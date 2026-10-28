@@ -1,0 +1,63 @@
+// Inspekcje — aplikacja działająca na Twoim koncie Google.
+// Telefon robi pliki DOCX i PDF; ten skrypt zapisuje je na Twoim Google Drive
+// i wysyła maila z Twojej skrzynki. Nic nie przechodzi przez Claude.
+// Wygląd/logika strony: https://github.com/Sarenkag/pierwszy (folder inspekcje) — skrypt pobiera ją przy otwarciu.
+
+var CFG = {
+  folder: 'Inspekcje',                                   // folder na Google Drive
+  template: 'Szablon - Engineers Report DB.docx',        // szablon Worda w tym folderze
+  email: 'TWOJ@EMAIL',             // domyślny odbiorca raportów
+  site: 'NAZWA OBIEKTU',
+  engineer: 'IMIE NAZWISKO',
+  devices: ['KOD-1', 'KOD-2'],
+  pageUrl: 'https://raw.githubusercontent.com/Sarenkag/pierwszy/main/inspekcje/index.html'
+};
+var MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+function doGet() {
+  var html = UrlFetchApp.fetch(CFG.pageUrl + '?t=' + Date.now()).getContentText('UTF-8');
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('Inspekcje')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+}
+
+function folder_(name) {
+  var it = DriveApp.getFoldersByName(name);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(name);
+}
+
+// Start aplikacji: szablon z Drive + ustawienia domyślne
+function getSetup(folderName) {
+  var out = { email: CFG.email, folder: CFG.folder, site: CFG.site, engineer: CFG.engineer, devices: CFG.devices };
+  var f = folder_(folderName || CFG.folder);
+  var t = f.getFilesByName(CFG.template);
+  if (!t.hasNext()) {
+    out.error = 'Brak pliku „' + CFG.template + '” w folderze „' + f.getName() + '” na Google Drive.';
+    return out;
+  }
+  var file = t.next();
+  out.template = Utilities.base64Encode(file.getBlob().getBytes());
+  out.templateName = file.getName();
+  return out;
+}
+
+// Tłumaczenie komentarza na angielski (wbudowany tłumacz Google, bez kosztów)
+function translate(text) {
+  if (!text) return '';
+  return LanguageApp.translate(text, '', 'en');
+}
+
+// Zapis na Drive + mail z Twojej skrzynki
+function submit(p) {
+  var f = folder_(p.folder || CFG.folder);
+  var docx = Utilities.newBlob(Utilities.base64Decode(p.docx), MIME_DOCX, p.name + '.docx');
+  var pdf = Utilities.newBlob(Utilities.base64Decode(p.pdf), 'application/pdf', p.name + '.pdf');
+  var fDocx = f.createFile(docx);
+  var fPdf = f.createFile(pdf);
+  (p.photos || []).forEach(function (b64, i) {
+    f.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', p.name + ' foto ' + (i + 1) + '.jpg'));
+  });
+  var body = p.body + '\nGoogle Drive:\n' + fPdf.getName() + ': ' + fPdf.getUrl() + '\n' + fDocx.getName() + ': ' + fDocx.getUrl() + '\n';
+  MailApp.sendEmail({ to: p.to || CFG.email, subject: p.subject, body: body, attachments: [pdf, docx] });
+  return { pdfUrl: fPdf.getUrl(), docxUrl: fDocx.getUrl(), folderUrl: f.getUrl() };
+}
