@@ -786,10 +786,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var dn = doneToday();
     $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
     $("types").innerHTML = TYPES.map(function (t) {
-      var all = devices(t), done = all.filter(function (d) { return dn[d.code]; }).length;
+      var all = devices(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
+      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + " · od " + esc(fmtDate(new Date(pr.started))) + " · dotknij, by wznowić</span>" :
+        '<span class="sub">' + all.length + " urządzeń · dziś zrobione: " + done + "</span>";
       return '<button class="type" type="button" data-type="' + t.id + '">' +
         '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
-        "<div><b>" + esc(t.name) + '</b><span class="sub">' + all.length + " urządzeń · dziś zrobione: " + done + "</span></div>" +
+        "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
         '<span class="arrow" aria-hidden="true">›</span></button>';
     }).join("");
     $("types").querySelectorAll("[data-type]").forEach(function (b) {
@@ -980,7 +982,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- zlecenie zbiorcze (izolatory): każde urządzenie domyślnie OK, jeden raport na koniec ----------
   var batch = { items: {} };
   function batchKey(t) { return "batch_" + t.id; }
-  function saveBatch() { return kvSet(batchKey(cur.type), batch); }
+  // Postęp zlecenia także w localStorage, żeby ekran startowy pokazał „W trakcie 12/27” bez czytania bazy
+  function saveBatch() {
+    if (!batch.started) batch.started = Date.now();
+    var t = cur.type;
+    return kvSet(batchKey(t), batch).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
+  }
   // Usterki z ostatniej inspekcji (per kod): { d: "dd/mm/rrrr", q: [klucze pytań], r: [id powodów] }
   function histOf(code) { var h = load("hist_" + cur.type.id, {}); return h[code] || null; }
   function saveHist(t, d) {
@@ -997,7 +1004,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     save("hist_" + t.id, h);
   }
-  function clearBatch(t) { batch = { items: {} }; return kvSet(batchKey(t), batch).catch(function () {}); }
+  function clearBatch(t) { batch = { items: {} }; save("bprog_" + t.id, null); return kvSet(batchKey(t), batch).catch(function () {}); }
   function loadBatch(t) {
     return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }).catch(function () { batch = { items: {} }; });
   }
@@ -1005,12 +1012,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.type, bar = $("batchBar");
     bar.hidden = !t.batch; if (!t.batch) return;
     var all = devices(t), codes = Object.keys(batch.items), fails = codes.filter(function (c) { return batch.items[c].fails; }).length;
+    var nextUp = all.filter(function (d) { return !batch.items[d.code]; })[0];
     bar.innerHTML = '<div class="label">Zlecenie: ' + esc(t.batch) + "</div>" +
-      "<div>Zapisane: " + codes.length + " z " + all.length + " · z uwagami: " + fails + "</div>" +
-      '<p class="hint">Otwórz urządzenie tylko, gdy coś jest nie tak albo chcesz dodać zdjęcie. Reszta liczy się jako sprawdzona bez uwag.</p>' +
+      "<div>Zapisane: " + codes.length + " z " + all.length + " · z uwagami: " + fails + (batch.started ? " · zaczęte " + esc(fmtDate(new Date(batch.started))) : "") + "</div>" +
+      (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">Wznów od ' + esc(nextUp.code) + "</button></div>" : "") +
+      '<p class="hint">Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.</p>' +
       '<div class="row"><button class="go" type="button" id="batchEnd">Zakończ zlecenie</button></div>' +
       (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">Zacznij od nowa</button></div>' : "");
     $("batchEnd").addEventListener("click", openSum);
+    if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
     if ($("batchClear")) $("batchClear").addEventListener("click", function () {
       if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList);
     });
@@ -1301,11 +1311,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("saveItem").disabled = sus || !!restoring;
       $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
     }
-    if (!photos.length) h.push("Dodaj przynajmniej jedno zdjęcie.");
+    if (!photos.length && cur.mode !== "sum") h.push("Dodaj przynajmniej jedno zdjęcie.");
     if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
     if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
-    var block = !photos.length || (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; }));
+    var block = cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
     $("toPreview").disabled = block; $("toQueue").disabled = block;
     $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate());
   }
@@ -1349,7 +1359,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!cfg.insp) cfg.insp = r.engineer || "";
     var dv = r.devices;
     if (Array.isArray(dv)) dv = { db: dv }; // stary Code.gs: tylko rozdzielnice
-    TYPES.forEach(function (t) { if (dv && dv[t.id] && dv[t.id].length) t.devices = dv[t.id]; });
+    TYPES.forEach(function (t) { if (dv && Array.isArray(dv[t.id])) t.devices = dv[t.id]; }); // pusta lista też obowiązuje
     // pytania z Code.gs (CFG.questions[typ] = [{ q, en, note? }]) zastępują wbudowane
     var qs = r.questions || {};
     TYPES.forEach(function (t) {
@@ -1425,18 +1435,26 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     function row(label, value, h) { pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); pdf.text(label, L + 1.5, y + 4.6); pdf.text(value || "", L + c1 + 1.5, y + 4.6); y += h; }
     row("Site", d.site, 6.2); row("Date", d.data, 9.5); row("Engineer", d.inspektor, 9.5);
     var top = y, ty = y + 8, lh = 5;
+    // długi tekst (np. zbiorczy raport 27 izolatorów): zamknij ramkę, nowa strona, ramka dalej
+    function room(h) {
+      if (ty + h <= 272) return;
+      pdf.rect(L, top, W, ty - top + 1); footer();
+      pdf.addPage(); top = header(); pdf.setLineWidth(0.25); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
+    }
     pdf.text(d.urzadzenie + " in " + d.lokalizacja + ".", L + 1.5, ty); ty += lh * 2;
     pdf.setFont("DV", "bold"); pdf.text(d.tytul || "", L + 1.5, ty); ty += lh; pdf.setFont("DV", "normal");
-    d.punkty.forEach(function (p) { var ls = pdf.splitTextToSize(p, W - 14); pdf.text("•", L + 6, ty); pdf.text(ls, L + 10, ty); ty += ls.length * lh; });
-    pdf.setFont("DV", "bold"); pdf.text("Overall Condition:", L + 1.5, ty);
+    d.punkty.forEach(function (p) { var ls = pdf.splitTextToSize(p, W - 14); room(ls.length * lh); pdf.text("•", L + 6, ty); pdf.text(ls, L + 10, ty); ty += ls.length * lh; });
+    room(lh); pdf.setFont("DV", "bold"); pdf.text("Overall Condition:", L + 1.5, ty);
     var ow = pdf.getTextWidth("Overall Condition: "); pdf.setFont("DV", "normal"); pdf.text(d.stan_ogolny + ".", L + 1.5 + ow, ty); ty += lh;
     if (d.komentarz) {
       pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); var cw = pdf.getTextWidth("Comments: "); pdf.setFont("DV", "normal");
       var cl = pdf.splitTextToSize(d.komentarz, W - 4 - cw);
+      if (ty + cl.length * lh > 272) { room(cl.length * lh); pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); pdf.setFont("DV", "normal"); }
       pdf.text(cl, L + 1.5 + cw, ty); ty += cl.length * lh;
     }
-    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
-    var cellBottom = Math.max(ty + 18, top + 72);
+    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.setFontSize(8.5); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
+    room(18 + 25); // Works Complete + Quote + Signed muszą zmieścić się razem
+    var cellBottom = Math.max(ty + 18, Math.min(top + 72, 252));
     pdf.text("Works Complete : " + d.data, L + 1.5, cellBottom - 2);
     pdf.rect(L, top, W, cellBottom - top + 1); y = cellBottom + 1;
     pdf.rect(L, y, W, 6); pdf.text("Quote Required : " + (d.quote || ""), L + 1.5, y + 4.5); y += 6;
