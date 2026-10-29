@@ -59,7 +59,7 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line
 h1 span.dot { color: var(--accent); }
 .sub { color: var(--muted); font-size: 0.92rem; }
 .back { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 1.4rem; cursor: pointer; }
-.view[hidden] { display: none !important; }
+[hidden] { display: none !important; }
 .view { display: flex; flex-direction: column; gap: 14px; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -319,7 +319,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
     <div class="panel" data-m="one item">
       <div class="label" id="ckTitle">Checklista</div>
-      <div class="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
+      <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
       <div class="ck" id="ck"></div>
       <div class="row"><button class="btn" type="button" id="allOk">Wszystkie zaznaczone → OK</button></div>
     </div>
@@ -595,31 +595,37 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
     scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
     devices: [],
-    // ask: dwa poziomy. Ogólne pytanie (TAK = w porządku, domyślnie), pod NIE konkretne powody z gotowym tekstem EN.
+    // ask: dwa poziomy. Ogólne pytanie (TAK = w porządku, domyślnie), pod nim konkretne powody z gotowym tekstem EN —
+    // kliknięcie powodu od razu daje NIE.
     // Do raportu: „Isolator KOD: <powody albo en pytania>.” Pytania robocze — docelowo z SFG20;
     // można je podmienić bez zmiany apki: CFG.questions.iso w Code.gs (ten sam układ).
     ask: true,
     checks: [
       { key: "access", q: "Dostępny?", en: "access obstructed", def: "ok", reasons: [
-        { id: "blocked", pl: "Zastawiony", en: "access obstructed by stored items" },
-        { id: "locked", pl: "Zamknięte pomieszczenie", en: "located in a locked room – no access" } ] },
+        { id: "blocked", pl: "Zastawiony", en: "access obstructed" },
+        { id: "locked", pl: "Brak dostępu (zamknięte)", en: "no access at time of inspection" } ] },
       { key: "label", q: "Oznaczony?", en: "label missing or illegible", def: "ok", reasons: [
-        { id: "nolabel", pl: "Brak etykiety", en: "identification label missing" },
-        { id: "illegible", pl: "Nieczytelna", en: "identification label illegible" },
+        { id: "nolabel", pl: "Brak oznaczenia", en: "no identification label" },
+        { id: "illegible", pl: "Nieczytelna naklejka", en: "identification label illegible" },
+        { id: "desc", pl: "Nieczytelny opis", en: "circuit description illegible" },
         { id: "wrong", pl: "Niezgodna z urządzeniem", en: "label does not match equipment served" } ] },
       { key: "damage", q: "Bez uszkodzeń?", en: "damage found", def: "ok", reasons: [
-        { id: "crack", pl: "Pęknięta obudowa", en: "cracked enclosure" },
-        { id: "knob", pl: "Brak pokrętła", en: "operating knob missing" },
-        { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating knob damaged" },
+        { id: "crack", pl: "Pęknięta obudowa", en: "enclosure cracked" },
+        { id: "knob", pl: "Brak pokrętła", en: "operating handle missing" },
+        { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating handle damaged" },
+        { id: "scratch", pl: "Porysowana", en: "enclosure scratched" },
         { id: "gland", pl: "Kabel / dławik", en: "cable or gland damaged" },
         { id: "heat", pl: "Ślady przegrzania", en: "signs of overheating" } ] },
       { key: "secure", q: "Pokrywa i mocowanie w porządku?", en: "cover or fixings defective", def: "ok", reasons: [
         { id: "nocover", pl: "Brak pokrywy", en: "cover missing" },
+        { id: "looseenc", pl: "Luźna obudowa", en: "enclosure loose – not securely fixed" },
+        { id: "notfixed", pl: "Nieprzykręcony", en: "not secured to the wall/mounting" },
         { id: "loose", pl: "Luźne mocowanie", en: "loose fixings" },
         { id: "screws", pl: "Brak śrub", en: "missing screws" } ] },
       { key: "clean", q: "Czysty i suchy?", en: "dirt or moisture present", def: "ok", reasons: [
         { id: "rust", pl: "Rdza", en: "corrosion" },
-        { id: "water", pl: "Woda / wilgoć", en: "water ingress" },
+        { id: "water", pl: "Woda / wilgoć", en: "signs of water ingress" },
+        { id: "flood", pl: "Zalany", en: "flooded – water damage" },
         { id: "dirt", pl: "Brud", en: "dirt build-up" } ] },
       { key: "state", q: "W normalnym stanie pracy?", en: "not in normal operating state", def: "ok", reasons: [
         { id: "off", pl: "Wyłączony (OFF)", en: "switch found in OFF position" },
@@ -858,9 +864,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (ask) $("faults").closest(".panel").hidden = true;
     $("photos").closest(".panel").style.order = ask ? "-1" : ""; // zdjęcie, potem pytania
     $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
+    $("legend").hidden = !!cur.type.ask;
   }
   function resetForm() {
-    built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -875,7 +882,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
       $("ck").innerHTML = idx.map(function (i) {
         var c = cur.type.checks[i], st = states[i];
-        var rs = (st === "fail" || st === "sus") && c.reasons && c.reasons.length ?
+        var rs = c.reasons && c.reasons.length ?
           '<div class="chips rs">' + c.reasons.map(function (r) {
             return '<button type="button" class="rchip" data-ri="' + i + '" data-r="' + r.id + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
           }).join("") + "</div>" : "";
@@ -912,7 +919,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     faultsOn[f.id] = on;
     if (i >= 0) {
       if (faultsOn[f.id]) { states[i] = "fail"; override[i] = f.en; }
-      else { delete override[i]; states[i] = cur.type.checks[i].def === "na" ? "na" : "ok"; }
+      else {
+        // inna aktywna usterka z tym samym punktem trzyma go dalej na ✗
+        var other = faultsFor(cur.type).filter(function (x) { return x.key === f.key && faultsOn[x.id]; })[0];
+        if (other) override[i] = other.en;
+        else { delete override[i]; states[i] = cur.type.checks[i].def === "na" ? "na" : "ok"; }
+      }
       renderChecks();
     }
     if (faultsOn[f.id] && !f.note) $("ov-2").checked = true;
@@ -927,7 +939,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (r) {
       var ri = +r.getAttribute("data-ri"), id = r.getAttribute("data-r"), arr = rsel[ri] = rsel[ri] || [];
       if (arr.indexOf(id) >= 0) arr.splice(arr.indexOf(id), 1); else arr.push(id);
-      if (states[ri] === "sus") { states[ri] = "fail"; delete susN[ri]; } // wybór powodu = potwierdzenie
+      // jedno kliknięcie w powód = NIE z gotowym zdaniem; odznaczenie ostatniego powodu wraca na TAK
+      if (arr.length) { states[ri] = "fail"; delete susN[ri]; }
+      else if (states[ri] === "fail") states[ri] = "ok";
       renderChecks(); suggestOverall(); updateFormHint(); return;
     }
     var b = e.target.closest("button[data-i]"); if (!b) return;
@@ -997,14 +1011,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   $("saveItem").addEventListener("click", function () {
     var b = this; b.disabled = true;
-    batch.items[cur.code] = {
+    var item = {
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
       lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
       photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }),
       t: Date.now()
     };
-    saveBatch().catch(function () {}).then(function () {
+    var prev = batch.items[cur.code];
+    batch.items[cur.code] = item;
+    saveBatch().then(function () {
       b.disabled = false; resetForm(); cur.code = ""; show("list");
+    }, function (e) {
+      if (prev) batch.items[cur.code] = prev; else delete batch.items[cur.code];
+      b.disabled = false; $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
     });
   });
   function photoFromSaved(sp, code, wh) {
@@ -1014,10 +1033,20 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, code: code, where: wh };
     });
   }
+  // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
+  var restoring = 0;
   function restoreItem(it) {
     states = it.states.slice(); override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn); rsel = JSON.parse(JSON.stringify(it.rsel || {}));
     renderChecks(); renderFaults();
-    Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp); })).then(function (ps) { photos = ps; renderPhotos(); });
+    var my = ++restoring, code = cur.code;
+    $("saveItem").disabled = true;
+    Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp); })).then(function (ps) {
+      if (my !== restoring || cur.code !== code) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      photos = ps; restoring = 0; renderPhotos();
+    }, function () {
+      if (my !== restoring) return;
+      restoring = 0; $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć."; updateFormHint();
+    });
   }
   function openSum() {
     var t = cur.type, all = devices(t), missing = all.filter(function (d) { return !batch.items[d.code]; });
@@ -1238,7 +1267,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
       $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
-      $("saveItem").disabled = sus;
+      $("saveItem").disabled = sus || !!restoring;
       $("saveItem").textContent = (cur.type.ask ? "Reszta TAK · zapisz " : "Zapisz · ") + cur.code; return;
     }
     if (!photos.length) h.push("Dodaj przynajmniej jedno zdjęcie.");
