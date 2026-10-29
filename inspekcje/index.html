@@ -1276,7 +1276,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           return qPut(it).then(function () { refresh(); return true; }); // przerwij, spróbuję później
         });
       });
-    }, Promise.resolve(false)).then(function () { sending = false; refresh(); });
+    }, Promise.resolve(false)).catch(function (e) {
+      $("qHint").textContent = "Błąd zapisu kolejki w telefonie: " + gErr(e);
+    }).then(function () { sending = false; refresh(); });
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl) loadSetup(); });
   window.addEventListener("offline", function () { renderTranslate(); refresh(); });
