@@ -237,6 +237,12 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .sug { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .sug:last-child { border-bottom: 0; }
 .sug .n { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
+.ck-row .rs { grid-column: 1 / -1; }
+.rchip { border: 1px solid var(--line); border-radius: 999px; background: var(--field); color: var(--ink); font: inherit; font-size: 0.88rem; font-weight: 600; padding: 7px 12px; cursor: pointer; }
+.rchip[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.ck-row.sus { background: var(--bad-bg); }
+.mkn { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
+.view > .top { order: -2; }
 .sumlist { margin: 0; padding-left: 20px; font-size: 0.92rem; }
 .datesug { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.92rem; }
 </style>
@@ -589,16 +595,35 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
     scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
     devices: [],
+    // ask: dwa poziomy. Ogólne pytanie (TAK = w porządku, domyślnie), pod NIE konkretne powody z gotowym tekstem EN.
+    // Do raportu: „Isolator KOD: <powody albo en pytania>.” Pytania robocze — docelowo z SFG20;
+    // można je podmienić bez zmiany apki: CFG.questions.iso w Code.gs (ten sam układ).
+    ask: true,
     checks: [
-      { key: "enclosure", ok: "Isolator enclosure inspected – no physical damage, cracks or corrosion.", fail: "Isolator enclosure shows physical damage, cracks or corrosion – remedial action required.", def: "ok" },
-      { key: "position", ok: "Isolator handle intact; ON/OFF position clearly indicated.", fail: "Isolator handle damaged, or ON/OFF position not clearly indicated.", def: "ok" },
-      { key: "cover", ok: "Cover and fixings secure; no missing screws or open entries.", fail: "Cover/fixings loose or missing, or open entries present.", def: "ok" },
-      { key: "label", ok: "Identification label present and legible, showing the equipment served.", fail: "Identification label missing or illegible.", def: "ok" },
-      { key: "lockoff", ok: "Lock-off facility intact.", fail: "Lock-off facility damaged or missing.", def: "na" },
-      { key: "heat", ok: "No visible signs of overheating, burning or discolouration.", fail: "Signs of overheating, burning or discolouration observed.", def: "ok" },
-      { key: "glands", ok: "Cable entries, glands and flexible conduit secure and undamaged.", fail: "Cable entries, glands or flexible conduit loose or damaged.", def: "ok" },
-      { key: "clean", ok: "Isolator clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found on or around the isolator.", def: "ok" },
-      { key: "access", ok: "Access to the isolator clear and unobstructed.", fail: "Access to the isolator obstructed.", def: "ok" }
+      { key: "access", q: "Dostępny?", en: "access obstructed", def: "ok", reasons: [
+        { id: "blocked", pl: "Zastawiony", en: "access obstructed by stored items" },
+        { id: "locked", pl: "Zamknięte pomieszczenie", en: "located in a locked room – no access" } ] },
+      { key: "label", q: "Oznaczony?", en: "label missing or illegible", def: "ok", reasons: [
+        { id: "nolabel", pl: "Brak etykiety", en: "identification label missing" },
+        { id: "illegible", pl: "Nieczytelna", en: "identification label illegible" },
+        { id: "wrong", pl: "Niezgodna z urządzeniem", en: "label does not match equipment served" } ] },
+      { key: "damage", q: "Bez uszkodzeń?", en: "damage found", def: "ok", reasons: [
+        { id: "crack", pl: "Pęknięta obudowa", en: "cracked enclosure" },
+        { id: "knob", pl: "Brak pokrętła", en: "operating knob missing" },
+        { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating knob damaged" },
+        { id: "gland", pl: "Kabel / dławik", en: "cable or gland damaged" },
+        { id: "heat", pl: "Ślady przegrzania", en: "signs of overheating" } ] },
+      { key: "secure", q: "Pokrywa i mocowanie w porządku?", en: "cover or fixings defective", def: "ok", reasons: [
+        { id: "nocover", pl: "Brak pokrywy", en: "cover missing" },
+        { id: "loose", pl: "Luźne mocowanie", en: "loose fixings" },
+        { id: "screws", pl: "Brak śrub", en: "missing screws" } ] },
+      { key: "clean", q: "Czysty i suchy?", en: "dirt or moisture present", def: "ok", reasons: [
+        { id: "rust", pl: "Rdza", en: "corrosion" },
+        { id: "water", pl: "Woda / wilgoć", en: "water ingress" },
+        { id: "dirt", pl: "Brud", en: "dirt build-up" } ] },
+      { key: "state", q: "W normalnym stanie pracy?", en: "not in normal operating state", def: "ok", reasons: [
+        { id: "off", pl: "Wyłączony (OFF)", en: "switch found in OFF position" },
+        { id: "padlock", pl: "Kłódka / LOTO", en: "padlock / LOTO fitted", note: true } ] }
     ]
   }];
   // Gotowe usterki: jedno dotknięcie = zdanie EN w raporcie + „Requires attention”.
@@ -607,11 +632,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     { id: "dirty", pl: "Obudowa brudna", key: "clean", en: "Enclosure dirty – cleaning required." },
     { id: "display", pl: "Błąd na wyświetlaczu", key: "display", en: "Error/fault message shown on the display – further investigation required." },
     { id: "damage", pl: "Uszkodzenie", key: "enclosure", en: "Visible damage to the enclosure – remedial action required." },
-    { id: "label", pl: "Brak oznaczenia", key: "label", en: "Identification label missing or illegible – new label required." },
-    { id: "crack", pl: "Pęknięta obudowa", key: "enclosure", en: "Cracked enclosure – replacement required.", types: ["iso"] },
-    { id: "off", pl: "Wyłączony (OFF)", key: "position", en: "Isolator found in OFF position – to be confirmed whether intentional.", types: ["iso"] },
-    // note: obserwacja, nie usterka — nie zmienia Overall Condition
-    { id: "padlock", pl: "Kłódka założona", key: "", en: "Isolator locked off with a padlock.", types: ["iso"], note: true }
+    { id: "label", pl: "Brak oznaczenia", key: "label", en: "Identification label missing or illegible – new label required." }
   ];
   function faultsFor(t) { return FAULTS.filter(function (f) { return !f.types || f.types.indexOf(t.id) >= 0; }); }
   // Piętra potwierdzone przez użytkownika: UG = Upper Ground, LG = Lower Ground, LL-06 = Level 6
@@ -833,16 +854,39 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function formMode() {
     var m = cur.mode;
     document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
+    var ask = !!cur.type.ask && m !== "sum";
+    if (ask) $("faults").closest(".panel").hidden = true;
+    $("photos").closest(".panel").style.order = ask ? "-1" : ""; // zdjęcie, potem pytania
+    $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
   }
   function resetForm() {
-    built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false;
+    built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = "";
     $("ov-1").checked = true; $("q-0").checked = true;
   }
+  var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
+  var rsel = {}; // wybrane powody pod pytaniem (i → [id])
   function renderChecks() {
+    if (cur.type.ask) {
+      var idx = cur.type.checks.map(function (c, i) { return i; });
+      idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
+      $("ck").innerHTML = idx.map(function (i) {
+        var c = cur.type.checks[i], st = states[i];
+        var rs = (st === "fail" || st === "sus") && c.reasons && c.reasons.length ?
+          '<div class="chips rs">' + c.reasons.map(function (r) {
+            return '<button type="button" class="rchip" data-ri="' + i + '" data-r="' + r.id + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
+          }).join("") + "</div>" : "";
+        return '<div class="ck-row ' + st + '"><div class="txt">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) + "</div>" +
+          '<div class="seg" role="group" aria-label="' + esc(c.q) + '">' +
+          '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
+          '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
+          "</div>" + rs + "</div>";
+      }).join("");
+      return;
+    }
     $("ck").innerHTML = cur.type.checks.map(function (c, i) {
       var s = states[i];
       return '<div class="ck-row ' + s + '"><div class="txt">' + esc(s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
@@ -879,9 +923,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return faultsFor(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
   }
   $("ck").addEventListener("click", function (e) {
+    var r = e.target.closest("button[data-r]");
+    if (r) {
+      var ri = +r.getAttribute("data-ri"), id = r.getAttribute("data-r"), arr = rsel[ri] = rsel[ri] || [];
+      if (arr.indexOf(id) >= 0) arr.splice(arr.indexOf(id), 1); else arr.push(id);
+      if (states[ri] === "sus") { states[ri] = "fail"; delete susN[ri]; } // wybór powodu = potwierdzenie
+      renderChecks(); suggestOverall(); updateFormHint(); return;
+    }
     var b = e.target.closest("button[data-i]"); if (!b) return;
     var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
-    states[i] = b.getAttribute("data-s"); delete override[i];
+    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
+    if (states[i] === "ok") delete rsel[i];
     FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
   });
@@ -890,8 +942,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     FAULTS.forEach(function (f) { if (checkIdx(f.key) >= 0) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
   });
+  function failCount() {
+    if (cur.type.ask) return askFinds().filter(function (x) { return !x.note; }).length;
+    return states.filter(function (s) { return s === "fail"; }).length + extraFaults().length;
+  }
   function suggestOverall() {
-    var fails = states.filter(function (s) { return s === "fail"; }).length + extraFaults().length;
+    var fails = failCount();
     if (fails && radio("ov") === "Satisfactory") $("ov-2").checked = true;
     if (!fails && radio("ov") === "Requires attention") $("ov-1").checked = true;
   }
@@ -919,8 +975,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList);
     });
   }
+  // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
+  function askFinds() {
+    var out = [];
+    cur.type.checks.forEach(function (c, i) {
+      if (states[i] !== "fail") return;
+      var rs = (c.reasons || []).filter(function (r) { return (rsel[i] || []).indexOf(r.id) >= 0; });
+      if (rs.length) rs.forEach(function (r) { out.push({ en: r.en, note: !!r.note }); });
+      else out.push({ en: c.en, note: !!c.note });
+    });
+    return out;
+  }
   function itemLines() {
     var out = [];
+    if (cur.type.ask) {
+      var f = askFinds(), bad = f.some(function (x) { return !x.note; });
+      return f.length ? ["Isolator " + cur.code + ": " + f.map(function (x) { return x.en; }).join("; ") + "." + (bad ? " Requires attention." : "")] : [];
+    }
     cur.type.checks.forEach(function (c, i) { if (states[i] === "fail") out.push(override[i] || c.fail); });
     return out.concat(extraFaults(true));
   }
@@ -928,7 +999,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var b = this; b.disabled = true;
     batch.items[cur.code] = {
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
-      lines: itemLines(), fails: states.filter(function (x) { return x === "fail"; }).length + extraFaults().length,
+      lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
       photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }),
       t: Date.now()
     };
@@ -944,7 +1015,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   function restoreItem(it) {
-    states = it.states.slice(); override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn);
+    states = it.states.slice(); override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn); rsel = JSON.parse(JSON.stringify(it.rsel || {}));
     renderChecks(); renderFaults();
     Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp); })).then(function (ps) { photos = ps; renderPhotos(); });
   }
@@ -974,15 +1045,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function batchData(w) {
     var t = cur.type, all = devices(t), items = batch.items;
     var checked = all.filter(function (d) { return cur.restOk || items[d.code]; });
-    var bySentence = {}, order = [];
-    checked.forEach(function (d) {
-      var it = items[d.code]; if (!it) return;
-      it.lines.forEach(function (l) { if (!bySentence[l]) { bySentence[l] = []; order.push(l); } bySentence[l].push(d.code); });
-    });
-    var pts = ["Local isolators inspected: " + checked.length + "/" + all.length + "."];
-    order.forEach(function (l) { pts.push(bySentence[l].length + " × " + l.replace(/\.$/, "") + " (" + bySentence[l].join(", ") + ")."); });
-    var clean = checked.filter(function (d) { return !items[d.code] || !items[d.code].fails; }).length;
-    pts.push(order.length ? "Remaining " + clean + " isolator(s) – no defects found." : "No defects found on any inspected isolator.");
+    var pts = ["Local isolators inspected: " + checked.length + "/" + all.length + "."], noted = 0;
+    checked.forEach(function (d) { var it = items[d.code]; if (it && it.lines.length) { noted++; pts = pts.concat(it.lines); } });
+    pts.push(noted ? "Remaining " + (checked.length - noted) + " isolator(s) – no defects found." : "No defects found on any inspected isolator.");
     var miss = all.filter(function (d) { return !cur.restOk && !items[d.code]; }).map(function (d) { return d.code; });
     if (miss.length) pts.push("Not inspected: " + miss.join(", ") + ".");
     var d = {
@@ -1089,18 +1154,25 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   });
   $("dzien").addEventListener("change", function () { dateTouched = true; suggestDate(); });
   // ---------- sugestie ze zdjęcia (miejsce na model; bez modelu nic się nie pokazuje) ----------
-  // Model podpina się jako window.INSP_ANALYZE(canvas, typId) → Promise<[{ fault: "crack", x: 0..1, y: 0..1 }]>.
+  // Model podpina się jako window.INSP_ANALYZE(canvas, typId) → Promise<[{ fault: "enclosure", x: 0..1, y: 0..1 }]>; fault = id usterki albo key pytania (izolatory).
   // Każda sugestia czeka na Twoje Tak/Nie; do raportu trafia tylko to, co potwierdzisz.
   var sugN = 0;
   function analyze(ph) {
     if (typeof window.INSP_ANALYZE !== "function") return;
-    var ids = faultsFor(cur.type).map(function (f) { return f.id; }), code = cur.code;
+    var ask = !!cur.type.ask, code = cur.code;
+    var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
+    function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
     $("photoInfo").textContent = "Sprawdzam zdjęcie…";
     Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
       if (cur.code !== code) return;
-      ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && !faultsOn[sg.fault]; })
-        .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: true }; });
-      renderPhotos(); renderSugs();
+      ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
+        .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: !ask }; });
+      // podpowiedź: pytanie na górę z numerem, powód wstępnie zaznaczony; liczy się dopiero Twoje TAK/NIE
+      if (ask) ph.sugs.forEach(function (sg) {
+        var i = qOf(sg.fault); states[i] = "sus"; susN[i] = susN[i] || sg.n;
+        if (sg.fault !== cur.type.checks[i].key) { rsel[i] = rsel[i] || []; if (rsel[i].indexOf(sg.fault) < 0) rsel[i].push(sg.fault); }
+      });
+      renderPhotos(); renderSugs(); renderChecks(); updateFormHint();
       $("photoInfo").textContent = ph.sugs.length ? "Sprawdź sugestie pod zdjęciami." : "Na zdjęciu nic podejrzanego.";
     }).catch(function () { $("photoInfo").textContent = "Nie udało się sprawdzić zdjęcia — zaznacz ręcznie."; });
   }
@@ -1164,8 +1236,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function updateFormHint() {
     var h = [];
     if (cur.mode === "item") {
-      $("formHint").textContent = "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
-      $("saveItem").textContent = "Zapisz · " + cur.code; return;
+      var sus = states.indexOf("sus") >= 0;
+      $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
+      $("saveItem").disabled = sus;
+      $("saveItem").textContent = (cur.type.ask ? "Reszta TAK · zapisz " : "Zapisz · ") + cur.code; return;
     }
     if (!photos.length) h.push("Dodaj przynajmniej jedno zdjęcie.");
     if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
@@ -1216,13 +1290,20 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var dv = r.devices;
     if (Array.isArray(dv)) dv = { db: dv }; // stary Code.gs: tylko rozdzielnice
     TYPES.forEach(function (t) { if (dv && dv[t.id] && dv[t.id].length) t.devices = dv[t.id]; });
+    // pytania z Code.gs (CFG.questions[typ] = [{ q, en, note? }]) zastępują wbudowane
+    var qs = r.questions || {};
+    TYPES.forEach(function (t) {
+      if (t.ask && qs[t.id] && qs[t.id].length) t.checks = qs[t.id].map(function (x, i) {
+        return { key: x.key || "q" + i, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r, j) { return { id: r.id || "q" + i + "r" + j, pl: r.pl, en: r.en, note: !!r.note }; }) };
+      });
+    });
   }
   function loadSetup() {
     $("tplName").textContent = "Ładuję z Google Drive…";
     return api("getSetup", cfg.folder || "").then(function (r) {
       applySetup(r);
       save("cfg", cfg); fillSettings();
-      save("setup", { email: r.email, folder: r.folder, site: r.site, engineer: r.engineer, devices: r.devices });
+      save("setup", { email: r.email, folder: r.folder, site: r.site, engineer: r.engineer, devices: r.devices, questions: r.questions });
       if (r.error) tplState(r.error);
       else {
         serverTpl = { name: r.templateName, bytes: b64ToBytes(r.template) }; tplState();

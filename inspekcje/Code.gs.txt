@@ -19,6 +19,12 @@ var CFG = {
     ats: ['KOD-1'],                 // ATS
     iso: ['KOD-1']                  // Local Isolators (rejestr)
   },
+  // Pytania po zdjęciu dla izolatorów (docelowo z SFG20). Puste = pytania wbudowane w apkę.
+  // q: pytanie po polsku (TAK = w porządku), en: tekst do raportu przy NIE bez wybranego powodu,
+  // reasons: konkretne powody pod NIE (pl na przycisku, en do raportu; note: true = obserwacja, nie usterka).
+  questions: {
+    iso: []   // np. { q: 'Bez uszkodzeń?', en: 'damage found', reasons: [{ pl: 'Pęknięta obudowa', en: 'cracked enclosure' }] }
+  },
   appUrl: 'https://sarenkag.github.io/pierwszy/inspekcje/',
   pageUrl: 'https://raw.githubusercontent.com/Sarenkag/pierwszy/main/inspekcje/index.html'
 };
@@ -87,7 +93,7 @@ function folder_(name) {
 
 // Start aplikacji: szablon z Drive + ustawienia domyślne
 function getSetup_(folderName) {
-  var out = { email: CFG.email, folder: CFG.folder, site: CFG.site, engineer: CFG.engineer, devices: CFG.devices };
+  var out = { email: CFG.email, folder: CFG.folder, site: CFG.site, engineer: CFG.engineer, devices: CFG.devices, questions: CFG.questions };
   var f = folder_(folderName || CFG.folder);
   var t = f.getFilesByName(CFG.template);
   if (!t.hasNext()) {
