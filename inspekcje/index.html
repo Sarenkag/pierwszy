@@ -1079,11 +1079,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
-  var restoring = 0;
+  var restoring = 0, restSeq = 0; // restoring = numer trwającego wczytywania (rośnie, żeby stary wynik nie trafił do nowego formularza)
   function restoreItem(it) {
     states = it.states.slice(); override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn); rsel = JSON.parse(JSON.stringify(it.rsel || {}));
     renderChecks(); renderFaults();
-    var my = ++restoring, code = cur.code;
+    var my = restoring = ++restSeq, code = cur.code;
     $("saveItem").disabled = true;
     Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp); })).then(function (ps) {
       if (my !== restoring || cur.code !== code) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
@@ -1107,7 +1107,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     formMode();
     var jobs = [];
     all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d))); }); });
-    Promise.all(jobs).then(function (ps) { photos = ps; renderPhotos(); suggestDate(); });
+    // Do końca wczytywania zdjęć raport jest zablokowany (inaczej poszedłby bez nich)
+    var my = jobs.length ? (restoring = ++restSeq) : 0;
+    if (my) Promise.all(jobs).then(function (ps) {
+      if (my !== restoring || cur.mode !== "sum") { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      photos = ps.concat(photos); restoring = 0; renderPhotos(); suggestDate(); updateFormHint();
+    }, function () {
+      if (my !== restoring) return;
+      restoring = 0; updateFormHint(); $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć — raport pójdzie bez nich.";
+    });
     renderSum(); show("form"); updateFormHint();
   }
   function renderSum() {
@@ -1317,9 +1325,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     if (!photos.length && cur.mode !== "sum") h.push("Dodaj przynajmniej jedno zdjęcie.");
     if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
+    if (restoring) h.push("Wczytuję zapisane zdjęcia…");
     if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
-    var block = cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
+    var block = !!restoring || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
     $("toPreview").disabled = block; $("toQueue").disabled = block;
     $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate());
   }
