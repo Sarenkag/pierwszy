@@ -986,7 +986,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function saveBatch() {
     if (!batch.started) batch.started = Date.now();
     var t = cur.type;
-    return kvSet(batchKey(t), batch).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
+    // Bez IndexedDB zapis zniknąłby po zamknięciu apki, a obiecujemy wznowienie: nie udaję, że się zapisało
+    return dbP.then(function (db) {
+      if (!db) throw new Error("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji");
+      return kvSet(batchKey(t), batch);
+    }).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
   }
   // Usterki z ostatniej inspekcji (per kod): { d: "dd/mm/rrrr", q: [klucze pytań], r: [id powodów] }
   function histOf(code) { var h = load("hist_" + cur.type.id, {}); return h[code] || null; }
