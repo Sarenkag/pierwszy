@@ -1416,12 +1416,24 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     TYPES.forEach(function (t) {
       if (!t.ask || !Array.isArray(qs[t.id])) return;
       if (!t.baseChecks) t.baseChecks = t.checks;
+      var old = t.checks;
       // pusta lista w Code.gs = wracamy do pytań wbudowanych (także gdy telefon pamiętał wcześniejsze własne)
       t.checks = !qs[t.id].length ? t.baseChecks : qs[t.id].map(function (x, i) {
         // klucze z treści (nie z kolejności), żeby przestawienie pytań w CFG nie zmieniło znaczenia zapisanych odpowiedzi
         var k = x.key || x.q;
         return { key: k, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
       });
+      // otwarty formularz tego rodzaju: odpowiedzi idą za kluczem pytania, nie za pozycją
+      if (cur.type === t && cur.code && old !== t.checks) {
+        var ok = old.map(function (c) { return c.key; }), st = states, rs = rsel, sn = susN;
+        rsel = {}; susN = {};
+        states = t.checks.map(function (c, i) {
+          var j = ok.indexOf(c.key); if (j < 0) return c.def;
+          if (rs[j]) rsel[i] = rs[j]; if (sn[j] != null) susN[i] = sn[j];
+          return st[j];
+        });
+        renderChecks(); updateFormHint();
+      }
     });
   }
   function loadSetup() {
@@ -1542,13 +1554,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- podgląd ----------
   function freeBuilt() { if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); built = null; } }
   $("toPreview").addEventListener("click", function () {
-    var b = this; b.disabled = true; b.textContent = "Przygotowuję…";
+    if (queueing) return;
+    var b = this; b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    var from = { type: cur.type, mode: cur.mode };
     freeBuilt();
     buildAll().then(function (r) {
-      built = r; renderPreview(); show("preview");
+      r.from = from; built = r; renderPreview(); show("preview");
     }).catch(function (e) {
       $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
-    }).then(function () { b.disabled = false; b.textContent = "Podgląd raportu"; });
+    }).then(function () { queueing = false; b.disabled = false; b.textContent = "Podgląd raportu"; });
   });
   function buildErr(e) { return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
@@ -1589,10 +1603,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
       status: "wait", err: ""
     };
-    // Bez IndexedDB raport żyje tylko do zamknięcia apki: wtedy przyjmuję go wyłącznie, gdy od razu można wysłać
+    // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
     return dbP.then(function (db) {
-      if (!db && !online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
-      return qPut(it);
+      if (db) return qPut(it);
+      if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
+      return api("submit", submitArg(it)).then(function (r) { markSent(it, r); return qPut(it); }, function (e) {
+        throw new Error("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie");
+      });
     }).then(function () {
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
       var done = Promise.resolve();
@@ -1607,7 +1624,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function queueBtn(b, fromPreview) {
     if (queueing) return;
     b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
-    var from = { type: cur.type, mode: cur.mode };
+    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode };
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
@@ -1653,6 +1670,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function refresh() { if (!$("v-queue").hidden) renderQueue(); else renderNet(); if (!$("v-list").hidden) renderList(); }
 
   // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
+  function submitArg(it) {
+    return { id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
+      docx: bytesToB64(it.docx), pdf: bytesToB64(it.pdf), photos: it.photos.map(bytesToB64) };
+  }
+  function markSent(it, r) {
+    it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
+    it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
+  }
   function sendQueue(manual) {
     if (sending || !cfg.email) return Promise.resolve();
     if (!online() && !manual) { refresh(); return Promise.resolve(); }
@@ -1663,12 +1688,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return p.then(function (stop) {
         if (stop) return true;
         it.status = "sending"; it.err = ""; refresh();
-        return api("submit", {
-          id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
-          docx: bytesToB64(it.docx), pdf: bytesToB64(it.pdf), photos: it.photos.map(bytesToB64)
-        }).then(function (r) {
-          it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
-          it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
+        return api("submit", submitArg(it)).then(function (r) {
+          markSent(it, r);
           return qPut(it).then(function () { refresh(); return false; });
         }, function (e) {
           it.status = "err"; it.err = gErr(e);
