@@ -240,6 +240,10 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .ck-row .rs { grid-column: 1 / -1; }
 .rchip { border: 1px solid var(--line); border-radius: 999px; background: var(--field); color: var(--ink); font: inherit; font-size: 0.88rem; font-weight: 600; padding: 7px 12px; cursor: pointer; }
 .rchip[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.prevq { text-decoration: underline wavy var(--bad); text-underline-offset: 4px; }
+.was { display: block; color: var(--bad); font-size: 0.8rem; text-decoration: none; }
+.rchip.prev { border: 2px dashed var(--bad); }
+.item .last { color: var(--bad); font-size: 0.8rem; }
 .ck-row.sus { background: var(--bad-bg); }
 .mkn { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
 .view > .top { order: -2; }
@@ -826,7 +830,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length + "/" + list.length + "</small></h2>" +
         list.map(function (d) {
           var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(c) ? '<span class="badge q">⏳ w kolejce</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
-          return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div></div>" + badge + "</button>";
+          var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">ostatnio z uwagami (' + esc(hl.d) + ")</div>" : "";
+          return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div>" + lastTxt + "</div>" + badge + "</button>";
         }).join("") + "</div>";
     }).join("") : '<p class="hint">Brak wyników. Wpisz kod niżej, żeby otworzyć inne urządzenie.</p>';
     $("groups").querySelectorAll("[data-code]").forEach(function (b) { b.addEventListener("click", function () { openForm(b.getAttribute("data-code")); }); });
@@ -854,7 +859,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("formSub").textContent = cur.where + " · " + cur.type.name;
     $("ckTitle").textContent = cur.type.title;
     if (mode === "item" && batch.items[code]) restoreItem(batch.items[code]);
-    formMode(); renderFaults(); show("form"); updateFormHint();
+    formMode(); renderChecks(); renderFaults(); show("form"); updateFormHint();
   }
   // Pokazuje tylko panele potrzebne w danym trybie
   function formMode() {
@@ -880,13 +885,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type.ask) {
       var idx = cur.type.checks.map(function (c, i) { return i; });
       idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
+      var last = histOf(cur.code);
       $("ck").innerHTML = idx.map(function (i) {
         var c = cur.type.checks[i], st = states[i];
-        var rs = c.reasons && c.reasons.length ?
+        var was = last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; }));
+        // powody zwinięte, dopóki NIE / podpowiedź / usterka z ostatniej inspekcji
+        var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
           '<div class="chips rs">' + c.reasons.map(function (r) {
-            return '<button type="button" class="rchip" data-ri="' + i + '" data-r="' + r.id + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
+            var prev = last && last.r.indexOf(r.id) >= 0;
+            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + r.id + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
           }).join("") + "</div>" : "";
-        return '<div class="ck-row ' + st + '"><div class="txt">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) + "</div>" +
+        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) +
+          (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
           '<div class="seg" role="group" aria-label="' + esc(c.q) + '">' +
           '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
           '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
@@ -971,6 +981,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var batch = { items: {} };
   function batchKey(t) { return "batch_" + t.id; }
   function saveBatch() { return kvSet(batchKey(cur.type), batch); }
+  // Usterki z ostatniej inspekcji (per kod): { d: "dd/mm/rrrr", q: [klucze pytań], r: [id powodów] }
+  function histOf(code) { var h = load("hist_" + cur.type.id, {}); return h[code] || null; }
+  function saveHist(t, d) {
+    var h = load("hist_" + t.id, {});
+    devices(t).forEach(function (dv) {
+      if (!cur.restOk && !batch.items[dv.code]) return; // niesprawdzone: zostaje stara historia
+      var it = batch.items[dv.code], q = [], r = [];
+      if (it) t.checks.forEach(function (c, i) {
+        if (it.states[i] !== "fail") return;
+        var sel = (it.rsel && it.rsel[i]) || [];
+        if (sel.length) r = r.concat(sel); else q.push(c.key);
+      });
+      h[dv.code] = { d: d, q: q, r: r };
+    });
+    save("hist_" + t.id, h);
+  }
   function clearBatch(t) { batch = { items: {} }; return kvSet(batchKey(t), batch).catch(function () {}); }
   function loadBatch(t) {
     return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }).catch(function () { batch = { items: {} }; });
@@ -1019,8 +1045,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     };
     var prev = batch.items[cur.code];
     batch.items[cur.code] = item;
+    var all = devices(cur.type), pos = all.map(function (d) { return d.code; }).indexOf(cur.code);
+    var next = all.slice(pos + 1).concat(all.slice(0, pos)).filter(function (d) { return !batch.items[d.code]; })[0];
     saveBatch().then(function () {
-      b.disabled = false; resetForm(); cur.code = ""; show("list");
+      b.disabled = false; resetForm(); cur.code = "";
+      if (!next) { show("list"); return; }
+      openForm(next.code);
+      try { $("camIn").click(); } catch (e) {} // aparat od razu dla następnego (działa w ciągu kilku sekund od kliknięcia)
     }, function (e) {
       if (prev) batch.items[cur.code] = prev; else delete batch.items[cur.code];
       b.disabled = false; $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
@@ -1268,7 +1299,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var sus = states.indexOf("sus") >= 0;
       $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
       $("saveItem").disabled = sus || !!restoring;
-      $("saveItem").textContent = (cur.type.ask ? "Reszta TAK · zapisz " : "Zapisz · ") + cur.code; return;
+      $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
     }
     if (!photos.length) h.push("Dodaj przynajmniej jedno zdjęcie.");
     if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
@@ -1490,7 +1521,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return qPut(it);
     }).then(function () {
       queue.push(it); markDone(it.code); lastQueued = it.code;
-      if (cur.mode === "sum") clearBatch(cur.type);
+      if (cur.mode === "sum") { if (cur.type.ask) saveHist(cur.type, d.data); clearBatch(cur.type); }
       freeBuilt(); resetForm(); cur.code = ""; show("list");
       if (cfg.auto) sendQueue();
     });
