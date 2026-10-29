@@ -853,14 +853,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // cur.mode: "one" — raport na urządzenie; "item" — urządzenie w zleceniu zbiorczym; "sum" — zakończenie zlecenia
   function openForm(code) {
     var mode = cur.type.batch ? "item" : "one";
-    if (cur.code !== code || cur.formType !== cur.type.id || cur.mode !== mode) resetForm();
+    var fresh = cur.code !== code || cur.formType !== cur.type.id || cur.mode !== mode;
+    if (fresh) resetForm();
     cur.code = code; cur.formType = cur.type.id; cur.mode = mode;
     var d = devOf(code);
     cur.loc = d.loc; cur.where = where(d);
     $("formTitle").textContent = code;
     $("formSub").textContent = cur.where + " · " + cur.type.name;
     $("ckTitle").textContent = cur.type.title;
-    if (mode === "item" && batch.items[code]) restoreItem(batch.items[code]);
+    if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
     formMode(); renderChecks(); renderFaults(); show("form"); updateFormHint();
   }
   // Pokazuje tylko panele potrzebne w danym trybie
@@ -895,7 +896,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
           '<div class="chips rs">' + c.reasons.map(function (r) {
             var prev = last && last.r.indexOf(r.id) >= 0;
-            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + r.id + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
+            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
           }).join("") + "</div>" : "";
         return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) +
           (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
@@ -1058,18 +1059,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }).concat(keptSaved),
       t: Date.now()
     };
-    var prev = batch.items[cur.code];
-    batch.items[cur.code] = item;
-    var all = devices(cur.type), pos = all.map(function (d) { return d.code; }).indexOf(cur.code);
+    var code = cur.code, prev = batch.items[code];
+    batch.items[code] = item;
+    var all = devices(cur.type), pos = all.map(function (d) { return d.code; }).indexOf(code);
     var next = all.slice(pos + 1).concat(all.slice(0, pos)).filter(function (d) { return !batch.items[d.code]; })[0];
     saveBatch().then(function () {
-      b.disabled = false; resetForm(); cur.code = "";
+      b.disabled = false;
+      if (cur.code !== code || cur.mode !== "item") return; // w międzyczasie otwarto coś innego: nie przeskakujemy
+      resetForm(); cur.code = "";
       if (!next) { show("list"); return; }
       openForm(next.code);
       try { $("camIn").click(); } catch (e) {} // aparat od razu dla następnego (działa w ciągu kilku sekund od kliknięcia)
     }, function (e) {
-      if (prev) batch.items[cur.code] = prev; else delete batch.items[cur.code];
-      b.disabled = false; $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
+      if (batch.items[code] === item) { if (prev) batch.items[code] = prev; else delete batch.items[code]; }
+      b.disabled = false;
+      if (cur.code !== code) { alert("Nie zapisano " + code + " w telefonie (" + gErr(e) + "). Otwórz go i zapisz ponownie."); return; }
+      $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
     });
   });
   function photoFromSaved(sp, code, wh) {
@@ -1396,7 +1401,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // pytania z Code.gs (CFG.questions[typ] = [{ q, en, note? }]) zastępują wbudowane
     var qs = r.questions || {};
     TYPES.forEach(function (t) {
-      if (t.ask && qs[t.id] && qs[t.id].length) t.checks = qs[t.id].map(function (x, i) {
+      if (!t.ask || !Array.isArray(qs[t.id])) return;
+      if (!t.baseChecks) t.baseChecks = t.checks;
+      // pusta lista w Code.gs = wracamy do pytań wbudowanych (także gdy telefon pamiętał wcześniejsze własne)
+      t.checks = !qs[t.id].length ? t.baseChecks : qs[t.id].map(function (x, i) {
         // klucze z treści (nie z kolejności), żeby przestawienie pytań w CFG nie zmieniło znaczenia zapisanych odpowiedzi
         var k = x.key || x.q;
         return { key: k, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
