@@ -881,7 +881,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("legend").hidden = !!cur.type.ask;
   }
   function resetForm() {
-    restoring = 0; formSeq++; unsent = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -1003,7 +1003,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function histOf(code) { var h = load("hist_" + cur.type.id, {}); return h[code] || null; }
   function saveHist(t, d) {
     var h = load("hist_" + t.id, {});
-    devices(t).forEach(function (dv) {
+    (cur.sumDevs || devices(t)).forEach(function (dv) {
       if (!cur.restOk && !batch.items[dv.code]) return; // niesprawdzone: zostaje stara historia
       var it = batch.items[dv.code], q = [], r = [];
       if (it) t.checks.forEach(function (c, i) {
@@ -1125,6 +1125,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.type, all = devices(t), missing = all.filter(function (d) { return !batch.items[d.code]; });
     resetForm();
     cur.mode = "sum"; cur.formType = t.id; cur.code = t.batch;
+    cur.sumDevs = all; // rejestr zamrożony na czas podsumowania (odświeżenie z Code.gs nie zmieni raportu po potwierdzeniu)
     cur.restOk = !missing.length || confirm(missing.length + " urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone");
     var locs = [];
     all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
@@ -1155,7 +1156,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<p class="hint">Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.</p>';
   }
   function batchData(w) {
-    var t = cur.type, all = devices(t), items = batch.items;
+    var t = cur.type, all = cur.sumDevs || devices(t), items = batch.items;
     var checked = all.filter(function (d) { return cur.restOk || items[d.code]; });
     var pts = ["Local isolators inspected: " + checked.length + "/" + all.length + "."], noted = 0;
     checked.forEach(function (d) { var it = items[d.code]; if (it && it.lines.length) { noted++; pts = pts.concat(it.lines); } });
