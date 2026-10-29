@@ -775,7 +775,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (v === "queue") renderQueue();
     window.scrollTo(0, 0);
   }
-  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-go")); }); });
+  // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
+  var queueing = false;
+  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
 
   // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
   function doneToday(t) { var d = load("done", {}), day = d[isoDay(new Date())] || {}; return day[t.id] || {}; }
@@ -969,7 +971,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
   });
   $("allOk").addEventListener("click", function () {
-    states = states.map(function (s) { return s === "na" ? "na" : "ok"; }); override = {};
+    states = states.map(function (s) { return s === "na" ? "na" : "ok"; }); override = {}; rsel = {}; susN = {};
     FAULTS.forEach(function (f) { if (checkIdx(f.key) >= 0) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
   });
@@ -1013,9 +1015,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     save("hist_" + t.id, h);
   }
+  // Zlecenie znika z pamięci dopiero po udanym zapisie (inaczej po ponownym otwarciu wróciłyby stare wpisy)
   function clearBatch(t) {
-    if (cur.mode !== "one") cur.code = ""; // następne otwarcie formularza zaczyna od czystego: stare odpowiedzi i zdjęcia nie przejdą do nowego zlecenia
-    batch = { items: {} }; save("bprog_" + t.id, null); return kvSet(batchKey(t), batch).catch(function () {}); }
+    var empty = { items: {} };
+    return kvSet(batchKey(t), empty).then(function () {
+      if (cur.mode !== "one") cur.code = ""; // następne otwarcie formularza zaczyna od czystego: stare odpowiedzi i zdjęcia nie przejdą do nowego zlecenia
+      batch = empty; save("bprog_" + t.id, null);
+    });
+  }
   function loadBatch(t) {
     return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }); // błąd odczytu ≠ brak zlecenia: nie zaczynamy od pustego, bo nadpisalibyśmy zapisane
   }
@@ -1033,7 +1040,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("batchEnd").addEventListener("click", openSum);
     if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
     if ($("batchClear")) $("batchClear").addEventListener("click", function () {
-      if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList);
+      if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList, function (e) { alert("Nie udało się usunąć zlecenia (" + gErr(e) + "). Zapisy zostają."); });
     });
   }
   // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
@@ -1566,15 +1573,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
       (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> (tylko na Drive)" : "");
   }
-  $("editBtn").addEventListener("click", function () { show("form"); });
+  $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
   // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
   var queue = [], sending = false;
-  function enqueue(r) {
+  function enqueue(r, from) {
     var d = r.data;
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      created: Date.now(), type: cur.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
+      created: Date.now(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
       body: d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
         "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
@@ -1587,18 +1594,24 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!db && !online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
       return qPut(it);
     }).then(function () {
-      queue.push(it); markDone(cur.type, it.code); lastQueued = it.code;
-      if (cur.mode === "sum") { if (cur.type.ask) saveHist(cur.type, d.data); clearBatch(cur.type); }
-      freeBuilt(); resetForm(); cur.code = ""; show("list");
+      queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
+      var done = Promise.resolve();
+      if (from.mode === "sum") {
+        if (from.type.ask) saveHist(from.type, d.data);
+        done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
+      }
       if (cfg.auto) sendQueue();
+      return done.then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     });
   }
   function queueBtn(b, fromPreview) {
-    b.disabled = true; b.textContent = "Przygotowuję…";
-    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(enqueue).catch(function (e) {
+    if (queueing) return;
+    b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    var from = { type: cur.type, mode: cur.mode };
+    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
-    }).then(function () { b.disabled = false; b.textContent = "Do kolejki"; updateFormHint(); });
+    }).then(function () { queueing = false; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint(); });
   }
   $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
