@@ -874,7 +874,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("legend").hidden = !!cur.type.ask;
   }
   function resetForm() {
-    restoring = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; formSeq++; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -1052,9 +1052,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("saveItem").addEventListener("click", function () {
     var b = this; b.disabled = true;
     var item = {
+      qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
       lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }),
+      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }).concat(keptSaved),
       t: Date.now()
     };
     var prev = batch.items[cur.code];
@@ -1079,18 +1080,27 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
-  var restoring = 0, restSeq = 0; // restoring = numer trwającego wczytywania (rośnie, żeby stary wynik nie trafił do nowego formularza)
+  var restoring = 0, restSeq = 0, formSeq = 0, pendingPh = 0;
+  var keptSaved = []; // zapisane zdjęcia, których nie udało się odczytać: nie giną przy ponownym zapisie // restoring = numer trwającego wczytywania (rośnie, żeby stary wynik nie trafił do nowego formularza)
   function restoreItem(it) {
-    states = it.states.slice(); override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn); rsel = JSON.parse(JSON.stringify(it.rsel || {}));
+    override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn);
+    // odpowiedzi wracają po kluczu pytania (lista pytań mogła się zmienić w trakcie zlecenia)
+    var qk = it.qk || cur.type.checks.map(function (c) { return c.key; }), old = it.rsel || {};
+    rsel = {};
+    states = cur.type.checks.map(function (c, i) {
+      var j = qk.indexOf(c.key); if (j < 0) return c.def;
+      if (old[j]) rsel[i] = old[j].slice();
+      return it.states[j];
+    });
     renderChecks(); renderFaults();
     var my = restoring = ++restSeq, code = cur.code;
     $("saveItem").disabled = true;
-    Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp); })).then(function (ps) {
-      if (my !== restoring || cur.code !== code) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
-      photos = ps; restoring = 0; renderPhotos();
-    }, function () {
-      if (my !== restoring) return;
-      restoring = 0; $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć."; updateFormHint();
+    Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp).catch(function () { return { failed: sp }; }); })).then(function (ps) {
+      var ok = ps.filter(function (p) { return !p.failed; });
+      if (my !== restoring || cur.code !== code) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
+      photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
+      if (keptSaved.length) $("formHint").textContent = "Nie udało się pokazać " + keptSaved.length + " zapisanych zdjęć. Zostają w zapisie urządzenia.";
     });
   }
   function openSum() {
@@ -1106,12 +1116,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov-2").checked = true;
     formMode();
     var jobs = [];
-    all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d))); }); });
+    all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d)).catch(function () { return null; })); }); });
     // Do końca wczytywania zdjęć raport jest zablokowany (inaczej poszedłby bez nich)
     var my = jobs.length ? (restoring = ++restSeq) : 0;
     if (my) Promise.all(jobs).then(function (ps) {
+      var lost = ps.filter(function (p) { return !p; }).length; ps = ps.filter(Boolean);
       if (my !== restoring || cur.mode !== "sum") { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
       photos = ps.concat(photos); restoring = 0; renderPhotos(); suggestDate(); updateFormHint();
+      if (lost) $("formHint").textContent = "Nie udało się odczytać " + lost + " zapisanych zdjęć — raport pójdzie bez nich.";
     }, function () {
       if (my !== restoring) return;
       restoring = 0; updateFormHint(); $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć — raport pójdzie bez nich.";
@@ -1191,17 +1203,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- zdjęcia ----------
   function addFiles(input) {
     var files = Array.prototype.slice.call(input.files || []); input.value = "";
+    if (!files.length) return;
+    var tok = formSeq; pendingPh++; updateFormHint();
     $("photoInfo").textContent = "Zmniejszam…";
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          return processPhoto(f, when).then(function (ph) { ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph); });
+          return processPhoto(f, when).then(function (ph) {
+            if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
+            ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph);
+          });
         });
       });
     }, Promise.resolve()).then(function () {
       $("photoInfo").textContent = photos.length ? "Zdjęć: " + photos.length + " · zmniejszone do maks. 1280 px." : "Zdjęcia są zmniejszane od razu po dodaniu.";
-    }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; });
+    }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
+      .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
   $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
@@ -1320,7 +1338,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
       $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
-      $("saveItem").disabled = sus || !!restoring;
+      if (pendingPh) $("formHint").textContent = "Zmniejszam zdjęcie…";
+      $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
       $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
     }
     if (!photos.length && cur.mode !== "sum") h.push("Dodaj przynajmniej jedno zdjęcie.");
@@ -1328,7 +1347,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (restoring) h.push("Wczytuję zapisane zdjęcia…");
     if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
-    var block = !!restoring || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
+    if (pendingPh) h.push("Zmniejszam zdjęcie…");
+    var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
     $("toPreview").disabled = block; $("toQueue").disabled = block;
     $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate());
   }
@@ -1377,7 +1397,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var qs = r.questions || {};
     TYPES.forEach(function (t) {
       if (t.ask && qs[t.id] && qs[t.id].length) t.checks = qs[t.id].map(function (x, i) {
-        return { key: x.key || "q" + i, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r, j) { return { id: r.id || "q" + i + "r" + j, pl: r.pl, en: r.en, note: !!r.note }; }) };
+        // klucze z treści (nie z kolejności), żeby przestawienie pytań w CFG nie zmieniło znaczenia zapisanych odpowiedzi
+        var k = x.key || x.q;
+        return { key: k, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
       });
     });
   }
