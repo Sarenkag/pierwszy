@@ -881,7 +881,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("legend").hidden = !!cur.type.ask;
   }
   function resetForm() {
-    restoring = 0; formSeq++; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; formSeq++; unsent = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -1590,7 +1590,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
   // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
-  var queue = [], sending = false;
+  var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
   function enqueue(r, from) {
     var d = r.data;
     var it = {
@@ -1607,8 +1607,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return dbP.then(function (db) {
       if (db) return qPut(it);
       if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
-      return api("submit", submitArg(it)).then(function (r) { markSent(it, r); return qPut(it); }, function (e) {
-        throw new Error("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie");
+      // ponowna próba wysyła ten sam raport (to samo id), żeby serwer nie zrobił duplikatu, gdy zginęła tylko odpowiedź
+      if (unsent) { it = unsent; d = unsentData; }
+      return api("submit", submitArg(it)).then(function (r) { unsent = null; markSent(it, r); return qPut(it); }, function (e) {
+        unsent = it; unsentData = d;
+        throw new Error("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (" + gErr(e) + "). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian");
       });
     }).then(function () {
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
@@ -1624,11 +1627,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function queueBtn(b, fromPreview) {
     if (queueing) return;
     b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
-    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode };
+    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode }, fail = "";
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
-      $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
+      fail = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
-    }).then(function () { queueing = false; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint(); });
+    }).then(function () {
+      queueing = false; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
+      if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
+    });
   }
   $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
