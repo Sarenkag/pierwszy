@@ -875,7 +875,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // Ten sam zestaw funkcji (getSetup, translate, submit) przez google.script.run albo POST na …/exec
   function api(fn, arg) {
-    if (IN_GAS) return gs(fn, arg);
+    if (IN_GAS) return gs(fn, arg, window.GAS_KEY || ""); // klucz wstawia doGet
     if (!cfg.api) return Promise.reject(new Error("brak adresu skryptu w Ustawieniach"));
     return fetch(cfg.api, {
       method: "POST", redirect: "follow",
@@ -1197,7 +1197,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
       status: "wait", err: ""
     };
-    return qPut(it).then(function () {
+    // Bez IndexedDB raport żyje tylko do zamknięcia apki: wtedy przyjmuję go wyłącznie, gdy od razu można wysłać
+    return dbP.then(function (db) {
+      if (!db && !online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
+      return qPut(it);
+    }).then(function () {
       queue.push(it); markDone(it.code); lastQueued = it.code;
       freeBuilt(); resetForm(); cur.code = ""; show("list");
       if (cfg.auto) sendQueue();
