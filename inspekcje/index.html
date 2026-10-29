@@ -233,6 +233,10 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .qitem .st.ok { background: var(--ok-bg); color: var(--ok); }
 .qitem .st.err { background: var(--bad-bg); color: var(--bad); }
 .badge.q { background: var(--field); color: var(--warn); }
+.thumb .mk { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; box-shadow: 0 0 0 2px #fff; }
+.sug { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sug:last-child { border-bottom: 0; }
+.sug .n { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
 .sumlist { margin: 0; padding-left: 20px; font-size: 0.92rem; }
 .datesug { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.92rem; }
 </style>
@@ -323,6 +327,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>Z galerii</label>
       </div>
       <div class="photos" id="photos"></div>
+      <div id="sugBox" hidden></div>
       <p class="hint" id="photoInfo">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
     </div>
 
@@ -831,7 +836,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function resetForm() {
     built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false;
-    photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos();
+    photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = "";
@@ -856,8 +861,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   $("faults").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-f]"); if (!b) return;
-    var f = FAULTS.filter(function (x) { return x.id === b.getAttribute("data-f"); })[0], i = checkIdx(f.key);
-    faultsOn[f.id] = !faultsOn[f.id];
+    setFault(b.getAttribute("data-f"), !faultsOn[b.getAttribute("data-f")]);
+  });
+  function setFault(id, on) {
+    var f = FAULTS.filter(function (x) { return x.id === id; })[0], i = checkIdx(f.key);
+    faultsOn[f.id] = on;
     if (i >= 0) {
       if (faultsOn[f.id]) { states[i] = "fail"; override[i] = f.en; }
       else { delete override[i]; states[i] = cur.type.checks[i].def === "na" ? "na" : "ok"; }
@@ -865,7 +873,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     if (faultsOn[f.id] && !f.note) $("ov-2").checked = true;
     renderFaults(); suggestOverall(); updateFormHint();
-  });
+  }
   // usterki bez pasującego punktu checklisty idą jako osobne zdania
   function extraFaults(notes) {
     return faultsFor(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
@@ -1041,7 +1049,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          return processPhoto(f, when).then(function (ph) { ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); });
+          return processPhoto(f, when).then(function (ph) { ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph); });
         });
       });
     }, Promise.resolve()).then(function () {
@@ -1054,11 +1062,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("photos").innerHTML = "";
     photos.forEach(function (p, i) {
       var d = document.createElement("div"); d.className = "thumb";
-      d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>';
+      d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
+        (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
       d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
       $("photos").appendChild(d);
     });
     $("photoCount").textContent = photos.length ? "(" + photos.length + ")" : "";
+    if ($("sugBox").innerHTML) renderSugs();
     updateFormHint();
   }
   // Data raportu: apka proponuje datę z pierwszego zdjęcia, dopóki nie zmienisz jej ręcznie
@@ -1078,6 +1088,46 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("dzien").value = b.getAttribute("data-day"); dateTouched = true; suggestDate();
   });
   $("dzien").addEventListener("change", function () { dateTouched = true; suggestDate(); });
+  // ---------- sugestie ze zdjęcia (miejsce na model; bez modelu nic się nie pokazuje) ----------
+  // Model podpina się jako window.INSP_ANALYZE(canvas, typId) → Promise<[{ fault: "crack", x: 0..1, y: 0..1 }]>.
+  // Każda sugestia czeka na Twoje Tak/Nie; do raportu trafia tylko to, co potwierdzisz.
+  var sugN = 0;
+  function analyze(ph) {
+    if (typeof window.INSP_ANALYZE !== "function") return;
+    var ids = faultsFor(cur.type).map(function (f) { return f.id; }), code = cur.code;
+    $("photoInfo").textContent = "Sprawdzam zdjęcie…";
+    Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
+      if (cur.code !== code) return;
+      ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && !faultsOn[sg.fault]; })
+        .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: true }; });
+      renderPhotos(); renderSugs();
+      $("photoInfo").textContent = ph.sugs.length ? "Sprawdź sugestie pod zdjęciami." : "Na zdjęciu nic podejrzanego.";
+    }).catch(function () { $("photoInfo").textContent = "Nie udało się sprawdzić zdjęcia — zaznacz ręcznie."; });
+  }
+  function renderSugs() {
+    var open = [];
+    photos.forEach(function (p) { (p.sugs || []).forEach(function (sg) { if (sg.open) open.push(sg); }); });
+    $("sugBox").hidden = !open.length;
+    $("sugBox").innerHTML = open.map(function (sg) {
+      var f = FAULTS.filter(function (x) { return x.id === sg.fault; })[0];
+      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(f.pl) + '?</div><div class="row">' +
+        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">Tak</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">Nie</button></div></div>';
+    }).join("");
+  }
+  $("sugBox").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sg]"); if (!b) return;
+    var n = +b.getAttribute("data-sg");
+    photos.forEach(function (p) {
+      (p.sugs || []).forEach(function (sg) {
+        if (sg.n !== n) return;
+        sg.open = false;
+        if (b.getAttribute("data-ok") === "1") setFault(sg.fault, true);
+        else p.sugs = p.sugs.filter(function (x) { return x !== sg; }); // odrzucone: znika też kropka
+      });
+    });
+    renderPhotos(); renderSugs();
+  });
+
   function loadImage(file) {
     function viaImg() { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = URL.createObjectURL(file); }); }
     if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(file); }).catch(viaImg);
