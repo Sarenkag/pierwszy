@@ -777,16 +777,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-go")); }); });
 
-  // zrobione dziś (zaznaczane przy dodaniu do kolejki)
-  function doneToday() { var d = load("done", {}); return d[isoDay(new Date())] || {}; }
-  function markDone(code) { var d = load("done", {}), k = isoDay(new Date()); var keep = {}; keep[k] = d[k] || {}; keep[k][code] = fmtTime(new Date()); save("done", keep); }
-  function waiting(code) { return queue.some(function (q) { return q.code === code && q.status !== "sent"; }); }
+  // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
+  function doneToday(t) { var d = load("done", {}), day = d[isoDay(new Date())] || {}; return day[t.id] || {}; }
+  function markDone(t, code) {
+    var d = load("done", {}), k = isoDay(new Date()), keep = {};
+    keep[k] = d[k] || {}; keep[k][t.id] = keep[k][t.id] || {}; keep[k][t.id][code] = fmtTime(new Date()); save("done", keep);
+  }
+  function waiting(t, code) { return queue.some(function (q) { return q.type === t.id && q.code === code && q.status !== "sent"; }); }
 
   function renderHome() {
-    var dn = doneToday();
     $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
     $("types").innerHTML = TYPES.map(function (t) {
-      var all = devices(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
+      var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
       var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + " · od " + esc(fmtDate(new Date(pr.started))) + " · dotknij, by wznowić</span>" :
         '<span class="sub">' + all.length + " urządzeń · dziś zrobione: " + done + "</span>";
       return '<button class="type" type="button" data-type="' + t.id + '">' +
@@ -797,7 +799,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("types").querySelectorAll("[data-type]").forEach(function (b) {
       b.addEventListener("click", function () {
         cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
-        (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); });
+        (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
+          alert("Nie udało się odczytać zapisanego zlecenia (" + gErr(e) + "). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.");
+        });
       });
     });
     renderNet();
@@ -817,7 +821,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function where(d) { return [d.loc, floorOf(d.code), d.room].filter(Boolean).join(", "); }
   var lastQueued = "";
   function renderList() {
-    var t = cur.type, dn = doneToday(), q = val("search").toUpperCase();
+    var t = cur.type, dn = doneToday(t), q = val("search").toUpperCase();
     $("listTitle").textContent = t.name;
     var all = devices(t);
     var done = all.filter(function (d) { return dn[d.code]; }).length;
@@ -831,7 +835,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var list = groups[g];
       return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length + "/" + list.length + "</small></h2>" +
         list.map(function (d) {
-          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(c) ? '<span class="badge q">⏳ w kolejce</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
+          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(t, c) ? '<span class="badge q">⏳ w kolejce</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
           var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">ostatnio z uwagami (' + esc(hl.d) + ")</div>" : "";
           return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div>" + lastTxt + "</div>" + badge + "</button>";
         }).join("") + "</div>";
@@ -1009,9 +1013,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     save("hist_" + t.id, h);
   }
-  function clearBatch(t) { batch = { items: {} }; save("bprog_" + t.id, null); return kvSet(batchKey(t), batch).catch(function () {}); }
+  function clearBatch(t) {
+    if (cur.mode !== "one") cur.code = ""; // następne otwarcie formularza zaczyna od czystego: stare odpowiedzi i zdjęcia nie przejdą do nowego zlecenia
+    batch = { items: {} }; save("bprog_" + t.id, null); return kvSet(batchKey(t), batch).catch(function () {}); }
   function loadBatch(t) {
-    return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }).catch(function () { batch = { items: {} }; });
+    return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }); // błąd odczytu ≠ brak zlecenia: nie zaczynamy od pustego, bo nadpisalibyśmy zapisane
   }
   function renderBatchBar() {
     var t = cur.type, bar = $("batchBar");
@@ -1581,7 +1587,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!db && !online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
       return qPut(it);
     }).then(function () {
-      queue.push(it); markDone(it.code); lastQueued = it.code;
+      queue.push(it); markDone(cur.type, it.code); lastQueued = it.code;
       if (cur.mode === "sum") { if (cur.type.ask) saveHist(cur.type, d.data); clearBatch(cur.type); }
       freeBuilt(); resetForm(); cur.code = ""; show("list");
       if (cfg.auto) sendQueue();
