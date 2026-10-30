@@ -1,4 +1,13 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Inspekcja w terenie</title>
+<!-- PWA (działa tylko z GitHub Pages; w trybie Apps Script te linki są ignorowane) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#17242c">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Układ: aplikacja ekranowa w jednej kolumnie — rodzaje inspekcji → lista urządzeń → formularz → podgląd → wysyłka */
@@ -50,7 +59,7 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line
 h1 span.dot { color: var(--accent); }
 .sub { color: var(--muted); font-size: 0.92rem; }
 .back { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 1.4rem; cursor: pointer; }
-.view[hidden] { display: none !important; }
+[hidden] { display: none !important; }
 .view { display: flex; flex-direction: column; gap: 14px; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -204,18 +213,62 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .tags { background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 10px; line-height: 1.7; overflow-wrap: anywhere; }
 .toast { color: var(--ok); font-size: 0.9rem; min-height: 1.2em; margin: 0; }
 .err { color: var(--bad); }
+
+/* Gotowe usterki */
+.faults { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fault { min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font: inherit; font-weight: 600; font-size: 0.92rem; cursor: pointer; padding: 8px 10px; text-align: left; }
+.fault[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+
+/* Pasek sieci i kolejki */
+.netbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 0.92rem; }
+.netbar .dot2 { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); flex: none; }
+.netbar.off .dot2 { background: var(--warn); }
+.netbar .t { flex: 1; min-width: 0; }
+.qbtn { position: relative; }
+.qitem { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.qitem:last-child { border-bottom: 0; }
+.qitem .code { font-family: var(--font-mono); font-weight: 500; }
+.qitem small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.qitem .st { font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; background: var(--field); color: var(--muted); }
+.qitem .st.ok { background: var(--ok-bg); color: var(--ok); }
+.qitem .st.err { background: var(--bad-bg); color: var(--bad); }
+.badge.q { background: var(--field); color: var(--warn); }
+.thumb .mk { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; box-shadow: 0 0 0 2px #fff; }
+.sug { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sug:last-child { border-bottom: 0; }
+.sug .n { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
+.ck-row .rs { grid-column: 1 / -1; }
+.rchip { border: 1px solid var(--line); border-radius: 999px; background: var(--field); color: var(--ink); font: inherit; font-size: 0.88rem; font-weight: 600; padding: 7px 12px; cursor: pointer; }
+.rchip[aria-pressed="true"] { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.prevq { text-decoration: underline wavy var(--bad); text-underline-offset: 4px; }
+.was { display: block; color: var(--bad); font-size: 0.8rem; text-decoration: none; }
+.rchip.prev { border: 2px dashed var(--bad); }
+.item .last { color: var(--bad); font-size: 0.8rem; }
+.ck-row.sus { background: var(--bad-bg); }
+.mkn { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
+.view > .top { order: -2; }
+.sumlist { margin: 0; padding-left: 20px; font-size: 0.92rem; }
+.datesug { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.92rem; }
 </style>
+</head>
+<body>
 
 <div class="wrap">
 
   <!-- 1. Rodzaje inspekcji -->
   <section class="view" id="v-home">
-    <div class="top"><div class="t"><h1>Inspekcje<span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
+    <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1>Inspekcje<span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
     <div class="notice" id="tplNotice" hidden></div>
+    <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue">Kolejka</button></div>
     <div class="types" id="types"></div>
     <details class="panel" id="settings">
       <summary>Ustawienia</summary>
       <div class="set">
+        <div class="f" id="apiBox"><label for="s-api">Adres skryptu Google (…/exec)</label>
+          <input id="s-api" type="text" inputmode="url" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+          <label for="s-key">Klucz (KEY z Apps Script)</label>
+          <input id="s-key" type="text" spellcheck="false" autocomplete="off">
+          <p class="hint">Potrzebne tylko w wersji z ekranu głównego telefonu (działa bez zasięgu). Wpisuje się raz.</p></div>
         <div class="f"><span class="label">Szablon raportu (Word)</span>
           <p class="hint" id="tplName">Ładuję z Google Drive…</p>
           <div class="row"><button class="btn" type="button" id="tplReload">Wczytaj ponownie z Drive</button></div>
@@ -234,6 +287,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         <label class="toggle"><input type="checkbox" id="s-scope"> Dopisz zakres: „visual inspection only”</label>
         <label class="toggle"><input type="checkbox" id="s-stamp"> Wpisz datę, kod i lokalizację na zdjęciach</label>
         <label class="toggle"><input type="checkbox" id="s-dphotos"> Zapisuj też osobne pliki zdjęć na Drive (wolniej)</label>
+        <label class="toggle"><input type="checkbox" id="s-auto"> Wysyłaj kolejkę sama, gdy jest sieć</label>
         <div class="tags">Znaczniki w szablonie: {data} {inspektor} {urzadzenie} {lokalizacja} {tytul} {stan_ogolny} {quote}<br>{#punkty} / {.} / {/punkty} — lista punktów<br>{#komentarz} / Comments: {komentarz} / {/komentarz} — komentarz<br>{#zakres} / {zakres} / {/zakres} — zakres<br>{%zdjecia} — każde zdjęcie na nowej stronie</div>
         <p class="toast" id="setToast"></p>
       </div>
@@ -245,11 +299,12 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
       <div class="t"><h1 id="listTitle">—</h1><div class="sub" id="listSub"></div></div></div>
     <input class="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" autocomplete="off" spellcheck="false">
+    <div class="panel" id="batchBar" hidden></div>
     <div id="groups"></div>
     <div class="panel">
-      <label class="label" for="customCode">Inna rozdzielnica</label>
+      <label class="label" for="customCode">Inne urządzenie</label>
       <div class="addrow"><input id="customCode" type="text" placeholder="np. DB-TA-L3-01" autocapitalize="characters" spellcheck="false"><select id="customLoc" aria-label="Lokalizacja" style="width:auto"><option>Tower A</option><option>Tower B</option><option>Pavilion</option></select><button class="btn" type="button" id="customGo">Dodaj</button></div>
-      <p class="hint">Rozdzielnica zostanie na liście na stałe, z tą lokalizacją.</p>
+      <p class="hint">Urządzenie zostanie na liście na stałe, z tą lokalizacją.</p>
     </div>
   </section>
 
@@ -258,21 +313,43 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="top"><button class="back" type="button" data-go="list" aria-label="Wstecz">‹</button>
       <div class="t"><h1 id="formTitle">—</h1><div class="sub" id="formSub"></div></div></div>
 
-    <div class="panel">
-      <div class="grid">
-        <div class="f"><label for="dzien">Data wykonania</label><input id="dzien" type="date"></div>
-        <div class="f"><label for="podpis">Podpis</label><input id="podpis" type="text"></div>
-      </div>
+    <div class="panel" data-m="sum" id="sumBox"></div>
+
+    <div class="panel" data-m="one item">
+      <div class="label">Usterki — jedno dotknięcie</div>
+      <div class="faults" id="faults"></div>
+      <p class="hint">Każda usterka dopisuje gotowe zdanie po angielsku i ustawia „Requires attention”.</p>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-m="one item">
       <div class="label" id="ckTitle">Checklista</div>
-      <div class="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
+      <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
       <div class="ck" id="ck"></div>
       <div class="row"><button class="btn" type="button" id="allOk">Wszystkie zaznaczone → OK</button></div>
     </div>
 
     <div class="panel">
+      <div class="label">Zdjęcia <span id="photoCount"></span></div>
+      <div class="photo-btns">
+        <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg>Zrób zdjęcie</label>
+        <label class="pbtn"><input id="galIn" type="file" accept="image/*" multiple aria-label="Dodaj z galerii">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>Z galerii</label>
+      </div>
+      <div class="photos" id="photos"></div>
+      <div id="sugBox" hidden></div>
+      <p class="hint" id="photoInfo">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
+    </div>
+
+    <div class="panel" data-m="one sum">
+      <div class="grid">
+        <div class="f"><label for="dzien">Data wykonania</label><input id="dzien" type="date"></div>
+        <div class="f"><label for="podpis">Podpis</label><input id="podpis" type="text"></div>
+      </div>
+      <div class="datesug" id="dateSug" hidden></div>
+    </div>
+
+    <div class="panel" data-m="one sum">
       <div class="f"><span id="l-ov">Overall Condition</span>
         <div class="chips" role="radiogroup" aria-labelledby="l-ov">
           <label class="chip ok"><input type="radio" name="ov" id="ov-1" value="Satisfactory" checked><span>Satisfactory</span></label>
@@ -287,30 +364,20 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         </div></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-m="one sum">
       <div class="f"><label for="komentarz">Komentarz (trafi do raportu po angielsku)</label>
         <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu"></textarea></div>
       <div class="row"><button class="btn" type="button" id="translate" hidden>Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden>Cofnij tłumaczenie</button></div>
       <p class="hint" id="trHint"></p>
     </div>
 
-    <div class="panel">
-      <div class="label">Zdjęcia <span id="photoCount"></span></div>
-      <div class="photo-btns">
-        <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg>Zrób zdjęcie</label>
-        <label class="pbtn"><input id="galIn" type="file" accept="image/*" multiple aria-label="Dodaj z galerii">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>Z galerii</label>
-      </div>
-      <div class="photos" id="photos"></div>
-      <p class="hint" id="photoInfo">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
-    </div>
-
-    <button class="go" type="button" id="toPreview">Podgląd raportu</button>
+    <button class="go" type="button" id="toQueue" data-m="one sum">Do kolejki</button>
+    <button class="btn wide" type="button" id="toPreview" data-m="one sum">Podgląd raportu</button>
+    <button class="go" type="button" id="saveItem" data-m="item">Zapisz</button>
     <p class="hint" id="formHint"></p>
   </section>
 
-  <!-- 4. Podgląd i wysyłka -->
+  <!-- 4. Podgląd -->
   <section class="view" id="v-preview" hidden>
     <div class="top"><button class="back" type="button" data-go="form" aria-label="Wróć do edycji">‹</button>
       <div class="t"><h1>Podgląd<span class="dot">.</span></h1><div class="sub" id="prevSub"></div></div></div>
@@ -318,12 +385,21 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="panel">
       <div class="label">Pliki</div>
       <div class="fname" id="fname">—</div>
-      <button class="go" id="send" type="button">Zatwierdź i wyślij</button>
-      <p class="hint" id="sendHint"></p>
-      <ul class="steps" id="steps" hidden></ul>
+      <button class="go" id="prevQueue" type="button">Do kolejki</button>
       <button class="btn wide" type="button" id="editBtn">Wróć do edycji</button>
-      <button class="go" type="button" id="nextBtn" hidden>Następna rozdzielnica</button>
     </div>
+  </section>
+
+  <!-- 5. Kolejka -->
+  <section class="view" id="v-queue" hidden>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+      <div class="t"><h1>Kolejka<span class="dot">.</span></h1><div class="sub" id="qSub"></div></div></div>
+    <div class="panel">
+      <div id="qList"></div>
+      <button class="go" type="button" id="qSend">Wyślij wszystko</button>
+      <p class="hint" id="qHint"></p>
+    </div>
+    <button class="btn wide" type="button" id="qNext">Następne urządzenie</button>
   </section>
 </div>
 
@@ -452,7 +528,7 @@ function makeName(pattern, data, when) {
     return String(s || "").trim()
       .normalize("NFD").replace(/[̀-ͯ]/g, "")
       .replace(/[łŁ]/g, function (c) { return c === "ł" ? "l" : "L"; })
-      .replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      .replace(/[^A-Za-z0-9._ -]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   }
   var map = {
     RRRR: when.getFullYear(), MM: pad(when.getMonth() + 1), DD: pad(when.getDate()),
@@ -480,27 +556,95 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   // ---------- rodzaje inspekcji ----------
+  // key: łączy punkt checklisty z gotową usterką (FAULTS)
   var TYPES = [{
     id: "db", name: "Distribution Boards", title: "Distribution Board - Visual Inspection",
     scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
     devices: [], // lista z Code.gs (getSetup)
     checks: [
-      { ok: "Enclosure inspected – no physical damage, distortion or corrosion.", fail: "Enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
-      { ok: "Enclosure integrity maintained – no missing blanks, open knockouts or gaps.", fail: "Enclosure integrity compromised – missing blanks, open knockouts or gaps present.", def: "ok" },
-      { ok: "Board identification label present and legible.", fail: "Board identification label missing or illegible.", def: "ok" },
-      { ok: "Circuit chart/schedule present, legible and appears up to date.", fail: "Circuit chart/schedule missing, illegible or out of date.", def: "ok" },
-      { ok: "Required warning notices present and legible (e.g. RCD test, periodic inspection, voltage warning).", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
-      { ok: "Protective devices visually intact; no tripped or damaged devices observed.", fail: "Tripped or visibly damaged protective device(s) observed.", def: "ok" },
-      { ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
-      { ok: "Visible earthing and bonding conductors present and secure.", fail: "Earthing/bonding conductor loose, damaged or missing.", def: "na" },
-      { ok: "Board clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the board.", def: "ok" },
-      { ok: "No evidence of water leaks or damp in the vicinity of the board.", fail: "Evidence of water leaks or damp in the vicinity of the board.", def: "na" },
-      { ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
+      { key: "enclosure", ok: "Enclosure inspected – no physical damage, distortion or corrosion.", fail: "Enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
+      { key: "door", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
+      { key: "integrity", ok: "Enclosure integrity maintained – no missing blanks, open knockouts or gaps.", fail: "Enclosure integrity compromised – missing blanks, open knockouts or gaps present.", def: "ok" },
+      { key: "label", ok: "Board identification label present and legible.", fail: "Board identification label missing or illegible.", def: "ok" },
+      { key: "chart", ok: "Circuit chart/schedule present, legible and appears up to date.", fail: "Circuit chart/schedule missing, illegible or out of date.", def: "ok" },
+      { key: "notices", ok: "Required warning notices present and legible (e.g. RCD test, periodic inspection, voltage warning).", fail: "Required warning notices missing or illegible.", def: "ok" },
+      { key: "heat", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
+      { key: "noise", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
+      { key: "devices", ok: "Protective devices visually intact; no tripped or damaged devices observed.", fail: "Tripped or visibly damaged protective device(s) observed.", def: "ok" },
+      { key: "glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
+      { key: "earth", ok: "Visible earthing and bonding conductors present and secure.", fail: "Earthing/bonding conductor loose, damaged or missing.", def: "na" },
+      { key: "clean", ok: "Board clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the board.", def: "ok" },
+      { key: "damp", ok: "No evidence of water leaks or damp in the vicinity of the board.", fail: "Evidence of water leaks or damp in the vicinity of the board.", def: "na" },
+      { key: "access", ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
+    ]
+  }, {
+    id: "ats", name: "ATS", title: "Automatic Transfer Switch - Visual Inspection",
+    scope: "Scope: visual inspection only – no covers removed, no transfer test and no electrical testing carried out.",
+    devices: [],
+    checks: [
+      { key: "enclosure", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
+      { key: "door", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
+      { key: "display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
+      { key: "position", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
+      { key: "auto", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
+      { key: "label", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
+      { key: "notices", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
+      { key: "heat", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
+      { key: "noise", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
+      { key: "glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
+      { key: "clean", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
+      { key: "access", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
+    ]
+  }, {
+    id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
+    scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
+    devices: [],
+    // ask: dwa poziomy. Ogólne pytanie (TAK = w porządku, domyślnie), pod nim konkretne powody z gotowym tekstem EN —
+    // kliknięcie powodu od razu daje NIE.
+    // Do raportu: „Isolator KOD: <powody albo en pytania>.” Pytania robocze — docelowo z SFG20;
+    // można je podmienić bez zmiany apki: CFG.questions.iso w Code.gs (ten sam układ).
+    ask: true,
+    checks: [
+      { key: "access", q: "Dostępny?", en: "access obstructed", def: "ok", reasons: [
+        { id: "blocked", pl: "Zastawiony", en: "access obstructed" },
+        { id: "locked", pl: "Brak dostępu (zamknięte)", en: "no access at time of inspection" } ] },
+      { key: "label", q: "Oznaczony?", en: "label missing or illegible", def: "ok", reasons: [
+        { id: "nolabel", pl: "Brak oznaczenia", en: "no identification label" },
+        { id: "illegible", pl: "Nieczytelna naklejka", en: "identification label illegible" },
+        { id: "desc", pl: "Nieczytelny opis", en: "circuit description illegible" },
+        { id: "wrong", pl: "Niezgodna z urządzeniem", en: "label does not match equipment served" } ] },
+      { key: "damage", q: "Bez uszkodzeń?", en: "damage found", def: "ok", reasons: [
+        { id: "crack", pl: "Pęknięta obudowa", en: "enclosure cracked" },
+        { id: "knob", pl: "Brak pokrętła", en: "operating handle missing" },
+        { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating handle damaged" },
+        { id: "scratch", pl: "Porysowana", en: "enclosure scratched" },
+        { id: "gland", pl: "Kabel / dławik", en: "cable or gland damaged" },
+        { id: "heat", pl: "Ślady przegrzania", en: "signs of overheating" } ] },
+      { key: "secure", q: "Pokrywa i mocowanie w porządku?", en: "cover or fixings defective", def: "ok", reasons: [
+        { id: "nocover", pl: "Brak pokrywy", en: "cover missing" },
+        { id: "looseenc", pl: "Luźna obudowa", en: "enclosure loose – not securely fixed" },
+        { id: "notfixed", pl: "Nieprzykręcony", en: "not secured to the wall/mounting" },
+        { id: "loose", pl: "Luźne mocowanie", en: "loose fixings" },
+        { id: "screws", pl: "Brak śrub", en: "missing screws" } ] },
+      { key: "clean", q: "Czysty i suchy?", en: "dirt or moisture present", def: "ok", reasons: [
+        { id: "rust", pl: "Rdza", en: "corrosion" },
+        { id: "water", pl: "Woda / wilgoć", en: "signs of water ingress" },
+        { id: "flood", pl: "Zalany", en: "flooded – water damage" },
+        { id: "dirt", pl: "Brud", en: "dirt build-up" } ] },
+      { key: "state", q: "W normalnym stanie pracy?", en: "not in normal operating state", def: "ok", reasons: [
+        { id: "off", pl: "Wyłączony (OFF)", en: "switch found in OFF position" },
+        { id: "padlock", pl: "Kłódka / LOTO", en: "padlock / LOTO fitted", note: true } ] }
     ]
   }];
+  // Gotowe usterki: jedno dotknięcie = zdanie EN w raporcie + „Requires attention”.
+  // Jeśli typ ma punkt o tym samym key, ten punkt dostaje ✗ i to zdanie; jeśli nie, zdanie dochodzi jako osobny punkt.
+  var FAULTS = [
+    { id: "dirty", pl: "Obudowa brudna", key: "clean", en: "Enclosure dirty – cleaning required." },
+    { id: "display", pl: "Błąd na wyświetlaczu", key: "display", en: "Error/fault message shown on the display – further investigation required." },
+    { id: "damage", pl: "Uszkodzenie", key: "enclosure", en: "Visible damage to the enclosure – remedial action required." },
+    { id: "label", pl: "Brak oznaczenia", key: "label", en: "Identification label missing or illegible – new label required." }
+  ];
+  function faultsFor(t) { return FAULTS.filter(function (f) { return !f.types || f.types.indexOf(t.id) >= 0; }); }
   // Piętra potwierdzone przez użytkownika: UG = Upper Ground, LG = Lower Ground, LL-06 = Level 6
   function floorOf(code) {
     var c = String(code || "").toUpperCase(), m;
@@ -521,17 +665,29 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var DEFAULTS = {
     v: 4, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "", insp: "", scope: true, stamp: true, drivePhotos: false
+    site: "", insp: "", scope: true, stamp: true, drivePhotos: false,
+    api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
   var cfg = Object.assign({}, DEFAULTS);
   if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
   else {
-    ["folder", "site", "stamp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
+    ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
+  // Link z Apps Script (linkDoTelefonu): …/inspekcje/#api=…&key=… — zapisuje adres i klucz, potem czyści pasek adresu
+  (function () {
+    var h = new URLSearchParams(location.hash.slice(1));
+    if (h.get("api") && h.get("key")) {
+      cfg.api = h.get("api"); cfg.key = h.get("key"); save("cfg", cfg);
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    }
+  })();
   var serverTpl = null; // {name, bytes} z Google Drive
+
+  // Tryb: strona z Apps Script (google.script.run) albo z GitHub Pages (fetch do …/exec, działa offline)
+  var IN_GAS = !!(window.google && google.script && google.script.run);
 
   // ---------- pomocnicze ----------
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -544,99 +700,222 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function val(id) { return $(id).value.trim(); }
   function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
+  function online() { return navigator.onLine !== false; }
+
+  // ---------- baza w telefonie (IndexedDB): kolejka raportów + szablon ----------
+  var mem = { queue: {}, kv: {} }; // zapas, gdy IndexedDB niedostępne (wtedy kolejka ginie po zamknięciu)
+  var dbP = new Promise(function (res) {
+    try {
+      var rq = indexedDB.open("inspekcje", 1);
+      rq.onupgradeneeded = function () { var db = rq.result; db.createObjectStore("queue", { keyPath: "id" }); db.createObjectStore("kv"); };
+      rq.onsuccess = function () { res(rq.result); };
+      rq.onerror = function () { res(null); };
+    } catch (e) { res(null); }
+  });
+  function idb(store, mode, fn) {
+    return dbP.then(function (db) {
+      if (!db) return fn(null, mem[store]);
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(store, mode), out = fn(tx.objectStore(store));
+        tx.oncomplete = function () { res(out instanceof IDBRequest ? out.result : out); };
+        tx.onerror = tx.onabort = function () { rej(tx.error); };
+      });
+    });
+  }
+  function kvGet(k) { return idb("kv", "readonly", function (s, m) { return m ? m[k] : s.get(k); }); }
+  function kvSet(k, v) { return idb("kv", "readwrite", function (s, m) { if (m) m[k] = v; else s.put(v, k); }); }
+  function qAll() { return idb("queue", "readonly", function (s, m) { return m ? Object.keys(m).map(function (k) { return m[k]; }) : s.getAll(); }); }
+  function qPut(it) { return idb("queue", "readwrite", function (s, m) { if (m) m[it.id] = it; else s.put(it); }); }
+  function qDel(id) { return idb("queue", "readwrite", function (s, m) { if (m) delete m[id]; else s.delete(id); }); }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+
+  // ---------- EXIF: data zrobienia zdjęcia ----------
+  function exifDate(file) {
+    return file.slice(0, 262144).arrayBuffer().then(function (buf) {
+      var v = new DataView(buf), n = v.byteLength;
+      if (n < 4 || v.getUint16(0) !== 0xFFD8) return null;
+      var o = 2;
+      while (o + 4 <= n) {
+        var mk = v.getUint16(o), len = v.getUint16(o + 2);
+        if (mk === 0xFFE1 && v.getUint32(o + 4) === 0x45786966) return tiff(o + 10);
+        if ((mk & 0xFF00) !== 0xFF00 || mk === 0xFFDA) return null;
+        o += 2 + len;
+      }
+      return null;
+      function tiff(t) {
+        var le = v.getUint16(t) === 0x4949;
+        function u16(p) { return v.getUint16(p, le); }
+        function u32(p) { return v.getUint32(p, le); }
+        function tags(ifd) {
+          var out = {}, c = u16(t + ifd);
+          for (var i = 0; i < c; i++) { var e = t + ifd + 2 + i * 12; if (e + 12 > n) break; out[u16(e)] = e; }
+          return out;
+        }
+        function str(e) {
+          var cnt = u32(e + 4), p = cnt > 4 ? t + u32(e + 8) : e + 8, s = "";
+          for (var i = 0; i < cnt - 1 && p + i < n; i++) s += String.fromCharCode(v.getUint8(p + i));
+          return s;
+        }
+        var i0 = tags(u32(t + 4)), s = "";
+        if (i0[0x8769]) { var ex = tags(u32(i0[0x8769] + 8)); if (ex[0x9003]) s = str(ex[0x9003]); }
+        if (!s && i0[0x0132]) s = str(i0[0x0132]);
+        var m = /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d)/.exec(s);
+        if (!m || +m[1] < 2000) return null;
+        return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+      }
+    }).catch(function () { return null; });
+  }
 
   // ---------- ekrany ----------
-  var cur = { type: TYPES[0], code: "" };
+  var cur = { type: TYPES[0], code: "", mode: "one" };
   function show(v) {
-    ["home", "list", "form", "preview"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
+    ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
     if (v === "home") renderHome();
     if (v === "list") renderList();
+    if (v === "queue") renderQueue();
     window.scrollTo(0, 0);
   }
-  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-go")); }); });
+  // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
+  var queueing = false;
+  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
 
-  // zrobione dziś
-  function doneToday() { var d = load("done", {}); return d[isoDay(new Date())] || {}; }
-  function markDone(code) { var d = load("done", {}), k = isoDay(new Date()); var keep = {}; keep[k] = d[k] || {}; keep[k][code] = fmtTime(new Date()); save("done", keep); }
+  // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
+  function doneToday(t) { var d = load("done", {}), day = d[isoDay(new Date())] || {}; return day[t.id] || {}; }
+  function markDone(t, code) {
+    var d = load("done", {}), k = isoDay(new Date()), keep = {};
+    keep[k] = d[k] || {}; keep[k][t.id] = keep[k][t.id] || {}; keep[k][t.id][code] = fmtTime(new Date()); save("done", keep);
+  }
+  function waiting(t, code) { return queue.some(function (q) { return q.type === t.id && q.code === code && q.status !== "sent"; }); }
 
   function renderHome() {
-    var dn = doneToday();
-    $("homeSub").textContent = cfg.site + " · " + fmtDate(new Date());
+    $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
     $("types").innerHTML = TYPES.map(function (t) {
-      var n = t.devices.length, done = t.devices.filter(function (c) { return dn[c]; }).length;
+      var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
+      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + " · od " + esc(fmtDate(new Date(pr.started))) + " · dotknij, by wznowić</span>" :
+        '<span class="sub">' + all.length + " urządzeń · dziś zrobione: " + done + "</span>";
       return '<button class="type" type="button" data-type="' + t.id + '">' +
         '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
-        "<div><b>" + esc(t.name) + '</b><span class="sub">' + n + " urządzeń · dziś zrobione: " + done + "</span></div>" +
+        "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
         '<span class="arrow" aria-hidden="true">›</span></button>';
     }).join("");
     $("types").querySelectorAll("[data-type]").forEach(function (b) {
-      b.addEventListener("click", function () { cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = ""; show("list"); });
+      b.addEventListener("click", function () {
+        cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
+        (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
+          alert("Nie udało się odczytać zapisanego zlecenia (" + gErr(e) + "). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.");
+        });
+      });
     });
+    renderNet();
   }
-  // Każda rozdzielnica ma stałą lokalizację: z kodu (TA/TB) albo zapisaną przy dodawaniu
-  function customList(t) {
-    return load("custom_" + t.id, []).map(function (c) { return typeof c === "string" ? { code: c, loc: towerOf(c) || "Tower B" } : c; });
+  // Urządzenie: kod albo {code, loc, room} z Code.gs; lokalizacja z kodu (TA/TB) albo zapisana przy dodawaniu
+  function norm(c) {
+    if (typeof c === "string") return { code: c, loc: towerOf(c) || "Tower B", room: "" };
+    return { code: c.code, loc: c.loc || towerOf(c.code) || "Tower B", room: c.room || "" };
   }
+  function customList(t) { return load("custom_" + t.id, []).map(norm); }
   function devices(t) {
-    var list = t.devices.map(function (c) { return { code: c, loc: towerOf(c) || "Tower B" }; });
+    var list = t.devices.map(norm);
     customList(t).forEach(function (c) { if (!list.some(function (x) { return x.code === c.code; })) list.push(c); });
     return list;
   }
-  function locOf(code) { var d = devices(cur.type).filter(function (x) { return x.code === code; })[0]; return d ? d.loc : (towerOf(code) || "Tower B"); }
+  function devOf(code) { return devices(cur.type).filter(function (x) { return x.code === code; })[0] || norm(code); }
+  function where(d) { return [d.loc, floorOf(d.code), d.room].filter(Boolean).join(", "); }
+  var lastQueued = "";
   function renderList() {
-    var t = cur.type, dn = doneToday(), q = val("search").toUpperCase();
+    var t = cur.type, dn = doneToday(t), q = val("search").toUpperCase();
     $("listTitle").textContent = t.name;
     var all = devices(t);
     var done = all.filter(function (d) { return dn[d.code]; }).length;
-    $("listSub").textContent = "Dziś zrobione: " + done + " z " + all.length;
+    $("listSub").textContent = t.batch ? "Raport zbiorczy: otwórz tylko urządzenia z uwagami albo ze zdjęciem" :
+      "Dziś zrobione: " + done + " z " + all.length + (lastQueued ? " · " + lastQueued + " w kolejce" : "");
+    renderBatchBar();
     var groups = {};
-    all.filter(function (d) { return !q || d.code.indexOf(q) >= 0; }).forEach(function (d) { (groups[d.loc] = groups[d.loc] || []).push(d.code); });
+    all.filter(function (d) { return !q || d.code.indexOf(q) >= 0; }).forEach(function (d) { (groups[d.loc] = groups[d.loc] || []).push(d); });
     var order = ["Tower A", "Tower B", "Pavilion"].concat(Object.keys(groups).filter(function (g) { return ["Tower A", "Tower B", "Pavilion"].indexOf(g) < 0; })).filter(function (g) { return groups[g]; });
     $("groups").innerHTML = order.length ? order.map(function (g) {
       var list = groups[g];
-      return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (c) { return dn[c]; }).length + "/" + list.length + "</small></h2>" +
-        list.map(function (c) {
-          return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(g + (floorOf(c) ? " · " + floorOf(c) : "")) + "</div></div>" +
-            (dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>') + "</button>";
+      return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length + "/" + list.length + "</small></h2>" +
+        list.map(function (d) {
+          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(t, c) ? '<span class="badge q">⏳ w kolejce</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
+          var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">ostatnio z uwagami (' + esc(hl.d) + ")</div>" : "";
+          return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div>" + lastTxt + "</div>" + badge + "</button>";
         }).join("") + "</div>";
-    }).join("") : '<p class="hint">Brak wyników. Wpisz kod niżej, żeby otworzyć inną rozdzielnicę.</p>';
+    }).join("") : '<p class="hint">Brak wyników. Wpisz kod niżej, żeby otworzyć inne urządzenie.</p>';
     $("groups").querySelectorAll("[data-code]").forEach(function (b) { b.addEventListener("click", function () { openForm(b.getAttribute("data-code")); }); });
   }
   $("search").addEventListener("input", renderList);
   $("customGo").addEventListener("click", function () {
     var c = val("customCode").toUpperCase(); if (!c) return;
     var key = "custom_" + cur.type.id, arr = customList(cur.type).filter(function (x) { return x.code !== c; });
-    if (cur.type.devices.indexOf(c) < 0) { arr.push({ code: c, loc: $("customLoc").value }); save(key, arr); }
+    if (!cur.type.devices.map(norm).some(function (x) { return x.code === c; })) { arr.push({ code: c, loc: $("customLoc").value, room: "" }); save(key, arr); }
     $("customCode").value = ""; renderList(); openForm(c);
   });
 
   $("customCode").addEventListener("input", function () { var tw = towerOf(val("customCode")); if (tw) $("customLoc").value = tw; });
 
   // ---------- formularz ----------
-  var states = [], photos = [], built = null, sent = false, busy = false, trOriginal = null;
+  var states = [], override = {}, faultsOn = {}, photos = [], built = null, trOriginal = null, dateTouched = false;
+  // cur.mode: "one" — raport na urządzenie; "item" — urządzenie w zleceniu zbiorczym; "sum" — zakończenie zlecenia
   function openForm(code) {
-    if (cur.code !== code || sent) resetForm();
-    cur.code = code;
+    var mode = cur.type.batch ? "item" : "one";
+    var fresh = cur.code !== code || cur.formType !== cur.type.id || cur.mode !== mode;
+    if (fresh) resetForm();
+    cur.code = code; cur.formType = cur.type.id; cur.mode = mode;
+    var d = devOf(code);
+    cur.loc = d.loc; cur.where = where(d);
     $("formTitle").textContent = code;
-    cur.loc = locOf(code);
-    $("formSub").textContent = cur.loc + (floorOf(code) ? " · " + floorOf(code) : "") + " · " + cur.type.name;
+    $("formSub").textContent = cur.where + " · " + cur.type.name;
     $("ckTitle").textContent = cur.type.title;
-    show("form"); updateFormHint();
+    if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
+    formMode(); renderChecks(); renderFaults(); show("form"); updateFormHint();
+  }
+  // Pokazuje tylko panele potrzebne w danym trybie
+  function formMode() {
+    var m = cur.mode;
+    document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
+    var ask = !!cur.type.ask && m !== "sum";
+    if (ask) $("faults").closest(".panel").hidden = true;
+    $("photos").closest(".panel").style.order = ask ? "-1" : ""; // zdjęcie, potem pytania
+    $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
+    $("legend").hidden = !!cur.type.ask;
   }
   function resetForm() {
-    sent = false; built = null; trOriginal = null;
-    photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos();
-    states = cur.type.checks.map(function (c) { return c.def; }); renderChecks();
-    $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp;
+    restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
+    states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
+    $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = "";
     $("ov-1").checked = true; $("q-0").checked = true;
-    $("steps").hidden = true; $("steps").innerHTML = ""; $("nextBtn").hidden = true;
-    $("send").hidden = false; $("send").textContent = "Zatwierdź i wyślij"; $("editBtn").hidden = false;
   }
+  var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
+  var rsel = {}; // wybrane powody pod pytaniem (i → [id])
   function renderChecks() {
+    if (cur.type.ask) {
+      var idx = cur.type.checks.map(function (c, i) { return i; });
+      idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
+      var last = histOf(cur.code);
+      $("ck").innerHTML = idx.map(function (i) {
+        var c = cur.type.checks[i], st = states[i];
+        var was = last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; }));
+        // powody zwinięte, dopóki NIE / podpowiedź / usterka z ostatniej inspekcji
+        var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
+          '<div class="chips rs">' + c.reasons.map(function (r) {
+            var prev = last && last.r.indexOf(r.id) >= 0;
+            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
+          }).join("") + "</div>" : "";
+        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) +
+          (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
+          '<div class="seg" role="group" aria-label="' + esc(c.q) + '">' +
+          '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
+          '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
+          "</div>" + rs + "</div>";
+      }).join("");
+      return;
+    }
     $("ck").innerHTML = cur.type.checks.map(function (c, i) {
       var s = states[i];
-      return '<div class="ck-row ' + s + '"><div class="txt">' + esc(s === "fail" ? c.fail : c.ok) + "</div>" +
+      return '<div class="ck-row ' + s + '"><div class="txt">' + esc(s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
         '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
         '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
         '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="Nie OK" aria-pressed="' + (s === "fail") + '">✗</button>' +
@@ -644,15 +923,256 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         "</div></div>";
     }).join("");
   }
-  $("ck").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-i]"); if (!b) return;
-    states[+b.getAttribute("data-i")] = b.getAttribute("data-s"); renderChecks(); suggestOverall();
+  function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
+  function renderFaults() {
+    $("faults").innerHTML = faultsFor(cur.type).map(function (f) {
+      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(f.pl) + "</button>";
+    }).join("");
+  }
+  $("faults").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-f]"); if (!b) return;
+    setFault(b.getAttribute("data-f"), !faultsOn[b.getAttribute("data-f")]);
   });
-  $("allOk").addEventListener("click", function () { states = states.map(function (s) { return s === "na" ? "na" : "ok"; }); renderChecks(); suggestOverall(); });
+  function setFault(id, on) {
+    var f = FAULTS.filter(function (x) { return x.id === id; })[0], i = checkIdx(f.key);
+    faultsOn[f.id] = on;
+    if (i >= 0) {
+      if (faultsOn[f.id]) { states[i] = "fail"; override[i] = f.en; }
+      else {
+        // inna aktywna usterka z tym samym punktem trzyma go dalej na ✗
+        var other = faultsFor(cur.type).filter(function (x) { return x.key === f.key && faultsOn[x.id]; })[0];
+        if (other) override[i] = other.en;
+        else { delete override[i]; states[i] = cur.type.checks[i].def === "na" ? "na" : "ok"; }
+      }
+      renderChecks();
+    }
+    if (faultsOn[f.id] && !f.note) $("ov-2").checked = true;
+    renderFaults(); suggestOverall(); updateFormHint();
+  }
+  // usterki bez pasującego punktu checklisty idą jako osobne zdania
+  function extraFaults(notes) {
+    return faultsFor(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
+  }
+  $("ck").addEventListener("click", function (e) {
+    var r = e.target.closest("button[data-r]");
+    if (r) {
+      var ri = +r.getAttribute("data-ri"), id = r.getAttribute("data-r"), arr = rsel[ri] = rsel[ri] || [];
+      if (arr.indexOf(id) >= 0) arr.splice(arr.indexOf(id), 1); else arr.push(id);
+      // jedno kliknięcie w powód = NIE z gotowym zdaniem; odznaczenie ostatniego powodu wraca na TAK
+      if (arr.length) { states[ri] = "fail"; delete susN[ri]; }
+      else if (states[ri] === "fail") states[ri] = "ok";
+      renderChecks(); suggestOverall(); updateFormHint(); return;
+    }
+    var b = e.target.closest("button[data-i]"); if (!b) return;
+    var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
+    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
+    if (states[i] === "ok") delete rsel[i];
+    FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
+    renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
+  });
+  $("allOk").addEventListener("click", function () {
+    states = states.map(function (s) { return s === "na" ? "na" : "ok"; }); override = {}; rsel = {}; susN = {};
+    FAULTS.forEach(function (f) { if (checkIdx(f.key) >= 0) faultsOn[f.id] = false; });
+    renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
+  });
+  function failCount() {
+    if (cur.type.ask) return askFinds().filter(function (x) { return !x.note; }).length;
+    return states.filter(function (s) { return s === "fail"; }).length + extraFaults().length;
+  }
   function suggestOverall() {
-    var fails = states.filter(function (s) { return s === "fail"; }).length;
+    var fails = failCount();
     if (fails && radio("ov") === "Satisfactory") $("ov-2").checked = true;
     if (!fails && radio("ov") === "Requires attention") $("ov-1").checked = true;
+  }
+
+
+  // ---------- zlecenie zbiorcze (izolatory): każde urządzenie domyślnie OK, jeden raport na koniec ----------
+  var batch = { items: {} };
+  function batchKey(t) { return "batch_" + t.id; }
+  // Postęp zlecenia także w localStorage, żeby ekran startowy pokazał „W trakcie 12/27” bez czytania bazy
+  function saveBatch() {
+    if (!batch.started) batch.started = Date.now();
+    var t = cur.type;
+    // Bez IndexedDB zapis zniknąłby po zamknięciu apki, a obiecujemy wznowienie: nie udaję, że się zapisało
+    return dbP.then(function (db) {
+      if (!db) throw new Error("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji");
+      return kvSet(batchKey(t), batch);
+    }).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
+  }
+  // Usterki z ostatniej inspekcji (per kod): { d: "dd/mm/rrrr", q: [klucze pytań], r: [id powodów] }
+  function histOf(code) { var h = load("hist_" + cur.type.id, {}); return h[code] || null; }
+  function saveHist(t, d) {
+    var h = load("hist_" + t.id, {});
+    (cur.sumDevs || devices(t)).forEach(function (dv) {
+      if (!cur.restOk && !batch.items[dv.code]) return; // niesprawdzone: zostaje stara historia
+      var it = batch.items[dv.code], q = [], r = [];
+      // klucze pytań z chwili zapisu (lista pytań mogła się zmienić w trakcie zlecenia)
+      var qk = it && (it.qk || t.checks.map(function (c) { return c.key; }));
+      if (it) it.states.forEach(function (st, i) {
+        if (st !== "fail" || !qk[i]) return;
+        var sel = (it.rsel && it.rsel[i]) || [];
+        if (sel.length) r = r.concat(sel); else q.push(qk[i]);
+      });
+      h[dv.code] = { d: d, q: q, r: r };
+    });
+    save("hist_" + t.id, h);
+  }
+  // Zlecenie znika z pamięci dopiero po udanym zapisie (inaczej po ponownym otwarciu wróciłyby stare wpisy)
+  function clearBatch(t) {
+    var empty = { items: {} };
+    return kvSet(batchKey(t), empty).then(function () {
+      if (cur.mode !== "one") cur.code = ""; // następne otwarcie formularza zaczyna od czystego: stare odpowiedzi i zdjęcia nie przejdą do nowego zlecenia
+      batch = empty; save("bprog_" + t.id, null);
+    });
+  }
+  function loadBatch(t) {
+    return kvGet(batchKey(t)).then(function (b) { batch = b && b.items ? b : { items: {} }; }); // błąd odczytu ≠ brak zlecenia: nie zaczynamy od pustego, bo nadpisalibyśmy zapisane
+  }
+  function renderBatchBar() {
+    var t = cur.type, bar = $("batchBar");
+    bar.hidden = !t.batch; if (!t.batch) return;
+    var all = devices(t), codes = Object.keys(batch.items), fails = codes.filter(function (c) { return batch.items[c].fails; }).length;
+    var nextUp = all.filter(function (d) { return !batch.items[d.code]; })[0];
+    bar.innerHTML = '<div class="label">Zlecenie: ' + esc(t.batch) + "</div>" +
+      "<div>Zapisane: " + codes.length + " z " + all.length + " · z uwagami: " + fails + (batch.started ? " · zaczęte " + esc(fmtDate(new Date(batch.started))) : "") + "</div>" +
+      (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">Wznów od ' + esc(nextUp.code) + "</button></div>" : "") +
+      '<p class="hint">Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.</p>' +
+      '<div class="row"><button class="go" type="button" id="batchEnd">Zakończ zlecenie</button></div>' +
+      (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">Zacznij od nowa</button></div>' : "");
+    $("batchEnd").addEventListener("click", openSum);
+    if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
+    if ($("batchClear")) $("batchClear").addEventListener("click", function () {
+      if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList, function (e) { alert("Nie udało się usunąć zlecenia (" + gErr(e) + "). Zapisy zostają."); });
+    });
+  }
+  // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
+  function askFinds() {
+    var out = [];
+    cur.type.checks.forEach(function (c, i) {
+      if (states[i] !== "fail") return;
+      var rs = (c.reasons || []).filter(function (r) { return (rsel[i] || []).indexOf(r.id) >= 0; });
+      if (rs.length) rs.forEach(function (r) { out.push({ en: r.en, note: !!r.note }); });
+      else out.push({ en: c.en, note: !!c.note });
+    });
+    return out;
+  }
+  function itemLines() {
+    var out = [];
+    if (cur.type.ask) {
+      var f = askFinds(), bad = f.some(function (x) { return !x.note; });
+      return f.length ? ["Isolator " + cur.code + ": " + f.map(function (x) { return x.en; }).join("; ") + "." + (bad ? " Requires attention." : "")] : [];
+    }
+    cur.type.checks.forEach(function (c, i) { if (states[i] === "fail") out.push(override[i] || c.fail); });
+    return out.concat(extraFaults(true));
+  }
+  $("saveItem").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    var item = {
+      qk: cur.type.checks.map(function (c) { return c.key; }),
+      states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
+      lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
+      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }).concat(keptSaved),
+      t: Date.now()
+    };
+    var code = cur.code, prev = batch.items[code];
+    batch.items[code] = item;
+    var all = devices(cur.type), pos = all.map(function (d) { return d.code; }).indexOf(code);
+    var next = all.slice(pos + 1).concat(all.slice(0, pos)).filter(function (d) { return !batch.items[d.code]; })[0];
+    saveBatch().then(function () {
+      b.disabled = false;
+      if (cur.code !== code || cur.mode !== "item") return; // w międzyczasie otwarto coś innego: nie przeskakujemy
+      resetForm(); cur.code = "";
+      if (!next) { show("list"); return; }
+      openForm(next.code);
+      try { $("camIn").click(); } catch (e) {} // aparat od razu dla następnego (działa w ciągu kilku sekund od kliknięcia)
+    }, function (e) {
+      if (batch.items[code] === item) { if (prev) batch.items[code] = prev; else delete batch.items[code]; }
+      b.disabled = false;
+      if (cur.code !== code) { alert("Nie zapisano " + code + " w telefonie (" + gErr(e) + "). Otwórz go i zapisz ponownie."); return; }
+      $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
+    });
+  });
+  function photoFromSaved(sp, code, wh) {
+    return createImageBitmap(sp.blob).then(function (img) {
+      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
+      return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, code: code, where: wh };
+    });
+  }
+  // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
+  var restoring = 0, restSeq = 0, formSeq = 0, pendingPh = 0;
+  var keptSaved = []; // zapisane zdjęcia, których nie udało się odczytać: nie giną przy ponownym zapisie // restoring = numer trwającego wczytywania (rośnie, żeby stary wynik nie trafił do nowego formularza)
+  function restoreItem(it) {
+    override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn);
+    // odpowiedzi wracają po kluczu pytania (lista pytań mogła się zmienić w trakcie zlecenia)
+    var qk = it.qk || cur.type.checks.map(function (c) { return c.key; }), old = it.rsel || {};
+    rsel = {};
+    states = cur.type.checks.map(function (c, i) {
+      var j = qk.indexOf(c.key); if (j < 0) return c.def;
+      if (old[j]) rsel[i] = old[j].slice();
+      return it.states[j];
+    });
+    renderChecks(); renderFaults();
+    var my = restoring = ++restSeq, code = cur.code;
+    $("saveItem").disabled = true;
+    Promise.all((it.photos || []).map(function (sp) { return photoFromSaved(sp).catch(function () { return { failed: sp }; }); })).then(function (ps) {
+      var ok = ps.filter(function (p) { return !p.failed; });
+      if (my !== restoring || cur.code !== code) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
+      photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
+      if (keptSaved.length) $("formHint").textContent = "Nie udało się pokazać " + keptSaved.length + " zapisanych zdjęć. Zostają w zapisie urządzenia.";
+    });
+  }
+  function openSum() {
+    var t = cur.type, all = devices(t), missing = all.filter(function (d) { return !batch.items[d.code]; });
+    resetForm();
+    cur.mode = "sum"; cur.formType = t.id; cur.code = t.batch;
+    cur.sumDevs = all; // rejestr zamrożony na czas podsumowania (odświeżenie z Code.gs nie zmieni raportu po potwierdzeniu)
+    cur.restOk = !missing.length || confirm(missing.length + " urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone");
+    var locs = [];
+    all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
+    cur.loc = locs.join(", "); cur.where = cur.loc;
+    $("formTitle").textContent = t.batch;
+    $("formSub").textContent = cur.where + " · " + t.name;
+    if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov-2").checked = true;
+    formMode();
+    var jobs = [];
+    all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d)).catch(function () { return null; })); }); });
+    // Do końca wczytywania zdjęć raport jest zablokowany (inaczej poszedłby bez nich)
+    var my = jobs.length ? (restoring = ++restSeq) : 0;
+    if (my) Promise.all(jobs).then(function (ps) {
+      var lost = ps.filter(function (p) { return !p; }).length; ps = ps.filter(Boolean);
+      if (my !== restoring || cur.mode !== "sum") { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      photos = ps.concat(photos); restoring = 0; renderPhotos(); suggestDate(); updateFormHint();
+      if (lost) $("formHint").textContent = "Nie udało się odczytać " + lost + " zapisanych zdjęć — raport pójdzie bez nich.";
+    }, function () {
+      if (my !== restoring) return;
+      restoring = 0; updateFormHint(); $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć — raport pójdzie bez nich.";
+    });
+    renderSum(); show("form"); updateFormHint();
+  }
+  function renderSum() {
+    var d = batchData(reportDate());
+    $("sumBox").innerHTML = '<div class="label">Podsumowanie (trafi do raportu)</div><ul class="sumlist">' +
+      d.punkty.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" +
+      '<p class="hint">Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.</p>';
+  }
+  function batchData(w) {
+    var t = cur.type, all = cur.sumDevs || devices(t), items = batch.items;
+    var checked = all.filter(function (d) { return cur.restOk || items[d.code]; });
+    var pts = ["Local isolators inspected: " + checked.length + "/" + all.length + "."], noted = 0;
+    checked.forEach(function (d) { var it = items[d.code]; if (it && it.lines.length) { noted++; pts = pts.concat(it.lines); } });
+    pts.push(noted ? "Remaining " + (checked.length - noted) + " isolator(s) – no defects found." : "No defects found on any inspected isolator.");
+    var miss = all.filter(function (d) { return !cur.restOk && !items[d.code]; }).map(function (d) { return d.code; });
+    if (miss.length) pts.push("Not inspected: " + miss.join(", ") + ".");
+    var d = {
+      data: fmtDate(w), inspektor: val("podpis"), urzadzenie: t.batch, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      tytul: t.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
+      komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? t.scope : ""
+    };
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
+    d.opis = pts.map(function (x) { return "• " + x; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    return d;
   }
 
   // ---------- serwer (Twój Google Apps Script) ----------
@@ -663,14 +1183,36 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       r[fn].apply(r, args);
     });
   }
+  // Ten sam zestaw funkcji (getSetup, translate, submit) przez google.script.run albo POST na …/exec
+  function api(fn, arg) {
+    if (IN_GAS) return gs(fn, arg, window.GAS_KEY || ""); // klucz wstawia doGet
+    if (!cfg.api) return Promise.reject(new Error("brak adresu skryptu w Ustawieniach"));
+    return fetch(cfg.api, {
+      method: "POST", redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // bez preflight CORS
+      body: JSON.stringify({ fn: fn, arg: arg, key: cfg.key })
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (t) {
+      var j; try { j = JSON.parse(t); } catch (e) { throw new Error("skrypt zwrócił stronę zamiast danych — sprawdź dostęp „Każdy” we wdrożeniu"); }
+      if (j.error) throw new Error(j.error);
+      return j.result;
+    });
+  }
   function gErr(e) { return (e && e.message) ? e.message : String(e); }
 
-  // ---------- tłumaczenie komentarza (tłumacz Google) ----------
-  $("translate").hidden = false;
+  // ---------- tłumaczenie komentarza (tłumacz Google, wymaga sieci) ----------
+  function renderTranslate() {
+    var can = online() && (IN_GAS || cfg.api);
+    $("translate").hidden = !can;
+    if (!can && !$("trHint").textContent) $("trHint").textContent = "Bez sieci tłumaczenie nie działa — użyj gotowych usterek albo wpisz po angielsku.";
+    if (can && /^Bez sieci/.test($("trHint").textContent)) $("trHint").textContent = "";
+  }
   $("translate").addEventListener("click", function () {
     var txt = $("komentarz").value.trim(); if (!txt) return;
     var b = this; b.disabled = true; $("trHint").textContent = "Tłumaczę…";
-    gs("translate", txt).then(function (out) {
+    api("translate", txt).then(function (out) {
       out = (out || "").trim();
       if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; }
       else $("trHint").textContent = "Brak odpowiedzi — spróbuj jeszcze raz.";
@@ -682,12 +1224,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- zdjęcia ----------
   function addFiles(input) {
     var files = Array.prototype.slice.call(input.files || []); input.value = "";
+    if (!files.length) return;
+    var tok = formSeq; pendingPh++; updateFormHint();
     $("photoInfo").textContent = "Zmniejszam…";
     files.reduce(function (p, f) {
-      return p.then(function () { return processPhoto(f, new Date()).then(function (ph) { photos.push(ph); renderPhotos(); }); });
+      return p.then(function () {
+        return exifDate(f).then(function (ex) {
+          var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
+          return processPhoto(f, when).then(function (ph) {
+            if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
+            ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph);
+          });
+        });
+      });
     }, Promise.resolve()).then(function () {
       $("photoInfo").textContent = photos.length ? "Zdjęć: " + photos.length + " · zmniejszone do maks. 1280 px." : "Zdjęcia są zmniejszane od razu po dodaniu.";
-    }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; });
+    }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
+      .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
   $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
@@ -695,13 +1248,79 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("photos").innerHTML = "";
     photos.forEach(function (p, i) {
       var d = document.createElement("div"); d.className = "thumb";
-      d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>';
-      d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); });
+      d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
+        (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
+      d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
       $("photos").appendChild(d);
     });
     $("photoCount").textContent = photos.length ? "(" + photos.length + ")" : "";
+    if ($("sugBox").innerHTML) renderSugs();
     updateFormHint();
   }
+  // Data raportu: apka proponuje datę z pierwszego zdjęcia, dopóki nie zmienisz jej ręcznie
+  function suggestDate() {
+    var p = photos[0], box = $("dateSug");
+    if (!p) { box.hidden = true; updateFormHint(); return; }
+    var pd = isoDay(p.when), today = isoDay(new Date());
+    if (!dateTouched) $("dzien").value = pd;
+    box.hidden = false;
+    box.innerHTML = "<span>" + (p.exif ? "Zdjęcie zrobione " : "Plik zdjęcia z ") + esc(fmtDate(p.when) + " " + fmtTime(p.when)) + ".</span>" +
+      ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(fmtDate(p.when)) + "</button>" : "") +
+      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">Ustaw dziś</button>' : "");
+    updateFormHint();
+  }
+  $("dateSug").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-day]"); if (!b) return;
+    $("dzien").value = b.getAttribute("data-day"); dateTouched = true; suggestDate();
+  });
+  $("dzien").addEventListener("change", function () { dateTouched = true; suggestDate(); });
+  // ---------- sugestie ze zdjęcia (miejsce na model; bez modelu nic się nie pokazuje) ----------
+  // Model podpina się jako window.INSP_ANALYZE(canvas, typId) → Promise<[{ fault: "enclosure", x: 0..1, y: 0..1 }]>; fault = id usterki albo key pytania (izolatory).
+  // Każda sugestia czeka na Twoje Tak/Nie; do raportu trafia tylko to, co potwierdzisz.
+  var sugN = 0;
+  function analyze(ph) {
+    if (typeof window.INSP_ANALYZE !== "function") return;
+    var ask = !!cur.type.ask, code = cur.code;
+    var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
+    function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
+    $("photoInfo").textContent = "Sprawdzam zdjęcie…";
+    Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
+      if (cur.code !== code) return;
+      ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
+        .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: !ask }; });
+      // podpowiedź: pytanie na górę z numerem, powód wstępnie zaznaczony; liczy się dopiero Twoje TAK/NIE
+      if (ask) ph.sugs.forEach(function (sg) {
+        var i = qOf(sg.fault); states[i] = "sus"; susN[i] = susN[i] || sg.n;
+        if (sg.fault !== cur.type.checks[i].key) { rsel[i] = rsel[i] || []; if (rsel[i].indexOf(sg.fault) < 0) rsel[i].push(sg.fault); }
+      });
+      renderPhotos(); renderSugs(); renderChecks(); updateFormHint();
+      $("photoInfo").textContent = ph.sugs.length ? "Sprawdź sugestie pod zdjęciami." : "Na zdjęciu nic podejrzanego.";
+    }).catch(function () { $("photoInfo").textContent = "Nie udało się sprawdzić zdjęcia — zaznacz ręcznie."; });
+  }
+  function renderSugs() {
+    var open = [];
+    photos.forEach(function (p) { (p.sugs || []).forEach(function (sg) { if (sg.open) open.push(sg); }); });
+    $("sugBox").hidden = !open.length;
+    $("sugBox").innerHTML = open.map(function (sg) {
+      var f = FAULTS.filter(function (x) { return x.id === sg.fault; })[0];
+      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(f.pl) + '?</div><div class="row">' +
+        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">Tak</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">Nie</button></div></div>';
+    }).join("");
+  }
+  $("sugBox").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sg]"); if (!b) return;
+    var n = +b.getAttribute("data-sg");
+    photos.forEach(function (p) {
+      (p.sugs || []).forEach(function (sg) {
+        if (sg.n !== n) return;
+        sg.open = false;
+        if (b.getAttribute("data-ok") === "1") setFault(sg.fault, true);
+        else p.sugs = p.sugs.filter(function (x) { return x !== sg; }); // odrzucone: znika też kropka
+      });
+    });
+    renderPhotos(); renderSugs();
+  });
+
   function loadImage(file) {
     function viaImg() { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = URL.createObjectURL(file); }); }
     if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(file); }).catch(viaImg);
@@ -715,7 +1334,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       c.getContext("2d").drawImage(img, 0, 0, w, h);
       if (img.close) img.close();
       return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
-        return { canvas: c, url: URL.createObjectURL(blob), width: w, height: h, when: when };
+        return { canvas: c, blob: blob, url: URL.createObjectURL(blob), width: w, height: h, when: when };
       });
     });
   }
@@ -724,7 +1343,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var c = document.createElement("canvas"); c.width = w; c.height = h;
     var g = c.getContext("2d"); g.drawImage(src, 0, 0);
     if (cfg.stamp) {
-      var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + d.urzadzenie + " · " + d.lokalizacja;
+      var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja);
       var fs = Math.max(16, Math.round(w / 40));
       g.font = "600 " + fs + "px Barlow, system-ui, sans-serif";
       var tw = Math.min(g.measureText(txt).width, w - fs * 2.2), pw = tw + fs, ph = fs * 1.8;
@@ -737,10 +1356,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function updateFormHint() {
     var h = [];
-    if (!photos.length) h.push("Dodaj przynajmniej jedno zdjęcie.");
-    if (!states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
+    if (cur.mode === "item") {
+      var sus = states.indexOf("sus") >= 0;
+      $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
+      if (pendingPh) $("formHint").textContent = "Zmniejszam zdjęcie…";
+      $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
+      $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
+    }
+    if (!photos.length && cur.mode !== "sum") h.push("Dodaj przynajmniej jedno zdjęcie.");
+    if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
+    if (restoring) h.push("Wczytuję zapisane zdjęcia…");
+    if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
-    $("toPreview").disabled = h.length > 0;
+    if (pendingPh) h.push("Zmniejszam zdjęcie…");
+    var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
+    $("toPreview").disabled = block; $("toQueue").disabled = block;
+    $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate());
   }
 
   // ---------- dane raportu ----------
@@ -751,9 +1382,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function formData() {
     var w = reportDate(), pts = [];
-    cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(c.fail); });
+    if (cur.mode === "sum") return batchData(w);
+    cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
+    pts = pts.concat(extraFaults(true));
     var d = {
-      data: fmtDate(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.loc + (floorOf(cur.code) ? ", " + floorOf(cur.code) : ""), wieza: cur.loc, pietro: floorOf(cur.code),
+      data: fmtDate(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
@@ -762,26 +1395,63 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return d;
   }
 
-  // ---------- szablon (z Google Drive) ----------
+  // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
   function templateBytes() { return serverTpl ? serverTpl.bytes : b64ToBytes(SAMPLE_TPL); }
   function tplState(err) {
     var n = $("tplNotice");
-    if (err) { n.hidden = false; n.innerHTML = "<b>Szablon:</b> " + esc(err); $("tplName").textContent = "Brak — używany przykładowy wzór."; return; }
-    if (serverTpl) { n.hidden = true; $("tplName").textContent = "Używany: " + serverTpl.name + " (Google Drive)"; }
+    if (serverTpl) {
+      n.hidden = !err; if (err) n.innerHTML = "<b>Bez połączenia z Google:</b> " + esc(err) + ". Działam na zapisanym szablonie.";
+      $("tplName").textContent = "Używany: " + serverTpl.name + " (kopia z Google Drive)";
+      return;
+    }
+    if (err) { n.hidden = false; n.innerHTML = "<b>Szablon:</b> " + esc(err); $("tplName").textContent = "Brak — używany przykładowy wzór."; }
+  }
+  function applySetup(r) {
+    if (!cfg.email) cfg.email = r.email || "";
+    if (!cfg.folder) cfg.folder = r.folder || "";
+    if (!cfg.site) cfg.site = r.site || "";
+    if (!cfg.insp) cfg.insp = r.engineer || "";
+    var dv = r.devices;
+    if (Array.isArray(dv)) dv = { db: dv }; // stary Code.gs: tylko rozdzielnice
+    TYPES.forEach(function (t) { if (dv && Array.isArray(dv[t.id])) t.devices = dv[t.id]; }); // pusta lista też obowiązuje
+    // pytania z Code.gs (CFG.questions[typ] = [{ q, en, note? }]) zastępują wbudowane
+    var qs = r.questions || {};
+    TYPES.forEach(function (t) {
+      if (!t.ask || !Array.isArray(qs[t.id])) return;
+      if (!t.baseChecks) t.baseChecks = t.checks;
+      var old = t.checks;
+      // pusta lista w Code.gs = wracamy do pytań wbudowanych (także gdy telefon pamiętał wcześniejsze własne)
+      t.checks = !qs[t.id].length ? t.baseChecks : qs[t.id].map(function (x, i) {
+        // klucze z treści (nie z kolejności), żeby przestawienie pytań w CFG nie zmieniło znaczenia zapisanych odpowiedzi
+        var k = x.key || x.q;
+        return { key: k, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
+      });
+      // otwarty formularz tego rodzaju: odpowiedzi idą za kluczem pytania, nie za pozycją
+      if (cur.type === t && cur.code && old !== t.checks) {
+        var ok = old.map(function (c) { return c.key; }), st = states, rs = rsel, sn = susN;
+        rsel = {}; susN = {};
+        states = t.checks.map(function (c, i) {
+          var j = ok.indexOf(c.key); if (j < 0) return c.def;
+          if (rs[j]) rsel[i] = rs[j]; if (sn[j] != null) susN[i] = sn[j];
+          return st[j];
+        });
+        renderChecks(); updateFormHint();
+      }
+    });
   }
   function loadSetup() {
     $("tplName").textContent = "Ładuję z Google Drive…";
-    return gs("getSetup", cfg.folder || "").then(function (r) {
-      if (!cfg.email) cfg.email = r.email;
-      if (!cfg.folder) cfg.folder = r.folder;
-      if (!cfg.site) cfg.site = r.site || "";
-      if (!cfg.insp) cfg.insp = r.engineer || "";
-      if (r.devices && r.devices.length) TYPES[0].devices = r.devices;
+    return api("getSetup", cfg.folder || "").then(function (r) {
+      applySetup(r);
       save("cfg", cfg); fillSettings();
-      if (r.error) { serverTpl = null; tplState(r.error); }
-      else { serverTpl = { name: r.templateName, bytes: b64ToBytes(r.template) }; tplState(); }
-      renderHome(); updateSendHint();
-    }).catch(function (e) { tplState("nie udało się połączyć z Google (" + gErr(e) + ")"); });
+      save("setup", { email: r.email, folder: r.folder, site: r.site, engineer: r.engineer, devices: r.devices, questions: r.questions });
+      if (r.error) tplState(r.error);
+      else {
+        serverTpl = { name: r.templateName, bytes: b64ToBytes(r.template) }; tplState();
+        kvSet("tpl", serverTpl).catch(function () {});
+      }
+      renderHome(); updateFormHint();
+    }).catch(function (e) { tplState(gErr(e)); });
   }
   $("tplReload").addEventListener("click", loadSetup);
 
@@ -789,17 +1459,21 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function fillSettings() {
     $("s-email").value = cfg.email; $("s-folder").value = cfg.folder; $("s-pattern").value = cfg.pattern;
     $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-stamp").checked = !!cfg.stamp; $("s-dphotos").checked = !!cfg.drivePhotos;
+    $("s-api").value = cfg.api; $("s-key").value = cfg.key; $("s-auto").checked = !!cfg.auto;
+    $("apiBox").hidden = IN_GAS;
   }
   function readSettings() {
+    var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
     cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.drivePhotos = $("s-dphotos").checked;
+    cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked;
     save("cfg", cfg); renderHome();
+    if (apiChanged && cfg.api && cfg.key) loadSetup();
     $("setToast").textContent = "Zapisano w tej przeglądarce";
     clearTimeout(readSettings.t); readSettings.t = setTimeout(function () { $("setToast").textContent = ""; }, 1800);
   }
-  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
+  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos", "s-api", "s-key", "s-auto"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
   fillSettings();
-
   // ---------- PDF w układzie raportu ----------
   function buildPdf(d, pics, info) {
     var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
@@ -832,18 +1506,26 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     function row(label, value, h) { pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); pdf.text(label, L + 1.5, y + 4.6); pdf.text(value || "", L + c1 + 1.5, y + 4.6); y += h; }
     row("Site", d.site, 6.2); row("Date", d.data, 9.5); row("Engineer", d.inspektor, 9.5);
     var top = y, ty = y + 8, lh = 5;
+    // długi tekst (np. zbiorczy raport 27 izolatorów): zamknij ramkę, nowa strona, ramka dalej
+    function room(h) {
+      if (ty + h <= 272) return;
+      pdf.rect(L, top, W, ty - top + 1); footer();
+      pdf.addPage(); top = header(); pdf.setLineWidth(0.25); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
+    }
     pdf.text(d.urzadzenie + " in " + d.lokalizacja + ".", L + 1.5, ty); ty += lh * 2;
     pdf.setFont("DV", "bold"); pdf.text(d.tytul || "", L + 1.5, ty); ty += lh; pdf.setFont("DV", "normal");
-    d.punkty.forEach(function (p) { var ls = pdf.splitTextToSize(p, W - 14); pdf.text("•", L + 6, ty); pdf.text(ls, L + 10, ty); ty += ls.length * lh; });
-    pdf.setFont("DV", "bold"); pdf.text("Overall Condition:", L + 1.5, ty);
+    d.punkty.forEach(function (p) { var ls = pdf.splitTextToSize(p, W - 14); room(ls.length * lh); pdf.text("•", L + 6, ty); pdf.text(ls, L + 10, ty); ty += ls.length * lh; });
+    room(lh); pdf.setFont("DV", "bold"); pdf.text("Overall Condition:", L + 1.5, ty);
     var ow = pdf.getTextWidth("Overall Condition: "); pdf.setFont("DV", "normal"); pdf.text(d.stan_ogolny + ".", L + 1.5 + ow, ty); ty += lh;
     if (d.komentarz) {
       pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); var cw = pdf.getTextWidth("Comments: "); pdf.setFont("DV", "normal");
       var cl = pdf.splitTextToSize(d.komentarz, W - 4 - cw);
+      if (ty + cl.length * lh > 272) { room(cl.length * lh); pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); pdf.setFont("DV", "normal"); }
       pdf.text(cl, L + 1.5 + cw, ty); ty += cl.length * lh;
     }
-    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
-    var cellBottom = Math.max(ty + 18, top + 72);
+    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.setFontSize(8.5); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
+    room(18 + 25); // Works Complete + Quote + Signed muszą zmieścić się razem
+    var cellBottom = Math.max(ty + 18, Math.min(top + 72, 252));
     pdf.text("Works Complete : " + d.data, L + 1.5, cellBottom - 2);
     pdf.rect(L, top, W, cellBottom - top + 1); y = cellBottom + 1;
     pdf.rect(L, y, W, 6); pdf.text("Quote Required : " + (d.quote || ""), L + 1.5, y + 4.5); y += 6;
@@ -873,15 +1555,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 
   // ---------- podgląd ----------
+  function freeBuilt() { if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); built = null; } }
   $("toPreview").addEventListener("click", function () {
-    var b = this; b.disabled = true; b.textContent = "Przygotowuję…";
-    if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); }
+    if (queueing) return;
+    var b = this; b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    var from = { type: cur.type, mode: cur.mode };
+    freeBuilt();
     buildAll().then(function (r) {
-      built = r; renderPreview(); show("preview");
+      r.from = from; built = r; renderPreview(); show("preview");
     }).catch(function (e) {
-      $("formHint").textContent = "Nie udało się przygotować raportu: " + (e && e.properties && e.properties.explanation || (e && e.message) || e);
-    }).then(function () { b.disabled = false; b.textContent = "Podgląd raportu"; });
+      $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
+    }).then(function () { queueing = false; b.disabled = false; b.textContent = "Podgląd raportu"; });
   });
+  function buildErr(e) { return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
     var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();
     function head() { return '<div class="ph">' + (built.logoUrl ? '<img alt="" src="' + built.logoUrl + '">' : "") + "<div>" + esc(title) + "</div></div>"; }
@@ -903,51 +1589,155 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
     $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
       (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> (tylko na Drive)" : "");
-    updateSendHint();
   }
-  $("editBtn").addEventListener("click", function () { show("form"); });
+  $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
-  // ---------- wysyłka (Gmail + Drive z Twojego konta) ----------
-  function step(id, text) {
-    var li = document.createElement("li"); li.id = "st-" + id; li.className = "s-run";
-    li.innerHTML = '<span class="sdot" aria-hidden="true"></span><div><span class="t">' + esc(text) + '</span><small></small></div>';
-    $("steps").appendChild(li); return li;
-  }
-  function setStep(li, state, note, html) { li.className = "s-" + state; var s = li.querySelector("small"); if (html) s.innerHTML = note; else s.textContent = note || ""; }
-  function updateSendHint() {
-    $("sendHint").textContent = cfg.email ? "Pójdzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Twoim Google Drive." : "Ustaw e-mail w Ustawieniach.";
-    $("send").disabled = busy || sent || !built || !cfg.email;
-  }
-  $("send").addEventListener("click", function () {
-    if (busy || sent || !built || !cfg.email) return;
-    busy = true; updateSendHint(); $("editBtn").hidden = true;
-    $("steps").innerHTML = ""; $("steps").hidden = false;
-    var t0 = Date.now(), d = built.data;
-    var st = step("send", "Gmail + Google Drive");
-    setStep(st, "run", "Wysyłam…");
-    var body = d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
-      "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
-      d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n";
-    gs("submit", {
-      name: built.name, folder: cfg.folder, to: cfg.email,
+  // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
+  var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
+  function enqueue(r, from) {
+    var d = r.data;
+    var it = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      created: Date.now(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
-      body: body, docx: bytesToB64(built.docx), pdf: bytesToB64(built.pdf),
-      photos: cfg.drivePhotos ? built.pics.map(function (p) { return bytesToB64(p.bytes); }) : []
-    }).then(function (r) {
-      var secs = Math.round((Date.now() - t0) / 1000);
-      setStep(st, "ok", "Wysłano na " + esc(cfg.email) + " i zapisano na Drive · " + secs + " s" +
-        (r && r.pdfUrl ? ' · <a href="' + esc(r.pdfUrl) + '" target="_blank" rel="noopener">otwórz PDF</a>' : ""), true);
-      sent = true; markDone(cur.code); $("send").hidden = true; $("nextBtn").hidden = false;
-    }).catch(function (e) {
-      setStep(st, "err", "Nie wysłano: " + gErr(e) + ". Sprawdź skrzynkę i Drive, zanim spróbujesz ponownie.");
-      $("editBtn").hidden = false;
-    }).then(function () { busy = false; updateSendHint(); });
+      body: d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
+        "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
+        d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n",
+      docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
+      status: "wait", err: ""
+    };
+    // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
+    return dbP.then(function (db) {
+      if (db) return qPut(it);
+      if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
+      // ponowna próba wysyła ten sam raport (to samo id), żeby serwer nie zrobił duplikatu, gdy zginęła tylko odpowiedź
+      if (unsent) { it = unsent; d = unsentData; }
+      return api("submit", submitArg(it)).then(function (r) { unsent = null; markSent(it, r); return qPut(it); }, function (e) {
+        unsent = it; unsentData = d;
+        throw new Error("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (" + gErr(e) + "). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian");
+      });
+    }).then(function () {
+      queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
+      var done = Promise.resolve();
+      if (from.mode === "sum") {
+        if (from.type.ask) saveHist(from.type, d.data);
+        done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
+      }
+      if (cfg.auto) sendQueue();
+      return done.then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+    });
+  }
+  function queueBtn(b, fromPreview) {
+    if (queueing) return;
+    b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode }, fail = "";
+    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
+      fail = "Nie udało się przygotować raportu: " + buildErr(e);
+      if (fromPreview) show("form");
+    }).then(function () {
+      queueing = false; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
+      if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
+    });
+  }
+  $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
+  $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
+
+  function pending() { return queue.filter(function (q) { return q.status !== "sent"; }); }
+  function renderNet() {
+    var n = pending().length, off = !online();
+    $("netbar").className = "netbar" + (off ? " off" : "");
+    $("netTxt").textContent = (off ? "Bez sieci" : "Online") + " · " +
+      (n ? "w kolejce: " + n + (sending ? " (wysyłam…)" : "") : "kolejka pusta");
+  }
+  function renderQueue() {
+    var n = pending().length;
+    var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
+    $("qSub").textContent = n ? "Do wysłania: " + n : "Wszystko wysłane";
+    $("qList").innerHTML = list.length ? list.map(function (q) {
+      var st = q.status === "sent" ? '<span class="st ok">✓ wysłane ' + esc(fmtTime(new Date(q.sentAt))) + "</span>" :
+        q.status === "sending" ? '<span class="st">wysyłam…</span>' :
+        q.status === "err" ? '<span class="st err">błąd</span>' : '<span class="st">czeka</span>';
+      return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + kb(q.docx.length + q.pdf.length) +
+        (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
+        (q.status !== "sent" && !sending ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">Usuń</button>' : "") +
+        "</small></div>" + st + "</div>";
+    }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
+    $("qSend").disabled = sending || !n;
+    $("qSend").textContent = sending ? "Wysyłam…" : "Wyślij wszystko";
+    $("qHint").textContent = !cfg.email ? "Ustaw e-mail w Ustawieniach." :
+      (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
+    renderNet();
+  }
+  $("qList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-del]"); if (!b || sending) return;
+    if (!confirm("Usunąć ten raport z kolejki? Nie zostanie wysłany.")) return;
+    var id = b.getAttribute("data-del");
+    qDel(id).then(function () { queue = queue.filter(function (q) { return q.id !== id; }); renderQueue(); });
   });
-  $("nextBtn").addEventListener("click", function () { resetForm(); cur.code = ""; show("list"); });
+  $("qSend").addEventListener("click", function () { sendQueue(true); });
+  $("qNext").addEventListener("click", function () { show("list"); });
+  function refresh() { if (!$("v-queue").hidden) renderQueue(); else renderNet(); if (!$("v-list").hidden) renderList(); }
+
+  // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
+  function submitArg(it) {
+    return { id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
+      docx: bytesToB64(it.docx), pdf: bytesToB64(it.pdf), photos: it.photos.map(bytesToB64) };
+  }
+  function markSent(it, r) {
+    it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
+    it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
+  }
+  function sendQueue(manual) {
+    if (sending || !cfg.email) return Promise.resolve();
+    if (!online() && !manual) { refresh(); return Promise.resolve(); }
+    var todo = pending();
+    if (!todo.length) return Promise.resolve();
+    sending = true; refresh();
+    return todo.reduce(function (p, it) {
+      return p.then(function (stop) {
+        if (stop) return true;
+        it.status = "sending"; it.err = ""; refresh();
+        return api("submit", submitArg(it)).then(function (r) {
+          markSent(it, r);
+          return qPut(it).then(function () { refresh(); return false; });
+        }, function (e) {
+          it.status = "err"; it.err = gErr(e);
+          return qPut(it).then(function () { refresh(); return true; }); // przerwij, spróbuję później
+        });
+      });
+    }, Promise.resolve(false)).catch(function (e) {
+      $("qHint").textContent = "Błąd zapisu kolejki w telefonie: " + gErr(e);
+    }).then(function () { sending = false; refresh(); });
+  }
+  window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl) loadSetup(); });
+  window.addEventListener("offline", function () { renderTranslate(); refresh(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && cfg.auto) sendQueue(); });
+  setInterval(function () { if (cfg.auto && pending().length) sendQueue(); }, 60000);
 
   // ---------- start ----------
   states = cur.type.checks.map(function (c) { return c.def; });
-  show("home");
-  loadSetup();
+  var cached = load("setup", null);
+  if (cached) applySetup(cached);
+  show("home"); renderTranslate();
+  Promise.all([
+    kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
+    qAll().then(function (all) {
+      var old = Date.now() - 3 * 864e5; // wysłane starsze niż 3 dni sprzątam
+      queue = (all || []).filter(function (q) { if (q.status === "sent" && q.sentAt < old) { qDel(q.id); return false; } return true; });
+      queue.forEach(function (q) { if (q.status === "sending") q.status = "wait"; });
+    }).catch(function () {})
+  ]).then(function () {
+    refresh(); renderHome();
+    return online() ? loadSetup() : tplState("brak sieci");
+  }).then(function () { if (cfg.auto) sendQueue(); });
+
+  // W apce na Androida: powrót do menu głównego
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) $("appMenu").hidden = false;
+
+  if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
 })();
 </script>
+</body>
+</html>

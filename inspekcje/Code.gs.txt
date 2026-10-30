@@ -1,25 +1,91 @@
 // Inspekcje — aplikacja działająca na Twoim koncie Google.
 // Telefon robi pliki DOCX i PDF; ten skrypt zapisuje je na Twoim Google Drive
 // i wysyła maila z Twojej skrzynki. Nic nie przechodzi przez Claude.
-// Wygląd/logika strony: https://github.com/Sarenkag/pierwszy (folder inspekcje) — skrypt pobiera ją przy otwarciu.
+// Wygląd/logika strony: https://github.com/Sarenkag/pierwszy (folder inspekcje).
+// Apka na telefon (działa bez zasięgu): https://sarenkag.github.io/pierwszy/inspekcje/
+// Wdrożenie krok po kroku: README.md w tym samym folderze.
 
 var CFG = {
   folder: 'Inspekcje',                                   // folder na Google Drive
   template: 'Szablon - Engineers Report DB.docx',        // szablon Worda w tym folderze
   email: 'TWOJ@EMAIL',             // domyślny odbiorca raportów
+  extraEmails: [],                 // inne adresy, na które apka może wysyłać (np. drugi e-mail z profilu)
   site: 'NAZWA OBIEKTU',
   engineer: 'IMIE NAZWISKO',
-  devices: ['KOD-1', 'KOD-2'],
+  // Urządzenia według rodzaju inspekcji. Wpis to sam kod ('DB-TB-LL-02')
+  // albo { code: 'DB-TB-EXT1', loc: 'Tower A', room: 'Sprinkler Plant Room' }.
+  // Bez loc lokalizacja idzie z kodu (TA/TB), piętro z końcówki (UG, LG, LL-06).
+  devices: {
+    db: ['KOD-1', 'KOD-2'],         // Distribution Boards
+    ats: ['KOD-1'],                 // ATS
+    iso: ['KOD-1']                  // Local Isolators (rejestr)
+  },
+  // Pytania po zdjęciu dla izolatorów (docelowo z SFG20). Puste = pytania wbudowane w apkę.
+  // q: pytanie po polsku (TAK = w porządku), en: tekst do raportu przy NIE bez wybranego powodu,
+  // reasons: konkretne powody pod NIE (pl na przycisku, en do raportu; note: true = obserwacja, nie usterka).
+  questions: {
+    iso: []   // np. { q: 'Bez uszkodzeń?', en: 'damage found', reasons: [{ pl: 'Pęknięta obudowa', en: 'cracked enclosure' }] }
+  },
+  appUrl: 'https://sarenkag.github.io/pierwszy/inspekcje/',
   pageUrl: 'https://raw.githubusercontent.com/Sarenkag/pierwszy/main/inspekcje/index.html'
 };
 var MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-function doGet() {
+// ---------- dostęp ----------
+// Wdrożenie musi mieć dostęp „Każdy” (inaczej telefon nie połączy się bez logowania),
+// dlatego każde wywołanie z telefonu niesie klucz. Klucz leży we właściwościach skryptu, nie w kodzie.
+function key_() { return PropertiesService.getScriptProperties().getProperty('KEY') || ''; }
+
+// Uruchom raz z edytora (Uruchom → ustawKlucz). Tworzy klucz, jeśli go nie ma.
+function ustawKlucz() {
+  var p = PropertiesService.getScriptProperties();
+  if (!p.getProperty('KEY')) p.setProperty('KEY', Utilities.getUuid().replace(/-/g, ''));
+  Logger.log('Klucz gotowy. Teraz wdroż skrypt i uruchom linkDoTelefonu.');
+}
+
+// Uruchom po wdrożeniu (Uruchom → linkDoTelefonu). W dzienniku pojawi się link:
+// wyślij go sobie i otwórz na telefonie w Chrome — apka zapamięta adres i klucz.
+function linkDoTelefonu() {
+  var url = ScriptApp.getService().getUrl();
+  if (!url) throw new Error('Najpierw Wdróż → Nowe wdrożenie (aplikacja internetowa).');
+  if (!key_()) ustawKlucz();
+  Logger.log(CFG.appUrl + '#api=' + encodeURIComponent(url) + '&key=' + key_());
+}
+
+// Strona otwierana z adresu skryptu (stary sposób, bez offline): …/exec?key=KLUCZ
+function doGet(e) {
+  if (!key_() || (e && e.parameter.key) !== key_()) {
+    return HtmlService.createHtmlOutput('<p style="font:16px sans-serif">Inspekcje: otwórz apkę z linku z linkDoTelefonu.</p>');
+  }
   var html = UrlFetchApp.fetch(CFG.pageUrl + '?t=' + Date.now()).getContentText('UTF-8');
+  // strona przekazuje klucz przy każdym wywołaniu google.script.run
+  html = html.replace('<head>', '<head><script>window.GAS_KEY = ' + JSON.stringify(key_()) + ';</script>');
   return HtmlService.createHtmlOutput(html)
     .setTitle('Inspekcje')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
 }
+
+// Apka z telefonu (GitHub Pages): POST { fn, arg, key } → { result } albo { error }
+function doPost(e) {
+  var out;
+  try {
+    var q = JSON.parse(e.postData.contents);
+    if (!key_() || q.key !== key_()) throw new Error('zły klucz — otwórz ponownie link z linkDoTelefonu');
+    var fns = { getSetup: getSetup_, translate: translate_, submit: submit_ };
+    if (!fns[q.fn]) throw new Error('nieznana funkcja ' + q.fn);
+    out = { result: fns[q.fn](q.arg) };
+  } catch (err) {
+    out = { error: String(err && err.message || err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Funkcje dla strony z doGet (google.script.run). Każdą może wywołać ktoś, kto otworzy adres skryptu,
+// więc każda sprawdza klucz; właściwa praca jest w funkcjach z „_” (niewidocznych dla google.script.run).
+function check_(key) { if (!key_() || key !== key_()) throw new Error('zły klucz'); }
+function getSetup(folderName, key) { check_(key); return getSetup_(folderName); }
+function translate(text, key) { check_(key); return translate_(text); }
+function submit(p, key) { check_(key); return submit_(p); }
 
 function folder_(name) {
   var it = DriveApp.getFoldersByName(name);
@@ -27,8 +93,8 @@ function folder_(name) {
 }
 
 // Start aplikacji: szablon z Drive + ustawienia domyślne
-function getSetup(folderName) {
-  var out = { email: CFG.email, folder: CFG.folder, site: CFG.site, engineer: CFG.engineer, devices: CFG.devices };
+function getSetup_(folderName) {
+  var out = { email: CFG.email, folder: CFG.folder, site: CFG.site, engineer: CFG.engineer, devices: CFG.devices, questions: CFG.questions };
   var f = folder_(folderName || CFG.folder);
   var t = f.getFilesByName(CFG.template);
   if (!t.hasNext()) {
@@ -42,22 +108,47 @@ function getSetup(folderName) {
 }
 
 // Tłumaczenie komentarza na angielski (wbudowany tłumacz Google, bez kosztów)
-function translate(text) {
+function translate_(text) {
   if (!text) return '';
   return LanguageApp.translate(text, '', 'en');
 }
 
-// Zapis na Drive + mail z Twojej skrzynki
-function submit(p) {
-  var f = folder_(p.folder || CFG.folder);
-  var docx = Utilities.newBlob(Utilities.base64Decode(p.docx), MIME_DOCX, p.name + '.docx');
-  var pdf = Utilities.newBlob(Utilities.base64Decode(p.pdf), 'application/pdf', p.name + '.pdf');
-  var fDocx = f.createFile(docx);
-  var fPdf = f.createFile(pdf);
-  (p.photos || []).forEach(function (b64, i) {
-    f.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', p.name + ' foto ' + (i + 1) + '.jpg'));
+// Zapis na Drive + mail z Twojej skrzynki.
+// p.id: numer raportu z kolejki w telefonie. Jeśli telefon wyśle ten sam raport drugi raz
+// (bo nie dostał odpowiedzi, nawet po wielu godzinach), zwracamy poprzedni wynik zamiast drugiego maila.
+// Wysłane id leżą we właściwościach skryptu przez 60 dni.
+function submit_(p) {
+  var props = PropertiesService.getScriptProperties(), lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var prev = p.id && props.getProperty('sent_' + p.id);
+    if (prev) return JSON.parse(prev).r;
+    // Maile tylko na Twój adres (skrypt jest dostępny dla „Każdy”, więc nie wysyła w dowolne miejsce)
+    var me = Session.getEffectiveUser().getEmail();
+    var allowed = [CFG.email, me].concat(CFG.extraEmails || []).map(function (e) { return String(e).toLowerCase(); });
+    var to = String(p.to || '').split(/\s*,\s*/).filter(function (e) { return e && allowed.indexOf(e.toLowerCase()) >= 0; });
+    to = to.length ? to.join(',') : CFG.email;
+    var f = folder_(p.folder || CFG.folder);
+    var docx = Utilities.newBlob(Utilities.base64Decode(p.docx), MIME_DOCX, p.name + '.docx');
+    var pdf = Utilities.newBlob(Utilities.base64Decode(p.pdf), 'application/pdf', p.name + '.pdf');
+    var fDocx = f.createFile(docx);
+    var fPdf = f.createFile(pdf);
+    (p.photos || []).forEach(function (b64, i) {
+      f.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', p.name + ' foto ' + (i + 1) + '.jpg'));
+    });
+    var body = p.body + '\nGoogle Drive:\n' + fPdf.getName() + ': ' + fPdf.getUrl() + '\n' + fDocx.getName() + ': ' + fDocx.getUrl() + '\n';
+    MailApp.sendEmail({ to: to, subject: p.subject, body: body, attachments: [pdf, docx] });
+    var res = { pdfUrl: fPdf.getUrl(), docxUrl: fDocx.getUrl(), folderUrl: f.getUrl() };
+    if (p.id) { props.setProperty('sent_' + p.id, JSON.stringify({ t: Date.now(), r: res })); prune_(props); }
+    return res;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function prune_(props) {
+  var all = props.getProperties(), old = Date.now() - 60 * 864e5;
+  Object.keys(all).forEach(function (k) {
+    if (k.indexOf('sent_') === 0) { try { if (JSON.parse(all[k]).t < old) props.deleteProperty(k); } catch (e) { props.deleteProperty(k); } }
   });
-  var body = p.body + '\nGoogle Drive:\n' + fPdf.getName() + ': ' + fPdf.getUrl() + '\n' + fDocx.getName() + ': ' + fDocx.getUrl() + '\n';
-  MailApp.sendEmail({ to: p.to || CFG.email, subject: p.subject, body: body, attachments: [pdf, docx] });
-  return { pdfUrl: fPdf.getUrl(), docxUrl: fDocx.getUrl(), folderUrl: f.getUrl() };
 }
