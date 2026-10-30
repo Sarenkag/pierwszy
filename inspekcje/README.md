@@ -17,7 +17,7 @@ Pliki:
 ### 1. Skrypt Google
 1. Wejdź na https://script.google.com → **Nowy projekt**. Nazwij go „Inspekcje”.
 2. Usuń zawartość `Code.gs` i wklej całą treść `Code.gs.txt` z tego folderu.
-3. Uzupełnij `CFG` na górze: `email`, `site`, `engineer` i listy urządzeń w `devices` (`db`, `ats`, `iso` — rejestr 27 izolatorów).
+3. Uzupełnij `CFG` na górze: `email`, `site`, `engineer` i listy urządzeń w `devices` (`db`, `ats`, `iso` — rejestr 27 izolatorów). Jeśli w profilu apki zaznaczysz drugi e-mail do raportów, wpisz go też w `extraEmails` (skrypt wysyła tylko na adresy, które zna).
 4. Zapisz (Ctrl+S).
 5. Na górze wybierz funkcję **ustawKlucz** → **Uruchom**. Google poprosi o zgody (Drive, Gmail, połączenia zewnętrzne): **Zezwól**. Przy „Google nie zweryfikował tej aplikacji” kliknij **Zaawansowane → Przejdź do Inspekcje**. To Twój własny skrypt.
 6. **Wdróż → Nowe wdrożenie** → typ **Aplikacja internetowa**:

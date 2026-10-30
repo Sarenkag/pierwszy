@@ -1,0 +1,90 @@
+# Buduje apkę OEST na Androida (folder app/ + inspekcje/).
+# Każda budowa daje plik APK w zakładce Actions (Artifacts). Po scaleniu do main APK trafia też do Releases,
+# skąd można go pobrać prosto na telefon.
+# Podpis: sekrety ANDROID_KEYSTORE_B64 i ANDROID_KEYSTORE_PASSWORD (instrukcja: app/README.md).
+# Bez nich powstaje wersja testowa z losowym podpisem (logowanie Google w niej nie zadziała).
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", "inspekcje/**", ".github/workflows/android.yml"]
+  pull_request:
+    paths: ["app/**", "inspekcje/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      APP_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android SDK 36
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+
+      - name: Strona apki
+        run: |
+          npm ci
+          npm run sync
+
+      - name: Klucz podpisu
+        id: key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/oest.jks"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/oest.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Brak sekretu ANDROID_KEYSTORE_B64 — buduję wersję testową."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Budowa
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          # Maven Central czasem chwilowo nie oddaje plików: jedna ponowna próba po przerwie
+          gw() { ./gradlew --no-daemon "$@" || { sleep 30; ./gradlew --no-daemon "$@"; }; }
+          if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
+            gw assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}.apk"
+          else
+            gw assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}-test.apk"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OEST-apk-${{ github.run_number }}
+          path: ${{ runner.temp }}/OEST-*.apk
+
+      - name: Wydanie (Releases)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.key.outputs.signed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: OEST ${{ github.run_number }}
+          files: ${{ runner.temp }}/OEST-*.apk
