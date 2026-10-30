@@ -257,7 +257,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
   <!-- 1. Rodzaje inspekcji -->
   <section class="view" id="v-home">
-    <div class="top"><div class="t"><h1>Inspekcje<span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
+    <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1>Inspekcje<span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
     <div class="notice" id="tplNotice" hidden></div>
     <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue">Kolejka</button></div>
     <div class="types" id="types"></div>
@@ -1728,6 +1728,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     refresh(); renderHome();
     return online() ? loadSetup() : tplState("brak sieci");
   }).then(function () { if (cfg.auto) sendQueue(); });
+
+  // W apce na Androida: powrót do menu głównego
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) $("appMenu").hidden = false;
 
   if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
