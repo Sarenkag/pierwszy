@@ -39,6 +39,10 @@
     --field: #1d2a32; --paper: #f4f4f2; --paper-ink: #111111; color-scheme: dark;
   }
 }
+:root[data-theme="dark"][data-app] {
+  --bg: #111418; --panel: #1a1e23; --ink: #e6e9ec; --muted: #8b949e; --line: #2a3038;
+  --accent: #3ecf8e; --accent-ink: #05170e; --steel: #9fb3c2; --ok: #3fb27f; --ok-bg: #16291f; --bad: #e5534b; --bad-bg: #351b1a; --warn: #e3b341; --field: #20252b;
+}
 :root[data-theme="dark"] {
   --bg: #0f171c; --panel: #172229; --ink: #e4ecef; --muted: #93a4ad; --line: #2b3a43;
   --accent: #f0b23a; --accent-ink: #1a1405; --steel: #9cc0d4; --ok: #5cc28a; --ok-bg: #173226; --bad: #ef7a72; --bad-bg: #3a1d1b; --warn: #e5a73c;
@@ -81,6 +85,11 @@ h1 span.dot { color: var(--accent); }
 
 /* Lista urządzeń */
 .search { width: 100%; }
+.ppmbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.92rem; color: var(--muted); }
+.ppmbar label { display: flex; align-items: center; gap: 8px; }
+.ppmbar input { min-height: 40px; width: auto; }
+.ppmbar b { color: var(--ink); }
+.ppmbar b.late { color: var(--bad); }
 .group { display: flex; flex-direction: column; gap: 0; }
 .group h2 { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase; margin: 6px 0 6px; color: var(--steel); display: flex; justify-content: space-between; }
 .group h2 small { font-family: var(--font-body); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
@@ -298,6 +307,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
   <section class="view" id="v-list" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
       <div class="t"><h1 id="listTitle">—</h1><div class="sub" id="listSub"></div></div></div>
+    <div class="ppmbar" hidden></div>
     <input class="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" autocomplete="off" spellcheck="false">
     <div class="panel" id="batchBar" hidden></div>
     <div id="groups"></div>
@@ -312,6 +322,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
   <section class="view" id="v-form" hidden>
     <div class="top"><button class="back" type="button" data-go="list" aria-label="Wstecz">‹</button>
       <div class="t"><h1 id="formTitle">—</h1><div class="sub" id="formSub"></div></div></div>
+    <div class="ppmbar" hidden></div>
 
     <div class="panel" data-m="sum" id="sumBox"></div>
 
@@ -405,6 +416,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
+<script src="../ppm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script>
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.
@@ -767,11 +779,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 
   // ---------- ekrany ----------
-  var cur = { type: TYPES[0], code: "", mode: "one" };
+  var PPM = window.OEST_PPM || null;
+  var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
   function show(v) {
+    if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { location.href = "../index.html#ppm"; return; }
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
     if (v === "home") renderHome();
     if (v === "list") renderList();
+    renderPpmBar();
     if (v === "queue") renderQueue();
     window.scrollTo(0, 0);
   }
@@ -874,9 +889,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function formMode() {
     var m = cur.mode;
     document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
-    var ask = !!cur.type.ask && m !== "sum";
-    if (ask) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ask ? "-1" : ""; // zdjęcie, potem pytania
+    var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
+    if (ask || quick) $("faults").closest(".panel").hidden = true;
+    $("photos").closest(".panel").style.order = ask || quick ? "-1" : ""; // zdjęcie, potem pytania
     $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
     $("legend").hidden = !!cur.type.ask;
   }
@@ -1559,7 +1574,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("toPreview").addEventListener("click", function () {
     if (queueing) return;
     var b = this; b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
-    var from = { type: cur.type, mode: cur.mode };
+    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
       r.from = from; built = r; renderPreview(); show("preview");
@@ -1618,6 +1633,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     }).then(function () {
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
+      if (from.ppm && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
       var done = Promise.resolve();
       if (from.mode === "sum") {
         if (from.type.ask) saveHist(from.type, d.data);
@@ -1630,7 +1646,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function queueBtn(b, fromPreview) {
     if (queueing) return;
     b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
-    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode }, fail = "";
+    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
@@ -1727,12 +1743,38 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       queue.forEach(function (q) { if (q.status === "sending") q.status = "wait"; });
     }).catch(function () {})
   ]).then(function () {
-    refresh(); renderHome();
+    refresh(); renderHome(); openPpm();
     return online() ? loadSetup() : tplState("brak sieci");
   }).then(function () { if (cfg.auto) sendQueue(); });
 
+  // ---------- wejście z listy PPM w apce (#ppm=id) ----------
+  function renderPpmBar() {
+    var t = cur.ppm;
+    document.querySelectorAll(".ppmbar").forEach(function (el) {
+      el.hidden = !t; if (!t) return;
+      var due = PPM.due(t), left = PPM.daysLeft(due);
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="Termin z systemu"></label>' +
+        '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
+      el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
+    });
+  }
+  function openPpm() {
+    var t = PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
+    if (!t) return;
+    cur.ppm = t; $("appMenu").href = "../index.html#ppm";
+    if (t.open) {
+      cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; $("search").value = "";
+      (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); });
+      return;
+    }
+    // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
+    cur.type = { id: "ppm-" + t.id, quick: true, name: t.name, title: t.name + " - Inspection", scope: "", devices: [{ code: t.name, loc: t.where || "One Eastside", room: "" }],
+      checks: [{ key: "done", ok: t.name + " carried out – no defects found.", fail: t.name + " carried out – defects found, see comments.", def: "ok" }] };
+    openForm(t.name);
+  }
+
   // W apce na Androida: powrót do menu głównego
-  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) $("appMenu").hidden = false;
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
   if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
