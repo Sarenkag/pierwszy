@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="pl">
+<html lang="pl" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OEST</title>
-<meta name="theme-color" content="#17242c">
+<meta name="theme-color" content="#111418">
 <style>
 /* Powłoka apki: start (logowanie) → menu główne → moduły. Kolory i krój jak w inspekcjach. */
 :root {
@@ -29,8 +29,9 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f171c; --panel: #172229; --ink: #e4ecef; --muted: #93a4ad; --line: #2b3a43;
-  --accent: #f0b23a; --steel: #9cc0d4; --ok: #5cc28a; --bad: #ef7a72; --field: #1d2a32; color-scheme: dark;
+  /* apka: zawsze ciemna, grafit + zielony akcent (wybór Grzegorza 30/10) */
+  --bg: #111418; --panel: #1a1e23; --ink: #e6e9ec; --muted: #8b949e; --line: #2a3038;
+  --accent: #3ecf8e; --accent-ink: #05170e; --steel: #9fb3c2; --ok: #3fb27f; --bad: #e5534b; --warn: #e3b341; --field: #20252b; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
@@ -96,6 +97,30 @@ input[type=text], input[type=email], input[type=date], select {
 .check { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .check input { width: 22px; height: 22px; }
 .saved { color: var(--ok); font-weight: 600; }
+
+/* Lista PPM: pasek dni, filtry grup, płaskie wiersze z kreską koloru grupy */
+.days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.days::-webkit-scrollbar { display: none; }
+.day { flex: none; width: 48px; padding: 8px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; text-align: center; cursor: pointer; }
+.day small { display: block; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; }
+.day b { display: block; font-size: 1.1rem; }
+.day i { display: block; font-style: normal; font-size: 0.78rem; color: var(--muted); min-height: 1.1em; }
+.day i.n { color: var(--accent); font-weight: 700; }
+.day.on { border-color: var(--accent); }
+.day.today small { color: var(--accent); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; }
+.ppm { display: flex; flex-direction: column; gap: 6px; }
+.prow { display: grid; grid-template-columns: 4px 1fr auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px 10px 0; border: 0; border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; text-align: left; cursor: pointer; overflow: hidden; }
+.prow .bar { align-self: stretch; }
+.prow .nm { font-weight: 600; line-height: 1.25; }
+.prow .dt { color: var(--muted); font-size: 0.85rem; }
+.st { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); opacity: .5; position: relative; }
+.st.g { background: var(--ok); opacity: 1; }
+.st.r, .st.x { background: var(--bad); opacity: 1; }
+.st.x::after { content: "!"; position: absolute; right: -10px; top: -6px; color: var(--bad); font-weight: 800; }
 </style>
 </head>
 <body>
@@ -125,9 +150,9 @@ input[type=text], input[type=email], input[type=date], select {
       <div class="t"><h1>OEST<span>.</span></h1><div class="sub" id="homeSub">One East Side Tower</div></div>
     </div>
     <div class="tiles">
-      <button class="tile" type="button" data-open="inspekcje">
+      <button class="tile" type="button" data-go="ppm">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
-        <div><b>Planowane inspekcje / PPM</b><span class="sub">Rozdzielnice, ATS, izolatory</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Planowane inspekcje / PPM</b><span class="sub" id="ppmSub">Terminy i szybkie zamykanie</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="soon" data-title="Reactive">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
@@ -145,11 +170,28 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
         <div><b>Keys / Doors</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
+      <button class="tile" type="button" data-go="soon" data-title="Handover">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
+        <div><b>Handover</b><span class="sub">Notatki i zdjęcia ze zmiany</span></div><span class="arrow" aria-hidden="true">›</span>
+      </button>
+      <button class="tile" type="button" data-go="soon" data-title="Statystyki">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/></svg>
+        <div><b>Statystyki</b><span class="sub">Zamknięte PPM i reactive na zmianę</span></div><span class="arrow" aria-hidden="true">›</span>
+      </button>
       <button class="tile" type="button" data-go="settings">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/></svg>
         <div><b>Settings</b><span class="sub">Profil, apka, inspekcje</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
     </div>
+  </section>
+
+  <!-- Planowane inspekcje / PPM -->
+  <section class="view" id="v-ppm" hidden>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+      <div class="t"><h1>Inspections</h1><div class="sub" id="ppmInfo"></div></div></div>
+    <div class="days" id="ppmDays"></div>
+    <div class="chips" id="ppmChips"></div>
+    <div class="ppm" id="ppmList"></div>
   </section>
 
   <!-- Moduł w przygotowaniu -->
@@ -230,6 +272,7 @@ input[type=text], input[type=email], input[type=date], select {
 
 </div>
 <script src="config.js"></script>
+<script src="ppm.js"></script>
 <script>
 (function () {
   "use strict";
@@ -249,6 +292,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "home") renderHome();
     if (v === "profile") fillProfile();
     if (v === "appset") renderAccount();
+    if (v === "ppm") renderPpm();
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -356,6 +400,44 @@ input[type=text], input[type=email], input[type=date], select {
     c.email = [p.send1 && p.email1, p.send2 && p.email2].filter(Boolean).join(", ");
     try { localStorage.setItem("insp.cfg", JSON.stringify(c)); } catch (e) {}
   }
+
+  // ---------- PPM: lista inspekcji ----------
+  var P = window.OEST_PPM, ppmGroup = load("ppm.group", "all"), ppmDay = "";
+  var DAYS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
+  // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
+  function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
+  function renderPpm() {
+    var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    var rows = P.tasks.map(function (t) { var due = P.due(t), left = P.daysLeft(due); return { t: t, due: due, left: left, day: due ? P.iso(left < 0 ? today : due) : "" }; });
+    var count = {};
+    rows.forEach(function (r) { if (r.day) count[r.day] = (count[r.day] || 0) + 1; });
+    var html = "";
+    for (var i = 0; i < 14; i++) {
+      var d = new Date(today); d.setDate(d.getDate() + i);
+      var k = P.iso(d), n = count[k] || 0;
+      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? "Dziś" : DAYS[d.getDay()]) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
+    }
+    $("ppmDays").innerHTML = html;
+    $("ppmChips").innerHTML = [{ id: "all", name: "All" }].concat(P.groups).map(function (g) {
+      return '<button class="chip' + (ppmGroup === g.id ? " on" : "") + '" type="button" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
+    }).join("");
+    var list = rows.filter(function (r) { return (ppmGroup === "all" || r.t.group === ppmGroup) && (!ppmDay || r.day === ppmDay); });
+    // najpierw po terminie i najbliższe, na końcu bez daty
+    list.sort(function (a, b) { return (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
+    $("ppmList").innerHTML = list.length ? list.map(function (r) {
+      var t = r.t, g = grp(t.group);
+      var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by].filter(Boolean).join(" · ");
+      return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span>' +
+        '<span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+    }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
+    var noDate = rows.filter(function (r) { return !r.due; }).length;
+    $("ppmInfo").textContent = noDate ? noDate + " bez terminu – ustaw Update w inspekcji" : "Wszystkie mają termin";
+  }
+  $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
+  $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
+  $("ppmList").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
 
   function renderHome() {
     var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
