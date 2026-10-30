@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+def appBuild = System.getenv("APP_VERSION_CODE") ?: "1"
+
 android {
     namespace = "com.oest.inspekcje"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -8,8 +10,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // numer kolejnej budowy na GitHubie, żeby nowa wersja instalowała się na starej
-        versionCode (System.getenv("APP_VERSION_CODE") ?: "1").toInteger()
-        versionName "0.1." + (System.getenv("APP_VERSION_CODE") ?: "0")
+        versionCode = appBuild.toInteger()
+        versionName = "0.1." + appBuild
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
