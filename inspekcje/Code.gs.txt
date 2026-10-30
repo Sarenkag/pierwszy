@@ -9,6 +9,7 @@ var CFG = {
   folder: 'Inspekcje',                                   // folder na Google Drive
   template: 'Szablon - Engineers Report DB.docx',        // szablon Worda w tym folderze
   email: 'TWOJ@EMAIL',             // domyślny odbiorca raportów
+  extraEmails: [],                 // inne adresy, na które apka może wysyłać (np. drugi e-mail z profilu)
   site: 'NAZWA OBIEKTU',
   engineer: 'IMIE NAZWISKO',
   // Urządzenia według rodzaju inspekcji. Wpis to sam kod ('DB-TB-LL-02')
@@ -124,7 +125,9 @@ function submit_(p) {
     if (prev) return JSON.parse(prev).r;
     // Maile tylko na Twój adres (skrypt jest dostępny dla „Każdy”, więc nie wysyła w dowolne miejsce)
     var me = Session.getEffectiveUser().getEmail();
-    var to = [CFG.email, me].indexOf(p.to) >= 0 ? p.to : CFG.email;
+    var allowed = [CFG.email, me].concat(CFG.extraEmails || []).map(function (e) { return String(e).toLowerCase(); });
+    var to = String(p.to || '').split(/\s*,\s*/).filter(function (e) { return e && allowed.indexOf(e.toLowerCase()) >= 0; });
+    to = to.length ? to.join(',') : CFG.email;
     var f = folder_(p.folder || CFG.folder);
     var docx = Utilities.newBlob(Utilities.base64Decode(p.docx), MIME_DOCX, p.name + '.docx');
     var pdf = Utilities.newBlob(Utilities.base64Decode(p.pdf), 'application/pdf', p.name + '.pdf');

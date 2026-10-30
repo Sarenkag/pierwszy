@@ -251,11 +251,21 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "appset") renderAccount();
     window.scrollTo(0, 0);
   }
+  function depth() { return (history.state && history.state.n) || 0; }
   function show(v) {
-    if (location.hash === "#" + v) render(v);
-    else location.hash = v;
+    if (location.hash === "#" + v) { render(v); return; }
+    history.pushState({ n: depth() + 1 }, "", "#" + v);
+    render(v);
   }
-  window.addEventListener("hashchange", function () { render(location.hash.slice(1)); });
+  window.addEventListener("popstate", function () { render(location.hash.slice(1)); });
+  // Strzałka „wstecz” cofa w historii (jak systemowy „wstecz”); przy wejściu prosto na ekran idzie do rodzica
+  document.querySelectorAll(".back[data-go]").forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      e.stopImmediatePropagation();
+      if (depth() > 0) history.back();
+      else { history.replaceState({ n: 0 }, "", "#" + b.dataset.go); render(b.dataset.go); }
+    }, true);
+  });
   document.querySelectorAll("[data-go]").forEach(function (b) {
     b.addEventListener("click", function () {
       if (b.dataset.title) $("soonTitle").textContent = b.dataset.title;
@@ -284,7 +294,7 @@ input[type=text], input[type=email], input[type=date], select {
       if (!p.email) throw new Error("Google nie zwrócił adresu e-mail.");
       setAccount({ provider: "google", id: p.id || "", email: p.email, name: p.name || "", first: p.givenName || "", last: p.familyName || "", pic: p.imageUrl || "", t: Date.now() });
       seedProfile();
-      history.replaceState(null, "", "#home"); render("home");
+      history.replaceState({ n: 0 }, "", "#home"); render("home");
     }).catch(function (e) {
       $("authErr").textContent = (e && e.message) || String(e); $("authErr").hidden = false;
       $("skipBtn").hidden = !!CONF.googleWebClientId && native;
@@ -293,13 +303,13 @@ input[type=text], input[type=email], input[type=date], select {
   // Tymczasowe wejście, dopóki nie ma identyfikatora Google (żeby dało się sprawdzić resztę apki)
   $("skipBtn").addEventListener("click", function () {
     setAccount({ provider: "local", id: "", email: "", name: "", t: Date.now() });
-    history.replaceState(null, "", "#home"); render("home");
+    history.replaceState({ n: 0 }, "", "#home"); render("home");
   });
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
     localStorage.removeItem("oest.account");
-    history.replaceState(null, "", "#start"); render("start");
+    history.replaceState({ n: 0 }, "", "#start"); render("start");
   });
   function renderAccount() {
     var a = account() || {};
@@ -330,6 +340,7 @@ input[type=text], input[type=email], input[type=date], select {
     PROFILE_FIELDS.forEach(function (k) { p[k] = f.elements[k].value.trim(); });
     p.send1 = f.elements.send1.checked; p.send2 = f.elements.send2.checked;
     if (p.send2 && !p.email2) { $("profileMsg").textContent = "Wpisz drugi e-mail albo odznacz wysyłkę na niego."; return; }
+    if ((p.email1 || p.email2) && !(p.send1 && p.email1) && !p.send2) { $("profileMsg").textContent = "Zaznacz przynajmniej jeden adres, na który mają iść raporty."; return; }
     save("profile", p);
     syncInspekcje(p);
     $("profileMsg").innerHTML = '<span class="saved">Zapisane.</span>';
@@ -338,10 +349,11 @@ input[type=text], input[type=email], input[type=date], select {
   function syncInspekcje(p) {
     var c = {};
     try { c = JSON.parse(localStorage.getItem("insp.cfg") || "{}") || {}; } catch (e) {}
+    if (!c.v) c.v = 4; // wersja ustawień inspekcji: bez niej inspekcje uznałyby je za stare i pominęły nazwisko
     var name = [p.first, p.last].filter(Boolean).join(" ");
     if (name) c.insp = name;
-    var to = p.send1 && p.email1 ? p.email1 : p.send2 && p.email2 ? p.email2 : "";
-    if (to) c.email = to;
+    // wszystkie zaznaczone adresy; skrypt Google wysyła tylko na adresy, które zna (CFG.email, extraEmails)
+    c.email = [p.send1 && p.email1, p.send2 && p.email2].filter(Boolean).join(", ");
     try { localStorage.setItem("insp.cfg", JSON.stringify(c)); } catch (e) {}
   }
 
@@ -354,8 +366,8 @@ input[type=text], input[type=email], input[type=date], select {
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
   if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
   var start = (location.hash || "").slice(1);
-  if (account() && (!start || start === "start")) history.replaceState(null, "", "#home");
-  if (!account()) history.replaceState(null, "", "#start");
+  if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
+  if (!account()) history.replaceState({ n: 0 }, "", "#start");
   render(location.hash.slice(1));
 })();
 </script>

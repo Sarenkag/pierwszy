@@ -672,7 +672,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var cfg = Object.assign({}, DEFAULTS);
   if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
   else {
-    ["folder", "site", "stamp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
+    ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
