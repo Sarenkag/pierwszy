@@ -1006,10 +1006,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     (cur.sumDevs || devices(t)).forEach(function (dv) {
       if (!cur.restOk && !batch.items[dv.code]) return; // niesprawdzone: zostaje stara historia
       var it = batch.items[dv.code], q = [], r = [];
-      if (it) t.checks.forEach(function (c, i) {
-        if (it.states[i] !== "fail") return;
+      // klucze pytań z chwili zapisu (lista pytań mogła się zmienić w trakcie zlecenia)
+      var qk = it && (it.qk || t.checks.map(function (c) { return c.key; }));
+      if (it) it.states.forEach(function (st, i) {
+        if (st !== "fail" || !qk[i]) return;
         var sel = (it.rsel && it.rsel[i]) || [];
-        if (sel.length) r = r.concat(sel); else q.push(c.key);
+        if (sel.length) r = r.concat(sel); else q.push(qk[i]);
       });
       h[dv.code] = { d: d, q: q, r: r };
     });
