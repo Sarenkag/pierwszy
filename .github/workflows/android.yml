@@ -66,11 +66,13 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
+          # Maven Central czasem chwilowo nie oddaje plików: jedna ponowna próba po przerwie
+          gw() { ./gradlew --no-daemon "$@" || { sleep 30; ./gradlew --no-daemon "$@"; }; }
           if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
-            ./gradlew --no-daemon assembleRelease
+            gw assembleRelease
             cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}.apk"
           else
-            ./gradlew --no-daemon assembleDebug
+            gw assembleDebug
             cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}-test.apk"
           fi
 
