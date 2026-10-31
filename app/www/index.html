@@ -122,6 +122,7 @@ input[type=text], input[type=email], input[type=date], select {
 .st.r, .st.x { background: var(--bad); opacity: 1; }
 .st.x::after { content: "!"; position: absolute; right: -10px; top: -6px; color: var(--bad); font-weight: 800; }
 </style>
+<link rel="stylesheet" href="settings.css">
 </head>
 <body>
 <div class="wrap">
@@ -222,44 +223,6 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
-  <!-- Mój profil -->
-  <section class="view" id="v-profile" hidden>
-    <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Mój profil</h1></div></div>
-    <form class="panel" id="profileForm">
-      <div class="row2">
-        <label class="field"><span>Imię</span><input type="text" name="first" autocomplete="given-name"></label>
-        <label class="field"><span>Nazwisko</span><input type="text" name="last" autocomplete="family-name"></label>
-      </div>
-      <div class="row2">
-        <label class="field"><span>Tytuł</span><input type="text" name="title" placeholder="np. Eng."></label>
-        <label class="field"><span>Stanowisko</span><input type="text" name="position" placeholder="np. Shift Engineer"></label>
-      </div>
-      <div class="label">Poczta</div>
-      <label class="field"><span>E-mail (z rejestracji)</span><input type="email" name="email1" autocomplete="email"></label>
-      <label class="check"><input type="checkbox" name="send1"> Wysyłaj raporty na ten adres</label>
-      <label class="field"><span>Drugi e-mail</span><input type="email" name="email2" placeholder="np. służbowy"></label>
-      <label class="check"><input type="checkbox" name="send2"> Wysyłaj raporty na ten adres</label>
-      <div class="label">Zmiana</div>
-      <div class="row2">
-        <label class="field"><span>Rodzaj</span>
-          <select name="shift">
-            <option value="">—</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekends">Weekends</option>
-            <option value="4on4">4 on 4 off</option>
-          </select>
-        </label>
-        <label class="field"><span>Początek zmiany</span><input type="date" name="shiftStart"></label>
-      </div>
-      <p class="hint">Zmiana pokaże się w kalendarzu, gdy powstanie moduł Calendar.</p>
-      <div class="label">Zapis plików</div>
-      <p class="hint">Podłączenie Google Drive albo folderu na komputerze dojdzie w kolejnym kroku. Do tego czasu raporty zapisuje skrypt Google z instrukcji inspekcji.</p>
-      <button class="btn go" type="submit">Zapisz profil</button>
-      <p class="hint" id="profileMsg" aria-live="polite"></p>
-    </form>
-  </section>
-
   <!-- Ustawienia aplikacji -->
   <section class="view" id="v-appset" hidden>
     <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz">‹</button>
@@ -274,6 +237,9 @@ input[type=text], input[type=email], input[type=date], select {
 </div>
 <script src="config.js"></script>
 <script src="ppm.js"></script>
+<script src="settings-store.js"></script>
+<script src="settings-google.js"></script>
+<script src="settings-ui.js"></script>
 <script>
 (function () {
   "use strict";
@@ -291,7 +257,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (!account()) v = "start";
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
     if (v === "home") renderHome();
-    if (v === "profile") fillProfile();
+    if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
     window.scrollTo(0, 0);
@@ -302,6 +268,7 @@ input[type=text], input[type=email], input[type=date], select {
     history.pushState({ n: depth() + 1 }, "", "#" + v);
     render(v);
   }
+  window.OESTSettingsUI.setNavigate(show);
   window.addEventListener("popstate", function () { render(location.hash.slice(1)); });
   // Strzałka „wstecz” cofa w historii (jak systemowy „wstecz”); przy wejściu prosto na ekran idzie do rodzica
   document.querySelectorAll(".back[data-go]").forEach(function (b) {
@@ -353,6 +320,7 @@ input[type=text], input[type=email], input[type=date], select {
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
+    window.OESTGoogle.disconnect();
     localStorage.removeItem("oest.account");
     history.replaceState({ n: 0 }, "", "#start"); render("start");
   });
@@ -363,43 +331,12 @@ input[type=text], input[type=email], input[type=date], select {
     $("accPic").hidden = !a.pic; if (a.pic) $("accPic").src = a.pic;
   }
 
-  // ---------- profil ----------
-  var PROFILE_FIELDS = ["first", "last", "title", "position", "email1", "email2", "shift", "shiftStart"];
-  function profile() { return load("profile", {}); }
-  // Pierwsze logowanie: imię, nazwisko i e-mail z konta Google
+  // Shared versioned profile: consumed by Settings and other modules.
+  function profile() { return window.OESTSettings.get().profile; }
   function seedProfile() {
-    var a = account() || {}, p = profile();
-    if (p.email1 || p.first) return;
-    save("profile", { first: a.first || "", last: a.last || "", email1: a.email || "", send1: true });
-  }
-  function fillProfile() {
-    var f = $("profileForm"), p = profile();
-    PROFILE_FIELDS.forEach(function (k) { f.elements[k].value = p[k] || ""; });
-    f.elements.send1.checked = p.send1 !== false;
-    f.elements.send2.checked = !!p.send2;
-    $("profileMsg").textContent = "";
-  }
-  $("profileForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var f = this, p = {};
-    PROFILE_FIELDS.forEach(function (k) { p[k] = f.elements[k].value.trim(); });
-    p.send1 = f.elements.send1.checked; p.send2 = f.elements.send2.checked;
-    if (p.send2 && !p.email2) { $("profileMsg").textContent = "Wpisz drugi e-mail albo odznacz wysyłkę na niego."; return; }
-    if ((p.email1 || p.email2) && !(p.send1 && p.email1) && !p.send2) { $("profileMsg").textContent = "Zaznacz przynajmniej jeden adres, na który mają iść raporty."; return; }
-    save("profile", p);
-    syncInspekcje(p);
-    $("profileMsg").innerHTML = '<span class="saved">Zapisane.</span>';
-  });
-  // Inspekcje czytają swoje ustawienia (insp.cfg): inżynier w raporcie i adres wysyłki idą z profilu
-  function syncInspekcje(p) {
-    var c = {};
-    try { c = JSON.parse(localStorage.getItem("insp.cfg") || "{}") || {}; } catch (e) {}
-    if (!c.v) c.v = 4; // wersja ustawień inspekcji: bez niej inspekcje uznałyby je za stare i pominęły nazwisko
-    var name = [p.first, p.last].filter(Boolean).join(" ");
-    if (name) c.insp = name;
-    // wszystkie zaznaczone adresy; skrypt Google wysyła tylko na adresy, które zna (CFG.email, extraEmails)
-    c.email = [p.send1 && p.email1, p.send2 && p.email2].filter(Boolean).join(", ");
-    try { localStorage.setItem("insp.cfg", JSON.stringify(c)); } catch (e) {}
+    window.OESTSettings.get();
+    window.OESTSettings.syncLegacy();
+    window.OESTSettingsUI.applyTheme();
   }
 
   // ---------- PPM: lista inspekcji ----------
@@ -448,6 +385,9 @@ input[type=text], input[type=email], input[type=date], select {
   // ---------- start ----------
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
   if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
+  if (account()) {
+    try { seedProfile(); } catch (e) { $("authErr").textContent = "Settings: " + e.message; $("authErr").hidden = false; }
+  }
   var start = (location.hash || "").slice(1);
   if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
   if (!account()) history.replaceState({ n: 0 }, "", "#start");

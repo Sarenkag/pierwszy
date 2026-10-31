@@ -1,0 +1,28 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');
+const {createGoogle}=require('../www/settings-google.js');
+function api(routes={}){const calls=[];const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'TOKEN'}),fetch:async(url,opts)=>{calls.push({url,opts});if(!routes[url])throw Error('Unexpected '+url);return {ok:true,status:200,json:async()=>routes[url],text:async()=>JSON.stringify(routes[url])};}});return {g,calls};}
+test('contacts fetch only members of selected label, no complete address book',async()=>{
+  const x=api({'https://people.googleapis.com/v1/contactGroups/team?maxMembers=1000':{memberResourceNames:['people/1'],memberCount:1},'https://people.googleapis.com/v1/people:batchGet?personFields=names%2CemailAddresses%2Corganizations&resourceNames=people%2F1':{responses:[{person:{resourceName:'people/1',names:[{givenName:'A',familyName:'B'}],emailAddresses:[{value:'a@example.com'}],organizations:[{title:'Engineer'}]}}]}});
+  await x.g.connect('contacts');const people=await x.g.contacts('contactGroups/team');assert.equal(people[0].email,'a@example.com');assert.equal(x.calls.length,2);assert.ok(x.calls.every(c=>!c.url.includes('/connections')));
+});
+test('different Google account cannot connect to current profile',async()=>{
+  const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'other@example.com',token:'SECRET'}),fetch:async()=>{throw Error('must not fetch');}});
+  await assert.rejects(g.connect('drive'),/GOOGLE_ACCOUNT_MISMATCH/);assert.equal(g.connected('drive'),false);
+});
+test('missing scope connection fails closed and disconnect removes memory token',async()=>{
+  const {g}=api();await assert.rejects(g.contacts('contactGroups/team'),/GOOGLE_CONNECT/);
+  await g.connect('contacts');assert.equal(g.connected('contacts'),true);g.disconnect();assert.equal(g.connected('contacts'),false);
+});
+test('mail test validates recipient and explicit one-message body',async()=>{
+  let body;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async(url,opts)=>{body=JSON.parse(opts.body);return {ok:true,status:200,json:async()=>({id:'receipt'})};}});
+  await g.connect('gmail');await assert.rejects(g.testMail('bad\r\nBcc:evil@example.com'),/EMAIL_INVALID/);
+  const r=await g.testMail('work@example.com');assert.equal(r.id,'receipt');assert.match(Buffer.from(body.raw,'base64url').toString(),/Subject: OEST TEST/);
+});
+test('expired token is cleared and API errors never become success',async()=>{
+  const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async()=>({ok:false,status:401})});
+  await g.connect('drive');await assert.rejects(g.folders(),/GOOGLE_HTTP_401/);assert.equal(g.connected('drive'),false);
+});
+test('account change invalidates existing connections before a request',async()=>{
+  let user='me@example.com',n=0;const g=createGoogle({account:()=>({email:user}),login:async()=>({email:user,token:'T'}),fetch:async()=>{n++;throw Error('no');}});
+  await g.connect('drive');user='other@example.com';await assert.rejects(g.folders(),/GOOGLE_CONNECT/);assert.equal(n,0);
+});
