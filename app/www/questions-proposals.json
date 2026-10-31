@@ -1,0 +1,472 @@
+{
+  "format": "oest.questions.proposal",
+  "version": 1,
+  "items": [
+    {
+      "section": "AOV",
+      "question": "Pełne otwarcie skrzydeł",
+      "type": "pass",
+      "ok": "Vents and windows opened fully upon manual activation.",
+      "fail": "Vents and windows failed to reach the fully open position upon manual activation.",
+      "reasons": [
+        {
+          "label": "Actuator fault",
+          "text": "Electric actuator failed to drive the vent mechanism – replacement or reset required."
+        },
+        {
+          "label": "Mechanical obstruction",
+          "text": "Physical obstruction prevented the vent from opening completely."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "AOV",
+      "question": "Działanie przycisków ROP",
+      "type": "pass",
+      "ok": "Local manual call point successfully initiated the opening signal.",
+      "fail": "Manual call point failed to trigger the system response.",
+      "reasons": [
+        {
+          "label": "Wiring fault",
+          "text": "Communication break between call point and control panel."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "AOV",
+      "question": "Stan siłowników elektrycznych/pneumatycznych",
+      "type": "pass",
+      "ok": "Actuators are securely mounted and free from visible damage.",
+      "fail": "Actuators show physical damage, loose mountings, or defects.",
+      "reasons": [
+        {
+          "label": "Loose mounting",
+          "text": "Actuator brackets or fixings have become loose."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "AOV",
+      "question": "Uszczelki i ramy okienne",
+      "type": "pass",
+      "ok": "Gaskets and window frames are clean, flexible, and seal properly.",
+      "fail": "Gaskets are damaged, worn, or frames compromised.",
+      "reasons": [
+        {
+          "label": "Seal wear",
+          "text": "Perished or damaged seals preventing a tight close."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "AOV",
+      "question": "Drogi dojścia i brak przeszkód",
+      "type": "pass",
+      "ok": "Access paths and vent surroundings are clear of obstructions.",
+      "fail": "Obstructions found blocking the vents or access paths.",
+      "reasons": [
+        {
+          "label": "Blocked access",
+          "text": "Items stored obstructing the vent area."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "AOV",
+      "question": "Procedura resetu i zamknięcia",
+      "type": "pass",
+      "ok": "System reset successfully and vents closed tightly via actuators.",
+      "fail": "System failed to reset or close completely.",
+      "reasons": [
+        {
+          "label": "Control latch error",
+          "text": "Panel failed to send close command post-reset."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-003",
+        "EFA-INS-019"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Stan obudowy i czystość",
+      "type": "pass",
+      "ok": "ATS enclosure is clean internally and externally with no damage.",
+      "fail": "ATS enclosure shows dirt accumulation or physical damage.",
+      "reasons": [
+        {
+          "label": "Physical damage",
+          "text": "Dents or cracks found on the enclosure body."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Szczelność drzwi i zamków",
+      "type": "pass",
+      "ok": "Enclosure doors close securely with functional locks and intact seals.",
+      "fail": "Doors fail to seal properly or locks are defective.",
+      "reasons": [
+        {
+          "label": "Broken lock",
+          "text": "Door latch or lock mechanism failure."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Stan dławików i kabli",
+      "type": "pass",
+      "ok": "Cable glands are tight, secured, and cabling is undamaged.",
+      "fail": "Loose cable glands or damaged cabling identified.",
+      "reasons": [
+        {
+          "label": "Loose gland",
+          "text": "Cable entry gland has loosened, compromising entry protection."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Brak wilgoci i kondensacji",
+      "type": "pass",
+      "ok": "Interior of the ATS enclosure is dry with no moisture or foreign bodies.",
+      "fail": "Moisture, condensation, or foreign bodies present inside.",
+      "reasons": [
+        {
+          "label": "Moisture ingress",
+          "text": "Water droplets or condensation pooling inside the panel."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Wskazania wyświetlacza sterownika",
+      "type": "pass",
+      "ok": "ATS microprocessor controller is operational with no active error codes.",
+      "fail": "Controller displays active faults, errors, or warning indicators.",
+      "reasons": [
+        {
+          "label": "Controller fault",
+          "text": "Internal diagnostic alarm triggered on the ATS controller."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "ATS",
+      "question": "Poprawność parametrów zasilania",
+      "type": "pass",
+      "ok": "Incoming voltages and frequencies are within nominal operating parameters.",
+      "fail": "Voltage or frequency levels out of acceptable tolerance range.",
+      "reasons": [
+        {
+          "label": "Voltage sag",
+          "text": "Utility supply voltage dropped below acceptable operational thresholds."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-014",
+        "EFA-INS-015",
+        "EFA-INS-016",
+        "EFA-INS-017",
+        "EFA-INS-018"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Porządek i brak materiałów łatwopalnych",
+      "type": "pass",
+      "ok": "Plant room is clean, tidy, and free of combustible materials.",
+      "fail": "Combustible materials or rubbish stored improperly in the plant room.",
+      "reasons": [
+        {
+          "label": "Poor housekeeping",
+          "text": "Cardboard or waste left near electrical panels or machinery."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Drogi ewakuacyjne i przejścia",
+      "type": "pass",
+      "ok": "Walkways and escape routes to all equipment are clear.",
+      "fail": "Access routes blocked by equipment or obstructions.",
+      "reasons": [
+        {
+          "label": "Blocked path",
+          "text": "Objects stored blocking safe passage to plant equipment."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Oświetlenie ogólne i awaryjne",
+      "type": "pass",
+      "ok": "General lighting and emergency lights in the plant room are fully operational.",
+      "fail": "Lighting units failed or damaged in the plant room.",
+      "reasons": [
+        {
+          "label": "Lamp failure",
+          "text": "Luminaire bulb or LED unit burned out."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Sprawność gaśnic i sprzętu ppoż.",
+      "type": "pass",
+      "ok": "Fire extinguishers are inspected, in place, and unobstructed.",
+      "fail": "Fire safety equipment missing, expired, or blocked.",
+      "reasons": [
+        {
+          "label": "Blocked extinguisher",
+          "text": "Fire extinguisher is obstructed by equipment."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Stan pomp i silników (wibracje/hałas)",
+      "type": "pass",
+      "ok": "Pumps and motors run smoothly with no abnormal vibration or noise.",
+      "fail": "Excessive noise or abnormal vibration detected on pumps or motors.",
+      "reasons": [
+        {
+          "label": "Worn bearings",
+          "text": "Motor bearings showing signs of mechanical failure."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "Plant room",
+      "question": "Szczelność rurociągów i armatury",
+      "type": "pass",
+      "ok": "Pipework, valves, and joints are sound with no leaks.",
+      "fail": "Leaks or weeping joints found on pipework or valves.",
+      "reasons": [
+        {
+          "label": "Joint leak",
+          "text": "Water leaking from threaded or flanged pipe joint."
+        }
+      ],
+      "suggestedFor": [
+        "EFA-INS-020",
+        "EFA-INS-021"
+      ]
+    },
+    {
+      "section": "General Lighting",
+      "question": "Działanie opraw oświetleniowych",
+      "type": "pass",
+      "ok": "All general lighting luminaires illuminate correctly with no failures.",
+      "fail": "One or more luminaires failed to illuminate.",
+      "reasons": [
+        {
+          "label": "Lamp failure",
+          "text": "LED module or bulb is blown."
+        }
+      ],
+      "suggestedFor": []
+    },
+    {
+      "section": "General Lighting",
+      "question": "Brak efektu migotania",
+      "type": "pass",
+      "ok": "Lighting output is stable with no flickering or dimming issues.",
+      "fail": "Flickering or unstable light output observed.",
+      "reasons": [
+        {
+          "label": "Driver fault",
+          "text": "LED driver failing, causing light flicker."
+        }
+      ],
+      "suggestedFor": []
+    },
+    {
+      "section": "General Lighting",
+      "question": "Stan kloszy i obudów",
+      "type": "pass",
+      "ok": "Diffusers, covers, and casings are clean and undamaged.",
+      "fail": "Diffusers cracked, dirty, or damaged.",
+      "reasons": [
+        {
+          "label": "Physical damage",
+          "text": "Cracked plastic diffuser cover."
+        }
+      ],
+      "suggestedFor": []
+    },
+    {
+      "section": "General Lighting",
+      "question": "Pewność mocowania",
+      "type": "pass",
+      "ok": "Luminaires are securely mounted to ceilings or walls.",
+      "fail": "Luminaires loose or sagging from mountings.",
+      "reasons": [
+        {
+          "label": "Loose fixing",
+          "text": "Mounting screws or brackets have slipped."
+        }
+      ],
+      "suggestedFor": []
+    },
+    {
+      "section": "General Lighting",
+      "question": "Stan okablowania i puszek",
+      "type": "pass",
+      "ok": "Visible wiring and junction boxes are secure and properly enclosed.",
+      "fail": "Exposed wiring or damaged junction boxes observed.",
+      "reasons": [
+        {
+          "label": "Damaged conduit",
+          "text": "Cable protection conduit or box cover missing."
+        }
+      ],
+      "suggestedFor": []
+    },
+    {
+      "section": "Electrical boards",
+      "question": "Stan zewnętrzny obudowy rozdzielnicy",
+      "type": "pass",
+      "ok": "Distribution board enclosure and doors are secure and undamaged.",
+      "fail": "Enclosure doors or body damaged or unsecure.",
+      "reasons": [
+        {
+          "label": "Hitch damage",
+          "text": "Cabinet door hinge damaged."
+        }
+      ],
+      "suggestedFor": [
+        "db",
+        "iso"
+      ]
+    },
+    {
+      "section": "Electrical boards",
+      "question": "Obecność tablic ostrzegawczych",
+      "type": "pass",
+      "ok": "Required electrical warning labels are present and legible.",
+      "fail": "Warning labels missing or faded.",
+      "reasons": [
+        {
+          "label": "Missing label",
+          "text": "Danger 400V warning sticker missing from door exterior."
+        }
+      ],
+      "suggestedFor": [
+        "db",
+        "iso"
+      ]
+    },
+    {
+      "section": "Electrical boards",
+      "question": "Czystość i brak zanieczyszczeń wewnątrz",
+      "type": "pass",
+      "ok": "Interior of the distribution board is clean and free of debris.",
+      "fail": "Dust, dirt, or debris found inside the distribution board.",
+      "reasons": [
+        {
+          "label": "Dust accumulation",
+          "text": "Construction dust or debris inside the enclosure."
+        }
+      ],
+      "suggestedFor": [
+        "db",
+        "iso"
+      ]
+    },
+    {
+      "section": "Electrical boards",
+      "question": "Stan aparatur modułowych (MCB, RCD, RCBO)",
+      "type": "pass",
+      "ok": "Modular switchgear devices are intact with no discoloration or cracks.",
+      "fail": "Switchgear devices show signs of damage, melting, or discoloration.",
+      "reasons": [
+        {
+          "label": "Thermal damage",
+          "text": "Discoloration on module casing indicating overheating."
+        }
+      ],
+      "suggestedFor": [
+        "db",
+        "iso"
+      ]
+    }
+  ]
+}

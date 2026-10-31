@@ -122,6 +122,11 @@ input[type=text], input[type=email], input[type=date], select {
 .st.r, .st.x { background: var(--bad); opacity: 1; }
 .st.x::after { content: "!"; position: absolute; right: -10px; top: -6px; color: var(--bad); font-weight: 800; }
 </style>
+<link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="handover.css">
+<link rel="stylesheet" href="keys.css">
+<link rel="stylesheet" href="powertrace.css">
+<link rel="stylesheet" href="questions.css">
 </head>
 <body>
 <div class="wrap">
@@ -158,19 +163,19 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
         <div><b>Reactive</b><span class="sub">Zlecenia i problemy poza planem</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Power trace">
+      <button class="tile" type="button" data-go="powertrace">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 5L13 27h10l-3 16 15-23H25z"/></svg>
         <div><b>Power trace</b><span class="sub">Brak zasilania → rozdzielnica i MCB</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Calendar">
+      <button class="tile" type="button" data-go="settings/calendar">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
         <div><b>Calendar</b><span class="sub">Zmiany i terminy inspekcji</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Keys / Doors">
+      <button class="tile" type="button" data-go="keys">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
-        <div><b>Keys / Doors</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Keys</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Handover">
+      <button class="tile" type="button" data-go="handover">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
         <div><b>Handover</b><span class="sub">Notatki i zdjęcia ze zmiany</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -222,44 +227,6 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
-  <!-- Mój profil -->
-  <section class="view" id="v-profile" hidden>
-    <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Mój profil</h1></div></div>
-    <form class="panel" id="profileForm">
-      <div class="row2">
-        <label class="field"><span>Imię</span><input type="text" name="first" autocomplete="given-name"></label>
-        <label class="field"><span>Nazwisko</span><input type="text" name="last" autocomplete="family-name"></label>
-      </div>
-      <div class="row2">
-        <label class="field"><span>Tytuł</span><input type="text" name="title" placeholder="np. Eng."></label>
-        <label class="field"><span>Stanowisko</span><input type="text" name="position" placeholder="np. Shift Engineer"></label>
-      </div>
-      <div class="label">Poczta</div>
-      <label class="field"><span>E-mail (z rejestracji)</span><input type="email" name="email1" autocomplete="email"></label>
-      <label class="check"><input type="checkbox" name="send1"> Wysyłaj raporty na ten adres</label>
-      <label class="field"><span>Drugi e-mail</span><input type="email" name="email2" placeholder="np. służbowy"></label>
-      <label class="check"><input type="checkbox" name="send2"> Wysyłaj raporty na ten adres</label>
-      <div class="label">Zmiana</div>
-      <div class="row2">
-        <label class="field"><span>Rodzaj</span>
-          <select name="shift">
-            <option value="">—</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekends">Weekends</option>
-            <option value="4on4">4 on 4 off</option>
-          </select>
-        </label>
-        <label class="field"><span>Początek zmiany</span><input type="date" name="shiftStart"></label>
-      </div>
-      <p class="hint">Zmiana pokaże się w kalendarzu, gdy powstanie moduł Calendar.</p>
-      <div class="label">Zapis plików</div>
-      <p class="hint">Podłączenie Google Drive albo folderu na komputerze dojdzie w kolejnym kroku. Do tego czasu raporty zapisuje skrypt Google z instrukcji inspekcji.</p>
-      <button class="btn go" type="submit">Zapisz profil</button>
-      <p class="hint" id="profileMsg" aria-live="polite"></p>
-    </form>
-  </section>
-
   <!-- Ustawienia aplikacji -->
   <section class="view" id="v-appset" hidden>
     <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz">‹</button>
@@ -271,9 +238,33 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
+  <section class="view" id="v-questions" hidden></section>
+  <section class="view" id="v-powertrace" hidden></section>
+  <section class="view" id="v-keys" hidden></section>
+  <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="config.js"></script>
 <script src="ppm.js"></script>
+<script src="settings-store.js"></script>
+<script src="settings-google.js"></script>
+<script src="calendar-core.js"></script>
+<script src="calendar-sync.js"></script>
+<script src="calendar-ui.js"></script>
+<script src="settings-ui.js"></script>
+<script src="reactive-store.js"></script>
+<script src="handover-core.js"></script>
+<script src="handover.js"></script>
+<script src="keys-core.js"></script>
+<script src="keys-store.js"></script>
+<script src="keys.js"></script>
+<script src="powertrace-core.js"></script>
+<script src="powertrace-store.js"></script>
+<script src="powertrace.js"></script>
+<script src="questions-proposals.js"></script>
+<script src="questions-core.js"></script>
+<script src="questions-store.js"></script>
+<script src="questions-api.js"></script>
+<script src="questions-ui.js"></script>
 <script>
 (function () {
   "use strict";
@@ -286,14 +277,28 @@ input[type=text], input[type=email], input[type=date], select {
 
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
+  var renderedRoute = "";
   function render(v) {
+    var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
+    var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
+    var keysRoute = v === "keys" || v.indexOf("keys/") === 0 ? v : null;
+    var powerRoute = v === "powertrace" || v.indexOf("powertrace/") === 0 ? v : null;
+    if (powerRoute) v = "powertrace";
+    if (keysRoute) v = "keys";
+    if (settingsRoute) v = "settings";
+    if (handoverRoute) v = "handover";
     if (!$("v-" + v)) v = "home";
     if (!account()) v = "start";
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
     if (v === "home") renderHome();
-    if (v === "profile") fillProfile();
+    if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
+    if (v === "handover") window.OESTHandover.open(handoverRoute);
+    if (v === "keys") window.OESTKeys.open(keysRoute);
+    if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
+    if (v === "questions") window.OESTQuestionsUI.open();
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
+    renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -302,7 +307,30 @@ input[type=text], input[type=email], input[type=date], select {
     history.pushState({ n: depth() + 1 }, "", "#" + v);
     render(v);
   }
-  window.addEventListener("popstate", function () { render(location.hash.slice(1)); });
+  window.OESTSettingsUI.setNavigate(show);
+  window.OESTHandover.setNavigate(show);
+  window.OESTKeys.setNavigate(show);
+  window.OESTPowerTrace.setNavigate(show);
+  window.OESTQuestionsUI.setNavigate(show);
+  window.addEventListener("popstate", function () {
+    if (renderedRoute === "questions" && !window.OESTQuestionsUI.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    if (renderedRoute.indexOf("powertrace") === 0 && !window.OESTPowerTrace.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    if (renderedRoute.indexOf("keys") === 0 && !window.OESTKeys.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    if (renderedRoute.indexOf("handover") === 0 && !window.OESTHandover.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    render(location.hash.slice(1));
+  });
   // Strzałka „wstecz” cofa w historii (jak systemowy „wstecz”); przy wejściu prosto na ekran idzie do rodzica
   document.querySelectorAll(".back[data-go]").forEach(function (b) {
     b.addEventListener("click", function (e) {
@@ -353,6 +381,7 @@ input[type=text], input[type=email], input[type=date], select {
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
+    window.OESTGoogle.disconnect();
     localStorage.removeItem("oest.account");
     history.replaceState({ n: 0 }, "", "#start"); render("start");
   });
@@ -363,43 +392,12 @@ input[type=text], input[type=email], input[type=date], select {
     $("accPic").hidden = !a.pic; if (a.pic) $("accPic").src = a.pic;
   }
 
-  // ---------- profil ----------
-  var PROFILE_FIELDS = ["first", "last", "title", "position", "email1", "email2", "shift", "shiftStart"];
-  function profile() { return load("profile", {}); }
-  // Pierwsze logowanie: imię, nazwisko i e-mail z konta Google
+  // Shared versioned profile: consumed by Settings and other modules.
+  function profile() { return window.OESTSettings.get().profile; }
   function seedProfile() {
-    var a = account() || {}, p = profile();
-    if (p.email1 || p.first) return;
-    save("profile", { first: a.first || "", last: a.last || "", email1: a.email || "", send1: true });
-  }
-  function fillProfile() {
-    var f = $("profileForm"), p = profile();
-    PROFILE_FIELDS.forEach(function (k) { f.elements[k].value = p[k] || ""; });
-    f.elements.send1.checked = p.send1 !== false;
-    f.elements.send2.checked = !!p.send2;
-    $("profileMsg").textContent = "";
-  }
-  $("profileForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var f = this, p = {};
-    PROFILE_FIELDS.forEach(function (k) { p[k] = f.elements[k].value.trim(); });
-    p.send1 = f.elements.send1.checked; p.send2 = f.elements.send2.checked;
-    if (p.send2 && !p.email2) { $("profileMsg").textContent = "Wpisz drugi e-mail albo odznacz wysyłkę na niego."; return; }
-    if ((p.email1 || p.email2) && !(p.send1 && p.email1) && !p.send2) { $("profileMsg").textContent = "Zaznacz przynajmniej jeden adres, na który mają iść raporty."; return; }
-    save("profile", p);
-    syncInspekcje(p);
-    $("profileMsg").innerHTML = '<span class="saved">Zapisane.</span>';
-  });
-  // Inspekcje czytają swoje ustawienia (insp.cfg): inżynier w raporcie i adres wysyłki idą z profilu
-  function syncInspekcje(p) {
-    var c = {};
-    try { c = JSON.parse(localStorage.getItem("insp.cfg") || "{}") || {}; } catch (e) {}
-    if (!c.v) c.v = 4; // wersja ustawień inspekcji: bez niej inspekcje uznałyby je za stare i pominęły nazwisko
-    var name = [p.first, p.last].filter(Boolean).join(" ");
-    if (name) c.insp = name;
-    // wszystkie zaznaczone adresy; skrypt Google wysyła tylko na adresy, które zna (CFG.email, extraEmails)
-    c.email = [p.send1 && p.email1, p.send2 && p.email2].filter(Boolean).join(", ");
-    try { localStorage.setItem("insp.cfg", JSON.stringify(c)); } catch (e) {}
+    window.OESTSettings.get();
+    window.OESTSettings.syncLegacy();
+    window.OESTSettingsUI.applyTheme();
   }
 
   // ---------- PPM: lista inspekcji ----------
@@ -448,6 +446,9 @@ input[type=text], input[type=email], input[type=date], select {
   // ---------- start ----------
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
   if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
+  if (account()) {
+    try { seedProfile(); } catch (e) { $("authErr").textContent = "Settings: " + e.message; $("authErr").hidden = false; }
+  }
   var start = (location.hash || "").slice(1);
   if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
   if (!account()) history.replaceState({ n: 0 }, "", "#start");

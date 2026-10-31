@@ -5,7 +5,8 @@
   "description": "Aplikacja OEST na Androida (Capacitor). Strona w www/, inspekcje kopiowane z ../inspekcje.",
   "scripts": {
     "copy-web": "node scripts/copy-web.js",
-    "sync": "npm run copy-web && cap sync android"
+    "sync": "npm run copy-web && cap sync android",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
