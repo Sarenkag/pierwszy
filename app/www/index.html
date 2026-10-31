@@ -314,6 +314,8 @@ input[type=text], input[type=email], input[type=date], select {
     var b = e.target.closest(".top .back");
     if (!b || depth() < 1) return;
     e.preventDefault(); e.stopImmediatePropagation();
+    // niezapisane zmiany w Ustawieniach: zapytaj przed wyjściem (pozostałe moduły pilnuje popstate)
+    if (b.closest("#v-settings") && !window.OESTSettingsUI.canLeave()) return;
     history.back();
   }, true);
   window.addEventListener("popstate", function () {
