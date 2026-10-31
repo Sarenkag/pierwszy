@@ -126,6 +126,7 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="handover.css">
 <link rel="stylesheet" href="keys.css">
 <link rel="stylesheet" href="powertrace.css">
+<link rel="stylesheet" href="questions.css">
 </head>
 <body>
 <div class="wrap">
@@ -237,6 +238,7 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
+  <section class="view" id="v-questions" hidden></section>
   <section class="view" id="v-powertrace" hidden></section>
   <section class="view" id="v-keys" hidden></section>
   <section class="view" id="v-handover" hidden></section>
@@ -258,6 +260,11 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="powertrace-core.js"></script>
 <script src="powertrace-store.js"></script>
 <script src="powertrace.js"></script>
+<script src="questions-proposals.js"></script>
+<script src="questions-core.js"></script>
+<script src="questions-store.js"></script>
+<script src="questions-api.js"></script>
+<script src="questions-ui.js"></script>
 <script>
 (function () {
   "use strict";
@@ -288,6 +295,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
+    if (v === "questions") window.OESTQuestionsUI.open();
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
     renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
@@ -303,7 +311,12 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTHandover.setNavigate(show);
   window.OESTKeys.setNavigate(show);
   window.OESTPowerTrace.setNavigate(show);
+  window.OESTQuestionsUI.setNavigate(show);
   window.addEventListener("popstate", function () {
+    if (renderedRoute === "questions" && !window.OESTQuestionsUI.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
     if (renderedRoute.indexOf("powertrace") === 0 && !window.OESTPowerTrace.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
