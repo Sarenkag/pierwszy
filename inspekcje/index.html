@@ -121,6 +121,12 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 
 /* Checklista */
 .ck { display: flex; flex-direction: column; }
+.tp-row { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tp-row:last-child { border-bottom: 0; }
+.tp-row small { display: block; color: var(--muted); }
+.tp-row input { text-align: right; }
+.tp-row.bad .txt, .tp-row.bad small { color: var(--bad); }
+.tp-row.bad input { border-color: var(--bad); }
 .ck-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .ck-row:last-child { border-bottom: 0; }
 .ck-row .txt { min-width: 0; font-size: 0.95rem; }
@@ -332,6 +338,12 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
       <p class="hint">Każda usterka dopisuje gotowe zdanie po angielsku i ustawia „Requires attention”.</p>
     </div>
 
+    <div class="panel" data-m="one" id="tempBox" hidden>
+      <div class="label">Temperatury (°C)</div>
+      <div id="tempList"></div>
+      <p class="hint">Wpisz tylko pomiary — pozostałe rubryki wzoru zostają puste. Nic nie jest wpisane z góry ani przepisane z poprzedniej inspekcji.</p>
+    </div>
+
     <div class="panel" data-m="one item">
       <div class="label" id="ckTitle">Checklista</div>
       <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
@@ -417,6 +429,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../ppm.js"></script>
+<script src="tpl-temp-tb.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script>
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.
@@ -894,6 +907,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("photos").closest(".panel").style.order = ask || quick ? "-1" : ""; // zdjęcie, potem pytania
     $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
     $("legend").hidden = !!cur.type.ask;
+    // formularz pomiarów (024): tylko temperatury, data i podpis
+    var temp = !!cur.type.temp;
+    $("tempBox").hidden = !temp || m === "sum";
+    if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (cur.type.plain) $("faults").closest(".panel").hidden = true;
   }
   function resetForm() {
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
@@ -902,6 +920,69 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = "";
     $("ov-1").checked = true; $("q-0").checked = true;
+    temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
+  }
+  // ---------- pomiary temperatur (wzór 024) ----------
+  var temps = [];
+  var KIND = { hot: "Hot outlet", cold: "Cold outlet", tmv: "TMV outlet (mixed)" };
+  var LIMIT = { hot: "Hot > 50°C", cold: "Cold < 20°C", tmv: "TMV mixed 38–43°C" };
+  function tempNum(v) { v = String(v || "").trim().replace(",", "."); return v !== "" && isFinite(v) ? +v : null; }
+  function tempBad(kind, v) {
+    var n = tempNum(v); if (n === null) return false;
+    return kind === "hot" ? n <= 50 : kind === "cold" ? n >= 20 : n < 38 || n > 43;
+  }
+  function renderTemps() {
+    if (!cur.type || !cur.type.temp) { $("tempList").innerHTML = ""; return; }
+    $("tempList").innerHTML = cur.type.slots.map(function (s, i) {
+      return '<div class="tp-row' + (tempBad(s[1], temps[i]) ? " bad" : "") + '"><div class="txt">' + esc(s[0]) + "<small>" + esc(KIND[s[1]]) + " · " + esc(LIMIT[s[1]]) + "</small></div>" +
+        '<input type="text" inputmode="decimal" autocomplete="off" data-t="' + i + '" value="' + esc(temps[i]) + '" aria-label="' + esc(s[0] + ", " + KIND[s[1]]) + '"></div>';
+    }).join("");
+  }
+  $("tempList").addEventListener("input", function (e) {
+    var el = e.target.closest("input[data-t]"); if (!el) return;
+    var i = +el.getAttribute("data-t"); temps[i] = el.value;
+    el.closest(".tp-row").classList.toggle("bad", tempBad(cur.type.slots[i][1], el.value));
+    updateFormHint();
+  });
+  function tempData(w) {
+    var slots = cur.type.slots, pts = [], outN = 0;
+    slots.forEach(function (s, i) {
+      var n = tempNum(temps[i]); if (n === null) return;
+      var bad = tempBad(s[1], temps[i]); if (bad) outN++;
+      pts.push(s[0] + " – " + KIND[s[1]] + ": " + n + "°C" + (bad ? " – out of range (" + LIMIT[s[1]] + ")" : ""));
+    });
+    var d = { data: fmtDate(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      tytul: cur.type.title, punkty: pts, quote: "", site: cfg.site, komentarz: "", zakres: "", temps: slots.map(function (s, i) { var n = tempNum(temps[i]); return n === null ? "" : String(n); }),
+      stan_ogolny: outN ? outN + " reading(s) out of range – record in the Fault and Remedial Actions Log" : "All readings within range" };
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date()); d.opis = pts.join("\n");
+    return d;
+  }
+  // Wzór firmy: kolejne pola {temp} dostają kolejne pomiary, {name} podpis, {data} datę; reszta tabeli bez zmian
+  function fillTempDocx(d) {
+    var zip = new PizZip(b64ToBytes(window[cur.type.tpl])), xml = zip.file("word/document.xml").asText(), i = 0;
+    function x(s) { return String(s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+    xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
+    zip.file("word/document.xml", xml);
+    return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+  }
+  function buildTempPdf(d) {
+    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
+    pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
+    var L = 20, y = 22;
+    pdf.setFont("DV", "bold"); pdf.setFontSize(14); pdf.text(d.tytul, L, y); y += 8;
+    pdf.setFont("DV", "normal"); pdf.setFontSize(10);
+    pdf.text((d.site ? d.site + " · " : "") + "Date: " + d.data + " · Print name: " + (d.inspektor || ""), L, y); y += 9;
+    pdf.setFont("DV", "bold"); pdf.text("Area / Location", L, y); pdf.text("Outlet", L + 62, y); pdf.text("°C", L + 112, y); pdf.text("Required", L + 128, y); y += 2;
+    pdf.line(L, y, 190, y); y += 5; pdf.setFont("DV", "normal");
+    cur.type.slots.forEach(function (s, i) {
+      var bad = tempBad(s[1], d.temps[i]);
+      if (bad) pdf.setTextColor(200, 30, 30);
+      pdf.text(s[0], L, y); pdf.text(KIND[s[1]], L + 62, y); pdf.text(d.temps[i] || "–", L + 112, y); pdf.text(LIMIT[s[1]].replace(/^\S+ (mixed )?/, ""), L + 128, y);
+      pdf.setTextColor(0, 0, 0); y += 6.5;
+    });
+    y += 4; pdf.setFont("DV", "bold"); pdf.text(d.stan_ogolny + ".", L, y);
+    return new Uint8Array(pdf.output("arraybuffer"));
   }
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])
@@ -1371,6 +1452,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function updateFormHint() {
     var h = [];
+    if (cur.type && cur.type.temp) {
+      var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
+      var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
+      $("formHint").textContent = "Wpisano " + filled + "/" + temps.length + "." + (bad ? " Popraw " + bad + " pole (tylko liczba)." : "") +
+        (outN ? " Poza zakresem: " + outN + " — wpis do Fault and Remedial Actions Log." : "") + (filled < temps.length ? " Puste pola zostaną puste w raporcie." : "");
+      var blk = !filled || bad > 0;
+      $("toPreview").disabled = blk; $("toQueue").disabled = blk;
+      $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate()); return;
+    }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
       $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
@@ -1398,6 +1488,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function formData() {
     var w = reportDate(), pts = [];
     if (cur.mode === "sum") return batchData(w);
+    if (cur.type.temp) return tempData(w);
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
     var d = {
@@ -1558,7 +1649,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 
   function buildAll() {
-    var d = formData(), name = makeName(cfg.pattern, d, reportDate()), tpl = templateBytes(), info = templateInfo(PizZip, tpl);
+    var d = formData(), name = makeName(cfg.pattern, d, reportDate());
+    if (cur.type.temp) return Promise.resolve().then(function () {
+      return { name: name, data: d, docx: fillTempDocx(d), pdf: buildTempPdf(d), pics: [], info: {}, logoUrl: "" };
+    });
+    var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
     return photos.reduce(function (p, ph) {
       return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { arr.push(f); return arr; }); });
     }, Promise.resolve([])).then(function (pics) {
@@ -1585,6 +1680,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function buildErr(e) { return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
     var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();
+    if (d.temps) {
+      $("paper").innerHTML = "<b>" + esc(d.tytul) + "</b><p>Date: " + esc(d.data) + " · Print name: " + esc(d.inspektor) + "</p><table>" +
+        built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
+        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
+      $("prevSub").textContent = d.urzadzenie + " · " + d.data;
+      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
+      return;
+    }
     function head() { return '<div class="ph">' + (built.logoUrl ? '<img alt="" src="' + built.logoUrl + '">' : "") + "<div>" + esc(title) + "</div></div>"; }
     var foot = '<div class="foot">' + esc(i.footerText || "") + "</div>";
     var html = head() + "<table>" +
@@ -1766,6 +1869,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; $("search").value = "";
       (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); });
       return;
+    }
+    var dev = [{ code: t.name, loc: t.where || "One Eastside", room: "" }], f = t.form && PPM.forms && PPM.forms[t.form];
+    if (f) {
+      // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
+      cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, tpl: f.tpl, slots: f.slots, scope: "", devices: dev, checks: [] } :
+        { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", devices: dev,
+          checks: f.checks.map(function (c) { return { key: c.key, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
+      openForm(t.name); return;
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
     cur.type = { id: "ppm-" + t.id, quick: true, name: t.name, title: t.name + " - Inspection", scope: "", devices: [{ code: t.name, loc: t.where || "One Eastside", room: "" }],

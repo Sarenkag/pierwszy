@@ -429,7 +429,7 @@ input[type=text], input[type=email], input[type=date], select {
     list.sort(function (a, b) { return (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
     $("ppmList").innerHTML = list.length ? list.map(function (r) {
       var t = r.t, g = grp(t.group);
-      var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by].filter(Boolean).join(" · ");
+      var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by, t.cfg && "formularz do konfiguracji"].filter(Boolean).join(" · ");
       return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span>' +
         '<span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
     }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
