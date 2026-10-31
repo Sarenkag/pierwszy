@@ -265,6 +265,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .sumlist { margin: 0; padding-left: 20px; font-size: 0.92rem; }
 .datesug { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.92rem; }
 </style>
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="form-ui.css">
 </head>
 <body>
 
@@ -394,7 +396,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
       <p class="hint" id="trHint"></p>
     </div>
 
-    <button class="go" type="button" id="toQueue" data-m="one sum">Do kolejki</button>
+    <button class="go" type="button" id="toQueue" data-m="one sum">Wyślij</button>
     <button class="btn wide" type="button" id="toPreview" data-m="one sum">Podgląd raportu</button>
     <button class="go" type="button" id="saveItem" data-m="item">Zapisz</button>
     <p class="hint" id="formHint"></p>
@@ -951,7 +953,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var bad = tempBad(s[1], temps[i]); if (bad) outN++;
       pts.push(s[0] + " – " + KIND[s[1]] + ": " + n + "°C" + (bad ? " – out of range (" + LIMIT[s[1]] + ")" : ""));
     });
-    var d = { data: fmtDate(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+    var d = { data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: pts, quote: "", site: cfg.site, komentarz: "", zakres: "", temps: slots.map(function (s, i) { var n = tempNum(temps[i]); return n === null ? "" : String(n); }),
       stan_ogolny: outN ? outN + " reading(s) out of range – record in the Fault and Remedial Actions Log" : "All readings within range" };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date()); d.opis = pts.join("\n");
@@ -1262,7 +1264,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var miss = all.filter(function (d) { return !cur.restOk && !items[d.code]; }).map(function (d) { return d.code; });
     if (miss.length) pts.push("Not inspected: " + miss.join(", ") + ".");
     var d = {
-      data: fmtDate(w), inspektor: val("podpis"), urzadzenie: t.batch, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: t.batch, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: t.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? t.scope : ""
     };
@@ -1459,7 +1461,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         (outN ? " Poza zakresem: " + outN + " — wpis do Fault and Remedial Actions Log." : "") + (filled < temps.length ? " Puste pola zostaną puste w raporcie." : "");
       var blk = !filled || bad > 0;
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
-      $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate()); return;
+      $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
@@ -1476,10 +1478,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (pendingPh) h.push("Zmniejszam zdjęcie…");
     var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
     $("toPreview").disabled = block; $("toQueue").disabled = block;
-    $("toQueue").textContent = "Do kolejki · " + fmtDate(reportDate());
+    $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate());
   }
 
   // ---------- dane raportu ----------
+  function dateOn() { var c = document.getElementById("dateOn"); return !c || c.checked; }
   function reportDate() {
     var v = $("dzien").value, n = new Date();
     if (!v) return n;
@@ -1492,7 +1495,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
     var d = {
-      data: fmtDate(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
+      data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
@@ -1865,6 +1868,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
     cur.ppm = t; $("appMenu").href = "../index.html#ppm";
+    if (t.open && t.dev) {
+      // jedna rozdzielnica = osobna inspekcja: prosto do jej formularza
+      cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0];
+      if (!cur.type.devices.some(function (d) { return d.code === t.dev; })) cur.type.devices.push({ code: t.dev, loc: t.where || "", room: "" });
+      openForm(t.dev); return;
+    }
     if (t.open) {
       cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; $("search").value = "";
       (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); });
@@ -1892,5 +1901,6 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 })();
 </script>
+<script src="form-ui.js"></script>
 </body>
 </html>

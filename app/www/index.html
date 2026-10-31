@@ -407,7 +407,7 @@ input[type=text], input[type=email], input[type=date], select {
   }
 
   // ---------- PPM: lista inspekcji ----------
-  var P = window.OEST_PPM, ppmGroup = load("ppm.group", "all"), ppmDay = "";
+  var P = window.OEST_PPM, ppmGroup = load("ppm.group", "all"), ppmDay = "", ppmOpen = {};
   var DAYS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
@@ -431,7 +431,21 @@ input[type=text], input[type=email], input[type=date], select {
     var list = rows.filter(function (r) { return (ppmGroup === "all" || r.t.group === ppmGroup) && (!ppmDay || r.day === ppmDay); });
     // najpierw po terminie i najbliższe, na końcu bez daty
     list.sort(function (a, b) { return (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
+    // rodzina (np. 18 DB): jedna karta grupy w miejscu najpilniejszej, rozwijana dotknięciem
+    var fams = {}, out = [];
+    list.forEach(function (r) {
+      var f = r.t.fam; if (!f) { out.push(r); return; }
+      if (!fams[f]) { fams[f] = { fam: f, rows: [], left: r.left, t: r.t }; out.push(fams[f]); }
+      fams[f].rows.push(r);
+    });
+    list = [];
+    out.forEach(function (r) { if (!r.fam) { list.push(r); return; } list.push(r); if (ppmOpen[r.fam]) list = list.concat(r.rows); });
     $("ppmList").innerHTML = list.length ? list.map(function (r) {
+      if (r.fam) {
+        var gg = grp(r.t.group);
+        return '<button class="prow fam" type="button" data-fam="' + esc(r.fam) + '"><span class="bar" style="background:' + gg.color + '"></span>' +
+          '<span><div class="nm">' + esc(r.fam) + " (" + r.rows.length + ')</div><div class="dt">' + (ppmOpen[r.fam] ? "▾ zwiń" : "▸ rozwiń") + " · " + esc(P.endsText(r.left)) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+      }
       var t = r.t, g = grp(t.group);
       var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by, t.cfg && "formularz do konfiguracji"].filter(Boolean).join(" · ");
       return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span>' +
@@ -442,7 +456,7 @@ input[type=text], input[type=email], input[type=date], select {
   }
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
   $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
-  $("ppmList").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
+  $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
 
   function renderHome() {
     var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
