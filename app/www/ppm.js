@@ -1,6 +1,6 @@
-// Lista PPM One Eastside (od Grzegorza, 30/10/2026). Karty jak w systemie: część zbiorcza, część rozdzielona.
+// Lista PPM One Eastside: 28 inspekcji startowych + rozdzielnice i izolatory + podwykonawcy (Sub).
 // freq: "1W", "3M" itd.; kilka częstotliwości (np. 1M + 12M) — termin liczy się z najkrótszej.
-// open: karta otwiera istniejący rodzaj inspekcji z listą urządzeń (db, ats, iso).
+// open: karta otwiera istniejący rodzaj inspekcji z listą urządzeń (db, iso).
 window.OEST_PPM = {
   groups: [
     { id: "fire", name: "Fire", color: "#e5534b" },
@@ -10,31 +10,41 @@ window.OEST_PPM = {
     { id: "sub", name: "Sub", color: "#a371f7" }
   ],
   tasks: [
-    { id: "fa-weekly", group: "fire", name: "Weekly Fire Alarm Test", where: "Tower A, Tower B, Pavilion", freq: ["1W"] },
-    { id: "spr-weekly", group: "fire", name: "Weekly Sprinkler Testing", freq: ["1W"] },
-    { id: "aov-weekly", group: "fire", name: "AOV Operation Test", where: "Tower A, Tower B", freq: ["1W"] },
-    { id: "el-ta-pv", group: "fire", name: "Emergency Lighting Test", where: "Tower A, Pavilion", freq: ["1M", "12M"] },
-    { id: "el-tb", group: "fire", name: "Emergency Lighting Test", where: "Tower B", freq: ["1M"] },
-    { id: "ats", group: "fire", name: "ATS Inspections (5)", freq: ["1M"], open: "ats" },
+    // 28 inspekcji startowych (katalog EFA-INS-001..028, nazwy dokładnie jak w katalogu, 31/10/2026).
+    // cfg: formularz do konfiguracji — do czasu ustalenia pytań szybki formularz: zdjęcie i jedno sprawdzenie.
+    // Częstotliwości z listy PPM; Lift signage bez częstotliwości (termin tylko przez Update).
+    { id: "EFA-INS-001", group: "fire", name: "Emergency Lighting Test (Tower A)", freq: ["1M",  "12M"], cfg: true },
+    { id: "EFA-INS-002", group: "water", name: "Water Temperature Checks (Tower A)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-003", group: "fire", name: "AOV Operation Testing (Tower A)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-004", group: "water", name: "Weekly Flushing (Tower A)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-005", group: "fire", name: "Weekly Sprinkler Testing", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-006", group: "fire", name: "Weekly Fire Alarm Test (Tower A)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-007", group: "water", name: "Water Feature Checks", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-008", group: "water", name: "Weekly Spa Checks", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-009", group: "water", name: "Daily Spa Pool Sampling", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-010", group: "water", name: "Monthly Tap Temperature Check (Pavillion)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-011", group: "fire", name: "Monthly Emergency Lighting Test (Pavillion)", freq: ["1M",  "12M"], cfg: true },
+    { id: "EFA-INS-012", group: "water", name: "Weekly Flushing of Seldom Used Outlets (Pavillion)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-013", group: "fire", name: "Weekly Fire Alarm Test (Pavillion)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-014", group: "fire", name: "Automatic Transfer Switches (Tower B, L13)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-015", group: "fire", name: "Automatic Transfer Switches (Tower B, L12)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-016", group: "fire", name: "Automatic Transfer Switches (Tower B, UG)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-017", group: "fire", name: "Automatic Transfer Switches (Tower B, Roof 2)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-018", group: "fire", name: "Automatic Transfer Switches (Tower A, Roof 1)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-019", group: "fire", name: "AOV Operation Test (Tower B)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-020", group: "mech", name: "Monthly Plant Room Inspections", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-021", group: "mech", name: "Weekly Plant Status Checks", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-022", group: "elec", name: "Monthly Lighting Checks", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-023", group: "mech", name: "Monthly Meter Readings", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-024", group: "water", name: "Water Temperature Checks (Tower B)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-025", group: "fire", name: "Weekly Fire Alarm Test (Tower B)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-026", group: "water", name: "Weekly Flushing (Tower B)", freq: ["1W"], cfg: true },
+    { id: "EFA-INS-027", group: "fire", name: "Emergency Lighting Test (Tower B)", freq: ["1M"], cfg: true },
+    { id: "EFA-INS-028", group: "fire", name: "Lift signage Tower B", freq: [], cfg: true },
 
-    { id: "flush", group: "water", name: "Weekly Flushing / Seldom Used Outlets", where: "Tower A, Tower B, Pavilion", freq: ["1W"] },
-    { id: "wtemp", group: "water", name: "Water Temperature Checks / Tap Temperature", where: "Tower A, Tower B, Pavilion", freq: ["1M"] },
-    { id: "shower", group: "water", name: "Showerhead Clean & De-scale", freq: ["3M"] },
-    { id: "spa-daily", group: "water", name: "Daily Spa Pool Sampling", freq: ["1W"] },
-    { id: "spa-weekly", group: "water", name: "Weekly Spa Checks", freq: ["1W"] },
-    { id: "wfeature", group: "water", name: "Water Feature Checks", freq: ["1W"] },
-
+    // istniejące rodzaje z listą urządzeń i pytaniami
     { id: "db", group: "elec", name: "Distribution Boards (18)", freq: ["3M", "6M", "12M"], open: "db" },
     { id: "iso", group: "elec", name: "Isolator Inspections", freq: ["3M", "12M"], open: "iso" },
-    { id: "lighting", group: "elec", name: "Monthly Lighting Checks", freq: ["1M"] },
-
-    { id: "plant-weekly", group: "mech", name: "Weekly Plant Status Checks", freq: ["1W"] },
-    { id: "plant-room", group: "mech", name: "Monthly Plant Room Inspections", freq: ["1M"] },
-    { id: "meters", group: "mech", name: "Monthly Meter Readings", freq: ["1M"] },
-    { id: "ahu", group: "mech", name: "Air Handling Units", freq: ["6M", "12M"] },
-    { id: "efans", group: "mech", name: "Extract Fans", where: "Tower B", freq: ["6M"] },
-    { id: "odh", group: "mech", name: "Overdoor Heaters", where: "Tower B", freq: ["6M"] },
-    { id: "hru", group: "mech", name: "Heat Recovery Units", freq: ["12M"] },
 
     { id: "s-fa", group: "sub", name: "Fire Alarm System", where: "Tower A, Tower B", freq: ["3M"], by: "Thompson Group" },
     { id: "s-refuge", group: "sub", name: "Disabled Refuge System", where: "Tower B", freq: ["6M"], by: "Thompson Group" },
@@ -79,7 +89,7 @@ window.OEST_PPM = {
   P.due = function (t) { var s = all()[t.id]; return s ? parse(s) : null; };
   P.setDue = function (t, day) { put(t.id, day); };
   // Raport wysłany (dzień raportu „day”): bez terminu liczy od dnia raportu, z terminem przesuwa go o jeden okres
-  P.close = function (t, day) { var d = P.due(t); put(t.id, iso(next(t, d || parse(day)))); };
+  P.close = function (t, day) { if (!t.freq.length) return; var d = P.due(t); put(t.id, iso(next(t, d || parse(day)))); };
   P.daysLeft = function (due) {
     if (!due) return null;
     var n = new Date(), today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
