@@ -39,3 +39,7 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .day i.n,.day.today small{color:#b9a8ff!important}
 .settings-tools{margin-top:6px}.settings-tools>summary{list-style:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:8px 4px;text-align:right}
 .settings-tools>summary::-webkit-details-marker{display:none}
+.prow.fam .nm{font-weight:700}
+.prow[data-id^="db-"]{margin-left:14px;width:calc(100% - 14px)}
+.keys-main{display:grid;grid-template-columns:1fr 1fr;gap:8px}.keys-main .btn{margin:0}
+.keys-search{min-height:44px;margin-top:4px}

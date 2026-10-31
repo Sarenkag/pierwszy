@@ -1,0 +1,38 @@
+/* Ekran inspekcji – styl „Szkło i poświata” (zmienne z ../theme.css) */
+#v-form .top{position:relative}
+#v-form #formSub,#v-form .legend,#v-form #allOk,#v-form #toPreview,#v-form #photoInfo,.gone{display:none!important}
+.kebab{width:38px;height:38px;border:0;background:transparent;color:var(--ink);font-size:1.5rem;cursor:pointer}
+.kmenu{position:absolute;right:0;top:44px;z-index:20;min-width:240px;display:flex;flex-direction:column;padding:6px;border-radius:16px;
+  background:rgba(22,26,52,.96);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.kmenu button{background:none;border:0;color:var(--ink);font:inherit;text-align:left;padding:12px;border-radius:10px;cursor:pointer}
+.kmenu button:active{background:rgba(255,255,255,.08)}
+.kmenu .ppmbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:.9rem}
+.kmenu .ppmbar[hidden]{display:none}
+.ihead{display:flex;justify-content:space-between;gap:10px;font-size:.92rem;margin:-4px 0 2px}
+.ileft{display:flex;flex-direction:column;gap:4px}
+.icb{display:flex;align-items:center;gap:8px}
+.icb input[type=checkbox]{width:18px;height:18px;accent-color:#7c84ff;margin:0}
+.icb input[type=date]{min-height:30px!important;padding:0 8px!important;width:auto!important;font-size:.9rem}
+.icb input[type=date]:disabled{opacity:.35}
+.iright{text-align:right;color:var(--muted)}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
+.iphotos{padding:10px!important;gap:10px!important}.iphotos .label{display:none}
+.iphotos .photo-btns{grid-template-columns:repeat(3,1fr)!important;gap:8px}
+.iphotos .pbtn{min-height:42px!important;font-size:.9rem}
+.fold:not(.open){display:none!important}
+.isec #ckTitle{cursor:pointer;display:flex;justify-content:space-between;text-transform:none;font-size:.9rem;letter-spacing:0;color:var(--ink);font-family:inherit}
+.isec #ckTitle::after{content:"⌃"}.isec.shut #ckTitle::after{content:"⌄"}.isec.shut #ck{display:none}
+/* checklista: kropki zamiast ✓ ✗ – */
+.ck-row{padding:9px 0!important;gap:8px!important}
+.ck-row .txt{font-size:.9rem!important;line-height:1.3}
+.ck-row .seg{display:flex;gap:9px;background:none!important;border:0!important;padding:0}
+.ck-row .seg button{width:30px!important;height:30px!important;min-height:0;padding:0;border-radius:50%!important;font-size:0!important;cursor:pointer;position:relative;
+  border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent)!important;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.3),transparent 45%),radial-gradient(circle,color-mix(in srgb,var(--c) 30%,#0a0e1f),color-mix(in srgb,var(--c) 18%,#0a0e1f))!important}
+.ck-row .seg .ok{--c:#3ddc84}.ck-row .seg .fail{--c:#ff4d5e}.ck-row .seg .na{--c:#8a93a3;margin-left:10px}
+.ck-row .seg .na::before{content:"";position:absolute;left:-11px;top:4px;bottom:4px;width:1px;background:rgba(255,255,255,.18)}
+.ck-row .seg button::after{font-size:13px;font-weight:800;color:rgba(255,255,255,.55)}
+.ck-row .seg .ok::after{content:"✓"}.ck-row .seg .fail::after{content:"✗"}.ck-row .seg .na::after{content:"N/A";font-size:8px}
+.ck-row .seg button.on{border-color:rgba(255,255,255,.85)!important;transform:scale(1.1);box-shadow:0 0 14px var(--c),0 0 4px var(--c);
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle,var(--c),color-mix(in srgb,var(--c) 70%,#000))!important}
+.ck-row .seg button.on::after{color:#0a0e1f}
+#toQueue{min-height:50px;border-radius:16px!important}

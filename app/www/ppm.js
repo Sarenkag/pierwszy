@@ -81,7 +81,25 @@ window.OEST_PPM = {
     { id: "EFA-INS-028", group: "fire", name: "Lift signage TB", freq: [], cfg: true },
 
     // istniejące rodzaje z listą urządzeń i pytaniami
-    { id: "db", group: "elec", name: "Distribution Boards (18)", freq: ["3M", "6M", "12M"], open: "db" },
+    // 18 rozdzielnic: każda to osobna inspekcja (własny termin i raport), na liście zebrane pod kartą „Distribution Boards”
+    { id: "db-DB-TB-EXT-1", group: "elec", fam: "Distribution Boards", name: "DB-TB-EXT-1", freq: ["3M", "6M", "12M"], open: "db", dev: "DB-TB-EXT-1" },
+    { id: "db-DB-TB-PR-1", group: "elec", fam: "Distribution Boards", name: "DB-TB-PR-1", freq: ["3M", "6M", "12M"], open: "db", dev: "DB-TB-PR-1" },
+    { id: "db-LL-LG", group: "elec", fam: "Distribution Boards", name: "LL-LG", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-LG" },
+    { id: "db-LL-UG", group: "elec", fam: "Distribution Boards", name: "LL-UG", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-UG" },
+    { id: "db-FFS-04", group: "elec", fam: "Distribution Boards", name: "FFS-04", freq: ["3M", "6M", "12M"], open: "db", dev: "FFS-04" },
+    { id: "db-FFS-12", group: "elec", fam: "Distribution Boards", name: "FFS-12", freq: ["3M", "6M", "12M"], open: "db", dev: "FFS-12" },
+    { id: "db-LL-02", group: "elec", fam: "Distribution Boards", name: "LL-02", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-02" },
+    { id: "db-LL-06", group: "elec", fam: "Distribution Boards", name: "LL-06", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-06" },
+    { id: "db-LL-10", group: "elec", fam: "Distribution Boards", name: "LL-10", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-10" },
+    { id: "db-LL-14", group: "elec", fam: "Distribution Boards", name: "LL-14", freq: ["3M", "6M", "12M"], open: "db", dev: "LL-14" },
+    { id: "db-MSDB-TB-01", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-01", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-01" },
+    { id: "db-MSDB-TB-03", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-03", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-03" },
+    { id: "db-MSDB-TB-05", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-05", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-05" },
+    { id: "db-MSDB-TB-06", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-06", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-06" },
+    { id: "db-MSDB-TB-08", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-08", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-08" },
+    { id: "db-MSDB-TB-10", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-10", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-10" },
+    { id: "db-MSDB-TB-11", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-11", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-11" },
+    { id: "db-MSDB-TB-13", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-13", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-13" },
     { id: "iso", group: "elec", name: "Isolator Inspections", freq: ["3M", "12M"], open: "iso" },
 
     { id: "s-fa", group: "sub", name: "Fire Alarm System", where: "Tower A, Tower B", freq: ["3M"], by: "Thompson Group" },
