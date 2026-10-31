@@ -20,7 +20,7 @@
       profile:{first:account.first || '',last:account.last || '',title:'',position:'',workplace:'',companyEmail:'',formSignature:'',photo:'',signatureImage:''},
       schedules:[],contacts:[],contactsLabel:{id:'',name:'',lastImportedAt:''},
       mail:{managerId:'',engineerId:''},drive:{folderId:'',folderName:'',lastBackupAt:''},
-      calendar:{calendarId:'',name:'',exportShifts:false,exportInspections:false},
+      calendar:{calendarId:'',name:'',exportShifts:false,exportInspections:true,enabled:false,nativeCalendarId:'',accountName:'',weeks:8,workdayMode:'all',groups:['fire','water','elec','mech','sub'],shiftMarkers:false},
       sync:{preferWifi:true,mobile:'manual',warnMB:null,maxConcurrent:1},
       reports:{language:'en',compression:'readable',photosPerPage:10,formats:['docx','pdf']},
       inspection:{startMode:'empty'},ai:{location:'phone',provider:'local',visionModel:'',textModel:'',cloudModel:'',ocrEnabled:true,autoAnalyzePhotos:true,maxConcurrent:1,autoCloudFallback:false},appearance:{language:'pl',theme:'graphite',accent:'default',density:'comfortable',reduceMotion:false},legacyProfile:{}};
@@ -51,6 +51,7 @@
     if(s.ai.location!=='phone'||s.ai.autoCloudFallback!==false||s.ai.maxConcurrent!==1||['local','openai','anthropic','gemini'].indexOf(s.ai.provider)<0||typeof s.ai.ocrEnabled!=='boolean'||typeof s.ai.autoAnalyzePhotos!=='boolean')fail('AI_POLICY');
     ['visionModel','textModel','cloudModel'].forEach(function(k){if(typeof s.ai[k]!=='string'||s.ai[k].length>200)fail('AI_MODEL');});
     if(typeof s.calendar.exportShifts!=='boolean'||typeof s.calendar.exportInspections!=='boolean') fail('CALENDAR_POLICY');
+    if(typeof s.calendar.enabled!=='boolean'||typeof s.calendar.shiftMarkers!=='boolean'||typeof s.calendar.nativeCalendarId!=='string'||typeof s.calendar.accountName!=='string'||!Number.isInteger(s.calendar.weeks)||s.calendar.weeks<1||s.calendar.weeks>52||!['all','skip','next'].includes(s.calendar.workdayMode)||!Array.isArray(s.calendar.groups)||s.calendar.groups.some(g=>!['fire','water','elec','mech','sub'].includes(g))) fail('CALENDAR_POLICY');
     if(s.drive.folderId && !/^[a-zA-Z0-9_-]+$/.test(s.drive.folderId)) fail('FOLDER_ID');
     if(!Array.isArray(s.schedules)||!Array.isArray(s.contacts)) fail('SETTINGS_SCHEMA');
     var seen={};
@@ -80,7 +81,7 @@
     function key(id){return 'oest.settings.v1.'+encodeURIComponent(id);}
     function get(){
       var who=identity(),s=read(key(who.id),null);
-      if(s){validate(s,false);return copy(s);}
+      if(s){s.calendar=Object.assign({},defaults(who.id,who.a).calendar,s.calendar);validate(s,false);return copy(s);}
       s=defaults(who.id,who.a);
       var migrationOwner=read('oest.settings.legacyOwner',null);
       if(!migrationOwner || migrationOwner===who.id){
@@ -123,7 +124,7 @@
     function checkBackup(b){
       if(!b||b.kind!=='OEST_SETTINGS'||b.version!==1)fail('BACKUP_VERSION');
       if(b.owner!==identity().id||!b.data||b.data.owner!==b.owner)fail('BACKUP_OWNER');
-      validate(b.data,true);return copy(b.data);
+      var incoming=copy(b.data);incoming.calendar=Object.assign({},defaults(b.owner,{}).calendar,incoming.calendar);validate(incoming,true);return incoming;
     }
     function previewRestore(b){var s=checkBackup(b);return {profileName:[s.profile.first,s.profile.last].filter(Boolean).join(' '),contacts:s.contacts.length,schedules:s.schedules.length,exportedAt:b.exportedAt};}
     function restore(b,confirmed){if(confirmed!==true)fail('RESTORE_CONFIRM');var incoming=checkBackup(b);return update(function(s){var legacy=s.legacyProfile;Object.assign(s,incoming);s.legacyProfile=legacy;});}

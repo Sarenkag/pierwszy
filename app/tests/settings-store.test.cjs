@@ -91,3 +91,8 @@ test('AI defaults keep phone vision/text replaceable and cloud explicitly select
   assert.equal(f.store.get().ai.visionModel,'phone-vision-v2');
   assert.throws(()=>f.store.update(s=>{s.ai.apiKey='secret';}),/UNKNOWN_FIELD/);
 });
+test('calendar preferences migrate old Settings without enabling or selecting a private calendar',()=>{
+  const f=fixture();let s=f.store.get();delete s.calendar.enabled;delete s.calendar.weeks;delete s.calendar.groups;
+  f.data.set('oest.settings.v1.a',JSON.stringify(s));s=f.store.get();assert.equal(s.calendar.enabled,false);assert.equal(s.calendar.weeks,8);assert.equal(s.calendar.shiftMarkers,false);assert.equal(s.calendar.nativeCalendarId,'');
+  assert.throws(()=>f.store.update(x=>{x.calendar.weeks=0;}),/CALENDAR/);
+});
