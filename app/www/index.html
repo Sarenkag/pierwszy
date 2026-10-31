@@ -123,6 +123,7 @@ input[type=text], input[type=email], input[type=date], select {
 .st.x::after { content: "!"; position: absolute; right: -10px; top: -6px; color: var(--bad); font-weight: 800; }
 </style>
 <link rel="stylesheet" href="settings.css">
+<link rel="stylesheet" href="handover.css">
 </head>
 <body>
 <div class="wrap">
@@ -171,7 +172,7 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
         <div><b>Keys / Doors</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Handover">
+      <button class="tile" type="button" data-go="handover">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
         <div><b>Handover</b><span class="sub">Notatki i zdjęcia ze zmiany</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -234,12 +235,16 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
+  <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="config.js"></script>
 <script src="ppm.js"></script>
 <script src="settings-store.js"></script>
 <script src="settings-google.js"></script>
 <script src="settings-ui.js"></script>
+<script src="reactive-store.js"></script>
+<script src="handover-core.js"></script>
+<script src="handover.js"></script>
 <script>
 (function () {
   "use strict";
@@ -252,16 +257,21 @@ input[type=text], input[type=email], input[type=date], select {
 
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
+  var renderedRoute = "";
   function render(v) {
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
+    var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
     if (settingsRoute) v = "settings";
+    if (handoverRoute) v = "handover";
     if (!$("v-" + v)) v = "home";
     if (!account()) v = "start";
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
     if (v === "home") renderHome();
     if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
+    if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
+    renderedRoute = handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -271,7 +281,14 @@ input[type=text], input[type=email], input[type=date], select {
     render(v);
   }
   window.OESTSettingsUI.setNavigate(show);
-  window.addEventListener("popstate", function () { render(location.hash.slice(1)); });
+  window.OESTHandover.setNavigate(show);
+  window.addEventListener("popstate", function () {
+    if (renderedRoute.indexOf("handover") === 0 && !window.OESTHandover.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    render(location.hash.slice(1));
+  });
   // Strzałka „wstecz” cofa w historii (jak systemowy „wstecz”); przy wejściu prosto na ekran idzie do rodzica
   document.querySelectorAll(".back[data-go]").forEach(function (b) {
     b.addEventListener("click", function (e) {
