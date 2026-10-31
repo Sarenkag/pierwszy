@@ -124,6 +124,7 @@ input[type=text], input[type=email], input[type=date], select {
 </style>
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="handover.css">
+<link rel="stylesheet" href="keys.css">
 </head>
 <body>
 <div class="wrap">
@@ -168,9 +169,9 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
         <div><b>Calendar</b><span class="sub">Zmiany i terminy inspekcji</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Keys / Doors">
+      <button class="tile" type="button" data-go="keys">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
-        <div><b>Keys / Doors</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Keys</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="handover">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
@@ -235,6 +236,7 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
+  <section class="view" id="v-keys" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="config.js"></script>
@@ -248,6 +250,9 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="reactive-store.js"></script>
 <script src="handover-core.js"></script>
 <script src="handover.js"></script>
+<script src="keys-core.js"></script>
+<script src="keys-store.js"></script>
+<script src="keys.js"></script>
 <script>
 (function () {
   "use strict";
@@ -264,6 +269,8 @@ input[type=text], input[type=email], input[type=date], select {
   function render(v) {
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
+    var keysRoute = v === "keys" || v.indexOf("keys/") === 0 ? v : null;
+    if (keysRoute) v = "keys";
     if (settingsRoute) v = "settings";
     if (handoverRoute) v = "handover";
     if (!$("v-" + v)) v = "home";
@@ -272,9 +279,10 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "home") renderHome();
     if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
     if (v === "handover") window.OESTHandover.open(handoverRoute);
+    if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
-    renderedRoute = handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
+    renderedRoute = keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -285,7 +293,12 @@ input[type=text], input[type=email], input[type=date], select {
   }
   window.OESTSettingsUI.setNavigate(show);
   window.OESTHandover.setNavigate(show);
+  window.OESTKeys.setNavigate(show);
   window.addEventListener("popstate", function () {
+    if (renderedRoute.indexOf("keys") === 0 && !window.OESTKeys.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
     if (renderedRoute.indexOf("handover") === 0 && !window.OESTHandover.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
