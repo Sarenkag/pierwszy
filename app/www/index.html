@@ -127,6 +127,7 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="keys.css">
 <link rel="stylesheet" href="powertrace.css">
 <link rel="stylesheet" href="questions.css">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="wrap">
@@ -151,49 +152,46 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Menu główne -->
   <section class="view" id="v-home" hidden>
-    <div class="top">
-      <div class="t"><h1>OEST<span>.</span></h1><div class="sub" id="homeSub">One East Side Tower</div></div>
-    </div>
     <div class="tiles">
       <button class="tile" type="button" data-go="ppm">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
-        <div><b>Planowane inspekcje / PPM</b><span class="sub" id="ppmSub">Terminy i szybkie zamykanie</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Inspections</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="soon" data-title="Reactive">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
-        <div><b>Reactive</b><span class="sub">Zlecenia i problemy poza planem</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Reactive</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="powertrace">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 5L13 27h10l-3 16 15-23H25z"/></svg>
-        <div><b>Power trace</b><span class="sub">Brak zasilania → rozdzielnica i MCB</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Power trace</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="settings/calendar">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
-        <div><b>Calendar</b><span class="sub">Zmiany i terminy inspekcji</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Calendar</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="keys">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
-        <div><b>Keys</b><span class="sub">Klucze i drzwi</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Keys</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="handover">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
-        <div><b>Handover</b><span class="sub">Notatki i zdjęcia ze zmiany</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Handover</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Statystyki">
+      <button class="tile" type="button" data-go="soon" data-title="Stats">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/></svg>
-        <div><b>Statystyki</b><span class="sub">Zamknięte PPM i reactive na zmianę</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Stats</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="settings">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/></svg>
-        <div><b>Settings</b><span class="sub">Profil, apka, inspekcje</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b>Settings</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
     </div>
   </section>
 
-  <!-- Planowane inspekcje / PPM -->
+  <!-- Inspections -->
   <section class="view" id="v-ppm" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Inspections</h1><div class="sub" id="ppmInfo"></div></div></div>
+      <div class="t"><h1>Inspections</h1></div></div>
     <div class="days" id="ppmDays"></div>
     <div class="chips" id="ppmChips"></div>
     <div class="ppm" id="ppmList"></div>
@@ -312,6 +310,12 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTKeys.setNavigate(show);
   window.OESTPowerTrace.setNavigate(show);
   window.OESTQuestionsUI.setNavigate(show);
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".top .back");
+    if (!b || depth() < 1) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    history.back();
+  }, true);
   window.addEventListener("popstate", function () {
     if (renderedRoute === "questions" && !window.OESTQuestionsUI.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
@@ -432,7 +436,7 @@ input[type=text], input[type=email], input[type=date], select {
         '<span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
     }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
     var noDate = rows.filter(function (r) { return !r.due; }).length;
-    $("ppmInfo").textContent = noDate ? noDate + " bez terminu – ustaw Update w inspekcji" : "Wszystkie mają termin";
+
   }
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
   $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
@@ -440,7 +444,7 @@ input[type=text], input[type=email], input[type=date], select {
 
   function renderHome() {
     var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
-    $("homeSub").textContent = (name ? name + " · " : "") + "One East Side Tower";
+
   }
 
   // ---------- start ----------

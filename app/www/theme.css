@@ -1,0 +1,41 @@
+/* OEST – jeden wspólny styl „Szkło i poświata” (wybór Grzegorza 31/10/2026).
+   Ładowany jako ostatni: nadpisuje kolory i wygląd wszystkich modułów. */
+:root:root:root{
+  --bg:#0a0e1f;--panel:rgba(255,255,255,.06);--panel-solid:#151a33;--field:rgba(255,255,255,.07);
+  --ink:#eef1ff;--muted:#9aa3cc;--line:rgba(255,255,255,.12);--steel:#b9c2f0;
+  --accent:#7c84ff;--accent-2:#a35bff;--accent-ink:#fff;--grad:linear-gradient(90deg,#5b7cff,#a35bff);
+  --ok:#3ddc84;--warn:#ffd23f;--bad:#ff4d5e;--good:#3ddc84;--acceptable:#ffd23f;--attention:#ff8a3d;--defect:#ff4d5e;--na:#8a93a3;
+  --font-display:Inter,Roboto,"Segoe UI",system-ui,sans-serif;--font-body:Inter,Roboto,"Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{background:radial-gradient(circle at 15% 0%,#26357f 0,transparent 42%),radial-gradient(circle at 100% 55%,#4a2478 0,transparent 45%),#0a0e1f fixed;color:var(--ink)}
+body{font-size:15px}
+/* nagłówki: mały tytuł w jednej linii, bez nadtytułów i podtytułów */
+h1,.settings-page h1{font-family:var(--font-body)!important;font-size:1.15rem!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important;line-height:1.25!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1 span{color:inherit}
+.top{min-height:44px}
+.top .sub,.top small,.top .t>small,.settings-eyebrow{display:none!important}
+.back{width:38px!important;height:38px!important;border:0!important;background:transparent!important;font-size:1.6rem!important;color:var(--ink)!important}
+/* karty szklane */
+.panel,.tile,.prow,.settings-card,.settings-hero,.settings-group,.day,.chip,.btn:not(.go),.pbtn,.sm{background:var(--panel)!important;border:1px solid var(--line)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.panel,.settings-hero{border-radius:18px!important}
+.btn,.pbtn{border-radius:14px!important;min-height:46px}
+.btn.go,button.go,.save-bar .btn{background:var(--grad)!important;border:0!important;color:#fff!important;box-shadow:0 8px 24px rgba(120,90,255,.4)}
+input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],input[type=tel],select,textarea{background:var(--field)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:12px!important}
+.field>span,.field>label{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* menu główne: siatka 2 kolumny, tylko ikona + nazwa */
+#v-home .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#v-home .tile{grid-template-columns:1fr;grid-template-rows:auto auto;gap:14px;padding:16px;border-radius:18px;min-height:104px;align-content:space-between}
+#v-home .tile .sub,#v-home .tile .arrow{display:none}
+#v-home .tile svg{width:30px;height:30px;stroke:#fff;padding:7px;border-radius:10px;background:var(--grad);box-sizing:content-box}
+#v-home .tile b{font-family:var(--font-body);font-size:1rem;font-weight:600;text-transform:none}
+.tile svg{stroke:var(--steel)}
+.tile b{font-family:var(--font-body)!important;font-size:1rem!important;text-transform:none!important;font-weight:600}
+/* lista PPM */
+.prow{border-radius:14px!important}
+.chip{min-height:32px;font-size:.85rem;border-radius:999px!important}
+.chip.on{background:var(--grad)!important;border-color:transparent!important;color:#fff!important}
+.day{border-radius:14px!important}.day.on{border-color:var(--accent)!important;box-shadow:0 0 12px rgba(124,132,255,.5)}
+.day i.n,.day.today small{color:#b9a8ff!important}
+.settings-tools{margin-top:6px}.settings-tools>summary{list-style:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:8px 4px;text-align:right}
+.settings-tools>summary::-webkit-details-marker{display:none}
