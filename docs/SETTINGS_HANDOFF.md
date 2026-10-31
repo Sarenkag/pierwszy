@@ -13,3 +13,7 @@ Latest AI decisions: models run on phone, text PL to professional EN is priority
 Verification: 20 Node unit tests PASS; JS syntax PASS; scripts/copy-web.js PASS with existing dependencies; no new dependency added. Browser check exists in app/tests/settings-ui-check.cjs but could not launch in restricted environment; elevated attempt was NOT executed because automatic approval review hit account usage limit. Screenshots/Android APK/real OAuth not verified. Do not call the UI or integrations device-tested. Need next: run browser test then Android smoke and real OAuth permissions, wire owner modules to policy.
 
 Run: cd app; node --test tests/*.test.cjs. Browser check requires Playwright; optional OEST_PLAYWRIGHT_PATH and OEST_BROWSER_PATH point to an installed runtime/browser. Never publish or merge automatically.
+
+## Update 2 — Settings routing fix
+
+Fixed undefined settingsRoute and routed settings subpages / legacy profile paths correctly; index.html normalized to LF. Regression tests reproduced the error before the fix and now pass (4/4). Browser Settings check PASS in installed Chrome at 390/360 px, including account-seeded #settings, profile save/reload, shift history, themes, PL/EN, offline save and existing PPM. This supersedes the earlier unverified browser status. Real OAuth/Android checks remain unverified.

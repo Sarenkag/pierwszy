@@ -253,6 +253,8 @@ input[type=text], input[type=email], input[type=date], select {
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
   function render(v) {
+    var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
+    if (settingsRoute) v = "settings";
     if (!$("v-" + v)) v = "home";
     if (!account()) v = "start";
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
