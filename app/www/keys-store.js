@@ -17,5 +17,5 @@
     async function recordTest(id,expectedId,rankIds){const account=owner();return b.update(account,s=>{same(account);if(!s.records.some(r=>r.id===expectedId)||!Array.isArray(rankIds)||rankIds.length>3||rankIds.some(x=>!s.records.some(r=>r.id===x)))throw Error('KEY_TRIAL');if(!s.trials.some(t=>t.id===id))s.trials.push({id,expectedId,rankIds:rankIds.slice(),at:new Date().toISOString()});return true;});}
     async function stats(){const account=owner(),s=await b.read(account);same(account);return {total:s.trials.length,top1:s.trials.filter(t=>t.rankIds[0]===t.expectedId).length,top3:s.trials.filter(t=>t.rankIds.includes(t.expectedId)).length};}
     return {all,save,remove,exportJSON,importJSON,recordTest,stats};
-  }return {createRepository,record,merge};
+  }return {createRepository,record,merge,media,encodeMedia:encode,decodeMedia:decode};
 });

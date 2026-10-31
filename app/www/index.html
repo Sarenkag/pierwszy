@@ -125,6 +125,7 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="settings.css">
 <link rel="stylesheet" href="handover.css">
 <link rel="stylesheet" href="keys.css">
+<link rel="stylesheet" href="powertrace.css">
 </head>
 <body>
 <div class="wrap">
@@ -161,7 +162,7 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
         <div><b>Reactive</b><span class="sub">Zlecenia i problemy poza planem</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Power trace">
+      <button class="tile" type="button" data-go="powertrace">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 5L13 27h10l-3 16 15-23H25z"/></svg>
         <div><b>Power trace</b><span class="sub">Brak zasilania → rozdzielnica i MCB</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -236,6 +237,7 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
+  <section class="view" id="v-powertrace" hidden></section>
   <section class="view" id="v-keys" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
@@ -253,6 +255,9 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="keys-core.js"></script>
 <script src="keys-store.js"></script>
 <script src="keys.js"></script>
+<script src="powertrace-core.js"></script>
+<script src="powertrace-store.js"></script>
+<script src="powertrace.js"></script>
 <script>
 (function () {
   "use strict";
@@ -270,6 +275,8 @@ input[type=text], input[type=email], input[type=date], select {
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
     var keysRoute = v === "keys" || v.indexOf("keys/") === 0 ? v : null;
+    var powerRoute = v === "powertrace" || v.indexOf("powertrace/") === 0 ? v : null;
+    if (powerRoute) v = "powertrace";
     if (keysRoute) v = "keys";
     if (settingsRoute) v = "settings";
     if (handoverRoute) v = "handover";
@@ -280,9 +287,10 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
     if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "keys") window.OESTKeys.open(keysRoute);
+    if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
-    renderedRoute = keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
+    renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -294,7 +302,12 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTSettingsUI.setNavigate(show);
   window.OESTHandover.setNavigate(show);
   window.OESTKeys.setNavigate(show);
+  window.OESTPowerTrace.setNavigate(show);
   window.addEventListener("popstate", function () {
+    if (renderedRoute.indexOf("powertrace") === 0 && !window.OESTPowerTrace.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
     if (renderedRoute.indexOf("keys") === 0 && !window.OESTKeys.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
