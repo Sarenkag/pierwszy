@@ -48,6 +48,7 @@ public class PhotoEditPlugin extends Plugin {
             for (String pkg : EDITORS) { intent.setPackage(pkg); if (intent.resolveActivity(pm) != null) { editor = pkg; break; } }
             if (editor.isEmpty()) { intent.setPackage(null); if (intent.resolveActivity(pm) == null) throw new IllegalStateException("PHOTO_EDIT_NO_EDITOR"); }
             call.getData().put("editPath", file.getAbsolutePath());
+            call.getData().put("editUri", uri.toString());
             call.getData().put("editStamp", file.lastModified());
             call.getData().put("editSize", file.length());
             call.getData().put("editor", editor);
@@ -68,7 +69,7 @@ public class PhotoEditPlugin extends Plugin {
                 Intent data = result.getData();
                 Uri back = data != null ? data.getData() : null;
                 // Edytor może zwrócić nowy plik (Markup) albo nadpisać nasz (EXTRA_OUTPUT)
-                if (result.getResultCode() == Activity.RESULT_OK && back != null && !back.toString().endsWith(file.getName())) bytes = read(back);
+                if (result.getResultCode() == Activity.RESULT_OK && back != null && !back.toString().equals(call.getString("editUri", ""))) bytes = read(back);
                 else if (file.exists() && (file.lastModified() != call.getLong("editStamp", 0L) || file.length() != call.getLong("editSize", 0L))) bytes = read(Uri.fromFile(file));
                 JSObject out = new JSObject();
                 out.put("editor", call.getString("editor", ""));
