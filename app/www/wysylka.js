@@ -40,15 +40,12 @@
   }
   function online() { return root.navigator.onLine !== false; }
   function onWifi() { var c = root.navigator.connection; return !!(c && (c.type === "wifi" || c.type === "ethernet")); } // nieznana sieć = jak komórkowa (czeka na kliknięcie)
-  function myEmail() {
+  function myEmail() { // tylko z ustawień obecnego konta; brak adresu = raport czeka (nigdy adres innego konta)
     var c = cfg(); if (c.email) return c.email;
     try {
-      for (var i = 0; i < root.localStorage.length; i++) {
-        var k = root.localStorage.key(i);
-        if (k.indexOf("oest.settings.v1.") === 0) { var s = JSON.parse(root.localStorage.getItem(k)); if (s && s.profile && s.profile.companyEmail) return s.profile.companyEmail; }
-      }
-    } catch (e) {}
-    return "";
+      var a = account() || {}, k = "oest.settings.v1." + encodeURIComponent(String(a.id || a.email || "")), st = JSON.parse(root.localStorage.getItem(k) || "null");
+      return st && st.profile && st.profile.companyEmail || "";
+    } catch (e) { return ""; }
   }
   function errText(e) {
     var m = e && e.message ? e.message : String(e);
