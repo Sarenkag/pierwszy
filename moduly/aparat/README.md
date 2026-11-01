@@ -1,8 +1,8 @@
 # Moduł aparatu (`moduly/aparat`)
 
-**Zasada:** każde miejsce w apkach OEST, które robi zdjęcie, korzysta z tego modułu. Nie piszemy własnego aparatu ani edytora.
+**Zasada:** każde miejsce w apkach OEST, które robi zdjęcie, korzysta z tego modułu. Nie piszemy własnego aparatu. Edytor jest własny i wbudowany (decyzja Grzegorza 01/11/2026), bo edytory Google nie otwierają plików z wnętrza apki.
 
-Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz** → gotowe zdjęcie. „Edytuj” otwiera edytor z telefonu (Markup, a gdy go nie ma Google Zdjęcia) i wraca do podglądu.
+Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz** → gotowe zdjęcie. „Edytuj” otwiera edytor w apce (strzałka, kółko, kwadrat, linia, 6 kolorów, grubość S/M/L, kadrowanie, cofnij) i wraca do podglądu. Wynik: JPEG w pełnej rozdzielczości, offline, nic nie trafia do Galerii.
 
 ## Użycie
 ```js
@@ -20,3 +20,5 @@ OESTAparat.edit(blob).then(nowy => { if (nowy) podmien(nowy); });     // ✏️ 
 - Kolejność edytorów: Google Zdjęcia, potem Markup (Markup wywalał się na pliku z apki, 01/11). Bez `EXTRA_OUTPUT`; edytor zwraca nowy plik (`data.getData()`) albo nadpisuje nasz – wtyczka obsługuje oba, brak zmian → `null`.
 - Przed startem edytora usuń duże dane z `call.getData()` (base64): Capacitor zapisuje je w stanie aktywności → TransactionTooLargeException i zamknięcie apki (01/11).
 - Pliki robocze leżą w `cache/photo-edit` i są kasowane po powrocie. PNG/WebP są zamieniane na JPEG.
+
+- 01/11 wieczorem: Google Zdjęcia odrzucały plik z FileProvidera („Editing is not supported for this image”), Markup dawał czarny ekran. Dlatego `edit()` używa edytora w apce; wtyczka `OESTPhotoEdit` zostaje w kodzie, ale nie jest wołana.
