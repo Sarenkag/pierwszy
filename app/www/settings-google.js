@@ -34,7 +34,9 @@
       var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},30000);
       try{
         var response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:Object.assign({Authorization:'Bearer '+session.token},options&&options.headers)}));
-        if(!response.ok){if(response.status===401){delete sessions[kind];store.set(sessions);}throw Error('GOOGLE_HTTP_'+response.status);}
+        if(!response.ok){if(response.status===401){delete sessions[kind];store.set(sessions);}
+          var why='';try{var j=await response.json();why=j&&j.error&&j.error.message?String(j.error.message).slice(0,160):'';}catch(_){}
+          throw Error('GOOGLE_HTTP_'+response.status+(why?': '+why:''));}
         if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
         return response.status===204?{}:await response.json();
       }finally{clearTimeout(timer);busy=false;}
@@ -101,7 +103,9 @@
     }
     async function sendMail(m){
       var mime=buildMime(m);
-      try{return await request('gmail','https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media',{method:'POST',headers:{'Content-Type':'message/rfc822'},body:mime});}
+      // zwykły adres (JSON), nie /upload: przy błędzie /upload nie daje nagłówków CORS i WebView widzi tylko „brak odpowiedzi”
+      var bytes=new TextEncoder().encode(mime),raw=b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw})});}
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}

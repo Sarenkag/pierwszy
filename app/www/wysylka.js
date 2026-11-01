@@ -51,7 +51,7 @@
     var m = e && e.message ? e.message : String(e);
     if (/GOOGLE_SETUP/.test(m)) return "zaloguj się do Google w apce";
     if (/ACCOUNT_MISMATCH/.test(m)) return "wybrano inne konto Google niż to, na które jesteś zalogowany";
-    if (/HTTP_403/.test(m)) return "Gmail odmówił (włącz Gmail API w Google Cloud)";
+    if (/HTTP_403/.test(m)) return "Gmail odmówił" + (/has not been used|disabled/i.test(m) ? " – włącz Gmail API w Google Cloud" : /scope|insufficient/i.test(m) ? " – brak zgody na wysyłanie; Ustawienia → Konto → Rozłącz sesje i Ponów" : "") + " (" + m.replace(/^.*?HTTP_403:?\s*/, "").slice(0, 120) + ")";
     if (/HTTP_401/.test(m)) return "sesja Google wygasła, ponów";
     if (/HTTP_413/.test(m)) return "raport za duży dla Gmaila";
     if (/RESULT_UNCERTAIN/.test(m)) return "brak odpowiedzi; sprawdź „Wysłane” w Gmailu, zanim ponowisz";
