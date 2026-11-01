@@ -18,4 +18,5 @@ OESTAparat.edit(blob).then(nowy => { if (nowy) podmien(nowy); });     // ✏️ 
 ## Pułapki
 - Ekranu potwierdzenia w aplikacji aparatu nie da się rozszerzyć, dlatego podgląd jest nasz.
 - Kolejność edytorów: Google Zdjęcia, potem Markup (Markup wywalał się na pliku z apki, 01/11). Bez `EXTRA_OUTPUT`; edytor zwraca nowy plik (`data.getData()`) albo nadpisuje nasz – wtyczka obsługuje oba, brak zmian → `null`.
+- Przed startem edytora usuń duże dane z `call.getData()` (base64): Capacitor zapisuje je w stanie aktywności → TransactionTooLargeException i zamknięcie apki (01/11).
 - Pliki robocze leżą w `cache/photo-edit` i są kasowane po powrocie. PNG/WebP są zamieniane na JPEG.

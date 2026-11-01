@@ -47,6 +47,8 @@ public class PhotoEditPlugin extends Plugin {
             String editor = "";
             for (String pkg : EDITORS) { intent.setPackage(pkg); if (intent.resolveActivity(pm) != null) { editor = pkg; break; } }
             if (editor.isEmpty()) { intent.setPackage(null); if (intent.resolveActivity(pm) == null) throw new IllegalStateException("PHOTO_EDIT_NO_EDITOR"); }
+            // Capacitor zapisuje dane wywołania w stanie aktywności, gdy otwiera się edytor: kilkumegabajtowe base64 → TransactionTooLargeException i zamknięcie apki
+            call.getData().remove("base64");
             call.getData().put("editPath", file.getAbsolutePath());
             call.getData().put("editUri", uri.toString());
             call.getData().put("editStamp", file.lastModified());
