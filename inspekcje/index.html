@@ -781,16 +781,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function save(k, v) { try { localStorage.setItem("insp." + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 
   var DEFAULTS = {
-    v: 4, email: "", folder: "",
+    v: 5, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "One Eastside Tower", insp: "", scope: true, stamp: true, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
   var cfg = Object.assign({}, DEFAULTS);
-  if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
+  if (savedCfg.v === 5) Object.assign(cfg, savedCfg);
+  else if (savedCfg.v === 4) { Object.assign(cfg, savedCfg); cfg.v = 5; cfg.stamp = false; save("cfg", cfg); } // 01/11: zdjęcia bez napisów (Grzegorz)
   else {
-    ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
+    ["folder", "site", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
