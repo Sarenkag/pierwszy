@@ -1,0 +1,9 @@
+(function(w){
+  'use strict';const base64=blob=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(blob);});
+  function create(o={}){let recording=false,stream=null,recorder=null,chunks=[],timer;const native=()=>w.Capacitor?.isNativePlatform()&&w.Capacitor.Plugins.HandoverTools;
+    async function start(){if(recording)throw Error('AUDIO_ALREADY_RECORDING');if(native())await native().startAudio();else{if(!navigator.mediaDevices?.getUserMedia||!w.MediaRecorder)throw Error('AUDIO_UNAVAILABLE');stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};recorder.start();}recording=true;o.onState?.(true);timer=setTimeout(()=>stop().catch(e=>o.onError?.(e)),120000);}
+    async function stop(){if(!recording)return;let blob;try{if(native()){const result=await native().stopAudio();blob=new Blob([Uint8Array.from(atob(result.data),c=>c.charCodeAt(0))],{type:'audio/wav'});}else{await new Promise(resolve=>{recorder.onstop=resolve;recorder.stop();});blob=new Blob(chunks,{type:recorder.mimeType});}const media={id:crypto.randomUUID(),kind:'audio',name:'Voice note',mime:blob.type,blob,size:blob.size};await o.onAudio?.(media);return media;}finally{recording=false;clearTimeout(timer);stream?.getTracks().forEach(t=>t.stop());stream=null;recorder=null;chunks=[];o.onState?.(false);}}
+    async function transcribe(blob){if(recording)throw Error('STOP_RECORDING_FIRST');if(!native())throw Error('ANDROID_TRANSCRIPTION_REQUIRED');return native().transcribe({data:await base64(blob)});}
+    return {start,stop,transcribe,get recording(){return recording;}};
+  }w.OESTVoice={create,base64};
+})(window);
