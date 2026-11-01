@@ -264,6 +264,13 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .view > .top { order: -2; }
 .sumlist { margin: 0; padding-left: 20px; font-size: 0.92rem; }
 .datesug { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.92rem; }
+/* plant roomy: nagłówek pomieszczenia i pole uwag */
+.room-h { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 14px 4px 4px; border-top: 1px solid var(--line); margin-top: 6px; }
+.room-h:first-child { border-top: 0; margin-top: 0; }
+.room-h span { font-size: .85rem; color: var(--muted); }
+.room-note { width: 100%; box-sizing: border-box; margin: 4px 0 6px; padding: 10px; border-radius: 10px; border: 1px solid var(--bad, #e5484d); background: transparent; color: inherit; font: inherit; }
+/* w apce: bez starych kafelków DB/ATS/Isolators i bez ustawień skryptu Google – tu tylko kolejka i ustawienia raportu */
+[data-app] #types, [data-app] #apiBox, [data-app] #tplNotice, [data-app] #tplBox { display: none !important; }
 </style>
 <link rel="stylesheet" href="../theme.css">
 <link rel="stylesheet" href="form-ui.css">
@@ -286,7 +293,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
           <label for="s-key">Klucz (KEY z Apps Script)</label>
           <input id="s-key" type="text" spellcheck="false" autocomplete="off">
           <p class="hint">Potrzebne tylko w wersji z ekranu głównego telefonu (działa bez zasięgu). Wpisuje się raz.</p></div>
-        <div class="f"><span class="label">Szablon raportu (Word)</span>
+        <div class="f" id="tplBox"><span class="label">Szablon raportu (Word)</span>
           <p class="hint" id="tplName">Ładuję z Google Drive…</p>
           <div class="row"><button class="btn" type="button" id="tplReload">Wczytaj ponownie z Drive</button></div>
           <p class="hint">Szablon leży na Twoim Google Drive w folderze z raportami. Podmień tam plik, a apka weźmie nowy.</p></div>
@@ -434,6 +441,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
+<script src="tpl-plant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script>
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.
@@ -584,33 +592,47 @@ function photoGrid(n) {
 }
 // tabulator w tekście (checkpointy) → <w:tab/> + 3 równe kolumny w tym akapicie
 function tabsToColumns(xml) {
+  // akapit treści z wierszami „☑ hasło<TAB>zdanie” → tabela bez ramek: kratka z hasłem | zdanie; reszta tekstu zostaje akapitami
   if (xml.indexOf("\t") < 0) return xml;
   return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
     if (!/<w:t[^>]*>[^<]*\t/.test(p)) return p;
-    p = p.replace(/(<w:t[^>]*>)([^<]*)<\/w:t>/g, function (m, open, txt) {
-      return txt.indexOf("\t") < 0 ? m : open + txt.split("\t").join('</w:t><w:tab/><w:t xml:space="preserve">') + "</w:t>";
-    });
-    var tabs = '<w:tabs><w:tab w:val="left" w:pos="3000"/><w:tab w:val="left" w:pos="6000"/></w:tabs>';
-    if (/<w:pPr>/.test(p) || /<w:pPr /.test(p)) {
-      var after = /<w:(suppressAutoHyphens|kinsoku|wordWrap|overflowPunct|topLinePunct|autoSpaceDE|autoSpaceDN|bidi|adjustRightInd|snapToGrid|spacing|ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/;
-      return p.replace(/(<w:pPr[^>]*>)([\s\S]*?)(<\/w:pPr>)/, function (m, a, inner, z) {
-        inner = inner.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, "");
-        var k = inner.search(after);
-        inner = k < 0 ? inner + tabs : inner.slice(0, k) + tabs + inner.slice(k);
-        return a + lineSpacing(inner) + z;
-      });
+    var pPr = (/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(p) || [""])[0];
+    var rPr = (/<w:r>\s*(<w:rPr>[\s\S]*?<\/w:rPr>)\s*<w:t/.exec(p) || ["", ""])[1];
+    var font = (/<w:rFonts[^>]*\/>/.exec(rPr) || [""])[0];
+    // tekst akapitu jako linie (w:br = nowa linia)
+    var lines = [""], re = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t\/>|<w:br\/>|<w:tab\/>/g, m;
+    while ((m = re.exec(p))) { if (m[0] === "<w:br/>") lines.push(""); else if (m[0] === "<w:tab/>") lines[lines.length - 1] += "\t"; else lines[lines.length - 1] += m[1] || ""; }
+    var x = function (t) { return t.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#)/g, "&amp;"); };
+    function run(t, sz, bold) { return '<w:r><w:rPr>' + font + (bold ? "<w:b/>" : "") + '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/></w:rPr><w:t xml:space="preserve">' + x(t) + "</w:t></w:r>"; }
+    function para(ls) {
+      var r = [];
+      ls.forEach(function (l, i) { if (i) r.push("<w:r><w:br/></w:r>"); r.push(run(l, 22)); });
+      return "<w:p>" + pPr + r.join("") + "</w:p>";
     }
-    return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + LS + "</w:pPr>");
+    var CELL = '<w:tcPr><w:tcW w:w="0" w:type="auto"/><w:tcMar><w:top w:w="20" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/></w:tcMar></w:tcPr>';
+    var SP = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>';
+    function table(rows) {
+      // wielkość zależna od liczby punktów: mało = duże i przestronne, ponad 9 = mniejsze, żeby podpis został na 1. stronie
+      var n = rows.length, sz = n <= 6 ? 22 : n <= 9 ? 20 : 18, lsz = sz + 2, bsz = n <= 6 ? 32 : n <= 9 ? 28 : 24, pad = n <= 6 ? 80 : 20;
+      var CELL = '<w:tcPr><w:tcW w:w="0" w:type="auto"/><w:tcMar><w:top w:w="' + pad + '" w:type="dxa"/><w:bottom w:w="' + pad + '" w:type="dxa"/></w:tcMar></w:tcPr>';
+      return '<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:insideH w:val="single" w:sz="2" w:space="0" w:color="D0D0D0"/></w:tblBorders>' +
+        '<w:tblLayout w:type="fixed"/><w:tblLook w:val="0000"/></w:tblPr><w:tblGrid><w:gridCol w:w="3300"/><w:gridCol w:w="6000"/></w:tblGrid>' +
+        rows.map(function (l) {
+          var c = l.split("\t"), lab = c[0], box = lab.charAt(0);
+          var left = /[☑☒]/.test(box) ? run(box + " ", bsz) + run(lab.slice(1).trim(), lsz, true) : run(lab, lsz, true);
+          return '<w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc>' + CELL + "<w:p>" + SP + left + "</w:p></w:tc><w:tc>" + CELL + "<w:p>" + SP + run(c.slice(1).join(" ").trim(), sz) + "</w:p></w:tc></w:tr>";
+        }).join("") + "</w:tbl>";
+    }
+    var out = [], buf = [], rows = [];
+    function flush() { if (rows.length) { out.push(table(rows)); rows = []; } if (buf.length) { out.push(para(buf)); buf = []; } }
+    lines.forEach(function (l) {
+      if (l.indexOf("\t") >= 0) { if (buf.length) { out.push(para(buf)); buf = []; } rows.push(l); }
+      else { if (rows.length) { out.push(table(rows)); rows = []; } buf.push(l); }
+    });
+    flush();
+    if (/<\/w:tbl>$/.test(out[out.length - 1])) out.push("<w:p>" + pPr + "</w:p>"); // komórka musi kończyć się akapitem
+    return out.join("");
   });
-}
-// odstęp 2 wierszy w akapicie z checkpointami (miejsca jest dość)
-var LS = '<w:spacing w:line="480" w:lineRule="auto"/>';
-function lineSpacing(inner) {
-  if (/<w:spacing\b/.test(inner)) return inner.replace(/<w:spacing\b([^>]*?)\/>/, function (m, at) {
-    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="480" w:lineRule="auto"/>';
-  });
-  var k = inner.search(/<w:(ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/);
-  return k < 0 ? inner + LS : inner.slice(0, k) + LS + inner.slice(k);
 }
 // Tekst i logo z nagłówka/stopki szablonu (do PDF)
 function templateInfo(PizZip, templateBytes) {
@@ -810,6 +832,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
 
   // Tryb: strona z Apps Script (google.script.run) albo z GitHub Pages (fetch do …/exec, działa offline)
   var IN_GAS = !!(window.google && google.script && google.script.run);
+  var APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
   // ---------- pomocnicze ----------
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -893,6 +916,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
   function show(v) {
     if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { location.href = "../index.html#ppm"; return; }
+    if (APP && v === "home" && location.hash === "#queue") { location.href = "../index.html#ppm"; return; } // z kolejki wracamy do listy inspekcji
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
     if (v === "home") renderHome();
     if (v === "list") renderList();
@@ -1013,6 +1037,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type.folder) $("photos").closest(".panel").style.order = "-1";
   }
   function resetForm() {
+    roomNotes = {};
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
@@ -1108,16 +1133,24 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       }).join("");
       return;
     }
-    $("ck").innerHTML = cur.type.checks.map(function (c, i) {
-      var s = states[i];
-      return '<div class="ck-row ' + s + '"><div class="txt">' + esc(s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
+    var cks = cur.type.checks;
+    $("ck").innerHTML = cks.map(function (c, i) {
+      var s = states[i], head = "", tail = "";
+      if (c.room && (!i || cks[i - 1].room !== c.room)) head = '<div class="room-h"><b>' + esc(c.roomName) + "</b><span>" + esc(c.roomLoc) + "</span></div>";
+      if (c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length)
+        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="Co jest nie tak? (trafi do raportu)" aria-label="Uwagi: ' + esc(c.roomName) + '">';
+      return head + '<div class="ck-row ' + s + '"><div class="txt">' + esc(c.room ? c.cp : s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
         '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
         '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
         '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="Nie OK" aria-pressed="' + (s === "fail") + '">✗</button>' +
         '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="Pomiń" aria-pressed="' + (s === "na") + '">–</button>' +
-        "</div></div>";
+        "</div></div>" + tail;
     }).join("");
   }
+  // plant roomy: uwaga do pomieszczenia (jedna na pomieszczenie), pokazuje się, gdy coś jest ✗
+  var roomNotes = {};
+  function roomFails(room) { return cur.type.checks.filter(function (c, i) { return c.room === room && states[i] === "fail"; }).map(function (c) { return c.cp; }); }
+  $("ck").addEventListener("input", function (e) { var el = e.target.closest("input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
     $("faults").innerHTML = faultsFor(cur.type).map(function (f) {
@@ -1611,6 +1644,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var w = reportDate(), pts = [];
     if (cur.mode === "sum") return batchData(w);
     if (cur.type.temp) return tempData(w);
+    if (cur.type.rooms) return roomsData(w);
     if (cur.type.folder) return english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: "", quote: "", site: cfg.site, komentarz: "", zakres: "", folder: true,
       obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "" });
@@ -1629,22 +1663,51 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     d.opis = (head ? head + "\n\n" : "") + body + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
     return english(d);
   }
+  // plant roomy: dane do wzoru firmy (siatka 4 w wierszu: {a}{b}{c}{d}) i tekst do PDF (siatka 3 w wierszu, tabulatory)
+  function roomsData(w) {
+    var d = english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      tytul: cur.type.title, punkty: [], stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site, komentarz: $("komentarz").value.trim(), zakres: "" });
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
+    var txt = [], seen = {}, last = "";
+    cur.type.checks.forEach(function (c) {
+      if (seen[c.room]) return; seen[c.room] = 1; last = c.room;
+      var cells = [];
+      cur.type.checks.forEach(function (x, i) { if (x.room !== c.room) return; if (states[i] === "ok") cells.push("\u2611 " + x.cp); else if (states[i] === "fail") cells.push("\u2612 " + x.cp); });
+      var fails = roomFails(c.room), note = (roomNotes[c.room] || "").trim(), notes = fails.length ? [fails.join(", ") + ": " + (note || "requires attention.")] : [];
+      var rows = [];
+      for (var k = 0; k < cells.length; k += 4) rows.push({ a: cells[k] || "", b: cells[k + 1] || "", c: cells[k + 2] || "", d: cells[k + 3] || "" });
+      d[c.room] = rows; d[c.room + "_notes"] = notes;
+      txt.push(c.roomName + " \u2013 Location: " + c.roomLoc);
+      for (var j = 0; j < cells.length; j += 3) { var row = cells.slice(j, j + 3); txt.push(row.join("\t") + "\t\t".slice(row.length - 1)); } // zawsze 3 kolumny w PDF
+      notes.forEach(function (n) { txt.push("\u2022 " + n); });
+      txt.push("");
+    });
+    // wzór plant roomów nie ma pola na komentarz ogólny: dopisujemy go pod ostatnim pomieszczeniem, żeby Word go nie zgubił
+    if (d.komentarz && last) d[last + "_notes"] = d[last + "_notes"].concat(["Comments: " + d.komentarz]);
+    d.opis = d.details = txt.join("\n").trim() + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    return d;
+  }
   // pola wzoru OEST-basic (po angielsku); polskie zostają dla starszych szablonów
   var BUILDING = { TA: "Tower A", TB: "Tower B", P: "Pavilion", PV: "Pavilion" };
   // kod urządzenia jako nagłówek treści (jak nazwa pomieszczenia w plant roomach), żeby raporty różnych rozdzielnic dało się odróżnić;
   // pomijany, gdy tytuł już go zawiera (np. „ATS”)
   // checkpointy: siatka ☑ krótkich haseł po 3 w wierszu (tabulatory), N/A pominięte; usterki pełnym zdaniem pod siatką
   function checkpointText(checks) {
-    var cells = [], faults = [];
+    // jedno miejsce: wiersz na checkpoint – kratka z hasłem | krótkie zdanie (Grzegorz 01/11); N/A pominięte
+    var rows = [], n = 0;
     checks.forEach(function (c, i) {
-      if (states[i] === "ok") cells.push("\u2611 " + c.cp);
-      else if (states[i] === "fail") { cells.push("\u2612 " + c.cp); faults.push(override[i] || c.fail); }
+      if (states[i] === "ok") rows.push("\u2611 " + c.cp + "\t" + c.ok);
+      else if (states[i] === "fail") { rows.push("\u2612 " + c.cp + "\t" + (override[i] || c.fail)); n++; }
     });
-    faults = faults.concat(extraFaults(true));
-    var rows = [];
-    for (var i = 0; i < cells.length; i += 3) rows.push(cells.slice(i, i + 3).join("\t"));
+    var extra = extraFaults(true);
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
-    return t + (faults.length ? "\n\nFaults:\n" + faults.map(function (s) { return "• " + s; }).join("\n") : "");
+    return t + (extra.length ? "\n\nFaults:\n" + extra.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(n + extra.length);
+  }
+  // zdanie podsumowania pod checkpointami (Grzegorz 01/11: same kratki wyglądają biednie)
+  function summaryLine(nFaults) {
+    var what = String(cur.code || cur.type.name || "the equipment").replace(/\s*\(.*\)\s*$/, "");
+    if (!nFaults) return "Visual inspection of " + what + " completed. All items checked were found in satisfactory condition and no defects or signs of damage were observed. No further action required at this time.";
+    return "Visual inspection of " + what + " completed. The defect" + (nFaults > 1 ? "s" : "") + " listed above require" + (nFaults > 1 ? "" : "s") + " attention; all other items checked were found in satisfactory condition.";
   }
   function deviceHead(title, code) {
     var c = String(code || "").replace(/\s*\(.*\)\s*$/, "").trim();
@@ -1658,7 +1721,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 
   // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
-  function templateBytes() { return serverTpl ? serverTpl.bytes : b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL); }
+  function templateBytes() {
+    if (cur.type && cur.type.tpl && window[cur.type.tpl]) return b64ToBytes(window[cur.type.tpl]); // wzór firmy dla tej inspekcji
+    // w apce bez skryptu Google zawsze wbudowany wzór (stara kopia z Drive w telefonie nie może go podmieniać)
+    if (APP && !cfg.api) return b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
+    return serverTpl ? serverTpl.bytes : b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
+  }
   function tplState(err) {
     var n = $("tplNotice");
     if (serverTpl) {
@@ -1787,18 +1855,28 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var where = [d.building, d.level].filter(Boolean).join(" ");
     if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
     ty += 8; pdf.setFontSize(10.5);
-    function cpCell(c, x, yy) {
+    function cpCell(c, x, yy, b) {
       var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
       if (!box) { pdf.text(c, x, yy); return; }
-      var b = 3.2, by = yy - b + 0.4; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
+      var k = b / 3.2, by = yy - b + 0.4 * k; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
       pdf.setLineWidth(0.45);
-      if (m === "\u2611") pdf.lines([[0.9, 1.0], [1.6, -2.0]], x + 0.6, by + 1.6);
-      else { pdf.line(x + 0.6, by + 0.6, x + b - 0.6, by + b - 0.6); pdf.line(x + b - 0.6, by + 0.6, x + 0.6, by + b - 0.6); }
+      if (m === "\u2611") pdf.lines([[0.9 * k, 1.0 * k], [1.6 * k, -2.0 * k]], x + 0.6 * k, by + 1.6 * k);
+      else { pdf.line(x + 0.6 * k, by + 0.6 * k, x + b - 0.6 * k, by + b - 0.6 * k); pdf.line(x + b - 0.6 * k, by + 0.6 * k, x + 0.6 * k, by + b - 0.6 * k); }
       pdf.setLineWidth(0.4); pdf.text(c.slice(1).trim(), x + b + 1.5, yy);
     }
+    var cpN = (d.details || "").split("\n").filter(function (p) { return p.indexOf("\t") >= 0; }).length; // liczba checkpointów (wielkość wierszy)
     (d.details || "").split("\n").forEach(function (p) {
       if (p.indexOf("\t") >= 0) { // checkpointy: font PDF nie ma ☑/☒, więc kratka rysowana
-        room(lh * 2); p.split("\t").forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh * 2; return; } // checkpointy
+        var cs = p.split("\t");
+        if (cs.length > 2) { // plant roomy: siatka 3 kratek w wierszu
+          room(lh * 2); cs.forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty, 3.2); }); ty += lh * 2; return; }
+        // jedno miejsce: kratka z hasłem (pogrubione) | zdanie, łamane w swojej kolumnie
+        var few = cpN <= 6, fs = few ? 10.5 : 9.5, gap = few ? 4.5 : 2.6;
+        pdf.setFontSize(fs); var cx = L + 60, sl = pdf.splitTextToSize(cs[1] || "", L + W - 2 - cx), h = Math.max(1, sl.length) * (fs * 0.43) + gap;
+        room(h); pdf.setFontSize(few ? 11.5 : 10.5); pdf.setFont("DV", "bold"); cpCell(cs[0], L + 1.5, ty + 0.4, few ? 4.3 : 3.8); pdf.setFont("DV", "normal");
+        pdf.setFontSize(fs); pdf.text(sl, cx, ty + 0.4); pdf.setFontSize(10.5);
+        pdf.setDrawColor(208); pdf.setLineWidth(0.2); pdf.line(L + 1.5, ty + h - 3.0, L + W - 1.5, ty + h - 3.0); pdf.setDrawColor(0); pdf.setLineWidth(0.4);
+        ty += h; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
@@ -2058,7 +2136,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("qHint").textContent = "Błąd zapisu kolejki w telefonie: " + gErr(e);
     }).then(function () { sending = false; refresh(); });
   }
-  window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl) loadSetup(); });
+  window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
   window.addEventListener("offline", function () { renderTranslate(); refresh(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden && cfg.auto) sendQueue(); });
   setInterval(function () { if (cfg.auto && pending().length) sendQueue(); }, 60000);
@@ -2067,7 +2145,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   states = cur.type.checks.map(function (c) { return c.def; });
   var cached = load("setup", null);
   if (cached) applySetup(cached);
-  show("home"); renderTranslate();
+  show(APP && location.hash === "#queue" ? "queue" : "home"); renderTranslate(); // z apki prosto do kolejki (bez przekierowania z ekranu startowego)
   Promise.all([
     kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
     qAll().then(function (all) {
@@ -2077,6 +2155,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).catch(function () {})
   ]).then(function () {
     refresh(); renderHome(); openPpm();
+    if (location.hash === "#queue") show("queue");
+    if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
     return online() ? loadSetup() : tplState("brak sieci");
   }).then(function () { if (cfg.auto) sendQueue(); });
 
@@ -2091,6 +2171,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
     });
   }
+  // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
+  var GENERIC_CPS = [
+    ["access", "Access clear", "Access to the area and equipment clear and unobstructed.", "Access to the area or equipment obstructed – requires clearing."],
+    ["condition", "Condition good", "Equipment and surroundings in good condition, no visible damage.", "Visible damage found – remedial action required."],
+    ["operation", "Operating normally", "Equipment operating normally at the time of inspection.", "Equipment not operating normally – further investigation required."],
+    ["clean", "Clean and tidy", "Area clean, tidy and free of stored materials.", "Area untidy or used for storage – requires clearing."],
+    ["labels", "Labels in place", "Labels and safety signage in place and legible.", "Labels or safety signage missing or illegible."],
+    ["hazards", "No hazards", "No hazards, leaks or signs of overheating observed.", "Hazard observed – reported for action."]];
   function openPpm() {
     var t = PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
@@ -2112,6 +2200,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       cur.type = { id: "ppm-" + t.id, folder: true, name: t.name, title: t.name, scope: "", devices: dev, checks: [] };
       openForm(t.name); return;
     }
+    if (f && f.rooms) {
+      // plant roomy: stałe pomieszczenia, w każdym checkpointy (domyślnie OK), raport na wzorze firmy
+      var cps = PPM.forms.plantCps.concat(f.monthly ? PPM.forms.plantCpsMonthly : []), rc = [];
+      PPM.forms.plantRooms.forEach(function (r) {
+        cps.concat(r.extra || []).forEach(function (cp) { rc.push({ key: r.key + "." + cp, cp: cp, room: r.key, roomName: r.name, roomLoc: r.loc, ok: r.name + ": " + cp + " OK.", fail: r.name + ": " + cp + " – requires attention.", def: "ok" }); });
+      });
+      cur.type = { id: "ppm-" + t.id, plain: true, rooms: true, name: t.name, title: f.title, tpl: f.tpl, scope: "", devices: dev, checks: rc };
+      openForm(t.name); return;
+    }
     if (f) {
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, tpl: f.tpl, slots: f.slots, scope: "", devices: dev, checks: [] } :
@@ -2121,7 +2218,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
     cur.type = { id: "ppm-" + t.id, quick: true, name: t.name, title: t.name + " - Inspection", scope: "", devices: [{ code: t.name, loc: t.where || "One Eastside", room: "" }],
-      checks: [{ key: "done", ok: t.name + " carried out – no defects found.", fail: t.name + " carried out – defects found, see comments.", def: "ok" }] };
+      checks: GENERIC_CPS.map(function (g) { return { key: g[0], cp: g[1], ok: g[2], fail: g[3], def: "ok" }; }) };
     openForm(t.name);
   }
 
