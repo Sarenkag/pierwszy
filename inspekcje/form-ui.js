@@ -66,9 +66,13 @@
   $("ckTitle").addEventListener("click", function () { ckp.classList.toggle("shut"); });
 
   function syncHead() {
-    var rows = $("ck").querySelectorAll(".ck-row"), done = 0;
-    Array.prototype.forEach.call(rows, function (r) { if (r.querySelector(".seg .on")) done++; });
-    $("iCnt").textContent = done + "/" + rows.length;
+    // licznik = ile OK z pytań w użyciu (N/A nie liczy się do sumy), np. jedno NIE → 7/8
+    var rows = $("ck").querySelectorAll(".ck-row"), ok = 0, used = 0;
+    Array.prototype.forEach.call(rows, function (r) {
+      var on = r.querySelector(".seg .on"), st = on && on.getAttribute("data-s");
+      if (st === "na") return; used++; if (st === "ok") ok++;
+    });
+    $("iCnt").textContent = ok + "/" + used;
     $("iCntBox").hidden = !rows.length;
     var b = bar && bar.querySelector("b");
     $("iEnds").textContent = b ? b.textContent : "";

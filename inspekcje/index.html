@@ -700,18 +700,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     scope: "Scope: visual inspection only – no covers removed, no transfer test and no electrical testing carried out.",
     devices: [],
     checks: [
-      { key: "enclosure", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { key: "door", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
-      { key: "display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
-      { key: "position", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
-      { key: "auto", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
-      { key: "label", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
-      { key: "notices", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { key: "heat", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { key: "noise", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
-      { key: "glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
-      { key: "clean", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
-      { key: "access", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
+      { key: "enclosure", cp: "Enclosure undamaged", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
+      { key: "door", cp: "Door and lock OK", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
+      { key: "display", cp: "No alarms on display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
+      { key: "position", cp: "Normal supply shown", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
+      { key: "auto", cp: "Selector in AUTO", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
+      { key: "label", cp: "ID label present", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
+      { key: "notices", cp: "Warning labels present", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
+      { key: "heat", cp: "No overheating signs", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
+      { key: "noise", cp: "No noise or odour", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
+      { key: "glands", cp: "Cables secure", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
+      { key: "clean", cp: "Clean and dry", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
+      { key: "access", cp: "Access clear", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
     ]
   }, {
     id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
@@ -1608,7 +1608,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
-    var head = deviceHead(d.tytul, cur.code), body;
+    var head = cur.type.plain ? "" : deviceHead(d.tytul, cur.code), body; // PPM: kod = nazwa zadania, już w tytule/lokalizacji
     if (cur.type.checks.length && cur.type.checks.every(function (c) { return c.cp; })) body = checkpointText(cur.type.checks);
     else body = pts.map(function (s) { return "• " + s; }).join("\n");
     d.opis = (head ? head + "\n\n" : "") + body + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
@@ -2101,7 +2101,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, tpl: f.tpl, slots: f.slots, scope: "", devices: dev, checks: [] } :
         { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", devices: dev,
-          checks: f.checks.map(function (c) { return { key: c.key, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
+          checks: f.checks.map(function (c) { return { key: c.key, cp: c.cp, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
       openForm(t.name); return;
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
