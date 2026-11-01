@@ -28,7 +28,7 @@
   }
   function loadAll() { return tx("readonly", function (s) { return s.getAll(); }).then(function (a) { items = a || []; return items; }); }
   function put(it) { return tx("readwrite", function (s) { s.put(it); }); }
-  function pending() { return items.filter(function (q) { return q.status !== "sent"; }); }
+  function pending() { var me = ((account() || {}).email || "").toLowerCase(); return items.filter(function (q) { return q.status !== "sent" && (!q.acct || q.acct.toLowerCase() === me); }); }
 
   // ---------- warunki ----------
   function cfg() { try { return JSON.parse(root.localStorage.getItem("insp.cfg") || "{}"); } catch (e) { return {}; } }
@@ -77,7 +77,11 @@
     if (!active()) return Promise.resolve();
     if (lock) return lock; // dwa wywołania naraz nie mogą wysłać tego samego raportu dwa razy
     return (lock = loadAll().then(function () {
-      var todo = pending().sort(function (a, b) { return a.created - b.created; });
+      var me = (account().email || "").toLowerCase();
+      // błędy (też „brak odpowiedzi” = mail mógł dojść) ponawia tylko przycisk Ponów; cudze raporty nigdy, stare bez konta tylko po kliknięciu
+      var todo = pending().filter(function (q) {
+        return q.status !== "err" && (q.acct ? q.acct.toLowerCase() === me : !!o.login);
+      }).sort(function (a, b) { return a.created - b.created; });
       if (!todo.length || !online()) return;
       if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return;
       var g = G();
@@ -87,6 +91,7 @@
         return todo.reduce(function (p, it, i) {
           return p.then(function (stop) {
             if (stop || !online()) return true;
+            if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
             pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
             return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; done++;
@@ -141,7 +146,7 @@
   function retry() {
     loadAll().then(function () {
       return Promise.all(pending().filter(function (q) { return q.status === "err"; }).map(function (q) { q.status = "wait"; q.err = ""; changed(q); return put(q); }));
-    }).then(function () { run({ login: true, anyNet: !wifiOnly() || onWifi() || skipWifi }); });
+    }).then(function () { run({ login: true, anyNet: true }); }); // Ponów = świadoma decyzja, także przez dane
   }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function render() {
