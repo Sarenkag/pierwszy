@@ -419,7 +419,7 @@ input[type=text], input[type=email], input[type=date], select {
       history.replaceState({ n: 0 }, "", "#home"); render("home");
     }).catch(function (e) {
       $("authErr").textContent = (e && e.message) || String(e); $("authErr").hidden = false;
-      $("skipBtn").hidden = !!CONF.googleWebClientId && native;
+      $("skipBtn").hidden = false; // gdy Google zawiedzie, zawsze da się wejść bez logowania (praca nie może stanąć)
     }).then(function () { b.disabled = false; });
   });
   // Tymczasowe wejście, dopóki nie ma identyfikatora Google (żeby dało się sprawdzić resztę apki)
