@@ -8,7 +8,7 @@ try{browser=await chromium.launch({headless:true, ...(process.env.OEST_BROWSER_P
 await context.addInitScript(()=>{if(!localStorage.getItem('oest.account')){localStorage.setItem('oest.account',JSON.stringify({provider:'local',id:'test',email:'demo@example.com',first:'Greg',last:'Sarna'}));localStorage.setItem('oest.profile',JSON.stringify({first:'Greg',last:'Sarna',email1:'demo@example.com',email2:'work@example.com',unknown:'retain'}));}});
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 const url='http://127.0.0.1:'+server.address().port;
-await page.goto(url+'/#settings');await page.locator('.settings-card').first().waitFor();assert.equal(await page.locator('.settings-card').count(),14);
+await page.goto(url+'/#settings');await page.locator('.settings-card').first().waitFor();assert.equal(await page.locator('.settings-card').count(),15);
 await page.locator('[data-route=profile]').click();await page.locator('[data-path="profile.formSignature"]').fill('G. S.');await page.locator('[data-path="profile.position"]').fill('Shift Engineer');await page.locator('[data-path="profile.workplace"]').fill('One Eastside');await page.getByRole('button',{name:'Zapisz ustawienia',exact:true}).click();assert.match(await page.locator('#settingsMessage').textContent(),/Zapisano/);
 assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('insp.cfg')).insp),'G. S.');
 await page.reload();await page.locator('[data-path="profile.formSignature"]').waitFor();assert.equal(await page.locator('[data-path="profile.formSignature"]').inputValue(),'G. S.');
