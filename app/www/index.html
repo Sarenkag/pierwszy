@@ -161,7 +161,7 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
         <div><b>Inspections</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Reactive">
+      <button class="tile" type="button" data-go="reactive">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
         <div><b>Reactive</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -254,6 +254,7 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-questions" hidden></section>
   <section class="view" id="v-powertrace" hidden></section>
   <section class="view" id="v-keys" hidden></section>
+  <section class="view" id="v-reactive" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="config.js"></script>
@@ -264,7 +265,10 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="calendar-sync.js"></script>
 <script src="calendar-ui.js"></script>
 <script src="settings-ui.js"></script>
+<script src="reactive-tree.js"></script>
+<script src="reactive-core.js"></script>
 <script src="reactive-store.js"></script>
+<script src="handover-voice.js"></script>
 <script src="handover-core.js"></script>
 <script src="handover.js"></script>
 <script src="keys-core.js"></script>
@@ -278,6 +282,11 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="questions-store.js"></script>
 <script src="questions-api.js"></script>
 <script src="questions-ui.js"></script>
+<script src="inspekcje/lib/pizzip.min.js"></script>
+<script src="inspekcje/lib/docxtemplater.min.js"></script>
+<script src="inspekcje/lib/jspdf.umd.min.js"></script>
+<script src="reactive-report.js"></script>
+<script src="reactive.js"></script>
 <script>
 (function () {
   "use strict";
@@ -294,6 +303,8 @@ input[type=text], input[type=email], input[type=date], select {
   function render(v) {
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
+    var reactiveRoute = v === "reactive" || v.indexOf("reactive/") === 0 ? v : null;
+    if (reactiveRoute) v = "reactive";
     var keysRoute = v === "keys" || v.indexOf("keys/") === 0 ? v : null;
     var powerRoute = v === "powertrace" || v.indexOf("powertrace/") === 0 ? v : null;
     if (powerRoute) v = "powertrace";
@@ -309,10 +320,11 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
     if (v === "questions") window.OESTQuestionsUI.open();
+    if (v === "reactive" || v.indexOf("reactive/") === 0) window.OESTReactiveUI.open(reactiveRoute);
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
     if (v === "cal") renderCal();
-    renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
+    renderedRoute = reactiveRoute && v === "reactive" ? reactiveRoute : powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
@@ -326,8 +338,10 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTKeys.setNavigate(show);
   window.OESTPowerTrace.setNavigate(show);
   window.OESTQuestionsUI.setNavigate(show);
+  window.OESTReactiveUI.setNavigate(show);
   document.addEventListener("click", function (e) {
     var b = e.target.closest(".top .back");
+    if (b && b.closest("#v-reactive")) return;
     if (!b || depth() < 1) return;
     e.preventDefault(); e.stopImmediatePropagation();
     // niezapisane zmiany w Ustawieniach: zapytaj przed wyjściem (pozostałe moduły pilnuje popstate)
@@ -335,6 +349,10 @@ input[type=text], input[type=email], input[type=date], select {
     history.back();
   }, true);
   window.addEventListener("popstate", function () {
+    if (renderedRoute.indexOf("reactive") === 0 && !window.OESTReactiveUI.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
     if (renderedRoute === "questions" && !window.OESTQuestionsUI.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
