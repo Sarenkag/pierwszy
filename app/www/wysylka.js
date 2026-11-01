@@ -73,11 +73,11 @@
     o = o || {};
     if (!active()) return Promise.resolve();
     if (lock) return lock; // dwa wywołania naraz nie mogą wysłać tego samego raportu dwa razy
-    return (lock = loadAll().then(function () {
+    return (lock = ready.then(loadAll).then(function () {
       var me = (account().email || "").toLowerCase();
       // błędy (też „brak odpowiedzi” = mail mógł dojść) ponawia tylko przycisk Ponów; cudze raporty nigdy, stare bez konta tylko po kliknięciu
       var todo = pending().filter(function (q) {
-        return q.status !== "err" && (q.acct ? q.acct.toLowerCase() === me : !!o.login);
+        return q.status !== "err" && q.status !== "sending" && (q.acct ? q.acct.toLowerCase() === me : !!o.login);
       }).sort(function (a, b) { return a.created - b.created; });
       if (!todo.length || !online()) return;
       if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return;
@@ -181,12 +181,12 @@
   function auto() { return cfg().auto !== false ? run() : Promise.resolve(); } // „Wysyłaj kolejkę sama” z Ustawień inspekcji
   // raport zapisany jako „wysyłam”, a strona zamknięta w trakcie: nie wiadomo, czy doszedł, więc tylko ręczne Ponów
   function orphans() {
-    if (lock) return Promise.resolve();
     return Promise.all(items.filter(function (q) { return q.status === "sending"; }).map(function (q) {
       q.status = "err"; q.err = errText(Error("EMAIL_RESULT_UNCERTAIN")); changed(q); return put(q);
     }));
   }
-  function init(o) { Object.assign(opts, o || {}); return refresh().then(orphans).then(render).then(auto); }
+  var readyOk, ready = new Promise(function (r) { readyOk = r; }); // wysyłka startuje dopiero po sprzątnięciu przerwanych
+  function init(o) { Object.assign(opts, o || {}); return refresh().then(orphans).catch(function () {}).then(function () { readyOk(); render(); }).then(auto); }
   var kick = function () { refresh().then(auto); };
   root.addEventListener("online", kick); root.addEventListener("offline", render);
   if (root.navigator.connection && root.navigator.connection.addEventListener) root.navigator.connection.addEventListener("change", kick);
