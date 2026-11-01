@@ -2091,7 +2091,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
     $("qSend").disabled = busy || !n;
     $("qSend").textContent = busy ? "Wysyłam…" : "Wyślij wszystko";
-    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Wyślij otwiera Gmaila (albo inną apkę) z raportem w załączniku." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
+    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
       (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
     renderNet();
   }
