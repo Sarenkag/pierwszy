@@ -16,15 +16,16 @@
   const LOCAL='local-preview';
   function mergeStates(t,src){const has=x=>(x.jobs||[]).length||(x.entries||[]).length||(x.shifts||[]).length||(x.archives||[]).length||x.reactiveDraft||Object.keys(x.reactiveDrafts||{}).length;if(!src||!has(src))return false;
     const ids=k=>new Set((t[k]||[]).map(x=>x.id)),keepShift=new Map();
-    for(const sh of src.shifts||[]){if(ids('shifts').has(sh.id))continue;const clash=t.shifts.find(x=>!x.archived&&!sh.archived&&x.start<=sh.end&&x.end>=sh.start);if(clash){keepShift.set(sh.id,clash.id);clash.jobIds=[...new Set([...clash.jobIds,...sh.jobIds])];clash.contentRevision=(clash.contentRevision||0)+1;}else t.shifts.push(sh);}
-    const jobIds=ids('jobs');for(const j of src.jobs||[])if(!jobIds.has(j.id))t.jobs.push(j);
+    for(const sh of src.shifts||[]){if(ids('shifts').has(sh.id))continue;const clash=t.shifts.find(x=>!x.archived&&!sh.archived&&x.start<=sh.end&&x.end>=sh.start);if(clash){keepShift.set(sh.id,clash.id);clash.jobIds=[...new Set([...clash.jobIds,...sh.jobIds])];clash.draftHistory=[...(clash.draftHistory||[]),...(sh.draftHistory||[])];if(sh.draft){if(!clash.draft){clash.draft=sh.draft;clash.recipients=[...new Set([...(clash.recipients||[]),...(sh.recipients||[])])];}else if(clash.draft!==sh.draft)clash.draftHistory.push({body:sh.draft,at:sh.createdAt||'',sourceRevision:sh.draftRevision,imported:true});}clash.contentRevision=(clash.contentRevision||0)+1;}else t.shifts.push(sh);}
+    const jobIds=ids('jobs'),inShift=new Set((src.shifts||[]).flatMap(x=>x.jobIds||[])),today=new Date().toISOString().slice(0,10),open=t.shifts.find(x=>!x.archived&&today>=x.start&&today<=x.end)||t.shifts.filter(x=>!x.archived).at(-1);
+    for(const j of src.jobs||[]){if(jobIds.has(j.id))continue;t.jobs.push(j);if(open&&!inShift.has(j.id)&&j.status!=='fixed'&&!open.jobIds.includes(j.id)){open.jobIds.push(j.id);open.contentRevision=(open.contentRevision||0)+1;}}
     const entryIds=ids('entries');for(const e of src.entries||[])if(!entryIds.has(e.id))t.entries.push(keepShift.has(e.shiftId)?{...e,shiftId:keepShift.get(e.shiftId)}:e);
     const archIds=ids('archives');for(const a of src.archives||[])if(!archIds.has(a.id))t.archives.push(a);
     const td=drafts(t),sd=drafts(src);for(const k of Object.keys(sd))if(!td[k])td[k]=sd[k];
     if(src.reactiveLastLocation&&!t.reactiveLastLocation)t.reactiveLastLocation=src.reactiveLastLocation;
     return true;}
   /* Szkice: wiele naraz, klucz = jobId (edycja zlecenia) albo draftId (nowe). Stary pojedynczy szkic przenosimy do mapy. */
-  function drafts(s){if(!s.reactiveDrafts)s.reactiveDrafts={};if(s.reactiveDraft){const d=s.reactiveDraft;if(!d.jobId&&!d.draftId)d.draftId='szkic-'+(d.createdAt||Date.now());s.reactiveDrafts[d.jobId||d.draftId]=d;delete s.reactiveDraft;}return s.reactiveDrafts;}
+  function drafts(s){if(!s.reactiveDrafts)s.reactiveDrafts={};if(s.reactiveDraft){const d=s.reactiveDraft;if(!d.jobId&&!d.draftId)d.draftId='szkic-poprzedni';s.reactiveDrafts[d.jobId||d.draftId]=d;delete s.reactiveDraft;}return s.reactiveDrafts;}
   const draftKey=d=>d.jobId||d.draftId;
   function createRepository(options){const backend=options.backend||browserBackend(),clock=options.clock||(()=>new Date().toISOString()),id=options.id||(()=>crypto.randomUUID());
     function owner(){const o=options.owner();if(!o)throw Error('ACCOUNT_REQUIRED');return String(o);}
