@@ -24,10 +24,10 @@ test('with photos keeps the photo section and embeds images',()=>{
   const out=ctx.fillDocx(PizZip,Docxtemplater,tpl,data,[{bytes:jpg,width:4,height:3}]),xml=out.file('word/document.xml').asText();
   assert.ok((xml.match(/<w:sectPr\b/g)||[]).length>=2);assert.ok(out.file('word/media/zdjecie1.jpeg'));assert.ok(!xml.includes('§ZDJ'));
 });
-test('checkpoint grid: tabs become Word tabs with 3 column stops',()=>{
+test('checkpoint grid: tabs become Word tabs with a half-width column stop',()=>{
   const det='DB-TB-EXT-1\n\n☑ Enclosure\t☑ Door / cover\t☑ Integrity\n☒ Clean\n\nFaults:\n• Dust found.';
   const out=ctx.fillDocx(PizZip,Docxtemplater,tpl,{...data,details:det},[]),xml=out.file('word/document.xml').asText();
   assert.ok(!/<w:t[^>]*>[^<]*\t/.test(xml),'no raw tab left in text');
   assert.equal((xml.match(/<w:tab\/>/g)||[]).length,2);
-  assert.match(xml,/<w:tabs><w:tab w:val="left" w:pos="3000"\/><w:tab w:val="left" w:pos="6000"\/><\/w:tabs>/);
+  assert.match(xml,/<w:tabs><w:tab w:val="left" w:pos="4600"\/><\/w:tabs>/);
 });

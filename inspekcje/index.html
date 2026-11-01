@@ -598,7 +598,12 @@ function tabsToColumns(xml) {
     p = p.replace(/(<w:t[^>]*>)([^<]*)<\/w:t>/g, function (m, open, txt) {
       return txt.indexOf("\t") < 0 ? m : open + txt.split("\t").join('</w:t><w:tab/><w:t xml:space="preserve">') + "</w:t>";
     });
-    var tabs = '<w:tabs><w:tab w:val="left" w:pos="3000"/><w:tab w:val="left" w:pos="6000"/></w:tabs>';
+    var tabs = '<w:tabs><w:tab w:val="left" w:pos="4600"/></w:tabs>';
+    // checkpointy czcionką 12 pt
+    p = p.replace(/<w:r>(<w:rPr>[\s\S]*?<\/w:rPr>)?/g, function (m, rpr) {
+      rpr = (rpr || "<w:rPr></w:rPr>").replace(/<w:sz w:val="\d+"\/>/, "").replace(/<w:szCs w:val="\d+"\/>/, "").replace("</w:rPr>", '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>');
+      return "<w:r>" + rpr;
+    });
     if (/<w:pPr>/.test(p) || /<w:pPr /.test(p)) {
       var after = /<w:(suppressAutoHyphens|kinsoku|wordWrap|overflowPunct|topLinePunct|autoSpaceDE|autoSpaceDN|bidi|adjustRightInd|snapToGrid|spacing|ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/;
       return p.replace(/(<w:pPr[^>]*>)([\s\S]*?)(<\/w:pPr>)/, function (m, a, inner, z) {
@@ -611,11 +616,11 @@ function tabsToColumns(xml) {
     return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + LS + "</w:pPr>");
   });
 }
-// odstęp 2 wierszy w akapicie z checkpointami (miejsca jest dość)
-var LS = '<w:spacing w:line="480" w:lineRule="auto"/>';
+// odstęp 1,5 wiersza w akapicie z checkpointami (miejsca jest dość)
+var LS = '<w:spacing w:line="360" w:lineRule="auto"/>';
 function lineSpacing(inner) {
   if (/<w:spacing\b/.test(inner)) return inner.replace(/<w:spacing\b([^>]*?)\/>/, function (m, at) {
-    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="480" w:lineRule="auto"/>';
+    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="360" w:lineRule="auto"/>';
   });
   var k = inner.search(/<w:(ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/);
   return k < 0 ? inner + LS : inner.slice(0, k) + LS + inner.slice(k);
@@ -1664,7 +1669,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       for (var k = 0; k < cells.length; k += 4) rows.push({ a: cells[k] || "", b: cells[k + 1] || "", c: cells[k + 2] || "", d: cells[k + 3] || "" });
       d[c.room] = rows; d[c.room + "_notes"] = notes;
       txt.push(c.roomName + " \u2013 Location: " + c.roomLoc);
-      for (var j = 0; j < cells.length; j += 3) txt.push(cells.slice(j, j + 3).join("\t") + (cells.length - j === 1 ? "\t" : "")); // tabulator = wiersz siatki w PDF
+      for (var j = 0; j < cells.length; j += 3) { var row = cells.slice(j, j + 3); txt.push(row.join("\t") + "\t\t".slice(row.length - 1)); } // zawsze 3 kolumny w PDF
       notes.forEach(function (n) { txt.push("\u2022 " + n); });
       txt.push("");
     });
@@ -1684,9 +1689,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     faults = faults.concat(extraFaults(true));
     var rows = [];
-    for (var i = 0; i < cells.length; i += 3) rows.push(cells.slice(i, i + 3).join("\t"));
+    // 2 w wierszu, normalna czcionka (Grzegorz 01/11: 3 w wierszu wyglądało mikroskopijnie); pojedyncza kratka też z tabulatorem
+    for (var i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2).join("\t") + (cells.length - i === 1 ? "\t" : ""));
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
-    return t + (faults.length ? "\n\nFaults:\n" + faults.map(function (s) { return "• " + s; }).join("\n") : "");
+    return t + (faults.length ? "\n\nFaults:\n" + faults.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(faults.length);
+  }
+  // zdanie podsumowania pod checkpointami (Grzegorz 01/11: same kratki wyglądają biednie)
+  function summaryLine(nFaults) {
+    var what = String(cur.code || cur.type.name || "the equipment").replace(/\s*\(.*\)\s*$/, "");
+    if (!nFaults) return "Visual inspection of " + what + " completed. All items checked were found in satisfactory condition and no defects or signs of damage were observed. No further action required at this time.";
+    return "Visual inspection of " + what + " completed. The defect" + (nFaults > 1 ? "s" : "") + " listed above require" + (nFaults > 1 ? "" : "s") + " attention; all other items checked were found in satisfactory condition.";
   }
   function deviceHead(title, code) {
     var c = String(code || "").replace(/\s*\(.*\)\s*$/, "").trim();
@@ -1834,18 +1846,21 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var where = [d.building, d.level].filter(Boolean).join(" ");
     if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
     ty += 8; pdf.setFontSize(10.5);
-    function cpCell(c, x, yy) {
+    function cpCell(c, x, yy, b) {
       var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
       if (!box) { pdf.text(c, x, yy); return; }
-      var b = 3.2, by = yy - b + 0.4; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
+      var k = b / 3.2, by = yy - b + 0.4 * k; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
       pdf.setLineWidth(0.45);
-      if (m === "\u2611") pdf.lines([[0.9, 1.0], [1.6, -2.0]], x + 0.6, by + 1.6);
-      else { pdf.line(x + 0.6, by + 0.6, x + b - 0.6, by + b - 0.6); pdf.line(x + b - 0.6, by + 0.6, x + 0.6, by + b - 0.6); }
+      if (m === "\u2611") pdf.lines([[0.9 * k, 1.0 * k], [1.6 * k, -2.0 * k]], x + 0.6 * k, by + 1.6 * k);
+      else { pdf.line(x + 0.6 * k, by + 0.6 * k, x + b - 0.6 * k, by + b - 0.6 * k); pdf.line(x + b - 0.6 * k, by + 0.6 * k, x + 0.6 * k, by + b - 0.6 * k); }
       pdf.setLineWidth(0.4); pdf.text(c.slice(1).trim(), x + b + 1.5, yy);
     }
     (d.details || "").split("\n").forEach(function (p) {
       if (p.indexOf("\t") >= 0) { // checkpointy: font PDF nie ma ☑/☒, więc kratka rysowana
-        room(lh * 2); p.split("\t").forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh * 2; return; } // checkpointy
+        var cs = p.split("\t"), n = cs.length > 2 ? 3 : 2; // plant roomy po 3, reszta po 2 i większa czcionka
+        room(lh * 2); if (n === 2) pdf.setFontSize(12);
+        cs.forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / n, ty, n === 2 ? 4.2 : 3.2); });
+        pdf.setFontSize(10.5); ty += lh * 2; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
