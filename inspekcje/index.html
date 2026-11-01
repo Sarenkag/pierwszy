@@ -468,8 +468,8 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   var availH = (ph ? +ph[1] : 16838) - (mt ? +mt[1] : 1134) - (mb ? +mb[1] : 1134);
   var maxW = Math.round(availW * 635);
 
-  function drawing(p, i, maxH) {
-    var cx = maxW, cy = Math.round(maxW * p.height / p.width);
+  function drawing(p, i, maxH, boxW) {
+    var bw = boxW || maxW, cx = bw, cy = Math.round(bw * p.height / p.width);
     if (cy > maxH) { cy = maxH; cx = Math.round(maxH * p.width / p.height); }
     return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
       '<wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
@@ -492,12 +492,43 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     var e = xml.indexOf("</w:p>", idx) + 6;
     var para = xml.slice(s, e);
     var pPr = (/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(para) || [""])[0];
-    var maxH = pageBreaks ? Math.round(Math.min(availH * 635 * 0.8, 7.2e6)) : Math.round(12 * 360000);
-    var body = photos.map(function (p, i) {
-      return "<w:p>" + pPr + (pageBreaks ? '<w:r><w:br w:type="page"/></w:r>' : "") + drawing(p, i, maxH) + "</w:p>";
+    var maxH = Math.round(Math.min(availH * 635 * 0.8, 7.2e6)), body;
+    if (pageBreaks) body = photos.map(function (p, i) {
+      return "<w:p>" + pPr + '<w:r><w:br w:type="page"/></w:r>' + drawing(p, i, maxH) + "</w:p>";
     }).join("");
+    else body = photoTables(); // wzór OEST-basic: do 12 zdjęć na stronę w siatce
     xml = xml.slice(0, s) + body + xml.slice(e);
     return true;
+  }
+  // siatka zdjęć: 1 = cała strona, 2 = połówki, … do 12 (3×4) na stronę; 13. zdjęcie idzie na następną stronę
+  function photoTables() {
+    // wymiary strony ze zdjęciami = ostatnia sekcja (we wzorze ma inne marginesy niż strona 1); nagłówek z logo
+    // wystaje poniżej górnego marginesu, więc zostawiamy zapas, żeby siatka nie przelała się na następną stronę
+    var sp = xml.slice(xml.lastIndexOf("<w:sectPr")), num = function (re, d) { var m = re.exec(sp); return m ? +m[1] : d; };
+    var pW = num(/<w:pgSz[^>]*w:w="(\d+)"/, 11906) - num(/<w:pgMar[^>]*w:left="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:right="(\d+)"/, 1134);
+    var pH = num(/<w:pgSz[^>]*w:h="(\d+)"/, 16838) - num(/<w:pgMar[^>]*w:top="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:bottom="(\d+)"/, 1134);
+    var availW = pW, out = [], usableH = pH - 1500, P0 = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>';
+    for (var start = 0; start < photos.length; start += 12) {
+      var chunk = photos.slice(start, start + 12), g = photoGrid(chunk.length);
+      var cw = Math.floor(availW / g.cols), rh = Math.floor(usableH / g.rows);
+      var t = '<w:tbl><w:tblPr><w:tblW w:w="' + cw * g.cols + '" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>' +
+        '<w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>';
+      for (var c = 0; c < g.cols; c++) t += '<w:gridCol w:w="' + cw + '"/>';
+      t += "</w:tblGrid>";
+      for (var r = 0; r < g.rows; r++) {
+        t += '<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="' + rh + '" w:hRule="exact"/></w:trPr>';
+        for (c = 0; c < g.cols; c++) {
+          var k = r * g.cols + c, ph = chunk[k], i = start + k;
+          t += '<w:tc><w:tcPr><w:tcW w:w="' + cw + '" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p>' + P0 +
+            (ph ? drawing(ph, i, (rh - 160) * 635, (cw - 160) * 635) : "") + "</w:p></w:tc>";
+        }
+        t += "</w:tr>";
+      }
+      t += "</w:tbl>";
+      out.push(t);
+    }
+    return out.join('<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>') +
+      '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>';
   }
   // brak zdjęć: wytnij stronę na zdjęcia (podział sekcji + akapit znacznika), żeby nie było pustej strony
   if (!photos.length) dropPhotoSection(M1);
@@ -547,6 +578,10 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   return out;
 }
 
+// układ zdjęć na stronie wg liczby: 1, 2 (jedno pod drugim), 2×2, 2×3, 3×3, 3×4
+function photoGrid(n) {
+  return n <= 1 ? { cols: 1, rows: 1 } : n === 2 ? { cols: 1, rows: 2 } : n <= 4 ? { cols: 2, rows: 2 } : n <= 6 ? { cols: 2, rows: 3 } : n <= 9 ? { cols: 3, rows: 3 } : { cols: 3, rows: 4 };
+}
 // tabulator w tekście (checkpointy) → <w:tab/> + 3 równe kolumny w tym akapicie
 function tabsToColumns(xml) {
   if (xml.indexOf("\t") < 0) return xml;
@@ -666,18 +701,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     scope: "Scope: visual inspection only – no covers removed, no transfer test and no electrical testing carried out.",
     devices: [],
     checks: [
-      { key: "enclosure", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { key: "door", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
-      { key: "display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
-      { key: "position", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
-      { key: "auto", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
-      { key: "label", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
-      { key: "notices", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { key: "heat", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { key: "noise", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
-      { key: "glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
-      { key: "clean", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
-      { key: "access", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
+      { key: "enclosure", cp: "Enclosure undamaged", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
+      { key: "door", cp: "Door and lock OK", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
+      { key: "display", cp: "No alarms on display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
+      { key: "position", cp: "Normal supply shown", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
+      { key: "auto", cp: "Selector in AUTO", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
+      { key: "label", cp: "ID label present", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
+      { key: "notices", cp: "Warning labels present", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
+      { key: "heat", cp: "No overheating signs", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
+      { key: "noise", cp: "No noise or odour", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
+      { key: "glands", cp: "Cables secure", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
+      { key: "clean", cp: "Clean and dry", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
+      { key: "access", cp: "Access clear", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
     ]
   }, {
     id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
@@ -747,16 +782,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function save(k, v) { try { localStorage.setItem("insp." + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 
   var DEFAULTS = {
-    v: 4, email: "", folder: "",
+    v: 5, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
     site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
   var cfg = Object.assign({}, DEFAULTS);
-  if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
+  if (savedCfg.v === 5) Object.assign(cfg, savedCfg);
+  else if (savedCfg.v === 4) { Object.assign(cfg, savedCfg); cfg.v = 5; cfg.stamp = false; save("cfg", cfg); } // 01/11: zdjęcia bez napisów (Grzegorz)
   else {
-    ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
+    ["folder", "site", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
@@ -1362,16 +1398,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function gErr(e) { return (e && e.message) ? e.message : String(e); }
 
   // ---------- tłumaczenie komentarza (tłumacz Google, wymaga sieci) ----------
+  // w APK: tłumacz ML Kit w telefonie (offline; za pierwszym razem pobiera słownik PL→EN ok. 30 MB)
+  var trPlugin = null;
+  function nativeTr() {
+    if (IN_GAS || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
+    if (!trPlugin) trPlugin = Capacitor.registerPlugin ? Capacitor.registerPlugin("Translate") : Capacitor.Plugins && Capacitor.Plugins.Translate;
+    return trPlugin || null;
+  }
   function renderTranslate() {
-    var can = online() && (IN_GAS || cfg.api);
+    var can = !!nativeTr() || (online() && (IN_GAS || cfg.api));
     $("translate").hidden = !can;
     if (!can && !$("trHint").textContent) $("trHint").textContent = "Bez sieci tłumaczenie nie działa — użyj gotowych usterek albo wpisz po angielsku.";
     if (can && /^Bez sieci/.test($("trHint").textContent)) $("trHint").textContent = "";
   }
   $("translate").addEventListener("click", function () {
     var txt = $("komentarz").value.trim(); if (!txt) return;
-    var b = this; b.disabled = true; $("trHint").textContent = "Tłumaczę…";
-    api("translate", txt).then(function (out) {
+    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? "Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)" : "Tłumaczę…";
+    (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
       if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; }
       else $("trHint").textContent = "Brak odpowiedzi — spróbuj jeszcze raz.";
@@ -1580,7 +1623,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
-    var head = deviceHead(d.tytul, cur.code), body;
+    var head = cur.type.plain ? "" : deviceHead(d.tytul, cur.code), body; // PPM: kod = nazwa zadania, już w tytule/lokalizacji
     if (cur.type.checks.length && cur.type.checks.every(function (c) { return c.cp; })) body = checkpointText(cur.type.checks);
     else body = pts.map(function (s) { return "• " + s; }).join("\n");
     d.opis = (head ? head + "\n\n" : "") + body + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
@@ -1768,13 +1811,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     pdf.rect(L, y, W, 18); pdf.setFont("DV", "bold"); pdf.text("Signed:", L + 1.5, y + 9.5); pdf.text(d.inspektor || "", L + 22, y + 9.5); y += 18;
     footer();
-    pics.forEach(function (p) {
-      pdf.addPage(); var top2 = header();
-      var maxH = 274 - top2, iw = W, ih = iw * p.height / p.width;
-      if (ih > maxH) { ih = maxH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", L + (W - iw) / 2, top2, iw, ih);
+    for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
+      var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
+      pdf.addPage(); var top2 = header(), areaH = 274 - top2;
+      var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
+      chunk.forEach(function (p, k) {
+        var col = k % g.cols, row = Math.floor(k / g.cols), iw = cw, ih = iw * p.height / p.width;
+        if (ih > chh) { ih = chh; iw = ih * p.width / p.height; }
+        pdf.addImage(p.bytes, "JPEG", L + col * (cw + gap) + (cw - iw) / 2, top2 + row * (chh + gap) + (chh - ih) / 2, iw, ih);
+      });
       footer();
-    });
+    }
     return new Uint8Array(pdf.output("arraybuffer"));
   }
 
@@ -2069,7 +2116,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, tpl: f.tpl, slots: f.slots, scope: "", devices: dev, checks: [] } :
         { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", devices: dev,
-          checks: f.checks.map(function (c) { return { key: c.key, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
+          checks: f.checks.map(function (c) { return { key: c.key, cp: c.cp, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
       openForm(t.name); return;
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
@@ -2081,7 +2128,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // W apce na Androida: powrót do menu głównego
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
-  if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
+  var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (NATIVE && "serviceWorker" in navigator) {
+    // w APK pliki są w telefonie: pamięć offline tylko pokazywała starą wersję po aktualizacji, więc ją usuwamy
+    var stale = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+      .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : null; })
+      .then(function () {
+        var k = "oest.sw.reloaded";
+        try { if (stale && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); } } catch (e) {}
+      }).catch(function () {});
+  } else if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
 })();
