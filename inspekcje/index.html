@@ -1529,7 +1529,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
     var d = {
       data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
-      tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
+      tytul: withCode(cur.type.title, cur.code), punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
@@ -1538,6 +1538,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // pola wzoru OEST-basic (po angielsku); polskie zostają dla starszych szablonów
   var BUILDING = { TA: "Tower A", TB: "Tower B", P: "Pavilion", PV: "Pavilion" };
+  // kod urządzenia w tytule, żeby raporty np. różnych rozdzielnic dało się odróżnić („… - DB-TB-EXT-1”)
+  function withCode(title, code) {
+    var c = String(code || "").replace(/\s*\(.*\)\s*$/, "").trim();
+    return c && String(title || "").toLowerCase().indexOf(c.toLowerCase()) < 0 ? title + " - " + c : title;
+  }
   function english(d) {
     d.site = d.site || "One Eastside Tower"; d.date = d.data; d.engineer = d.inspektor; d.title = d.tytul; d.condition = d.stan_ogolny;
     var m = /\((TA|TB|P)(?:,\s*([^)]+))?\)/.exec(d.urzadzenie || ""); // np. „ATS (TB, L13)”, „Weekly Flushing (P)”
