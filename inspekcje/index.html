@@ -560,11 +560,21 @@ function tabsToColumns(xml) {
       return p.replace(/(<w:pPr[^>]*>)([\s\S]*?)(<\/w:pPr>)/, function (m, a, inner, z) {
         inner = inner.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, "");
         var k = inner.search(after);
-        return a + (k < 0 ? inner + tabs : inner.slice(0, k) + tabs + inner.slice(k)) + z;
+        inner = k < 0 ? inner + tabs : inner.slice(0, k) + tabs + inner.slice(k);
+        return a + lineSpacing(inner) + z;
       });
     }
-    return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + "</w:pPr>");
+    return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + LS + "</w:pPr>");
   });
+}
+// odstęp 1.5 wiersza w akapicie z checkpointami (miejsca jest dość)
+var LS = '<w:spacing w:line="360" w:lineRule="auto"/>';
+function lineSpacing(inner) {
+  if (/<w:spacing\b/.test(inner)) return inner.replace(/<w:spacing\b([^>]*?)\/>/, function (m, at) {
+    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="360" w:lineRule="auto"/>';
+  });
+  var k = inner.search(/<w:(ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/);
+  return k < 0 ? inner + LS : inner.slice(0, k) + LS + inner.slice(k);
 }
 // Tekst i logo z nagłówka/stopki szablonu (do PDF)
 function templateInfo(PizZip, templateBytes) {
@@ -1721,7 +1731,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
     ty += 8; pdf.setFontSize(10.5);
     (d.details || "").split("\n").forEach(function (p) {
-      if (p.indexOf("\t") >= 0) { room(lh); p.split("\t").forEach(function (c, k) { pdf.text(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh; return; } // checkpointy
+      if (p.indexOf("\t") >= 0) { room(lh * 1.5); p.split("\t").forEach(function (c, k) { pdf.text(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh * 1.5; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
@@ -1816,7 +1826,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<p style="display:flex;justify-content:space-between;gap:8px"><span>Overall Condition: ' + esc(d.stan_ogolny) + "</span><span>" +
       ([d.building, d.level].filter(Boolean).length ? "Location: " + esc([d.building, d.level].filter(Boolean).join(" ")) : "") + "</span></p>" +
       '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
-        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%">' + esc(c) + "</span>"; }).join("");
+        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:1.8">' + esc(c) + "</span>"; }).join("");
       }).join("\n") + "</div>" +
       (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
       '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
