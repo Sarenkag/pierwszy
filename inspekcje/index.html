@@ -1478,7 +1478,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (pendingPh) h.push("Zmniejszam zdjęcie…");
     var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
     $("toPreview").disabled = block; $("toQueue").disabled = block;
-    $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate());
+    $("toQueue").textContent = block && h.length ? h[0] : "Wyślij · " + fmtDate(reportDate());
   }
 
   // ---------- dane raportu ----------
@@ -1810,7 +1810,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
   }
   // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
-  function shareApi() { return !IN_GAS && !cfg.api && window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.ReportShare; }
+  var reportShare = null;
+  function shareApi() {
+    if (IN_GAS || cfg.api || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
+    if (!reportShare) reportShare = Capacitor.registerPlugin ? Capacitor.registerPlugin("ReportShare") : Capacitor.Plugins && Capacitor.Plugins.ReportShare;
+    return reportShare || null;
+  }
   function myEmail() {
     if (cfg.email) return cfg.email;
     try {
@@ -1829,7 +1834,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     it.status = "sending"; refresh();
     return shareApi().share({ subject: it.subject, body: it.body, to: to ? [to] : [], files: files }).then(function () {
       markSent(it, null); return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); return qPut(it); }).then(refresh);
+    }, function (e) { it.status = "err"; it.err = gErr(e); alert("Nie udało się otworzyć Gmaila: " + it.err + ". Raport czeka w kolejce."); return qPut(it); }).then(refresh);
   }
   function sendQueue(manual) {
     if (shareApi()) { var p = pending()[0]; return manual && p && !sending ? shareSend(p) : Promise.resolve(); }
