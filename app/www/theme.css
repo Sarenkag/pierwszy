@@ -88,3 +88,13 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .hero-logo{width:84px;height:84px;border-radius:24px;display:grid;place-items:center;font-weight:800;font-size:1.45rem;letter-spacing:.06em;color:#fff;
   background:linear-gradient(135deg,#5b7cff,#a35bff);box-shadow:0 10px 30px rgba(120,90,255,.5),inset 0 1px 0 rgba(255,255,255,.35)}
 .hero-name{font-size:1.35rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(90deg,#dfe4ff,#b9a8ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center}
+/* Reactive jak inspekcja: nagłówki paneli, klocki od lewej, dwa przyciski w stopce */
+#v-reactive .panel .label{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+#v-reactive .rx-sub{font-size:.8rem;color:var(--muted);margin:10px 0 2px}
+#v-reactive .panel .rx-chips{justify-content:flex-start}
+#v-reactive .rx-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#v-reactive .rx-row>.btn{min-height:52px;margin:4px 0}
+#v-reactive .rx-photos .ph{position:relative}
+#v-reactive .rx-photos .ph button{position:absolute;top:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(10,16,20,.72);color:#fff;font-size:.95rem}
+#v-reactive .rx-photos .ph .del{right:4px}
+#v-reactive .rx-photos .ph .ed{right:4px;top:auto;bottom:4px}

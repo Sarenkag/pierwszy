@@ -205,5 +205,11 @@
   doc.addEventListener("visibilitychange", function () { if (!doc.hidden) kick(); });
   setInterval(function () { if (!sending && pending().length) auto(); }, 60000);
 
-  root.OESTSender = { init: init, run: run, active: active, busy: function () { return sending; }, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText };
+  // Dodanie raportu do kolejki z dowolnego miejsca apki (np. Reactive): uzupełnia id, konto i status, potem wysyła w tle
+  function enqueue(it) {
+    var acct = ""; try { acct = (JSON.parse(root.localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) {}
+    var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
+    return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
+  }
+  root.OESTSender = { init: init, run: run, enqueue: enqueue, active: active, busy: function () { return sending; }, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText };
 })(window);
