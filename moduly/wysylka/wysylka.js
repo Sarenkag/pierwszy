@@ -126,6 +126,8 @@
     ".oest-sbar .m{display:none;padding:10px 12px 6px;gap:8px;flex-wrap:wrap;border-bottom:1px solid #2a313c}.oest-sbar.open .m{display:flex}" +
     ".oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:8px;border:1px solid #3a4250;background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:600;padding:8px 10px}" +
     ".oest-sbar .m button.go{background:#f0b23a;color:#1a1405;border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75;font-size:12px}" +
+    ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid #2a313c;opacity:.85}" +
+    ".oest-sbar .n i{width:8px;height:8px;border-radius:50%;background:#3fb27f}.oest-sbar .n.mid i{background:#e3b341}.oest-sbar .n.off i{background:#e5534b}" +
     "@keyframes oestspin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
     "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}body.oest-sbar-on #updBanner{bottom:calc(var(--oest-sbar-h) + 8px)!important}";
   var el = null;
@@ -133,7 +135,7 @@
     if (el || !doc.body) return;
     var st = doc.createElement("style"); st.textContent = css; doc.head.appendChild(st);
     el = doc.createElement("div"); el.className = "oest-sbar"; el.hidden = true; el.setAttribute("role", "status");
-    el.innerHTML = '<div class="r"><span class="i"></span><span class="t"></span><span aria-hidden="true">▴</span></div><div class="p"></div><div class="m"></div>';
+    el.innerHTML = '<div class="r"><span class="n"><i></i><span></span></span><span class="i"></span><span class="t"></span><span aria-hidden="true">▴</span></div><div class="p"></div><div class="m"></div>';
     doc.body.appendChild(el);
     el.querySelector(".r").addEventListener("click", function () { open = !open; render(); });
     el.querySelector(".m").addEventListener("click", function (e) {
@@ -159,13 +161,16 @@
     var cls = "", txt = "", more = "", prog = 0;
     var b = function (a, t, go) { return '<button type="button" data-a="' + a + '"' + (go ? ' class="go"' : "") + ">" + t + "</button>"; };
     var qb = b("queue", "Pokaż kolejkę");
-    if (!active() && !flash) { el.hidden = true; doc.body.classList.remove("oest-sbar-on"); return; }
+    var cap = root.Capacitor; if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { el.hidden = true; doc.body.classList.remove("oest-sbar-on"); return; } // pasek stale w apce
+    if (!active()) { cls = "err"; txt = n ? "W kolejce: " + n + " · Gmail niepołączony" : "Gmail niepołączony";
+      more = "<small>Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.</small>" + qb; }
+    else
     if (sending) {
       cls = "run"; prog = pos ? (pos.i - 0.5) / pos.n : 0.05;
       txt = pos ? "Wysyłam raport " + (pos.n > 1 ? pos.i + "/" + pos.n + " " : "") + "· " + pos.code + "…" : "Łączę z Gmailem…";
       more = "<small>Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.</small>" + qb;
     } else if (flash) { cls = "ok"; txt = flash; prog = 1; more = qb; }
-    else if (!n) { el.hidden = true; doc.body.classList.remove("oest-sbar-on"); return; }
+    else if (!n) { cls = "ok"; txt = "Wszystko wysłane"; more = qb; }
     else if (err || loginErr) {
       cls = "err"; txt = "Nie wysłano: " + (err ? err.err : loginErr);
       more = b("retry", "Ponów", true) + (opts.onShare ? b("share", "Wyślij przez Udostępnij") : "") + qb;
@@ -177,6 +182,8 @@
     else { cls = "wait"; txt = "W kolejce: " + n; more = b("send", "Wyślij teraz", true) + qb; }
     el.className = "oest-sbar " + cls + (open ? " open" : "");
     el.querySelector(".t").textContent = txt;
+    var net = !online() ? ["off", "Brak sieci"] : onWifi() ? ["on", "Wi‑Fi"] : ["mid", "Dane"]; // lampka sieci
+    var nb = el.querySelector(".n"); nb.className = "n " + net[0]; nb.lastChild.textContent = net[1];
     el.querySelector(".m").innerHTML = more;
     el.querySelector(".p").style.width = Math.round(prog * 100) + "%";
     el.hidden = false; doc.body.classList.add("oest-sbar-on");
