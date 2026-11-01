@@ -26,3 +26,19 @@ test('account change invalidates existing connections before a request',async()=
   let user='me@example.com',n=0;const g=createGoogle({account:()=>({email:user}),login:async()=>({email:user,token:'T'}),fetch:async()=>{n++;throw Error('no');}});
   await g.connect('drive');user='other@example.com';await assert.rejects(g.folders(),/GOOGLE_CONNECT/);assert.equal(n,0);
 });
+test('report mail goes as one MIME message with attachments via upload endpoint',async()=>{
+  let call;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async(url,opts)=>{call={url,opts};return {ok:true,status:200,json:async()=>({id:'m1'})};}});
+  await g.connect('gmail');
+  await assert.rejects(g.sendMail({to:'x\r\nBcc:evil@example.com',subject:'s',files:[]}),/EMAIL_INVALID/);
+  const r=await g.sendMail({to:'work@example.com',subject:'Engineers Report – DB 1 – Łódź',body:'Zażółć',files:[{name:'DB 1.pdf',mime:'application/pdf',bytes:new Uint8Array([37,80,68,70])}]});
+  assert.equal(r.id,'m1');assert.match(call.url,/upload\/gmail\/v1\/users\/me\/messages\/send\?uploadType=media/);
+  assert.equal(call.opts.headers['Content-Type'],'message/rfc822');assert.equal(call.opts.headers.Authorization,'Bearer T');
+  const m=call.opts.body;assert.match(m,/^To: work@example.com\r\n/);assert.match(m,/Subject: =\?UTF-8\?B\?/);
+  assert.match(m,/filename="DB 1.pdf"/);assert.ok(m.includes(Buffer.from('%PDF').toString('base64')));
+  assert.ok(Buffer.from(m.split('Content-Transfer-Encoding: base64\r\n\r\n')[1].split('\r\n')[0],'base64').toString()==='Zażółć');
+});
+test('gmail session survives page change through the store',async()=>{
+  let saved={};const store={get:()=>saved,set:v=>{saved=JSON.parse(JSON.stringify(v));}};
+  const mk=()=>createGoogle({store,account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async()=>({ok:true,status:200,json:async()=>({})})});
+  await mk().connect('gmail');assert.equal(mk().connected('gmail'),true);
+});
