@@ -432,6 +432,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../ppm.js"></script>
 <script src="tpl-temp-tb.js"></script>
+<script src="tpl-oest-basic.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script>
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.
@@ -449,6 +450,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   var d = Object.assign({}, data);
   d["%zdjecie"] = M1;
   d["%zdjecia"] = M2;
+  d["%photos"] = M1; // wzór OEST-basic: zdjęcia na osobnej stronie (sekcja), jedno pod drugim
   doc.render(d);
   var out = doc.getZip();
   var xmlPath = "word/document.xml";
@@ -495,6 +497,21 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     xml = xml.slice(0, s) + body + xml.slice(e);
     return true;
   }
+  // brak zdjęć: wytnij stronę na zdjęcia (podział sekcji + akapit znacznika), żeby nie było pustej strony
+  if (!photos.length) dropPhotoSection(M1);
+  function dropPhotoSection(mark) {
+    var idx = xml.indexOf(mark); if (idx < 0) return;
+    var s = idx;
+    while (s > 0) { s = xml.lastIndexOf("<w:p", s - 1); var c = xml.charAt(s + 4); if (c === ">" || c === " ") break; }
+    var e = xml.indexOf("</w:p>", idx) + 6;
+    var before = xml.slice(0, s), pe = before.lastIndexOf("</w:p>");
+    if (pe < 0 || pe + 6 !== before.length) return;
+    var ps = pe; while (ps > 0) { ps = before.lastIndexOf("<w:p", ps - 1); var c2 = before.charAt(ps + 4); if (c2 === ">" || c2 === " ") break; }
+    var brk = before.slice(ps), sect = /<w:sectPr\b[\s\S]*?<\/w:sectPr>/.exec(brk);
+    var bodyEnd = xml.lastIndexOf("</w:body>"), li = xml.lastIndexOf("<w:sectPr", bodyEnd);
+    if (!sect || li < e || bodyEnd < 0) return;
+    xml = xml.slice(0, ps) + xml.slice(e, li) + sect[0] + xml.slice(bodyEnd);
+  }
   var used = replacePara(M2, true);
   used = replacePara(M1, false) || used;
   xml = xml.split(M1).join("").split(M2).join("");
@@ -519,6 +536,12 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     photos.forEach(function (p, i) { out.file("word/media/zdjecie" + (i + 1) + ".jpeg", p.bytes); });
   }
   out.file(xmlPath, xml);
+  var who = data.engineer || data.inspektor, core = out.file("docProps/core.xml");
+  if (who && core) {
+    var w = String(who).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    out.file("docProps/core.xml", core.asText().replace(/<dc:creator>[^<]*<\/dc:creator>/, "<dc:creator>" + w + "</dc:creator>")
+      .replace(/<cp:lastModifiedBy>[^<]*<\/cp:lastModifiedBy>/, "<cp:lastModifiedBy>" + w + "</cp:lastModifiedBy>"));
+  }
   return out;
 }
 
@@ -552,7 +575,7 @@ function templateInfo(PizZip, templateBytes) {
 function makeName(pattern, data, when) {
   function pad(n) { return String(n).padStart(2, "0"); }
   function clean(s) {
-    return String(s || "").trim()
+    return String(s || "").replace(/[(),]/g, " ").trim()
       .normalize("NFD").replace(/[̀-ͯ]/g, "")
       .replace(/[łŁ]/g, function (c) { return c === "ł" ? "l" : "L"; })
       .replace(/[^A-Za-z0-9._ -]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
@@ -692,7 +715,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var DEFAULTS = {
     v: 4, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "", insp: "", scope: true, stamp: true, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, stamp: true, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
@@ -914,6 +937,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("tempBox").hidden = !temp || m === "sum";
     if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
+    if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (cur.type.folder) $("photos").closest(".panel").style.order = "-1";
   }
   function resetForm() {
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
@@ -1270,7 +1295,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
     d.opis = pts.map(function (x) { return "• " + x; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
-    return d;
+    return english(d);
   }
 
   // ---------- serwer (Twój Google Apps Script) ----------
@@ -1336,7 +1361,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         });
       });
     }, Promise.resolve()).then(function () {
-      $("photoInfo").textContent = photos.length ? "Zdjęć: " + photos.length + " · zmniejszone do maks. 1280 px." : "Zdjęcia są zmniejszane od razu po dodaniu.";
+      $("photoInfo").textContent = photos.length ? "Zdjęć: " + photos.length + " · zmniejszone do maks. 1920 px." : "Zdjęcia są zmniejszane od razu po dodaniu.";
     }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
@@ -1426,7 +1451,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function processPhoto(file, when) {
     return loadImage(file).then(function (img) {
-      var w = img.width, h = img.height, MAX = 1280;
+      var w = img.width, h = img.height, MAX = 1920;
       var s = Math.min(1, MAX / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
       var c = document.createElement("canvas"); c.width = w; c.height = h;
       c.getContext("2d").drawImage(img, 0, 0, w, h);
@@ -1463,6 +1488,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
       $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
     }
+    if (cur.type && cur.type.folder) {
+      var none = !photos.length;
+      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + photos.length + " → jeden PDF, strona na zdjęcie.";
+      var fb = none || !!restoring || pendingPh > 0;
+      $("toPreview").disabled = fb; $("toQueue").disabled = fb;
+      $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
+    }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
       $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
@@ -1470,12 +1502,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
       $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
     }
-    if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
     if (restoring) h.push("Wczytuję zapisane zdjęcia…");
-    if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
     if (pendingPh) h.push("Zmniejszam zdjęcie…");
-    var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; });
+    var block = !!restoring || pendingPh > 0;
     $("toPreview").disabled = block; $("toQueue").disabled = block;
     $("toQueue").textContent = block && h.length ? h[0] : "Wyślij · " + fmtDate(reportDate());
   }
@@ -1491,8 +1521,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var w = reportDate(), pts = [];
     if (cur.mode === "sum") return batchData(w);
     if (cur.type.temp) return tempData(w);
+    if (cur.type.folder) return english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      tytul: cur.type.title, punkty: [], stan_ogolny: "", quote: "", site: cfg.site, komentarz: "", zakres: "", folder: true,
+      obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "" });
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
+    if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
     var d = {
       data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
@@ -1500,11 +1534,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
     d.opis = pts.map(function (s) { return "• " + s; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
-    return d;
+    return english(d);
+  }
+  // pola wzoru OEST-basic (po angielsku); polskie zostają dla starszych szablonów
+  var BUILDING = { TA: "Tower A", TB: "Tower B", P: "Pavilion", PV: "Pavilion" };
+  function english(d) {
+    d.site = d.site || "One Eastside Tower"; d.date = d.data; d.engineer = d.inspektor; d.title = d.tytul; d.condition = d.stan_ogolny;
+    var m = /\((TA|TB|P)(?:,\s*([^)]+))?\)/.exec(d.urzadzenie || ""); // np. „ATS (TB, L13)”, „Weekly Flushing (P)”
+    d.building = BUILDING[d.wieza] || (m && BUILDING[m[1]]) || (d.wieza === "One Eastside" ? "" : d.wieza) || "";
+    d.level = d.pietro || (m && m[2]) || ""; d.details = d.opis; d.quote = d.quote || "No"; return d;
   }
 
   // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
-  function templateBytes() { return serverTpl ? serverTpl.bytes : b64ToBytes(SAMPLE_TPL); }
+  function templateBytes() { return serverTpl ? serverTpl.bytes : b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL); }
   function tplState(err) {
     var n = $("tplNotice");
     if (serverTpl) {
@@ -1587,7 +1629,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
     pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
     pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
-    var L = 31.75, W = 210 - 2 * L;
+    var L = 25.4, W = 158.7;
     var title = (info.headerText || "Engineers Report").split("\n").pop();
     function header() {
       var y = 12.7;
@@ -1608,37 +1650,43 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       pdf.setFont("DV", "bold"); pdf.setFontSize(6.5); pdf.setTextColor(0, 0, 0);
       lines.forEach(function (s, i) { pdf.text(s, L + 0, 283.5 + i * 3); });
     }
-    var y = header(); pdf.setLineWidth(0.25);
-    pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); pdf.setTextColor(0, 0, 0);
-    var c1 = 22;
-    function row(label, value, h) { pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); pdf.text(label, L + 1.5, y + 4.6); pdf.text(value || "", L + c1 + 1.5, y + 4.6); y += h; }
-    row("Site", d.site, 6.2); row("Date", d.data, 9.5); row("Engineer", d.inspektor, 9.5);
-    var top = y, ty = y + 8, lh = 5;
-    // długi tekst (np. zbiorczy raport 27 izolatorów): zamknij ramkę, nowa strona, ramka dalej
+    // układ jak wzór OEST-basic: Site/Date/Engineer, tytuł, Overall Condition + Location, opis, Works/Quote/Signed
+    var y = header(); pdf.setLineWidth(0.4); pdf.setTextColor(0, 0, 0);
+    var c1 = 24.7, F = 12;
+    function lab(t, x, yy, w) { pdf.setFont("DV", "bold"); pdf.setFontSize(10.5); pdf.text(t, x + w - 1.5, yy, { align: "right" }); }
+    function row(label, value, h, center) {
+      pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(label, L, y + h / 2 + 1.6, c1);
+      pdf.setFont("DV", center ? "bold" : "normal"); pdf.setFontSize(F);
+      if (center) pdf.text(String(value || "").toUpperCase(), L + c1 + (W - c1) / 2, y + h / 2 + 1.6, { align: "center" });
+      else pdf.text(value || "", L + c1 + 1.5, y + h / 2 + 1.6);
+      y += h;
+    }
+    row("Site:", d.site, 10, true); row("Date:", d.data, 10); row("Engineer:", d.inspektor, 10);
+    var top = y, ty = y + 6, lh = 5;
     function room(h) {
-      if (ty + h <= 272) return;
+      if (ty + h <= 266) return;
       pdf.rect(L, top, W, ty - top + 1); footer();
-      pdf.addPage(); top = header(); pdf.setLineWidth(0.25); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
+      pdf.addPage(); top = header(); pdf.setLineWidth(0.4); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
     }
-    pdf.text(d.urzadzenie + " in " + d.lokalizacja + ".", L + 1.5, ty); ty += lh * 2;
-    pdf.setFont("DV", "bold"); pdf.text(d.tytul || "", L + 1.5, ty); ty += lh; pdf.setFont("DV", "normal");
-    d.punkty.forEach(function (p) { var ls = pdf.splitTextToSize(p, W - 14); room(ls.length * lh); pdf.text("•", L + 6, ty); pdf.text(ls, L + 10, ty); ty += ls.length * lh; });
-    room(lh); pdf.setFont("DV", "bold"); pdf.text("Overall Condition:", L + 1.5, ty);
-    var ow = pdf.getTextWidth("Overall Condition: "); pdf.setFont("DV", "normal"); pdf.text(d.stan_ogolny + ".", L + 1.5 + ow, ty); ty += lh;
-    if (d.komentarz) {
-      pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); var cw = pdf.getTextWidth("Comments: "); pdf.setFont("DV", "normal");
-      var cl = pdf.splitTextToSize(d.komentarz, W - 4 - cw);
-      if (ty + cl.length * lh > 272) { room(cl.length * lh); pdf.setFont("DV", "bold"); pdf.text("Comments:", L + 1.5, ty); pdf.setFont("DV", "normal"); }
-      pdf.text(cl, L + 1.5 + cw, ty); ty += cl.length * lh;
-    }
-    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.setFontSize(8.5); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
-    room(18 + 25); // Works Complete + Quote + Signed muszą zmieścić się razem
-    var cellBottom = Math.max(ty + 18, Math.min(top + 72, 252));
-    pdf.text("Works Complete : " + d.data, L + 1.5, cellBottom - 2);
-    pdf.rect(L, top, W, cellBottom - top + 1); y = cellBottom + 1;
-    pdf.rect(L, y, W, 6); pdf.text("Quote Required : " + (d.quote || ""), L + 1.5, y + 4.5); y += 6;
-    pdf.rect(L, y, W, 3.5); y += 3.5;
-    pdf.rect(L, y, W, 14); pdf.text("Signed: " + (d.inspektor || ""), L + 1.5, y + 5); y += 14;
+    pdf.setFont("DV", "bold"); pdf.setFontSize(F);
+    var tl = pdf.splitTextToSize(d.tytul || "", W - 6); pdf.text(tl, L + W / 2, ty, { align: "center" }); ty += tl.length * 5.5 + 3;
+    pdf.setFont("DV", "normal");
+    pdf.text("Overall Condition: " + (d.stan_ogolny || ""), L + 1.5, ty);
+    var where = [d.building, d.level].filter(Boolean).join(" ");
+    if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
+    ty += 8; pdf.setFontSize(10.5);
+    (d.details || "").split("\n").forEach(function (p) {
+      var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
+    });
+    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
+    room(7 + 7 + 18 + 4); // Works Complete + Quote + Signed zawsze razem
+    var cellBottom = Math.max(ty + 2, Math.min(top + 140, 266 - 32));
+    pdf.rect(L, top, W, cellBottom - top); y = cellBottom;
+    var c2 = 41.6;
+    [["Works Complete:", d.data], ["Quote Required:", d.quote || ""]].forEach(function (r) {
+      pdf.rect(L, y, c2, 7); pdf.rect(L + c2, y, W - c2, 7); lab(r[0], L, y + 5, c2); pdf.setFont("DV", "normal"); pdf.text(r[1], L + c2 + 1.5, y + 5); y += 7;
+    });
+    pdf.rect(L, y, W, 18); pdf.setFont("DV", "bold"); pdf.text("Signed:", L + 1.5, y + 9.5); pdf.text(d.inspektor || "", L + 22, y + 9.5); y += 18;
     footer();
     pics.forEach(function (p) {
       pdf.addPage(); var top2 = header();
@@ -1650,10 +1698,26 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return new Uint8Array(pdf.output("arraybuffer"));
   }
 
+  // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
+  function buildPhotoPdf(pics) {
+    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" }), M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
+    pics.forEach(function (p, i) {
+      if (i) pdf.addPage();
+      var iw = PW, ih = iw * p.height / p.width;
+      if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
+      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
+    });
+    return new Uint8Array(pdf.output("arraybuffer"));
+  }
   function buildAll() {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate());
     if (cur.type.temp) return Promise.resolve().then(function () {
       return { name: name, data: d, docx: fillTempDocx(d), pdf: buildTempPdf(d), pics: [], info: {}, logoUrl: "" };
+    });
+    if (cur.type.folder) return photos.reduce(function (p, ph) {
+      return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { arr.push(f); return arr; }); });
+    }, Promise.resolve([])).then(function (pics) {
+      return { name: name, data: d, docx: new Uint8Array(0), pdf: buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
     });
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
     return photos.reduce(function (p, ph) {
@@ -1690,19 +1754,25 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
       return;
     }
+    if (d.folder) {
+      $("paper").innerHTML = built.pics.map(function (p, n) { return '<div class="pimg"><img alt="Strona ' + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
+      $("prevSub").textContent = d.urzadzenie + " · " + d.data + " · stron: " + built.pics.length;
+      $("fname").innerHTML = esc(built.name) + "<em>.pdf</em>";
+      return;
+    }
     function head() { return '<div class="ph">' + (built.logoUrl ? '<img alt="" src="' + built.logoUrl + '">' : "") + "<div>" + esc(title) + "</div></div>"; }
     var foot = '<div class="foot">' + esc(i.footerText || "") + "</div>";
     var html = head() + "<table>" +
       '<tr><td class="k">Site</td><td>' + esc(d.site) + "</td></tr>" +
       '<tr><td class="k">Date</td><td>' + esc(d.data) + "</td></tr>" +
       '<tr><td class="k">Engineer</td><td>' + esc(d.inspektor) + "</td></tr>" +
-      '<tr><td colspan="2" class="big"><p>' + esc(d.urzadzenie) + " in " + esc(d.lokalizacja) + ".</p><b>" + esc(d.tytul) + "</b><ul>" +
-      d.punkty.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul><b>Overall Condition:</b> " + esc(d.stan_ogolny) + "." +
-      (d.komentarz ? "<br><b>Comments:</b> " + esc(d.komentarz) : "") +
-      (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") +
-      "<p>Works Complete : " + esc(d.data) + "</p></td></tr>" +
-      '<tr><td colspan="2">Quote Required : ' + esc(d.quote) + "</td></tr>" +
-      '<tr><td colspan="2">&nbsp;</td></tr>' +
+      '<tr><td colspan="2" class="big"><p style="text-align:center"><b>' + esc(d.tytul) + "</b></p>" +
+      '<p style="display:flex;justify-content:space-between;gap:8px"><span>Overall Condition: ' + esc(d.stan_ogolny) + "</span><span>" +
+      ([d.building, d.level].filter(Boolean).length ? "Location: " + esc([d.building, d.level].filter(Boolean).join(" ")) : "") + "</span></p>" +
+      '<div style="white-space:pre-wrap">' + esc(d.details || "") + "</div>" +
+      (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
+      '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
+      '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
       '<tr><td colspan="2" style="height:44px">Signed: ' + esc(d.inspektor) + "</td></tr></table>" + foot +
       built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="Zdjęcie ' + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
     $("paper").innerHTML = html;
@@ -1719,8 +1789,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       created: Date.now(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
-      subject: "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
-      body: d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
+      subject: d.folder ? r.name : "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
+      body: d.folder ? d.tytul + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") + "\n" :
+        d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
         "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
         d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n",
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
@@ -1907,6 +1978,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return;
     }
     var dev = [{ code: t.name, loc: t.where || "One Eastside", room: "" }], f = t.form && PPM.forms && PPM.forms[t.form];
+    if (f && f.folder) {
+      // inspekcja „z folderu”: tylko zdjęcia wypełnionej kartki → jeden PDF (strona na zdjęcie), bez formularza
+      cur.type = { id: "ppm-" + t.id, folder: true, name: t.name, title: t.name, scope: "", devices: dev, checks: [] };
+      openForm(t.name); return;
+    }
     if (f) {
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, tpl: f.tpl, slots: f.slots, scope: "", devices: dev, checks: [] } :

@@ -465,7 +465,7 @@ input[type=text], input[type=email], input[type=date], select {
       var t = r.t, g = grp(t.group);
       var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by, t.cfg && "formularz do konfiguracji"].filter(Boolean).join(" · ");
       return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span>' +
-        '<span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+        '<span><div class="nm">' + (t.form === "folder" ? '<span title="Z folderu: zdjęcia kartki → PDF">📁 </span>' : "") + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
     }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
     var noDate = rows.filter(function (r) { return !r.due; }).length;
 
@@ -500,14 +500,15 @@ input[type=text], input[type=email], input[type=date], select {
     return by;
   }
   function renderCal() {
-    var y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), last = new Date(y, m + 1, 0);
-    var from = P.iso(first), to = P.iso(last), today = P.iso(new Date()), by = calDue(from, to);
+    // zawsze 6 pełnych tygodni (42 kratki): dni sąsiednich miesięcy przygaszone
+    var y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), lead = (first.getDay() + 6) % 7;
+    var start = new Date(y, m, 1 - lead), end = new Date(y, m, 42 - lead);
+    var from = P.iso(start), to = P.iso(end), today = P.iso(new Date()), by = calDue(from, to);
     $("calTitle").textContent = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
     var h = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(function (d) { return '<b class="cw">' + d + "</b>"; }).join("");
-    for (var k = 0; k < (first.getDay() + 6) % 7; k++) h += "<span></span>";
-    for (var d = 1; d <= last.getDate(); d++) {
-      var iso = P.iso(new Date(y, m, d)), n = (by[iso] || []).length;
-      h += '<button type="button" class="cd' + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i>" + n + "</i>" : "") + "</button>";
+    for (var k = 0; k < 42; k++) {
+      var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length;
+      h += '<button type="button" class="cd' + (day.getMonth() !== m ? " ot" : "") + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i>" + n + "</i>" : "") + "</button>";
     }
     $("calGrid").innerHTML = h;
     var list = by[calSel] || [];

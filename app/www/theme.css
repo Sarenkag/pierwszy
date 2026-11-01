@@ -49,6 +49,7 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .calgrid .cw{font-size:.75rem;color:var(--muted);text-align:center;font-weight:600}
 .cd{position:relative;aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:.9rem;cursor:pointer}
 .cd.sh{background:linear-gradient(135deg,rgba(91,124,255,.35),rgba(163,91,255,.35));border-color:rgba(160,150,255,.45)}
+.cd{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.08)}.cd.ot{opacity:.38}
 .cd.td{box-shadow:0 0 0 2px #b9a8ff inset}.cd.on{box-shadow:0 0 14px rgba(124,132,255,.7);border-color:#fff}
 .cd i{position:absolute;right:3px;bottom:3px;min-width:16px;height:16px;border-radius:8px;background:#ff8a3d;color:#1a0d00;font-size:.65rem;font-style:normal;font-weight:800;display:grid;place-items:center;padding:0 3px}
 .callegend{display:flex;gap:14px;font-size:.8rem;color:var(--muted)}
