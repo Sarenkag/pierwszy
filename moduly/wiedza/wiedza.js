@@ -37,6 +37,8 @@
   var POLA_GLOWNE = ['kod', 'typ', 'nazwa', 'miejsce', 'status', 'notatka', 'zrodlo', 'zdjecia', 'punkt', 'pola', 'utworzono', 'zmieniono'];
 
   function blad(kod, info) { var e = new Error(kod + (info ? ': ' + info : '')); e.code = kod; return e; }
+  // tylko własne klucze: „constructor” czy „__proto__” nie przejdą jako typ/status/relacja
+  function ma(slownik, k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(slownik, k); }
   function kopia(x) { return JSON.parse(JSON.stringify(x)); }
   function pusty() { return { wersja: 1, obiekty: {}, powiazania: [] }; }
   // „Pompa Spa” == „pompa spa”, „żarówka” == „zarowka”
@@ -66,11 +68,11 @@
     var o = {};
     o.kod = czystyKod(wejscie.kod);
     o.typ = String(wejscie.typ || '').toLowerCase();
-    if (!TYPY[o.typ]) throw blad('WIEDZA_TYP', o.typ);
+    if (!ma(TYPY, o.typ)) throw blad('WIEDZA_TYP', o.typ);
     o.nazwa = String(wejscie.nazwa || '').trim();
     if (!o.nazwa) throw blad('WIEDZA_NAZWA', o.kod);
     o.miejsce = wejscie.miejsce ? czystyKod(wejscie.miejsce) : '';
-    if (!o.miejsce && !BEZ_MIEJSCA[o.typ]) throw blad('WIEDZA_MIEJSCE_WYMAGANE', o.kod);
+    if (!o.miejsce && !ma(BEZ_MIEJSCA, o.typ)) throw blad('WIEDZA_MIEJSCE_WYMAGANE', o.kod);
     if (o.miejsce) {
       if (o.miejsce === o.kod) throw blad('WIEDZA_PETLA', o.kod);
       if (!stan.obiekty[o.miejsce]) throw blad('WIEDZA_BRAK_MIEJSCA', o.miejsce);
@@ -79,7 +81,7 @@
         if (m === o.kod || krok > 64) throw blad('WIEDZA_PETLA', o.kod);
       }
     }
-    o.status = STATUSY[wejscie.status] ? wejscie.status : 'propozycja';
+    o.status = ma(STATUSY, wejscie.status) ? wejscie.status : 'propozycja';
     o.notatka = String(wejscie.notatka || '');
     o.zrodlo = String(wejscie.zrodlo || '');
     o.zdjecia = Array.isArray(wejscie.zdjecia) ? wejscie.zdjecia.map(String).filter(Boolean) : [];
@@ -158,7 +160,7 @@
     Object.keys(stan.obiekty).forEach(function (k) {
       var o = stan.obiekty[k];
       if (o.miejsce && !stan.obiekty[o.miejsce]) dodaj('brak_miejsca', k, 'Miejsce ' + o.miejsce + ' nie istnieje');
-      if (!o.miejsce && !BEZ_MIEJSCA[o.typ]) dodaj('bez_miejsca', k, 'Obiekt nie ma miejsca');
+      if (!o.miejsce && !ma(BEZ_MIEJSCA, o.typ)) dodaj('bez_miejsca', k, 'Obiekt nie ma miejsca');
       if (o.status === 'propozycja') dodaj('do_zatwierdzenia', k, 'Czeka na zatwierdzenie');
       if (!o.zdjecia.length && o.typ !== 'budynek' && o.typ !== 'pietro' && o.typ !== 'plan') dodaj('bez_zdjecia', k, 'Brak zdjęcia');
       var klucz = o.miejsce + '|' + norm(o.nazwa);
@@ -192,7 +194,7 @@
           if (stary) zmienione++; else dodane++;
         } catch (e) {
           // brak rodzica albo chwilowa pętla (rodzic przenosi się później w tym samym imporcie) → następna runda
-          if (e.code === 'WIEDZA_BRAK_MIEJSCA' || e.code === 'WIEDZA_BRAK_PLANU' || e.code === 'WIEDZA_PETLA') reszta.push(o);
+          if (e.code === 'WIEDZA_BRAK_MIEJSCA' || e.code === 'WIEDZA_BRAK_PLANU' || e.code === 'WIEDZA_PETLA' || e.code === 'WIEDZA_PLAN_UZYWANY') reszta.push(o);
           else pominiete.push({ kod: o && o.kod, blad: e.code || e.message });
         }
       });
@@ -212,7 +214,7 @@
 
   function dodajPowiazanie(stan, z, rel, d, kiedy) {
     z = czystyKod(z); d = czystyKod(d);
-    if (!RELACJE[rel]) throw blad('WIEDZA_RELACJA', rel);
+    if (!ma(RELACJE, rel)) throw blad('WIEDZA_RELACJA', rel);
     if (!stan.obiekty[z]) throw blad('WIEDZA_BRAK_OBIEKTU', z);
     if (!stan.obiekty[d]) throw blad('WIEDZA_BRAK_OBIEKTU', d);
     if (z === d) throw blad('WIEDZA_PETLA', z);

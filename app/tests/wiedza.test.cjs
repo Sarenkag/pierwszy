@@ -191,3 +191,27 @@ test('import: pokój z kropką na planie, który leży w tym pokoju', async () =
   assert.deepStrictEqual(r.pominiete, []);
   assert.deepStrictEqual((await n.pobierz('R')).punkt, { plan: 'P', x: 5, y: 6 });
 });
+
+test('nazwy z prototypu nie przejdą jako typ, status ani relacja', async () => {
+  const w = baza();
+  await budynekB(w);
+  await assert.rejects(w.zapisz({ kod: 'X', typ: 'constructor', nazwa: 'X' }), /WIEDZA_TYP/);
+  await w.zapisz({ kod: 'Y', typ: 'inne', nazwa: 'Y', miejsce: 'B-UG', status: 'constructor' });
+  assert.strictEqual((await w.pobierz('Y')).status, 'propozycja');
+  await assert.rejects(w.powiaz('Y', '__proto__', 'B-UG'), /WIEDZA_RELACJA/);
+});
+
+test('import: kropka zdjęta i plan zmieniony na dokument w jednym imporcie', async () => {
+  const w = baza();
+  await budynekB(w);
+  await w.zapisz({ kod: 'P', typ: 'plan', nazwa: 'P', miejsce: 'B-UG' });
+  await w.zapisz({ kod: 'D', typ: 'drzwi', nazwa: 'D', miejsce: 'B-UG', punkt: { plan: 'P', x: 1, y: 1 } });
+  const n = W.create({ magazyn: W.magazynPamiec(JSON.parse(await w.eksportJSON())), zegar: () => '2027-01-01T00:00:00.000Z' });
+  await n.zapisz({ kod: 'D', typ: 'drzwi', nazwa: 'D', miejsce: 'B-UG' });
+  await n.zapisz({ kod: 'P', typ: 'dokument', nazwa: 'P', miejsce: 'B-UG' });
+  const dane = JSON.parse(await n.eksportJSON());
+  const { P, D, ...reszta } = dane.obiekty; dane.obiekty = { P, D, ...reszta };
+  const r = await w.importJSON(JSON.stringify(dane));
+  assert.deepStrictEqual(r.pominiete, []);
+  assert.strictEqual((await w.pobierz('P')).typ, 'dokument');
+});
