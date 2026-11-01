@@ -42,6 +42,19 @@ window.OEST_PPM = {
       { key: "fittings", cp: "Fittings intact", ok: "Fittings: no damaged, loose or missing diffusers/covers.", fail: "Fittings: damaged, loose or missing diffusers/covers found." } ] },
     // 024: wzór firmy (docx) z polami {temp} — kolejność pól jak w tabeli wzoru. Tylko temperatury, bez domyślnych wartości.
     // kind: hot / cold / tmv — progi z wzoru: Hot > 50°C, Cold < 20°C, TMV mixed 38–43°C.
+    // plant roomy (01/11/2026, Grzegorz): 7 stałych pomieszczeń, w każdym siatka checkpointów, wzór firmy TPL_PLANT
+    plantW: { rooms: true, title: "Weekly Plant Status Checks", tpl: "TPL_PLANT" },
+    plantM: { rooms: true, monthly: true, title: "Monthly Plant Room Inspections", tpl: "TPL_PLANT" },
+    plantRooms: [
+      { key: "spa_pump", name: "Spa pump plant room", loc: "TB LG" },
+      { key: "spa_filtration", name: "Spa filtration plant room", loc: "TB UG", extra: ["Chemicals stored safely"] },
+      { key: "comms", name: "Comms room", loc: "TB External access" },
+      { key: "primary_switch", name: "Primary Switch Room", loc: "TB External access" },
+      { key: "secondary_switch", name: "Secondary Switch Room", loc: "TB External access" },
+      { key: "sprinkler", name: "Sprinkler plant room", loc: "TB LG", extra: ["Fire extinguisher"] },
+      { key: "mechanical", name: "Mechanical plant room", loc: "TB External access" } ],
+    plantCps: ["Secure", "Clean", "Access", "Lighting", "No leaks", "Panel secure"],
+    plantCpsMonthly: ["No active alarms", "Emergency lighting"],
     tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", tpl: "TPL_TEMP_TB", slots: [
       ["Roof", "cold"], ["Spa Chemical Room", "hot"], ["Spa Chemical Room", "cold"], ["Bin Area", "cold"],
       ["Spa Hall Tap", "hot"], ["Spa Hall Tap", "cold"], ["Massage Hall", "cold"], ["Massage Room", "hot"], ["Massage Room", "cold"],
@@ -72,8 +85,8 @@ window.OEST_PPM = {
     { id: "EFA-INS-017", group: "elec", form: "ats", name: "Automatic Transfer Switches (TB, R2)", freq: ["1M"] },
     { id: "EFA-INS-018", group: "elec", form: "ats", name: "Automatic Transfer Switches (TA, R1)", freq: ["1M"] },
     { id: "EFA-INS-019", form: "folder", group: "fire", name: "AOV Operation Test (TB)", freq: ["1W"] },
-    { id: "EFA-INS-020", group: "mech", form: "plant", name: "Monthly Plant Room Inspections", freq: ["1M"] },
-    { id: "EFA-INS-021", group: "mech", form: "plant", name: "Weekly Plant Status Checks", freq: ["1W"] },
+    { id: "EFA-INS-020", group: "mech", form: "plantM", name: "Monthly Plant Room Inspections", freq: ["1M"] },
+    { id: "EFA-INS-021", group: "mech", form: "plantW", name: "Weekly Plant Status Checks", freq: ["1W"] },
     { id: "EFA-INS-022", group: "elec", form: "lighting", name: "Monthly Lighting Checks", freq: ["1M"] },
     { id: "EFA-INS-023", group: "mech", name: "Monthly Meter Readings", freq: ["1M"], cfg: true },
     { id: "EFA-INS-024", group: "water", form: "tempTB", name: "Water Temperature Checks (TB)", freq: ["1M"] },

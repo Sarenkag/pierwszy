@@ -1,7 +1,7 @@
 // Service worker: apka otwiera się bez zasięgu. Strona z pamięci od razu, nowa wersja pobierana w tle
 // (widać ją przy następnym otwarciu). Skrypt Google (wysyłka) nigdy nie idzie przez pamięć.
 var CACHE = "inspekcje-v2";
-var SHELL = ["./", "./index.html", "./tpl-temp-tb.js", "./tpl-oest-basic.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+var SHELL = ["./", "./index.html", "./tpl-temp-tb.js", "./tpl-oest-basic.js", "./tpl-plant.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 var LIBS = [
   "https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js",
   "https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js",
