@@ -455,6 +455,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   var out = doc.getZip();
   var xmlPath = "word/document.xml";
   var xml = out.file(xmlPath).asText();
+  xml = tabsToColumns(xml);
 
   var pw = /<w:pgSz[^>]*w:w="(\d+)"/.exec(xml);
   var ph = /<w:pgSz[^>]*w:h="(\d+)"/.exec(xml);
@@ -545,6 +546,26 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   return out;
 }
 
+// tabulator w tekście (checkpointy) → <w:tab/> + 3 równe kolumny w tym akapicie
+function tabsToColumns(xml) {
+  if (xml.indexOf("\t") < 0) return xml;
+  return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
+    if (!/<w:t[^>]*>[^<]*\t/.test(p)) return p;
+    p = p.replace(/(<w:t[^>]*>)([^<]*)<\/w:t>/g, function (m, open, txt) {
+      return txt.indexOf("\t") < 0 ? m : open + txt.split("\t").join('</w:t><w:tab/><w:t xml:space="preserve">') + "</w:t>";
+    });
+    var tabs = '<w:tabs><w:tab w:val="left" w:pos="3000"/><w:tab w:val="left" w:pos="6000"/></w:tabs>';
+    if (/<w:pPr>/.test(p) || /<w:pPr /.test(p)) {
+      var after = /<w:(suppressAutoHyphens|kinsoku|wordWrap|overflowPunct|topLinePunct|autoSpaceDE|autoSpaceDN|bidi|adjustRightInd|snapToGrid|spacing|ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/;
+      return p.replace(/(<w:pPr[^>]*>)([\s\S]*?)(<\/w:pPr>)/, function (m, a, inner, z) {
+        inner = inner.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, "");
+        var k = inner.search(after);
+        return a + (k < 0 ? inner + tabs : inner.slice(0, k) + tabs + inner.slice(k)) + z;
+      });
+    }
+    return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + "</w:pPr>");
+  });
+}
 // Tekst i logo z nagłówka/stopki szablonu (do PDF)
 function templateInfo(PizZip, templateBytes) {
   var zip = new PizZip(templateBytes), info = { headerText: "", footerText: "", logo: null, logoType: "" };
@@ -612,20 +633,20 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
     devices: [], // lista z Code.gs (getSetup)
     checks: [
-      { key: "enclosure", ok: "Enclosure inspected – no physical damage, distortion or corrosion.", fail: "Enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { key: "door", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
-      { key: "integrity", ok: "Enclosure integrity maintained – no missing blanks, open knockouts or gaps.", fail: "Enclosure integrity compromised – missing blanks, open knockouts or gaps present.", def: "ok" },
-      { key: "label", ok: "Board identification label present and legible.", fail: "Board identification label missing or illegible.", def: "ok" },
-      { key: "chart", ok: "Circuit chart/schedule present, legible and appears up to date.", fail: "Circuit chart/schedule missing, illegible or out of date.", def: "ok" },
-      { key: "notices", ok: "Required warning notices present and legible (e.g. RCD test, periodic inspection, voltage warning).", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { key: "heat", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { key: "noise", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
-      { key: "devices", ok: "Protective devices visually intact; no tripped or damaged devices observed.", fail: "Tripped or visibly damaged protective device(s) observed.", def: "ok" },
-      { key: "glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
-      { key: "earth", ok: "Visible earthing and bonding conductors present and secure.", fail: "Earthing/bonding conductor loose, damaged or missing.", def: "na" },
-      { key: "clean", ok: "Board clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the board.", def: "ok" },
-      { key: "damp", ok: "No evidence of water leaks or damp in the vicinity of the board.", fail: "Evidence of water leaks or damp in the vicinity of the board.", def: "na" },
-      { key: "access", ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
+      { key: "enclosure", cp: "Enclosure", ok: "Enclosure inspected – no physical damage, distortion or corrosion.", fail: "Enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
+      { key: "door", cp: "Door / cover", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
+      { key: "integrity", cp: "Integrity", ok: "Enclosure integrity maintained – no missing blanks, open knockouts or gaps.", fail: "Enclosure integrity compromised – missing blanks, open knockouts or gaps present.", def: "ok" },
+      { key: "label", cp: "ID label", ok: "Board identification label present and legible.", fail: "Board identification label missing or illegible.", def: "ok" },
+      { key: "chart", cp: "Circuit chart", ok: "Circuit chart/schedule present, legible and appears up to date.", fail: "Circuit chart/schedule missing, illegible or out of date.", def: "ok" },
+      { key: "notices", cp: "Notices", ok: "Required warning notices present and legible (e.g. RCD test, periodic inspection, voltage warning).", fail: "Required warning notices missing or illegible.", def: "ok" },
+      { key: "heat", cp: "No overheating", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
+      { key: "noise", cp: "No noise / odour", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
+      { key: "devices", cp: "Devices intact", ok: "Protective devices visually intact; no tripped or damaged devices observed.", fail: "Tripped or visibly damaged protective device(s) observed.", def: "ok" },
+      { key: "glands", cp: "Cable glands", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
+      { key: "earth", cp: "Earthing", ok: "Visible earthing and bonding conductors present and secure.", fail: "Earthing/bonding conductor loose, damaged or missing.", def: "na" },
+      { key: "clean", cp: "Clean", ok: "Board clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the board.", def: "ok" },
+      { key: "damp", cp: "No damp", ok: "No evidence of water leaks or damp in the vicinity of the board.", fail: "Evidence of water leaks or damp in the vicinity of the board.", def: "na" },
+      { key: "access", cp: "Access clear", ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
     ]
   }, {
     id: "ats", name: "ATS", title: "Automatic Transfer Switch - Visual Inspection",
@@ -1533,14 +1554,29 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
-    var head = deviceHead(d.tytul, cur.code);
-    d.opis = (head ? head + "\n\n" : "") + pts.map(function (s) { return "• " + s; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    var head = deviceHead(d.tytul, cur.code), body;
+    if (cur.type.checks.length && cur.type.checks.every(function (c) { return c.cp; })) body = checkpointText(cur.type.checks);
+    else body = pts.map(function (s) { return "• " + s; }).join("\n");
+    d.opis = (head ? head + "\n\n" : "") + body + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
     return english(d);
   }
   // pola wzoru OEST-basic (po angielsku); polskie zostają dla starszych szablonów
   var BUILDING = { TA: "Tower A", TB: "Tower B", P: "Pavilion", PV: "Pavilion" };
   // kod urządzenia jako nagłówek treści (jak nazwa pomieszczenia w plant roomach), żeby raporty różnych rozdzielnic dało się odróżnić;
   // pomijany, gdy tytuł już go zawiera (np. „ATS”)
+  // checkpointy: siatka ☑ krótkich haseł po 3 w wierszu (tabulatory), N/A pominięte; usterki pełnym zdaniem pod siatką
+  function checkpointText(checks) {
+    var cells = [], faults = [];
+    checks.forEach(function (c, i) {
+      if (states[i] === "ok") cells.push("\u2611 " + c.cp);
+      else if (states[i] === "fail") { cells.push("\u2612 " + c.cp); faults.push(override[i] || c.fail); }
+    });
+    faults = faults.concat(extraFaults(true));
+    var rows = [];
+    for (var i = 0; i < cells.length; i += 3) rows.push(cells.slice(i, i + 3).join("\t"));
+    var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
+    return t + (faults.length ? "\n\nFaults:\n" + faults.map(function (s) { return "• " + s; }).join("\n") : "");
+  }
   function deviceHead(title, code) {
     var c = String(code || "").replace(/\s*\(.*\)\s*$/, "").trim();
     return c && String(title || "").toLowerCase().indexOf(c.toLowerCase()) < 0 ? c : "";
@@ -1683,6 +1719,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
     ty += 8; pdf.setFontSize(10.5);
     (d.details || "").split("\n").forEach(function (p) {
+      if (p.indexOf("\t") >= 0) { room(lh); p.split("\t").forEach(function (c, k) { pdf.text(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
@@ -1776,7 +1813,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<tr><td colspan="2" class="big"><p style="text-align:center"><b>' + esc(d.tytul) + "</b></p>" +
       '<p style="display:flex;justify-content:space-between;gap:8px"><span>Overall Condition: ' + esc(d.stan_ogolny) + "</span><span>" +
       ([d.building, d.level].filter(Boolean).length ? "Location: " + esc([d.building, d.level].filter(Boolean).join(" ")) : "") + "</span></p>" +
-      '<div style="white-space:pre-wrap">' + esc(d.details || "") + "</div>" +
+      '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
+        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%">' + esc(c) + "</span>"; }).join("");
+      }).join("\n") + "</div>" +
       (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
       '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
       '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
