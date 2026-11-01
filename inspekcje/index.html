@@ -444,7 +444,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../settings-google.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
-<script src="../moduly/edytor/edytor.js"></script>
+<script src="../moduly/aparat/aparat.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
 <script src="tpl-plant.js"></script>
@@ -1488,17 +1488,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
-  // Po zdjęciu z aparatu podgląd: ✓ OK / ✏️ Edytuj (edytor z telefonu) / ↺ Powtórz
-  $("camIn").addEventListener("change", function () {
-    var files = Array.prototype.slice.call(this.files || []); this.value = "";
-    if (!files.length) return;
-    if (!(window.OESTEdytor && OESTEdytor.available()) || cfg.editAfterShot === false) { addFiles(files); return; }
-    var f = files[0];
-    OESTEdytor.review(f).then(function (r) {
-      if (r.retake) { try { $("camIn").click(); } catch (e) {} return; }
-      addFiles([r.blob === f ? f : new File([r.blob], f.name || "zdjecie.jpg", { type: "image/jpeg", lastModified: f.lastModified || Date.now() })]);
-    });
+  // Zdjęcie przez wspólny moduł aparatu (zdjęcie → podgląd OK / Edytuj / Powtórz); w przeglądarce zwykły wybór pliku
+  $("camIn").addEventListener("click", function (e) {
+    if (!(window.OESTAparat && OESTAparat.available())) return;
+    e.preventDefault();
+    OESTAparat.take().then(function (b) { if (b) addFiles([new File([b], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })]); }, function (er) { $("photoInfo").textContent = er.message; });
   });
+  $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
   function renderPhotos() {
     $("photos").innerHTML = "";
@@ -1507,10 +1503,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
         (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
       d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
-      if (window.OESTEdytor && OESTEdytor.available()) {
+      if (window.OESTAparat && OESTAparat.available()) {
         var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", "Edytuj zdjęcie " + (i + 1));
         eb.addEventListener("click", function () {
-          OESTEdytor.edit(p.blob).then(function (nb) {
+          OESTAparat.edit(p.blob).then(function (nb) {
             if (!nb) return;
             return processPhoto(nb, p.when).then(function (np) { URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; photos[photos.indexOf(p)] = np; renderPhotos(); });
           }).catch(function (e) { alert(e.message); });

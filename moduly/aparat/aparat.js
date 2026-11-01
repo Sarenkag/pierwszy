@@ -1,12 +1,14 @@
-/* Moduł edycji zdjęć (moduly/edytor) – wielokrotnego użytku.
+/* Moduł aparatu (moduly/aparat) – JEDYNE miejsce, przez które apki OEST robią zdjęcia.
  *
- * Nie ma własnego edytora: otwiera gotowy edytor z telefonu (Markup albo Google Zdjęcia: kadrowanie,
- * strzałki, rysik, tekst, zakreślacz) przez natywną wtyczkę OESTPhotoEdit, a poprawione zdjęcie oddaje apce.
+ * Zdjęcie: aparat systemowy (wtyczka OESTKeys.capture) → podgląd „✓ OK / ✏️ Edytuj / ↺ Powtórz” →
+ * gotowe zdjęcie. Edycja: gotowy edytor z telefonu (Markup / Google Zdjęcia) przez wtyczkę OESTPhotoEdit,
+ * własnego edytora nie piszemy.
  *
- *   OESTEdytor.available()           → true w apce Android
- *   OESTEdytor.edit(blob) → Promise<Blob|null>   (null = bez zmian / anulowane)
- *   OESTEdytor.review(blob) → Promise<{blob}|{retake:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz
- *   OESTEdytor.button(label?)        → gotowy <button> „✏️ Edytuj” do wstawienia pod zdjęciem
+ *   OESTAparat.take()  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
+ *   OESTAparat.available()           → true w apce Android
+ *   OESTAparat.edit(blob) → Promise<Blob|null>   (null = bez zmian / anulowane)
+ *   OESTAparat.review(blob) → Promise<{blob}|{retake:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz
+ *   OESTAparat.button(label?)        → gotowy <button> „✏️ Edytuj” do wstawienia pod zdjęciem
  */
 (function (root) {
   'use strict';
@@ -28,6 +30,19 @@
         if (/NO_EDITOR/.test(m)) throw new Error('Na telefonie nie ma edytora zdjęć (Markup / Google Zdjęcia).');
         throw new Error('Edycja nie powiodła się: ' + m);
       });
+    },
+    take: function () {
+      var C = root.Capacitor, cam = C && C.Plugins && C.Plugins.OESTKeys;
+      if (!api.available() || !cam) return Promise.reject(new Error('Aparat działa w aplikacji na telefonie.'));
+      function shot() {
+        return cam.capture().then(function (r) {
+          return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error('Nie udało się odczytać zdjęcia.'); return res.blob(); })
+            .then(function (b) { return cam.release({ path: r.path }).catch(function () {}).then(function () { return b; }); },
+              function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
+        }, function (e) { if (/CANCELLED/.test(String(e && e.message || e))) return null; throw e; });
+      }
+      function loop() { return shot().then(function (b) { if (!b) return null; return api.review(b).then(function (r) { return r.retake ? loop() : r.blob; }); }); }
+      return loop();
     },
     /* Podgląd po zdjęciu: duże zdjęcie + „✓ OK”, „✏️ Edytuj”, „↺ Powtórz”.
        review(blob) → Promise<{blob}|{retake:true}>; Edytuj otwiera edytor z telefonu i wraca do podglądu. */
@@ -58,5 +73,5 @@
     },
     button: function (label) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn oest-edit'; b.textContent = label || '✏️ Edytuj'; return b; }
   };
-  root.OESTEdytor = api;
+  root.OESTAparat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
