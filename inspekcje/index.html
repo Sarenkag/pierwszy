@@ -1668,9 +1668,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var d = english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site, komentarz: $("komentarz").value.trim(), zakres: "" });
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
-    var txt = [], seen = {};
+    var txt = [], seen = {}, last = "";
     cur.type.checks.forEach(function (c) {
-      if (seen[c.room]) return; seen[c.room] = 1;
+      if (seen[c.room]) return; seen[c.room] = 1; last = c.room;
       var cells = [];
       cur.type.checks.forEach(function (x, i) { if (x.room !== c.room) return; if (states[i] === "ok") cells.push("\u2611 " + x.cp); else if (states[i] === "fail") cells.push("\u2612 " + x.cp); });
       var fails = roomFails(c.room), note = (roomNotes[c.room] || "").trim(), notes = fails.length ? [fails.join(", ") + ": " + (note || "requires attention.")] : [];
@@ -1682,6 +1682,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       notes.forEach(function (n) { txt.push("\u2022 " + n); });
       txt.push("");
     });
+    // wzór plant roomów nie ma pola na komentarz ogólny: dopisujemy go pod ostatnim pomieszczeniem, żeby Word go nie zgubił
+    if (d.komentarz && last) d[last + "_notes"] = d[last + "_notes"].concat(["Comments: " + d.komentarz]);
     d.opis = d.details = txt.join("\n").trim() + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
     return d;
   }
@@ -2143,7 +2145,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   states = cur.type.checks.map(function (c) { return c.def; });
   var cached = load("setup", null);
   if (cached) applySetup(cached);
-  show("home"); renderTranslate();
+  show(APP && location.hash === "#queue" ? "queue" : "home"); renderTranslate(); // z apki prosto do kolejki (bez przekierowania z ekranu startowego)
   Promise.all([
     kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
     qAll().then(function (all) {
