@@ -22,7 +22,7 @@ await W.arkusz(); await W.csv();                   // tabele jak w „OEST – R
 ```
 
 ## Pilnowanie
-Moduł odrzuca: zły kod, nieznany typ, brak miejsca, miejsce, które nie istnieje, pętlę w miejscach, punkt poza 0–100 % albo na nieistniejącym planie, podwójne lub wiszące powiązania, usunięcie miejsca, w którym coś jest. Zapisy idą po kolei, więc dwa szybkie zapisy nie nadpiszą się nawzajem.
+Moduł odrzuca: zły kod, nieznany typ, brak miejsca, miejsce, które nie istnieje, pętlę w miejscach, punkt poza 0–100 % albo na nieistniejącym planie, podwójne lub wiszące powiązania, usunięcie miejsca, w którym coś jest, i planu, na którym są kropki. Każdy zapis to jedna transakcja (odczyt–zmiana–zapis), więc dwa szybkie zapisy, dwie części apki ani dwie karty nie nadpiszą się nawzajem. Magazyn: `{ load(), update(fn) }`, gdzie `fn(stan) → { stan, wynik }`.
 
 ## Podłączenie (następne kroki)
 1. Strona: `<script src="moduly/wiedza/wiedza.js"></script>`.

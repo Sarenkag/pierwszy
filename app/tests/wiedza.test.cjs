@@ -129,3 +129,45 @@ test('zapisy idą po kolei (dwa szybkie zapisy się nie gubią)', async () => {
   await Promise.all([1, 2, 3, 4, 5].map(i => w.zapisz({ kod: 'G' + i, typ: 'gniazdko', nazwa: 'Gniazdko ' + i, miejsce: 'B-UG' })));
   assert.strictEqual((await w.lista({ typ: 'gniazdko' })).length, 5);
 });
+
+test('dwie instancje na jednym magazynie się nie nadpisują', async () => {
+  const m = W.magazynPamiec();
+  const a = W.create({ magazyn: m }), b = W.create({ magazyn: m });
+  await a.zapisz({ kod: 'B', typ: 'budynek', nazwa: 'Building B' });
+  await Promise.all([a.zapisz({ kod: 'X1', typ: 'kran', nazwa: 'Kran 1', miejsce: 'B' }), b.zapisz({ kod: 'X2', typ: 'kran', nazwa: 'Kran 2', miejsce: 'B' })]);
+  assert.deepStrictEqual((await a.lista({ typ: 'kran' })).map(o => o.kod), ['X1', 'X2']);
+});
+
+test('łańcuch: zbiegające się gałęzie dają obiekt raz, na najkrótszej głębokości', async () => {
+  const w = baza();
+  await w.zapisz({ kod: 'B', typ: 'budynek', nazwa: 'B' });
+  for (const k of ['A', 'C', 'D', 'E']) await w.zapisz({ kod: k, typ: 'rozdzielnica', nazwa: k, miejsce: 'B' });
+  await w.powiaz('A', 'zasila', 'C'); await w.powiaz('A', 'zasila', 'D'); await w.powiaz('C', 'zasila', 'E'); await w.powiaz('D', 'zasila', 'E'); await w.powiaz('A', 'zasila', 'E');
+  assert.deepStrictEqual((await w.lancuch('A', 'zasila')).map(x => [x.kod, x.glebokosc]), [['C', 1], ['D', 1], ['E', 1]]);
+});
+
+test('nie usunie planu, na którym są kropki', async () => {
+  const w = baza();
+  await budynekB(w);
+  await w.zapisz({ kod: 'B-UG-PLAN', typ: 'plan', nazwa: 'Plan UG', miejsce: 'B-UG' });
+  await w.zapisz({ kod: 'D1', typ: 'drzwi', nazwa: 'Drzwi', miejsce: 'B-UG', punkt: { plan: 'B-UG-PLAN', x: 1, y: 1 } });
+  await assert.rejects(w.usun('B-UG-PLAN'), /WIEDZA_PLAN_UZYWANY/);
+});
+
+test('import przestawiający drzewo (chwilowa pętla) kończy się poprawnie', async () => {
+  const stary = baza();
+  await stary.zapisz({ kod: 'B', typ: 'budynek', nazwa: 'B' });
+  await stary.zapisz({ kod: 'A', typ: 'pomieszczenie', nazwa: 'A', miejsce: 'B' });
+  await stary.zapisz({ kod: 'C', typ: 'pomieszczenie', nazwa: 'C', miejsce: 'A' });
+  const nowy = baza();
+  await nowy.importJSON(await stary.eksportJSON());
+  await new Promise(r => setTimeout(r, 5));
+  const n = W.create({ magazyn: W.magazynPamiec(JSON.parse(await nowy.eksportJSON())), zegar: () => '2027-01-01T00:00:00.000Z' });
+  await n.zapisz({ kod: 'C', typ: 'pomieszczenie', nazwa: 'C', miejsce: 'B' });
+  await n.zapisz({ kod: 'A', typ: 'pomieszczenie', nazwa: 'A', miejsce: 'C' });
+  const dane = JSON.parse(await n.eksportJSON());
+  dane.obiekty = { A: dane.obiekty.A, C: dane.obiekty.C, B: dane.obiekty.B }; // A przed C
+  const r = await stary.importJSON(JSON.stringify(dane));
+  assert.deepStrictEqual(r.pominiete, []);
+  assert.deepStrictEqual((await stary.pobierz('A')).adres, ['B', 'C']);
+});

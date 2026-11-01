@@ -12,7 +12,7 @@
  *
  * Moduł pilnuje: unikalnego kodu, znanego typu, istniejącego miejsca, braku pętli w miejscach,
  * powiązań tylko do istniejących obiektów. Nowe wpisy mają status „propozycja” – zatwierdza człowiek.
- * Magazyn podaje się z zewnątrz ({ load(), save(stan) }), więc moduł działa też w testach i w innych apkach.
+ * Magazyn podaje się z zewnątrz ({ load(), update(fn) } – update atomowo: stan → { stan, wynik }), więc moduł działa też w testach i w innych apkach.
  */
 (function (root, factory) {
   var api = factory();
@@ -129,15 +129,16 @@
 
   // Łańcuch po jednej relacji: 'naprzod' (DB → co zasila) albo 'wstecz' (korytarz ← obwód ← DB ← MSB).
   function lancuch(stan, kod, rel, kierunek) {
+    // znaczymy przy dodaniu do kolejki: każdy obiekt raz, na najkrótszej głębokości
     var wstecz = kierunek === 'wstecz', wynik = [], byl = {}, kolejka = [{ kod: kod, gl: 0 }];
+    byl[kod] = 1;
     while (kolejka.length) {
       var cur = kolejka.shift();
-      if (byl[cur.kod] || cur.gl > 64) continue;
-      byl[cur.kod] = 1;
+      if (cur.gl >= 64) continue;
       stan.powiazania.forEach(function (p) {
         if (p.rel !== rel) return;
         var nast = wstecz ? (p.do === cur.kod ? p.z : null) : (p.z === cur.kod ? p.do : null);
-        if (nast && !byl[nast]) { wynik.push({ kod: nast, glebokosc: cur.gl + 1, obiekt: kopia(stan.obiekty[nast]) }); kolejka.push({ kod: nast, gl: cur.gl + 1 }); }
+        if (nast && !byl[nast]) { byl[nast] = 1; wynik.push({ kod: nast, glebokosc: cur.gl + 1, obiekt: kopia(stan.obiekty[nast]) }); kolejka.push({ kod: nast, gl: cur.gl + 1 }); }
       });
     }
     return wynik;
@@ -181,11 +182,12 @@
           nowy.obiekty[kod] = gotowy;
           if (stary) zmienione++; else dodane++;
         } catch (e) {
-          if (e.code === 'WIEDZA_BRAK_MIEJSCA' || e.code === 'WIEDZA_BRAK_PLANU') reszta.push(o);
+          // brak rodzica albo chwilowa pętla (rodzic przenosi się później w tym samym imporcie) → następna runda
+          if (e.code === 'WIEDZA_BRAK_MIEJSCA' || e.code === 'WIEDZA_BRAK_PLANU' || e.code === 'WIEDZA_PETLA') reszta.push(o);
           else pominiete.push({ kod: o && o.kod, blad: e.code || e.message });
         }
       });
-      if (reszta.length === lista.length) { reszta.forEach(function (o) { pominiete.push({ kod: o.kod, blad: 'WIEDZA_BRAK_MIEJSCA' }); }); break; }
+      if (reszta.length === lista.length) { reszta.forEach(function (o) { pominiete.push({ kod: o.kod, blad: 'WIEDZA_NIE_DA_SIE_UMIESCIC' }); }); break; }
       lista = reszta;
     }
     dane.powiazania.forEach(function (p) {
@@ -227,7 +229,14 @@
 
   function magazynPamiec(start) {
     var dane = start ? kopia(start) : null;
-    return { load: function () { return Promise.resolve(dane ? kopia(dane) : null); }, save: function (s) { dane = kopia(s); return Promise.resolve(); } };
+    return {
+      load: function () { return Promise.resolve(dane ? kopia(dane) : null); },
+      // odczyt + zmiana + zapis w jednym kroku (bez await w środku), jak transakcja; fn: stan → { stan, wynik }
+      update: function (fn) {
+        try { var r = fn(dane ? kopia(dane) : null); dane = kopia(r.stan); return Promise.resolve(r.wynik); }
+        catch (e) { return Promise.reject(e); }
+      }
+    };
   }
   function magazynIndexedDB(nazwa) {
     var otwarcie;
@@ -252,7 +261,20 @@
     }
     return {
       load: function () { return tx('readonly', function (s) { return s.get('v1'); }); },
-      save: function (stan) { return tx('readwrite', function (s) { s.put(stan, 'v1'); }); }
+      // jedna transakcja readwrite: odczyt, zmiana, zapis – inna karta ani druga instancja nie wejdzie w środek
+      update: function (fn) {
+        return db().then(function (d) {
+          return new Promise(function (ok, zle) {
+            var t = d.transaction('stan', 'readwrite'), st = t.objectStore('stan'), r = st.get('v1'), wynik, przyczyna;
+            r.onsuccess = function () {
+              try { var x = fn(r.result || null); wynik = x.wynik; st.put(x.stan, 'v1'); }
+              catch (e) { przyczyna = e; t.abort(); }
+            };
+            t.oncomplete = function () { ok(wynik); };
+            t.onerror = t.onabort = function () { zle(przyczyna || t.error || blad('WIEDZA_ZAPIS')); };
+          });
+        });
+      }
     };
   }
 
@@ -263,10 +285,15 @@
     var kolejka = Promise.resolve();
     function stan() { return magazyn.load().then(function (s) { return s && s.obiekty ? s : pusty(); }); }
     // zapisy po kolei, żeby dwa szybkie „Dodaj do bazy” się nie nadpisały
+    // magazyn.update robi odczyt-zmianę-zapis atomowo, więc dwie instancje (albo dwie karty) się nie nadpiszą;
+    // kolejka tylko zachowuje kolejność w tej instancji
     function zmien(fn) {
-      var wynik;
       var praca = kolejka.then(function () {
-        return stan().then(function (s) { wynik = fn(s); return magazyn.save(s); }).then(function () { return wynik; });
+        // magazyn dostaje funkcję: stan (albo null) → { stan, wynik }
+        return magazyn.update(function (s) {
+          if (!s || !s.obiekty) s = pusty();
+          return { wynik: fn(s), stan: s };
+        });
       });
       kolejka = praca.catch(function () {});
       return praca;
@@ -284,6 +311,7 @@
           kod = czystyKod(kod);
           if (!s.obiekty[kod]) return false;
           if (dzieci(s, kod).length) throw blad('WIEDZA_MA_ZAWARTOSC', kod); // najpierw przenieś to, co jest w środku
+          if (Object.keys(s.obiekty).some(function (k) { return s.obiekty[k].punkt && s.obiekty[k].punkt.plan === kod; })) throw blad('WIEDZA_PLAN_UZYWANY', kod);
           delete s.obiekty[kod];
           s.powiazania = s.powiazania.filter(function (p) { return p.z !== kod && p.do !== kod; });
           return true;
