@@ -8,6 +8,7 @@ Samodzielny moduł do każdej apki OEST. Wysyła raporty z kolejki prosto z Gmai
 3. Raport do wysłania = rekord w IndexedDB `inspekcje`, magazyn `queue`:
    `{ id, created, acct, code, name, to, subject, body, pdf: Uint8Array, docx: Uint8Array, status: "wait" }`.
    Po zapisaniu wywołaj `OESTSender.run({ login: true })`.
+   Prościej: `OESTSender.enqueue({ type, code, name, subject, body, pdf, docx })` — sam uzupełni id, konto i status i uruchomi wysyłkę.
 
 ## Wymagania po stronie Google Cloud
 - Gmail API włączone; klient OAuth (Android + Web) jak w `app/README.md`.
