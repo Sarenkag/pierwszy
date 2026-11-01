@@ -467,8 +467,8 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   var availH = (ph ? +ph[1] : 16838) - (mt ? +mt[1] : 1134) - (mb ? +mb[1] : 1134);
   var maxW = Math.round(availW * 635);
 
-  function drawing(p, i, maxH) {
-    var cx = maxW, cy = Math.round(maxW * p.height / p.width);
+  function drawing(p, i, maxH, boxW) {
+    var bw = boxW || maxW, cx = bw, cy = Math.round(bw * p.height / p.width);
     if (cy > maxH) { cy = maxH; cx = Math.round(maxH * p.width / p.height); }
     return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
       '<wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
@@ -491,12 +491,43 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     var e = xml.indexOf("</w:p>", idx) + 6;
     var para = xml.slice(s, e);
     var pPr = (/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(para) || [""])[0];
-    var maxH = pageBreaks ? Math.round(Math.min(availH * 635 * 0.8, 7.2e6)) : Math.round(12 * 360000);
-    var body = photos.map(function (p, i) {
-      return "<w:p>" + pPr + (pageBreaks ? '<w:r><w:br w:type="page"/></w:r>' : "") + drawing(p, i, maxH) + "</w:p>";
+    var maxH = Math.round(Math.min(availH * 635 * 0.8, 7.2e6)), body;
+    if (pageBreaks) body = photos.map(function (p, i) {
+      return "<w:p>" + pPr + '<w:r><w:br w:type="page"/></w:r>' + drawing(p, i, maxH) + "</w:p>";
     }).join("");
+    else body = photoTables(); // wzór OEST-basic: do 12 zdjęć na stronę w siatce
     xml = xml.slice(0, s) + body + xml.slice(e);
     return true;
+  }
+  // siatka zdjęć: 1 = cała strona, 2 = połówki, … do 12 (3×4) na stronę; 13. zdjęcie idzie na następną stronę
+  function photoTables() {
+    // wymiary strony ze zdjęciami = ostatnia sekcja (we wzorze ma inne marginesy niż strona 1); nagłówek z logo
+    // wystaje poniżej górnego marginesu, więc zostawiamy zapas, żeby siatka nie przelała się na następną stronę
+    var sp = xml.slice(xml.lastIndexOf("<w:sectPr")), num = function (re, d) { var m = re.exec(sp); return m ? +m[1] : d; };
+    var pW = num(/<w:pgSz[^>]*w:w="(\d+)"/, 11906) - num(/<w:pgMar[^>]*w:left="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:right="(\d+)"/, 1134);
+    var pH = num(/<w:pgSz[^>]*w:h="(\d+)"/, 16838) - num(/<w:pgMar[^>]*w:top="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:bottom="(\d+)"/, 1134);
+    var availW = pW, out = [], usableH = pH - 1500, P0 = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>';
+    for (var start = 0; start < photos.length; start += 12) {
+      var chunk = photos.slice(start, start + 12), g = photoGrid(chunk.length);
+      var cw = Math.floor(availW / g.cols), rh = Math.floor(usableH / g.rows);
+      var t = '<w:tbl><w:tblPr><w:tblW w:w="' + cw * g.cols + '" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>' +
+        '<w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>';
+      for (var c = 0; c < g.cols; c++) t += '<w:gridCol w:w="' + cw + '"/>';
+      t += "</w:tblGrid>";
+      for (var r = 0; r < g.rows; r++) {
+        t += '<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="' + rh + '" w:hRule="exact"/></w:trPr>';
+        for (c = 0; c < g.cols; c++) {
+          var k = r * g.cols + c, ph = chunk[k], i = start + k;
+          t += '<w:tc><w:tcPr><w:tcW w:w="' + cw + '" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p>' + P0 +
+            (ph ? drawing(ph, i, (rh - 160) * 635, (cw - 160) * 635) : "") + "</w:p></w:tc>";
+        }
+        t += "</w:tr>";
+      }
+      t += "</w:tbl>";
+      out.push(t);
+    }
+    return out.join('<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>') +
+      '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>';
   }
   // brak zdjęć: wytnij stronę na zdjęcia (podział sekcji + akapit znacznika), żeby nie było pustej strony
   if (!photos.length) dropPhotoSection(M1);
@@ -546,6 +577,10 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   return out;
 }
 
+// układ zdjęć na stronie wg liczby: 1, 2 (jedno pod drugim), 2×2, 2×3, 3×3, 3×4
+function photoGrid(n) {
+  return n <= 1 ? { cols: 1, rows: 1 } : n === 2 ? { cols: 1, rows: 2 } : n <= 4 ? { cols: 2, rows: 2 } : n <= 6 ? { cols: 2, rows: 3 } : n <= 9 ? { cols: 3, rows: 3 } : { cols: 3, rows: 4 };
+}
 // tabulator w tekście (checkpointy) → <w:tab/> + 3 równe kolumny w tym akapicie
 function tabsToColumns(xml) {
   if (xml.indexOf("\t") < 0) return xml;
@@ -1761,13 +1796,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     pdf.rect(L, y, W, 18); pdf.setFont("DV", "bold"); pdf.text("Signed:", L + 1.5, y + 9.5); pdf.text(d.inspektor || "", L + 22, y + 9.5); y += 18;
     footer();
-    pics.forEach(function (p) {
-      pdf.addPage(); var top2 = header();
-      var maxH = 274 - top2, iw = W, ih = iw * p.height / p.width;
-      if (ih > maxH) { ih = maxH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", L + (W - iw) / 2, top2, iw, ih);
+    for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
+      var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
+      pdf.addPage(); var top2 = header(), areaH = 274 - top2;
+      var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
+      chunk.forEach(function (p, k) {
+        var col = k % g.cols, row = Math.floor(k / g.cols), iw = cw, ih = iw * p.height / p.width;
+        if (ih > chh) { ih = chh; iw = ih * p.width / p.height; }
+        pdf.addImage(p.bytes, "JPEG", L + col * (cw + gap) + (cw - iw) / 2, top2 + row * (chh + gap) + (chh - ih) / 2, iw, ih);
+      });
       footer();
-    });
+    }
     return new Uint8Array(pdf.output("arraybuffer"));
   }
 
