@@ -312,6 +312,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         <label class="toggle"><input type="checkbox" id="s-stamp"> Wpisz datę, kod i lokalizację na zdjęciach</label>
         <label class="toggle"><input type="checkbox" id="s-dphotos"> Zapisuj też osobne pliki zdjęć na Drive (wolniej)</label>
         <label class="toggle"><input type="checkbox" id="s-auto"> Wysyłaj kolejkę sama, gdy jest sieć</label>
+        <label class="toggle"><input type="checkbox" id="s-wifi"> Czekaj z wysyłką na Wi‑Fi (pasek na dole pozwala wysłać od razu)</label>
         <div class="tags">Znaczniki w szablonie: {data} {inspektor} {urzadzenie} {lokalizacja} {tytul} {stan_ogolny} {quote}<br>{#punkty} / {.} / {/punkty} — lista punktów<br>{#komentarz} / Comments: {komentarz} / {/komentarz} — komentarz<br>{#zakres} / {zakres} / {/zakres} — zakres<br>{%zdjecia} — każde zdjęcie na nowej stronie</div>
         <p class="toast" id="setToast"></p>
       </div>
@@ -438,6 +439,9 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../ppm.js"></script>
+<script src="../config.js"></script>
+<script src="../settings-google.js"></script>
+<script src="../wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
@@ -915,8 +919,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var PPM = window.OEST_PPM || null;
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
   function show(v) {
-    if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { location.href = "../index.html#ppm"; return; }
-    if (APP && v === "home" && location.hash === "#queue") { location.href = "../index.html#ppm"; return; } // z kolejki wracamy do listy inspekcji
+    if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { leave("../index.html#ppm"); return; }
+    if (APP && v === "home" && location.hash === "#queue") { leave("../index.html#ppm"); return; } // z kolejki wracamy do listy inspekcji
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
     if (v === "home") renderHome();
     if (v === "list") renderList();
@@ -924,6 +928,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (v === "queue") renderQueue();
     window.scrollTo(0, 0);
   }
+  // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
+  function leave(url) { (gm() ? OESTSender.whenIdle() : Promise.resolve()).then(function () { location.href = url; }); }
+  // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../wysylka.js, pasek stanu na dole
+  function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
@@ -1789,14 +1797,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function fillSettings() {
     $("s-email").value = cfg.email; $("s-folder").value = cfg.folder; $("s-pattern").value = cfg.pattern;
     $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-stamp").checked = !!cfg.stamp; $("s-dphotos").checked = !!cfg.drivePhotos;
-    $("s-api").value = cfg.api; $("s-key").value = cfg.key; $("s-auto").checked = !!cfg.auto;
+    $("s-api").value = cfg.api; $("s-key").value = cfg.key; $("s-auto").checked = !!cfg.auto; $("s-wifi").checked = cfg.wifiOnly !== false;
     $("apiBox").hidden = IN_GAS;
   }
   function readSettings() {
     var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
     cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.stampChosen = true; cfg.drivePhotos = $("s-dphotos").checked;
-    cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked;
+    cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked; cfg.wifiOnly = $("s-wifi").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
     $("setToast").textContent = "Zapisano w tej przeglądarce";
@@ -2022,7 +2030,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (from.type.ask) saveHist(from.type, d.data);
         done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
       }
-      if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
+      if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
       return done.then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     });
   }
@@ -2048,8 +2056,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("netTxt").textContent = (off ? "Bez sieci" : "Online") + " · " +
       (n ? "w kolejce: " + n + (sending ? " (wysyłam…)" : "") : "kolejka pusta");
   }
+  function qBusy() { return sending || (gm() && OESTSender.busy()); }
   function renderQueue() {
-    var n = pending().length;
+    var n = pending().length, busy = qBusy();
     var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
     $("qSub").textContent = n ? "Do wysłania: " + n : "Wszystko wysłane";
     $("qList").innerHTML = list.length ? list.map(function (q) {
@@ -2058,17 +2067,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         q.status === "err" ? '<span class="st err">błąd</span>' : '<span class="st">czeka</span>';
       return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + kb(q.docx.length + q.pdf.length) +
         (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status !== "sent" && !sending ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">Usuń</button>' : "") +
+        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">Usuń</button>' : "") +
         "</small></div>" + st + "</div>";
     }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
-    $("qSend").disabled = sending || !n;
-    $("qSend").textContent = sending ? "Wysyłam…" : "Wyślij wszystko";
-    $("qHint").textContent = shareApi() ? "Wyślij otwiera Gmaila (albo inną apkę) z raportem w załączniku." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
+    $("qSend").disabled = busy || !n;
+    $("qSend").textContent = busy ? "Wysyłam…" : "Wyślij wszystko";
+    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Wyślij otwiera Gmaila (albo inną apkę) z raportem w załączniku." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
       (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
     renderNet();
   }
   $("qList").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-del]"); if (!b || sending) return;
+    var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
     if (!confirm("Usunąć ten raport z kolejki? Nie zostanie wysłany.")) return;
     var id = b.getAttribute("data-del");
     qDel(id).then(function () { queue = queue.filter(function (q) { return q.id !== id; }); renderQueue(); });
@@ -2114,6 +2123,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }, function (e) { it.status = "err"; it.err = gErr(e); alert("Nie udało się otworzyć Gmaila: " + it.err + ". Raport czeka w kolejce."); return qPut(it); }).then(refresh);
   }
   function sendQueue(manual) {
+    if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
     if (shareApi()) { var p = pending()[0]; return manual && p && !sending ? shareSend(p) : Promise.resolve(); }
     if (sending || !cfg.email) return Promise.resolve();
     if (!online() && !manual) { refresh(); return Promise.resolve(); }
@@ -2156,6 +2166,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   ]).then(function () {
     refresh(); renderHome(); openPpm();
     if (location.hash === "#queue") show("queue");
+    if (window.OESTSender) OESTSender.init({
+      onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
+        var q = queue.filter(function (x) { return x.id === it.id; })[0]; if (!q) return;
+        q.status = it.status; q.err = it.err || ""; if (it.status === "sent") { q.sentAt = it.sentAt; q.docx = new Uint8Array(0); q.pdf = new Uint8Array(0); q.photos = []; }
+        refresh();
+      },
+      onQueue: function () { show("queue"); },
+      onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
+    });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
     return online() ? loadSetup() : tplState("brak sieci");
   }).then(function () { if (cfg.auto) sendQueue(); });

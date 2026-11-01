@@ -9,29 +9,32 @@
       await social.initialize({google:{webClientId:config.googleWebClientId,mode:'online'}});
       var result=await social.login({provider:'google',options:{scopes:['email','profile'].concat(scopes)}});
       var r=result.result||{};return {email:r.profile&&r.profile.email,token:r.accessToken&&r.accessToken.token};
+    },store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
+      get:function(){try{return JSON.parse(root.sessionStorage.getItem('oest.gsess')||'{}');}catch(_){return {};}},
+      set:function(v){try{root.sessionStorage.setItem('oest.gsess',JSON.stringify(v));}catch(_){}}
     }});
   }
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
   var SCOPES={contacts:['https://www.googleapis.com/auth/contacts.readonly'],drive:['https://www.googleapis.com/auth/drive.file'],gmail:['https://www.googleapis.com/auth/gmail.send'],calendar:['https://www.googleapis.com/auth/calendar.calendarlist.readonly']};
   function createGoogle(opts){
-    var sessions={},busy=false;
+    var store=opts.store||{get:function(){return {};},set:function(){}},sessions=store.get()||{},busy=false;
     function accountEmail(){var a=opts.account();return a&&a.email?a.email.toLowerCase():'';}
     function connected(kind){var s=sessions[kind];return !!(s&&s.email===accountEmail()&&s.until>Date.now());}
     async function connect(kind){
       if(!SCOPES[kind]||!accountEmail())throw Error('GOOGLE_SETUP');
       var expected=accountEmail(),r=await opts.login(SCOPES[kind]);
       if(!r.email||r.email.toLowerCase()!==expected||accountEmail()!==expected)throw Error('GOOGLE_ACCOUNT_MISMATCH');
-      if(!r.token)throw Error('GOOGLE_TOKEN');sessions[kind]={token:r.token,email:expected,until:Date.now()+50*60*1000};return true;
+      if(!r.token)throw Error('GOOGLE_TOKEN');sessions[kind]={token:r.token,email:expected,until:Date.now()+50*60*1000};store.set(sessions);return true;
     }
-    function disconnect(){sessions={};}
+    function disconnect(){sessions={};store.set(sessions);}
     async function request(kind,url,options){
       if(!connected(kind))throw Error('GOOGLE_CONNECT');
       if(busy)throw Error('GOOGLE_BUSY');busy=true;
       var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},30000);
       try{
         var response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:Object.assign({Authorization:'Bearer '+session.token},options&&options.headers)}));
-        if(!response.ok){if(response.status===401)delete sessions[kind];throw Error('GOOGLE_HTTP_'+response.status);}
+        if(!response.ok){if(response.status===401){delete sessions[kind];store.set(sessions);}throw Error('GOOGLE_HTTP_'+response.status);}
         if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
         return response.status===204?{}:await response.json();
       }finally{clearTimeout(timer);busy=false;}
@@ -83,8 +86,26 @@
       try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw})});}
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
+    /* Raport z załącznikami prosto z Gmaila (zakres gmail.send). files: [{name, mime, bytes: Uint8Array}] */
+    function b64(bytes){var bin='';for(var i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin);}
+    function wrap76(t){return t.replace(/.{1,76}/g,'$&\r\n');}
+    function hdr(t){return /^[\x20-\x7e]*$/.test(t)?t:'=?UTF-8?B?'+b64(new TextEncoder().encode(t))+'?=';}
+    function buildMime(m){
+      if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(m.to||''))throw Error('EMAIL_INVALID');
+      var subject=String(m.subject||'').replace(/[\r\n]+/g,' '),boundary='oest_'+Date.now().toString(36)+Math.random().toString(36).slice(2);
+      var out='To: '+m.to+'\r\nSubject: '+hdr(subject)+'\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="'+boundary+'"\r\n\r\n';
+      out+='--'+boundary+'\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n'+wrap76(b64(new TextEncoder().encode(m.body||'')));
+      (m.files||[]).forEach(function(f){var n=String(f.name).replace(/["\r\n\\]/g,'_');
+        out+='--'+boundary+'\r\nContent-Type: '+(f.mime||'application/octet-stream')+'; name="'+n+'"\r\nContent-Disposition: attachment; filename="'+n+'"\r\nContent-Transfer-Encoding: base64\r\n\r\n'+wrap76(b64(f.bytes));});
+      return out+'--'+boundary+'--\r\n';
+    }
+    async function sendMail(m){
+      var mime=buildMime(m);
+      try{return await request('gmail','https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media',{method:'POST',headers:{'Content-Type':'message/rfc822'},body:mime});}
+      catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
+    }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,calendars:calendars};
+    return {connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
   }
   return {createGoogle:createGoogle};
 });
