@@ -1745,7 +1745,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (from.type.ask) saveHist(from.type, d.data);
         done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
       }
-      if (cfg.auto) sendQueue();
+      if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
       return done.then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     });
   }
@@ -1786,7 +1786,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
     $("qSend").disabled = sending || !n;
     $("qSend").textContent = sending ? "Wysyłam…" : "Wyślij wszystko";
-    $("qHint").textContent = !cfg.email ? "Ustaw e-mail w Ustawieniach." :
+    $("qHint").textContent = shareApi() ? "Wyślij otwiera Gmaila (albo inną apkę) z raportem w załączniku." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
       (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
     renderNet();
   }
@@ -1809,7 +1809,30 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
     it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
   }
+  // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
+  function shareApi() { return !IN_GAS && !cfg.api && window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.ReportShare; }
+  function myEmail() {
+    if (cfg.email) return cfg.email;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k.indexOf("oest.settings.v1.") === 0) { var s = JSON.parse(localStorage.getItem(k)); if (s && s.profile && s.profile.companyEmail) return s.profile.companyEmail; }
+      }
+    } catch (e) {}
+    return "";
+  }
+  function shareSend(it) {
+    var files = [];
+    if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: bytesToB64(it.pdf) });
+    if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: bytesToB64(it.docx) });
+    var to = it.to || myEmail();
+    it.status = "sending"; refresh();
+    return shareApi().share({ subject: it.subject, body: it.body, to: to ? [to] : [], files: files }).then(function () {
+      markSent(it, null); return qPut(it);
+    }, function (e) { it.status = "err"; it.err = gErr(e); return qPut(it); }).then(refresh);
+  }
   function sendQueue(manual) {
+    if (shareApi()) { var p = pending()[0]; return manual && p && !sending ? shareSend(p) : Promise.resolve(); }
     if (sending || !cfg.email) return Promise.resolve();
     if (!online() && !manual) { refresh(); return Promise.resolve(); }
     var todo = pending();
