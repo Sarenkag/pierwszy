@@ -749,12 +749,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var DEFAULTS = {
     v: 4, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "One Eastside Tower", insp: "", scope: true, stamp: true, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
   var cfg = Object.assign({}, DEFAULTS);
   if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
+  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
+  if (!cfg.stampChosen) cfg.stamp = false;
   else {
     ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
@@ -1679,7 +1681,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function readSettings() {
     var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
-    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.drivePhotos = $("s-dphotos").checked;
+    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.stampChosen = true; cfg.drivePhotos = $("s-dphotos").checked;
     cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
