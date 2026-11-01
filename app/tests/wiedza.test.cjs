@@ -171,3 +171,23 @@ test('import przestawiający drzewo (chwilowa pętla) kończy się poprawnie', a
   assert.deepStrictEqual(r.pominiete, []);
   assert.deepStrictEqual((await stary.pobierz('A')).adres, ['B', 'C']);
 });
+
+test('plan z kropkami nie zmieni typu', async () => {
+  const w = baza();
+  await budynekB(w);
+  await w.zapisz({ kod: 'P', typ: 'plan', nazwa: 'Plan', miejsce: 'B-UG' });
+  await w.zapisz({ kod: 'D1', typ: 'drzwi', nazwa: 'Drzwi', miejsce: 'B-UG', punkt: { plan: 'P', x: 1, y: 1 } });
+  await assert.rejects(w.zapisz({ kod: 'P', typ: 'dokument', nazwa: 'Plan', miejsce: 'B-UG' }), /WIEDZA_PLAN_UZYWANY/);
+});
+
+test('import: pokój z kropką na planie, który leży w tym pokoju', async () => {
+  const w = baza();
+  await w.zapisz({ kod: 'B', typ: 'budynek', nazwa: 'B' });
+  await w.zapisz({ kod: 'R', typ: 'pomieszczenie', nazwa: 'R', miejsce: 'B' });
+  await w.zapisz({ kod: 'P', typ: 'plan', nazwa: 'P', miejsce: 'R' });
+  await w.zapisz({ kod: 'R', typ: 'pomieszczenie', nazwa: 'R', miejsce: 'B', punkt: { plan: 'P', x: 5, y: 6 } });
+  const n = baza();
+  const r = await n.importJSON(await w.eksportJSON());
+  assert.deepStrictEqual(r.pominiete, []);
+  assert.deepStrictEqual((await n.pobierz('R')).punkt, { plan: 'P', x: 5, y: 6 });
+});

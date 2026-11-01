@@ -49,6 +49,17 @@
     return kod;
   }
 
+  function czystyPunkt(stan, p, kod) {
+    var x = Number(p.x), y = Number(p.y);
+    if (!p.plan || !(x >= 0 && x <= 100) || !(y >= 0 && y <= 100)) throw blad('WIEDZA_PUNKT', kod);
+    var plan = czystyKod(p.plan);
+    if (!stan.obiekty[plan] || stan.obiekty[plan].typ !== 'plan') throw blad('WIEDZA_BRAK_PLANU', plan);
+    return { plan: plan, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+  }
+  function planUzywany(stan, plan) {
+    return Object.keys(stan.obiekty).some(function (k) { return k !== plan && stan.obiekty[k].punkt && stan.obiekty[k].punkt.plan === plan; });
+  }
+
   // Sprawdza i porządkuje jeden obiekt względem stanu (bez zapisu).
   function przygotuj(stan, wejscie, teraz) {
     if (!wejscie || typeof wejscie !== 'object') throw blad('WIEDZA_OBIEKT');
@@ -72,16 +83,11 @@
     o.notatka = String(wejscie.notatka || '');
     o.zrodlo = String(wejscie.zrodlo || '');
     o.zdjecia = Array.isArray(wejscie.zdjecia) ? wejscie.zdjecia.map(String).filter(Boolean) : [];
-    o.punkt = null;
-    if (wejscie.punkt) {
-      var p = wejscie.punkt, x = Number(p.x), y = Number(p.y);
-      if (!p.plan || !(x >= 0 && x <= 100) || !(y >= 0 && y <= 100)) throw blad('WIEDZA_PUNKT', o.kod);
-      var plan = czystyKod(p.plan);
-      if (!stan.obiekty[plan] || stan.obiekty[plan].typ !== 'plan') throw blad('WIEDZA_BRAK_PLANU', plan);
-      o.punkt = { plan: plan, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
-    }
-    o.pola = wejscie.pola && typeof wejscie.pola === 'object' ? kopia(wejscie.pola) : {};
+    o.punkt = wejscie.punkt ? czystyPunkt(stan, wejscie.punkt, o.kod) : null;
     var stary = stan.obiekty[o.kod];
+    // plan, na którym są kropki, nie może przestać być planem
+    if (stary && stary.typ === 'plan' && o.typ !== 'plan' && planUzywany(stan, o.kod)) throw blad('WIEDZA_PLAN_UZYWANY', o.kod);
+    o.pola = wejscie.pola && typeof wejscie.pola === 'object' ? kopia(wejscie.pola) : {};
     o.utworzono = (stary && stary.utworzono) || teraz;
     o.zmieniono = teraz;
     return o;
@@ -168,7 +174,7 @@
   // Scalanie importu: nowsza data „zmieniono” wygrywa, nic nie znika.
   function scal(stan, dane) {
     if (!dane || typeof dane !== 'object' || !dane.obiekty || !Array.isArray(dane.powiazania)) throw blad('WIEDZA_IMPORT_FORMAT');
-    var nowy = kopia(stan), dodane = 0, zmienione = 0, pominiete = [];
+    var nowy = kopia(stan), dodane = 0, zmienione = 0, pominiete = [], punkty = [];
     // najpierw obiekty bez miejsca i miejsca nadrzędne, żeby walidacja widziała rodziców
     var lista = Object.keys(dane.obiekty).map(function (k) { return dane.obiekty[k]; });
     for (var runda = 0; lista.length && runda < 70; runda++) {
@@ -177,9 +183,12 @@
         try {
           var kod = czystyKod(o.kod), stary = nowy.obiekty[kod];
           if (stary && String(stary.zmieniono) >= String(o.zmieniono || '')) return;
-          var gotowy = przygotuj(nowy, o, o.zmieniono || new Date().toISOString());
+          // kropki na planach dopiero po ułożeniu drzewa miejsc (plan może leżeć w pokoju, który ma kropkę na tym planie)
+          var bezPunktu = Object.assign({}, o, { punkt: null });
+          var gotowy = przygotuj(nowy, bezPunktu, o.zmieniono || new Date().toISOString());
           gotowy.utworzono = o.utworzono || gotowy.utworzono;
           nowy.obiekty[kod] = gotowy;
+          if (o.punkt) punkty.push({ kod: kod, punkt: o.punkt });
           if (stary) zmienione++; else dodane++;
         } catch (e) {
           // brak rodzica albo chwilowa pętla (rodzic przenosi się później w tym samym imporcie) → następna runda
@@ -190,6 +199,10 @@
       if (reszta.length === lista.length) { reszta.forEach(function (o) { pominiete.push({ kod: o.kod, blad: 'WIEDZA_NIE_DA_SIE_UMIESCIC' }); }); break; }
       lista = reszta;
     }
+    punkty.forEach(function (x) {
+      try { nowy.obiekty[x.kod].punkt = czystyPunkt(nowy, x.punkt, x.kod); }
+      catch (e) { pominiete.push({ kod: x.kod, blad: e.code || e.message, tylko: 'punkt' }); }
+    });
     dane.powiazania.forEach(function (p) {
       try { dodajPowiazanie(nowy, p.z, p.rel, p.do, p.utworzono); }
       catch (e) { if (e.code !== 'WIEDZA_POWIAZANIE_JEST') pominiete.push({ kod: p && p.z, blad: e.code }); }
@@ -311,7 +324,7 @@
           kod = czystyKod(kod);
           if (!s.obiekty[kod]) return false;
           if (dzieci(s, kod).length) throw blad('WIEDZA_MA_ZAWARTOSC', kod); // najpierw przenieś to, co jest w środku
-          if (Object.keys(s.obiekty).some(function (k) { return s.obiekty[k].punkt && s.obiekty[k].punkt.plan === kod; })) throw blad('WIEDZA_PLAN_UZYWANY', kod);
+          if (planUzywany(s, kod)) throw blad('WIEDZA_PLAN_UZYWANY', kod);
           delete s.obiekty[kod];
           s.powiazania = s.powiazania.filter(function (p) { return p.z !== kod && p.do !== kod; });
           return true;
