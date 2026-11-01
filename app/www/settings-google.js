@@ -31,7 +31,7 @@
     async function request(kind,url,options){
       if(!connected(kind))throw Error('GOOGLE_CONNECT');
       if(busy)throw Error('GOOGLE_BUSY');busy=true;
-      var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},30000);
+      var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},(options&&options.timeout)||30000);
       try{
         var response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:Object.assign({Authorization:'Bearer '+session.token},options&&options.headers)}));
         if(!response.ok){if(response.status===401){delete sessions[kind];store.set(sessions);}
@@ -105,7 +105,7 @@
       var mime=buildMime(m);
       // zwykły adres (JSON), nie /upload: przy błędzie /upload nie daje nagłówków CORS i WebView widzi tylko „brak odpowiedzi”
       var bytes=new TextEncoder().encode(mime),raw=b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw})});}
+      try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw}),timeout:Math.min(600000,30000+Math.ceil(raw.length/20000)*1000)});} // duży raport na słabym zasięgu: ok. 1 s na 20 KB
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
