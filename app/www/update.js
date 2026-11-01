@@ -21,9 +21,15 @@
     });
   }
   function setStatus(t) { var e = document.getElementById("updStatus"); if (e) e.textContent = t; }
+  // pasek tylko na ekranie głównym (nie zasłania przycisków na dole innych ekranów); po „Anuluj” znika do następnego uruchomienia
+  var dismissed = false, wanted = false;
+  function onHome() { var h = location.hash.replace(/^#/, ""); return h === "" || h === "home"; }
+  function recheck() { setTimeout(function () { banner(wanted); }, 0); } // nawigacja apki zmienia adres przez history API (bez hashchange)
+  w.addEventListener("hashchange", recheck); w.addEventListener("popstate", recheck); document.addEventListener("click", recheck, true);
   function banner(show) {
+    wanted = !!show;
     var b = document.getElementById("updBanner");
-    if (!show) { if (b) b.remove(); return; }
+    if (!show || dismissed || !onHome()) { if (b) b.remove(); return; }
     if (b) return;
     b = document.createElement("button"); b.id = "updBanner"; b.type = "button";
     b.style.cssText = "position:fixed;left:12px;right:12px;bottom:14px;z-index:50;padding:12px 14px;border-radius:14px;border:0;font:inherit;font-weight:700;color:#fff;background:linear-gradient(90deg,#3b82f6,#8b5cf6);box-shadow:0 6px 20px rgba(0,0,0,.35)";
@@ -43,7 +49,7 @@
   }
   function install() {
     if (busy || !latest) return; var p = api(); if (!p) return;
-    if (!w.confirm("Pobrać i zainstalować wersję " + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?")) return;
+    if (!w.confirm("Pobrać i zainstalować wersję " + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?")) { dismissed = true; banner(false); return; }
     busy = true; setStatus("Pobieram wersję " + latest.n + "…");
     var b = document.getElementById("updBanner"); if (b) b.textContent = "Pobieram wersję " + latest.n + "…";
     p.install({ url: latest.url, name: "OEST-" + latest.n + ".apk" }).then(function () {
