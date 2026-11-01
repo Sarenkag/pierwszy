@@ -213,6 +213,9 @@ input[type=text], input[type=email], input[type=date], select {
     <div class="ppm" id="calDay"></div>
   </section>
 
+  <!-- Zdjęcia (moduł moduly/zdjecia) -->
+  <section class="view" id="v-zdjecia" hidden></section>
+
   <!-- Moduł w przygotowaniu -->
   <section class="view" id="v-soon" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
@@ -287,6 +290,8 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="inspekcje/lib/jspdf.umd.min.js"></script>
 <script src="reactive-report.js"></script>
 <script src="reactive.js"></script>
+<script src="moduly/zdjecia/zdjecia.js"></script>
+<script src="zdjecia-ui.js"></script>
 <script>
 (function () {
   "use strict";
@@ -321,6 +326,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
     if (v === "questions") window.OESTQuestionsUI.open();
     if (v === "reactive" || v.indexOf("reactive/") === 0) window.OESTReactiveUI.open(reactiveRoute);
+    if (v === "zdjecia" && window.OESTZdjeciaUI) window.OESTZdjeciaUI.open();
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
     if (v === "cal") renderCal();
@@ -339,6 +345,7 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTPowerTrace.setNavigate(show);
   window.OESTQuestionsUI.setNavigate(show);
   window.OESTReactiveUI.setNavigate(show);
+  if (window.OESTZdjeciaUI) window.OESTZdjeciaUI.setNavigate(show);
   document.addEventListener("click", function (e) {
     var b = e.target.closest(".top .back");
     if (b && b.closest("#v-reactive")) return;

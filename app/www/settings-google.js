@@ -60,6 +60,21 @@
       var body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify(backup)+'\r\n--'+boundary+'--';
       return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
     }
+    /* Moduł zdjęć: foldery i pliki tworzone przez apkę (zakres drive.file widzi tylko je). */
+    async function ensureFolder(name,parentId){
+      if(!name||name.length>150)throw Error('FOLDER_NAME');if(parentId&&!/^[\w-]+$/.test(parentId))throw Error('FOLDER_ID');
+      var q="mimeType='application/vnd.google-apps.folder' and trashed=false and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"' and '"+(parentId||'root')+"' in parents";
+      var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:q,fields:'files(id,name)',pageSize:'1'}));
+      if(r.files&&r.files[0])return r.files[0];
+      return request('drive','https://www.googleapis.com/drive/v3/files?fields=id,name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,mimeType:'application/vnd.google-apps.folder',parents:[parentId||'root']})});
+    }
+    async function uploadFile(parentId,name,blob){
+      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');
+      var boundary='oest_'+Date.now(),meta=JSON.stringify({name:name,parents:[parentId]});
+      var body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'image/jpeg')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
+      return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
+    }
+    async function removeFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE'});}
     async function testMail(address){
       if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(address)||/[\r\n]/.test(address))throw Error('EMAIL_INVALID');
       var mime='To: '+address+'\r\nSubject: OEST TEST - connection check\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nTEST ONLY. OEST email connection check. This is not an inspection report.';
@@ -69,7 +84,7 @@
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,backup:backup,testMail:testMail,calendars:calendars};
+    return {connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,calendars:calendars};
   }
   return {createGoogle:createGoogle};
 });

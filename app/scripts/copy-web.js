@@ -30,4 +30,8 @@ for (const f of ["index.html", "sw.js"]) {
   }
   fs.writeFileSync(p, txt);
 }
-console.log("inspekcje → www/inspekcje (biblioteki raportu lokalnie)");
+// moduły wielokrotnego użytku (../../moduly) → www/moduly; inspekcje sięgają do nich przez ../moduly/
+const modSrc = path.join(__dirname, "..", "..", "moduly"), modDst = path.join(__dirname, "..", "www", "moduly");
+fs.rmSync(modDst, { recursive: true, force: true });
+fs.cpSync(modSrc, modDst, { recursive: true, filter: (f) => !/\.md$/i.test(f) });
+console.log("inspekcje → www/inspekcje (biblioteki raportu lokalnie), moduly → www/moduly");

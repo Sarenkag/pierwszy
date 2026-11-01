@@ -431,6 +431,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../ppm.js"></script>
+<script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
@@ -748,7 +749,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var DEFAULTS = {
     v: 4, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "One Eastside Tower", insp: "", scope: true, stamp: true, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
@@ -759,6 +760,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
+  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
+  if (!cfg.stampChosen) cfg.stamp = false;
   // Link z Apps Script (linkDoTelefonu): …/inspekcje/#api=…&key=… — zapisuje adres i klucz, potem czyści pasek adresu
   (function () {
     var h = new URLSearchParams(location.hash.slice(1));
@@ -1381,12 +1384,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function addFiles(input) {
     var files = Array.prototype.slice.call(input.files || []); input.value = "";
     if (!files.length) return;
-    var tok = formSeq; pendingPh++; updateFormHint();
+    var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
     $("photoInfo").textContent = "Zmniejszam…";
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
+          if (tok === formSeq) keepCopy(f, when, ctx);
           return processPhoto(f, when).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph);
@@ -1481,6 +1485,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     function viaImg() { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = URL.createObjectURL(file); }); }
     if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(file); }).catch(viaImg);
     return viaImg();
+  }
+  // kopia do folderu OEST (moduł zdjęć: jakość z ustawień, limit, wysyłka na Dysk); błąd kopii nie blokuje inspekcji
+  // kontekst zapamiętany przy wyborze zdjęć: przejście do innego urządzenia w trakcie nie zmienia opisu kopii
+  function copyCtx() {
+    var t = cur.type || {};
+    return { source: "inspekcja", category: t.name || t.title || "Inspekcja", code: cur.mode === "sum" ? "" : cur.code, location: cur.where || cur.loc || "" };
+  }
+  function keepCopy(file, when, ctx) {
+    if (!window.OESTZdjecia) return;
+    window.OESTZdjecia.save(file, Object.assign({}, ctx, { when: when })).catch(function () {});
   }
   function processPhoto(file, when) {
     return loadImage(file).then(function (img) {
@@ -1670,7 +1684,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function readSettings() {
     var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
-    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.drivePhotos = $("s-dphotos").checked;
+    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.stampChosen = true; cfg.drivePhotos = $("s-dphotos").checked;
     cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
