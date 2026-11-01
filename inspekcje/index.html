@@ -1384,13 +1384,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function addFiles(input) {
     var files = Array.prototype.slice.call(input.files || []); input.value = "";
     if (!files.length) return;
-    var tok = formSeq; pendingPh++; updateFormHint();
+    var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
     $("photoInfo").textContent = "Zmniejszam…";
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          keepCopy(f, when);
+          if (tok === formSeq) keepCopy(f, when, ctx);
           return processPhoto(f, when).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph);
@@ -1487,11 +1487,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return viaImg();
   }
   // kopia do folderu OEST (moduł zdjęć: jakość z ustawień, limit, wysyłka na Dysk); błąd kopii nie blokuje inspekcji
-  function keepCopy(file, when) {
-    if (!window.OESTZdjecia) return;
+  // kontekst zapamiętany przy wyborze zdjęć: przejście do innego urządzenia w trakcie nie zmienia opisu kopii
+  function copyCtx() {
     var t = cur.type || {};
-    window.OESTZdjecia.save(file, { source: "inspekcja", category: t.name || t.title || "Inspekcja", code: cur.mode === "sum" ? "" : cur.code, location: cur.where || cur.loc || "", when: when })
-      .catch(function () {});
+    return { source: "inspekcja", category: t.name || t.title || "Inspekcja", code: cur.mode === "sum" ? "" : cur.code, location: cur.where || cur.loc || "" };
+  }
+  function keepCopy(file, when, ctx) {
+    if (!window.OESTZdjecia) return;
+    window.OESTZdjecia.save(file, Object.assign({}, ctx, { when: when })).catch(function () {});
   }
   function processPhoto(file, when) {
     return loadImage(file).then(function (img) {

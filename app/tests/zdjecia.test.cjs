@@ -74,3 +74,37 @@ test('limit Dysku kasuje najstarsze z Dysku; bez Wi-Fi brak automatu', async () 
   assert.deepStrictEqual(await off.store.sync(fakeDrive()), { skipped: 'wifi', sent: 0 });
   assert.strictEqual((await off.store.sync(fakeDrive(), true)).sent, 1, 'ręcznie wysyła bez Wi-Fi');
 });
+
+test('utrata Wi-Fi w trakcie: reszta czeka; ręcznie wysyła wszystko', async () => {
+  let wifi = true; const { store } = fakeStore({ wifi: () => wifi });
+  await store.save({ size: MB }, { code: 'A' }); await store.save({ size: MB }, { code: 'B' });
+  const d = fakeDrive(), up = d.upload; d.upload = async (...a) => { const r = await up(...a); wifi = false; return r; };
+  assert.deepStrictEqual(await store.sync(d), { skipped: 'wifi', sent: 1 });
+  assert.strictEqual((await store.sync(d, true)).sent, 1);
+});
+
+test('osobne konta nie widzą i nie wysyłają swoich zdjęć', async () => {
+  let who = 'a@x'; const { store } = fakeStore({ owner: () => who });
+  await store.save({ size: MB }, { code: 'A' });
+  who = 'b@x';
+  assert.strictEqual((await store.list()).length, 0);
+  assert.strictEqual((await store.sync(fakeDrive())).sent, 0);
+  who = 'a@x'; assert.strictEqual((await store.list()).length, 1);
+});
+
+test('pełny Dysk: sprzątanie po każdej wysyłce i przed następną próbą', async () => {
+  const { store, rows } = fakeStore();
+  store.setSettings({ driveLimitMB: 100, phoneLimitMB: 100000 });
+  for (const c of ['A', 'B', 'C']) await store.save({ size: 60 * MB }, { code: c });
+  const d = fakeDrive(); let n = 0; const up = d.upload;
+  d.upload = async (...a) => { if (++n === 3) throw Error('GOOGLE_HTTP_403'); return up(...a); };
+  await assert.rejects(store.sync(d));
+  const onDrive = [...rows.values()].filter(r => r.driveId && !r.driveDeleted).map(r => r.code);
+  assert.deepStrictEqual(onDrive, ['B'], 'po drugiej wysyłce najstarsze A zniknęło z Dysku mimo błędu trzeciej');
+});
+
+test('save powiadamia onSaved, sync nie', async () => {
+  const { store } = fakeStore(); let saved = 0; store.onSaved(() => saved++);
+  await store.save({ size: MB }, {}); await store.sync(fakeDrive());
+  assert.strictEqual(saved, 1);
+});

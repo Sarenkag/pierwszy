@@ -112,6 +112,7 @@
   w.document.head.appendChild(css);
 
   Z.onChange(function () { render(); });
+  var soon; Z.onSaved(function () { clearTimeout(soon); soon = w.setTimeout(auto, 2000); }); // nowe zdjęcie → wyślij, jeśli Dysk połączony i Wi-Fi
   w.addEventListener('online', auto);
   if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener('change', auto);
   w.setTimeout(auto, 3000);

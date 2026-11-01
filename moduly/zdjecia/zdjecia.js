@@ -92,11 +92,14 @@
 
   /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset), wifi(), now() } */
   function createStore(deps) {
-    var syncing = null, listeners = [];
-    function emit() { listeners.forEach(function (f) { try { f(); } catch (_) {} }); }
+    var syncing = null, listeners = [], savedListeners = [];
+    function emit(list) { (list || listeners).forEach(function (f) { try { f(); } catch (_) {} }); }
+    // każde konto ma osobne zdjęcia i osobny stan Dysku (inne konto na tym samym telefonie ich nie widzi)
+    function owner() { return String((deps.owner && deps.owner()) || ''); }
+    async function mine() { var o = owner(); return (await deps.db.all()).filter(function (r) { return (r.owner || '') === o; }); }
     function settings() { return cleanSettings(deps.settings.load()); }
     function setSettings(next) { var s = cleanSettings(Object.assign({}, deps.settings.load(), next)); deps.settings.save(s); emit(); return s; }
-    async function list() { return (await deps.db.all()).map(meta); }
+    async function list() { return (await mine()).map(meta); }
     function meta(r) { var m = Object.assign({}, r); delete m.blob; m.hasBlob = !!r.blob; return m; }
 
     async function save(file, info) {
@@ -104,17 +107,17 @@
       var when = info.when instanceof Date && !isNaN(info.when) ? info.when : new Date(deps.now());
       var s = settings(), out = await deps.compress(file, s.preset);
       var p = place(info, when);
-      var rec = { id: deps.id(), created: when.toISOString(), day: p.day, folder: p.folder, name: p.name,
+      var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), day: p.day, folder: p.folder, name: p.name,
         source: safe(info.source) || 'inne', category: safe(info.category), code: safe(info.code), location: safe(info.location),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
       await enforce(null);
-      emit();
+      emit(); emit(savedListeners);
       return meta(rec);
     }
 
     async function enforce(drive) {
-      var all = await deps.db.all(), p = plan(all.map(meta), settings());
+      var all = await mine(), p = plan(all.map(meta), settings());
       if (drive) for (var i = 0; i < p.driveRemove.length; i++) {
         var r = await deps.db.get(p.driveRemove[i]);
         try { await drive.remove(r.driveId); } catch (e) { if (!/404/.test(String(e && e.message))) throw e; }
@@ -133,9 +136,11 @@
     function sync(drive, force) {
       if (syncing) return syncing;
       syncing = (async function () {
-        var s = settings();
-        if (s.wifiOnly && !force && deps.wifi() !== true) return { skipped: 'wifi', sent: 0 };
+        var s = settings(), who = owner();
+        function allowed() { return !(s.wifiOnly && !force && deps.wifi() !== true); }
+        if (!allowed()) return { skipped: 'wifi', sent: 0 };
         var folders = {}, sent = 0;
+        await enforce(drive); // najpierw zaległe sprzątanie Dysku, żeby pełny Dysk nie blokował wysyłki
         async function folderId(parts) {
           var key = '', parent = s.rootId || '';
           if (!parent) { parent = (await drive.ensureFolder(s.rootName, '')).id; s = setSettings({ rootId: parent }); }
@@ -146,9 +151,11 @@
           }
           return parent;
         }
-        var all = (await deps.db.all()).filter(function (r) { return r.blob && !r.driveId; })
+        var all = (await mine()).filter(function (r) { return r.blob && !r.driveId; })
           .sort(function (a, b) { return a.created < b.created ? -1 : 1; });
         for (var i = 0; i < all.length; i++) {
+          if (owner() !== who) return { skipped: 'account', sent: sent }; // zmiana konta w trakcie: reszta czeka
+          if (!allowed()) return { skipped: 'wifi', sent: sent }; // utrata Wi-Fi w trakcie: reszta czeka
           var r = all[i], parent;
           try { parent = await folderId(r.folder); }
           catch (e) { if (s.rootId && /404/.test(String(e && e.message))) { s = setSettings({ rootId: '' }); folders = {}; parent = await folderId(r.folder); } else throw e; }
@@ -157,8 +164,8 @@
           if (!fresh) continue;
           fresh.driveId = up.id; fresh.synced = new Date(deps.now()).toISOString();
           await deps.db.put(fresh); sent++; emit();
+          await enforce(drive);
         }
-        await enforce(drive);
         setSettings({ lastSync: new Date(deps.now()).toISOString() });
         return { sent: sent };
       })().finally(function () { syncing = null; emit(); });
@@ -168,8 +175,9 @@
     async function blob(id) { var r = await deps.db.get(id); return r && r.blob; }
     async function remove(id) { await deps.db.del(id); emit(); }
     function onChange(f) { listeners.push(f); }
+    function onSaved(f) { savedListeners.push(f); }
     return { save: save, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
-      onChange: onChange, busy: function () { return !!syncing; } };
+      onChange: onChange, onSaved: onSaved, busy: function () { return !!syncing; } };
   }
 
   /* ---- przeglądarka / Android WebView ---- */
@@ -214,12 +222,14 @@
     };
   }
   function createBrowser(win) {
-    var KEY = 'oest.zdjecia.v1';
+    function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
+    function KEY() { return 'oest.zdjecia.v1.' + who(); }
     var store = createStore({
+      owner: who,
       db: idb(win),
       settings: {
-        load: function () { try { return JSON.parse(win.localStorage.getItem(KEY) || '{}'); } catch (_) { return {}; } },
-        save: function (s) { try { win.localStorage.setItem(KEY, JSON.stringify(s)); } catch (_) {} }
+        load: function () { try { return JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { return {}; } },
+        save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
       compress: compressIn(win),
       wifi: function () { var c = win.navigator.connection; if (!c || !c.type) return null; return c.type === 'wifi' || c.type === 'ethernet'; },
