@@ -441,7 +441,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../ppm.js"></script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
-<script src="../wysylka.js"></script>
+<script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
@@ -930,7 +930,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
   function leave(url) { (gm() ? OESTSender.whenIdle() : Promise.resolve()).then(function () { location.href = url; }); }
-  // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../wysylka.js, pasek stanu na dole
+  // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
@@ -2091,7 +2091,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
     $("qSend").disabled = busy || !n;
     $("qSend").textContent = busy ? "Wysyłam…" : "Wyślij wszystko";
-    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Wyślij otwiera Gmaila (albo inną apkę) z raportem w załączniku." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
+    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
       (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
     renderNet();
   }

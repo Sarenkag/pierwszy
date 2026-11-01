@@ -31,9 +31,9 @@ test('report mail goes as one MIME message with attachments via upload endpoint'
   await g.connect('gmail');
   await assert.rejects(g.sendMail({to:'x\r\nBcc:evil@example.com',subject:'s',files:[]}),/EMAIL_INVALID/);
   const r=await g.sendMail({to:'work@example.com',subject:'Engineers Report – DB 1 – Łódź',body:'Zażółć',files:[{name:'DB 1.pdf',mime:'application/pdf',bytes:new Uint8Array([37,80,68,70])}]});
-  assert.equal(r.id,'m1');assert.match(call.url,/upload\/gmail\/v1\/users\/me\/messages\/send\?uploadType=media/);
-  assert.equal(call.opts.headers['Content-Type'],'message/rfc822');assert.equal(call.opts.headers.Authorization,'Bearer T');
-  const m=call.opts.body;assert.match(m,/^To: work@example.com\r\n/);assert.match(m,/Subject: =\?UTF-8\?B\?/);
+  assert.equal(r.id,'m1');assert.equal(call.url,'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+  assert.equal(call.opts.headers['Content-Type'],'application/json');assert.equal(call.opts.headers.Authorization,'Bearer T');
+  const m=Buffer.from(JSON.parse(call.opts.body).raw,'base64url').toString('latin1');assert.match(m,/^To: work@example.com\r\n/);assert.match(m,/Subject: =\?UTF-8\?B\?/);
   assert.match(m,/filename="DB 1.pdf"/);assert.ok(m.includes(Buffer.from('%PDF').toString('base64')));
   assert.ok(Buffer.from(m.split('Content-Transfer-Encoding: base64\r\n\r\n')[1].split('\r\n')[0],'base64').toString()==='Zażółć');
 });
