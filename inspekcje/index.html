@@ -755,13 +755,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var savedCfg = load("cfg", {});
   var cfg = Object.assign({}, DEFAULTS);
   if (savedCfg.v === 4) Object.assign(cfg, savedCfg);
-  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
-  if (!cfg.stampChosen) cfg.stamp = false;
   else {
     ["folder", "site", "stamp", "insp"].forEach(function (k) { if (savedCfg[k] !== undefined && savedCfg[k] !== "") cfg[k] = savedCfg[k]; });
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
+  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
+  if (!cfg.stampChosen) cfg.stamp = false;
   // Link z Apps Script (linkDoTelefonu): …/inspekcje/#api=…&key=… — zapisuje adres i klucz, potem czyści pasek adresu
   (function () {
     var h = new URLSearchParams(location.hash.slice(1));
