@@ -16,6 +16,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(CalendarPlugin.class);
         registerPlugin(KeysPlugin.class);
         registerPlugin(ReportSharePlugin.class);
+        registerPlugin(TranslatePlugin.class);
         super.onCreate(savedInstanceState);
     }
 

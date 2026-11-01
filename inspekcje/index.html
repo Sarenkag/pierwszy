@@ -1359,16 +1359,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function gErr(e) { return (e && e.message) ? e.message : String(e); }
 
   // ---------- tłumaczenie komentarza (tłumacz Google, wymaga sieci) ----------
+  // w APK: tłumacz ML Kit w telefonie (offline; za pierwszym razem pobiera słownik PL→EN ok. 30 MB)
+  var trPlugin = null;
+  function nativeTr() {
+    if (IN_GAS || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
+    if (!trPlugin) trPlugin = Capacitor.registerPlugin ? Capacitor.registerPlugin("Translate") : Capacitor.Plugins && Capacitor.Plugins.Translate;
+    return trPlugin || null;
+  }
   function renderTranslate() {
-    var can = online() && (IN_GAS || cfg.api);
+    var can = !!nativeTr() || (online() && (IN_GAS || cfg.api));
     $("translate").hidden = !can;
     if (!can && !$("trHint").textContent) $("trHint").textContent = "Bez sieci tłumaczenie nie działa — użyj gotowych usterek albo wpisz po angielsku.";
     if (can && /^Bez sieci/.test($("trHint").textContent)) $("trHint").textContent = "";
   }
   $("translate").addEventListener("click", function () {
     var txt = $("komentarz").value.trim(); if (!txt) return;
-    var b = this; b.disabled = true; $("trHint").textContent = "Tłumaczę…";
-    api("translate", txt).then(function (out) {
+    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? "Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)" : "Tłumaczę…";
+    (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
       if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; }
       else $("trHint").textContent = "Brak odpowiedzi — spróbuj jeszcze raz.";
@@ -2067,7 +2074,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // W apce na Androida: powrót do menu głównego
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
-  if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
+  var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (NATIVE && "serviceWorker" in navigator) {
+    // w APK pliki są w telefonie: pamięć offline tylko pokazywała starą wersję po aktualizacji, więc ją usuwamy
+    var stale = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+      .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : null; })
+      .then(function () {
+        var k = "oest.sw.reloaded";
+        try { if (stale && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); } } catch (e) {}
+      }).catch(function () {});
+  } else if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
 })();
