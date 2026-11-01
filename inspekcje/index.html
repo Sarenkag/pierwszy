@@ -1683,7 +1683,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var cells = [];
       cur.type.checks.forEach(function (x, i) { if (x.room !== c.room) return; if (states[i] === "ok") cells.push("\u2611 " + x.cp); else if (states[i] === "fail") cells.push("\u2612 " + x.cp); });
       var fails = roomFails(c.room), note = (roomNotes[c.room] || "").trim().replace(/\.?$/, ".");
-      if (fails.length) issues.push(c.roomName + " (" + c.roomLoc + "): " + fails.join(", ") + (fails.length > 1 ? " checks failed" : " check failed") + " \u2013 " + (note.length > 1 ? note : "requires attention."));
+      fails.forEach(function (f) { issues.push(c.roomName + " (" + c.roomLoc + "): " + f + " check failed \u2013 " + (note.length > 1 ? note : "requires attention.")); }); // każde odznaczenie osobnym zdaniem
       var rows = [];
       for (var k = 0; k < cells.length; k += 4) rows.push({ a: cells[k] || "", b: cells[k + 1] || "", c: cells[k + 2] || "", d: cells[k + 3] || "" });
       d[c.room] = rows; d[c.room + "_notes"] = [];
@@ -2191,6 +2191,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         refresh();
       },
       onQueue: function () { show("queue"); },
+      onIdle: refresh,
       onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
     });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny

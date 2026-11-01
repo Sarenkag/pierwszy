@@ -39,7 +39,7 @@
     return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && (root.OEST_CONFIG || {}).googleWebClientId && !c.api && account() && account().email);
   }
   function online() { return root.navigator.onLine !== false; }
-  function onWifi() { var c = root.navigator.connection; return !c || !c.type || c.type === "wifi" || c.type === "ethernet" || c.type === "unknown"; }
+  function onWifi() { var c = root.navigator.connection; return !!(c && (c.type === "wifi" || c.type === "ethernet")); } // nieznana sieć = jak komórkowa (czeka na kliknięcie)
   function myEmail() {
     var c = cfg(); if (c.email) return c.email;
     try {
@@ -93,13 +93,14 @@
             if (stop || !online()) return true;
             if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
             pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
-            return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
+            return put(it).then(function () { return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; done++;
               return put(it).then(function () { changed(it); return false; });
             }, function (e) {
-              it.status = "err"; it.err = errText(e);
+              if (/GOOGLE_BUSY/.test(e && e.message)) { it.status = "wait"; it.err = ""; } // Drive akurat zajęty: spróbuję przy następnym razie
+              else { it.status = "err"; it.err = errText(e); }
               return put(it).then(function () { changed(it); return true; });
-            });
+            }); });
           });
         }, Promise.resolve(false));
       }, function (e) { loginErr = errText(e); }).then(function () {
@@ -107,6 +108,7 @@
       });
     }).catch(function (e) { loginErr = "błąd kolejki w telefonie: " + errText(e); }).then(function () {
       sending = false; pos = null; skipWifi = false; lock = null; render();
+      if (opts.onIdle) try { opts.onIdle(); } catch (e) {}
       var w = idle; idle = []; w.forEach(function (f) { f(); });
     }));
   }
@@ -139,7 +141,7 @@
       else if (a === "send") run({ login: true });
       else if (a === "retry") retry();
       else if (a === "share" && opts.onShare) opts.onShare();
-      else if (a === "queue") { open = false; if (opts.onQueue) opts.onQueue(); else root.location.href = opts.queueUrl; }
+      else if (a === "queue") { open = false; if (opts.onQueue) opts.onQueue(); else whenIdle().then(function () { root.location.href = opts.queueUrl; }); }
       render();
     });
   }
@@ -180,7 +182,14 @@
   function refresh() { return loadAll().then(render, render); }
 
   function auto() { return cfg().auto !== false ? run() : Promise.resolve(); } // „Wysyłaj kolejkę sama” z Ustawień inspekcji
-  function init(o) { Object.assign(opts, o || {}); return refresh().then(auto); }
+  // raport zapisany jako „wysyłam”, a strona zamknięta w trakcie: nie wiadomo, czy doszedł, więc tylko ręczne Ponów
+  function orphans() {
+    if (lock) return Promise.resolve();
+    return Promise.all(items.filter(function (q) { return q.status === "sending"; }).map(function (q) {
+      q.status = "err"; q.err = errText(Error("EMAIL_RESULT_UNCERTAIN")); changed(q); return put(q);
+    }));
+  }
+  function init(o) { Object.assign(opts, o || {}); return refresh().then(orphans).then(render).then(auto); }
   var kick = function () { refresh().then(auto); };
   root.addEventListener("online", kick); root.addEventListener("offline", render);
   if (root.navigator.connection && root.navigator.connection.addEventListener) root.navigator.connection.addEventListener("change", kick);
