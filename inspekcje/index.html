@@ -1488,14 +1488,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
-  // Po zdjęciu z aparatu od razu otwiera się edytor z telefonu (strzałki, kółka, tekst); wyjście bez zmian = oryginał
+  // Po zdjęciu z aparatu podgląd: ✓ OK / ✏️ Edytuj (edytor z telefonu) / ↺ Powtórz
   $("camIn").addEventListener("change", function () {
     var files = Array.prototype.slice.call(this.files || []); this.value = "";
     if (!files.length) return;
     if (!(window.OESTEdytor && OESTEdytor.available()) || cfg.editAfterShot === false) { addFiles(files); return; }
     var f = files[0];
-    OESTEdytor.edit(f).then(function (nb) { addFiles([nb ? new File([nb], f.name || "zdjecie.jpg", { type: "image/jpeg", lastModified: f.lastModified || Date.now() }) : f]); },
-      function (e) { addFiles([f]); $("photoInfo").textContent = e.message; });
+    OESTEdytor.review(f).then(function (r) {
+      if (r.retake) { try { $("camIn").click(); } catch (e) {} return; }
+      addFiles([r.blob === f ? f : new File([r.blob], f.name || "zdjecie.jpg", { type: "image/jpeg", lastModified: f.lastModified || Date.now() })]);
+    });
   });
   $("galIn").addEventListener("change", function () { addFiles(this); });
   function renderPhotos() {
