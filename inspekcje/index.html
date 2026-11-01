@@ -567,11 +567,11 @@ function tabsToColumns(xml) {
     return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + LS + "</w:pPr>");
   });
 }
-// odstęp 1.5 wiersza w akapicie z checkpointami (miejsca jest dość)
-var LS = '<w:spacing w:line="360" w:lineRule="auto"/>';
+// odstęp 2 wierszy w akapicie z checkpointami (miejsca jest dość)
+var LS = '<w:spacing w:line="480" w:lineRule="auto"/>';
 function lineSpacing(inner) {
   if (/<w:spacing\b/.test(inner)) return inner.replace(/<w:spacing\b([^>]*?)\/>/, function (m, at) {
-    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="360" w:lineRule="auto"/>';
+    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="480" w:lineRule="auto"/>';
   });
   var k = inner.search(/<w:(ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/);
   return k < 0 ? inner + LS : inner.slice(0, k) + LS + inner.slice(k);
@@ -1730,8 +1730,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var where = [d.building, d.level].filter(Boolean).join(" ");
     if (where) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" });
     ty += 8; pdf.setFontSize(10.5);
+    function cpCell(c, x, yy) {
+      var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
+      if (!box) { pdf.text(c, x, yy); return; }
+      var b = 3.2, by = yy - b + 0.4; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
+      pdf.setLineWidth(0.45);
+      if (m === "\u2611") pdf.lines([[0.9, 1.0], [1.6, -2.0]], x + 0.6, by + 1.6);
+      else { pdf.line(x + 0.6, by + 0.6, x + b - 0.6, by + b - 0.6); pdf.line(x + b - 0.6, by + 0.6, x + 0.6, by + b - 0.6); }
+      pdf.setLineWidth(0.4); pdf.text(c.slice(1).trim(), x + b + 1.5, yy);
+    }
     (d.details || "").split("\n").forEach(function (p) {
-      if (p.indexOf("\t") >= 0) { room(lh * 1.5); p.split("\t").forEach(function (c, k) { pdf.text(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh * 1.5; return; } // checkpointy
+      if (p.indexOf("\t") >= 0) { // checkpointy: font PDF nie ma ☑/☒, więc kratka rysowana
+        room(lh * 2); p.split("\t").forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty); }); ty += lh * 2; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
@@ -1826,7 +1836,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<p style="display:flex;justify-content:space-between;gap:8px"><span>Overall Condition: ' + esc(d.stan_ogolny) + "</span><span>" +
       ([d.building, d.level].filter(Boolean).length ? "Location: " + esc([d.building, d.level].filter(Boolean).join(" ")) : "") + "</span></p>" +
       '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
-        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:1.8">' + esc(c) + "</span>"; }).join("");
+        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:2.2">' + esc(c) + "</span>"; }).join("");
       }).join("\n") + "</div>" +
       (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
       '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
