@@ -2,7 +2,7 @@
 
 **Zasada:** każde miejsce w apkach OEST, które robi zdjęcie, korzysta z tego modułu. Nie piszemy własnego aparatu. Edytor jest własny i wbudowany (decyzja Grzegorza 01/11/2026), bo edytory Google nie otwierają plików z wnętrza apki.
 
-Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz** → gotowe zdjęcie. „Edytuj” otwiera edytor w apce (strzałka, kółko, kwadrat, linia, 6 kolorów, grubość S/M/L, kadrowanie, cofnij) i wraca do podglądu. Wynik: JPEG w pełnej rozdzielczości, offline, nic nie trafia do Galerii.
+Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz** → gotowe zdjęcie. „Edytuj” otwiera edytor w apce (strzałka, gotowe kółka S/M/L — stuknij, żeby postawić, przeciągnij, żeby przesunąć — kwadrat, linia, 6 kolorów, grubość S/M/L, kadrowanie, cofnij) i wraca do podglądu. Wynik: JPEG w pełnej rozdzielczości, offline, nic nie trafia do Galerii.
 
 ## Użycie
 ```js
