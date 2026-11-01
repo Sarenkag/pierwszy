@@ -86,6 +86,8 @@
     o.zrodlo = String(wejscie.zrodlo || '');
     o.zdjecia = Array.isArray(wejscie.zdjecia) ? wejscie.zdjecia.map(String).filter(Boolean) : [];
     o.punkt = wejscie.punkt ? czystyPunkt(stan, wejscie.punkt, o.kod) : null;
+    // kropka na samym sobie: liczy się nowy typ, nie stary
+    if (o.punkt && o.punkt.plan === o.kod && o.typ !== 'plan') throw blad('WIEDZA_BRAK_PLANU', o.kod);
     var stary = stan.obiekty[o.kod];
     // plan, na którym są kropki, nie może przestać być planem
     if (stary && stary.typ === 'plan' && o.typ !== 'plan' && planUzywany(stan, o.kod)) throw blad('WIEDZA_PLAN_UZYWANY', o.kod);
@@ -238,7 +240,7 @@
   }
   function csv(tabela) {
     return tabela.map(function (w) {
-      return w.map(function (c) { c = String(c == null ? '' : c); return /[",\n;]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',');
+      return w.map(function (c) { c = String(c == null ? '' : c); return /[",\r\n;]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',');
     }).join('\r\n');
   }
 

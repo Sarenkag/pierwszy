@@ -215,3 +215,13 @@ test('import: kropka zdjęta i plan zmieniony na dokument w jednym imporcie', as
   assert.deepStrictEqual(r.pominiete, []);
   assert.strictEqual((await w.pobierz('P')).typ, 'dokument');
 });
+
+test('plan z kropką na sobie nie zmieni się w dokument; CSV cytuje \\r', async () => {
+  const w = baza();
+  await budynekB(w);
+  await w.zapisz({ kod: 'P', typ: 'plan', nazwa: 'P', miejsce: 'B-UG' });
+  await w.zapisz({ kod: 'P', typ: 'plan', nazwa: 'P', miejsce: 'B-UG', punkt: { plan: 'P', x: 1, y: 1 } });
+  await assert.rejects(w.zapisz({ kod: 'P', typ: 'dokument', nazwa: 'P', miejsce: 'B-UG', punkt: { plan: 'P', x: 1, y: 1 } }), /WIEDZA_BRAK_PLANU/);
+  await w.zapisz({ kod: 'N', typ: 'inne', nazwa: 'N', miejsce: 'B-UG', notatka: 'a\rb' });
+  assert.match((await w.csv()).obiekty, /"a\rb"/);
+});
