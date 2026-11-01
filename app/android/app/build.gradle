@@ -13,6 +13,9 @@ android {
         versionCode = appBuild.toInteger()
         versionName = "0.1." + appBuild
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // tylko 64-bitowy ARM (Pixel 8 Pro i współczesne telefony): biblioteki ML Kit (tłumacz, OCR) bez wersji dla
+        // innych procesorów — APK ok. 2× mniejsze
+        ndk { abiFilters 'arm64-v8a' }
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
