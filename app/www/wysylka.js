@@ -113,22 +113,27 @@
   function say(t) { flash = t; clearTimeout(flashT); flashT = setTimeout(function () { flash = ""; render(); }, 4000); render(); }
 
   // ---------- pasek ----------
-  var css = ".oest-sbar{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:9999;background:var(--panel,#fff);color:var(--ink,#1b1f24);" +
-    "border:1px solid var(--line,#d0d4d9);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.28);font:14px/1.3 system-ui,sans-serif;overflow:hidden}" +
-    ".oest-sbar .r{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}.oest-sbar .t{flex:1;min-width:0}" +
-    ".oest-sbar .i{width:16px;height:16px;flex:none;border-radius:50%;box-sizing:border-box}" +
-    ".oest-sbar.run .i{border:2px solid rgba(127,127,127,.35);border-top-color:var(--accent,#e8a317);animation:oestspin .8s linear infinite}" +
-    ".oest-sbar.ok .i{background:var(--ok,#2f7d4f)}.oest-sbar.wait .i{background:var(--warn,#c98a12)}.oest-sbar.err .i{background:var(--bad,#c0392b)}" +
-    ".oest-sbar .p{height:3px;background:var(--accent,#e8a317);transition:width .3s}.oest-sbar .m{display:none;padding:0 12px 12px;gap:8px;flex-wrap:wrap}" +
-    ".oest-sbar.open .m{display:flex}.oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:8px;border:1px solid var(--line,#d0d4d9);background:transparent;color:inherit;font:inherit;font-weight:600;padding:8px 10px}" +
-    ".oest-sbar .m button.go{background:var(--accent,#e8a317);color:var(--accent-ink,#1a1405);border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75}" +
-    "@keyframes oestspin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:76px}";
+  // cienki pełny pasek przyklejony do dołu ekranu (pod appką, nieprzezroczysty); rozwinięcie otwiera się nad nim
+  var css = ":root{--oest-sbar-h:calc(30px + env(safe-area-inset-bottom,0px))}" +
+    ".oest-sbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column-reverse;background:#151a22;color:#e8eaed;" +
+    "border-top:1px solid #2a313c;padding-bottom:env(safe-area-inset-bottom,0px);font:13px/1.2 system-ui,sans-serif}" +
+    ".oest-sbar .r{display:flex;align-items:center;gap:8px;height:29px;padding:0 12px;cursor:pointer;white-space:nowrap}" +
+    ".oest-sbar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.oest-sbar .r>span:last-child{opacity:.6;font-size:11px}" +
+    ".oest-sbar .i{width:10px;height:10px;flex:none;border-radius:50%;box-sizing:border-box}" +
+    ".oest-sbar.run .i{width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:#f0b23a;animation:oestspin .8s linear infinite}" +
+    ".oest-sbar.ok .i{background:#3fb27f}.oest-sbar.wait .i{background:#e3b341}.oest-sbar.err .i{background:#e5534b}" +
+    ".oest-sbar .p{height:2px;background:#f0b23a;transition:width .3s;align-self:flex-start}" +
+    ".oest-sbar .m{display:none;padding:10px 12px 6px;gap:8px;flex-wrap:wrap;border-bottom:1px solid #2a313c}.oest-sbar.open .m{display:flex}" +
+    ".oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:8px;border:1px solid #3a4250;background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:600;padding:8px 10px}" +
+    ".oest-sbar .m button.go{background:#f0b23a;color:#1a1405;border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75;font-size:12px}" +
+    "@keyframes oestspin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
+    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}body.oest-sbar-on #updBanner{bottom:calc(var(--oest-sbar-h) + 8px)!important}";
   var el = null;
   function mount() {
     if (el || !doc.body) return;
     var st = doc.createElement("style"); st.textContent = css; doc.head.appendChild(st);
     el = doc.createElement("div"); el.className = "oest-sbar"; el.hidden = true; el.setAttribute("role", "status");
-    el.innerHTML = '<div class="r"><span class="i"></span><span class="t"></span><span aria-hidden="true">▾</span></div><div class="p"></div><div class="m"></div>';
+    el.innerHTML = '<div class="r"><span class="i"></span><span class="t"></span><span aria-hidden="true">▴</span></div><div class="p"></div><div class="m"></div>';
     doc.body.appendChild(el);
     el.querySelector(".r").addEventListener("click", function () { open = !open; render(); });
     el.querySelector(".m").addEventListener("click", function (e) {
