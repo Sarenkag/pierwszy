@@ -17,5 +17,5 @@ OESTAparat.edit(blob).then(nowy => { if (nowy) podmien(nowy); });     // ✏️ 
 
 ## Pułapki
 - Ekranu potwierdzenia w aplikacji aparatu nie da się rozszerzyć, dlatego podgląd jest nasz.
-- Edytor może zwrócić nowy plik (`data.getData()`) albo nadpisać nasz (`EXTRA_OUTPUT`); wtyczka obsługuje oba, brak zmian → `null`.
+- Kolejność edytorów: Google Zdjęcia, potem Markup (Markup wywalał się na pliku z apki, 01/11). Bez `EXTRA_OUTPUT`; edytor zwraca nowy plik (`data.getData()`) albo nadpisuje nasz – wtyczka obsługuje oba, brak zmian → `null`.
 - Pliki robocze leżą w `cache/photo-edit` i są kasowane po powrocie. PNG/WebP są zamieniane na JPEG.
