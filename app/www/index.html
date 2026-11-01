@@ -152,6 +152,10 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Menu główne -->
   <section class="view" id="v-home" hidden>
+    <div class="hero" aria-label="One East Side Tower">
+      <div class="hero-logo">OEST</div>
+      <div class="hero-name">One East Side Tower</div>
+    </div>
     <div class="tiles">
       <button class="tile" type="button" data-go="ppm">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
@@ -165,7 +169,7 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 5L13 27h10l-3 16 15-23H25z"/></svg>
         <div><b>Power trace</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="settings/calendar">
+      <button class="tile" type="button" data-go="cal">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
         <div><b>Calendar</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -196,6 +200,17 @@ input[type=text], input[type=email], input[type=date], select {
     <div class="chips" id="ppmChips"></div>
     <div class="ppm" id="ppmList"></div>
     <button class="btn" type="button" data-open="inspekcje">Kolejka raportów i wysyłka</button>
+  </section>
+
+  <!-- Kalendarz: miesiąc, zmiany z grafiku, inspekcje do zrobienia -->
+  <section class="view" id="v-cal" hidden>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Back">‹</button>
+      <div class="t"><h1 id="calTitle">Calendar</h1></div>
+      <button class="calnav" type="button" data-cm="-1" aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Next month">▶</button>
+      <button class="calnav" type="button" data-go="settings/calendar" aria-label="Shift settings">⚙</button></div>
+    <div class="calgrid" id="calGrid"></div>
+    <div class="callegend"><span class="sh">Shift</span><span class="dn">Inspections due</span></div>
+    <div class="ppm" id="calDay"></div>
   </section>
 
   <!-- Moduł w przygotowaniu -->
@@ -296,6 +311,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "questions") window.OESTQuestionsUI.open();
     if (v === "appset") renderAccount();
     if (v === "ppm") renderPpm();
+    if (v === "cal") renderCal();
     renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.scrollTo(0, 0);
   }
@@ -457,6 +473,49 @@ input[type=text], input[type=email], input[type=date], select {
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
   $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
   $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
+
+
+  // ---------- Kalendarz (widok miesiąca) ----------
+  var calMonth = new Date(), calSel = "";
+  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
+  function calShift(iso) {
+    try {
+      var ss = window.OESTSettings.get().schedules.filter(function (s) { return s.effectiveFrom <= iso; }).sort(function (a, b) { return a.effectiveFrom < b.effectiveFrom ? 1 : -1; });
+      if (!ss.length) return false;
+      return window.OESTCalendarCore.isWorkday(iso, function () { return ss[0]; });
+    } catch (e) { return false; }
+  }
+  function calDue(from, to) {
+    var C = window.OESTCalendarCore, by = {};
+    P.tasks.forEach(function (t) {
+      var d0 = P.due(t); if (!d0) return;
+      var a = P.iso(d0), p = null;
+      try { p = t.freq[0] && C.period(t.freq[0]); } catch (e) { p = null; }
+      for (var i = 0; i < 400; i++) {
+        var d = p ? C.occurrence(a, p, i) : (i ? null : a);
+        if (!d || d > to) break;
+        if (d >= from) (by[d] = by[d] || []).push(t);
+      }
+    });
+    return by;
+  }
+  function renderCal() {
+    var y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), last = new Date(y, m + 1, 0);
+    var from = P.iso(first), to = P.iso(last), today = P.iso(new Date()), by = calDue(from, to);
+    $("calTitle").textContent = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    var h = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(function (d) { return '<b class="cw">' + d + "</b>"; }).join("");
+    for (var k = 0; k < (first.getDay() + 6) % 7; k++) h += "<span></span>";
+    for (var d = 1; d <= last.getDate(); d++) {
+      var iso = P.iso(new Date(y, m, d)), n = (by[iso] || []).length;
+      h += '<button type="button" class="cd' + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i>" + n + "</i>" : "") + "</button>";
+    }
+    $("calGrid").innerHTML = h;
+    var list = by[calSel] || [];
+    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (t) { var g = grp(t.group); return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(t.freq.join(" + ")) + '</div></span><span></span></button>'; }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
+  }
+  document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
+  $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });
+  $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
 
   function renderHome() {
     var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
