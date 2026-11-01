@@ -1506,10 +1506,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (window.OESTAparat && OESTAparat.available()) {
         var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", "Edytuj zdjęcie " + (i + 1));
         eb.addEventListener("click", function () {
+          var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob).then(function (nb) {
             if (!nb) return;
-            return processPhoto(nb, p.when).then(function (np) { URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; photos[photos.indexOf(p)] = np; renderPhotos(); });
-          }).catch(function (e) { alert(e.message); });
+            return processPhoto(nb, p.when).then(function (np) {
+              var at = photos.indexOf(p);
+              if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
+              URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos();
+            });
+          }).catch(function (e) { alert(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
         });
         d.appendChild(eb);
       }
