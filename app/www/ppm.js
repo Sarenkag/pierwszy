@@ -28,7 +28,8 @@ window.OEST_PPM = {
       { key: "moisture", cp: "No moisture", ok: "No signs of moisture or water ingress.", fail: "Signs of moisture or water ingress found." },
       { key: "heat", cp: "No overheating signs", ok: "No signs of overheating, burning or discolouration.", fail: "Signs of overheating, burning or discolouration observed." },
       { key: "terminations", cp: "Terminations tight", ok: "No loose cable terminations observed.", fail: "Loose cable termination(s) observed – remedial action required." },
-      { key: "lights", cp: "Indicators normal", ok: "Controller indicator lights showing normal status.", fail: "Controller indicator lights showing abnormal or fault status." } ] },
+      { key: "lights", cp: "Indicators normal", ok: "Controller indicator lights showing normal status.", fail: "Controller indicator lights showing abnormal or fault status." },
+      { key: "access", cp: "Access clear", ok: "Access to the ATS clear and unobstructed.", fail: "Access to the ATS obstructed – area requires clearing." } ] },
     plant: { title: "Plant Room Inspection", scope: "", checks: [
       { key: "housekeeping", cp: "Clean and tidy", ok: "Housekeeping: room clean, tidy and free of clutter, rubbish and stored combustible materials.", fail: "Housekeeping: clutter, rubbish or combustible materials found – room requires clearing." },
       { key: "access", cp: "Access clear", ok: "Access & egress: escape routes and walkways to plant equipment clear and unobstructed.", fail: "Access & egress: escape routes or walkways to plant equipment obstructed." },
@@ -39,7 +40,9 @@ window.OEST_PPM = {
       { key: "external", cp: "External lights OK", ok: "External lighting: all external and façade lights operational.", fail: "External lighting: one or more external or façade lights not operational." },
       { key: "common", cp: "Common areas lit", ok: "Common areas: lobbies, corridors and stairwells fully lit, no failed lamps.", fail: "Common areas: failed lamps found in lobbies, corridors or stairwells." },
       { key: "plant", cp: "Plant rooms lit", ok: "Plant rooms & risers: lighting operational.", fail: "Plant rooms & risers: lighting not fully operational." },
-      { key: "fittings", cp: "Fittings intact", ok: "Fittings: no damaged, loose or missing diffusers/covers.", fail: "Fittings: damaged, loose or missing diffusers/covers found." } ] },
+      { key: "fittings", cp: "Fittings intact", ok: "Fittings: no damaged, loose or missing diffusers/covers.", fail: "Fittings: damaged, loose or missing diffusers/covers found." },
+      { key: "controls", cp: "Controls working", ok: "Lighting controls: timers, PIR sensors and switches operating correctly.", fail: "Lighting controls: timer, PIR sensor or switch not operating correctly." },
+      { key: "flicker", cp: "No flickering lamps", ok: "No flickering, buzzing or discoloured lamps observed.", fail: "Flickering, buzzing or discoloured lamp(s) observed – replacement required." } ] },
     // 024: wzór firmy (docx) z polami {temp} — kolejność pól jak w tabeli wzoru. Tylko temperatury, bez domyślnych wartości.
     // kind: hot / cold / tmv — progi z wzoru: Hot > 50°C, Cold < 20°C, TMV mixed 38–43°C.
     // plant roomy (01/11/2026, Grzegorz): 7 stałych pomieszczeń, w każdym siatka checkpointów, wzór firmy TPL_PLANT

@@ -592,38 +592,47 @@ function photoGrid(n) {
 }
 // tabulator w tekście (checkpointy) → <w:tab/> + 3 równe kolumny w tym akapicie
 function tabsToColumns(xml) {
+  // akapit treści z wierszami „☑ hasło<TAB>zdanie” → tabela bez ramek: kratka z hasłem | zdanie; reszta tekstu zostaje akapitami
   if (xml.indexOf("\t") < 0) return xml;
   return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
     if (!/<w:t[^>]*>[^<]*\t/.test(p)) return p;
-    p = p.replace(/(<w:t[^>]*>)([^<]*)<\/w:t>/g, function (m, open, txt) {
-      return txt.indexOf("\t") < 0 ? m : open + txt.split("\t").join('</w:t><w:tab/><w:t xml:space="preserve">') + "</w:t>";
-    });
-    var tabs = '<w:tabs><w:tab w:val="left" w:pos="4600"/></w:tabs>';
-    // checkpointy czcionką 12 pt
-    p = p.replace(/<w:r>(<w:rPr>[\s\S]*?<\/w:rPr>)?/g, function (m, rpr) {
-      rpr = (rpr || "<w:rPr></w:rPr>").replace(/<w:sz w:val="\d+"\/>/, "").replace(/<w:szCs w:val="\d+"\/>/, "").replace("</w:rPr>", '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>');
-      return "<w:r>" + rpr;
-    });
-    if (/<w:pPr>/.test(p) || /<w:pPr /.test(p)) {
-      var after = /<w:(suppressAutoHyphens|kinsoku|wordWrap|overflowPunct|topLinePunct|autoSpaceDE|autoSpaceDN|bidi|adjustRightInd|snapToGrid|spacing|ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/;
-      return p.replace(/(<w:pPr[^>]*>)([\s\S]*?)(<\/w:pPr>)/, function (m, a, inner, z) {
-        inner = inner.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, "");
-        var k = inner.search(after);
-        inner = k < 0 ? inner + tabs : inner.slice(0, k) + tabs + inner.slice(k);
-        return a + lineSpacing(inner) + z;
-      });
+    var pPr = (/<w:pPr>[\s\S]*?<\/w:pPr>/.exec(p) || [""])[0];
+    var rPr = (/<w:r>\s*(<w:rPr>[\s\S]*?<\/w:rPr>)\s*<w:t/.exec(p) || ["", ""])[1];
+    var font = (/<w:rFonts[^>]*\/>/.exec(rPr) || [""])[0];
+    // tekst akapitu jako linie (w:br = nowa linia)
+    var lines = [""], re = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t\/>|<w:br\/>|<w:tab\/>/g, m;
+    while ((m = re.exec(p))) { if (m[0] === "<w:br/>") lines.push(""); else if (m[0] === "<w:tab/>") lines[lines.length - 1] += "\t"; else lines[lines.length - 1] += m[1] || ""; }
+    var x = function (t) { return t.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#)/g, "&amp;"); };
+    function run(t, sz, bold) { return '<w:r><w:rPr>' + font + (bold ? "<w:b/>" : "") + '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/></w:rPr><w:t xml:space="preserve">' + x(t) + "</w:t></w:r>"; }
+    function para(ls) {
+      var r = [];
+      ls.forEach(function (l, i) { if (i) r.push("<w:r><w:br/></w:r>"); r.push(run(l, 22)); });
+      return "<w:p>" + pPr + r.join("") + "</w:p>";
     }
-    return p.replace(/(<w:p[^>]*>)/, "$1<w:pPr>" + tabs + LS + "</w:pPr>");
+    var CELL = '<w:tcPr><w:tcW w:w="0" w:type="auto"/><w:tcMar><w:top w:w="20" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/></w:tcMar></w:tcPr>';
+    var SP = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>';
+    function table(rows) {
+      // wielkość zależna od liczby punktów: mało = duże i przestronne, ponad 9 = mniejsze, żeby podpis został na 1. stronie
+      var n = rows.length, sz = n <= 6 ? 22 : n <= 9 ? 20 : 18, lsz = sz + 2, bsz = n <= 6 ? 32 : n <= 9 ? 28 : 24, pad = n <= 6 ? 80 : 20;
+      var CELL = '<w:tcPr><w:tcW w:w="0" w:type="auto"/><w:tcMar><w:top w:w="' + pad + '" w:type="dxa"/><w:bottom w:w="' + pad + '" w:type="dxa"/></w:tcMar></w:tcPr>';
+      return '<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:insideH w:val="single" w:sz="2" w:space="0" w:color="D0D0D0"/></w:tblBorders>' +
+        '<w:tblLayout w:type="fixed"/><w:tblLook w:val="0000"/></w:tblPr><w:tblGrid><w:gridCol w:w="3300"/><w:gridCol w:w="6000"/></w:tblGrid>' +
+        rows.map(function (l) {
+          var c = l.split("\t"), lab = c[0], box = lab.charAt(0);
+          var left = /[☑☒]/.test(box) ? run(box + " ", bsz) + run(lab.slice(1).trim(), lsz, true) : run(lab, lsz, true);
+          return '<w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc>' + CELL + "<w:p>" + SP + left + "</w:p></w:tc><w:tc>" + CELL + "<w:p>" + SP + run(c.slice(1).join(" ").trim(), sz) + "</w:p></w:tc></w:tr>";
+        }).join("") + "</w:tbl>";
+    }
+    var out = [], buf = [], rows = [];
+    function flush() { if (rows.length) { out.push(table(rows)); rows = []; } if (buf.length) { out.push(para(buf)); buf = []; } }
+    lines.forEach(function (l) {
+      if (l.indexOf("\t") >= 0) { if (buf.length) { out.push(para(buf)); buf = []; } rows.push(l); }
+      else { if (rows.length) { out.push(table(rows)); rows = []; } buf.push(l); }
+    });
+    flush();
+    if (/<\/w:tbl>$/.test(out[out.length - 1])) out.push("<w:p>" + pPr + "</w:p>"); // komórka musi kończyć się akapitem
+    return out.join("");
   });
-}
-// odstęp 1,5 wiersza w akapicie z checkpointami (miejsca jest dość)
-var LS = '<w:spacing w:line="360" w:lineRule="auto"/>';
-function lineSpacing(inner) {
-  if (/<w:spacing\b/.test(inner)) return inner.replace(/<w:spacing\b([^>]*?)\/>/, function (m, at) {
-    return "<w:spacing" + at.replace(/\s+w:(line|lineRule)="[^"]*"/g, "") + ' w:line="360" w:lineRule="auto"/>';
-  });
-  var k = inner.search(/<w:(ind|contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)[ \/>]/);
-  return k < 0 ? inner + LS : inner.slice(0, k) + LS + inner.slice(k);
 }
 // Tekst i logo z nagłówka/stopki szablonu (do PDF)
 function templateInfo(PizZip, templateBytes) {
@@ -1682,17 +1691,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // pomijany, gdy tytuł już go zawiera (np. „ATS”)
   // checkpointy: siatka ☑ krótkich haseł po 3 w wierszu (tabulatory), N/A pominięte; usterki pełnym zdaniem pod siatką
   function checkpointText(checks) {
-    var cells = [], faults = [];
+    // jedno miejsce: wiersz na checkpoint – kratka z hasłem | krótkie zdanie (Grzegorz 01/11); N/A pominięte
+    var rows = [], n = 0;
     checks.forEach(function (c, i) {
-      if (states[i] === "ok") cells.push("\u2611 " + c.cp);
-      else if (states[i] === "fail") { cells.push("\u2612 " + c.cp); faults.push(override[i] || c.fail); }
+      if (states[i] === "ok") rows.push("\u2611 " + c.cp + "\t" + c.ok);
+      else if (states[i] === "fail") { rows.push("\u2612 " + c.cp + "\t" + (override[i] || c.fail)); n++; }
     });
-    faults = faults.concat(extraFaults(true));
-    var rows = [];
-    // 2 w wierszu, normalna czcionka (Grzegorz 01/11: 3 w wierszu wyglądało mikroskopijnie); pojedyncza kratka też z tabulatorem
-    for (var i = 0; i < cells.length; i += 2) rows.push(cells.slice(i, i + 2).join("\t") + (cells.length - i === 1 ? "\t" : ""));
+    var extra = extraFaults(true);
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
-    return t + (faults.length ? "\n\nFaults:\n" + faults.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(faults.length);
+    return t + (extra.length ? "\n\nFaults:\n" + extra.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(n + extra.length);
   }
   // zdanie podsumowania pod checkpointami (Grzegorz 01/11: same kratki wyglądają biednie)
   function summaryLine(nFaults) {
@@ -1855,12 +1862,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       else { pdf.line(x + 0.6 * k, by + 0.6 * k, x + b - 0.6 * k, by + b - 0.6 * k); pdf.line(x + b - 0.6 * k, by + 0.6 * k, x + 0.6 * k, by + b - 0.6 * k); }
       pdf.setLineWidth(0.4); pdf.text(c.slice(1).trim(), x + b + 1.5, yy);
     }
+    var cpN = (d.details || "").split("\n").filter(function (p) { return p.indexOf("\t") >= 0; }).length; // liczba checkpointów (wielkość wierszy)
     (d.details || "").split("\n").forEach(function (p) {
       if (p.indexOf("\t") >= 0) { // checkpointy: font PDF nie ma ☑/☒, więc kratka rysowana
-        var cs = p.split("\t"), n = cs.length > 2 ? 3 : 2; // plant roomy po 3, reszta po 2 i większa czcionka
-        room(lh * 2); if (n === 2) pdf.setFontSize(12);
-        cs.forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / n, ty, n === 2 ? 4.2 : 3.2); });
-        pdf.setFontSize(10.5); ty += lh * 2; return; } // checkpointy
+        var cs = p.split("\t");
+        if (cs.length > 2) { // plant roomy: siatka 3 kratek w wierszu
+          room(lh * 2); cs.forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty, 3.2); }); ty += lh * 2; return; }
+        // jedno miejsce: kratka z hasłem (pogrubione) | zdanie, łamane w swojej kolumnie
+        var few = cpN <= 6, fs = few ? 10.5 : 9.5, gap = few ? 4.5 : 2.6;
+        pdf.setFontSize(fs); var cx = L + 60, sl = pdf.splitTextToSize(cs[1] || "", L + W - 2 - cx), h = Math.max(1, sl.length) * (fs * 0.43) + gap;
+        room(h); pdf.setFontSize(few ? 11.5 : 10.5); pdf.setFont("DV", "bold"); cpCell(cs[0], L + 1.5, ty + 0.4, few ? 4.3 : 3.8); pdf.setFont("DV", "normal");
+        pdf.setFontSize(fs); pdf.text(sl, cx, ty + 0.4); pdf.setFontSize(10.5);
+        pdf.setDrawColor(208); pdf.setLineWidth(0.2); pdf.line(L + 1.5, ty + h - 3.0, L + W - 1.5, ty + h - 3.0); pdf.setDrawColor(0); pdf.setLineWidth(0.4);
+        ty += h; return; } // checkpointy
       var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
@@ -2155,6 +2169,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
     });
   }
+  // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
+  var GENERIC_CPS = [
+    ["access", "Access clear", "Access to the area and equipment clear and unobstructed.", "Access to the area or equipment obstructed – requires clearing."],
+    ["condition", "Condition good", "Equipment and surroundings in good condition, no visible damage.", "Visible damage found – remedial action required."],
+    ["operation", "Operating normally", "Equipment operating normally at the time of inspection.", "Equipment not operating normally – further investigation required."],
+    ["clean", "Clean and tidy", "Area clean, tidy and free of stored materials.", "Area untidy or used for storage – requires clearing."],
+    ["labels", "Labels in place", "Labels and safety signage in place and legible.", "Labels or safety signage missing or illegible."],
+    ["hazards", "No hazards", "No hazards, leaks or signs of overheating observed.", "Hazard observed – reported for action."]];
   function openPpm() {
     var t = PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
@@ -2194,7 +2216,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji
     cur.type = { id: "ppm-" + t.id, quick: true, name: t.name, title: t.name + " - Inspection", scope: "", devices: [{ code: t.name, loc: t.where || "One Eastside", room: "" }],
-      checks: [{ key: "done", ok: t.name + " carried out – no defects found.", fail: t.name + " carried out – defects found, see comments.", def: "ok" }] };
+      checks: GENERIC_CPS.map(function (g) { return { key: g[0], cp: g[1], ok: g[2], fail: g[3], def: "ok" }; }) };
     openForm(t.name);
   }
 
