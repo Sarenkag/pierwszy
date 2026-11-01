@@ -61,7 +61,7 @@
         var box = document.createElement('div'); box.className = 'oest-editor';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483001;background:#05070c;display:flex;flex-direction:column;touch-action:none;user-select:none');
         box.innerHTML =
-          '<div style="display:flex;gap:8px;padding:10px 12px calc(6px);align-items:center"><button type="button" data-a="cancel" style="' + btn + '">✕ Anuluj</button><span style="flex:1"></span>' +
+          '<div style="display:flex;gap:8px;padding:max(44px, calc(10px + env(safe-area-inset-top, 0px))) 12px 6px;align-items:center"><button type="button" data-a="cancel" style="' + btn + '">✕ Anuluj</button><span style="flex:1"></span>' +
           '<button type="button" data-a="undo" style="' + btn + '">↶ Cofnij</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">✓ Zapisz</button></div>' +
           '<div class="ed-stage" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
           '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + t[2] + '" style="' + btn + '">' + t[1] + ' <small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
@@ -154,7 +154,7 @@
         var cur = blob, url = '', box = document.createElement('div');
         box.className = 'oest-review';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:#05070c;display:flex;flex-direction:column');
-        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
+        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + env(safe-area-inset-top, 0px))) 8px 8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
           '<p class="oest-review-msg" role="status" style="margin:0;padding:0 16px;color:#f3c76b;font:500 14px system-ui;min-height:18px"></p>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom))">' +
           '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">↺ Powtórz</button>' +
