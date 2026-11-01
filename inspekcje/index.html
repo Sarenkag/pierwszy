@@ -1529,19 +1529,21 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
     var d = {
       data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
-      tytul: withCode(cur.type.title, cur.code), punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
+      tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
-    d.opis = pts.map(function (s) { return "• " + s; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    var head = deviceHead(d.tytul, cur.code);
+    d.opis = (head ? head + "\n\n" : "") + pts.map(function (s) { return "• " + s; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
     return english(d);
   }
   // pola wzoru OEST-basic (po angielsku); polskie zostają dla starszych szablonów
   var BUILDING = { TA: "Tower A", TB: "Tower B", P: "Pavilion", PV: "Pavilion" };
-  // kod urządzenia w tytule, żeby raporty np. różnych rozdzielnic dało się odróżnić („… - DB-TB-EXT-1”)
-  function withCode(title, code) {
+  // kod urządzenia jako nagłówek treści (jak nazwa pomieszczenia w plant roomach), żeby raporty różnych rozdzielnic dało się odróżnić;
+  // pomijany, gdy tytuł już go zawiera (np. „ATS”)
+  function deviceHead(title, code) {
     var c = String(code || "").replace(/\s*\(.*\)\s*$/, "").trim();
-    return c && String(title || "").toLowerCase().indexOf(c.toLowerCase()) < 0 ? title + " - " + c : title;
+    return c && String(title || "").toLowerCase().indexOf(c.toLowerCase()) < 0 ? c : "";
   }
   function english(d) {
     d.site = d.site || "One Eastside Tower"; d.date = d.data; d.engineer = d.inspektor; d.title = d.tytul; d.condition = d.stan_ogolny;
