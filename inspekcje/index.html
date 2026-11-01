@@ -1470,13 +1470,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
       $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
     }
-    if (!photos.length && cur.mode !== "sum") h.push("Dodaj przynajmniej jedno zdjęcie.");
     if (cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; })) h.push("Zaznacz przynajmniej jeden punkt checklisty.");
     if (restoring) h.push("Wczytuję zapisane zdjęcia…");
     if (!h.length && !serverTpl) h.push("Uwaga: brak szablonu z Google Drive — raport powstanie na wzorze przykładowym.");
     $("formHint").textContent = h.join(" ");
     if (pendingPh) h.push("Zmniejszam zdjęcie…");
-    var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && (!photos.length || !states.some(function (s) { return s !== "na"; }));
+    var block = !!restoring || pendingPh > 0 || cur.mode !== "sum" && !states.some(function (s) { return s !== "na"; });
     $("toPreview").disabled = block; $("toQueue").disabled = block;
     $("toQueue").textContent = block && h.length ? h[0] : "Wyślij · " + fmtDate(reportDate());
   }
