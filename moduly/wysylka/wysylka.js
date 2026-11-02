@@ -92,6 +92,7 @@
             pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
             return put(it).then(function () { return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; done++;
+              if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
             }, function (e) {
               if (/GOOGLE_BUSY/.test(e && e.message)) { it.status = "wait"; it.err = ""; } // Drive akurat zajęty: spróbuję przy następnym razie

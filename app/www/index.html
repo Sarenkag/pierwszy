@@ -262,6 +262,7 @@ input[type=text], input[type=email], input[type=date], select {
 </div>
 <script src="config.js"></script>
 <script src="ppm.js"></script>
+<script src="aktywa.js"></script>
 <script src="settings-store.js"></script>
 <script src="settings-google.js"></script>
 <script src="moduly/wysylka/wysylka.js"></script>
@@ -461,6 +462,47 @@ input[type=text], input[type=email], input[type=date], select {
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
   // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
+  // aktywo Vantify przypięte do karty PPM (aktywa.js): numer + nazwa na karcie, lista „Aktywa”
+  var AS = window.OEST_ASSETS || [];
+  function assetOf(t) { return AS.filter(function (a) { return a.app.indexOf(t.id) >= 0; })[0] || null; }
+  function assetRows() {
+    return AS.map(function (a) {
+      var tasks = a.app.map(function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
+      var color = a.kind === "hvac" ? grp("mech").color : grp("elec").color;
+      var own = tasks.length ? "Inspekcja w apce: " + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : "Tylko zlecenia Vantify — brak inspekcji w apce";
+      var info = ["#" + a.id, a.freq.join(" + ") || "bez częstotliwości", a.doc].filter(Boolean).join(" · ");
+      return '<button class="prow as" type="button"' + (tasks.length ? ' data-id="' + esc(tasks[0].id) + '"' : " disabled") + '><span class="bar" style="background:' + color + '"></span>' +
+        '<span><div class="nm">' + esc(a.name) + '</div><div class="dt">' + esc(info) + '</div><div class="dt">' + (tasks.length ? "✓ " : "○ ") + esc(own) + "</div></span></button>";
+    }).join("");
+  }
+  // klocek v2 (Grzegorz 02/11): typ z lewej, krótka nazwa + etap, budynek · częstotliwość, termin + %, pasek, punkty/usterki/zdjęcia
+  var ST = { prog: ["◐ W trakcie", "c1", 50], hold: ["⏸ Wstrzymana", "c1", 50], done: ["✓ Zakończona", "c2", 100], queued: ["⏳ W kolejce", "c4", 100], sent: ["✓ Wysłana", "c2", 100] };
+  var FREQ = { "1W": "weekly", "1M": "monthly", "3M": "quarterly", "6M": "6-monthly", "12M": "annual" };
+  var ICON_APP = '<svg class="ty" viewBox="0 0 24 24" aria-label="Inspekcja w apce"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 9l2 2 3-4M8 16l2 2 3-4M15 9h2M15 16h2"/></svg>';
+  var ICON_FOLDER = '<svg class="ty" viewBox="0 0 24 24" aria-label="Ze zdjęć kartki"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2.6"/></svg>';
+  function dshort(d) { return DAYS[d.getDay()].toLowerCase() + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function ppmCard(r) {
+    var t = r.t, g = grp(t.group), sh = P.short(t), st = P.stage ? P.stage(t) : null, a = assetOf(t);
+    var stg = st ? ST[st.s] : null, late = !stg && r.left !== null && r.left < 0;
+    // dwa statusy (Grzegorz 02/11): etap inspekcji w rogu + wysyłka na dole; zrobione i wysłane → szare, na koniec listy
+    var insp = !st ? null : st.s === "queued" || st.s === "sent" ? ST.done : ST[st.s];
+    var badge = insp ? '<span class="kst ' + insp[1] + '">' + insp[0] + "</span>" : late ? '<span class="kst c3">! Zaległa</span>' : '<span class="kst c0">○ Nie rozpoczęta</span>';
+    var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">📤 Wysłana</span>' : st.s === "queued" ? '<span class="ksend c4">⏳ W kolejce</span>' : st.s === "done" ? '<span class="ksend c3">✉ Niewysłana</span>' : "";
+    var where = [sh.where, t.freq.map(function (f) { return FREQ[f] || f; }).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
+    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? "Zakończona " : st.s === "sent" ? "Wysłana " : "W kolejce ") + dshort(new Date(st.at)) + " · następna " + dshort(r.due)
+      : "Termin <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? "dziś, " : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " dni temu</span>" : r.left > 0 ? " · za " + r.left + " dni" : "")) : "Brak terminu — ustaw w inspekcji (Update)";
+    var pc = stg ? stg[2] : 0, col = stg ? { c1: "#f0c75e", c2: "#3fb27f", c4: "#79b8ff" }[stg[1]] : "transparent";
+    var foot = t.form === "folder" ? (st && st.photos ? st.photos + " zdj. kartki → PDF" : "Zdjęcia kartki → PDF") :
+      [st && st.total ? st.total + " punktów" : t.cfg ? "formularz do konfiguracji" : "", st && st.total ? (st.issues ? st.issues + (st.issues === 1 ? " usterka" : " usterki") : "bez usterek") : "", st && st.photos ? st.photos + " zdj." : ""].filter(Boolean).join(" · ");
+    var go = !st ? "Zacznij ›" : st.s === "prog" || st.s === "hold" ? "Kontynuuj ›" : "Otwórz ›";
+    var thumb = st && st.thumb ? '<img class="kth" alt="" src="' + st.thumb + '">' : "";
+    return '<button class="prow k2' + (st && st.s === "sent" ? " kdone" : "") + '" type="button" data-id="' + esc(t.id) + '" style="--g:' + g.color + '">' +
+      '<div class="kr">' + (t.form === "folder" ? ICON_FOLDER : ICON_APP) + '<div class="knm">' + (sh.bld ? '<span class="kbl">' + sh.bld + "</span>" : "") + esc(sh.name) + "</div>" + badge + "</div>" +
+      '<div class="kr"><div class="kloc">' + esc(where) + "</div></div>" +
+      '<div class="kr"><div class="kd">' + due + '</div><div class="kpc">' + pc + "%</div></div>" +
+      '<div class="kbar"><i style="width:' + pc + "%;background:" + col + '"></i></div>' +
+      '<div class="kr"><div class="kft">' + esc(foot) + "</div>" + send + thumb + '<div class="kgo">' + go + "</div></div></button>";
+  }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
   function renderPpm() {
     var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -474,12 +516,14 @@ input[type=text], input[type=email], input[type=date], select {
       html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? "Dziś" : DAYS[d.getDay()]) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
     }
     $("ppmDays").innerHTML = html;
-    $("ppmChips").innerHTML = [{ id: "all", name: "All" }].concat(P.groups).map(function (g) {
+    $("ppmChips").innerHTML = [{ id: "all", name: "All" }].concat(P.groups, AS.length ? [{ id: "assets", name: "Aktywa (" + AS.length + ")" }] : []).map(function (g) {
       return '<button class="chip' + (ppmGroup === g.id ? " on" : "") + '" type="button" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
     }).join("");
+    if (ppmGroup === "assets") { $("ppmList").innerHTML = assetRows(); return; }
     var list = rows.filter(function (r) { return (ppmGroup === "all" || r.t.group === ppmGroup) && (!ppmDay || r.day === ppmDay); });
     // najpierw po terminie i najbliższe, na końcu bez daty
-    list.sort(function (a, b) { return (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
+    var doneOf = function (r) { var x = P.stage && P.stage(r.t); return x && x.s === "sent" ? 1 : 0; };
+    list.sort(function (a, b) { return doneOf(a) - doneOf(b) || (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
     // rodzina (np. 18 DB): jedna karta grupy w miejscu najpilniejszej, rozwijana dotknięciem
     var fams = {}, out = [];
     list.forEach(function (r) {
@@ -495,14 +539,16 @@ input[type=text], input[type=email], input[type=date], select {
         return '<button class="prow fam" type="button" data-fam="' + esc(r.fam) + '"><span class="bar" style="background:' + gg.color + '"></span>' +
           '<span><div class="nm">' + esc(r.fam) + " (" + r.rows.length + ')</div><div class="dt">' + (ppmOpen[r.fam] ? "▾ zwiń" : "▸ rozwiń") + " · " + esc(P.endsText(r.left)) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
       }
-      var t = r.t, g = grp(t.group);
-      var info = [t.freq.join(" + "), P.endsText(r.left), t.where, t.by, t.cfg && "formularz do konfiguracji"].filter(Boolean).join(" · ");
-      return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span>' +
-        '<span><div class="nm">' + (t.form === "folder" ? '<span title="Z folderu: zdjęcia kartki → PDF">📁 </span>' : "") + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+      return ppmCard(r);
     }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
     var noDate = rows.filter(function (r) { return !r.due; }).length;
 
   }
+  // dynamicznie (Grzegorz 02/11): lista i kalendarz odświeżają się same po powrocie z inspekcji, wysłaniu i zmianie etapu/terminu
+  function liveRefresh() { if (!$("v-ppm").hidden) renderPpm(); if (!$("v-cal").hidden) renderCal(); }
+  ["oest:ppm-stage", "oest:ppm-due-changed", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, liveRefresh); });
+  window.addEventListener("storage", function (e) { if (!e.key || /^oest\.ppm\./.test(e.key)) liveRefresh(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) liveRefresh(); });
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
   $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
   $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
@@ -545,7 +591,7 @@ input[type=text], input[type=email], input[type=date], select {
     }
     $("calGrid").innerHTML = h;
     var list = by[calSel] || [];
-    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (t) { var g = grp(t.group); return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(t.name) + '</div><div class="dt">' + esc(t.freq.join(" + ")) + '</div></span><span></span></button>'; }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
+    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (t) { var g = grp(t.group), stc = P.stage && P.stage(t), stx = stc && ST[stc.s] ? ST[stc.s][0] + " · " : ""; return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(stx) + esc(t.name) + '</div><div class="dt">' + esc(t.freq.join(" + ")) + '</div></span><span></span></button>'; }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
   }
   document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
   $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });

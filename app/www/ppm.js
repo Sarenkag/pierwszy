@@ -96,7 +96,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-025", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (TB)", freq: ["1W"] },
     { id: "EFA-INS-026", form: "folder", group: "water", name: "Weekly Flushing (TB)", freq: ["1W"] },
     { id: "EFA-INS-027", group: "fire", name: "Emergency Lighting Test (TB)", freq: ["1M"], cfg: true },
-    { id: "EFA-INS-028", group: "fire", name: "Lift signage TB", freq: [], cfg: true },
+    // EFA-INS-028 Lift signage TB usunięte z listy: w Vantify to zlecenie reactive, a reactive nie ma być na liście PPM (Grzegorz 02/11/2026)
 
     // istniejące rodzaje z listą urządzeń i pytaniami
     // 18 rozdzielnic: każda to osobna inspekcja (własny termin i raport), na liście zebrane pod kartą „Distribution Boards”
@@ -188,5 +188,36 @@ window.OEST_PPM = {
     if (left === 0) return "Today";
     if (left < 0) return "Overdue " + -left + "d";
     return "Ends in " + left + "d";
+  };
+
+  // ---------- etap inspekcji na klocku (02/11/2026) ----------
+  // localStorage "oest.ppm.stage" = { id: { s, at, period, photos, thumb, issues, total, manual } }
+  // s: prog = W trakcie, hold = Wstrzymana, done = Zakończona (bez wysyłki), queued = W kolejce, sent = Wysłana.
+  // period = termin (RRRR-MM-DD), którego dotyczy wpis. Wpis „zamyka” okres, dopóki nie minie ten termin (albo dzień wysłania, jeśli po terminie).
+  var SK = "oest.ppm.stage";
+  function stages() { try { return JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
+  function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
+  function alive(r) { if (!r || !r.s) return false; if (r.s === "prog" || r.s === "hold" || r.s === "queued") return true; /* w kolejce: aż raport faktycznie wyjdzie */ var end = r.period && r.period > r.day ? r.period : r.day; return !!end && today0() <= end; }
+  P.stage = function (t) { var r = stages()[t.id]; return alive(r) ? r : null; };
+  P.setStage = function (t, patch) {
+    var a = stages(), r = alive(a[t.id]) ? a[t.id] : {};
+    if (patch === null) delete a[t.id];
+    else { r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = Date.now(); a[t.id] = r; }
+    try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
+  };
+  // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
+  P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
+  // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
+  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
+  // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
+  P.unqueue = function (id) { var t = P.byId(id), r = stages()[id]; if (t && r && r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, null); } }; // termin wraca na ten sprzed wysłania
+  // krótka nazwa na klocek (pełna zostaje w raporcie) + budynek ze znaczka w nawiasie
+  var BLD = { TA: "Tower A", TB: "Tower B", P: "Pavilion" };
+  P.short = function (t) {
+    var m = /\s*\((TA|TB|P)(?:,\s*([^)]+))?\)\s*$/.exec(t.name), n = m ? t.name.slice(0, m.index) : t.name;
+    n = n.replace(/^Weekly /, "").replace(/^Monthly /, "").replace(/ Operation Test(ing)?$/, " Test").replace(/^Automatic Transfer Switches$/, "ATS").replace(/ of Seldom Used Outlets$/, " (seldom used)");
+    if (n === "ATS" && m && m[2]) { n = "ATS " + m[2]; m[2] = ""; }
+    return { name: n, bld: m ? m[1] : "", where: [m ? BLD[m[1]] : "", m && m[2] || "", t.where || ""].filter(Boolean).join(" · ") };
   };
 })(window.OEST_PPM);
