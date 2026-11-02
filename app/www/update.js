@@ -43,14 +43,17 @@
     return Promise.all([current(), fetchLatest()]).then(function (r) {
       var have = r[0], l = r[1];
       if (!l) { if (manual) setStatus("Nie znalazłem pliku APK w najnowszym wydaniu."); return; }
-      if (l.n > have) { banner(true); if (manual) setStatus("Jest nowa wersja " + l.n + " (masz " + have + ")."); if (manual) install(); }
+      if (l.n > have) { banner(true); if (manual) { setStatus("Jest nowa wersja " + l.n + " (masz " + have + ")."); showInstallBtn(l.n); install(); } }
       else { banner(false); if (manual) setStatus("Masz najnowszą wersję (" + have + ")."); }
     }).catch(function (e) { if (manual) setStatus("Nie udało się sprawdzić: " + (e && e.message || e)); });
   }
+  var busySince = 0;
   function install() {
-    if (busy || !latest) return; var p = api(); if (!p) return;
+    if (busy && Date.now() - busySince > 180000) busy = false; // poprzednie pobieranie utknęło (>3 min) – pozwól zacząć od nowa
+    if (busy) { setStatus("Pobieranie już trwa – postęp widać na pasku na dole ekranu głównego."); return; }
+    if (!latest) return; var p = api(); if (!p) return;
     if (!w.confirm("Pobrać i zainstalować wersję " + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?")) { dismissed = true; banner(false); return; }
-    busy = true; setStatus("Pobieram wersję " + latest.n + "…");
+    busy = true; busySince = Date.now(); setStatus("Pobieram wersję " + latest.n + "…");
     var b = document.getElementById("updBanner"); if (b) b.textContent = "Pobieram wersję " + latest.n + "…";
     // procenty na pasku i w Ustawieniach (58 MB na danych mobilnych trwa – bez postępu wyglądało na zawieszone)
     var sub = null, mb = Math.round((latest.size || 0) / 1048576);
@@ -69,6 +72,12 @@
       setStatus(m); if (b) b.textContent = /Zezwól/.test(m) ? "Nowa wersja " + latest.n + " – dotknij, żeby zainstalować" : "Pobieranie przerwane – dotknij, żeby ponowić";
     }).then(function () { busy = false; });
   }
+  // w Ustawieniach: osobny przycisk „Pobierz i zainstaluj”, żeby po anulowaniu/błędzie dało się ponowić bez szukania paska
+  function showInstallBtn(n) {
+    var st = document.getElementById("updStatus"); if (!st || document.getElementById("updInstall")) return;
+    var b = document.createElement("button"); b.id = "updInstall"; b.type = "button"; b.className = "btn"; b.setAttribute("data-upd", "install");
+    b.textContent = "Pobierz i zainstaluj wersję " + n; st.before(b);
+  }
   function panelHtml() {
     return '<div class="panel"><b>Aktualizacja aplikacji</b>' +
       '<p class="hint">Wersja w telefonie: <b id="updMine">' + esc(mine === null ? "…" : mine) + '</b></p>' +
@@ -77,7 +86,7 @@
   }
   document.addEventListener("click", function (e) {
     var t = e.target && e.target.closest && e.target.closest("[data-upd]"); if (!t) return;
-    e.preventDefault(); check(true);
+    e.preventDefault(); if (t.getAttribute("data-upd") === "install") { dismissed = false; install(); } else check(true);
   });
   current().then(function (v) { var e = document.getElementById("updMine"); if (e) e.textContent = v || "?"; });
   // przy starcie: ciche sprawdzenie (raz na uruchomienie), pasek na dole, gdy jest nowsza wersja
