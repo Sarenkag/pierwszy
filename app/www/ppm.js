@@ -96,7 +96,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-025", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (TB)", freq: ["1W"] },
     { id: "EFA-INS-026", form: "folder", group: "water", name: "Weekly Flushing (TB)", freq: ["1W"] },
     { id: "EFA-INS-027", group: "fire", name: "Emergency Lighting Test (TB)", freq: ["1M"], cfg: true },
-    { id: "EFA-INS-028", group: "fire", name: "Lift signage TB", freq: [], cfg: true },
+    // EFA-INS-028 Lift signage TB usunięte z listy: w Vantify to zlecenie reactive, a reactive nie ma być na liście PPM (Grzegorz 02/11/2026)
 
     // istniejące rodzaje z listą urządzeń i pytaniami
     // 18 rozdzielnic: każda to osobna inspekcja (własny termin i raport), na liście zebrane pod kartą „Distribution Boards”
