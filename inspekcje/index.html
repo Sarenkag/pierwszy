@@ -1755,6 +1755,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var end = issues.length ? ["Issues found:"].concat(issues.map(function (t) { return "\u2022 " + t; })) : [];
     if (d.komentarz) end.push("Comments: " + d.komentarz);
     if (last) d[last + "_notes"] = end; // wzór nie ma pola na koniec: lista idzie pod ostatnie pomieszczenie, przed podpisem
+    rooms = rooms.filter(function (r) { return r.cells.length; }); // pomieszczenie całe na N/A: nie pokazuj pustego nagłówka
+    if (!rooms.length) end.unshift("Visual inspection carried out."); // wszystko N/A: sama inspekcja wzrokowa
     d.plant = rooms; d.plantEnd = end;
     d.opis = d.details = rooms.map(function (r) { return r.name + " \u2013 Location: " + r.loc + "\n" + r.cells.join(", "); }).concat(end).join("\n");
     return d;
@@ -1772,6 +1774,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       else if (states[i] === "fail") { rows.push("\u2612 " + c.cp + "\t" + (override[i] || c.fail)); n++; }
     });
     var extra = extraFaults(true);
+    if (!rows.length && !extra.length) return "Visual inspection carried out."; // wszystko N/A: bez zdania „All items checked…”
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
     return t + (extra.length ? "\n\nFaults:\n" + extra.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(n + extra.length);
   }
