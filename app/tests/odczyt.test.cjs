@@ -8,3 +8,4 @@ test('odczyt: pH bez spacji',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('pH7.2')
 test('odczyt: plus usunięty z liczby',()=>{assert.equal(w.OESTOdczyt.numberOf('+12,5 °C'),'12.5');assert.equal(w.OESTOdczyt.numberOf('-3.0'),'-3.0');});
 test('odczyt: minus unicode',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('−3.0 °C').numbers),['-3.0 °C']);assert.equal(w.OESTOdczyt.numberOf('−3.0 °C'),'-3.0');assert.equal(w.OESTOdczyt.numberOf('–2,5'),'-2.5');});
 test('odczyt: notacja naukowa nie daje wykładnika',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('1.2e-3 A').numbers),[]);assert.equal(w.OESTOdczyt.numberOf('1.2e-3 A'),null);assert.equal(w.OESTOdczyt.numberOf('5E+2'),null);assert.equal(w.OESTOdczyt.numberOf('Zone A -3'),'-3');});
+test('odczyt: znak po literze nie gubi minusa',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('T-3.0 °C').numbers),[]);assert.equal(w.OESTOdczyt.numberOf('T-3.0 °C'),null);assert.equal(w.OESTOdczyt.numberOf('T -3.0 °C'),'-3.0');});

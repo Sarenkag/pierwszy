@@ -3,7 +3,7 @@
 (function (w) {
   'use strict';
   var UNIT = '(?:\\s?(?:mg\\/l|ppm|°c|°f|ph|bar|mbar|kpa|pa|hz|kw|kva|kwh|w|a|ma|v|kv|%|rpm|l\\/s|m3\\/h|m³\\/h|l\\/min|s|min|h))?';
-  var NUM = new RegExp('(?:(?<![A-Za-z\\d.,])ph\\s?|(?<![A-Za-z\\d.,])(?<!\\d[eE][-+]))[-+]?\\d+(?:[.,]\\d+)?(?![.,]?\\d)' + UNIT.replace(')?', ')?(?![A-Za-z])'), 'gi');
+  var NUM = new RegExp('(?:(?<![A-Za-z\\d.,])ph\\s?|(?<![A-Za-z\\d.,])(?<!\\d[eE][-+])(?<![A-Za-z][-+\u2212]))[-+]?\\d+(?:[.,]\\d+)?(?![.,]?\\d)' + UNIT.replace(')?', ')?(?![A-Za-z])'), 'gi');
   function available() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform() && w.Capacitor.Plugins && w.Capacitor.Plugins.OESTKeys); }
   // Zdjęcie → JPEG ≤ 2000 px (wtyczka przyjmuje do 4 Mpx)
   function prepare(blob) {
