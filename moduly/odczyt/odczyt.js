@@ -1,0 +1,71 @@
+/* Moduł odczytu tekstu ze zdjęcia (OESTOdczyt): OCR na telefonie (ML Kit, offline), bez AI w chmurze.
+   Nic nie trafia do pól bez stuknięcia — użytkownik wybiera linie albo liczby. */
+(function (w) {
+  'use strict';
+  var UNIT = '(?:\\s?(?:mg\\/l|ppm|°c|°f|ph|bar|mbar|kpa|pa|hz|kw|kva|kwh|w|a|ma|v|kv|%|rpm|l\\/s|m3\\/h|m³\\/h|l\\/min|s|min|h))?';
+  var NUM = new RegExp('(?:ph\\s?)?(?<![A-Za-z\\d.,])[-+]?\\d+(?:[.,]\\d+)?' + UNIT.replace(')?', ')?(?![A-Za-z])'), 'gi');
+  function available() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform() && w.Capacitor.Plugins && w.Capacitor.Plugins.OESTKeys); }
+  // Zdjęcie → JPEG ≤ 2000 px (wtyczka przyjmuje do 4 Mpx)
+  function prepare(blob) {
+    return createImageBitmap(blob).then(function (bmp) {
+      var s = Math.min(1, 2000 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
+      return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    });
+  }
+  function parse(text) {
+    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean), seen = {}, numbers = [];
+    lines.forEach(function (l) { (l.match(NUM) || []).forEach(function (n) { n = n.trim(); if (/\d/.test(n) && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = 1; numbers.push(n); } }); });
+    var uniq = {}; lines = lines.filter(function (l) { var k = l.toLowerCase(); if (uniq[k]) return false; uniq[k] = 1; return true; });
+    return { text: lines.join('\n'), lines: lines, numbers: numbers };
+  }
+  function read(blob) {
+    if (!available()) return Promise.reject(Error('Odczyt tekstu działa w apce na telefonie.'));
+    return prepare(blob).then(function (b64) { return w.Capacitor.Plugins.OESTKeys.recognize({ base64: b64 }); })
+      .then(function (r) { return parse(r && r.text); }, function (e) { throw Error('Nie udało się odczytać: ' + (e && e.message || e)); });
+  }
+  var css = false;
+  function style() {
+    if (css) return; css = true; var st = document.createElement('style');
+    st.textContent = '.oest-ocr{position:fixed;inset:0;z-index:2147481000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}.oest-ocr .sh{background:#14202a;color:#fff;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));font:16px system-ui}.oest-ocr h3{margin:0 0 6px;font-size:19px}.oest-ocr .hint{opacity:.7;font-size:14px;margin:0 0 10px}.oest-ocr img{width:100%;max-height:28vh;object-fit:contain;border-radius:10px;background:#000}.oest-ocr .lbl{margin:14px 0 6px;font-size:13px;letter-spacing:.06em;opacity:.7;text-transform:uppercase}.oest-ocr .chips{display:flex;flex-wrap:wrap;gap:8px}.oest-ocr .chips button{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);color:#fff;border-radius:12px;padding:10px 12px;font:600 16px system-ui;text-align:left;max-width:100%}.oest-ocr .chips button.on{background:#2e7d32;border-color:#2e7d32}.oest-ocr .num button{font-family:ui-monospace,monospace}.oest-ocr select{width:100%;padding:12px;border-radius:10px;font:16px system-ui;background:#0d161d;color:#fff;border:1px solid rgba(255,255,255,.3)}.oest-ocr .go{width:100%;margin-top:16px;padding:16px;border:0;border-radius:14px;background:#fff;color:#14202a;font:700 18px system-ui}';
+    document.head.appendChild(st);
+  }
+  function put(el, v) {
+    if (el.tagName === 'TEXTAREA') el.value = el.value ? el.value.replace(/\s+$/, '') + '\n' + v : v;
+    else { if (el.inputMode === 'decimal' || el.type === 'number') { var m = v.match(/[-+]?\d+(?:[.,]\d+)?/); if (m) v = m[0]; } el.value = v; } // pole liczbowe: sama liczba, zastępuje poprzednią
+    el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  /* pick(blob, {targets:[{label, el}]}) – arkusz z odczytem; stuknięcie linii/liczby wpisuje ją do wybranego pola.
+     Zwraca Promise<liczba wpisanych>. */
+  function pick(blob, opts) {
+    style(); var targets = (opts && opts.targets || []).filter(function (t) { return t && t.el; });
+    var o = document.createElement('div'), url = URL.createObjectURL(blob), used = 0; o.className = 'oest-ocr';
+    o.innerHTML = '<div class="sh" role="dialog" aria-label="Odczyt ze zdjęcia"><h3>🔍 Odczyt ze zdjęcia</h3><p class="hint">Czytam tekst na telefonie…</p><img alt="Zdjęcie"><div class="body"></div><button type="button" class="go">Gotowe</button></div>';
+    o.querySelector('img').src = url; document.body.appendChild(o);
+    return new Promise(function (resolve) {
+      function close() { URL.revokeObjectURL(url); o.remove(); resolve(used); }
+      o.querySelector('.go').onclick = close; o.addEventListener('click', function (e) { if (e.target === o) close(); });
+      read(blob).then(function (r) {
+        var hint = o.querySelector('.hint'), body = o.querySelector('.body');
+        if (!r.lines.length) { hint.textContent = 'Nie znalazłem tekstu. Zrób zdjęcie bliżej i prosto, bez odblasków.'; return; }
+        hint.textContent = targets.length ? 'Stuknij to, co ma trafić do pola. Nic nie wpisuję samo.' : 'Odczytany tekst.';
+        var h = '';
+        if (targets.length > 1) h += '<div class="lbl">Wpisz do</div><select>' + targets.map(function (t, i) { return '<option value="' + i + '">' + esc(t.label) + '</option>'; }).join('') + '</select>';
+        else if (targets.length) h += '<div class="lbl">Wpisz do: ' + esc(targets[0].label) + '</div>';
+        if (r.numbers.length) h += '<div class="lbl">Liczby</div><div class="chips num">' + r.numbers.map(function (n, i) { return '<button type="button" data-k="n' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
+        h += '<div class="lbl">Linie tekstu</div><div class="chips">' + r.lines.map(function (l, i) { return '<button type="button" data-k="l' + i + '">' + esc(l) + '</button>'; }).join('') + '</div>';
+        body.innerHTML = h;
+        body.querySelectorAll('[data-k]').forEach(function (b) {
+          b.onclick = function () {
+            if (!targets.length) return; var sel = body.querySelector('select'), t = targets[sel ? +sel.value : 0];
+            var k = b.getAttribute('data-k'), v = k[0] === 'n' ? r.numbers[+k.slice(1)] : r.lines[+k.slice(1)];
+            put(t.el, v); used++; b.classList.add('on');
+          };
+        });
+      }, function (e) { o.querySelector('.hint').textContent = e.message; });
+    });
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  w.OESTOdczyt = { available: available, read: read, parse: parse, pick: pick };
+})(window);
