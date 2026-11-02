@@ -98,3 +98,10 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .rx-photos .ph button{position:absolute;top:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(10,16,20,.72);color:#fff;font-size:.95rem}
 #v-reactive .rx-photos .ph .del{right:4px}
 #v-reactive .rx-photos .ph .ed{right:4px;top:auto;bottom:4px}
+
+#v-reactive .rx-rec{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;margin-top:10px;padding:18px 12px;border-radius:16px;border:2px solid #e53935;background:rgba(229,57,53,.15);color:inherit;font:700 20px system-ui;user-select:none;-webkit-user-select:none;touch-action:none}
+#v-reactive .rx-rec small{font-weight:400;font-size:14px;opacity:.75}
+#v-reactive .rx-voice{display:flex;align-items:center;gap:8px;margin:8px 0}
+#v-reactive .rx-voice audio{flex:1;min-width:0}
+#v-reactive .rx-voice .tx{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;font:600 15px system-ui;white-space:nowrap}
+#v-reactive .rx-voice .del{width:40px;height:40px;border-radius:50%;border:0;background:#e53935;color:#fff;font:700 22px system-ui;flex:none}
