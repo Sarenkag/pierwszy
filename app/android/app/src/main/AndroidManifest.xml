@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- LiteRT-LM może mieć wyższe minSdk; wtyczka modelu sprawdza wersję Androida przed użyciem -->
+    <uses-sdk tools:overrideLibrary="com.google.ai.edge.litertlm" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +37,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+        <uses-native-library android:name="libvndksupport.so" android:required="false"/>
+        <uses-native-library android:name="libOpenCL.so" android:required="false"/>
     </application>
 
     <!-- Permissions -->
