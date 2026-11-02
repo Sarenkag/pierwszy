@@ -17,7 +17,10 @@
   /* ---------- edytor w apce ---------- */
   var COLORS = ['#ff2d2d', '#ffd400', '#21d36b', '#2f8bff', '#ffffff', '#111111'];
   var WIDTHS = [{ k: 'S', v: 4 }, { k: 'M', v: 8 }, { k: 'L', v: 14 }]; // na 1000 px dłuższego boku
-  var TOOLS = [['arrow', '↗', 'Strzałka'], ['circle', '◯', 'Kółko'], ['rect', '▢', 'Kwadrat'], ['line', '／', 'Linia'], ['crop', '⛶', 'Kadruj']];
+  // gotowe kółka: promień na 1000 px dłuższego boku; stuknięcie stawia kółko, przeciąganie przesuwa
+  var RADII = { c1: 45, c2: 90, c3: 160 };
+  var TOOLS = [['arrow', '↗', 'Strzałka'], ['c1', '<span style="font-size:12px">◯</span>', '', 'Małe kółko'], ['c2', '<span style="font-size:18px">◯</span>', '', 'Średnie kółko'], ['c3', '<span style="font-size:24px">◯</span>', '', 'Duże kółko'],
+    ['rect', '▢', 'Kwadrat'], ['line', '／', 'Linia'], ['crop', '⛶', 'Kadruj']];
 
   /* Rysuje jeden kształt na kontekście g; k = skala z „współrzędnych zdjęcia” do pikseli płótna. */
   function drawShape(g, sh, k) {
@@ -61,10 +64,10 @@
         var box = document.createElement('div'); box.className = 'oest-editor';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483001;background:#05070c;display:flex;flex-direction:column;touch-action:none;user-select:none');
         box.innerHTML =
-          '<div style="display:flex;gap:8px;padding:10px 12px calc(6px);align-items:center"><button type="button" data-a="cancel" style="' + btn + '">✕ Anuluj</button><span style="flex:1"></span>' +
+          '<div style="display:flex;gap:8px;padding:max(44px, calc(10px + env(safe-area-inset-top, 0px))) 12px 6px;align-items:center"><button type="button" data-a="cancel" style="' + btn + '">✕ Anuluj</button><span style="flex:1"></span>' +
           '<button type="button" data-a="undo" style="' + btn + '">↶ Cofnij</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">✓ Zapisz</button></div>' +
           '<div class="ed-stage" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
-          '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + t[2] + '" style="' + btn + '">' + t[1] + ' <small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
+          '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + (t[3] || t[2]) + '" style="' + btn + ';flex:none">' + t[1] + (t[2] ? ' <small>' + t[2] + '</small>' : '') + '</button>'; }).join('') + '</div>' +
           '<div style="display:flex;gap:6px;padding:6px 12px calc(14px + env(safe-area-inset-bottom));align-items:center;flex-wrap:wrap;justify-content:center">' +
           COLORS.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="Kolor" style="flex:none;width:32px;height:32px;border-radius:50%;border:3px solid #3a4152;background:' + c + '"></button>'; }).join('') +
           '<span style="width:8px"></span>' + WIDTHS.map(function (w) { return '<button type="button" data-w="' + w.v + '" style="' + btn + ';flex:none">' + w.k + '</button>'; }).join('') + '</div>';
@@ -90,17 +93,46 @@
           box.querySelectorAll('[data-w]').forEach(function (b) { b.style.background = +b.getAttribute('data-w') === st.width ? '#3b4ad8' : '#151a22'; });
         }
         function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
-        cv.addEventListener('pointerdown', function (e) { e.preventDefault(); cv.setPointerCapture(e.pointerId); var p = pt(e); cur = { t: st.tool, c: st.color, w: st.width * unit, x1: p.x, y1: p.y, x2: p.x, y2: p.y }; draw(); });
-        cv.addEventListener('pointermove', function (e) { if (!cur) return; var p = pt(e); cur.x2 = p.x; cur.y2 = p.y; draw(); });
+        var drag = null;
+        // kółko pod palcem: przy narzędziu kółka całe wnętrze, przy innych tylko obwódka
+        function hitCircle(p) {
+          var inside = !!RADII[st.tool];
+          for (var i = shapes.length - 1; i >= 0; i--) {
+            var sh = shapes[i]; if (sh.t !== 'circle') continue;
+            var r = Math.abs(sh.x2 - sh.x1) / 2, d = Math.hypot(p.x - (sh.x1 + sh.x2) / 2, p.y - (sh.y1 + sh.y2) / 2);
+            if (inside ? d < r + 25 * unit : Math.abs(d - r) < Math.max(25 * unit, sh.w)) return sh;
+          }
+          return null;
+        }
+        cv.addEventListener('pointerdown', function (e) {
+          e.preventDefault(); cv.setPointerCapture(e.pointerId); var p = pt(e), hit = st.tool === 'crop' ? null : hitCircle(p);
+          if (!hit && RADII[st.tool]) { // nowe gotowe kółko w miejscu stuknięcia
+            var R = RADII[st.tool] * unit;
+            hit = { t: 'circle', c: st.color, w: st.width * unit, x1: p.x - R, y1: p.y - R, x2: p.x + R, y2: p.y + R }; shapes.push(hit);
+            drag = { s: hit, x: p.x, y: p.y, ox: hit.x1, oy: hit.y1, fresh: true }; draw(); return;
+          }
+          if (hit) { drag = { s: hit, x: p.x, y: p.y, ox: hit.x1, oy: hit.y1 }; return; }
+          cur = { t: st.tool, c: st.color, w: st.width * unit, x1: p.x, y1: p.y, x2: p.x, y2: p.y }; draw();
+        });
+        cv.addEventListener('pointermove', function (e) {
+          var p = pt(e);
+          if (drag) { var s = drag.s, wd = s.x2 - s.x1, ht = s.y2 - s.y1; s.x1 = drag.ox + p.x - drag.x; s.y1 = drag.oy + p.y - drag.y; s.x2 = s.x1 + wd; s.y2 = s.y1 + ht; draw(); return; }
+          if (!cur) return; cur.x2 = p.x; cur.y2 = p.y; draw();
+        });
         function end() {
+          if (drag) { // przesunięcie zapisane do „Cofnij”
+            var dx = drag.s.x1 - drag.ox, dy = drag.s.y1 - drag.oy;
+            if (!drag.fresh && (dx || dy)) shapes.push({ t: 'move', s: drag.s, dx: dx, dy: dy });
+            drag = null; draw(); return;
+          }
           if (!cur) return;
           var big = Math.hypot(cur.x2 - cur.x1, cur.y2 - cur.y1) > 10 * unit;
           if (cur.t === 'crop') { if (normCrop(cur, W, H)) { crop = cur; shapes.push({ t: 'crop-mark', prev: shapes.length }); } }
           else if (big) shapes.push(cur);
           cur = null; draw();
         }
-        cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', function () { cur = null; draw(); });
-        function realShapes() { return shapes.filter(function (s) { return s.t !== 'crop-mark'; }); }
+        cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', function () { if (drag) return end(); cur = null; draw(); });
+        function realShapes() { return shapes.filter(function (s) { return s.t !== 'crop-mark' && s.t !== 'move'; }); }
         function close(r) { window.removeEventListener('resize', fit); box.remove(); if (bmp.close) bmp.close(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('button'); if (!b) return;
@@ -109,6 +141,7 @@
           else if (b.hasAttribute('data-w')) st.width = +b.getAttribute('data-w');
           else if (b.getAttribute('data-a') === 'undo') {
             var last = shapes.pop();
+            if (last && last.t === 'move') { last.s.x1 -= last.dx; last.s.x2 -= last.dx; last.s.y1 -= last.dy; last.s.y2 -= last.dy; }
             if (last && last.t === 'crop-mark') { // cofnięcie kadru: poprzedni kadr albo brak
               var prev = null; for (var i = shapes.length - 1; i >= 0; i--) if (shapes[i].t === 'crop-mark') { prev = shapes[i].crop; break; }
               crop = prev;
@@ -154,7 +187,7 @@
         var cur = blob, url = '', box = document.createElement('div');
         box.className = 'oest-review';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:#05070c;display:flex;flex-direction:column');
-        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
+        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + env(safe-area-inset-top, 0px))) 8px 8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
           '<p class="oest-review-msg" role="status" style="margin:0;padding:0 16px;color:#f3c76b;font:500 14px system-ui;min-height:18px"></p>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom))">' +
           '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">↺ Powtórz</button>' +
