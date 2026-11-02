@@ -1038,7 +1038,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
     if (ask || quick) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ask || quick ? "-1" : ""; // zdjęcie, potem pytania
+    $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
     $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
@@ -1047,7 +1047,6 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
     if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
-    if (cur.type.folder) $("photos").closest(".panel").style.order = "-1";
   }
   function resetForm() {
     roomNotes = {};
@@ -1686,8 +1685,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type && cur.type.folder) {
       var none = !photos.length;
       $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + photos.length + " → jeden PDF, strona na zdjęcie.";
-      var fb = none || !!restoring || pendingPh > 0;
-      $("toPreview").disabled = fb; $("toQueue").disabled = fb;
+      var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
+      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
     }
     if (cur.mode === "item") {
@@ -1756,6 +1755,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var end = issues.length ? ["Issues found:"].concat(issues.map(function (t) { return "\u2022 " + t; })) : [];
     if (d.komentarz) end.push("Comments: " + d.komentarz);
     if (last) d[last + "_notes"] = end; // wzór nie ma pola na koniec: lista idzie pod ostatnie pomieszczenie, przed podpisem
+    rooms = rooms.filter(function (r) { return r.cells.length; }); // pomieszczenie całe na N/A: nie pokazuj pustego nagłówka
+    if (!rooms.length) end.unshift("Visual inspection carried out."); // wszystko N/A: sama inspekcja wzrokowa
     d.plant = rooms; d.plantEnd = end;
     d.opis = d.details = rooms.map(function (r) { return r.name + " \u2013 Location: " + r.loc + "\n" + r.cells.join(", "); }).concat(end).join("\n");
     return d;
@@ -1773,6 +1774,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       else if (states[i] === "fail") { rows.push("\u2612 " + c.cp + "\t" + (override[i] || c.fail)); n++; }
     });
     var extra = extraFaults(true);
+    if (!rows.length && !extra.length) return "Visual inspection carried out."; // wszystko N/A: bez zdania „All items checked…”
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
     return t + (extra.length ? "\n\nFaults:\n" + extra.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(n + extra.length);
   }
@@ -2129,7 +2131,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
     });
   }
-  $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
+  $("toQueue").addEventListener("click", function () {
+    if (cur.type && cur.type.folder && !photos.length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
+    queueBtn(this, false);
+  });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
 
   function pending() { return queue.filter(function (q) { return q.status !== "sent"; }); }
