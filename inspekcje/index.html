@@ -143,6 +143,23 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .seg button.on.ok { background: var(--ok); color: #fff; }
 .seg button.on.fail { background: var(--bad); color: #fff; }
 .seg button.on.na { background: var(--steel); color: var(--panel); }
+.fl-week { display: flex; gap: 6px; margin: 4px 0 10px; }
+.fl-week button { flex: 1; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font-weight: 700; cursor: pointer; }
+.fl-week button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.fl-on { display: flex; align-items: center; gap: 10px; font-weight: 600; padding: 6px 0 10px; }
+.fl-list.off { opacity: .45; pointer-events: none; filter: grayscale(1); }
+.fl-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.fl-row:last-child { border-bottom: 0; }
+.fl-line { display: flex; align-items: center; gap: 8px; }
+.fl-line .txt { flex: 1; min-width: 0; }
+.fl-row.no .txt { color: var(--bad); } .fl-row.na .txt { color: var(--muted); }
+.fl-row .seg button { width: 44px; font-size: .85rem; }
+.fl-ic { width: 36px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); cursor: pointer; font-size: 1rem; position: relative; }
+.fl-ic b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: .7rem; line-height: 16px; }
+.fl-note { margin-top: 6px; }
+.fl-pics { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.fl-pics span { position: relative; } .fl-pics img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; display: block; }
+.fl-pics button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 10px; border: 0; background: var(--bad); color: #fff; font-size: .8rem; line-height: 20px; padding: 0; cursor: pointer; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
 .legend b { font-weight: 700; }
 .legend .o { color: var(--ok); } .legend .x { color: var(--bad); }
@@ -190,6 +207,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .paper .scope { font-style: italic; font-size: 0.78rem; }
 .paper .foot { margin-top: 10px; border-top: 1px solid #000; padding-top: 3px; font-size: 0.62rem; font-weight: 700; white-space: pre-line; }
 .paper .pimg { margin-top: 10px; }
+.paper .pimg small { display: block; text-align: center; font-size: .8rem; }
 .paper .pimg img { display: block; width: 100%; height: auto; }
 .wrapscroll { overflow-x: auto; }
 
@@ -360,6 +378,15 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
       <p class="hint">Wpisz tylko pomiary — pozostałe rubryki wzoru zostają puste. Nic nie jest wpisane z góry ani przepisane z poprzedniej inspekcji.</p>
     </div>
 
+    <div class="panel" data-m="one" id="flushBox" hidden>
+      <div class="label">Tydzień miesiąca (jak na formularzu)</div>
+      <div class="fl-week" id="flWeek"><button type="button" data-w="1">1</button><button type="button" data-w="2">2</button><button type="button" data-w="3">3</button><button type="button" data-w="4">4</button><button type="button" data-w="5">5</button></div>
+      <label class="fl-on"><input type="checkbox" id="flOn"> Formularz elektroniczny</label>
+      <div class="fl-list off" id="flList"></div>
+      <p class="hint" id="flHint">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
+      <input id="flCam" type="file" accept="image/*" capture="environment" hidden>
+    </div>
+
     <div class="panel" data-m="one item">
       <div class="label" id="ckTitle">Checklista</div>
       <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
@@ -458,6 +485,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/pole-email/pole-email.js"></script>
 <script src="../moduly/model/model.js"></script>
 <script src="tpl-temp-tb.js"></script>
+<script src="tpl-flush.js"></script>
+<script src="flush.js"></script>
 <script src="tpl-oest-basic.js"></script>
 <script src="tpl-plant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
@@ -1076,6 +1105,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
     if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    $("flushBox").hidden = !cur.type.flush || m === "sum";
   }
   function resetForm() {
     roomNotes = {};
@@ -1086,6 +1116,49 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
+    fl = { on: false, week: 0, open: {}, taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
+  }
+  // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
+  var fl = { on: false, week: 0, open: {}, taps: [] };
+  function formPhotos() { return photos.filter(function (p) { return p.tap == null; }); }
+  function tapPhotos(i) { return photos.filter(function (p) { return p.tap === i; }); }
+  function renderFlush() {
+    var F = cur.type && cur.type.flush;
+    if (!F) { $("flList").innerHTML = ""; return; }
+    if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
+    $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
+    $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
+    $("flList").innerHTML = F.taps.map(function (name, i) {
+      var t = fl.taps[i], pics = tapPhotos(i), open = fl.open[i] || t.note;
+      return '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(name) + '</div><div class="seg">' +
+        [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]].map(function (o) { return '<button type="button" data-fl="' + i + '" data-s="' + o[0] + '" class="' + o[2] + (t.state === o[0] ? " on" : "") + '">' + o[1] + "</button>"; }).join("") +
+        '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="Zdjęcie: ' + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
+        '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="Notatka: ' + esc(name) + '">📝</button></div>' +
+        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="Notatka (trafi do kolumny NOTES)">' : "") +
+        (pics.length ? '<div class="fl-pics">' + pics.map(function (p) { return '<span><img alt="" src="' + p.url + '"><button type="button" data-fldel="' + photos.indexOf(p) + '" aria-label="Usuń zdjęcie">×</button></span>'; }).join("") + "</div>" : "") + "</div>";
+    }).join("");
+  }
+  var flTap = null;
+  $("flushBox").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    if (b.hasAttribute("data-w")) { var w = +b.getAttribute("data-w"); fl.week = fl.week === w ? 0 : w; renderFlush(); updateFormHint(); return; }
+    if (b.hasAttribute("data-fl")) { fl.taps[+b.getAttribute("data-fl")].state = b.getAttribute("data-s"); renderFlush(); updateFormHint(); return; }
+    if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.focus(); return; }
+    if (b.hasAttribute("data-fldel")) { var at = +b.getAttribute("data-fldel"), p = photos[at]; if (p) { URL.revokeObjectURL(p.url); photos.splice(at, 1); renderPhotos(); } return; }
+    if (b.hasAttribute("data-flcam")) {
+      var tap = +b.getAttribute("data-flcam");
+      if (window.OESTAparat && OESTAparat.available()) {
+        OESTAparat.take().then(function (bl) { if (bl) addFiles([new File([bl], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })], tap); }, function (er) { $("flHint").textContent = er.message; });
+      } else { flTap = tap; $("flCam").click(); }
+    }
+  });
+  $("flCam").addEventListener("change", function () { var t = flTap; flTap = null; if (t != null) addFiles(this, t); });
+  $("flushBox").addEventListener("input", function (e) { var el = e.target.closest("input[data-fln]"); if (el) fl.taps[+el.getAttribute("data-fln")].note = el.value; });
+  $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
+  function flushReport(w) {
+    var F = cur.type.flush;
+    return { building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
+      taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
   var temps = [];
@@ -1537,7 +1610,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   renderModel();
 
   // ---------- zdjęcia ----------
-  function addFiles(input) {
+  function addFiles(input, tap) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
@@ -1549,7 +1622,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           if (tok === formSeq) keepCopy(f, when, ctx);
           return processPhoto(f, when).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
-            ph.exif = !!ex; photos.push(ph); renderPhotos(); suggestDate(); analyze(ph);
+            ph.exif = !!ex; if (tap != null) ph.tap = tap; photos.push(ph); renderPhotos(); suggestDate(); if (tap == null) analyze(ph);
           });
         });
       });
@@ -1569,6 +1642,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function renderPhotos() {
     $("photos").innerHTML = ""; if (cur.type) ppmTrack(false);
     photos.forEach(function (p, i) {
+      if (p.tap != null) return; // zdjęcie kranu (Flushing): pokazane przy kranie
       var d = document.createElement("div"); d.className = "thumb";
       d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
         (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
@@ -1590,7 +1664,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       }
       $("photos").appendChild(d);
     });
-    $("photoCount").textContent = photos.length ? "(" + photos.length + ")" : "";
+    var fp = formPhotos().length; $("photoCount").textContent = fp ? "(" + fp + ")" : "";
+    if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").innerHTML) renderSugs();
     updateFormHint();
   }
@@ -1712,9 +1787,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
       $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
     }
+    if (cur.type && cur.type.flush && fl.on) {
+      var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
+      var fpn = formPhotos().length, fbk = !!restoring || pendingPh > 0 || !fl.week;
+      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : !fl.week ? "Wybierz tydzień miesiąca (1–5) — tak jak na formularzu." :
+        "Formularz: " + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + " · tydzień " + fl.week + (fpn ? " · zdjęć kartek: " + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
+      $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
+      $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
+    }
     if (cur.type && cur.type.folder) {
-      var none = !photos.length;
-      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + photos.length + " → jeden PDF, strona na zdjęcie.";
+      var none = !formPhotos().length;
+      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + formPhotos().length + " → jeden PDF, strona na zdjęcie.";
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
@@ -1748,7 +1831,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type.rooms) return roomsData(w);
     if (cur.type.folder) return english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: "", quote: "", site: cfg.site, komentarz: "", zakres: "", folder: true,
-      obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "" });
+      obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "", flush: cur.type.flush && fl.on ? flushReport(w) : null });
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
@@ -2037,16 +2120,70 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     return new Uint8Array(pdf.output("arraybuffer"));
   }
+  function fillFlushDocx(f) {
+    var zip = new PizZip(b64ToBytes(window.TPL_FLUSH));
+    zip.file("word/document.xml", OESTFlush.fill(zip.file("word/document.xml").asText(), f));
+    zip.file("word/header1.xml", OESTFlush.header(zip.file("word/header1.xml").asText(), f.building));
+    return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+  }
+  // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
+  function buildFlushPdf(d, pics) {
+    var f = d.flush, pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
+    pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
+    var L = 15, y = 20;
+    pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(f.title, L, y); y += 7;
+    pdf.setFont("DV", "normal"); pdf.setFontSize(10);
+    pdf.text(OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · Date: " + d.data + " · Name: " + (f.name || ""), L, y); y += 8;
+    pdf.setFont("DV", "bold"); pdf.text("Outlet", L, y); pdf.text("Completed", 110, y); pdf.text("Notes", 135, y); y += 2; pdf.line(L, y, 195, y); y += 5;
+    pdf.setFont("DV", "normal");
+    f.taps.forEach(function (t) {
+      var note = pdf.splitTextToSize(t.note || "", 60), name = pdf.splitTextToSize(t.name, 92), lines = Math.max(1, note.length, name.length);
+      // długa notatka: dzielona na kawałki, każdy mieści się na stronie
+      for (var k = 0; k < lines; k += 50) {
+        var part = note.slice(k, k + 50), h = Math.max(1, part.length, k ? 0 : name.length) * 5 + 1.5;
+        if (y + h > 287) { pdf.addPage(); y = 20; }
+        if (!k) { pdf.text(name, L, y); pdf.text(OESTFlush.LABEL[t.state], 110, y); }
+        if (part.length) pdf.text(part, 135, y);
+        y += h;
+      }
+    });
+    y += 3; if (y > 285) { pdf.addPage(); y = 20; }
+    pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize(OESTFlush.summary(f) + ".", 180), L, y);
+    var tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null; });
+    if (tp.length) {
+      var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;
+      tp.forEach(function (p, i) {
+        var k = i % 12; if (!k) { pdf.addPage(); pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
+        var cx = x0 + (k % COLS) * (W + GAP), cy = 20 + Math.floor(k / COLS) * (H + 10);
+        var iw = W, ih = iw * p.height / p.width; if (ih > H) { ih = H; iw = ih * p.width / p.height; }
+        pdf.addImage(p.bytes, "JPEG", cx + (W - iw) / 2, cy + (H - ih) / 2, iw, ih);
+        pdf.text(pdf.splitTextToSize(f.taps[p.tap] ? f.taps[p.tap].name : "", W)[0] || "", cx + W / 2, cy + H + 4.5, { align: "center" });
+      });
+    }
+    fp.forEach(function (p) {
+      pdf.addPage(); var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M, iw = PW, ih = iw * p.height / p.width;
+      if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
+      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
+    });
+    return new Uint8Array(pdf.output("arraybuffer"));
+  }
   function buildAll() {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate());
     if (cur.type.temp) return Promise.resolve().then(function () {
       return { name: name, data: d, docx: fillTempDocx(d), pdf: buildTempPdf(d), pics: [], info: {}, logoUrl: "" };
     });
-    if (cur.type.folder) return photos.reduce(function (p, ph) {
-      return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { arr.push(f); return arr; }); });
-    }, Promise.resolve([])).then(function (pics) {
-      return { name: name, data: d, docx: new Uint8Array(0), pdf: buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
-    });
+    if (cur.type.folder) {
+      var useTaps = !!d.flush, list = useTaps ? photos.slice() : formPhotos(); // bez formularza zdjęcia kranów nie idą
+      return list.reduce(function (p, ph) {
+        return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { f.tap = ph.tap; arr.push(f); return arr; }); });
+      }, Promise.resolve([])).then(function (pics) {
+        if (!useTaps) return { name: name, data: d, docx: new Uint8Array(0), pdf: buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
+        d.stan_ogolny = d.stan = OESTFlush.summary(d.flush);
+        d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
+        return { name: name, data: d, docx: fillFlushDocx(d.flush), pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
+      });
+    }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
     return photos.reduce(function (p, ph) {
       return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { arr.push(f); return arr; }); });
@@ -2078,6 +2215,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("paper").innerHTML = "<b>" + esc(d.tytul) + "</b><p>Date: " + esc(d.data) + " · Print name: " + esc(d.inspektor) + "</p><table>" +
         built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
+      $("prevSub").textContent = d.urzadzenie + " · " + d.data;
+      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
+      return;
+    }
+    if (d.folder && d.flush) {
+      var ff = d.flush;
+      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + " · tydzień " + ff.week + " · " + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
+        ff.taps.map(function (t) { return '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
+        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
+        built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
       $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
       return;
@@ -2174,7 +2321,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   $("toQueue").addEventListener("click", function () {
-    if (cur.type && cur.type.folder && !photos.length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
+    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
   });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
@@ -2373,7 +2520,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var dev = [{ code: t.name, loc: t.where || "One Eastside", room: "" }], f = t.form && PPM.forms && PPM.forms[t.form];
     if (f && f.folder) {
       // inspekcja „z folderu”: tylko zdjęcia wypełnionej kartki → jeden PDF (strona na zdjęcie), bez formularza
-      cur.type = { id: "ppm-" + t.id, folder: true, name: t.name, title: t.name, scope: "", devices: dev, checks: [] };
+      cur.type = { id: "ppm-" + t.id, folder: true, name: t.name, title: t.name, scope: "", devices: dev, checks: [], flush: t.flush && PPM.forms.flush ? PPM.forms.flush[t.flush] : null };
       openForm(t.name); return;
     }
     if (f && f.rooms) {
