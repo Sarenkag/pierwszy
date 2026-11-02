@@ -58,6 +58,14 @@ window.OEST_PPM = {
       { key: "mechanical", name: "Mechanical plant room", loc: "TB External access" } ],
     plantCps: ["Secure", "Clean", "Access", "Lighting", "No leaks", "Panel secure"],
     plantCpsMonthly: ["No active alarms", "Emergency lighting"],
+    // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (inspekcje/tpl-flush.js)
+    flush: {
+      TA: { title: "Weekly Taps/Shower Flushing Record Tower A", building: "A", taps: ["Disable Toilet LG", "Toilet LG", "Kitchen next to Pantree", "Bin Store", "Kitchen UL",
+        "Bar Area Level 49", "Private Dining", "Toilet Level 49", "Disable Toilet Level 49", "Meeting Area Level 49", "Disable Toilet/Shower UG", "Roof Level"] },
+      TB: { title: "Weekly Taps/Shower Flushing Record Tower B", building: "B", taps: ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room",
+        "Hairdresser Room", "Disable Toilet LG", "Studio", "Fitness 1", "Fitness 2 Learner", "SPA", "Cycle Store", "Office Sink",
+        "Shower Disable Toilet", "Shower in SPA", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107"] },
+      P: { title: "Weekly Taps/Shower Flushing Record Pavilion", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"] } },
     tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", tpl: "TPL_TEMP_TB", slots: [
       ["Roof", "cold"], ["Spa Chemical Room", "hot"], ["Spa Chemical Room", "cold"], ["Bin Area", "cold"],
       ["Spa Hall Tap", "hot"], ["Spa Hall Tap", "cold"], ["Massage Hall", "cold"], ["Massage Room", "hot"], ["Massage Room", "cold"],
@@ -72,7 +80,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-001", group: "fire", name: "Emergency Lighting Test (TA)", freq: ["1M",  "12M"], cfg: true },
     { id: "EFA-INS-002", group: "water", name: "Water Temperature Checks (TA)", freq: ["1M"], cfg: true },
     { id: "EFA-INS-003", form: "folder", group: "fire", name: "AOV Operation Test (TA)", freq: ["1W"] },
-    { id: "EFA-INS-004", form: "folder", group: "water", name: "Weekly Flushing (TA)", freq: ["1W"] },
+    { id: "EFA-INS-004", form: "folder", flush: "TA", group: "water", name: "Weekly Flushing (TA)", freq: ["1W"] },
     { id: "EFA-INS-005", group: "fire", name: "Weekly Sprinkler Testing", freq: ["1W"], cfg: true },
     { id: "EFA-INS-006", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (TA)", freq: ["1W"] },
     { id: "EFA-INS-007", group: "water", name: "Water Feature Checks", freq: ["1W"], cfg: true },
@@ -80,7 +88,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-009", form: "folder", group: "water", name: "Daily Spa Pool Sampling", freq: ["1W"] },
     { id: "EFA-INS-010", group: "water", name: "Monthly Tap Temperature Check (P)", freq: ["1M"], cfg: true },
     { id: "EFA-INS-011", group: "fire", name: "Monthly Emergency Lighting Test (P)", freq: ["1M",  "12M"], cfg: true },
-    { id: "EFA-INS-012", form: "folder", group: "water", name: "Weekly Flushing of Seldom Used Outlets (P)", freq: ["1W"] },
+    { id: "EFA-INS-012", form: "folder", flush: "P", group: "water", name: "Weekly Flushing of Seldom Used Outlets (P)", freq: ["1W"] },
     { id: "EFA-INS-013", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (P)", freq: ["1W"] },
     { id: "EFA-INS-014", group: "elec", form: "ats", name: "Automatic Transfer Switches (TB, L13)", freq: ["1M"] },
     { id: "EFA-INS-015", group: "elec", form: "ats", name: "Automatic Transfer Switches (TB, L12)", freq: ["1M"] },
@@ -94,7 +102,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-023", group: "mech", name: "Monthly Meter Readings", freq: ["1M"], cfg: true },
     { id: "EFA-INS-024", group: "water", form: "tempTB", name: "Water Temperature Checks (TB)", freq: ["1M"] },
     { id: "EFA-INS-025", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (TB)", freq: ["1W"] },
-    { id: "EFA-INS-026", form: "folder", group: "water", name: "Weekly Flushing (TB)", freq: ["1W"] },
+    { id: "EFA-INS-026", form: "folder", flush: "TB", group: "water", name: "Weekly Flushing (TB)", freq: ["1W"] },
     { id: "EFA-INS-027", group: "fire", name: "Emergency Lighting Test (TB)", freq: ["1M"], cfg: true },
     // EFA-INS-028 Lift signage TB usunięte z listy: w Vantify to zlecenie reactive, a reactive nie ma być na liście PPM (Grzegorz 02/11/2026)
 
