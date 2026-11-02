@@ -81,17 +81,27 @@ public class HandoverPlugin extends Plugin {
             try{
                 speechCall=call;ParcelFileDescriptor[] pipe=ParcelFileDescriptor.createPipe();speechInput=pipe[0];
                 recognizer=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
+                final Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 recognizer.setRecognitionListener(new RecognitionListener(){
                     public void onReadyForSpeech(Bundle b){}public void onBeginningOfSpeech(){}public void onRmsChanged(float r){}public void onBufferReceived(byte[] b){}public void onEndOfSpeech(){}public void onPartialResults(Bundle b){}public void onEvent(int t,Bundle b){}
-                    public void onError(int error){finishSpeech(null,"SPEECH_ERROR_"+error);}
+                    public void onError(int error){
+                        // 12/13: brak polskiego pakietu mowy offline — poproś system o pobranie i powiedz o tym w apce
+                        if(error==SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED||error==SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE){downloadPolish(intent);finishSpeech(null,"SPEECH_PL_DOWNLOAD");return;}
+                        finishSpeech(null,"SPEECH_ERROR_"+error);}
                     public void onResults(Bundle b){ArrayList<String> results=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);finishSpeech(results!=null&&!results.isEmpty()?results.get(0):null,"SPEECH_EMPTY");}
                 });
-                Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pl-PL");intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,speechInput);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT,1);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING,AudioFormat.ENCODING_PCM_16BIT);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE,RATE);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pl-PL");intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,speechInput);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT,1);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING,AudioFormat.ENCODING_PCM_16BIT);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE,RATE);
                 recognizer.startListening(intent);
                 new Thread(()->{try(ParcelFileDescriptor.AutoCloseOutputStream out=new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])){out.write(wav,44,wav.length-44);}catch(Exception ignored){}},"oest-speech-input").start();
                 main.postDelayed(()->{if(speechCall==call)finishSpeech(null,"SPEECH_TIMEOUT");},45000);
             }catch(Exception e){finishSpeech(null,"SPEECH_UNAVAILABLE");}
         });
+    }
+    private void downloadPolish(Intent source){
+        if(Build.VERSION.SDK_INT<33)return;
+        try{Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pl-PL");
+            SpeechRecognizer d=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());d.triggerModelDownload(i);main.postDelayed(()->{try{d.destroy();}catch(Exception ignored){}},60000);
+        }catch(Exception ignored){}
     }
     private void finishSpeech(String text,String error){PluginCall c=speechCall;speechCall=null;if(recognizer!=null){recognizer.destroy();recognizer=null;}try{if(speechInput!=null)speechInput.close();}catch(Exception ignored){}speechInput=null;if(c!=null){if(text==null)c.reject(error);else{JSObject r=new JSObject();r.put("text",text);c.resolve(r);}}}
     @PluginMethod public void share(PluginCall call){

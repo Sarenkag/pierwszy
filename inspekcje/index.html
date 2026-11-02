@@ -170,7 +170,6 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb .n { position: absolute; left: 6px; top: 6px; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(10,16,20,0.7); color: #fff; padding: 1px 6px; border-radius: 4px; }
 .thumb button.ed { top: auto; bottom: 4px; font-size: 0.95rem; }
-.thumb button.rd { top: auto; bottom: 4px; right: auto; left: 4px; font-size: 0.95rem; }
 .thumb button { position: absolute; right: 4px; top: 4px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(10,16,20,0.72); color: #fff; font-size: 1.1rem; cursor: pointer; }
 
 /* Podgląd raportu */
@@ -402,8 +401,10 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="panel" data-m="one sum">
       <div class="f"><label for="komentarz">Komentarz (trafi do raportu po angielsku)</label>
         <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu"></textarea></div>
-      <div class="row"><button class="btn" type="button" id="translate" hidden>Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden>Cofnij tłumaczenie</button></div>
+      <div class="row"><button class="btn" type="button" id="translate" hidden>Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden>Cofnij tłumaczenie</button><button class="btn" type="button" id="mdRun" hidden>✨ Ułóż po angielsku</button></div>
       <p class="hint" id="trHint"></p>
+      <div id="mdBox" hidden><div class="f"><label for="mdOut">Propozycja modelu — sprawdź i popraw</label><textarea id="mdOut"></textarea></div><p class="hint" id="mdWarn"></p>
+        <div class="row"><button class="btn" type="button" id="mdUse">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop">Odrzuć</button></div></div>
     </div>
 
     <button class="go" type="button" id="toQueue" data-m="one sum">Wyślij</button>
@@ -446,7 +447,10 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
-<script src="../moduly/odczyt/odczyt.js"></script>
+<script src="../moduly/checkbox/checkbox.js"></script>
+<script src="../moduly/przycisk/przycisk.js"></script>
+<script src="../moduly/pole-email/pole-email.js"></script>
+<script src="../moduly/model/model.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-oest-basic.js"></script>
 <script src="tpl-plant.js"></script>
@@ -1037,7 +1041,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
     if (ask || quick) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ask || quick ? "-1" : ""; // zdjęcie, potem pytania
+    $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
     $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
@@ -1046,7 +1050,6 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
     if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
-    if (cur.type.folder) $("photos").closest(".panel").style.order = "-1";
   }
   function resetForm() {
     roomNotes = {};
@@ -1054,7 +1057,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
-    $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = "";
+    $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
   }
@@ -1461,12 +1464,50 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? "Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)" : "Tłumaczę…";
     (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
-      if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; }
+      if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; if (mdReady) runModel(true); }
       else $("trHint").textContent = "Brak odpowiedzi — spróbuj jeszcze raz.";
     }).catch(function (e) { $("trHint").textContent = "Nie udało się przetłumaczyć: " + gErr(e); })
       .then(function () { b.disabled = false; });
   });
   $("undoTr").addEventListener("click", function () { if (trOriginal != null) { $("komentarz").value = trOriginal; trOriginal = null; } this.hidden = true; $("trHint").textContent = ""; });
+
+  // ---------- model tekstowy na telefonie (opcjonalny): zdanie po angielsku / jeden akapit z kilku notatek ----------
+  var mdReady = false, mdSeq = 0, mdInput = null;
+  function renderModel() {
+    if (IN_GAS || !window.OESTModel || !OESTModel.available()) return;
+    OESTModel.ready().then(function (r) { mdReady = r; $("mdRun").hidden = !r; });
+  }
+  function runModel(auto) {
+    var txt = $("komentarz").value.trim(); if (!txt || !mdReady) return;
+    // wejście = to, co jest teraz w polu (z Twoimi poprawkami); polski oryginał tylko pomocniczo
+    var reference = trOriginal != null ? trOriginal : "", original = txt;
+    var notes = txt.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var tok = ++mdSeq, form = formSeq; mdInput = txt; $("mdRun").disabled = true;
+    $("mdWarn").textContent = ""; $("mdBox").hidden = true;
+    $("trHint").textContent = (auto ? "Przetłumaczone. " : "") + "Model układa tekst na telefonie… (pierwszy raz do ~20 s)";
+    (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
+      if (tok !== mdSeq || form !== formSeq) return;
+      $("mdOut").value = out; $("mdBox").hidden = false;
+      var miss = OESTModel.missingNumbers(original, out);
+      $("mdWarn").textContent = miss.length ? "⚠ W propozycji brakuje: " + miss.join(", ") + " — sprawdź." : "";
+      $("trHint").textContent = "Propozycja gotowa. Nic nie wstawiam bez Twojej zgody.";
+    }).catch(function (e) { if (tok === mdSeq) $("trHint").textContent = e.message; })
+      .then(function () { if (tok === mdSeq) $("mdRun").disabled = false; });
+  }
+  $("mdRun").addEventListener("click", function () { runModel(false); });
+  // zmiana komentarza unieważnia propozycję (w toku i pokazaną), żeby nie nadpisać nowych poprawek
+  $("komentarz").addEventListener("input", function () {
+    if (mdInput === null) return; mdSeq++; mdInput = null; $("mdBox").hidden = true; $("mdRun").disabled = false; $("mdWarn").textContent = "";
+    if (/^(Propozycja|Model układa|Przetłumaczone\. Model)/.test($("trHint").textContent)) $("trHint").textContent = "Komentarz zmieniony — „✨ Ułóż po angielsku”, gdy skończysz.";
+  });
+  $("mdUse").addEventListener("click", function () {
+    var out = $("mdOut").value.trim(); if (!out) return;
+    if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = "Komentarz się zmienił — ułóż jeszcze raz."; return; }
+    if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
+    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = "Wstawione. Możesz poprawić ręcznie albo cofnąć.";
+  });
+  $("mdDrop").addEventListener("click", function () { mdSeq++; $("mdBox").hidden = true; $("trHint").textContent = ""; });
+  renderModel();
 
   // ---------- zdjęcia ----------
   function addFiles(input) {
@@ -1519,16 +1560,6 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           }).catch(function (e) { alert(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
         });
         d.appendChild(eb);
-      }
-      if (window.OESTOdczyt && OESTOdczyt.available()) {
-        // 🔍 odczyt tekstu/liczb z wyświetlacza lub tabliczki — offline; wpisuje tylko to, co stukniesz
-        var rb = document.createElement("button"); rb.type = "button"; rb.className = "rd"; rb.textContent = "🔍"; rb.setAttribute("aria-label", "Odczytaj tekst ze zdjęcia " + (i + 1));
-        rb.addEventListener("click", function () {
-          var targets = [{ label: "Komentarz", el: $("komentarz") }];
-          document.querySelectorAll("input[data-t]").forEach(function (el) { if (el.offsetParent) targets.push({ label: el.getAttribute("aria-label") || "Wartość", el: el }); });
-          OESTOdczyt.pick(p.blob, { targets: targets });
-        });
-        d.appendChild(rb);
       }
       $("photos").appendChild(d);
     });
@@ -1657,8 +1688,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type && cur.type.folder) {
       var none = !photos.length;
       $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + photos.length + " → jeden PDF, strona na zdjęcie.";
-      var fb = none || !!restoring || pendingPh > 0;
-      $("toPreview").disabled = fb; $("toQueue").disabled = fb;
+      var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
+      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
     }
     if (cur.mode === "item") {
@@ -1727,6 +1758,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var end = issues.length ? ["Issues found:"].concat(issues.map(function (t) { return "\u2022 " + t; })) : [];
     if (d.komentarz) end.push("Comments: " + d.komentarz);
     if (last) d[last + "_notes"] = end; // wzór nie ma pola na koniec: lista idzie pod ostatnie pomieszczenie, przed podpisem
+    rooms = rooms.filter(function (r) { return r.cells.length; }); // pomieszczenie całe na N/A: nie pokazuj pustego nagłówka
+    if (!rooms.length) end.unshift("Visual inspection carried out."); // wszystko N/A: sama inspekcja wzrokowa
     d.plant = rooms; d.plantEnd = end;
     d.opis = d.details = rooms.map(function (r) { return r.name + " \u2013 Location: " + r.loc + "\n" + r.cells.join(", "); }).concat(end).join("\n");
     return d;
@@ -1744,6 +1777,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       else if (states[i] === "fail") { rows.push("\u2612 " + c.cp + "\t" + (override[i] || c.fail)); n++; }
     });
     var extra = extraFaults(true);
+    if (!rows.length && !extra.length) return "Visual inspection carried out."; // wszystko N/A: bez zdania „All items checked…”
     var t = rows.length ? rows.join("\n") : "Visual inspection carried out.";
     return t + (extra.length ? "\n\nFaults:\n" + extra.map(function (s) { return "• " + s; }).join("\n") : "") + "\n\n" + summaryLine(n + extra.length);
   }
@@ -2085,22 +2119,28 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
       }
       if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
-      return done.then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+      return done.then(sendOk).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     });
   }
+  var sendBtn = null; // wspólny przycisk akcji (moduly/przycisk): kręciołek → ✓ Gotowe, zanim formularz zniknie
+  function sendOk() { return sendBtn ? sendBtn.ok() : null; }
   function queueBtn(b, fromPreview) {
     if (queueing) return;
-    b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: "Przygotowuję raport", keep: false }) : null;
+    if (!sendBtn) { b.disabled = true; b.textContent = "Przygotowuję…"; }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {
-      queueing = false; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
+      queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
       if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
     });
   }
-  $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
+  $("toQueue").addEventListener("click", function () {
+    if (cur.type && cur.type.folder && !photos.length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
+    queueBtn(this, false);
+  });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
 
   function pending() { return queue.filter(function (q) { return q.status !== "sent"; }); }
