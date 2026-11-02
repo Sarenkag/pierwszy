@@ -13,3 +13,6 @@ wyslij().then(() => h.ok()).then(pokazListe, () => h.fail());
 Opcje: `{ done: "Wysłano", busy: "Wysyłam…", hold: 900 }`.
 
 Strona: `<script src="moduly/przycisk/przycisk.js"></script>` (inspekcje: `../moduly/przycisk/przycisk.js`). CSS moduł dokłada sam.
+
+## Naciśnięcie (wszystkie przyciski)
+Moduł dokłada też jedną regułę dla całej strony: każdy przycisk, kafelek (`button`, `.btn`, `.tile`, `.pbtn`, `.go`, `[role=button]`) przy naciśnięciu płynnie zmniejsza się do 97% i płynnie wraca po puszczeniu (0,16 s, ta sama krzywa w obie strony, bez szarpnięcia). Zerowa waga (`:where`), więc elementy z własnym `transform` się nie zmieniają.
