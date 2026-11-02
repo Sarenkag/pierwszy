@@ -207,9 +207,10 @@ input[type=text], input[type=email], input[type=date], select {
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Back">‹</button>
       <div class="t"><h1 id="calTitle">Calendar</h1></div>
       <button class="calnav" type="button" data-cm="-1" aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Next month">▶</button>
-      <button class="calnav" type="button" data-go="settings/calendar" aria-label="Shift settings">⚙</button></div>
+      <button class="calnav" type="button" data-go="profile" aria-label="Mój grafik">⚙</button></div>
     <div class="calgrid" id="calGrid"></div>
-    <div class="callegend"><span class="sh">Shift</span><span class="dn">Inspections due</span></div>
+    <div class="callegend"><span class="sh">Shift</span><span class="dn">Vantify job</span><span class="dn pl">Planned</span></div>
+    <button class="calhint" id="calNoShift" type="button" data-go="profile" hidden>Brak grafiku – ustaw swoje zmiany w <b>Mój profil → Mój grafik</b> ›</button>
     <div class="ppm" id="calDay"></div>
   </section>
 
@@ -261,6 +262,7 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="config.js"></script>
+<script src="vantify-plan.js"></script>
 <script src="ppm.js"></script>
 <script src="aktywa.js"></script>
 <script src="settings-store.js"></script>
@@ -564,18 +566,10 @@ input[type=text], input[type=email], input[type=date], select {
       return window.OESTCalendarCore.isWorkday(iso, function () { return ss[0]; });
     } catch (e) { return false; }
   }
+  // Dzień → lista {t, job, plan} (P.occurrences: zlecenia Vantify, bieżący termin, dalej planowane)
   function calDue(from, to) {
-    var C = window.OESTCalendarCore, by = {};
-    P.tasks.forEach(function (t) {
-      var d0 = P.due(t); if (!d0) return;
-      var a = P.iso(d0), p = null;
-      try { p = t.freq[0] && C.period(t.freq[0]); } catch (e) { p = null; }
-      for (var i = 0; i < 400; i++) {
-        var d = p ? C.occurrence(a, p, i) : (i ? null : a);
-        if (!d || d > to) break;
-        if (d >= from) (by[d] = by[d] || []).push(t);
-      }
-    });
+    var by = {};
+    P.tasks.forEach(function (t) { P.occurrences(t, from, to).forEach(function (e) { e.t = t; (by[e.d] = by[e.d] || []).push(e); }); });
     return by;
   }
   function renderCal() {
@@ -586,12 +580,18 @@ input[type=text], input[type=email], input[type=date], select {
     $("calTitle").textContent = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
     var h = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(function (d) { return '<b class="cw">' + d + "</b>"; }).join("");
     for (var k = 0; k < 42; k++) {
-      var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length;
-      h += '<button type="button" class="cd' + (day.getMonth() !== m ? " ot" : "") + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i>" + n + "</i>" : "") + "</button>";
+      var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length, pl = n && (by[iso] || []).every(function (e) { return e.plan; });
+      h += '<button type="button" class="cd' + (day.getMonth() !== m ? " ot" : "") + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i" + (pl ? ' class="pl"' : "") + ">" + n + "</i>" : "") + "</button>";
     }
     $("calGrid").innerHTML = h;
     var list = by[calSel] || [];
-    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (t) { var g = grp(t.group), stc = P.stage && P.stage(t), stx = stc && ST[stc.s] ? ST[stc.s][0] + " · " : ""; return '<button class="prow" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(stx) + esc(t.name) + '</div><div class="dt">' + esc(t.freq.join(" + ")) + '</div></span><span></span></button>'; }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
+    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (e) {
+      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, stc = cur && P.stage && P.stage(t), stx = stc && ST[stc.s] ? ST[stc.s][0] + " · " : "";
+      var info = [t.freq.join(" + "), e.job ? "Vantify " + e.job : "", e.plan ? "planowane (jeszcze nie w Vantify)" : ""].filter(Boolean).join(" · ");
+      return '<button class="prow' + (e.plan ? " plan" : "") + '" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(stx) + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span></span></button>';
+    }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
+    var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0; } catch (e2) {}
+    $("calNoShift").hidden = hasShift;
   }
   document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
   $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });

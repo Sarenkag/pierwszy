@@ -169,6 +169,31 @@ window.OEST_PPM = {
       delete a[k]; moved = true;
     });
     if (moved) try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {}
+    return fromVantify(a);
+  }
+  // Zlecenia z Vantify (vantify-plan.js): raz na eksport termin karty = najbliższe otwarte zlecenie
+  // (jeśli inspekcja z tego zlecenia jest już wysłana/zakończona w apce → kolejne zlecenie).
+  function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
+  function fromVantify(a) {
+    var V = window.OEST_VANTIFY, mk = "oest.ppm.vantify";
+    if (!V || !V.jobs) return a;
+    try { if (localStorage.getItem(mk) === V.exported) return a; } catch (e) { return a; }
+    var st = stages();
+    function span(f) { var n = parseInt(f, 10) || 1; return /W$/.test(f) ? 7 * n : 31 * n; }
+    function gap(x, y) { return Math.round((parse(x) - parse(y)) / 864e5); }
+    Object.keys(V.jobs).forEach(function (id) {
+      var j = V.jobs[id], t = P.byId(id);
+      if (a[id] && j.some(function (x) { return x.due === a[id]; })) return; // termin już jest zleceniem Vantify (np. po wysłaniu) – nie cofać
+      // wysłana / zakończona w apce (także gdy etap na klocku już wygasł): które zlecenie objęła?
+      var r = st[id], c = null;
+      if (r && r.day && (r.s === "queued" || r.s === "sent" || r.s === "done")) {
+        c = j.filter(function (x) { return x.due === r.period; })[0] || j.filter(function (x) { return x.due >= r.day; })[0] || null;
+        if (c && c.due !== r.period && gap(c.due, r.day) > span(c.f)) c = null; // wpis z wcześniejszego okresu
+      }
+      var nx = c ? j[j.indexOf(c) + 1] : j[0];
+      if (nx) a[id] = nx.due; else if (c && t && t.freq.length) a[id] = iso(next(t, parse(c.due)));
+    });
+    try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); localStorage.setItem(mk, V.exported); } catch (e) {}
     return a;
   }
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
@@ -177,7 +202,33 @@ window.OEST_PPM = {
   P.due = function (t) { var s = all()[t.id]; return s ? parse(s) : null; };
   P.setDue = function (t, day) { put(t.id, day); };
   // Raport wysłany (dzień raportu „day”): bez terminu liczy od dnia raportu, z terminem przesuwa go o jeden okres
-  P.close = function (t, day) { if (!t.freq.length) return; var d = P.due(t); put(t.id, iso(next(t, d || parse(day)))); };
+  // Z zleceniem w Vantify: następny termin = kolejne zlecenie po obecnym terminie (jak w Vantify), dalej z częstotliwości.
+  P.close = function (t, day) {
+    if (!t.freq.length) return;
+    var d = P.due(t), cur = d ? iso(d) : day, nj = jobsOf(t.id).filter(function (j) { return j.due > cur; })[0];
+    put(t.id, nj ? nj.due : iso(next(t, d || parse(day))));
+  };
+  P.jobs = function (t) { return jobsOf(t.id); };
+  // Terminy karty w zakresie [from, to] (RRRR-MM-DD): zlecenia Vantify od bieżącego terminu, bieżący termin (także
+  // ręcznie zmieniony, gdy nie jest datą zlecenia), za ostatnim zleceniem z częstotliwości (plan: jeszcze nie w Vantify).
+  // Wspólne dla widoku miesiąca i synchronizacji z kalendarzem telefonu.
+  P.occurrences = function (t, from, to) {
+    var jobs = jobsOf(t.id), d0 = P.due(t), a = d0 ? iso(d0) : (jobs[0] ? jobs[0].due : ""), out = [];
+    if (!a) return out;
+    function put(d, e) { if (d >= from && d <= to) { e.d = d; out.push(e); } }
+    var real = jobs.filter(function (j) { return j.due >= a; });
+    if (!real.some(function (j) { return j.due === a; })) put(a, { plan: !!jobs.length && !real.length, manual: !!jobs.length });
+    real.forEach(function (j) { put(j.due, { job: j.no }); });
+    var base = real.length ? real[real.length - 1].due : a, f = t.freq[0], m = f && /^(\d+)([WM])$/.exec(f);
+    for (var i = 1; m && i < 600; i++) {
+      var d = iso(add(parse(base), (+m[1] * i) + m[2]));
+      if (d > to) break;
+      put(d, { plan: true });
+    }
+    return out.sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : 0; });
+  };
+  // numer zlecenia Vantify dla terminu (RRRR-MM-DD) albo null
+  P.jobFor = function (t, day) { return jobsOf(t.id).filter(function (j) { return j.due === day; })[0] || null; };
   P.daysLeft = function (due) {
     if (!due) return null;
     var n = new Date(), today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
