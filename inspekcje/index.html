@@ -1157,7 +1157,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
-    return { building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, name: val("podpis"),
+    return { building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
@@ -2138,12 +2138,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     pdf.setFont("DV", "bold"); pdf.text("Outlet", L, y); pdf.text("Completed", 110, y); pdf.text("Notes", 135, y); y += 2; pdf.line(L, y, 195, y); y += 5;
     pdf.setFont("DV", "normal");
     f.taps.forEach(function (t) {
-      var note = pdf.splitTextToSize(t.note || "", 60);
-      if (y > 280) { pdf.addPage(); y = 20; }
-      pdf.text(t.name, L, y); pdf.text(OESTFlush.LABEL[t.state], 110, y); if (note.length) pdf.text(note, 135, y);
-      y += Math.max(1, note.length) * 5 + 1.5;
+      var note = pdf.splitTextToSize(t.note || "", 60), name = pdf.splitTextToSize(t.name, 92), lines = Math.max(1, note.length, name.length);
+      // długa notatka: dzielona na kawałki, każdy mieści się na stronie
+      for (var k = 0; k < lines; k += 50) {
+        var part = note.slice(k, k + 50), h = Math.max(1, part.length, k ? 0 : name.length) * 5 + 1.5;
+        if (y + h > 287) { pdf.addPage(); y = 20; }
+        if (!k) { pdf.text(name, L, y); pdf.text(OESTFlush.LABEL[t.state], 110, y); }
+        if (part.length) pdf.text(part, 135, y);
+        y += h;
+      }
     });
-    y += 3; pdf.setFont("DV", "bold"); pdf.text(OESTFlush.summary(f) + ".", L, y);
+    y += 3; if (y > 285) { pdf.addPage(); y = 20; }
+    pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize(OESTFlush.summary(f) + ".", 180), L, y);
     var tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null; });
     if (tp.length) {
       var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;

@@ -6,11 +6,11 @@
   var GREEN = "92D050";
   function x(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
-  // d: { building: "A"|"B"|"Pavilion", year, month (0–11), week (1–5), date: Date, name, taps: [{ name, state, note }] }
+  // d: { noDate (Date odznaczone), building: "A"|"B"|"Pavilion", year, month (0–11), week (1–5), date: Date, name, taps: [{ name, state, note }] }
   function fill(xml, d) {
     var parts = xml.split("<!--ROW-->");
     if (parts.length !== 3) throw Error("FLUSH_TPL");
-    var dateTxt = pad(d.date.getDate()) + "." + pad(d.date.getMonth() + 1) + "." + d.date.getFullYear();
+    var dateTxt = d.noDate ? "" : pad(d.date.getDate()) + "." + pad(d.date.getMonth() + 1) + "." + d.date.getFullYear(); // „Date” odznaczone w nagłówku → puste
     var rows = d.taps.map(function (t) {
       var v = { o: t.name, c11: d.name, c12: t.note || "" };
       v["c" + (2 * d.week - 1)] = LABEL[t.state] || "";
