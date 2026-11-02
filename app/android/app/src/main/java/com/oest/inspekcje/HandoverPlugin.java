@@ -75,11 +75,13 @@ public class HandoverPlugin extends Plugin {
         if(getPermissionState("microphone")!=PermissionState.GRANTED){call.reject("MICROPHONE_DENIED");return;}
         String encoded=call.getString("data","");if(encoded.length()>MAX_PCM*2){call.reject("AUDIO_SIZE");return;}
         byte[] wav;try{wav=Base64.decode(encoded,Base64.DEFAULT);if(wav.length<44||wav[0]!='R'||wav[8]!='W')throw new IllegalArgumentException();}catch(Exception e){call.reject("AUDIO_FORMAT");return;}
+        if(peak(wav)<300){call.reject("AUDIO_SILENT");return;}
+        final long audioMs=(wav.length-44)*1000L/(RATE*2);
         main.post(()->{
             if(speechCall!=null){call.reject("SPEECH_BUSY");return;}
             if(!SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext())){call.reject("ON_DEVICE_POLISH_SPEECH_UNAVAILABLE");return;}
             try{
-                speechCall=call;ParcelFileDescriptor[] pipe=ParcelFileDescriptor.createPipe();speechInput=pipe[0];
+                speechCall=call;segments.setLength(0);ParcelFileDescriptor[] pipe=ParcelFileDescriptor.createPipe();speechInput=pipe[0];
                 recognizer=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
                 final Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 recognizer.setRecognitionListener(new RecognitionListener(){
@@ -87,13 +89,20 @@ public class HandoverPlugin extends Plugin {
                     public void onError(int error){
                         // 12/13: brak polskiego pakietu mowy offline — poproś system o pobranie i powiedz o tym w apce
                         if(error==SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED||error==SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE){downloadPolish(intent);finishSpeech(null,"SPEECH_PL_DOWNLOAD");return;}
+                        // Gdy coś już rozpoznano w poprzednich fragmentach — oddaj to zamiast błędu
+                        if(segments.length()>0){finishSpeech(segments.toString().trim(),"SPEECH_EMPTY");return;}
                         finishSpeech(null,"SPEECH_ERROR_"+error);}
-                    public void onResults(Bundle b){ArrayList<String> results=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);finishSpeech(results!=null&&!results.isEmpty()?results.get(0):null,"SPEECH_EMPTY");}
+                    public void onResults(Bundle b){addSegment(b);finishSpeech(segments.length()>0?segments.toString().trim():null,"SPEECH_EMPTY");}
+                    // Sesja segmentowa: całe nagranie, także po pauzach i ciszy na początku
+                    public void onSegmentResults(Bundle b){addSegment(b);}
+                    public void onEndOfSegmentedSession(){finishSpeech(segments.length()>0?segments.toString().trim():null,"SPEECH_EMPTY");}
                 });
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pl-PL");intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,speechInput);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT,1);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING,AudioFormat.ENCODING_PCM_16BIT);intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE,RATE);
+                intent.putExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION,RecognizerIntent.EXTRA_AUDIO_SOURCE);
                 recognizer.startListening(intent);
-                new Thread(()->{try(ParcelFileDescriptor.AutoCloseOutputStream out=new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])){out.write(wav,44,wav.length-44);}catch(Exception ignored){}},"oest-speech-input").start();
-                main.postDelayed(()->{if(speechCall==call)finishSpeech(null,"SPEECH_TIMEOUT");},45000);
+                // Podawanie dźwięku porcjami (~4× szybciej niż na żywo) + 1 s ciszy na końcu, żeby rozpoznawanie domknęło ostatnie zdanie
+                new Thread(()->{try(ParcelFileDescriptor.AutoCloseOutputStream out=new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])){int step=RATE*2/10;for(int i=44;i<wav.length;i+=step){out.write(wav,i,Math.min(step,wav.length-i));Thread.sleep(25);}byte[] quiet=new byte[step];for(int i=0;i<10;i++){out.write(quiet);Thread.sleep(25);}}catch(Exception ignored){}},"oest-speech-input").start();
+                main.postDelayed(()->{if(speechCall==call)finishSpeech(segments.length()>0?segments.toString().trim():null,"SPEECH_TIMEOUT");},audioMs/4+45000);
             }catch(Exception e){finishSpeech(null,"SPEECH_UNAVAILABLE");}
         });
     }
@@ -103,6 +112,10 @@ public class HandoverPlugin extends Plugin {
             SpeechRecognizer d=SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());d.triggerModelDownload(i);main.postDelayed(()->{try{d.destroy();}catch(Exception ignored){}},60000);
         }catch(Exception ignored){}
     }
+    private final StringBuilder segments=new StringBuilder();
+    private void addSegment(Bundle b){ArrayList<String> r=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);if(r!=null&&!r.isEmpty()&&r.get(0)!=null&&!r.get(0).trim().isEmpty())segments.append(r.get(0).trim()).append(' ');}
+    // Najgłośniejsza próbka nagrania (PCM 16 bit) — prawie zero znaczy, że mikrofon nic nie złapał
+    private static int peak(byte[] wav){int m=0;for(int i=44;i+1<wav.length;i+=2){int v=Math.abs((short)((wav[i]&0xff)|(wav[i+1]<<8)));if(v>m)m=v;}return m;}
     private void finishSpeech(String text,String error){PluginCall c=speechCall;speechCall=null;if(recognizer!=null){recognizer.destroy();recognizer=null;}try{if(speechInput!=null)speechInput.close();}catch(Exception ignored){}speechInput=null;if(c!=null){if(text==null)c.reject(error);else{JSObject r=new JSObject();r.put("text",text);c.resolve(r);}}}
     @PluginMethod public void share(PluginCall call){
         String body=call.getString("body",""),subject=call.getString("subject","Handover");JSArray recipients=call.getArray("recipients",new JSArray()),photos=call.getArray("photos",new JSArray());
