@@ -38,6 +38,12 @@ test('etap klocka: wysłana zamyka okres do terminu, poprawka nie przesuwa termi
   // w kolejce (bez sieci) zostaje aktywne po terminie, aż raport wyjdzie – drugie wysłanie to poprawka
   store['oest.ppm.stage'] = JSON.stringify({ 'EFA-INS-003': { s: 'queued', period: '2020-01-01', day: '2020-01-01' } });
   assert.ok(P.closed(t));
+  // wysłany dopiero po terminie i dniu dodania do kolejki: „Wysłana” zostaje do końca dnia wysyłki
+  const keep = store['oest.ppm.stage'];
+  P.markSent('EFA-INS-003');
+  assert.strictEqual(P.stage(t).s, 'sent');
+  assert.ok(P.closed(t));
+  store['oest.ppm.stage'] = keep;
   // raport usunięty z kolejki: etap znika, termin wraca
   P.unqueue('EFA-INS-003');
   assert.strictEqual(P.stage(t), null);

@@ -209,7 +209,7 @@ window.OEST_PPM = {
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
-  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
+  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
   P.unqueue = function (id) { var t = P.byId(id), r = stages()[id]; if (t && r && r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, null); } }; // termin wraca na ten sprzed wysłania
   // krótka nazwa na klocek (pełna zostaje w raporcie) + budynek ze znaczka w nawiasie

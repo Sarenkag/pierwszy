@@ -1030,7 +1030,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function openForm(code) {
     var mode = cur.type.batch ? "item" : "one";
     var fresh = cur.code !== code || cur.formType !== cur.type.id || cur.mode !== mode;
-    if (fresh) resetForm();
+    if (fresh) { noTrack = true; try { resetForm(); } finally { noTrack = false; } } // czyszczenie formularza nie może nadpisać klocka poprzedniej rozdzielnicy
     // inna rozdzielnica z listy urządzeń po wejściu z karty PPM: klocek tej rozdzielnicy (albo żaden), nie pierwszej
     if (cur.ppm && cur.ppm.dev && cur.ppm.dev !== code && PPM) cur.ppm = PPM.tasks.filter(function (t) { return t.open === cur.type.id && t.dev === code; })[0] || null;
     cur.code = code; cur.formType = cur.type.id; cur.mode = mode;
@@ -1044,9 +1044,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     ppmTrack(true);
   }
   // etap inspekcji na klocku listy PPM: otwarcie = W trakcie (jeśli nie wysłana w tym okresie), zdjęcia i usterki na bieżąco
-  var thumbFor = null;
+  var thumbFor = null, noTrack = false;
   function ppmTrack(open) {
-    var t = cur.ppm; if (!t || !PPM || !PPM.setStage || cur.mode === "sum") return;
+    var t = cur.ppm; if (noTrack || !t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
     if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
     if (!r && !open) return;
