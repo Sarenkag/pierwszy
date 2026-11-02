@@ -68,7 +68,7 @@
     case 'complete':run(async()=>{const saved=await save();busy=false;navigate('reactive/complete/'+saved.id);});return;
     case 'action':collect();if(draft.reportEdited&&!w.confirm('Zastąpić ręcznie poprawiony raport tekstem z klocków?'))return;{const a=T.actions.find(x=>x.id===b.dataset.id);if(a?.closes){draft.pendingActionId=a.id;}else{draft.pendingActionId='';draft=C.finish(draft,a.id);}}draft.reportText='';draft.reportEdited=false;persist(false);render();renderEvidence();return;
     case 'close':run(async()=>{collect();if(!draft.pendingActionId)throw Error('Wybierz, co zrobiłeś.');C.validate(draft);draft=C.finish(draft,draft.pendingActionId);draft.pendingActionId='';await save();busy=false;navigate('reactive');});return;
-    case 'send':run(send);return;case 'retry-report':if(canLeave())navigate('reactive/complete/'+draft.jobId);return;
+    case 'send':run(()=>w.OESTPrzycisk&&b?w.OESTPrzycisk.run(b,send):send());return;case 'retry-report':if(canLeave())navigate('reactive/complete/'+draft.jobId);return;
     case 'camera':run(async()=>{if(!w.OESTAparat?.available())throw Error('Na komputerze użyj galerii.');const shot=await w.OESTAparat.take();if(!shot)return;await addPhoto(shot,b.dataset.phase);await renderEvidence();});return;
     case 'transcribe':run(async()=>{const media=await repo.media(b.dataset.id);if(!media)throw Error('Najpierw nagraj notatkę.');const result=await voice.transcribe(media.blob);ensure();draft.note=[draft.note,result.text].filter(Boolean).join('\n');render();await persist();await renderEvidence();});return;
   }}
