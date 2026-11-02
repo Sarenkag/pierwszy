@@ -15,8 +15,10 @@ for x in rows:
     out.setdefault(i,[]).append({"no":x['id'],"due":x['completeBy'][:10],"f":x['frequency']})
 for v in out.values(): v.sort(key=lambda j:j['due'])
 print("missing:",miss,file=sys.stderr)
+import hashlib
 exp=max(x["createdAt"][:10] for x in rows)
-js="// Zlecenia PPM z Vantify (eksport Job "+exp+"): numer zlecenia + termin (completeBy). Bez danych osobowych.\n// Aktualizacja: nowy eksport → python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js. Klucz = id karty z ppm.js.\nwindow.OEST_VANTIFY = { exported: \""+exp+"\", jobs: {\n"
+ver=exp+"-"+hashlib.sha1(json.dumps(out,sort_keys=True).encode()).hexdigest()[:8]  # zmiana treści = nowa wersja
+js="// Zlecenia PPM z Vantify (eksport Job "+exp+"): numer zlecenia + termin (completeBy). Bez danych osobowych.\n// Aktualizacja: nowy eksport → python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js. Klucz = id karty z ppm.js.\nwindow.OEST_VANTIFY = { exported: \""+ver+"\", jobs: {\n"
 js+=",\n".join('  "%s": [%s]'%(k,", ".join('{ no: "%s", due: "%s", f: "%s" }'%(j['no'],j['due'],j['f']) for j in out[k])) for k in sorted(out))
 js+="\n} };\n"
 open(sys.argv[2],'w').write(js)

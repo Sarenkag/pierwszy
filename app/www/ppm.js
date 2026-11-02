@@ -179,10 +179,19 @@ window.OEST_PPM = {
     if (!V || !V.jobs) return a;
     try { if (localStorage.getItem(mk) === V.exported) return a; } catch (e) { return a; }
     var st = stages();
+    function span(f) { var n = parseInt(f, 10) || 1; return /W$/.test(f) ? 7 * n : 31 * n; }
+    function gap(x, y) { return Math.round((parse(x) - parse(y)) / 864e5); }
     Object.keys(V.jobs).forEach(function (id) {
-      var j = V.jobs[id], r = st[id], shut = alive(r) && (r.s === "queued" || r.s === "sent" || r.s === "done");
-      var pick = shut ? (j.filter(function (x) { return x.due >= (r.day || ""); })[1] || null) : j[0]; // wysłana: zlecenie z dnia wysyłki zrobione → następne
-      if (pick) a[id] = pick.due;
+      var j = V.jobs[id], t = P.byId(id);
+      if (a[id] && j.some(function (x) { return x.due === a[id]; })) return; // termin już jest zleceniem Vantify (np. po wysłaniu) – nie cofać
+      // wysłana / zakończona w apce (także gdy etap na klocku już wygasł): które zlecenie objęła?
+      var r = st[id], c = null;
+      if (r && r.day && (r.s === "queued" || r.s === "sent" || r.s === "done")) {
+        c = j.filter(function (x) { return x.due === r.period; })[0] || j.filter(function (x) { return x.due >= r.day; })[0] || null;
+        if (c && c.due !== r.period && gap(c.due, r.day) > span(c.f)) c = null; // wpis z wcześniejszego okresu
+      }
+      var nx = c ? j[j.indexOf(c) + 1] : j[0];
+      if (nx) a[id] = nx.due; else if (c && t && t.freq.length) a[id] = iso(next(t, parse(c.due)));
     });
     try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); localStorage.setItem(mk, V.exported); } catch (e) {}
     return a;

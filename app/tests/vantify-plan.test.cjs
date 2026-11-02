@@ -32,3 +32,17 @@ test('już wysłana dziś w apce: termin = zlecenie po tym, które obejmuje dzie
   const w = load(s2), P = w.OEST_PPM;
   assert.strictEqual(P.iso(P.due(P.byId('EFA-INS-004'))), jobs[1].due);
 });
+test('wysłana po terminie: kolejne zlecenie po okresie (period), nie po dniu wysyłki; wygasły etap też się liczy', () => {
+  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-004'));
+  const late = { 'oest.ppm.stage': JSON.stringify({ 'EFA-INS-004': { s: 'queued', period: jobs[0].due, day: '2026-11-07' } }) };
+  let P = load(late).OEST_PPM;
+  assert.strictEqual(P.iso(P.due(P.byId('EFA-INS-004'))), jobs[1].due);
+  // termin już ustawiony na zlecenie Vantify zostaje
+  const keep = { 'oest.ppm.due': JSON.stringify({ 'EFA-INS-004': jobs[1].due }) };
+  P = load(keep).OEST_PPM;
+  assert.strictEqual(P.iso(P.due(P.byId('EFA-INS-004'))), jobs[1].due);
+  // stary wpis z poprzedniego okresu (wysłany miesiąc wcześniej) nie zamyka pierwszego zlecenia
+  const old = { 'oest.ppm.stage': JSON.stringify({ 'EFA-INS-004': { s: 'sent', period: '2026-09-25', day: '2026-09-25' } }) };
+  P = load(old).OEST_PPM;
+  assert.strictEqual(P.iso(P.due(P.byId('EFA-INS-004'))), jobs[0].due);
+});
