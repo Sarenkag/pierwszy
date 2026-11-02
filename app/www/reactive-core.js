@@ -4,6 +4,7 @@
   const BUILDINGS=['Premises','Tower A','Tower B','Pavilion'];function levels(building){if(building==='Premises'||!building)return [];return building==='Pavilion'?['Ground','First']:['LG','UG',...Array.from({length:building==='Tower A'?49:14},(_,i)=>String(i+1)),'Roof'];}
   function status(job){if(job.status==='fixed')return 'completed';if(job.status==='watch')return 'monitoring';return job.reactive?.status&&job.reactive.status!=='completed'?job.reactive.status:'open';}
   /* 02/11/2026: nazwę zadania wpisuje się samemu, drzewko jest opcjonalne; By who = dowolna pozycja z listy (osoba, dział, Self) */
+  function voicePl(d){return (d?.audioMediaIds||[]).some(id=>d.voicePl?.[id]&&String(d.voiceTexts?.[id]||'').trim());}
   function voice(d){return (d?.audioMediaIds||[]).map(id=>String(d.voiceTexts?.[id]||'').trim()).filter(Boolean);}
   function who(d){return String(d?.requestedBy||'').trim();}
   function missing(d){const m=[];if(!String(d?.title||'').trim()&&!String(d?.problem||'').trim())m.push('nazwa zadania');if(!BUILDINGS.includes(d?.building))m.push('budynek');else if(levels(d.building).length&&!levels(d.building).includes(d?.level))m.push('piętro');if(!who(d))m.push('By who');return m;}
@@ -15,5 +16,5 @@
   function fromJob(job,entry){return {jobId:job.id,problemId:'other',title:job.text||entry?.text||'Reactive job',problem:job.text||entry?.text||'',building:'',level:'',room:job.location||'',note:'',requestedBy:'',requestedName:'',quote:false,beforeMediaIds:entry?.mediaIds||[],afterMediaIds:[],audioMediaIds:[],...job.reactive,status:status(job)};}
   function days(created,now=new Date().toISOString()){return Math.max(0,Math.floor((Date.parse(now)-Date.parse(created))/86400000));}
   function report(d,profile,date=new Date()){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),day=String(date.getDate()).padStart(2,'0'),engineer=profile.formSignature||[profile.first,profile.last].filter(Boolean).join(' ');return {site:'One Eastside Tower',date:day+'/'+m+'/'+y,engineer,author:[profile.first,profile.last].filter(Boolean).join(' ')||engineer,title:d.title||d.problem,condition:d.temporary?'Open — Temporary repair':labels[d.status],building:d.building,level:d.level,details:d.reportText||details(d),quote:d.quote?'Yes':'No',fileName:('REACTIVE '+(d.title||d.problem)+' '+day+m+y).replace(/[\\/:*?"<>|\r\n]/g,' ').slice(0,170)};}
-  return {find,levels,status,labels,legacy,validate,missing,finish,sentence,details,fromJob,days,report,whoLabel,requestLabels,BUILDINGS};
+  return {voicePl,find,levels,status,labels,legacy,validate,missing,finish,sentence,details,fromJob,days,report,whoLabel,requestLabels,BUILDINGS};
 });
