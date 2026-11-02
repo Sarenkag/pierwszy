@@ -1686,8 +1686,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type && cur.type.folder) {
       var none = !photos.length;
       $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + photos.length + " → jeden PDF, strona na zdjęcie.";
-      var fb = none || !!restoring || pendingPh > 0;
-      $("toPreview").disabled = fb; $("toQueue").disabled = fb;
+      var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
+      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
     }
     if (cur.mode === "item") {
@@ -2129,7 +2129,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
     });
   }
-  $("toQueue").addEventListener("click", function () { queueBtn(this, false); });
+  $("toQueue").addEventListener("click", function () {
+    if (cur.type && cur.type.folder && !photos.length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
+    queueBtn(this, false);
+  });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
 
   function pending() { return queue.filter(function (q) { return q.status !== "sent"; }); }
