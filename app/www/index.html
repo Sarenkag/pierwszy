@@ -484,7 +484,10 @@ input[type=text], input[type=email], input[type=date], select {
   function ppmCard(r) {
     var t = r.t, g = grp(t.group), sh = P.short(t), st = P.stage ? P.stage(t) : null, a = assetOf(t);
     var stg = st ? ST[st.s] : null, late = !stg && r.left !== null && r.left < 0;
-    var badge = stg ? '<span class="kst ' + stg[1] + '">' + stg[0] + "</span>" : late ? '<span class="kst c3">! Zaległa</span>' : '<span class="kst c0">○ Nie rozpoczęta</span>';
+    // dwa statusy (Grzegorz 02/11): etap inspekcji w rogu + wysyłka na dole; zrobione i wysłane → szare, na koniec listy
+    var insp = !st ? null : st.s === "queued" || st.s === "sent" ? ST.done : ST[st.s];
+    var badge = insp ? '<span class="kst ' + insp[1] + '">' + insp[0] + "</span>" : late ? '<span class="kst c3">! Zaległa</span>' : '<span class="kst c0">○ Nie rozpoczęta</span>';
+    var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">📤 Wysłana</span>' : st.s === "queued" ? '<span class="ksend c4">⏳ W kolejce</span>' : st.s === "done" ? '<span class="ksend c3">✉ Niewysłana</span>' : "";
     var where = [sh.where, t.freq.map(function (f) { return FREQ[f] || f; }).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
     var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? "Zakończona " : st.s === "sent" ? "Wysłana " : "W kolejce ") + dshort(new Date(st.at)) + " · następna " + dshort(r.due)
       : "Termin <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? "dziś, " : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " dni temu</span>" : r.left > 0 ? " · za " + r.left + " dni" : "")) : "Brak terminu — ustaw w inspekcji (Update)";
@@ -493,12 +496,12 @@ input[type=text], input[type=email], input[type=date], select {
       [st && st.total ? st.total + " punktów" : t.cfg ? "formularz do konfiguracji" : "", st && st.total ? (st.issues ? st.issues + (st.issues === 1 ? " usterka" : " usterki") : "bez usterek") : "", st && st.photos ? st.photos + " zdj." : ""].filter(Boolean).join(" · ");
     var go = !st ? "Zacznij ›" : st.s === "prog" || st.s === "hold" ? "Kontynuuj ›" : "Otwórz ›";
     var thumb = st && st.thumb ? '<img class="kth" alt="" src="' + st.thumb + '">' : "";
-    return '<button class="prow k2" type="button" data-id="' + esc(t.id) + '" style="--g:' + g.color + '">' +
+    return '<button class="prow k2' + (st && st.s === "sent" ? " kdone" : "") + '" type="button" data-id="' + esc(t.id) + '" style="--g:' + g.color + '">' +
       '<div class="kr">' + (t.form === "folder" ? ICON_FOLDER : ICON_APP) + '<div class="knm">' + (sh.bld ? '<span class="kbl">' + sh.bld + "</span>" : "") + esc(sh.name) + "</div>" + badge + "</div>" +
       '<div class="kr"><div class="kloc">' + esc(where) + "</div></div>" +
       '<div class="kr"><div class="kd">' + due + '</div><div class="kpc">' + pc + "%</div></div>" +
       '<div class="kbar"><i style="width:' + pc + "%;background:" + col + '"></i></div>' +
-      '<div class="kr"><div class="kft">' + esc(foot) + "</div>" + thumb + '<div class="kgo">' + go + "</div></div></button>";
+      '<div class="kr"><div class="kft">' + esc(foot) + "</div>" + send + thumb + '<div class="kgo">' + go + "</div></div></button>";
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
   function renderPpm() {
@@ -519,7 +522,8 @@ input[type=text], input[type=email], input[type=date], select {
     if (ppmGroup === "assets") { $("ppmList").innerHTML = assetRows(); return; }
     var list = rows.filter(function (r) { return (ppmGroup === "all" || r.t.group === ppmGroup) && (!ppmDay || r.day === ppmDay); });
     // najpierw po terminie i najbliższe, na końcu bez daty
-    list.sort(function (a, b) { return (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
+    var doneOf = function (r) { var x = P.stage && P.stage(r.t); return x && x.s === "sent" ? 1 : 0; };
+    list.sort(function (a, b) { return doneOf(a) - doneOf(b) || (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
     // rodzina (np. 18 DB): jedna karta grupy w miejscu najpilniejszej, rozwijana dotknięciem
     var fams = {}, out = [];
     list.forEach(function (r) {

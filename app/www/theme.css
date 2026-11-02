@@ -121,3 +121,5 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .k2 .kth{width:30px;height:30px;border-radius:7px;object-fit:cover;border:1px solid rgba(255,255,255,.2);flex:none}
 .k2 .kgo{font-size:13px;font-weight:700;flex:none}
 .prow.as{margin-left:0!important;width:100%!important}
+.k2 .ksend{flex:none;font-size:12px;font-weight:700}
+.prow.k2.kdone{opacity:.5;filter:grayscale(.6)}
