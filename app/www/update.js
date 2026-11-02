@@ -52,12 +52,21 @@
     if (!w.confirm("Pobrać i zainstalować wersję " + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?")) { dismissed = true; banner(false); return; }
     busy = true; setStatus("Pobieram wersję " + latest.n + "…");
     var b = document.getElementById("updBanner"); if (b) b.textContent = "Pobieram wersję " + latest.n + "…";
+    // procenty na pasku i w Ustawieniach (58 MB na danych mobilnych trwa – bez postępu wyglądało na zawieszone)
+    var sub = null, mb = Math.round((latest.size || 0) / 1048576);
+    try { sub = p.addListener && p.addListener("progress", function (ev) {
+      var t = ev && ev.percent >= 0 ? "Pobieram wersję " + latest.n + " – " + ev.percent + "% z " + mb + " MB" : "Pobieram wersję " + latest.n + " – " + Math.round((ev && ev.done || 0) / 1048576) + " MB";
+      setStatus(t); var bb = document.getElementById("updBanner"); if (bb) { bb.textContent = t; bb.style.background = "linear-gradient(90deg,#3b82f6 " + Math.max(0, ev.percent || 0) + "%,#8b5cf6 " + Math.max(0, ev.percent || 0) + "%)"; }
+    }); } catch (er) { sub = null; }
+    function unsub() { try { if (sub && sub.then) sub.then(function (h) { h.remove(); }); else if (sub && sub.remove) sub.remove(); } catch (er) {} }
     p.install({ url: latest.url, name: "OEST-" + latest.n + ".apk" }).then(function () {
-      setStatus("Otwieram instalator…"); banner(false);
+      unsub(); setStatus("Otwieram instalator…"); banner(false);
     }).catch(function (e) {
+      unsub(); b = document.getElementById("updBanner"); if (b) b.style.background = "linear-gradient(90deg,#3b82f6,#8b5cf6)";
       var m = e && e.message || String(e);
       if (/PERMISSION/.test(m)) m = "Zezwól OEST na instalowanie aplikacji (otworzyłem ustawienia), wróć i dotknij jeszcze raz.";
-      setStatus(m); if (b) b.textContent = "Nowa wersja " + latest.n + " – dotknij, żeby zainstalować";
+      if (!/PERMISSION|Zezwól/.test(m)) m = "Nie udało się pobrać (" + m.replace(/^Pobieranie nie powiodło się: /, "") + "). Dotknij, żeby spróbować jeszcze raz.";
+      setStatus(m); if (b) b.textContent = /Zezwól/.test(m) ? "Nowa wersja " + latest.n + " – dotknij, żeby zainstalować" : "Pobieranie przerwane – dotknij, żeby ponowić";
     }).then(function () { busy = false; });
   }
   function panelHtml() {
