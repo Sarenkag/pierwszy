@@ -197,7 +197,7 @@ window.OEST_PPM = {
   var SK = "oest.ppm.stage";
   function stages() { try { return JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
   function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
-  function alive(r) { if (!r || !r.s) return false; if (r.s === "prog" || r.s === "hold") return true; var end = r.period && r.period > r.day ? r.period : r.day; return !!end && today0() <= end; }
+  function alive(r) { if (!r || !r.s) return false; if (r.s === "prog" || r.s === "hold" || r.s === "queued") return true; /* w kolejce: aż raport faktycznie wyjdzie */ var end = r.period && r.period > r.day ? r.period : r.day; return !!end && today0() <= end; }
   P.stage = function (t) { var r = stages()[t.id]; return alive(r) ? r : null; };
   P.setStage = function (t, patch) {
     var a = stages(), r = alive(a[t.id]) ? a[t.id] : {};
@@ -209,7 +209,7 @@ window.OEST_PPM = {
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
-  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} } };
+  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
   // krótka nazwa na klocek (pełna zostaje w raporcie) + budynek ze znaczka w nawiasie
   var BLD = { TA: "Tower A", TB: "Tower B", P: "Pavilion" };
   P.short = function (t) {

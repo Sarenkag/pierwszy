@@ -1044,11 +1044,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // etap inspekcji na klocku listy PPM: otwarcie = W trakcie (jeśli nie wysłana w tym okresie), zdjęcia i usterki na bieżąco
   var thumbFor = null;
   function ppmTrack(open) {
-    var t = cur.ppm; if (!t || !PPM.setStage || cur.mode === "sum") return;
+    var t = cur.ppm; if (!t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
     if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
     if (!r && !open) return;
-    var patch = { s: r ? r.s : "prog", photos: photos.length, issues: cur.type && cur.type.checks ? states.filter(function (x) { return x === "fail"; }).length : 0, total: cur.type && cur.type.checks ? cur.type.checks.length : 0 };
+    var patch = { s: r ? r.s : "prog", photos: photos.length, issues: cur.type && cur.type.checks ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: cur.type && cur.type.checks ? cur.type.checks.length : 0 };
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
@@ -1149,6 +1149,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])
   function renderChecks() {
+    if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0); // każda zmiana odpowiedzi (też „wszystko OK”, powody) → liczniki na klocku
     if (cur.type.ask) {
       var idx = cur.type.checks.map(function (c, i) { return i; });
       idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
@@ -1231,7 +1232,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     var b = e.target.closest("button[data-i]"); if (!b) return;
     var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
-    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i]; ppmTrack(false);
+    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
     if (states[i] === "ok") delete rsel[i];
     FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
@@ -2137,7 +2138,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
       if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
         // etap na klocku: zapisany termin okresu, zanim termin przesunie się na następny
-        if (PPM.setStage && !from.fix) { var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
+        if (PPM.setStage && !from.fix) { ppmTrack(true); // ostatnie liczniki (usterki, zdjęcia) z formularza, który właśnie wyszedł
+ var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
         if (!from.fix && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
       }
       var done = Promise.resolve();
@@ -2218,7 +2220,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
-    if (it.ppm && PPM.markSent) PPM.markSent(it.ppm);
+    if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm);
     it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
   }
   // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
@@ -2319,7 +2321,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
     var top = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), sel = $("ppmStage");
-    if (!top || !PPM.setStage) return;
+    if (!top || !PPM || !PPM.setStage) return;
     if (!sel) {
       sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
       sel.addEventListener("change", function () {

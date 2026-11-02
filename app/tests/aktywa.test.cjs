@@ -35,5 +35,8 @@ test('etap klocka: wysłana zamyka okres do terminu, poprawka nie przesuwa termi
   // stary okres: wpis sprzed terminu, który już minął → klocek wraca do „Nie rozpoczęta”
   store['oest.ppm.stage'] = JSON.stringify({ 'EFA-INS-003': { s: 'sent', period: '2020-01-01', day: '2020-01-01' } });
   assert.strictEqual(P.stage(t), null);
+  // w kolejce (bez sieci) zostaje aktywne po terminie, aż raport wyjdzie – drugie wysłanie to poprawka
+  store['oest.ppm.stage'] = JSON.stringify({ 'EFA-INS-003': { s: 'queued', period: '2020-01-01', day: '2020-01-01' } });
+  assert.ok(P.closed(t));
   assert.strictEqual(P.short(P.byId('EFA-INS-014')).name, 'ATS L13');
 });
