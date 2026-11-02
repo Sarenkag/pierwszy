@@ -88,6 +88,11 @@ h1 span.dot { color: var(--accent); }
 .ppmbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.92rem; color: var(--muted); }
 .ppmbar label { display: flex; align-items: center; gap: 8px; }
 .ppmbar input { min-height: 40px; width: auto; }
+.ppmpill {display: block !important;max-width: 100% !important;box-sizing: border-box !important;margin: 0 0 6px auto !important;width: auto !important;min-height: 34px !important;padding: 4px 10px !important;border-radius: 16px !important;font-size: 0.82rem !important;font-weight: 700 !important;background: rgba(195,201,232,.14) !important;color: #c3c9e8 !important;border: 1px solid rgba(195,201,232,.35) !important;}
+.ppmpill.s-prog, .ppmpill.s-hold {background: rgba(240,199,94,.16) !important;color: #f0c75e !important;border-color: rgba(240,199,94,.45) !important;}
+.ppmpill.s-done, .ppmpill.s-sent {background: rgba(63,178,127,.18) !important;color: #5fd6a0 !important;border-color: rgba(63,178,127,.45) !important;}
+.ppmpill.s-queued {background: rgba(121,184,255,.16) !important;color: #79b8ff !important;border-color: rgba(121,184,255,.45) !important;}
+.ppmpill option {color: #111 !important;}
 .ppmbar b { color: var(--ink); }
 .ppmbar b.late { color: var(--bad); }
 .group { display: flex; flex-direction: column; gap: 0; }
@@ -1034,6 +1039,24 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("ckTitle").textContent = cur.type.title;
     if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
     formMode(); renderChecks(); renderFaults(); show("form"); updateFormHint();
+    ppmTrack(true);
+  }
+  // etap inspekcji na klocku listy PPM: otwarcie = W trakcie (jeśli nie wysłana w tym okresie), zdjęcia i usterki na bieżąco
+  var thumbFor = null;
+  function ppmTrack(open) {
+    var t = cur.ppm; if (!t || !PPM.setStage || cur.mode === "sum") return;
+    var r = PPM.stage(t);
+    if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
+    if (!r && !open) return;
+    var patch = { s: r ? r.s : "prog", photos: photos.length, issues: cur.type && cur.type.checks ? states.filter(function (x) { return x === "fail"; }).length : 0, total: cur.type && cur.type.checks ? cur.type.checks.length : 0 };
+    var first = photos[0];
+    if (!first) { patch.thumb = ""; thumbFor = null; }
+    PPM.setStage(t, patch); if (open) renderPpmBar();
+    if (first && thumbFor !== first.url) {
+      thumbFor = first.url; var img = new Image();
+      img.onload = function () { try { var c = document.createElement("canvas"), k = 96 / Math.max(img.width, img.height); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (PPM.stage(t)) PPM.setStage(t, { thumb: c.toDataURL("image/jpeg", 0.6) }); } catch (e) {} };
+      img.src = first.url;
+    }
   }
   // Pokazuje tylko panele potrzebne w danym trybie
   function formMode() {
@@ -1208,7 +1231,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     var b = e.target.closest("button[data-i]"); if (!b) return;
     var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
-    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
+    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i]; ppmTrack(false);
     if (states[i] === "ok") delete rsel[i];
     FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
@@ -1540,7 +1563,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
   function renderPhotos() {
-    $("photos").innerHTML = "";
+    $("photos").innerHTML = ""; if (cur.type) ppmTrack(false);
     photos.forEach(function (p, i) {
       var d = document.createElement("div"); d.className = "thumb";
       d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
@@ -2091,7 +2114,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var d = r.data;
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
+      ppm: from.ppm && !from.fix ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: d.folder ? r.name : "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
       body: d.folder ? d.tytul + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") + "\n" :
         d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
@@ -2112,7 +2135,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     }).then(function () {
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
-      if (from.ppm && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
+      if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
+        // etap na klocku: zapisany termin okresu, zanim termin przesunie się na następny
+        if (PPM.setStage && !from.fix) { var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
+        if (!from.fix && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
+      }
       var done = Promise.resolve();
       if (from.mode === "sum") {
         if (from.type.ask) saveHist(from.type, d.data);
@@ -2126,9 +2153,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function sendOk() { return sendBtn ? sendBtn.ok() : null; }
   function queueBtn(b, fromPreview) {
     if (queueing) return;
+    // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
+    var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
+    if (fix && !confirm("Ta inspekcja za termin " + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + " jest już " + (PPM.stage(cur.ppm).s === "done" ? "zakończona" : "wysłana") + ".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.")) return;
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: "Przygotowuję raport", keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = "Przygotowuję…"; }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
+    from = Object.assign({}, from, { fix: fix });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
@@ -2187,6 +2218,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
+    if (it.ppm && PPM.markSent) PPM.markSent(it.ppm);
     it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
   }
   // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
@@ -2283,7 +2315,27 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="Termin z systemu"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
+
     });
+    // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
+    var top = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), sel = $("ppmStage");
+    if (!top || !PPM.setStage) return;
+    if (!sel) {
+      sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
+      sel.addEventListener("change", function () {
+        var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
+        if (!this.value) PPM.setStage(tt, null); else PPM.setStage(tt, { s: this.value, manual: true, day: isoDay(new Date()) });
+        renderPpmBar();
+      });
+      top.insertBefore(sel, top.firstChild);
+    }
+    if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
+    sel.hidden = !t; if (!t) return;
+    var st = PPM.stage(t), s = st ? st.s : "";
+    sel.innerHTML = [["", "○ Nie rozpoczęta"], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", "✓ Zakończona"]]
+      .concat(s === "queued" ? [["queued", "⏳ W kolejce"]] : s === "sent" ? [["sent", "✓ Wysłana"]] : [])
+      .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
+    sel.className = "ppmpill s-" + (s || "none");
   }
   // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
   var GENERIC_CPS = [
