@@ -56,8 +56,8 @@ repositories {
 dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.1'
     implementation 'com.google.mlkit:translate:17.0.3'
-    // model tekstowy na telefonie (Gemma 4 E2B/E4B, plik .litertlm pobierany raz przez Wi-Fi)
-    implementation 'com.google.ai.edge.litertlm:litertlm-android:latest.release'
+    // model tekstowy na telefonie (Gemma 4 E2B/E4B, plik .litertlm pobierany raz przez Wi-Fi); biblioteka skompilowana Kotlinem 2.4
+    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.19.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
