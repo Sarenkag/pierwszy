@@ -31,10 +31,14 @@
     st.textContent = '.oest-ocr{position:fixed;inset:0;z-index:2147481000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}.oest-ocr .sh{background:#14202a;color:#fff;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));font:16px system-ui}.oest-ocr h3{margin:0 0 6px;font-size:19px}.oest-ocr .hint{opacity:.7;font-size:14px;margin:0 0 10px}.oest-ocr img{width:100%;max-height:28vh;object-fit:contain;border-radius:10px;background:#000}.oest-ocr .lbl{margin:14px 0 6px;font-size:13px;letter-spacing:.06em;opacity:.7;text-transform:uppercase}.oest-ocr .chips{display:flex;flex-wrap:wrap;gap:8px}.oest-ocr .chips button{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);color:#fff;border-radius:12px;padding:10px 12px;font:600 16px system-ui;text-align:left;max-width:100%}.oest-ocr .chips button.on{background:#2e7d32;border-color:#2e7d32}.oest-ocr .num button{font-family:ui-monospace,monospace}.oest-ocr select{width:100%;padding:12px;border-radius:10px;font:16px system-ui;background:#0d161d;color:#fff;border:1px solid rgba(255,255,255,.3)}.oest-ocr .go{width:100%;margin-top:16px;padding:16px;border:0;border-radius:14px;background:#fff;color:#14202a;font:700 18px system-ui}';
     document.head.appendChild(st);
   }
+  // pole liczbowe: dokładnie jedna liczba z tokenów parse() (bez cyfr z etykiet typu „Cl2”), przecinek → kropka; inaczej nic nie wpisuje
+  function numberOf(v) { var n = parse(v).numbers; if (n.length !== 1) return null; var m = n[0].match(/[-+]?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.') : null; }
   function put(el, v) {
     if (el.tagName === 'TEXTAREA') el.value = el.value ? el.value.replace(/\s+$/, '') + '\n' + v : v;
-    else { if (el.inputMode === 'decimal' || el.type === 'number') { var m = v.match(/[-+]?\d+(?:[.,]\d+)?/); if (m) v = m[0]; } el.value = v; } // pole liczbowe: sama liczba, zastępuje poprzednią
+    else if (el.inputMode === 'decimal' || el.type === 'number') { var n = numberOf(v); if (n === null) return false; el.value = n; }
+    else el.value = v;
     el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
   }
   /* pick(blob, {targets:[{label, el}]}) – arkusz z odczytem; stuknięcie linii/liczby wpisuje ją do wybranego pola.
      Zwraca Promise<liczba wpisanych>. */
@@ -60,12 +64,12 @@
           b.onclick = function () {
             if (!targets.length) return; var sel = body.querySelector('select'), t = targets[sel ? +sel.value : 0];
             var k = b.getAttribute('data-k'), v = k[0] === 'n' ? r.numbers[+k.slice(1)] : r.lines[+k.slice(1)];
-            put(t.el, v); used++; b.classList.add('on');
+            if (!put(t.el, v)) { o.querySelector('.hint').textContent = 'Do tego pola stuknij jedną liczbę (z sekcji Liczby).'; return; } used++; b.classList.add('on');
           };
         });
       }, function (e) { o.querySelector('.hint').textContent = e.message; });
     });
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  w.OESTOdczyt = { available: available, read: read, parse: parse, pick: pick };
+  w.OESTOdczyt = { available: available, read: read, parse: parse, pick: pick, numberOf: numberOf };
 })(window);
