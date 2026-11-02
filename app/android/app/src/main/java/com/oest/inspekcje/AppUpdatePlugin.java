@@ -53,10 +53,22 @@ public class AppUpdatePlugin extends Plugin {
                 c.setConnectTimeout(20000); c.setReadTimeout(60000);
                 int code = c.getResponseCode();
                 if (code != 200) throw new IllegalStateException("HTTP " + code);
+                long total = c.getContentLengthLong(), done = 0; int lastPct = -1; long lastAt = 0;
                 try (InputStream in = c.getInputStream(); FileOutputStream o = new FileOutputStream(out)) {
                     byte[] buf = new byte[65536]; int n;
-                    while ((n = in.read(buf)) > 0) o.write(buf, 0, n);
+                    while ((n = in.read(buf)) > 0) {
+                        o.write(buf, 0, n); done += n;
+                        // postęp do strony: co 1% (albo co sekundę, gdy serwer nie podał rozmiaru)
+                        int pct = total > 0 ? (int) (done * 100 / total) : -1;
+                        long now = System.currentTimeMillis();
+                        if ((total > 0 && pct != lastPct) || (total <= 0 && now - lastAt > 1000)) {
+                            lastPct = pct; lastAt = now;
+                            JSObject ev = new JSObject(); ev.put("done", done); ev.put("total", total); ev.put("percent", pct);
+                            notifyListeners("progress", ev);
+                        }
+                    }
                 } finally { c.disconnect(); }
+                if (total > 0 && done != total) throw new IllegalStateException("przerwane (" + (done / 1048576) + " z " + (total / 1048576) + " MB)");
                 Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out);
                 Intent i = new Intent(Intent.ACTION_VIEW);
                 i.setDataAndType(uri, "application/vnd.android.package-archive");
