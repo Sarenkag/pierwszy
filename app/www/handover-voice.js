@@ -25,6 +25,8 @@
     button.addEventListener('pointerup',()=>{if(pressT){clearTimeout(pressT);pressT=null;begin(false);return;}if(!hold)return;hold=false;if(starting)stopAfterStart=true;else if(voice.recording)finish();});
     // Przewinięcie w trakcie trzymania: nagrywanie trwa dalej, kończy się przyciskiem Zakończ
     button.addEventListener('pointercancel',()=>{if(pressT){clearTimeout(pressT);pressT=null;}hold=false;});
+    // Palec/kursor zjechał z przycisku przed startem — porzucony gest nie włącza mikrofonu
+    button.addEventListener('pointerleave',()=>{if(pressT){clearTimeout(pressT);pressT=null;}});
     button.addEventListener('contextmenu',e=>e.preventDefault());
     // Enter/Spacja/czytnik ekranu dają click bez wskaźnika (detail 0): stuknięcie = start/stop
     button.addEventListener('click',e=>{if(e.detail!==0||starting)return;if(voice.recording){finish();return;}begin(false);});
