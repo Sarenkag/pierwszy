@@ -32,23 +32,24 @@
     });
   }
   function clean(t) { t = String(t || '').trim().replace(/^["“”']+|["“”']+$/g, '').replace(/^(here is|here's)[^:]*:\s*/i, '').trim(); if (!t) throw Error('Model nie zwrócił tekstu.'); return t; }
-  // Notatka (PL, opcjonalnie z tłumaczeniem ML Kit) → 1–2 dobrze zbudowane zdania po angielsku
-  function polish(original, translation) {
-    var p = 'Rewrite this note as one or two well-built sentences for the report.\n\nNote (original):\n' + String(original || '').trim();
-    if (translation && translation.trim() && translation.trim() !== String(original || '').trim()) p += '\n\nPlain machine translation (for reference only, may be clumsy):\n' + translation.trim();
-    return run(p);
+  function ref(note, reference) { reference = String(reference || '').trim(); return reference && reference !== String(note || '').trim() ? '\n\nOriginal Polish wording (for reference only; the note above is what counts):\n' + reference : ''; }
+  // Notatka (aktualny tekst, np. tłumaczenie ML Kit z poprawkami) → 1–2 dobrze zbudowane zdania po angielsku
+  function polish(note, reference) {
+    return run('Rewrite this note as one or two well-built sentences for the report.\n\nNote:\n' + String(note || '').trim() + ref(note, reference));
   }
   // Kilka notatek → jeden spójny akapit (nie zlepek zdań), w tej samej kolejności
-  function combine(notes) {
+  function combine(notes, reference) {
     var list = (notes || []).map(function (n) { return String(n || '').trim(); }).filter(Boolean);
     if (!list.length) return Promise.reject(Error('Brak notatek do połączenia.'));
     return run('Combine the notes below into ONE coherent paragraph for the report. Keep their order, join related points naturally, ' +
-      'avoid repeating the same information, and keep every fact.\n\n' + list.map(function (n, i) { return (i + 1) + '. ' + n; }).join('\n'));
+      'avoid repeating the same information, and keep every fact.\n\n' + list.map(function (n, i) { return (i + 1) + '. ' + n; }).join('\n') + ref(list.join('\n'), reference));
   }
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
   function missingNumbers(input, output) {
-    var re = /\d+(?:[.,]\d+)?/g, out = String(output || '').replace(/,/g, '.'), miss = [];
-    (String(input || '').match(re) || []).forEach(function (n) { var k = n.replace(',', '.'); if (out.indexOf(k) < 0 && miss.indexOf(n) < 0) miss.push(n); });
+    // całe liczby jako tokeny: 12 ≠ 120
+    var re = /\d+(?:[.,]\d+)?/g, norm = function (n) { return n.replace(',', '.'); }, have = {}, miss = [];
+    (String(output || '').match(re) || []).forEach(function (n) { have[norm(n)] = 1; });
+    (String(input || '').match(re) || []).forEach(function (n) { if (!have[norm(n)] && miss.indexOf(n) < 0) miss.push(n); });
     return miss;
   }
   // Panel w Ustawieniach → AI: wybór E2B/E4B, pobranie przez Wi‑Fi, postęp, usunięcie

@@ -31,7 +31,8 @@ class ModelPlugin : Plugin() {
     private val main = Handler(Looper.getMainLooper())
     private var engine: Engine? = null
     private var engineFile: String = ""
-    private val idle = Runnable { worker.execute { closeEngine() } }
+    @Volatile private var destroyed = false
+    private val idle = Runnable { if (!destroyed) try { worker.execute { closeEngine() } } catch (_: Throwable) {} }
 
     private fun dir(): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "models").also { it.mkdirs() }
     private fun safeName(n: String): String { require(Regex("^[A-Za-z0-9._-]{1,80}\\.litertlm$").matches(n)) { "MODEL_NAME" }; return n }
@@ -120,7 +121,7 @@ class ModelPlugin : Plugin() {
             } catch (e: Throwable) {
                 call.reject("MODEL_FAILED: " + (e.message ?: e.javaClass.simpleName))
             } finally {
-                main.postDelayed(idle, 180_000)
+                if (!destroyed) main.postDelayed(idle, 180_000)
             }
         }
     }
@@ -147,5 +148,5 @@ class ModelPlugin : Plugin() {
 
     private fun closeEngine() { try { engine?.close() } catch (_: Throwable) {} ; engine = null; engineFile = "" }
 
-    override fun handleOnDestroy() { main.removeCallbacks(idle); worker.execute { closeEngine() }; worker.shutdown(); super.handleOnDestroy() }
+    override fun handleOnDestroy() { destroyed = true; main.removeCallbacks(idle); worker.execute { closeEngine() }; worker.shutdown(); super.handleOnDestroy() }
 }

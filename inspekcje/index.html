@@ -1055,7 +1055,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
-    $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true;
+    $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
   }
@@ -1477,12 +1477,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function runModel(auto) {
     var txt = $("komentarz").value.trim(); if (!txt || !mdReady) return;
-    var original = trOriginal != null ? trOriginal : txt, plain = trOriginal != null ? txt : "";
-    var notes = original.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    // wejście = to, co jest teraz w polu (z Twoimi poprawkami); polski oryginał tylko pomocniczo
+    var reference = trOriginal != null ? trOriginal : "", original = txt;
+    var notes = txt.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
     var tok = ++mdSeq, form = formSeq; $("mdRun").disabled = true;
     $("mdWarn").textContent = ""; $("mdBox").hidden = true;
     $("trHint").textContent = (auto ? "Przetłumaczone. " : "") + "Model układa tekst na telefonie… (pierwszy raz do ~20 s)";
-    (notes.length > 1 ? OESTModel.combine(notes) : OESTModel.polish(original, plain)).then(function (out) {
+    (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
       if (tok !== mdSeq || form !== formSeq) return;
       $("mdOut").value = out; $("mdBox").hidden = false;
       var miss = OESTModel.missingNumbers(original, out);
