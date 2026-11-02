@@ -82,6 +82,10 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .callegend{display:flex;gap:14px;font-size:.8rem;color:var(--muted)}
 .callegend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .callegend .sh::before{background:linear-gradient(135deg,#5b7cff,#a35bff)}.callegend .dn::before{background:#ff8a3d;border-radius:50%}
+.cd i.pl,.callegend .dn.pl::before{background:transparent;border:1.5px dashed #ff8a3d;color:#ff8a3d}
+.prow.plan{opacity:.6}
+.calhint{display:block;width:100%;margin:8px 0 0;padding:10px 12px;border-radius:10px;border:1px dashed var(--line,#444);background:transparent;color:var(--muted);text-align:left;font:inherit;font-size:.85rem}
+.calhint[hidden]{display:none}
 .calnav[data-cm]{font-size:.8rem;color:var(--muted)}
 /* Menu główne: logo + nazwa obiektu nad kafelkami */
 .hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0 22px}

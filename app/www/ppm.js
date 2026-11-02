@@ -169,6 +169,22 @@ window.OEST_PPM = {
       delete a[k]; moved = true;
     });
     if (moved) try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {}
+    return fromVantify(a);
+  }
+  // Zlecenia z Vantify (vantify-plan.js): raz na eksport termin karty = najbliższe otwarte zlecenie
+  // (jeśli inspekcja z tego zlecenia jest już wysłana/zakończona w apce → kolejne zlecenie).
+  function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
+  function fromVantify(a) {
+    var V = window.OEST_VANTIFY, mk = "oest.ppm.vantify";
+    if (!V || !V.jobs) return a;
+    try { if (localStorage.getItem(mk) === V.exported) return a; } catch (e) { return a; }
+    var st = stages();
+    Object.keys(V.jobs).forEach(function (id) {
+      var j = V.jobs[id], r = st[id], shut = alive(r) && (r.s === "queued" || r.s === "sent" || r.s === "done");
+      var pick = shut ? (j.filter(function (x) { return x.due >= (r.day || ""); })[1] || null) : j[0]; // wysłana: zlecenie z dnia wysyłki zrobione → następne
+      if (pick) a[id] = pick.due;
+    });
+    try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); localStorage.setItem(mk, V.exported); } catch (e) {}
     return a;
   }
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
@@ -177,7 +193,15 @@ window.OEST_PPM = {
   P.due = function (t) { var s = all()[t.id]; return s ? parse(s) : null; };
   P.setDue = function (t, day) { put(t.id, day); };
   // Raport wysłany (dzień raportu „day”): bez terminu liczy od dnia raportu, z terminem przesuwa go o jeden okres
-  P.close = function (t, day) { if (!t.freq.length) return; var d = P.due(t); put(t.id, iso(next(t, d || parse(day)))); };
+  // Z zleceniem w Vantify: następny termin = kolejne zlecenie po obecnym terminie (jak w Vantify), dalej z częstotliwości.
+  P.close = function (t, day) {
+    if (!t.freq.length) return;
+    var d = P.due(t), cur = d ? iso(d) : day, nj = jobsOf(t.id).filter(function (j) { return j.due > cur; })[0];
+    put(t.id, nj ? nj.due : iso(next(t, d || parse(day))));
+  };
+  P.jobs = function (t) { return jobsOf(t.id); };
+  // numer zlecenia Vantify dla terminu (RRRR-MM-DD) albo null
+  P.jobFor = function (t, day) { return jobsOf(t.id).filter(function (j) { return j.due === day; })[0] || null; };
   P.daysLeft = function (due) {
     if (!due) return null;
     var n = new Date(), today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
