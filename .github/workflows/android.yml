@@ -68,6 +68,8 @@ jobs:
           chmod +x gradlew
           # Maven Central czasem chwilowo nie oddaje plików: jedna ponowna próba po przerwie
           gw() { ./gradlew --no-daemon "$@" || { sleep 30; ./gradlew --no-daemon "$@"; }; }
+          # wersja LiteRT-LM (latest.release) do logu, żeby ją potem przypiąć
+          ./gradlew --no-daemon -q :app:dependencies --configuration releaseRuntimeClasspath | grep -m3 litertlm || true
           if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
             gw assembleRelease
             cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}.apk"

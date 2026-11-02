@@ -19,6 +19,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(TranslatePlugin.class);
         registerPlugin(AppUpdatePlugin.class);
         registerPlugin(PhotoEditPlugin.class);
+        registerPlugin(ModelPlugin.class);
         super.onCreate(savedInstanceState);
     }
 
