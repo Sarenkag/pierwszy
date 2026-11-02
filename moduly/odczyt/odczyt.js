@@ -32,10 +32,10 @@
     document.head.appendChild(st);
   }
   // pole liczbowe: dokładnie jedna liczba z tokenów parse() (bez cyfr z etykiet typu „Cl2”), przecinek → kropka; inaczej nic nie wpisuje
-  function numberOf(v) { var n = parse(v).numbers; if (n.length !== 1) return null; var m = n[0].match(/[-+]?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.') : null; }
+  function numberOf(v) { var n = parse(v).numbers; if (n.length !== 1) return null; var m = n[0].match(/[-+]?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.').replace(/^\+/, '') : null; }
   function put(el, v) {
     if (el.tagName === 'TEXTAREA') el.value = el.value ? el.value.replace(/\s+$/, '') + '\n' + v : v;
-    else if (el.inputMode === 'decimal' || el.type === 'number') { var n = numberOf(v); if (n === null) return false; el.value = n; }
+    else if (el.inputMode === 'decimal' || el.type === 'number') { var n = numberOf(v); if (n === null) return false; var was = el.value; el.value = n; if (el.value !== n) { el.value = was; return false; } }
     else el.value = v;
     el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
     return true;

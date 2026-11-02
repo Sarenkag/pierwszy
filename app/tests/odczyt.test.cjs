@@ -5,3 +5,4 @@ test('odczyt: nieznana jednostka nie daje obciętej liczby',()=>{assert.deepEqua
 test('odczyt: liczba do pola liczbowego',()=>{assert.equal(w.OESTOdczyt.numberOf('Cl2 0.85 mg/l'),'0.85');assert.equal(w.OESTOdczyt.numberOf('12,5 °C'),'12.5');assert.equal(w.OESTOdczyt.numberOf('49.8 Hz 12.5 A'),null);});
 test('odczyt: pusty tekst',()=>{const r=w.OESTOdczyt.parse('');assert.deepEqual(J(r.lines),[]);assert.deepEqual(J(r.numbers),[]);});
 test('odczyt: pH bez spacji',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('pH7.2').numbers),['pH7.2']);assert.equal(w.OESTOdczyt.numberOf('pH7.2'),'7.2');assert.equal(w.OESTOdczyt.numberOf('pH 7,2'),'7.2');assert.deepEqual(J(w.OESTOdczyt.parse('xph7').numbers),[]);});
+test('odczyt: plus usunięty z liczby',()=>{assert.equal(w.OESTOdczyt.numberOf('+12,5 °C'),'12.5');assert.equal(w.OESTOdczyt.numberOf('-3.0'),'-3.0');});
