@@ -17,11 +17,13 @@
   (function press() {
     if (document.getElementById("oest-nacisk-css")) return;
     var sel = "button,.btn,.tile,.pbtn,.go,[role=button],input[type=button],input[type=submit]";
+    // Cały selektor (z :active) w :where(), żeby własny transform ekranu (np. .pt-marker translate) zawsze wygrywał.
+    var act = sel.split(",").map(function (x) { return x + ":active:not(:disabled)"; }).join(",");
     var s = document.createElement("style"); s.id = "oest-nacisk-css";
     s.textContent = ":where(" + sel + "){transition:transform .16s cubic-bezier(.2,.8,.2,1);-webkit-tap-highlight-color:transparent;backface-visibility:hidden}" +
-      ":where(" + sel + "):active:not(:disabled){transform:scale(.97)}" +
-      "@media (prefers-reduced-motion:reduce){:where(" + sel + "):active{transform:none}}" +
-      ":root[data-settings-motion=reduce] :where(" + sel + "):active{transform:none}";
+      ":where(" + act + "){transform:scale(.97)}" +
+      "@media (prefers-reduced-motion:reduce){:where(" + act + "){transform:none}}" +
+      ":root[data-settings-motion=reduce] :where(" + act + "){transform:none}";
     (document.head || document.documentElement).insertBefore(s, (document.head || document.documentElement).firstChild);
   })();
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
