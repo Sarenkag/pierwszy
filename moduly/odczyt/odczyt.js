@@ -15,7 +15,7 @@
     });
   }
   function parse(text) {
-    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean), seen = {}, numbers = [];
+    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.replace(/\s+/g, ' ').replace(/[\u2212\u2012\u2013](?=\d)/g, '-').trim(); }).filter(Boolean), seen = {}, numbers = [];
     lines.forEach(function (l) { (l.match(NUM) || []).forEach(function (n) { n = n.trim(); if (/\d/.test(n) && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = 1; numbers.push(n); } }); });
     var uniq = {}; lines = lines.filter(function (l) { var k = l.toLowerCase(); if (uniq[k]) return false; uniq[k] = 1; return true; });
     return { text: lines.join('\n'), lines: lines, numbers: numbers };

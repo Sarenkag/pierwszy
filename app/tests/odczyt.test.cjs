@@ -6,3 +6,4 @@ test('odczyt: liczba do pola liczbowego',()=>{assert.equal(w.OESTOdczyt.numberOf
 test('odczyt: pusty tekst',()=>{const r=w.OESTOdczyt.parse('');assert.deepEqual(J(r.lines),[]);assert.deepEqual(J(r.numbers),[]);});
 test('odczyt: pH bez spacji',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('pH7.2').numbers),['pH7.2']);assert.equal(w.OESTOdczyt.numberOf('pH7.2'),'7.2');assert.equal(w.OESTOdczyt.numberOf('pH 7,2'),'7.2');assert.deepEqual(J(w.OESTOdczyt.parse('xph7').numbers),[]);});
 test('odczyt: plus usunięty z liczby',()=>{assert.equal(w.OESTOdczyt.numberOf('+12,5 °C'),'12.5');assert.equal(w.OESTOdczyt.numberOf('-3.0'),'-3.0');});
+test('odczyt: minus unicode',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('−3.0 °C').numbers),['-3.0 °C']);assert.equal(w.OESTOdczyt.numberOf('−3.0 °C'),'-3.0');assert.equal(w.OESTOdczyt.numberOf('–2,5'),'-2.5');});
