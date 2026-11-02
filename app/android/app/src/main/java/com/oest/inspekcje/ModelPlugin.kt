@@ -68,6 +68,7 @@ class ModelPlugin : Plugin() {
     }
 
     @PluginMethod fun download(call: PluginCall) {
+        if (Build.VERSION.SDK_INT < 31) { call.reject("MODEL_ANDROID_TOO_OLD"); return }
         try {
             val name = safeName(call.getString("name", "")!!)
             val url = call.getString("url", "")!!

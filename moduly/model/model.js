@@ -47,7 +47,7 @@
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
   function missingNumbers(input, output) {
     // całe liczby jako tokeny: 12 ≠ 120
-    var re = /\d+(?:[.,]\d+)?/g, norm = function (n) { return n.replace(',', '.'); }, have = {}, miss = [];
+    var re = /[-−]?\d+(?:[.,]\d+)?/g, norm = function (n) { return n.replace(',', '.').replace('−', '-'); }, have = {}, miss = [];
     (String(output || '').match(re) || []).forEach(function (n) { have[norm(n)] = 1; });
     (String(input || '').match(re) || []).forEach(function (n) { if (!have[norm(n)] && miss.indexOf(n) < 0) miss.push(n); });
     return miss;
@@ -68,7 +68,7 @@
       el.innerHTML = '<h2>Model tekstowy na telefonie</h2><p class="hint">Układa notatki w dobre zdania po angielsku i łączy je w jeden akapit raportu. Nie dodaje faktów; wynik zawsze sprawdzasz Ty. Bez modelu apka działa jak dotąd.</p>' +
         '<label class="field"><span>Model</span><select data-model-key><option value="E2B"' + (k === 'E2B' ? ' selected' : '') + '>Gemma 4 E2B – mniejszy, szybszy (2,6 GB)</option><option value="E4B"' + (k === 'E4B' ? ' selected' : '') + '>Gemma 4 E4B – dokładniejszy (3,7 GB)</option></select></label>' +
         '<p data-model-line>' + line + (err ? '<br>' + err : '') + '</p><div class="row">' +
-        (available() && !s.ready && !s.downloading ? '<button type="button" class="btn" data-model-act="download">⬇ Pobierz model (Wi‑Fi)</button>' : '') +
+        (available() && s.supported !== false && !s.ready && !s.downloading ? '<button type="button" class="btn" data-model-act="download">⬇ Pobierz model (Wi‑Fi)</button>' : '') +
         (s.downloading ? '<button type="button" class="btn" data-model-act="remove">Anuluj pobieranie</button>' : '') +
         (s.ready ? '<button type="button" class="btn" data-model-act="remove">Usuń model z telefonu</button>' : '') + '</div>';
       var sel = el.querySelector('[data-model-key]'); sel.oninput = function (e) { e.stopPropagation(); }; sel.onchange = function (e) { e.stopPropagation(); setKey(e.target.value); refresh(); };
