@@ -1470,7 +1470,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("undoTr").addEventListener("click", function () { if (trOriginal != null) { $("komentarz").value = trOriginal; trOriginal = null; } this.hidden = true; $("trHint").textContent = ""; });
 
   // ---------- model tekstowy na telefonie (opcjonalny): zdanie po angielsku / jeden akapit z kilku notatek ----------
-  var mdReady = false, mdSeq = 0;
+  var mdReady = false, mdSeq = 0, mdInput = null;
   function renderModel() {
     if (IN_GAS || !window.OESTModel || !OESTModel.available()) return;
     OESTModel.ready().then(function (r) { mdReady = r; $("mdRun").hidden = !r; });
@@ -1480,7 +1480,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // wejście = to, co jest teraz w polu (z Twoimi poprawkami); polski oryginał tylko pomocniczo
     var reference = trOriginal != null ? trOriginal : "", original = txt;
     var notes = txt.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
-    var tok = ++mdSeq, form = formSeq; $("mdRun").disabled = true;
+    var tok = ++mdSeq, form = formSeq; mdInput = txt; $("mdRun").disabled = true;
     $("mdWarn").textContent = ""; $("mdBox").hidden = true;
     $("trHint").textContent = (auto ? "Przetłumaczone. " : "") + "Model układa tekst na telefonie… (pierwszy raz do ~20 s)";
     (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
@@ -1493,10 +1493,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       .then(function () { if (tok === mdSeq) $("mdRun").disabled = false; });
   }
   $("mdRun").addEventListener("click", function () { runModel(false); });
+  // zmiana komentarza unieważnia propozycję (w toku i pokazaną), żeby nie nadpisać nowych poprawek
+  $("komentarz").addEventListener("input", function () {
+    if (mdInput === null) return; mdSeq++; mdInput = null; $("mdBox").hidden = true; $("mdRun").disabled = false; $("mdWarn").textContent = "";
+    if (/^(Propozycja|Model układa|Przetłumaczone\. Model)/.test($("trHint").textContent)) $("trHint").textContent = "Komentarz zmieniony — „✨ Ułóż po angielsku”, gdy skończysz.";
+  });
   $("mdUse").addEventListener("click", function () {
     var out = $("mdOut").value.trim(); if (!out) return;
+    if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = "Komentarz się zmienił — ułóż jeszcze raz."; return; }
     if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
-    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; $("trHint").textContent = "Wstawione. Możesz poprawić ręcznie albo cofnąć.";
+    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = "Wstawione. Możesz poprawić ręcznie albo cofnąć.";
   });
   $("mdDrop").addEventListener("click", function () { mdSeq++; $("mdBox").hidden = true; $("trHint").textContent = ""; });
   renderModel();
