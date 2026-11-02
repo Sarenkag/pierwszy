@@ -209,6 +209,24 @@ window.OEST_PPM = {
     put(t.id, nj ? nj.due : iso(next(t, d || parse(day))));
   };
   P.jobs = function (t) { return jobsOf(t.id); };
+  // Terminy karty w zakresie [from, to] (RRRR-MM-DD): zlecenia Vantify od bieżącego terminu, bieżący termin (także
+  // ręcznie zmieniony, gdy nie jest datą zlecenia), za ostatnim zleceniem z częstotliwości (plan: jeszcze nie w Vantify).
+  // Wspólne dla widoku miesiąca i synchronizacji z kalendarzem telefonu.
+  P.occurrences = function (t, from, to) {
+    var jobs = jobsOf(t.id), d0 = P.due(t), a = d0 ? iso(d0) : (jobs[0] ? jobs[0].due : ""), out = [];
+    if (!a) return out;
+    function put(d, e) { if (d >= from && d <= to) { e.d = d; out.push(e); } }
+    var real = jobs.filter(function (j) { return j.due >= a; });
+    if (!real.some(function (j) { return j.due === a; })) put(a, { plan: !!jobs.length && !real.length, manual: !!jobs.length });
+    real.forEach(function (j) { put(j.due, { job: j.no }); });
+    var base = real.length ? real[real.length - 1].due : a, f = t.freq[0], m = f && /^(\d+)([WM])$/.exec(f);
+    for (var i = 1; m && i < 600; i++) {
+      var d = iso(add(parse(base), (+m[1] * i) + m[2]));
+      if (d > to) break;
+      put(d, { plan: true });
+    }
+    return out.sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : 0; });
+  };
   // numer zlecenia Vantify dla terminu (RRRR-MM-DD) albo null
   P.jobFor = function (t, day) { return jobsOf(t.id).filter(function (j) { return j.due === day; })[0] || null; };
   P.daysLeft = function (due) {

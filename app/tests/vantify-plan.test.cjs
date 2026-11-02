@@ -46,3 +46,17 @@ test('wysłana po terminie: kolejne zlecenie po okresie (period), nie po dniu wy
   P = load(old).OEST_PPM;
   assert.strictEqual(P.iso(P.due(P.byId('EFA-INS-004'))), jobs[0].due);
 });
+test('occurrences: zlecenia, ręczny termin między zleceniami, dalej planowane; sync telefonu używa tego samego', () => {
+  const w = load({}), P = w.OEST_PPM, t = P.byId('EFA-INS-003'), jobs = P.jobs(t);
+  let o = P.occurrences(t, '2026-11-01', '2026-12-31');
+  assert.deepStrictEqual(o.filter(x => x.job).map(x => x.d), jobs.map(j => j.due));
+  assert.ok(!o.some(x => x.d === '2026-11-13'));   // w Vantify zrobione z wyprzedzeniem
+  assert.ok(o.some(x => x.d === '2026-12-18' && x.plan));
+  P.setDue(t, '2026-11-12');
+  o = P.occurrences(t, '2026-11-01', '2026-12-31');
+  assert.ok(o.some(x => x.d === '2026-11-12' && x.manual));
+  ctxCore(w);
+  const ev = w.OESTCalendarCore.generate({ tasks: [t], dues: {}, today: '2026-11-02', config: { weeks: 4, workdayMode: 'all', groups: ['fire', 'water', 'elec', 'mech', 'sub'], exportInspections: true, shiftMarkers: false }, scheduleOn: () => null, occurrences: (x, f, to) => P.occurrences(x, f, to) });
+  assert.deepStrictEqual(ev.map(e => e.date), ['2026-11-12', '2026-11-20', '2026-11-27']);
+});
+function ctxCore(w) { const m = { exports: {} }; new Function('module', 'exports', 'window', 'globalThis', fs.readFileSync(path.join(__dirname, '..', 'www', 'calendar-core.js'), 'utf8'))(m, m.exports, w, w); if (!w.OESTCalendarCore) w.OESTCalendarCore = m.exports; }

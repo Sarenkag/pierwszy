@@ -566,24 +566,10 @@ input[type=text], input[type=email], input[type=date], select {
       return window.OESTCalendarCore.isWorkday(iso, function () { return ss[0]; });
     } catch (e) { return false; }
   }
-  // Dzień → lista {t, job, plan}. Zlecenia z Vantify (vantify-plan.js) od bieżącego terminu karty;
-  // za ostatnim zleceniem dalsze terminy liczone z częstotliwości (plan: jaśniejsze, jeszcze nie wystawione w Vantify).
+  // Dzień → lista {t, job, plan} (P.occurrences: zlecenia Vantify, bieżący termin, dalej planowane)
   function calDue(from, to) {
-    var C = window.OESTCalendarCore, by = {};
-    function put(d, e) { if (d >= from && d <= to) (by[d] = by[d] || []).push(e); }
-    P.tasks.forEach(function (t) {
-      var jobs = P.jobs ? P.jobs(t) : [], d0 = P.due(t), a = d0 ? P.iso(d0) : (jobs[0] ? jobs[0].due : "");
-      if (!a) return;
-      var real = jobs.filter(function (j) { return j.due >= a; });
-      real.forEach(function (j) { put(j.due, { t: t, job: j.no }); });
-      var base = real.length ? real[real.length - 1].due : a, p = null;
-      try { p = t.freq[0] && C.period(t.freq[0]); } catch (e) { p = null; }
-      for (var i = real.length ? 1 : 0; i < 400; i++) {
-        var d = p ? C.occurrence(base, p, i) : (i ? null : base);
-        if (!d || d > to) break;
-        put(d, { t: t, plan: !!jobs.length || i > 0 });
-      }
-    });
+    var by = {};
+    P.tasks.forEach(function (t) { P.occurrences(t, from, to).forEach(function (e) { e.t = t; (by[e.d] = by[e.d] || []).push(e); }); });
     return by;
   }
   function renderCal() {
