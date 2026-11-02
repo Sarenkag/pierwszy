@@ -127,3 +127,33 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .prow.as{margin-left:0!important;width:100%!important}
 .k2 .ksend{flex:none;font-size:12px;font-weight:700}
 .prow.k2.kdone{opacity:.5;filter:grayscale(.6)}
+/* Reactive 02/11/2026: lista jak w inspekcjach, zwarte pola formularza */
+#v-reactive .top .rx-gear{margin-left:auto}
+#v-reactive .rx-top{margin:4px 0 8px}#v-reactive .rx-top .btn{width:auto;min-height:40px;padding:8px 14px;font-size:.92rem}
+#v-reactive .rx-filter{justify-content:flex-start;margin:0 0 10px}#v-reactive .rx-filter .chip{font-size:.8rem;padding:5px 10px}
+#v-reactive .prow.rxk{flex-wrap:nowrap;align-items:stretch;height:88px;padding:0;gap:0;overflow:hidden;border-left:5px solid var(--g)!important;margin-bottom:8px}
+#v-reactive .rxk .rxi{width:34px;display:grid;place-items:center;font-size:1.05rem;flex:none}
+#v-reactive .rxk .rxm{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px}
+#v-reactive .rxk .rxm b{font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v-reactive .rxk .rxm span{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v-reactive .rxk .bd{font-style:normal;font-size:.66rem;padding:1px 5px;border-radius:5px;background:rgba(120,140,255,.22);margin-right:5px;color:var(--ink)}
+#v-reactive .rxk .rxr{width:96px;flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;padding:7px 8px 7px 0}
+#v-reactive .rxk .rxr .chip{font-size:.66rem;padding:2px 7px;margin:0}
+#v-reactive .rxk .rxt img{width:34px;height:34px;object-fit:cover;border-radius:8px;display:block}
+#v-reactive .rxk.done{opacity:.55;filter:grayscale(.5)}
+#v-reactive .rx-name{margin:0 0 4px}
+#v-reactive .rx-f{border-top:1px solid rgba(255,255,255,.08)}
+#v-reactive .rx-fr{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:6px 0;background:none;border:0;color:var(--ink);font:inherit;text-align:left}
+#v-reactive .rx-fr .k{width:104px;flex:none;font-size:.8rem;color:var(--muted)}
+#v-reactive .rx-fr .v{flex:1;min-width:0;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:0;color:inherit;font-family:inherit;padding:0}
+#v-reactive .rx-fr .v.ph{color:var(--muted)}#v-reactive .rx-fr .ar{color:var(--muted);font-size:.8rem}
+#v-reactive .rx-fx{margin:0 0 8px 0;padding:2px 0 6px 10px;border-left:2px solid var(--accent,#5b7cff)}
+#v-reactive .rx-g{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 2px}
+#v-reactive .rx-opt{display:block;width:100%;text-align:left;padding:8px 6px;background:none;border:0;border-radius:8px;color:var(--ink);font:inherit;font-size:.9rem}
+#v-reactive .rx-opt.on{font-weight:700;background:rgba(120,140,255,.14)}#v-reactive .rx-opt.add{color:#8cc4ff;font-size:.85rem}
+#v-reactive .rx-pics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#v-reactive .rx-pics .rx-chips{gap:5px}#v-reactive .rx-pics .btn{font-size:.78rem;padding:6px 8px;min-height:34px}
+#v-reactive .rx-pics .rx-photos{grid-template-columns:repeat(2,minmax(0,1fr))}#v-reactive .rx-pics .rx-photos img{height:64px}
+#v-reactive .rx-vt{width:100%;margin:-2px 0 8px;font:inherit;font-size:.85rem;border-radius:10px;padding:8px;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid rgba(255,255,255,.14)}
+#v-reactive .rx-fr input.v{min-height:0;height:34px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.2);flex:none;width:auto}
+#v-reactive .rx-fr{min-height:40px;padding:3px 0}
