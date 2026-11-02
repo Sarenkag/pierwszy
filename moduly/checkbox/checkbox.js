@@ -7,7 +7,7 @@
   if (document.getElementById("oest-checkbox-css")) return;
   var tick = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
   var css = ":where(input[type=checkbox]){-webkit-appearance:none;appearance:none;margin:0;width:1.25em;height:1.25em;flex:none;border-radius:.35em;" +
-      "box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);background:transparent;display:inline-grid;place-content:center;vertical-align:middle;cursor:pointer;" +
+      "box-shadow:inset 0 0 0 2px rgba(128,128,128,.6);box-shadow:inset 0 0 0 2px color-mix(in srgb,currentColor 40%,transparent);background:transparent;display:inline-grid;place-content:center;vertical-align:middle;cursor:pointer;" +
       "transition:background-color .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s cubic-bezier(.34,1.56,.64,1)}" +
     ":where(input[type=checkbox])::before{content:'';width:.85em;height:.85em;background:#fff;-webkit-mask:" + tick + " center/contain no-repeat;mask:" + tick + " center/contain no-repeat;" +
       "clip-path:inset(0 100% 0 0);transition:clip-path .3s cubic-bezier(.25,.1,.25,1) .1s}" +
