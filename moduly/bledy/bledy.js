@@ -125,7 +125,8 @@
   }
   function text(e, l) {
     var i = (l || lang()) === 'en' ? 1 : 0;
-    var m = String(e && (e.code || e.message) || e || '').trim();
+    // kod aplikacji (tekst) ma pierwszeństwo; DOMException ma liczbowy .code – wtedy bierzemy nazwę i treść
+    var m = String(e && typeof e.code === 'string' && e.code ? e.code : e && e.message != null ? (e.name && e.name !== 'Error' ? e.name + ': ' : '') + e.message : e || '').trim();
     var code = (m.match(/^[A-Z][A-Z0-9_]{3,}/) || [''])[0];
     if (/GOOGLE_HTTP_\d+/.test(m)) return http(m, i);
     if (D[code]) return D[code][i];
