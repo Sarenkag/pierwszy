@@ -365,7 +365,14 @@ input[type=text], input[type=email], input[type=date], select {
     if (b.closest("#v-settings") && !window.OESTSettingsUI.canLeave()) return;
     history.back();
   }, true);
+  // okna na wierzchu (np. podgląd zdjęcia) dokładają wpis historii; Wstecz telefonu najpierw zamyka okno (Grzegorz 03/11)
+  window.OESTOverlay = {
+    stack: [],
+    open: function (close) { this.stack.push(close); try { history.pushState({ n: depth() + 1, overlay: 1 }, "", location.hash); } catch (e) {} },
+    close: function () { if (this.stack.length) history.back(); } // przycisk „Zamknij” = to samo co Wstecz
+  };
   window.addEventListener("popstate", function () {
+    if (window.OESTOverlay.stack.length) { var c = window.OESTOverlay.stack.pop(); try { c(); } catch (e) {} return; }
     if (renderedRoute.indexOf("reactive") === 0 && !window.OESTReactiveUI.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
@@ -402,7 +409,18 @@ input[type=text], input[type=email], input[type=date], select {
       show(b.dataset.go);
     });
   });
-  document.querySelectorAll("[data-href]").forEach(function (b) { b.addEventListener("click", function () { location.href = b.dataset.href; }); });
+  // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
+  function goInsp(url) {
+    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#home", day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.scrollY })); } catch (e) {}
+    location.href = url;
+  }
+  function restoreBack() {
+    var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); sessionStorage.removeItem("oest.back"); } catch (e) {}
+    if (!b || b.h !== (location.hash || "#home")) return;
+    ppmDay = b.day || ""; calSel = b.cs || ""; if (b.cm) calMonth = new Date(b.cm);
+    liveRefresh(); setTimeout(function () { window.scrollTo(0, b.y || 0); }, 0);
+  }
+  document.querySelectorAll("[data-href]").forEach(function (b) { b.addEventListener("click", function () { if (/^inspekcje\//.test(b.dataset.href)) goInsp(b.dataset.href); else location.href = b.dataset.href; }); });
   document.querySelectorAll("[data-open]").forEach(function (b) {
     b.addEventListener("click", function () { location.href = b.dataset.open + "/index.html"; });
   });
@@ -459,7 +477,9 @@ input[type=text], input[type=email], input[type=date], select {
   }
 
   // ---------- PPM: lista inspekcji ----------
-  var P = window.OEST_PPM, ppmGroup = load("ppm.group", "all"), ppmDay = "", ppmOpen = {};
+  // filtry (Grzegorz 03/11): kilka grup naraz + „Rozpoczęte”; włączone wyglądają na wciśnięte; „All” = brak filtra; bez „Aktywa”
+  var P = window.OEST_PPM, ppmSel = load("ppm.sel", null), ppmDay = "", ppmOpen = {};
+  if (!Array.isArray(ppmSel)) { var og = load("ppm.group", "all"); ppmSel = og && og !== "all" && og !== "assets" ? [og] : []; }
   var DAYS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
@@ -518,11 +538,17 @@ input[type=text], input[type=email], input[type=date], select {
       html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? "Dziś" : DAYS[d.getDay()]) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
     }
     $("ppmDays").innerHTML = html;
-    $("ppmChips").innerHTML = [{ id: "all", name: "All" }].concat(P.groups, AS.length ? [{ id: "assets", name: "Aktywa (" + AS.length + ")" }] : []).map(function (g) {
-      return '<button class="chip' + (ppmGroup === g.id ? " on" : "") + '" type="button" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
+    var chips = [{ id: "all", name: "All" }].concat(P.groups, [{ id: "started", name: "◐ Rozpoczęte" }]);
+    $("ppmChips").innerHTML = chips.map(function (g) {
+      var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
+      return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
     }).join("");
-    if (ppmGroup === "assets") { $("ppmList").innerHTML = assetRows(); return; }
-    var list = rows.filter(function (r) { return (ppmGroup === "all" || r.t.group === ppmGroup) && (!ppmDay || r.day === ppmDay); });
+    var gs = ppmSel.filter(function (x) { return x !== "started"; }), started = ppmSel.indexOf("started") >= 0;
+    var list = rows.filter(function (r) {
+      if (gs.length && gs.indexOf(r.t.group) < 0) return false;
+      if (started) { var x = P.stage && P.stage(r.t); if (!x || (x.s !== "prog" && x.s !== "hold")) return false; }
+      return !ppmDay || r.day === ppmDay;
+    });
     // najpierw po terminie i najbliższe, na końcu bez daty
     var doneOf = function (r) { var x = P.stage && P.stage(r.t); return x && x.s === "sent" ? 1 : 0; };
     list.sort(function (a, b) { return doneOf(a) - doneOf(b) || (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
@@ -552,8 +578,12 @@ input[type=text], input[type=email], input[type=date], select {
   window.addEventListener("storage", function (e) { if (!e.key || /^oest\.ppm\./.test(e.key)) liveRefresh(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) liveRefresh(); });
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
-  $("ppmChips").addEventListener("click", function (e) { var b = e.target.closest("[data-g]"); if (!b) return; ppmGroup = b.dataset.g; save("ppm.group", ppmGroup); renderPpm(); });
-  $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
+  $("ppmChips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-g]"); if (!b) return; var g = b.dataset.g, i = ppmSel.indexOf(g);
+    if (g === "all") ppmSel = []; else if (i >= 0) ppmSel.splice(i, 1); else ppmSel.push(g);
+    save("ppm.sel", ppmSel); renderPpm();
+  });
+  $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
 
   // ---------- Kalendarz (widok miesiąca) ----------
@@ -595,7 +625,7 @@ input[type=text], input[type=email], input[type=date], select {
   }
   document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
   $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });
-  $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) location.href = "inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id); });
+  $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
   function renderHome() {
     var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
@@ -612,6 +642,7 @@ input[type=text], input[type=email], input[type=date], select {
   if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
   if (!account()) history.replaceState({ n: 0 }, "", "#start");
   render(location.hash.slice(1));
+  restoreBack();
 })();
 </script>
 <script>if (window.OESTSender) OESTSender.init(); // pasek wysyłki raportów na dole, wysyła kolejkę z inspekcji w tle</script>
