@@ -39,10 +39,12 @@
     function disconnect(){sessions={};store.set(sessions);}
     // Przed operacją: internet i ważne pozwolenie. Brak → (po kliknięciu) okno „Połącz ponownie / Anuluj”, potem operacja idzie dalej.
     // praca w tle (automatyczna wysyłka zdjęć/raportów) oznacza się sama: wtedy nigdy nie pokazujemy okna, nawet tuż po dotknięciu ekranu
-    var bg=0;
+    // operacja z kliknięcia (foreground) zawsze może zapytać, nawet gdy obok trwa praca w tle
+    var bg=0,fg=0;
     function background(fn){bg++;return Promise.resolve().then(fn).then(function(r){bg--;return r;},function(e){bg--;throw e;});}
+    function foreground(fn){fg++;return Promise.resolve().then(fn).then(function(r){fg--;return r;},function(e){fg--;throw e;});}
     async function ensure(kind){
-      var interactive=bg===0&&(!opts.recentTap||opts.recentTap());
+      var interactive=fg>0||(bg===0&&(!opts.recentTap||opts.recentTap()));
       while(opts.online&&!opts.online()){
         if(!interactive||!opts.ask||!(await opts.ask(kind,'offline')))throw Error('GOOGLE_OFFLINE');
         await new Promise(function(r){setTimeout(r,1500);}); // chwila na złapanie sieci po „Spróbuj ponownie”
@@ -141,7 +143,7 @@
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {background:background,connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
+    return {background:background,foreground:foreground,connect:connect,connected:connected,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
   }
   return {createGoogle:createGoogle};
 });

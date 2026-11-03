@@ -88,7 +88,7 @@
       // wspólny przycisk (moduly/przycisk): kółko + etap na przycisku, potem „✓ Gotowe” (Grzegorz 03/11)
       var P = w.OESTPrzycisk, h = P ? P.start(this, { busy: 'Sprawdzam połączenie', keep: false }) : null;
       msg = ''; if (!h) { msg = 'Łączę z Dyskiem…'; render(); }
-      syncNow(true, h).then(function (r) { msg = r.sent ? 'Wysłano na Dysk: ' + r.sent + '.' : 'Wszystko jest już na Dysku.'; return h && h.ok(r.sent ? 'Wysłano ' + r.sent : 'Gotowe'); },
+      (G && G.foreground ? G.foreground(function () { return syncNow(true, h); }) : syncNow(true, h)).then(function (r) { msg = r.sent ? 'Wysłano na Dysk: ' + r.sent + '.' : 'Wszystko jest już na Dysku.'; return h && h.ok(r.sent ? 'Wysłano ' + r.sent : 'Gotowe'); },
         function (e) { msg = errText(e); if (h) h.fail(); }).then(render);
     };
     root.querySelector('[data-zd="save"]').onclick = function () {
