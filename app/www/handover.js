@@ -9,7 +9,7 @@
   const names=()=>({reported:L('Zgłoszone','Reported'),fixed:L('Naprawione','Fixed'),outstanding:L('Nie zrobione','Outstanding'),watch:L('Do obserwacji','To watch')});
   const panel=s=>'<div class="panel">'+s+'</div>',btn=(s,a,go=false)=>'<button class="btn'+(go?' go':'')+'" type="button" data-ho="'+a+'">'+s+'</button>';
   function status(s,error=false){if($('hoMessage')){$('hoMessage').textContent=s;$('hoMessage').className='settings-status '+(error?'warn':'ok');}}
-  function error(e){return L('Nie wykonano operacji: ','Operation failed: ')+(e.message||e);}
+  function error(e){return L('Nie wykonano operacji: ','Operation failed: ')+(w.OESTBledy?w.OESTBledy.text(e,L('pl','en')):(e.message||e));}
   function ensure(){if(w.OESTSettings.get().owner!==owner)throw Error('ACCOUNT_CHANGED');}
   function current(){return data?.shifts.find(s=>s.id===shiftId);}
   function clearUrls(){mediaUrls.forEach(URL.revokeObjectURL);mediaUrls=[];}

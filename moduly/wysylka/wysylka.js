@@ -60,7 +60,7 @@
     if (/RESULT_UNCERTAIN/.test(m)) return "nie doczekałem się odpowiedzi Gmaila (słaby zasięg albo duży raport); sprawdź „Wysłane”, zanim ponowisz";
     if (/EMAIL_INVALID/.test(m)) return "brak adresu e-mail w Ustawieniach";
     if (/cancel/i.test(m)) return "anulowano logowanie Google";
-    return m;
+    return root.OESTBledy ? root.OESTBledy.text(e) : m;
   }
 
   // ---------- wysyłka ----------

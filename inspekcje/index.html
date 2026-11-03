@@ -477,6 +477,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../ppm.js"></script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
+<script src="../moduly/bledy/bledy.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
@@ -1641,7 +1642,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return j.result;
     });
   }
-  function gErr(e) { return (e && e.message) ? e.message : String(e); }
+  function gErr(e) { return window.OESTBledy ? OESTBledy.text(e) : (e && e.message) ? e.message : String(e); }
 
   // ---------- tłumaczenie komentarza (tłumacz Google, wymaga sieci) ----------
   // w APK: tłumacz ML Kit w telefonie (offline; za pierwszym razem pobiera słownik PL→EN ok. 30 MB)

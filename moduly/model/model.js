@@ -76,11 +76,11 @@
       var sel = el.querySelector('[data-model-key]'); sel.oninput = function (e) { e.stopPropagation(); }; sel.onchange = function (e) { e.stopPropagation(); setKey(e.target.value); refresh(); };
       el.querySelectorAll('[data-model-act]').forEach(function (b) { b.onclick = function () {
         var a = b.getAttribute('data-model-act'); if (a === 'remove' && !w.confirm('Usunąć plik modelu z telefonu?')) return;
-        (a === 'download' ? download() : remove()).then(refresh, function (e) { refresh(e.message); });
+        (a === 'download' ? download() : remove()).then(refresh, function (e) { refresh(w.OESTBledy ? w.OESTBledy.text(e) : e.message); });
       }; });
       clearInterval(timer); if (s.downloading) timer = setInterval(refresh, 3000);
     }
-    function refresh(err) { status().then(function (s) { draw(s || {}, err); }, function (e) { draw({}, e.message); }); }
+    function refresh(err) { status().then(function (s) { draw(s || {}, err); }, function (e) { draw({}, w.OESTBledy ? w.OESTBledy.text(e) : e.message); }); }
     refresh();
   }
   w.OESTModel = { MODELS: MODELS, RULES: RULES, available: available, status: status, download: download, remove: remove, ready: ready, polish: polish, combine: combine, missingNumbers: missingNumbers, key: key, setKey: setKey, mount: mount };

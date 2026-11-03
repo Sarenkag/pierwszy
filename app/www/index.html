@@ -159,7 +159,7 @@ input[type=text], input[type=email], input[type=date], select {
     <div class="tiles">
       <button class="tile" type="button" data-go="ppm">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
-        <div><b>Inspections</b></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Inspections">Inspekcje</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="reactive">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
@@ -171,11 +171,11 @@ input[type=text], input[type=email], input[type=date], select {
       </button>
       <button class="tile" type="button" data-go="cal">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
-        <div><b>Calendar</b></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Calendar">Kalendarz</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="keys">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
-        <div><b>Keys</b></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Keys">Klucze</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="handover">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
@@ -183,11 +183,11 @@ input[type=text], input[type=email], input[type=date], select {
       </button>
       <button class="tile" type="button" data-go="soon" data-title="Stats">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/></svg>
-        <div><b>Stats</b></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Stats">Statystyki</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="settings">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/></svg>
-        <div><b>Settings</b></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Settings">Ustawienia</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
     </div>
   </section>
@@ -195,7 +195,7 @@ input[type=text], input[type=email], input[type=date], select {
   <!-- Inspections -->
   <section class="view" id="v-ppm" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Inspections</h1></div></div>
+      <div class="t"><h1 data-en="Inspections">Inspekcje</h1></div></div>
     <div class="days" id="ppmDays"></div>
     <div class="chips" id="ppmChips"></div>
     <div class="ppm" id="ppmList"></div>
@@ -205,11 +205,11 @@ input[type=text], input[type=email], input[type=date], select {
   <!-- Kalendarz: miesiąc, zmiany z grafiku, inspekcje do zrobienia -->
   <section class="view" id="v-cal" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Back">‹</button>
-      <div class="t"><h1 id="calTitle">Calendar</h1></div>
+      <div class="t"><h1 id="calTitle" data-en="Calendar">Kalendarz</h1></div>
       <button class="calnav" type="button" data-cm="-1" aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Next month">▶</button>
       <button class="calnav" type="button" data-go="profile" aria-label="Mój grafik">⚙</button></div>
     <div class="calgrid" id="calGrid"></div>
-    <div class="callegend"><span class="sh">Shift</span><span class="dn">Vantify job</span><span class="dn pl">Planned</span></div>
+    <div class="callegend"><span class="sh" data-en="Shift">Zmiana</span><span class="dn" data-en="Vantify job">Zlecenie Vantify</span><span class="dn pl" data-en="Planned">Planowane</span></div>
     <button class="calhint" id="calNoShift" type="button" data-go="profile" hidden>Brak grafiku – ustaw swoje zmiany w <b>Mój profil → Mój grafik</b> ›</button>
     <div class="ppm" id="calDay"></div>
   </section>
@@ -220,26 +220,26 @@ input[type=text], input[type=email], input[type=date], select {
   <!-- Moduł w przygotowaniu -->
   <section class="view" id="v-soon" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
-      <div class="t"><h1 id="soonTitle">Stats</h1></div></div>
+      <div class="t"><h1 id="soonTitle" data-en="Stats">Statystyki</h1></div></div>
     <div class="panel"><p class="hint">Ten moduł powstanie w kolejnych krokach.</p></div>
   </section>
 
   <!-- Settings -->
   <section class="view" id="v-settings" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Settings</h1></div></div>
+      <div class="t"><h1 data-en="Settings">Ustawienia</h1></div></div>
     <div class="tiles">
       <button class="tile" type="button" data-go="profile">
         <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="17" r="8"/><path d="M8 42c2-9 9-13 16-13s14 4 16 13"/></svg>
-        <div><b>Mój profil</b><span class="sub">Dane, e-maile, zmiana</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="My profile">Mój profil</b><span class="sub" data-en="Details, emails, shift">Dane, e-maile, zmiana</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-go="appset">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="13" y="5" width="22" height="38" rx="3"/><path d="M21 37h6"/></svg>
-        <div><b>Ustawienia aplikacji</b><span class="sub">Konto, wylogowanie</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="App settings">Ustawienia aplikacji</b><span class="sub" data-en="Account, sign out">Konto, wylogowanie</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
       <button class="tile" type="button" data-open="inspekcje">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 15h16M16 23h16M16 31h10"/></svg>
-        <div><b>Ustawienia inspekcji</b><span class="sub">E-mail, nazwy plików, kolejka raportów</span></div><span class="arrow" aria-hidden="true">›</span>
+        <div><b data-en="Inspection settings">Ustawienia inspekcji</b><span class="sub" data-en="Email, file names, report queue">E-mail, nazwy plików, kolejka raportów</span></div><span class="arrow" aria-hidden="true">›</span>
       </button>
     </div>
   </section>
@@ -250,7 +250,7 @@ input[type=text], input[type=email], input[type=date], select {
       <div class="t"><h1>Ustawienia aplikacji</h1></div></div>
     <div class="panel">
       <div class="who"><img id="accPic" alt="" hidden><div><b id="accName">—</b><div class="sub" id="accMail"></div></div></div>
-      <button class="btn" type="button" id="logoutBtn">Wyloguj</button>
+      <button class="btn" type="button" id="logoutBtn" data-en="Sign out">Wyloguj</button>
       <p class="hint">Wylogowanie nie usuwa profilu, inspekcji ani kolejki raportów z telefonu.</p>
     </div>
   </section>
@@ -261,6 +261,7 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-reactive" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
+<script src="moduly/bledy/bledy.js"></script>
 <script src="config.js"></script>
 <script src="vantify-plan.js"></script>
 <script src="ppm.js"></script>
@@ -409,6 +410,14 @@ input[type=text], input[type=email], input[type=date], select {
       show(b.dataset.go);
     });
   });
+  // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
+  function uiLang() { try { return localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
+  function applyLang() {
+    var en = uiLang() === "en";
+    document.querySelectorAll("[data-en]").forEach(function (el) { if (el.dataset.pl == null) el.dataset.pl = el.textContent; el.textContent = en ? el.dataset.en : el.dataset.pl; });
+  }
+  window.addEventListener("oest:lang", function () { applyLang(); liveRefresh(); });
+  applyLang();
   // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
   function goInsp(url) {
     try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#home", day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.scrollY })); } catch (e) {}
@@ -499,7 +508,9 @@ input[type=text], input[type=email], input[type=date], select {
   }
   // klocek v2 (Grzegorz 02/11): typ z lewej, krótka nazwa + etap, budynek · częstotliwość, termin + %, pasek, punkty/usterki/zdjęcia
   var ST = { prog: ["◐ W trakcie", "c1", 50], hold: ["⏸ Wstrzymana", "c1", 50], done: ["✓ Zakończona", "c2", 100], queued: ["⏳ W kolejce", "c4", 100], sent: ["✓ Wysłana", "c2", 100] };
-  var FREQ = { "1W": "weekly", "1M": "monthly", "3M": "quarterly", "6M": "6-monthly", "12M": "annual" };
+  var FREQ_EN = { "1W": "weekly", "1M": "monthly", "3M": "quarterly", "6M": "6-monthly", "12M": "annual" };
+  var FREQ_PL = { "1W": "co tydzień", "1M": "co miesiąc", "3M": "co kwartał", "6M": "co pół roku", "12M": "co rok" };
+  function freqName(f) { return (uiLang() === "en" ? FREQ_EN : FREQ_PL)[f] || f; }
   var ICON_APP = '<svg class="ty" viewBox="0 0 24 24" aria-label="Inspekcja w apce"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 9l2 2 3-4M8 16l2 2 3-4M15 9h2M15 16h2"/></svg>';
   var ICON_FOLDER = '<svg class="ty" viewBox="0 0 24 24" aria-label="Ze zdjęć kartki"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2.6"/></svg>';
   function dshort(d) { return DAYS[d.getDay()].toLowerCase() + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
@@ -510,7 +521,7 @@ input[type=text], input[type=email], input[type=date], select {
     var insp = !st ? null : st.s === "queued" || st.s === "sent" ? ST.done : ST[st.s];
     var badge = insp ? '<span class="kst ' + insp[1] + '">' + insp[0] + "</span>" : late ? '<span class="kst c3">! Zaległa</span>' : '<span class="kst c0">○ Nie rozpoczęta</span>';
     var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">📤 Wysłana</span>' : st.s === "queued" ? '<span class="ksend c4">⏳ W kolejce</span>' : st.s === "done" ? '<span class="ksend c3">✉ Niewysłana</span>' : "";
-    var where = [sh.where, t.freq.map(function (f) { return FREQ[f] || f; }).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
+    var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
     var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? "Zakończona " : st.s === "sent" ? "Wysłana " : "W kolejce ") + dshort(new Date(st.at)) + " · następna " + dshort(r.due)
       : "Termin <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? "dziś, " : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " dni temu</span>" : r.left > 0 ? " · za " + r.left + " dni" : "")) : "Brak terminu — ustaw w inspekcji (Update)";
     var pc = stg ? stg[2] : 0, col = stg ? { c1: "#f0c75e", c2: "#3fb27f", c4: "#79b8ff" }[stg[1]] : "transparent";
@@ -538,7 +549,8 @@ input[type=text], input[type=email], input[type=date], select {
       html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? "Dziś" : DAYS[d.getDay()]) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
     }
     $("ppmDays").innerHTML = html;
-    var chips = [{ id: "all", name: "All" }].concat(P.groups, [{ id: "started", name: "◐ Rozpoczęte" }]);
+    var en = uiLang() === "en";
+    var chips = [{ id: "all", name: en ? "All" : "Wszystkie" }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: en ? g.name : g.pl || g.name }; }), [{ id: "started", name: en ? "◐ Started" : "◐ Rozpoczęte" }]);
     $("ppmChips").innerHTML = chips.map(function (g) {
       var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
       return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
@@ -607,7 +619,7 @@ input[type=text], input[type=email], input[type=date], select {
     var y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), lead = (first.getDay() + 6) % 7;
     var start = new Date(y, m, 1 - lead), end = new Date(y, m, 42 - lead);
     var from = P.iso(start), to = P.iso(end), today = P.iso(new Date()), by = calDue(from, to);
-    $("calTitle").textContent = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    $("calTitle").textContent = first.toLocaleDateString(uiLang() === "en" ? "en-GB" : "pl-PL", { month: "long", year: "numeric" });
     var h = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(function (d) { return '<b class="cw">' + d + "</b>"; }).join("");
     for (var k = 0; k < 42; k++) {
       var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length, pl = n && (by[iso] || []).every(function (e) { return e.plan; });
