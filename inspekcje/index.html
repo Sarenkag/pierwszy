@@ -2245,7 +2245,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   function pointsSummary(f) {
     var no = f.taps.filter(function (t) { return t.state === "no"; }).length, na = f.taps.filter(function (t) { return t.state === "na"; }).length;
-    return no ? no + " call point(s) failed – AOVs did not operate correctly; record in the Fault and Remedial Actions Log" : "All call points tested – AOVs opened and reset correctly" + (na ? " (" + na + " N/A)" : "");
+    var yes = f.taps.length - no - na;
+    if (no) return no + " call point(s) failed – AOVs did not operate correctly; record in the Fault and Remedial Actions Log";
+    if (!yes) return "No call points tested (all N/A)";
+    return (na ? yes + " of " + f.taps.length + " call points tested – AOVs opened and reset correctly (" + na + " N/A, not tested)" : "All call points tested – AOVs opened and reset correctly");
   }
   function buildFlushPdf(d, pics) {
     var f = d.flush, pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
