@@ -1,15 +1,24 @@
-/* Explicit, on-demand Google operations. Tokens stay in memory; no timers, background scans or auto-send. */
+/* Explicit, on-demand Google operations. Tokens stay in memory; no timers, background scans or auto-send.
+ * 03/11: expired token (401) or no network → after a recent tap ask „Połącz ponownie / Anuluj”, reconnect, retry once. */
 (function(root,factory){
   var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;
   else {
-    root.OESTGoogle=api.createGoogle({fetch:root.fetch.bind(root),account:function(){return JSON.parse(root.localStorage.getItem('oest.account')||'null');},login:async function(scopes){
+    // ostatnie dotknięcie ekranu: okno ponownego połączenia tylko po świadomym kliknięciu, nigdy w tle
+    var lastTap=0;try{root.document.addEventListener('pointerdown',function(){lastTap=Date.now();},true);}catch(_){}
+    root.OESTGoogle=api.createGoogle({recentTap:function(){return Date.now()-lastTap<120000;},fetch:root.fetch.bind(root),account:function(){return JSON.parse(root.localStorage.getItem('oest.account')||'null');},login:async function(scopes){
       var cap=root.Capacitor,config=root.OEST_CONFIG||{};
       if(!cap||!cap.isNativePlatform()||!cap.Plugins.SocialLogin||!config.googleWebClientId)throw Error('GOOGLE_SETUP');
       var social=cap.Plugins.SocialLogin;
       await social.initialize({google:{webClientId:config.googleWebClientId,mode:'online'}});
-      var result=await social.login({provider:'google',options:{scopes:['email','profile'].concat(scopes)}});
+      // okno Google czasem nie wraca (03/11 „Łączę z Dyskiem…” bez końca): po 90 s zgłaszamy błąd zamiast wisieć
+      var result=await Promise.race([social.login({provider:'google',options:{scopes:['email','profile'].concat(scopes)}}),new Promise(function(_,rej){setTimeout(function(){rej(Error('GOOGLE_LOGIN_TIMEOUT'));},90000);})]);
       var r=result.result||{};return {email:r.profile&&r.profile.email,token:r.accessToken&&r.accessToken.token};
-    },store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
+    },ask:function(kind,why){ // okno „Połącz ponownie / Anuluj” (moduly/przycisk), tylko gdy Grzegorz właśnie coś kliknął
+      var P=root.OESTPrzycisk;if(!P||!P.ask)return Promise.resolve(false);
+      var what={drive:'Dysku Google',gmail:'Gmaila',contacts:'kontaktów Google',calendar:'Kalendarza Google'}[kind]||'Google';
+      if(why==='offline')return P.ask({title:'Brak internetu',text:'Telefon nie ma teraz połączenia z internetem. Włącz Wi‑Fi albo dane i spróbuj ponownie.',ok:'Spróbuj ponownie'});
+      return P.ask({title:'Połączenie wygasło',text:'Pozwolenie dla '+what+' wygasło. Połączyć ponownie? Potem operacja dokończy się sama.',ok:'Połącz ponownie'});
+    },online:function(){return root.navigator.onLine!==false;},store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
       get:function(){try{return JSON.parse(root.sessionStorage.getItem('oest.gsess')||'{}');}catch(_){return {};}},
       set:function(v){try{root.sessionStorage.setItem('oest.gsess',JSON.stringify(v));}catch(_){}}
     }});
@@ -28,18 +37,38 @@
       if(!r.token)throw Error('GOOGLE_TOKEN');sessions[kind]={token:r.token,email:expected,until:Date.now()+50*60*1000};store.set(sessions);return true;
     }
     function disconnect(){sessions={};store.set(sessions);}
-    async function request(kind,url,options){
-      if(!connected(kind))throw Error('GOOGLE_CONNECT');
+    // Przed operacją: internet i ważne pozwolenie. Brak → (po kliknięciu) okno „Połącz ponownie / Anuluj”, potem operacja idzie dalej.
+    async function ensure(kind){
+      var interactive=!opts.recentTap||opts.recentTap();
+      while(opts.online&&!opts.online()){
+        if(!interactive||!opts.ask||!(await opts.ask(kind,'offline')))throw Error('GOOGLE_OFFLINE');
+        await new Promise(function(r){setTimeout(r,1500);}); // chwila na złapanie sieci po „Spróbuj ponownie”
+      }
+      if(connected(kind))return;
+      if(!interactive||!opts.ask)throw Error('GOOGLE_CONNECT');
+      if(sessions[kind]&&!(await opts.ask(kind,'expired')))throw Error('GOOGLE_CANCELLED'); // pierwsze połączenie w sesji: od razu okno Google
+      await connect(kind);
+    }
+    async function once(kind,url,options){
       if(busy)throw Error('GOOGLE_BUSY');busy=true;
       var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},(options&&options.timeout)||30000);
       try{
         var response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:Object.assign({Authorization:'Bearer '+session.token},options&&options.headers)}));
-        if(!response.ok){if(response.status===401){delete sessions[kind];store.set(sessions);}
+        if(!response.ok){if(response.status===401){sessions[kind]=Object.assign({},sessions[kind],{until:0});store.set(sessions);}
           var why='';try{var j=await response.json();why=j&&j.error&&j.error.message?String(j.error.message).slice(0,160):'';}catch(_){}
           throw Error('GOOGLE_HTTP_'+response.status+(why?': '+why:''));}
         if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
         return response.status===204?{}:await response.json();
       }finally{clearTimeout(timer);busy=false;}
+    }
+    async function request(kind,url,options){
+      await ensure(kind);
+      try{return await once(kind,url,options);}
+      catch(e){
+        // pozwolenie wygasło w trakcie (401): jedno ponowne połączenie i ta sama operacja jeszcze raz
+        if(!/GOOGLE_HTTP_401/.test(e&&e.message))throw e;
+        await ensure(kind);return once(kind,url,options);
+      }
     }
     async function labels(){var out=[],page='';do{var r=await request('contacts','https://people.googleapis.com/v1/contactGroups?pageSize=1000'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat((r.contactGroups||[]).filter(function(g){return g.groupType==='USER_CONTACT_GROUP';}));page=r.nextPageToken||'';}while(page);return out;}
     async function contacts(label){

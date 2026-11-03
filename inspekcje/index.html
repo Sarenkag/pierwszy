@@ -2378,6 +2378,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       status: "wait", err: ""
     };
     // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
+    if (sendBtn && sendBtn.step) sendBtn.step("Dodaję do kolejki…");
     return dbP.then(function (db) {
       if (db) return qPut(it);
       if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");

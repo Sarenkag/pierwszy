@@ -22,13 +22,18 @@
     if (/GOOGLE_SETUP|GOOGLE_CONNECT|GOOGLE_TOKEN/.test(m)) return 'Brak połączenia z Google Drive. Zaloguj się w apce kontem Google.';
     if (/GOOGLE_ACCOUNT_MISMATCH/.test(m)) return 'Wybrano inne konto Google niż to, na które jesteś zalogowany.';
     if (/GOOGLE_BUSY/.test(m)) return 'Dysk jest zajęty inną operacją. Spróbuj za chwilę.';
+    if (/GOOGLE_OFFLINE/.test(m)) return 'Brak internetu. Zdjęcia poczekają na następną próbę.';
+    if (/GOOGLE_CANCELLED/.test(m)) return 'Anulowano. Zdjęcia zostają w telefonie.';
+    if (/LOGIN_TIMEOUT/.test(m)) return 'Okno Google nie odpowiedziało. Spróbuj ponownie.';
+    if (/GOOGLE_HTTP_401/.test(m)) return 'Pozwolenie Dysku wygasło. Stuknij jeszcze raz, apka poprosi o ponowne połączenie.';
     if (/AbortError|Failed to fetch|TypeError/.test(m)) return 'Brak internetu albo za słaby sygnał. Zdjęcia poczekają na następną próbę.';
     return 'Nie udało się: ' + m;
   }
 
-  async function syncNow(force) {
+  async function syncNow(force, h) {
     if (!G) throw Error('GOOGLE_SETUP');
     if (!G.connected('drive')) await G.connect('drive');
+    if (h) h.step('Wysyłam na Dysk…');
     return Z.sync(drive(), force);
   }
   // automatycznie: tylko na Wi-Fi i tylko gdy Dysk jest już połączony w tej sesji (bez wyskakujących okien)
@@ -80,9 +85,11 @@
   function bind(root, found) {
     root.querySelector('.back').onclick = function () { navigate('settings'); }; // przy historii wstecz obsługuje index.html
     root.querySelector('[data-zd="sync"]').onclick = function () {
-      msg = 'Łączę z Dyskiem…'; render();
-      syncNow(true).then(function (r) { msg = r.sent ? 'Wysłano na Dysk: ' + r.sent + '.' : 'Wszystko jest już na Dysku.'; })
-        .catch(function (e) { msg = errText(e); }).then(render);
+      // wspólny przycisk (moduly/przycisk): kółko + etap na przycisku, potem „✓ Gotowe” (Grzegorz 03/11)
+      var P = w.OESTPrzycisk, h = P ? P.start(this, { busy: 'Sprawdzam połączenie', keep: false }) : null;
+      msg = ''; if (!h) { msg = 'Łączę z Dyskiem…'; render(); }
+      syncNow(true, h).then(function (r) { msg = r.sent ? 'Wysłano na Dysk: ' + r.sent + '.' : 'Wszystko jest już na Dysku.'; return h && h.ok(r.sent ? 'Wysłano ' + r.sent : 'Gotowe'); },
+        function (e) { msg = errText(e); if (h) h.fail(); }).then(render);
     };
     root.querySelector('[data-zd="save"]').onclick = function () {
       Z.setSettings({ preset: $('zdPreset').value, phoneLimitMB: +$('zdPhone').value, driveLimitMB: +$('zdDrive').value, wifiOnly: $('zdWifi').checked });

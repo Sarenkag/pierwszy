@@ -53,6 +53,9 @@
     if (/ACCOUNT_MISMATCH/.test(m)) return "wybrano inne konto Google niż to, na które jesteś zalogowany";
     if (/HTTP_403/.test(m)) return "Gmail odmówił" + (/has not been used|disabled/i.test(m) ? " – włącz Gmail API w Google Cloud" : /scope|insufficient/i.test(m) ? " – brak zgody na wysyłanie; Ustawienia → Konto → Rozłącz sesje i Ponów" : "") + " (" + m.replace(/^.*?HTTP_403:?\s*/, "").slice(0, 120) + ")";
     if (/HTTP_401/.test(m)) return "sesja Google wygasła, ponów";
+    if (/GOOGLE_OFFLINE/.test(m)) return "brak internetu";
+    if (/GOOGLE_CANCELLED/.test(m)) return "anulowano ponowne połączenie";
+    if (/LOGIN_TIMEOUT/.test(m)) return "okno Google nie odpowiedziało, ponów";
     if (/HTTP_413/.test(m)) return "raport za duży dla Gmaila";
     if (/RESULT_UNCERTAIN/.test(m)) return "nie doczekałem się odpowiedzi Gmaila (słaby zasięg albo duży raport); sprawdź „Wysłane”, zanim ponowisz";
     if (/EMAIL_INVALID/.test(m)) return "brak adresu e-mail w Ustawieniach";
