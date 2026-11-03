@@ -2,6 +2,9 @@ package com.oest.inspekcje;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.webkit.WebView;
+import androidx.core.view.ViewCompat;
+import com.getcapacitor.WebViewListener;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.PluginHandle;
 import ee.forgr.capacitor.social.login.GoogleProvider;
@@ -21,6 +24,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(PhotoEditPlugin.class);
         registerPlugin(ModelPlugin.class);
         super.onCreate(savedInstanceState);
+        // Każda strona (menu → inspekcje → menu) ładuje się od nowa: prosimy system o ponowne podanie wysokości pasków,
+        // żeby przyciski na dole nie chowały się pod paskiem nawigacji telefonu (test w terenie 03/11/2026).
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override public void onPageLoaded(WebView webView) { ViewCompat.requestApplyInsets(getWindow().getDecorView()); }
+        });
     }
 
     @Override

@@ -115,9 +115,9 @@
 
   // ---------- pasek ----------
   // cienki pełny pasek przyklejony do dołu ekranu (pod appką, nieprzezroczysty); rozwinięcie otwiera się nad nim
-  var css = ":root{--oest-sbar-h:calc(30px + env(safe-area-inset-bottom,0px))}" +
+  var css = ":root{--oest-sbar-h:calc(30px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))}" +
     ".oest-sbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column-reverse;background:#151a22;color:#e8eaed;" +
-    "border-top:1px solid #2a313c;padding-bottom:env(safe-area-inset-bottom,0px);font:13px/1.2 system-ui,sans-serif}" +
+    "border-top:1px solid #2a313c;padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));font:13px/1.2 system-ui,sans-serif}" +
     ".oest-sbar .r{display:flex;align-items:center;gap:8px;height:29px;padding:0 12px;cursor:pointer;white-space:nowrap}" +
     ".oest-sbar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.oest-sbar .r>span:last-child{opacity:.6;font-size:11px}" +
     ".oest-sbar .i{width:10px;height:10px;flex:none;border-radius:50%;box-sizing:border-box}" +
