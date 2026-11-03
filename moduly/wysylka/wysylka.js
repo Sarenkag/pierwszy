@@ -222,5 +222,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, enqueue: enqueue, active: active, busy: function () { return sending; }, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending; }, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText };
 })(window);

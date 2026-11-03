@@ -128,6 +128,7 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="powertrace.css">
 <link rel="stylesheet" href="questions.css">
 <link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="home.css">
 </head>
 <body>
 <div class="wrap">
@@ -152,10 +153,21 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Menu główne -->
   <section class="view" id="v-home" hidden>
-    <div class="hero" aria-label="One East Side Tower">
-      <div class="hero-logo">OEST</div>
-      <div class="hero-name">One East Side Tower</div>
+    <!-- Nagłówek ekranu głównego (Grzegorz 03/11, makieta „Home experience”); logika w home.js -->
+    <header class="hm-head">
+      <div class="hm-logo" aria-hidden="true">OEST</div>
+      <div class="hm-name"><b>ONE EASTSIDE</b><span><span id="hmDate"></span><button class="hm-wx" id="hmWx" type="button" hidden aria-label="Prognoza pogody" data-en-aria-label="Weather forecast"><span class="i"></span><span class="v"></span></button></span></div>
+      <div class="hm-icons">
+        <button class="hm-lang" id="hmLang" type="button" aria-label="Język" data-en-aria-label="Language"><i data-l="en">EN</i><i data-l="pl">PL</i></button>
+        <button class="hm-sq" id="hmBell" type="button" aria-label="Powiadomienia" data-en-aria-label="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><span class="hm-badge" hidden></span></button>
+        <button class="hm-sq hm-me" type="button" data-go="profile" aria-label="Mój profil" data-en-aria-label="My Profile"><span id="hmIni"></span></button>
+      </div>
+    </header>
+    <div class="hm-st">
+      <button type="button" id="hmNet" aria-label="Połączenie" data-en-aria-label="Connection"><i class="l"></i><span></span></button>
+      <button type="button" id="hmDrive" aria-label="Google Drive"><i class="l"></i><span></span></button>
     </div>
+    <div class="days hm-days" id="hmDays"></div>
     <div class="tiles">
       <button class="tile" type="button" data-go="ppm">
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
@@ -191,6 +203,8 @@ input[type=text], input[type=email], input[type=date], select {
       </button>
     </div>
   </section>
+
+  <div class="hm-pop" id="hmPop" hidden><div class="hm-card" role="dialog"><div class="hm-pc"></div></div></div>
 
   <!-- Inspections -->
   <section class="view" id="v-ppm" hidden>
@@ -303,6 +317,7 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/pole-email/pole-email.js"></script>
 <script src="moduly/model/model.js"></script>
 <script src="zdjecia-ui.js"></script>
+<script src="home.js"></script>
 <script>
 (function () {
   "use strict";
@@ -637,10 +652,22 @@ input[type=text], input[type=email], input[type=date], select {
   $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });
   $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
-  function renderHome() {
-    var p = profile(), name = [p.first, p.last].filter(Boolean).join(" ");
-
+  // Ekran główny: home.js (pasek dni liczy tak samo jak lista Inspekcji: zaległe na dziś)
+  function ppmCounts() {
+    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    var out = {}, late = 0, k0 = P.iso(t);
+    P.tasks.forEach(function (x) { var due = P.due(x); if (!due) return; var left = P.daysLeft(due), k = P.iso(left < 0 ? t : due); out[k] = (out[k] || 0) + 1; if (left < 0) late++; });
+    return { by: out, late: late, today: out[k0] || 0 };
   }
+  window.OESTHome.init({
+    show: show, dayName: dayName,
+    counts: function () { return ppmCounts().by; },
+    inspToday: function () { var c = ppmCounts(); return { today: c.today, late: c.late }; },
+    hasShift: function () { try { return window.OESTSettings.get().schedules.length > 0; } catch (e) { return false; } },
+    isWorkday: calShift,
+    openDay: function (k) { ppmDay = k; show("ppm"); }
+  });
+  function renderHome() { ppmDay = ""; window.OESTHome.render(); } // powrót na ekran główny zdejmuje wybór dnia
 
   // ---------- start ----------
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
