@@ -75,6 +75,8 @@
   function run(o) {
     o = o || {};
     if (!active()) return Promise.resolve();
+    // bez kliknięcia (sieć wróciła, start apki): praca w tle, Google nie pokaże okna ponownego połączenia
+    if (!o.login && !o.bg && G() && G().background) return G().background(function () { return run(Object.assign({}, o, { bg: true })); });
     if (lock) return lock; // dwa wywołania naraz nie mogą wysłać tego samego raportu dwa razy
     return (lock = ready.then(loadAll).then(function () {
       var me = (account().email || "").toLowerCase();

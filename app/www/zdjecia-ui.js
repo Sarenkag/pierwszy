@@ -39,7 +39,7 @@
   // automatycznie: tylko na Wi-Fi i tylko gdy Dysk jest już połączony w tej sesji (bez wyskakujących okien)
   function auto() {
     if (!G || !G.connected('drive') || Z.busy()) return;
-    Z.sync(drive(), false).then(function (r) { if (r && r.sent) { msg = 'Wysłano na Dysk: ' + r.sent + '.'; render(); } }).catch(function () {});
+    (G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false)).then(function (r) { if (r && r.sent) { msg = 'Wysłano na Dysk: ' + r.sent + '.'; render(); } }).catch(function () {});
   }
 
   async function render() {
