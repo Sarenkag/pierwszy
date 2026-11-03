@@ -127,7 +127,8 @@
           var a = e.target.closest('[data-a]');
           if (!a) { if (e.target === o || e.target.tagName === 'IMG') shut(); return; }
           if (a.dataset.a === 'close') { shut(); return; }
-          delPhoto(r).then(function (ok) { if (ok) { shut(); msg = 'Usunięto: ' + r.name + '.'; render(); } }, function (err) { msg = errText(err); render(); });
+          var er = o.querySelector('.zd-err'); if (er) er.remove();
+          delPhoto(r).then(function (ok) { if (ok) { shut(); msg = 'Usunięto: ' + r.name + '.'; render(); } }, function (err) { var p = w.document.createElement('p'); p.className = 'zd-err'; p.textContent = 'Nie usunięto: ' + errText(err); o.appendChild(p); });
         };
       };
     });
@@ -140,7 +141,7 @@
     '.zd-ph{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:#222 center/cover no-repeat;padding:0;overflow:hidden}' +
     '.zd-ph small{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.zd-cloud{position:absolute;top:4px;right:4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:6px}' +
-    '.zd-full{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;color:#fff;text-align:center}.zd-full img{max-width:100%;max-height:72vh;object-fit:contain}.zd-act{display:flex;gap:10px;margin-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom),var(--safe-area-inset-bottom,0px))}.zd-act .btn{min-width:120px}';
+    '.zd-full{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;color:#fff;text-align:center}.zd-full img{max-width:100%;max-height:72vh;object-fit:contain}.zd-act{display:flex;gap:10px;margin-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom),var(--safe-area-inset-bottom,0px))}.zd-act .btn{min-width:120px}.zd-err{color:#ffb4b4;margin:8px 0 0;max-width:90%}';
   w.document.head.appendChild(css);
 
   Z.onChange(function () { render(); });
