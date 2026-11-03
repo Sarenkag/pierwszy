@@ -27,7 +27,7 @@
     if (/LOGIN_TIMEOUT/.test(m)) return 'Okno Google nie odpowiedziało. Spróbuj ponownie.';
     if (/GOOGLE_HTTP_401/.test(m)) return 'Pozwolenie Dysku wygasło. Stuknij jeszcze raz, apka poprosi o ponowne połączenie.';
     if (/AbortError|Failed to fetch|TypeError/.test(m)) return 'Brak internetu albo za słaby sygnał. Zdjęcia poczekają na następną próbę.';
-    return 'Nie udało się: ' + m;
+    return w.OESTBledy ? w.OESTBledy.text(e) : 'Nie udało się: ' + m;
   }
 
   async function syncNow(force, h) {

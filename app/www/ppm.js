@@ -3,11 +3,11 @@
 // open: karta otwiera istniejący rodzaj inspekcji z listą urządzeń (db, iso).
 window.OEST_PPM = {
   groups: [
-    { id: "fire", name: "Fire", color: "#e5534b" },
-    { id: "water", name: "Water", color: "#3b8eea" },
-    { id: "elec", name: "Electrical", color: "#e3b341" },
-    { id: "mech", name: "Mechanical", color: "#3fb27f" },
-    { id: "sub", name: "Sub", color: "#a371f7" }
+    { id: "fire", name: "Fire", pl: "Pożarowe", color: "#e5534b" },
+    { id: "water", name: "Water", pl: "Woda", color: "#3b8eea" },
+    { id: "elec", name: "Electrical", pl: "Elektryka", color: "#e3b341" },
+    { id: "mech", name: "Mechanical", pl: "Mechanika", color: "#3fb27f" },
+    { id: "sub", name: "Sub", pl: "Podwykonawcy", color: "#a371f7" }
   ],
   // Formularze {SF} (ten sam układ co DB): pytania od Grzegorza 31/10/2026, zdania do raportu po angielsku.
   // ✓ / ✗ / – (pominięty punkt nie trafia do raportu); domyślnie OK.
