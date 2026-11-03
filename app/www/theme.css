@@ -95,11 +95,6 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .calhint{display:block;width:100%;margin:8px 0 0;padding:10px 12px;border-radius:10px;border:1px dashed var(--line,#444);background:transparent;color:var(--muted);text-align:left;font:inherit;font-size:.85rem}
 .calhint[hidden]{display:none}
 .calnav[data-cm]{font-size:.8rem;color:var(--muted)}
-/* Menu główne: logo + nazwa obiektu nad kafelkami */
-.hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 0 22px}
-.hero-logo{width:84px;height:84px;border-radius:24px;display:grid;place-items:center;font-weight:800;font-size:1.45rem;letter-spacing:.06em;color:#fff;
-  background:linear-gradient(135deg,#5b7cff,#a35bff);box-shadow:0 10px 30px rgba(120,90,255,.5),inset 0 1px 0 rgba(255,255,255,.35)}
-.hero-name{font-size:1.35rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(90deg,#dfe4ff,#b9a8ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center}
 /* Reactive jak inspekcja: nagłówki paneli, klocki od lewej, dwa przyciski w stopce */
 #v-reactive .panel .label{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
 #v-reactive .rx-sub{font-size:.8rem;color:var(--muted);margin:10px 0 2px}

@@ -39,8 +39,9 @@
     return Z.sync(drive(), force);
   }
   // automatycznie: tylko na Wi-Fi i tylko gdy Dysk jest już połączony w tej sesji (bez wyskakujących okien)
+  function paused() { try { return w.localStorage.getItem('oest.zdjecia.pause') === '1'; } catch (_) { return false; } }
   function auto() {
-    if (!G || !G.connected('drive') || Z.busy()) return;
+    if (!G || !G.connected('drive') || Z.busy() || paused()) return; // „Wstrzymaj” z okienka Dysku na ekranie głównym
     (G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false)).then(function (r) { if (r && r.sent) { msg = T('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
   }
 
@@ -152,5 +153,6 @@
   if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener('change', auto);
   w.setTimeout(auto, 3000);
 
-  w.OESTZdjeciaUI = { open: function () { msg = ''; render(); auto(); }, setNavigate: function (f) { navigate = f; }, auto: auto };
+  w.OESTZdjeciaUI = { open: function () { msg = ''; render(); auto(); }, setNavigate: function (f) { navigate = f; }, auto: auto, syncNow: syncNow, errText: errText,
+    paused: paused, setPaused: function (on) { try { if (on) w.localStorage.setItem('oest.zdjecia.pause', '1'); else w.localStorage.removeItem('oest.zdjecia.pause'); } catch (_) {} if (!on) auto(); } };
 })(window);
