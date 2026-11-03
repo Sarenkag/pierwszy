@@ -109,7 +109,7 @@
   function rxCount() {
     var H = w.OESTHandover; if (!H || !H.repository || !H.repository.get) return Promise.resolve();
     return H.repository.get().then(function (s) {
-      rxOpen = ((s && s.jobs) || []).filter(function (j) { return j.reactive && j.status !== "fixed"; }).length;
+      rxOpen = ((s && s.jobs) || []).filter(function (j) { return j.status !== "fixed"; /* jak lista Reactive: także zadania z Handover */ }).length;
     }).catch(function () {});
   }
   function notes() {
@@ -257,6 +257,10 @@
       var op = e.target.closest("[data-hop]"); if (op) driveOp(op.dataset.hop, op);
     });
     w.addEventListener("oest:lang", relang);
+    // powrót do apki (np. następnego dnia): odśwież datę, pasek dni i liczniki, także bez sieci
+    function resume() { if (!$("v-home").hidden && !d.hidden && !popKind) render(); }
+    ["pageshow", "focus"].forEach(function (ev) { w.addEventListener(ev, resume); });
+    d.addEventListener("visibilitychange", resume);
     ["online", "offline"].forEach(function (ev) { w.addEventListener(ev, function () { if (!$("v-home").hidden) { lamps(); if (ev === "online") render(); if (popKind === "net") fillNet(); } }); });
     if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener("change", function () { lamps(); if (popKind === "net") fillNet(); });
     if (w.OESTZdjecia && w.OESTZdjecia.onChange) w.OESTZdjecia.onChange(function () { photoStats().then(function () { lamps(); badge(); if (popKind === "drive") fillDrive(); }); });
