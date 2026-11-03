@@ -1,4 +1,5 @@
-/* Moduł aparatu (moduly/aparat) – JEDYNE miejsce, przez które apki OEST robią zdjęcia.
+/* Dolny zapas przycisków (03/11, test Grzegorza): na Pixelu z przyciskami ◀●■ env() bywa 0, więc min. 44–56 px + zmienna od Capacitora.
+ * Moduł aparatu (moduly/aparat) – JEDYNE miejsce, przez które apki OEST robią zdjęcia.
  *
  * Zdjęcie: aparat systemowy (wtyczka OESTKeys.capture) → podgląd „✓ OK / ✏️ Edytuj / ↺ Powtórz” →
  * gotowe zdjęcie. Edycja: własny prosty edytor w apce (strzałka, kółko, kwadrat, linia, kolor, grubość,
@@ -68,7 +69,7 @@
           '<button type="button" data-a="undo" style="' + btn + '">↶ Cofnij</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">✓ Zapisz</button></div>' +
           '<div class="ed-stage" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
           '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + (t[3] || t[2]) + '" style="' + btn + ';flex:none">' + t[1] + (t[2] ? ' <small>' + t[2] + '</small>' : '') + '</button>'; }).join('') + '</div>' +
-          '<div style="display:flex;gap:6px;padding:6px 12px calc(14px + env(safe-area-inset-bottom));align-items:center;flex-wrap:wrap;justify-content:center">' +
+          '<div style="display:flex;gap:6px;padding:6px 12px max(44px, calc(14px + env(safe-area-inset-bottom, 0px)), calc(14px + var(--safe-area-inset-bottom, 0px)));align-items:center;flex-wrap:wrap;justify-content:center">' +
           COLORS.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="Kolor" style="flex:none;width:32px;height:32px;border-radius:50%;border:3px solid #3a4152;background:' + c + '"></button>'; }).join('') +
           '<span style="width:8px"></span>' + WIDTHS.map(function (w) { return '<button type="button" data-w="' + w.v + '" style="' + btn + ';flex:none">' + w.k + '</button>'; }).join('') + '</div>';
         var cv = box.querySelector('canvas'), g = cv.getContext('2d'), stage = box.querySelector('.ed-stage'), k = 1;
@@ -189,7 +190,7 @@
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:#05070c;display:flex;flex-direction:column');
         box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + env(safe-area-inset-top, 0px))) 8px 8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
           '<p class="oest-review-msg" role="status" style="margin:0;padding:0 16px;color:#f3c76b;font:500 14px system-ui;min-height:18px"></p>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom))">' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px max(56px, calc(16px + env(safe-area-inset-bottom, 0px)), calc(16px + var(--safe-area-inset-bottom, 0px)))">' +
           '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">↺ Powtórz</button>' +
           '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">✏️ Edytuj</button>' +
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';

@@ -9,13 +9,27 @@
 
   // ---- menu ⋮ (małe menu w rogu, bez przechodzenia na inny ekran) ----
   var kb = document.createElement("button");
-  kb.type = "button"; kb.className = "kebab"; kb.textContent = "⋮"; kb.setAttribute("aria-label", "Menu");
+  kb.type = "button"; kb.className = "kebab"; kb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'; kb.setAttribute("aria-label", "Menu");
+  // strzałka powrotu jako rysunek: znak „‹” siedział niżej niż nazwa inspekcji (03/11)
+  var back = top.querySelector(".back");
+  if (back) back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+  // przytrzymanie palca na nazwie: szary dymek z pełną nazwą inspekcji (03/11)
+  (function () {
+    var h1 = top.querySelector("h1"), tip = null, timer = 0;
+    if (!h1) return;
+    function hide() { clearTimeout(timer); if (tip) { tip.remove(); tip = null; } }
+    function full() { return h1.textContent || ""; }
+    h1.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    h1.addEventListener("pointerdown", function () { hide(); timer = setTimeout(function () { tip = document.createElement("div"); tip.className = "fulltitle"; tip.textContent = full(); document.body.appendChild(tip); }, 450); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { h1.addEventListener(ev, function () { clearTimeout(timer); if (tip) setTimeout(hide, 1500); }); });
+  })();
   var menu = document.createElement("div");
   menu.className = "kmenu"; menu.hidden = true;
   menu.innerHTML = '<div class="kupd"></div>' +
     '<button type="button" data-k="def">Przywróć domyślne (wszystko OK)</button>' +
     '<button type="button" data-k="more">Overall / Quote</button>' +
-    '<button type="button" data-k="prev">Podgląd raportu</button>';
+    '<button type="button" data-k="prev">Podgląd raportu</button>' +
+    '<button type="button" data-k="clear" class="kclear">Wyczyść inspekcję</button>';
   top.appendChild(kb); top.appendChild(menu);
   if (bar) menu.querySelector(".kupd").appendChild(bar);
   kb.addEventListener("click", function () { menu.hidden = !menu.hidden; });
@@ -25,6 +39,7 @@
     var k = b.getAttribute("data-k"); menu.hidden = true;
     if (k === "def") $("allOk").click();
     if (k === "prev") $("toPreview").click();
+    if (k === "clear" && window.OEST_clearInspection) window.OEST_clearInspection();
     if (k === "more") { ovp.classList.add("open"); ovp.scrollIntoView({ behavior: "smooth", block: "center" }); }
   });
 
@@ -80,6 +95,14 @@
   }
   new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   if (bar) new MutationObserver(syncHead).observe(bar, { childList: true, subtree: true });
+
+  // szkic wczytany (index.html → restoreDraft): Name/Date, notatka i licznik według zapisu
+  form.addEventListener("oest:restored", function () {
+    dz.disabled = !$("dateOn").checked;
+    if (!$("nameOn").checked) { pd.dataset.v = pd.value; pd.value = ""; }
+    kp.classList.toggle("open", !!$("komentarz").value.trim());
+    setTimeout(syncHead, 0);
+  });
 
   // przy każdym otwarciu formularza: znaczniki od nowa, notatka zwinięta (chyba że coś w niej jest)
   new MutationObserver(function () {

@@ -9,12 +9,14 @@
 .kmenu .ppmbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:.9rem}
 .kmenu .ppmbar[hidden]{display:none}
 .ihead{display:flex;justify-content:space-between;gap:10px;font-size:.92rem;margin:-4px 0 2px}
-.ileft{display:flex;flex-direction:column;gap:4px}
+.ileft{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
 .icb{display:flex;align-items:center;gap:8px}
 .icb input[type=checkbox]{width:18px;height:18px;accent-color:#7c84ff;margin:0}
 .icb input[type=date]{min-height:30px!important;padding:0 8px!important;width:auto!important;font-size:.9rem}
 .icb input[type=date]:disabled{opacity:.35}
-.iright{text-align:right;color:var(--muted)}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
+.iright{text-align:right;color:var(--muted);min-width:0;flex:0 1 auto;max-width:46%;display:flex;flex-direction:column;align-items:flex-end}
+.iright .ppmpill{max-width:100%!important;font-size:.78rem!important;padding:3px 8px!important;min-height:30px!important;text-overflow:ellipsis}
+#iEnds{white-space:nowrap}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
 .iphotos{padding:10px!important;gap:10px!important}.iphotos .label{display:none}
 .iphotos .photo-btns{grid-template-columns:repeat(3,1fr)!important;gap:8px}
 .iphotos .pbtn{min-height:42px!important;font-size:.9rem}
@@ -36,3 +38,21 @@
   background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 40%),radial-gradient(circle,var(--c),color-mix(in srgb,var(--c) 70%,#000))!important}
 .ck-row .seg button.on::after{color:#0a0e1f}
 #toQueue{min-height:50px;border-radius:16px!important}
+
+/* 03/11 test w terenie */
+#v-form .top{align-items:center}
+#v-form .top .back,#v-form .kebab{display:grid!important;place-items:center;padding:0!important;line-height:1}
+#v-form .top .back svg,#v-form .kebab svg{width:22px;height:22px;display:block}
+#v-form .top h1{cursor:default;-webkit-user-select:none;user-select:none}
+.fulltitle{position:fixed;left:16px;right:16px;top:calc(64px + var(--safe-area-inset-top,0px));z-index:60;padding:12px 14px;border-radius:12px;
+  background:rgba(60,64,80,.97);color:#fff;font-size:1rem;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none}
+#toQueue.compact{min-height:44px!important;padding:10px 14px!important;font-family:var(--font-body)!important;font-size:1rem!important;letter-spacing:0!important;
+  text-transform:none!important;width:auto!important;display:block;margin:0 auto;border-radius:12px!important;box-shadow:none!important}
+#busySpin{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);z-index:2147482000;display:none;flex-direction:column;align-items:center;gap:10px;
+  padding:18px 22px;border-radius:18px;background:rgba(14,18,40,.88);color:#fff;font-size:.9rem;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#busySpin.on{display:flex}
+#busySpin .ring{width:46px;height:46px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));
+  animation:oestSpin .9s linear infinite}
+@keyframes oestSpin{to{transform:rotate(360deg)}}

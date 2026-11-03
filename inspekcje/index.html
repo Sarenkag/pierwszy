@@ -972,7 +972,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     window.scrollTo(0, 0);
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
-  function leave(url) { (gm() ? OESTSender.whenIdle() : Promise.resolve()).then(function () { location.href = url; }); }
+  function leave(url) { saveDraftNow().then(function () { return gm() ? OESTSender.whenIdle() : null; }).then(function () { location.href = url; }); } // szkic zapisany, zanim strona zniknie
   // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
@@ -1072,6 +1072,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
     formMode(); renderChecks(); renderFaults(); show("form"); updateFormHint();
     ppmTrack(true);
+    if (fresh && mode === "one") loadDraft(); else if (mode === "one") draftOn = true;
   }
   // etap inspekcji na klocku listy PPM: otwarcie = W trakcie (jeśli nie wysłana w tym okresie), zdjęcia i usterki na bieżąco
   var thumbFor = null, noTrack = false;
@@ -1108,6 +1109,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("flushBox").hidden = !cur.type.flush || m === "sum";
   }
   function resetForm() {
+    draftOn = false; clearTimeout(draftT); draftT = 0;
     roomNotes = {};
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
@@ -1118,6 +1120,98 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
     fl = { on: false, week: 0, open: {}, taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
   }
+  // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
+  // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
+  // Szkic znika dopiero po wysłaniu raportu albo po „Wyczyść inspekcję” w menu ⋮.
+  var draftOn = false, draftT = 0, draftSeq = 0;
+  function draftKey(t, code) { t = t || cur.type; code = code == null ? cur.code : code; return t && code ? "draft_" + t.id + "|" + code : ""; }
+  function draftFields() {
+    // wszystkie pola formularza z id (data, podpis, Name/Date, Overall/Quote, komentarz…), bez plików i etapu klocka
+    return Array.prototype.filter.call($("v-form").querySelectorAll("input[id],textarea[id],select[id]"), function (el) {
+      return el.type !== "file" && el.id !== "ppmStage" && el.id !== "flOn";
+    });
+  }
+  function draftSnap() {
+    var f = {};
+    draftFields().forEach(function (el) { f[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
+    if (f.nameOn === false && $("podpis").dataset.v) f.podpis = $("podpis").dataset.v; // Name odznaczone: podpis schowany, ale pamiętany
+    return {
+      v: 1, t: Date.now(), qk: cur.type.checks.map(function (c) { return c.key; }),
+      states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
+      roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
+      fl: JSON.parse(JSON.stringify(fl)),
+      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap }; }).concat(keptSaved)
+    };
+  }
+  function saveDraftNow() {
+    clearTimeout(draftT); draftT = 0;
+    if (!draftOn || cur.mode !== "one" || !cur.type || queueing) return Promise.resolve();
+    var k = draftKey(); if (!k) return Promise.resolve();
+    var snap; try { snap = draftSnap(); } catch (e) { return Promise.resolve(); }
+    busySpin(true);
+    return kvSet(k, snap).catch(function (e) { $("formHint").textContent = "Nie zapisano szkicu w telefonie (" + gErr(e) + ")."; })
+      .then(function () { busySpin(pendingPh > 0 || !!restoring); });
+  }
+  function scheduleDraft() { if (!draftOn || cur.mode !== "one") return; clearTimeout(draftT); draftT = setTimeout(saveDraftNow, 300); }
+  function dropDraft(k) { return k ? kvSet(k, null).catch(function () {}) : Promise.resolve(); }
+  function loadDraft() {
+    var my = ++draftSeq, tok = formSeq, k = draftKey(), code = cur.code;
+    draftOn = false;
+    kvGet(k).then(function (d) {
+      if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
+      if (d && d.v === 1) restoreDraft(d, tok);
+      draftOn = true;
+    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = "Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz."; } });
+  }
+  function restoreDraft(d, tok) {
+    var f = d.fields || {};
+    draftFields().forEach(function (el) {
+      if (!(el.id in f)) return;
+      if (el.type === "checkbox" || el.type === "radio") el.checked = !!f[el.id]; else el.value = f[el.id];
+    });
+    var qk = d.qk || [], old = d.rsel || {};
+    override = Object.assign({}, d.override); faultsOn = Object.assign({}, d.faultsOn); rsel = {};
+    states = cur.type.checks.map(function (c, i) {
+      var j = qk.indexOf(c.key); if (j < 0) return c.def;
+      if (old[j]) rsel[i] = old[j].slice();
+      return d.states[j];
+    });
+    roomNotes = Object.assign({}, d.roomNotes); dateTouched = !!d.dateTouched;
+    if (d.temps && d.temps.length === temps.length) temps = d.temps.slice();
+    var F = cur.type.flush;
+    if (F && d.fl && d.fl.taps && d.fl.taps.length === F.taps.length) fl = d.fl;
+    renderChecks(); renderFaults(); renderTemps(); renderFlush();
+    try { $("v-form").dispatchEvent(new CustomEvent("oest:restored")); } catch (e) {}
+    var list = d.photos || [];
+    if (!list.length) { updateFormHint(); return; }
+    var my = restoring = ++restSeq;
+    updateFormHint();
+    Promise.all(list.map(function (sp) { return photoFromSaved(sp).then(function (p) { if (sp.tap != null) p.tap = sp.tap; return p; }, function () { return { failed: sp }; }); })).then(function (ps) {
+      var ok = ps.filter(function (p) { return !p.failed; });
+      if (my !== restoring || tok !== formSeq) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+      keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
+      photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
+      $("formHint").textContent = "Wczytano zapisaną inspekcję (" + ok.length + " zdj.)." + (keptSaved.length ? " Nie udało się pokazać " + keptSaved.length + " zdjęć — zostają w zapisie." : "");
+    });
+  }
+  // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
+  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function () { setTimeout(scheduleDraft, 0); }); });
+  // apka schowana / zamykana: zapis od razu, bez czekania
+  document.addEventListener("visibilitychange", function () { if (document.hidden) saveDraftNow(); });
+  window.addEventListener("pagehide", function () { saveDraftNow(); });
+  // „Wyczyść inspekcję” (menu ⋮): kasuje szkic, zdjęcia i etap klocka
+  window.OEST_clearInspection = function () {
+    if (cur.mode !== "one" || !cur.type) return;
+    if (!confirm("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).")) return;
+    var k = draftKey(), code = cur.code;
+    resetForm(); cur.code = "";
+    dropDraft(k).then(function () {
+      if (cur.ppm && PPM && PPM.setStage) { var r = PPM.stage(cur.ppm); if (!r || r.s === "prog" || r.s === "hold") PPM.setStage(cur.ppm, null); }
+      openForm(code); if (cur.ppm && PPM && PPM.setStage) { var r2 = PPM.stage(cur.ppm); if (r2 && r2.s === "prog" && !r2.manual) PPM.setStage(cur.ppm, null); }
+      renderPpmBar(); $("formHint").textContent = "Wyczyszczono. Formularz jest pusty.";
+    });
+  };
+
   // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
   var fl = { on: false, week: 0, open: {}, taps: [] };
   function formPhotos() { return photos.filter(function (p) { return p.tap == null; }); }
@@ -1667,7 +1761,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var fp = formPhotos().length; $("photoCount").textContent = fp ? "(" + fp + ")" : "";
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").innerHTML) renderSugs();
-    updateFormHint();
+    updateFormHint(); scheduleDraft();
   }
   // Data raportu: apka proponuje datę z pierwszego zdjęcia, dopóki nie zmienisz jej ręcznie
   function suggestDate() {
@@ -1776,8 +1870,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, url: URL.createObjectURL(blob) }; });
     });
   }
+  // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
+  function busySpin(on) {
+    var el = $("busySpin");
+    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>Zapisuję…</b>'; document.body.appendChild(el); }
+    el.classList.toggle("on", !!on);
+  }
   function updateFormHint() {
+    busySpin(pendingPh > 0 || !!restoring || (draftT && draftOn));
     var h = [];
+    $("toQueue").classList.remove("compact");
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
@@ -1800,7 +1902,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + formPhotos().length + " → jeden PDF, strona na zdjęcie.";
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? "Dodaj zdjęcie kartki" : "Wyślij · " + fmtDate(reportDate()); return;
+      $("toQueue").textContent = none ? "Dodaj zdjęcie formularza" : "Wyślij · " + fmtDate(reportDate());
+      $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
@@ -2298,6 +2401,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
       }
       if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
+      if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // raport wyszedł do kolejki: szkic niepotrzebny
       return done.then(sendOk).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     });
   }
@@ -2311,7 +2415,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: "Przygotowuję raport", keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = "Przygotowuję…"; }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
-    from = Object.assign({}, from, { fix: fix });
+    from = Object.assign({}, from, { fix: fix, draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = "Nie udało się przygotować raportu: " + buildErr(e);
       if (fromPreview) show("form");
