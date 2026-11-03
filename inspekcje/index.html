@@ -149,6 +149,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .fl-on { display: flex; align-items: center; gap: 10px; font-weight: 600; padding: 6px 0 10px; }
 .fl-list.off { opacity: .45; pointer-events: none; filter: grayscale(1); }
 .fl-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.fl-grp { margin: 10px 0 2px; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .fl-row:last-child { border-bottom: 0; }
 .fl-line { display: flex; align-items: center; gap: 8px; }
 .fl-line .txt { flex: 1; min-width: 0; }
@@ -379,9 +380,9 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     </div>
 
     <div class="panel" data-m="one" id="flushBox" hidden>
-      <div class="label">Tydzień miesiąca (jak na formularzu)</div>
+      <div class="label" id="flWeekL">Tydzień miesiąca (jak na formularzu)</div>
       <div class="fl-week" id="flWeek"><button type="button" data-w="1">1</button><button type="button" data-w="2">2</button><button type="button" data-w="3">3</button><button type="button" data-w="4">4</button><button type="button" data-w="5">5</button></div>
-      <label class="fl-on"><input type="checkbox" id="flOn"> Formularz elektroniczny</label>
+      <label class="fl-on"><input type="checkbox" id="flOn"> <span id="flOnL">Formularz elektroniczny</span></label>
       <div class="fl-list off" id="flList"></div>
       <p class="hint" id="flHint">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
       <input id="flCam" type="file" accept="image/*" capture="environment" hidden>
@@ -1226,10 +1227,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!F) { $("flList").innerHTML = ""; return; }
     if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
+    // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
+    $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
+    $("flOnL").textContent = F.points ? "Lista przycisków (sprawdzenie z apki)" : "Formularz elektroniczny";
+    $("flHint").textContent = F.points ? "Wyłączona: do raportu idą tylko zdjęcia kartki. Włączona: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach." :
+      "Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.";
+    var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
     $("flList").innerHTML = F.taps.map(function (name, i) {
       var t = fl.taps[i], pics = tapPhotos(i), open = fl.open[i] || t.note;
-      return '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(name) + '</div><div class="seg">' +
+      return (heads[i] ? '<div class="fl-grp">' + esc(heads[i]) + "</div>" : "") + '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(name) + '</div><div class="seg">' +
         [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]].map(function (o) { return '<button type="button" data-fl="' + i + '" data-s="' + o[0] + '" class="' + o[2] + (t.state === o[0] ? " on" : "") + '">' + o[1] + "</button>"; }).join("") +
         '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="Zdjęcie: ' + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
         '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="Notatka: ' + esc(name) + '">📝</button></div>' +
@@ -1256,7 +1263,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
-    return { building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
+    return { points: !!F.points, col: F.col, groups: F.groups || null, building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
@@ -1896,9 +1903,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     if (cur.type && cur.type.flush && fl.on) {
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
-      var fpn = formPhotos().length, fbk = !!restoring || pendingPh > 0 || !fl.week;
-      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : !fl.week ? "Wybierz tydzień miesiąca (1–5) — tak jak na formularzu." :
-        "Formularz: " + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + " · tydzień " + fl.week + (fpn ? " · zdjęć kartek: " + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
+      var pts = !!cur.type.flush.points, fpn = formPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
+      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : !pts && !fl.week ? "Wybierz tydzień miesiąca (1–5) — tak jak na formularzu." :
+        (pts ? "Przyciski: " : "Formularz: ") + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : " · tydzień " + fl.week) + (fpn ? " · zdjęć kartek: " + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
       $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
     }
@@ -2235,6 +2242,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
   // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
+  // AOV i inne listy punktów: podsumowanie po angielsku do raportu
+  function pointsSummary(f) {
+    var no = f.taps.filter(function (t) { return t.state === "no"; }).length, na = f.taps.filter(function (t) { return t.state === "na"; }).length;
+    return no ? no + " call point(s) failed – AOVs did not operate correctly; record in the Fault and Remedial Actions Log" : "All call points tested – AOVs opened and reset correctly" + (na ? " (" + na + " N/A)" : "");
+  }
   function buildFlushPdf(d, pics) {
     var f = d.flush, pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
     pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
@@ -2242,10 +2254,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var L = 15, y = 20;
     pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(f.title, L, y); y += 7;
     pdf.setFont("DV", "normal"); pdf.setFontSize(10);
-    pdf.text(OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · Date: " + d.data + " · Name: " + (f.name || ""), L, y); y += 8;
-    pdf.setFont("DV", "bold"); pdf.text("Outlet", L, y); pdf.text("Completed", 110, y); pdf.text("Notes", 135, y); y += 2; pdf.line(L, y, 195, y); y += 5;
+    pdf.text((f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), L, y); y += 8;
+    pdf.setFont("DV", "bold"); pdf.text(f.points ? "Call point" : "Outlet", L, y); pdf.text(f.points ? (f.col || "Result") : "Completed", 110, y); pdf.text("Notes", 145, y); y += 2; pdf.line(L, y, 195, y); y += 5;
     pdf.setFont("DV", "normal");
-    f.taps.forEach(function (t) {
+    var heads = {}, at = 0; (f.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
+    f.taps.forEach(function (t, ti) {
+      if (heads[ti]) { if (y + 12 > 287) { pdf.addPage(); y = 20; } y += 1; pdf.setFont("DV", "bold"); pdf.text(heads[ti], L, y); pdf.setFont("DV", "normal"); y += 6; }
       var note = pdf.splitTextToSize(t.note || "", 60), name = pdf.splitTextToSize(t.name, 92), lines = Math.max(1, note.length, name.length);
       // długa notatka: dzielona na kawałki, każdy mieści się na stronie
       for (var k = 0; k < lines; k += 50) {
@@ -2257,7 +2271,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       }
     });
     y += 3; if (y > 285) { pdf.addPage(); y = 20; }
-    pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize(OESTFlush.summary(f) + ".", 180), L, y);
+    pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize((f.points ? pointsSummary(f) : OESTFlush.summary(f)) + ".", 180), L, y);
     var tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null; });
     if (tp.length) {
       var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;
@@ -2287,9 +2301,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { f.tap = ph.tap; arr.push(f); return arr; }); });
       }, Promise.resolve([])).then(function (pics) {
         if (!useTaps) return { name: name, data: d, docx: new Uint8Array(0), pdf: buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
-        d.stan_ogolny = d.stan = OESTFlush.summary(d.flush);
+        d.stan_ogolny = d.stan = d.flush.points ? pointsSummary(d.flush) : OESTFlush.summary(d.flush);
         d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
-        return { name: name, data: d, docx: fillFlushDocx(d.flush), pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
+        return { name: name, data: d, docx: d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush), pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
@@ -2329,12 +2343,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }
     if (d.folder && d.flush) {
       var ff = d.flush;
-      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + " · tydzień " + ff.week + " · " + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
-        ff.taps.map(function (t) { return '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
+      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + " · tydzień " + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
+        ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; });
+          return (gname ? '<tr><td colspan="2"><b>' + esc(gname) + "</b></td></tr>" : "") + '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
         built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
+      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> (wzór firmy)<br>") + esc(built.name) + "<em>.pdf</em>";
       return;
     }
     if (d.folder) {
