@@ -19,11 +19,11 @@
 
   var MB = 1024 * 1024;
   var PRESETS = {
-    standard: { max: 1920, q: 0.8, pl: 'Standard (do 1920 px, ok. 0,5 MB)' },
-    wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)' },
-    oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)' }
+    standard: { max: 1920, q: 0.8, pl: 'Standard (do 1920 px, ok. 0,5 MB)', en: 'Standard (up to 1920 px, about 0.5 MB)' },
+    wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
+    oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
-  var DEFAULTS = { preset: 'standard', phoneLimitMB: 1024, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia' };
+  var DEFAULTS = { preset: 'standard', phoneLimitMB: 1024, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
 
   function cleanSettings(s) {
     var out = Object.assign({}, DEFAULTS, s || {});
@@ -43,7 +43,7 @@
   function place(meta, when) {
     var d = when instanceof Date && !isNaN(when) ? when : new Date();
     var month = d.getFullYear() + '-' + pad(d.getMonth() + 1), day = pad(d.getDate());
-    var category = safe(meta.category) || (meta.source === 'reactive' ? 'Reactive' : 'Inne');
+    var category = safe(meta.category) || (meta.source === 'reactive' ? 'Reactive' : 'Inne'); // i18n-ok: nazwa folderu na Dysku
     var label = [safe(meta.location), safe(meta.code)].filter(Boolean).join(' ') || category;
     var time = pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
     return { folder: [month, day, category], name: label + ' ' + time + '.jpg', day: month + '-' + day };

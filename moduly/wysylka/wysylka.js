@@ -4,6 +4,7 @@
 (function (root) {
   "use strict";
   var doc = root.document, G = function () { return root.OESTGoogle; };
+  function T(pl, en) { return root.OESTT ? root.OESTT(pl, en) : pl; }
   var opts = { onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
   var sending = false, pos = null, flash = "", flashT = null, skipWifi = false, open = false, idle = [], items = [], loginErr = "", lock = null;
 
@@ -49,17 +50,17 @@
   }
   function errText(e) {
     var m = e && e.message ? e.message : String(e);
-    if (/GOOGLE_SETUP/.test(m)) return "zaloguj się do Google w apce";
-    if (/ACCOUNT_MISMATCH/.test(m)) return "wybrano inne konto Google niż to, na które jesteś zalogowany";
-    if (/HTTP_403/.test(m)) return "Gmail odmówił" + (/has not been used|disabled/i.test(m) ? " – włącz Gmail API w Google Cloud" : /scope|insufficient/i.test(m) ? " – brak zgody na wysyłanie; Ustawienia → Konto → Rozłącz sesje i Ponów" : "") + " (" + m.replace(/^.*?HTTP_403:?\s*/, "").slice(0, 120) + ")";
-    if (/HTTP_401/.test(m)) return "sesja Google wygasła, ponów";
-    if (/GOOGLE_OFFLINE/.test(m)) return "brak internetu";
-    if (/GOOGLE_CANCELLED/.test(m)) return "anulowano ponowne połączenie";
-    if (/LOGIN_TIMEOUT/.test(m)) return "okno Google nie odpowiedziało, ponów";
-    if (/HTTP_413/.test(m)) return "raport za duży dla Gmaila";
-    if (/RESULT_UNCERTAIN/.test(m)) return "nie doczekałem się odpowiedzi Gmaila (słaby zasięg albo duży raport); sprawdź „Wysłane”, zanim ponowisz";
-    if (/EMAIL_INVALID/.test(m)) return "brak adresu e-mail w Ustawieniach";
-    if (/cancel/i.test(m)) return "anulowano logowanie Google";
+    if (/GOOGLE_SETUP/.test(m)) return T("zaloguj się do Google w apce", "sign in to Google in the app");
+    if (/ACCOUNT_MISMATCH/.test(m)) return T("wybrano inne konto Google niż to, na które jesteś zalogowany", "you chose a different Google account than the one you are signed in with");
+    if (/HTTP_403/.test(m)) return T("Gmail odmówił", "Gmail refused") + (/has not been used|disabled/i.test(m) ? T(" – włącz Gmail API w Google Cloud", " – enable the Gmail API in Google Cloud") : /scope|insufficient/i.test(m) ? T(" – brak zgody na wysyłanie; Ustawienia → Konto → Rozłącz sesje i Ponów", " – no permission to send; Settings → Account → Disconnect sessions, then Retry") : "") + " (" + m.replace(/^.*?HTTP_403:?\s*/, "").slice(0, 120) + ")";
+    if (/HTTP_401/.test(m)) return T("sesja Google wygasła, ponów", "Google session expired, retry");
+    if (/GOOGLE_OFFLINE/.test(m)) return T("brak internetu", "no internet");
+    if (/GOOGLE_CANCELLED/.test(m)) return T("anulowano ponowne połączenie", "reconnection cancelled");
+    if (/LOGIN_TIMEOUT/.test(m)) return T("okno Google nie odpowiedziało, ponów", "the Google window did not respond, retry");
+    if (/HTTP_413/.test(m)) return T("raport za duży dla Gmaila", "report too large for Gmail");
+    if (/RESULT_UNCERTAIN/.test(m)) return T("nie doczekałem się odpowiedzi Gmaila (słaby zasięg albo duży raport); sprawdź „Wysłane”, zanim ponowisz", "no answer from Gmail (weak signal or large report); check Sent before retrying");
+    if (/EMAIL_INVALID/.test(m)) return T("brak adresu e-mail w Ustawieniach", "no email address in Settings");
+    if (/cancel/i.test(m)) return T("anulowano logowanie Google", "Google sign-in cancelled");
     return root.OESTBledy ? root.OESTBledy.text(e) : m;
   }
 
@@ -110,9 +111,9 @@
           });
         }, Promise.resolve(false));
       }, function (e) { loginErr = errText(e); }).then(function () {
-        if (done) say("Wysłano ✓ " + (done === 1 ? "raport " + todo[0].code : done + " raporty"));
+        if (done) say(T("Wysłano ✓ ", "Sent ✓ ") + (done === 1 ? T("raport ", "report ") + todo[0].code : done + T(" raporty", " reports")));
       });
-    }).catch(function (e) { loginErr = "błąd kolejki w telefonie: " + errText(e); }).then(function () {
+    }).catch(function (e) { loginErr = T("błąd kolejki w telefonie: ", "phone queue error: ") + errText(e); }).then(function () {
       sending = false; pos = null; skipWifi = false; lock = null; render();
       if (opts.onIdle) try { opts.onIdle(); } catch (e) {}
       var w = idle; idle = []; w.forEach(function (f) { f(); });
@@ -169,29 +170,29 @@
     var p = pending(), n = p.length, err = p.filter(function (q) { return q.status === "err"; })[0];
     var cls = "", txt = "", more = "", prog = 0;
     var b = function (a, t, go) { return '<button type="button" data-a="' + a + '"' + (go ? ' class="go"' : "") + ">" + t + "</button>"; };
-    var qb = b("queue", "Pokaż kolejkę");
+    var qb = b("queue", T("Pokaż kolejkę", "Show queue"));
     var cap = root.Capacitor; if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { el.hidden = true; doc.body.classList.remove("oest-sbar-on"); return; } // pasek stale w apce
-    if (!active()) { cls = "err"; txt = n ? "W kolejce: " + n + " · Gmail niepołączony" : "Gmail niepołączony";
-      more = "<small>Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.</small>" + qb; }
+    if (!active()) { cls = "err"; txt = n ? T("W kolejce: ", "Queued: ") + n + T(" · Gmail niepołączony", " · Gmail not connected") : T("Gmail niepołączony", "Gmail not connected");
+      more = "<small>" + T("Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.", "To send reports automatically: Settings → Account → Sign out and sign in with Google, then add your work email in My Profile.") + "</small>" + qb; }
     else
     if (sending) {
       cls = "run"; prog = pos ? (pos.i - 0.5) / pos.n : 0.05;
-      txt = pos ? "Wysyłam raport " + (pos.n > 1 ? pos.i + "/" + pos.n + " " : "") + "· " + pos.code + "…" : "Łączę z Gmailem…";
-      more = "<small>Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.</small>" + qb;
+      txt = pos ? T("Wysyłam raport ", "Sending report ") + (pos.n > 1 ? pos.i + "/" + pos.n + " " : "") + "· " + pos.code + "…" : T("Łączę z Gmailem…", "Connecting to Gmail…");
+      more = "<small>" + T("Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.", "You can keep working. Do not close the app until the bar shows “Sent”.") + "</small>" + qb;
     } else if (flash) { cls = "ok"; txt = flash; prog = 1; more = qb; }
-    else if (!n) { cls = "ok"; txt = "Wszystko wysłane"; more = qb; }
+    else if (!n) { cls = "ok"; txt = T("Wszystko wysłane", "All sent"); more = qb; }
     else if (err || loginErr) {
-      cls = "err"; txt = "Nie wysłano: " + (err ? err.err : loginErr);
-      more = b("retry", "Ponów", true) + (opts.onShare ? b("share", "Wyślij przez Udostępnij") : "") + qb;
-    } else if (!online()) { cls = "wait"; txt = "W kolejce: " + n + " · czekam na sieć"; more = "<small>Wyślę sam, gdy wróci zasięg (apka musi być otwarta).</small>" + qb; }
+      cls = "err"; txt = T("Nie wysłano: ", "Not sent: ") + (err ? err.err : loginErr);
+      more = b("retry", T("Ponów", "Retry"), true) + (opts.onShare ? b("share", T("Wyślij przez Udostępnij", "Send via Share")) : "") + qb;
+    } else if (!online()) { cls = "wait"; txt = T("W kolejce: ", "Queued: ") + n + T(" · czekam na sieć", " · waiting for network"); more = "<small>" + T("Wyślę sam, gdy wróci zasięg (apka musi być otwarta).", "I will send it when the signal returns (the app must be open).") + "</small>" + qb; }
     else if (wifiOnly() && !onWifi() && !skipWifi) {
-      cls = "wait"; txt = "W kolejce: " + n + " · czekam na Wi‑Fi";
-      more = "<small>Wyślę sam po połączeniu z Wi‑Fi.</small>" + b("data", "Wyślij teraz przez dane komórkowe", true) + qb;
-    } else if (!G().connected("gmail")) { cls = "wait"; txt = "W kolejce: " + n + " · dotknij, aby wysłać"; more = b("send", "Wyślij teraz", true) + qb; }
-    else { cls = "wait"; txt = "W kolejce: " + n; more = b("send", "Wyślij teraz", true) + qb; }
+      cls = "wait"; txt = T("W kolejce: ", "Queued: ") + n + T(" · czekam na Wi‑Fi", " · waiting for Wi‑Fi");
+      more = "<small>" + T("Wyślę sam po połączeniu z Wi‑Fi.", "I will send it once on Wi‑Fi.") + "</small>" + b("data", T("Wyślij teraz przez dane komórkowe", "Send now over mobile data"), true) + qb;
+    } else if (!G().connected("gmail")) { cls = "wait"; txt = T("W kolejce: ", "Queued: ") + n + T(" · dotknij, aby wysłać", " · tap to send"); more = b("send", T("Wyślij teraz", "Send now"), true) + qb; }
+    else { cls = "wait"; txt = T("W kolejce: ", "Queued: ") + n; more = b("send", T("Wyślij teraz", "Send now"), true) + qb; }
     el.className = "oest-sbar " + cls + (open ? " open" : "");
     el.querySelector(".t").textContent = txt;
-    var net = !online() ? ["off", "Brak sieci"] : onWifi() ? ["on", "Wi‑Fi"] : ["mid", "Dane"]; // lampka sieci
+    var net = !online() ? ["off", T("Brak sieci", "No network")] : onWifi() ? ["on", "Wi‑Fi"] : ["mid", T("Dane", "Data")]; // lampka sieci
     var nb = el.querySelector(".n"); nb.className = "n " + net[0]; nb.lastChild.textContent = net[1];
     el.querySelector(".m").innerHTML = more;
     el.querySelector(".p").style.width = Math.round(prog * 100) + "%";
@@ -209,6 +210,7 @@
   var readyOk, ready = new Promise(function (r) { readyOk = r; }); // wysyłka startuje dopiero po sprzątnięciu przerwanych
   function init(o) { Object.assign(opts, o || {}); return refresh().then(orphans).catch(function () {}).then(function () { readyOk(); render(); }).then(auto); }
   var kick = function () { refresh().then(auto); };
+  root.addEventListener("oest:lang", function () { if (el) render(); }); // zmiana języka: tylko nowy tekst paska
   root.addEventListener("online", kick); root.addEventListener("offline", render);
   if (root.navigator.connection && root.navigator.connection.addEventListener) root.navigator.connection.addEventListener("change", kick);
   doc.addEventListener("visibilitychange", function () { if (!doc.hidden) kick(); });

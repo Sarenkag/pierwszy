@@ -136,12 +136,33 @@
     if (/QuotaExceeded|quota/i.test(m)) return ['Brak miejsca w pamięci apki.', 'App storage is full.'][i];
     if (/cancel/i.test(m)) return ['Anulowano.', 'Cancelled.'][i];
     if (/permission|denied|not allowed/i.test(m)) return ['Brak zgody telefonu na tę operację.', 'The phone did not allow this operation.'][i];
-    if (code) return ['Nie udało się (kod ' + code + ').', 'Failed (code ' + code + ').'][i];
+    if (code) return ['Nie udało się (kod ' + code + ').', 'Failed (code ' + code + ').'][i]; // i18n-ok
     // zwykłe zdanie: jeśli już po polsku, zostawiamy; jeśli angielskie w polskim UI – ogólny tekst + szczegół w nawiasie
     if (!m) return ['Nie udało się.', 'Failed.'][i];
-    if (i === 0 && !/[ąćęłńóśźż]/i.test(m) && /\b(the|is|not|failed|error|cannot|unable|invalid)\b/i.test(m)) return 'Nie udało się (' + m.slice(0, 80) + ').';
+    if (i === 0 && !/[ąćęłńóśźż]/i.test(m) && /\b(the|is|not|failed|error|cannot|unable|invalid)\b/i.test(m)) return 'Nie udało się (' + m.slice(0, 80) + ').'; // i18n-ok: tylko dla i === 0 (PL)
     return m;
   }
-  var api = { text: text, lang: lang, D: D };
-  if (typeof module === 'object' && module.exports) module.exports = api; else root.OESTBledy = api;
+  // JEDNA funkcja dla tekstów na ekranie w całej apce: OESTT('po polsku', 'in English') – wg języka ustawień
+  function t(pl, en) { return lang() === 'en' ? en : pl; }
+  // Stały HTML strony: <b data-en="Keys">Klucze</b>, <button aria-label="Wstecz" data-en-aria-label="Back">.
+  // Podmienia tylko tekst / atrybuty w miejscu (bez przerysowania ekranu). Polski oryginał zapamiętany w data-pl*.
+  var ATTRS = ['aria-label', 'placeholder', 'title', 'alt'];
+  function applyDom(scope) {
+    var en = lang() === 'en', doc = root.document; if (!doc) return;
+    (scope || doc).querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.pl == null) el.dataset.pl = el.textContent;
+      // tekst podmieniony przez JS (np. licznik, nazwa szablonu) – zostawiamy, JS sam tłumaczy przez OESTT
+      if (el.textContent !== el.dataset.pl && el.textContent !== el.dataset.en) return;
+      el.textContent = en ? el.dataset.en : el.dataset.pl;
+    });
+    ATTRS.forEach(function (a) {
+      (scope || doc).querySelectorAll('[data-en-' + a + ']').forEach(function (el) {
+        if (!el.hasAttribute('data-pl-' + a)) el.setAttribute('data-pl-' + a, el.getAttribute(a) || '');
+        el.setAttribute(a, el.getAttribute(en ? 'data-en-' + a : 'data-pl-' + a));
+      });
+    });
+    if (doc.documentElement) doc.documentElement.lang = en ? 'en' : 'pl';
+  }
+  var api = { text: text, lang: lang, t: t, applyDom: applyDom, D: D };
+  if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; }
 })(this);
