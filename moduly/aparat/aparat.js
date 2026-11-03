@@ -14,14 +14,16 @@
  */
 (function (root) {
   'use strict';
+  function T(pl, en) { return root.OESTT ? root.OESTT(pl, en) : pl; }
+  function TT(p) { return p ? T(p[0], p[1]) : ''; } // para [pl, en] → tekst
   function plugin() { var C = root.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.OESTPhotoEdit; }
   /* ---------- edytor w apce ---------- */
   var COLORS = ['#ff2d2d', '#ffd400', '#21d36b', '#2f8bff', '#ffffff', '#111111'];
   var WIDTHS = [{ k: 'S', v: 4 }, { k: 'M', v: 8 }, { k: 'L', v: 14 }]; // na 1000 px dłuższego boku
   // gotowe kółka: promień na 1000 px dłuższego boku; stuknięcie stawia kółko, przeciąganie przesuwa
   var RADII = { c1: 45, c2: 90, c3: 160 };
-  var TOOLS = [['arrow', '↗', 'Strzałka'], ['c1', '<span style="font-size:12px">◯</span>', '', 'Małe kółko'], ['c2', '<span style="font-size:18px">◯</span>', '', 'Średnie kółko'], ['c3', '<span style="font-size:24px">◯</span>', '', 'Duże kółko'],
-    ['rect', '▢', 'Kwadrat'], ['line', '／', 'Linia'], ['crop', '⛶', 'Kadruj']];
+  var TOOLS = [['arrow', '↗', ['Strzałka', 'Arrow']], ['c1', '<span style="font-size:12px">◯</span>', null, ['Małe kółko', 'Small circle']], ['c2', '<span style="font-size:18px">◯</span>', null, ['Średnie kółko', 'Medium circle']], ['c3', '<span style="font-size:24px">◯</span>', null, ['Duże kółko', 'Large circle']],
+    ['rect', '▢', ['Kwadrat', 'Square']], ['line', '／', ['Linia', 'Line']], ['crop', '⛶', ['Kadruj', 'Crop']]];
 
   /* Rysuje jeden kształt na kontekście g; k = skala z „współrzędnych zdjęcia” do pikseli płótna. */
   function drawShape(g, sh, k) {
@@ -65,12 +67,12 @@
         var box = document.createElement('div'); box.className = 'oest-editor';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483001;background:#05070c;display:flex;flex-direction:column;touch-action:none;user-select:none');
         box.innerHTML =
-          '<div style="display:flex;gap:8px;padding:max(44px, calc(10px + env(safe-area-inset-top, 0px))) 12px 6px;align-items:center"><button type="button" data-a="cancel" style="' + btn + '">✕ Anuluj</button><span style="flex:1"></span>' +
-          '<button type="button" data-a="undo" style="' + btn + '">↶ Cofnij</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">✓ Zapisz</button></div>' +
+          '<div style="display:flex;gap:8px;padding:max(44px, calc(10px + env(safe-area-inset-top, 0px))) 12px 6px;align-items:center"><button type="button" data-a="cancel" style="' + btn + '">' + T('✕ Anuluj', '✕ Cancel') + '</button><span style="flex:1"></span>' +
+          '<button type="button" data-a="undo" style="' + btn + '">' + T('↶ Cofnij', '↶ Undo') + '</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">' + T('✓ Zapisz', '✓ Save') + '</button></div>' +
           '<div class="ed-stage" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
-          '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + (t[3] || t[2]) + '" style="' + btn + ';flex:none">' + t[1] + (t[2] ? ' <small>' + t[2] + '</small>' : '') + '</button>'; }).join('') + '</div>' +
+          '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + TT(t[3] || t[2]) + '" style="' + btn + ';flex:none">' + t[1] + (t[2] ? ' <small>' + TT(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>' +
           '<div style="display:flex;gap:6px;padding:6px 12px max(44px, calc(14px + env(safe-area-inset-bottom, 0px)), calc(14px + var(--safe-area-inset-bottom, 0px)));align-items:center;flex-wrap:wrap;justify-content:center">' +
-          COLORS.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="Kolor" style="flex:none;width:32px;height:32px;border-radius:50%;border:3px solid #3a4152;background:' + c + '"></button>'; }).join('') +
+          COLORS.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="' + T('Kolor', 'Colour') + '" style="flex:none;width:32px;height:32px;border-radius:50%;border:3px solid #3a4152;background:' + c + '"></button>'; }).join('') +
           '<span style="width:8px"></span>' + WIDTHS.map(function (w) { return '<button type="button" data-w="' + w.v + '" style="' + btn + ';flex:none">' + w.k + '</button>'; }).join('') + '</div>';
         var cv = box.querySelector('canvas'), g = cv.getContext('2d'), stage = box.querySelector('.ed-stage'), k = 1;
         function fit() {
@@ -151,7 +153,7 @@
           } else if (b.getAttribute('data-a') === 'cancel') return close(null);
           else if (b.getAttribute('data-a') === 'save') {
             if (!realShapes().length && !normCrop(crop, W, H)) return close(null);
-            b.disabled = true; b.textContent = 'Zapisuję…';
+            b.disabled = true; b.textContent = T('Zapisuję…', 'Saving…');
             return renderFinal(bmp, realShapes(), crop).then(function (out) { close(out || null); }, function () { close(null); });
           }
           mark();
@@ -170,10 +172,10 @@
     _drawShape: drawShape, _normCrop: normCrop,
     take: function () {
       var C = root.Capacitor, cam = C && C.Plugins && C.Plugins.OESTKeys;
-      if (!api.available() || !cam) return Promise.reject(new Error('Aparat działa w aplikacji na telefonie.'));
+      if (!api.available() || !cam) return Promise.reject(new Error(T('Aparat działa w aplikacji na telefonie.', 'The camera works in the phone app.')));
       function shot() {
         return cam.capture().then(function (r) {
-          return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error('Nie udało się odczytać zdjęcia.'); return res.blob(); })
+          return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error(T('Nie udało się odczytać zdjęcia.', 'Could not read the photo.')); return res.blob(); })
             .then(function (b) { return cam.release({ path: r.path }).catch(function () {}).then(function () { return b; }); },
               function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
         }, function (e) { if (/CANCELLED/.test(String(e && e.message || e))) return null; throw e; });
@@ -188,11 +190,11 @@
         var cur = blob, url = '', box = document.createElement('div');
         box.className = 'oest-review';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:#05070c;display:flex;flex-direction:column');
-        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + env(safe-area-inset-top, 0px))) 8px 8px"><img alt="Podgląd zdjęcia" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
+        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + env(safe-area-inset-top, 0px))) 8px 8px"><img alt="' + T('Podgląd zdjęcia', 'Photo preview') + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
           '<p class="oest-review-msg" role="status" style="margin:0;padding:0 16px;color:#f3c76b;font:500 14px system-ui;min-height:18px"></p>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px max(56px, calc(16px + env(safe-area-inset-bottom, 0px)), calc(16px + var(--safe-area-inset-bottom, 0px)))">' +
-          '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">↺ Powtórz</button>' +
-          '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">✏️ Edytuj</button>' +
+          '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + T('↺ Powtórz', '↺ Retake') + '</button>' +
+          '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + T('✏️ Edytuj', '✏️ Edit') + '</button>' +
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';
         var img = box.querySelector('img'), msg = box.querySelector('.oest-review-msg'), busy = false;
         function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; }
@@ -202,12 +204,12 @@
           var r = b.getAttribute('data-r');
           if (r === 'ok') close({ blob: cur });
           else if (r === 'retake') close({ retake: true });
-          else { busy = true; msg.textContent = ''; api.edit(cur).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? 'Zapisano zmiany.' : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
+          else { busy = true; msg.textContent = ''; api.edit(cur).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? T('Zapisano zmiany.', 'Changes saved.') : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
         });
         show(); document.body.appendChild(box);
       });
     },
-    button: function (label) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn oest-edit'; b.textContent = label || '✏️ Edytuj'; return b; }
+    button: function (label) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn oest-edit'; b.textContent = label || T('✏️ Edytuj', '✏️ Edit'); return b; }
   };
   root.OESTAparat = api;
 })(typeof window !== 'undefined' ? window : globalThis);

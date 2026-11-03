@@ -3,6 +3,7 @@
 // Wygląd przycisku zostaje z ekranu; moduł zmienia tylko to, co dzieje się w środku w trakcie akcji.
 (function (w) {
   "use strict";
+  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   // kółko ze smugą (ten sam wzór co „Zapisuję…” na środku ekranu, Grzegorz 03/11) + tekst etapu obok
   var CSS = ".oest-busy{opacity:1!important;transform:scale(.97);transition:transform .2s}" +
     ".oest-busy .oest-step{display:inline-flex;align-items:center;justify-content:center;gap:.55em;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -42,8 +43,8 @@
     o = o || {}; css();
     return new Promise(function (done) {
       var box = document.createElement("div"); box.className = "oest-ask"; box.setAttribute("role", "dialog");
-      box.innerHTML = "<div><b>" + esc(o.title || "Brak połączenia") + "</b><p>" + esc(o.text || "") + '</p><div class="row">' +
-        '<button type="button" data-a="no">' + esc(o.cancel || "Anuluj") + '</button><button type="button" class="ok" data-a="ok">' + esc(o.ok || "Połącz ponownie") + "</button></div></div>";
+      box.innerHTML = "<div><b>" + esc(o.title || T("Brak połączenia", "No connection")) + "</b><p>" + esc(o.text || "") + '</p><div class="row">' +
+        '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + '</button><button type="button" class="ok" data-a="ok">' + esc(o.ok || T("Połącz ponownie", "Reconnect")) + "</button></div></div>";
       box.addEventListener("click", function (e) { var b = e.target.closest("[data-a]"); if (!b) return; box.remove(); done(b.getAttribute("data-a") === "ok"); });
       document.body.appendChild(box);
     });
@@ -56,13 +57,13 @@
     var html = btn.innerHTML, dis = btn.disabled, over = false;
     btn.disabled = true; btn.classList.add("oest-busy"); btn.setAttribute("aria-busy", "true");
     function show(t) { if (over) return; btn.innerHTML = '<span class="oest-step" role="status"><span class="oest-spin" aria-hidden="true"></span><span>' + esc(t) + "</span></span>"; }
-    show(opts.busy ? opts.busy + "…" : "Pracuję…");
+    show(opts.busy ? opts.busy + "…" : T("Pracuję…", "Working…"));
     function restore() { if (over) return; over = true; btn.innerHTML = html; btn.disabled = dis; btn.classList.remove("oest-busy"); btn.removeAttribute("aria-busy"); }
     return {
       // etap pracy na przycisku: „Sprawdzam połączenie…” → „Wysyłam 1/2…” (Grzegorz 03/11)
       step: function (text) { show(text); },
       ok: function (text) {
-        btn.innerHTML = '<span class="oest-done">✓ ' + (text || opts.done || "Gotowe") + "</span>";
+        btn.innerHTML = '<span class="oest-done">✓ ' + (text || opts.done || T("Gotowe", "Done")) + "</span>";
         return wait(opts.hold || 900).then(function () { if (opts.keep !== false) restore(); });
       },
       fail: restore,

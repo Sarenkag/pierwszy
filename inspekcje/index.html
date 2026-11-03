@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Inspekcja w terenie</title>
+<title data-en="Field inspection">Inspekcja w terenie</title>
 <!-- PWA (działa tylko z GitHub Pages; w trybie Apps Script te linki są ignorowane) -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -306,39 +306,39 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
   <!-- 1. Rodzaje inspekcji -->
   <section class="view" id="v-home">
-    <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1>Inspekcje<span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
+    <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" data-en-aria-label="App menu" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1><span data-en="Inspections">Inspekcje</span><span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
     <div class="notice" id="tplNotice" hidden></div>
-    <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue">Kolejka</button></div>
+    <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue" data-en="Queue">Kolejka</button></div>
     <div class="types" id="types"></div>
     <details class="panel" id="settings">
-      <summary>Ustawienia</summary>
+      <summary data-en="Settings">Ustawienia</summary>
       <div class="set">
-        <div class="f" id="apiBox"><label for="s-api">Adres skryptu Google (…/exec)</label>
+        <div class="f" id="apiBox"><label for="s-api" data-en="Google script address (…/exec)">Adres skryptu Google (…/exec)</label>
           <input id="s-api" type="text" inputmode="url" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
-          <label for="s-key">Klucz (KEY z Apps Script)</label>
+          <label for="s-key" data-en="Key (KEY from Apps Script)">Klucz (KEY z Apps Script)</label>
           <input id="s-key" type="text" spellcheck="false" autocomplete="off">
-          <p class="hint">Potrzebne tylko w wersji z ekranu głównego telefonu (działa bez zasięgu). Wpisuje się raz.</p></div>
-        <div class="f" id="tplBox"><span class="label">Szablon raportu (Word)</span>
-          <p class="hint" id="tplName">Ładuję z Google Drive…</p>
-          <div class="row"><button class="btn" type="button" id="tplReload">Wczytaj ponownie z Drive</button></div>
-          <p class="hint">Szablon leży na Twoim Google Drive w folderze z raportami. Podmień tam plik, a apka weźmie nowy.</p></div>
-        <div class="f"><label for="s-email">E-mail, na który idzie raport</label>
+          <p class="hint" data-en="Only needed in the version from the phone home screen (works without signal). Entered once.">Potrzebne tylko w wersji z ekranu głównego telefonu (działa bez zasięgu). Wpisuje się raz.</p></div>
+        <div class="f" id="tplBox"><span class="label" data-en="Report template (Word)">Szablon raportu (Word)</span>
+          <p class="hint" id="tplName" data-en="Loading from Google Drive…">Ładuję z Google Drive…</p>
+          <div class="row"><button class="btn" type="button" id="tplReload" data-en="Reload from Drive">Wczytaj ponownie z Drive</button></div>
+          <p class="hint" data-en="The template is on your Google Drive in the reports folder. Replace the file there and the app will use the new one.">Szablon leży na Twoim Google Drive w folderze z raportami. Podmień tam plik, a apka weźmie nowy.</p></div>
+        <div class="f"><label for="s-email" data-en="Email the report goes to">E-mail, na który idzie raport</label>
           <input id="s-email" type="email" autocomplete="email"></div>
-        <div class="f"><label for="s-folder">Folder na Google Drive</label>
+        <div class="f"><label for="s-folder" data-en="Google Drive folder">Folder na Google Drive</label>
           <input id="s-folder" type="text"></div>
-        <div class="f"><label for="s-pattern">Wzór nazwy plików</label>
+        <div class="f"><label for="s-pattern" data-en="File name pattern">Wzór nazwy plików</label>
           <input id="s-pattern" type="text" spellcheck="false">
-          <p class="hint">Dostępne: <code>{urzadzenie} {kod} {lokalizacja} {DD} {MM} {RRRR}</code>. {kod} to kod małymi literami.</p></div>
+          <p class="hint"><span data-en="Available:">Dostępne:</span> <code>{urzadzenie} {kod} {lokalizacja} {DD} {MM} {RRRR}</code>. <span data-en="{kod} is the code in lower case.">{kod} to kod małymi literami.</span></p></div>
         <div class="f"><label for="s-site">Site</label>
           <input id="s-site" type="text"></div>
-        <div class="f"><label for="s-insp">Domyślny podpis (Engineer / Signed)</label>
+        <div class="f"><label for="s-insp" data-en="Default signature (Engineer / Signed)">Domyślny podpis (Engineer / Signed)</label>
           <input id="s-insp" type="text"></div>
-        <label class="toggle"><input type="checkbox" id="s-scope"> Dopisz zakres: „visual inspection only”</label>
-        <label class="toggle"><input type="checkbox" id="s-stamp"> Wpisz datę, kod i lokalizację na zdjęciach</label>
-        <label class="toggle"><input type="checkbox" id="s-dphotos"> Zapisuj też osobne pliki zdjęć na Drive (wolniej)</label>
-        <label class="toggle"><input type="checkbox" id="s-auto"> Wysyłaj kolejkę sama, gdy jest sieć</label>
-        <label class="toggle"><input type="checkbox" id="s-wifi"> Czekaj z wysyłką na Wi‑Fi (pasek na dole pozwala wysłać od razu)</label>
-        <div class="tags">Znaczniki w szablonie: {data} {inspektor} {urzadzenie} {lokalizacja} {tytul} {stan_ogolny} {quote}<br>{#punkty} / {.} / {/punkty} — lista punktów<br>{#komentarz} / Comments: {komentarz} / {/komentarz} — komentarz<br>{#zakres} / {zakres} / {/zakres} — zakres<br>{%zdjecia} — każde zdjęcie na nowej stronie</div>
+        <label class="toggle"><input type="checkbox" id="s-scope"> <span data-en="Add scope: “visual inspection only”">Dopisz zakres: „visual inspection only”</span></label>
+        <label class="toggle"><input type="checkbox" id="s-stamp"> <span data-en="Stamp date, code and location on photos">Wpisz datę, kod i lokalizację na zdjęciach</span></label>
+        <label class="toggle"><input type="checkbox" id="s-dphotos"> <span data-en="Also save separate photo files to Drive (slower)">Zapisuj też osobne pliki zdjęć na Drive (wolniej)</span></label>
+        <label class="toggle"><input type="checkbox" id="s-auto"> <span data-en="Send the queue automatically when online">Wysyłaj kolejkę sama, gdy jest sieć</span></label>
+        <label class="toggle"><input type="checkbox" id="s-wifi"> <span data-en="Wait for Wi‑Fi to send (the bar at the bottom lets you send now)">Czekaj z wysyłką na Wi‑Fi (pasek na dole pozwala wysłać od razu)</span></label>
+        <div class="tags"><span data-en="Template tags:">Znaczniki w szablonie:</span> {data} {inspektor} {urzadzenie} {lokalizacja} {tytul} {stan_ogolny} {quote}<br>{#punkty} / {.} / {/punkty} — <span data-en="list of points">lista punktów</span><br>{#komentarz} / Comments: {komentarz} / {/komentarz} — <span data-en="comment">komentarz</span><br>{#zakres} / {zakres} / {/zakres} — <span data-en="scope">zakres</span><br>{%zdjecia} — <span data-en="each photo on a new page">każde zdjęcie na nowej stronie</span></div>
         <p class="toast" id="setToast"></p>
       </div>
     </details>
@@ -346,72 +346,72 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
   <!-- 2. Lista urządzeń -->
   <section class="view" id="v-list" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 id="listTitle">—</h1><div class="sub" id="listSub"></div></div></div>
     <div class="ppmbar" hidden></div>
-    <input class="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" autocomplete="off" spellcheck="false">
+    <input class="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" data-en-placeholder="Search code, e.g. LL-UG" autocomplete="off" spellcheck="false">
     <div class="panel" id="batchBar" hidden></div>
     <div id="groups"></div>
     <div class="panel">
-      <label class="label" for="customCode">Inne urządzenie</label>
-      <div class="addrow"><input id="customCode" type="text" placeholder="np. DB-TA-L3-01" autocapitalize="characters" spellcheck="false"><select id="customLoc" aria-label="Lokalizacja" style="width:auto"><option>Tower A</option><option>Tower B</option><option>Pavilion</option></select><button class="btn" type="button" id="customGo">Dodaj</button></div>
-      <p class="hint">Urządzenie zostanie na liście na stałe, z tą lokalizacją.</p>
+      <label class="label" for="customCode" data-en="Other device">Inne urządzenie</label>
+      <div class="addrow"><input id="customCode" type="text" placeholder="np. DB-TA-L3-01" data-en-placeholder="e.g. DB-TA-L3-01" autocapitalize="characters" spellcheck="false"><select id="customLoc" aria-label="Lokalizacja" data-en-aria-label="Location" style="width:auto"><option>Tower A</option><option>Tower B</option><option>Pavilion</option></select><button class="btn" type="button" id="customGo" data-en="Add">Dodaj</button></div>
+      <p class="hint" data-en="The device stays on the list permanently, with this location.">Urządzenie zostanie na liście na stałe, z tą lokalizacją.</p>
     </div>
   </section>
 
   <!-- 3. Formularz -->
   <section class="view" id="v-form" hidden>
-    <div class="top"><button class="back" type="button" data-go="list" aria-label="Wstecz">‹</button>
+    <div class="top"><button class="back" type="button" data-go="list" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 id="formTitle">—</h1><div class="sub" id="formSub"></div></div></div>
     <div class="ppmbar" hidden></div>
 
     <div class="panel" data-m="sum" id="sumBox"></div>
 
     <div class="panel" data-m="one item">
-      <div class="label">Usterki — jedno dotknięcie</div>
+      <div class="label" data-en="Faults — one tap">Usterki — jedno dotknięcie</div>
       <div class="faults" id="faults"></div>
-      <p class="hint">Każda usterka dopisuje gotowe zdanie po angielsku i ustawia „Requires attention”.</p>
+      <p class="hint" data-en="Each fault adds a ready English sentence and sets “Requires attention”.">Każda usterka dopisuje gotowe zdanie po angielsku i ustawia „Requires attention”.</p>
     </div>
 
     <div class="panel" data-m="one" id="tempBox" hidden>
-      <div class="label">Temperatury (°C)</div>
+      <div class="label" data-en="Temperatures (°C)">Temperatury (°C)</div>
       <div id="tempList"></div>
-      <p class="hint">Wpisz tylko pomiary — pozostałe rubryki wzoru zostają puste. Nic nie jest wpisane z góry ani przepisane z poprzedniej inspekcji.</p>
+      <p class="hint" data-en="Enter only the readings — other fields of the form stay empty. Nothing is pre-filled or copied from the previous inspection.">Wpisz tylko pomiary — pozostałe rubryki wzoru zostają puste. Nic nie jest wpisane z góry ani przepisane z poprzedniej inspekcji.</p>
     </div>
 
     <div class="panel" data-m="one" id="flushBox" hidden>
-      <div class="label" id="flWeekL">Tydzień miesiąca (jak na formularzu)</div>
+      <div class="label" id="flWeekL" data-en="Week of the month (as on the form)">Tydzień miesiąca (jak na formularzu)</div>
       <div class="fl-week" id="flWeek"><button type="button" data-w="1">1</button><button type="button" data-w="2">2</button><button type="button" data-w="3">3</button><button type="button" data-w="4">4</button><button type="button" data-w="5">5</button></div>
-      <label class="fl-on"><input type="checkbox" id="flOn"> <span id="flOnL">Formularz elektroniczny</span></label>
+      <label class="fl-on"><input type="checkbox" id="flOn"> <span id="flOnL" data-en="Electronic form">Formularz elektroniczny</span></label>
       <div class="fl-list off" id="flList"></div>
-      <p class="hint" id="flHint">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
+      <p class="hint" id="flHint" data-en="Off: only photos of the filled paper forms go to the report. On: the filled Word form goes, photos of the forms are an extra.">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
       <input id="flCam" type="file" accept="image/*" capture="environment" hidden>
     </div>
 
     <div class="panel" data-m="one item">
-      <div class="label" id="ckTitle">Checklista</div>
-      <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> nie OK</span><span><b>–</b> pomiń (nie trafi do raportu)</span></div>
+      <div class="label" id="ckTitle" data-en="Checklist">Checklista</div>
+      <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> <i data-en="not OK" style="font-style:normal">nie OK</i></span><span><b>–</b> <i data-en="skip (not in the report)" style="font-style:normal">pomiń (nie trafi do raportu)</i></span></div>
       <div class="ck" id="ck"></div>
-      <div class="row"><button class="btn" type="button" id="allOk">Wszystkie zaznaczone → OK</button></div>
+      <div class="row"><button class="btn" type="button" id="allOk" data-en="All marked → OK">Wszystkie zaznaczone → OK</button></div>
     </div>
 
     <div class="panel">
-      <div class="label">Zdjęcia <span id="photoCount"></span></div>
+      <div class="label"><span data-en="Photos">Zdjęcia</span> <span id="photoCount"></span></div>
       <div class="photo-btns">
-        <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg>Zrób zdjęcie</label>
-        <label class="pbtn"><input id="galIn" type="file" accept="image/*" multiple aria-label="Dodaj z galerii">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>Z galerii</label>
+        <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie" data-en-aria-label="Take photo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
+        <label class="pbtn"><input id="galIn" type="file" accept="image/*" multiple aria-label="Dodaj z galerii" data-en-aria-label="Add from gallery">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span data-en="From gallery">Z galerii</span></label>
       </div>
       <div class="photos" id="photos"></div>
       <div id="sugBox" hidden></div>
-      <p class="hint" id="photoInfo">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
+      <p class="hint" id="photoInfo" data-en="Photos are reduced straight after adding. Each goes on a separate page of the report.">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
     </div>
 
     <div class="panel" data-m="one sum">
       <div class="grid">
-        <div class="f"><label for="dzien">Data wykonania</label><input id="dzien" type="date"></div>
-        <div class="f"><label for="podpis">Podpis</label><input id="podpis" type="text"></div>
+        <div class="f"><label for="dzien" data-en="Date done">Data wykonania</label><input id="dzien" type="date"></div>
+        <div class="f"><label for="podpis" data-en="Signature">Podpis</label><input id="podpis" type="text"></div>
       </div>
       <div class="datesug" id="dateSug" hidden></div>
     </div>
@@ -425,60 +425,60 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         </div></div>
       <div class="f"><span id="l-q">Quote Required</span>
         <div class="chips" role="radiogroup" aria-labelledby="l-q">
-          <label class="chip nn"><input type="radio" name="quote" id="q-0" value="" checked><span>puste</span></label>
+          <label class="chip nn"><input type="radio" name="quote" id="q-0" value="" checked><span data-en="blank">puste</span></label>
           <label class="chip ok"><input type="radio" name="quote" id="q-1" value="No"><span>No</span></label>
           <label class="chip us"><input type="radio" name="quote" id="q-2" value="Yes"><span>Yes</span></label>
         </div></div>
     </div>
 
     <div class="panel" data-m="one sum">
-      <div class="f"><label for="komentarz">Komentarz (trafi do raportu po angielsku)</label>
-        <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu"></textarea></div>
-      <div class="row"><button class="btn" type="button" id="translate" hidden>Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden>Cofnij tłumaczenie</button><button class="btn" type="button" id="mdRun" hidden>✨ Ułóż po angielsku</button></div>
+      <div class="f"><label for="komentarz" data-en="Comment (goes to the report in English)">Komentarz (trafi do raportu po angielsku)</label>
+        <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu" data-en-placeholder="Type or dictate — microphone on the phone keyboard"></textarea></div>
+      <div class="row"><button class="btn" type="button" id="translate" hidden data-en="Translate to English">Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden data-en="Undo translation">Cofnij tłumaczenie</button><button class="btn" type="button" id="mdRun" hidden data-en="✨ Write in English">✨ Ułóż po angielsku</button></div>
       <p class="hint" id="trHint"></p>
-      <div id="mdBox" hidden><div class="f"><label for="mdOut">Propozycja modelu — sprawdź i popraw</label><textarea id="mdOut"></textarea></div><p class="hint" id="mdWarn"></p>
-        <div class="row"><button class="btn" type="button" id="mdUse">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop">Odrzuć</button></div></div>
+      <div id="mdBox" hidden><div class="f"><label for="mdOut" data-en="Model suggestion — check and correct">Propozycja modelu — sprawdź i popraw</label><textarea id="mdOut"></textarea></div><p class="hint" id="mdWarn"></p>
+        <div class="row"><button class="btn" type="button" id="mdUse" data-en="✓ Insert into comment">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop" data-en="Discard">Odrzuć</button></div></div>
     </div>
 
-    <button class="go" type="button" id="toQueue" data-m="one sum">Wyślij</button>
-    <button class="btn wide" type="button" id="toPreview" data-m="one sum">Podgląd raportu</button>
-    <button class="go" type="button" id="saveItem" data-m="item">Zapisz</button>
+    <button class="go" type="button" id="toQueue" data-m="one sum" data-en="Send">Wyślij</button>
+    <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
+    <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
     <p class="hint" id="formHint"></p>
   </section>
 
   <!-- 4. Podgląd -->
   <section class="view" id="v-preview" hidden>
-    <div class="top"><button class="back" type="button" data-go="form" aria-label="Wróć do edycji">‹</button>
-      <div class="t"><h1>Podgląd<span class="dot">.</span></h1><div class="sub" id="prevSub"></div></div></div>
+    <div class="top"><button class="back" type="button" data-go="form" aria-label="Wróć do edycji" data-en-aria-label="Back to editing">‹</button>
+      <div class="t"><h1><span data-en="Preview">Podgląd</span><span class="dot">.</span></h1><div class="sub" id="prevSub"></div></div></div>
     <div class="wrapscroll"><div class="paper" id="paper"></div></div>
     <div class="panel">
-      <div class="label">Pliki</div>
+      <div class="label" data-en="Files">Pliki</div>
       <div class="fname" id="fname">—</div>
-      <button class="go" id="prevQueue" type="button">Do kolejki</button>
-      <button class="btn wide" type="button" id="editBtn">Wróć do edycji</button>
+      <button class="go" id="prevQueue" type="button" data-en="To queue">Do kolejki</button>
+      <button class="btn wide" type="button" id="editBtn" data-en="Back to editing">Wróć do edycji</button>
     </div>
   </section>
 
   <!-- 5. Kolejka -->
   <section class="view" id="v-queue" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Kolejka<span class="dot">.</span></h1><div class="sub" id="qSub"></div></div></div>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
+      <div class="t"><h1><span data-en="Queue">Kolejka</span><span class="dot">.</span></h1><div class="sub" id="qSub"></div></div></div>
     <div class="panel">
       <div id="qList"></div>
-      <button class="go" type="button" id="qSend">Wyślij wszystko</button>
+      <button class="go" type="button" id="qSend" data-en="Send all">Wyślij wszystko</button>
       <p class="hint" id="qHint"></p>
     </div>
-    <button class="btn wide" type="button" id="qNext">Następne urządzenie</button>
+    <button class="btn wide" type="button" id="qNext" data-en="Next device">Następne urządzenie</button>
   </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
+<script src="../moduly/bledy/bledy.js"></script>
 <script src="../vantify-plan.js"></script>
 <script src="../ppm.js"></script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
-<script src="../moduly/bledy/bledy.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
@@ -493,6 +493,16 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="tpl-plant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script>
+// Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
+function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
+// Statyczne teksty strony (data-en / data-en-aria-label / data-en-placeholder) – podmiana w miejscu, bez przerysowania.
+(function () {
+  function lang() { if (window.OESTBledy) OESTBledy.applyDom(document); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", lang); else lang();
+  window.addEventListener("oest:lang", lang);
+  window.addEventListener("storage", function (e) { if (!e || e.key === "oest.lang" || e.key === "oest.settings") lang(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) lang(); });
+})();
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.
 // {%zdjecie}: zdjęcia jedno pod drugim; {%zdjecia}: każde zdjęcie na osobnej stronie.
 // Działa w przeglądarce (globalne PizZip, docxtemplater) i w node (test).
@@ -534,7 +544,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
       '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
       '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
       '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
-      '<pic:nvPicPr><pic:cNvPr id="0" name="zdjecie' + (i + 1) + '.jpeg"/><pic:cNvPicPr/></pic:nvPicPr>' +
+      '<pic:nvPicPr><pic:cNvPr id="0" name="zdjecie' + (i + 1) + '.jpeg"/><pic:cNvPicPr/></pic:nvPicPr>' + // i18n-ok: nazwa wewnątrz .docx
       '<pic:blipFill><a:blip r:embed="rIdZdj' + (i + 1) + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
       '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
       '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
@@ -715,7 +725,7 @@ function makeName(pattern, data, when) {
   function clean(s) {
     return String(s || "").replace(/[(),]/g, " ").trim()
       .normalize("NFD").replace(/[̀-ͯ]/g, "")
-      .replace(/[łŁ]/g, function (c) { return c === "ł" ? "l" : "L"; })
+      .replace(/[łŁ]/g, function (c) { return c === "ł" ? "l" : "L"; }) // i18n-ok: zamiana liter w nazwie pliku
       .replace(/[^A-Za-z0-9._ -]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   }
   var map = {
@@ -795,33 +805,33 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // można je podmienić bez zmiany apki: CFG.questions.iso w Code.gs (ten sam układ).
     ask: true,
     checks: [
-      { key: "access", q: "Dostępny?", en: "access obstructed", def: "ok", reasons: [
+      { key: "access", q: "Dostępny?", qen: "Accessible?", en: "access obstructed", def: "ok", reasons: [
         { id: "blocked", pl: "Zastawiony", en: "access obstructed" },
         { id: "locked", pl: "Brak dostępu (zamknięte)", en: "no access at time of inspection" } ] },
-      { key: "label", q: "Oznaczony?", en: "label missing or illegible", def: "ok", reasons: [
+      { key: "label", q: "Oznaczony?", qen: "Labelled?", en: "label missing or illegible", def: "ok", reasons: [
         { id: "nolabel", pl: "Brak oznaczenia", en: "no identification label" },
         { id: "illegible", pl: "Nieczytelna naklejka", en: "identification label illegible" },
         { id: "desc", pl: "Nieczytelny opis", en: "circuit description illegible" },
         { id: "wrong", pl: "Niezgodna z urządzeniem", en: "label does not match equipment served" } ] },
-      { key: "damage", q: "Bez uszkodzeń?", en: "damage found", def: "ok", reasons: [
+      { key: "damage", q: "Bez uszkodzeń?", qen: "Free from damage?", en: "damage found", def: "ok", reasons: [
         { id: "crack", pl: "Pęknięta obudowa", en: "enclosure cracked" },
         { id: "knob", pl: "Brak pokrętła", en: "operating handle missing" },
         { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating handle damaged" },
         { id: "scratch", pl: "Porysowana", en: "enclosure scratched" },
         { id: "gland", pl: "Kabel / dławik", en: "cable or gland damaged" },
         { id: "heat", pl: "Ślady przegrzania", en: "signs of overheating" } ] },
-      { key: "secure", q: "Pokrywa i mocowanie w porządku?", en: "cover or fixings defective", def: "ok", reasons: [
+      { key: "secure", q: "Pokrywa i mocowanie w porządku?", qen: "Cover and fixings OK?", en: "cover or fixings defective", def: "ok", reasons: [
         { id: "nocover", pl: "Brak pokrywy", en: "cover missing" },
         { id: "looseenc", pl: "Luźna obudowa", en: "enclosure loose – not securely fixed" },
         { id: "notfixed", pl: "Nieprzykręcony", en: "not secured to the wall/mounting" },
         { id: "loose", pl: "Luźne mocowanie", en: "loose fixings" },
         { id: "screws", pl: "Brak śrub", en: "missing screws" } ] },
-      { key: "clean", q: "Czysty i suchy?", en: "dirt or moisture present", def: "ok", reasons: [
+      { key: "clean", q: "Czysty i suchy?", qen: "Clean and dry?", en: "dirt or moisture present", def: "ok", reasons: [
         { id: "rust", pl: "Rdza", en: "corrosion" },
         { id: "water", pl: "Woda / wilgoć", en: "signs of water ingress" },
         { id: "flood", pl: "Zalany", en: "flooded – water damage" },
         { id: "dirt", pl: "Brud", en: "dirt build-up" } ] },
-      { key: "state", q: "W normalnym stanie pracy?", en: "not in normal operating state", def: "ok", reasons: [
+      { key: "state", q: "W normalnym stanie pracy?", qen: "In normal operating state?", en: "not in normal operating state", def: "ok", reasons: [
         { id: "off", pl: "Wyłączony (OFF)", en: "switch found in OFF position" },
         { id: "padlock", pl: "Kłódka / LOTO", en: "padlock / LOTO fitted", note: true } ] }
     ]
@@ -829,10 +839,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Gotowe usterki: jedno dotknięcie = zdanie EN w raporcie + „Requires attention”.
   // Jeśli typ ma punkt o tym samym key, ten punkt dostaje ✗ i to zdanie; jeśli nie, zdanie dochodzi jako osobny punkt.
   var FAULTS = [
-    { id: "dirty", pl: "Obudowa brudna", key: "clean", en: "Enclosure dirty – cleaning required." },
-    { id: "display", pl: "Błąd na wyświetlaczu", key: "display", en: "Error/fault message shown on the display – further investigation required." },
-    { id: "damage", pl: "Uszkodzenie", key: "enclosure", en: "Visible damage to the enclosure – remedial action required." },
-    { id: "label", pl: "Brak oznaczenia", key: "label", en: "Identification label missing or illegible – new label required." }
+    { id: "dirty", pl: "Obudowa brudna", enl: "Enclosure dirty", key: "clean", en: "Enclosure dirty – cleaning required." },
+    { id: "display", pl: "Błąd na wyświetlaczu", enl: "Display error", key: "display", en: "Error/fault message shown on the display – further investigation required." },
+    { id: "damage", pl: "Uszkodzenie", enl: "Damage", key: "enclosure", en: "Visible damage to the enclosure – remedial action required." },
+    { id: "label", pl: "Brak oznaczenia", enl: "No label", key: "label", en: "Identification label missing or illegible – new label required." }
   ];
   function faultsFor(t) { return FAULTS.filter(function (f) { return !f.types || f.types.indexOf(t.id) >= 0; }); }
   // Piętra potwierdzone przez użytkownika: UG = Upper Ground, LG = Lower Ground, LL-06 = Level 6
@@ -995,8 +1005,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
     $("types").innerHTML = TYPES.map(function (t) {
       var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
-      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + " · od " + esc(fmtDate(new Date(pr.started))) + " · dotknij, by wznowić</span>" :
-        '<span class="sub">' + all.length + " urządzeń · dziś zrobione: " + done + "</span>";
+      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + T(" · od ", " · since ") + esc(fmtDate(new Date(pr.started))) + " "+T("· dotknij, by wznowić", "· tap to resume")+"</span>" :
+        '<span class="sub">' + all.length + T(" urządzeń · dziś zrobione: ", " devices · done today: ") + done + "</span>";
       return '<button class="type" type="button" data-type="' + t.id + '">' +
         '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
         "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
@@ -1006,7 +1016,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       b.addEventListener("click", function () {
         cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
         (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
-          alert("Nie udało się odczytać zapisanego zlecenia (" + gErr(e) + "). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.");
+          alert(T("Nie udało się odczytać zapisanego zlecenia (", "Could not read the saved job (") + gErr(e) + T("). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.", "). Close and reopen the app — nothing was deleted."));
         });
       });
     });
@@ -1031,8 +1041,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("listTitle").textContent = t.name;
     var all = devices(t);
     var done = all.filter(function (d) { return dn[d.code]; }).length;
-    $("listSub").textContent = t.batch ? "Raport zbiorczy: otwórz tylko urządzenia z uwagami albo ze zdjęciem" :
-      "Dziś zrobione: " + done + " z " + all.length + (lastQueued ? " · " + lastQueued + " w kolejce" : "");
+    $("listSub").textContent = t.batch ? T("Raport zbiorczy: otwórz tylko urządzenia z uwagami albo ze zdjęciem", "Combined report: open only devices with remarks or a photo") :
+      T("Dziś zrobione: ", "Done today: ") + done + T(" z ", " of ") + all.length + (lastQueued ? " · " + lastQueued + T(" w kolejce", " queued") : "");
     renderBatchBar();
     var groups = {};
     all.filter(function (d) { return !q || d.code.indexOf(q) >= 0; }).forEach(function (d) { (groups[d.loc] = groups[d.loc] || []).push(d); });
@@ -1041,11 +1051,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var list = groups[g];
       return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length + "/" + list.length + "</small></h2>" +
         list.map(function (d) {
-          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(t, c) ? '<span class="badge q">⏳ w kolejce</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
-          var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">ostatnio z uwagami (' + esc(hl.d) + ")</div>" : "";
+          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(t, c) ? '<span class="badge q">'+T('⏳ w kolejce', '⏳ queued')+'</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
+          var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">'+T('ostatnio z uwagami (', 'last time with remarks (')+'' + esc(hl.d) + ")</div>" : "";
           return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div>" + lastTxt + "</div>" + badge + "</button>";
         }).join("") + "</div>";
-    }).join("") : '<p class="hint">Brak wyników. Wpisz kod niżej, żeby otworzyć inne urządzenie.</p>';
+    }).join("") : '<p class="hint">'+T('Brak wyników. Wpisz kod niżej, żeby otworzyć inne urządzenie.', 'No results. Type a code below to open another device.')+'</p>';
     $("groups").querySelectorAll("[data-code]").forEach(function (b) { b.addEventListener("click", function () { openForm(b.getAttribute("data-code")); }); });
   }
   $("search").addEventListener("input", renderList);
@@ -1102,7 +1112,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
     if (ask || quick) $("faults").closest(".panel").hidden = true;
     $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
-    $("allOk").textContent = ask ? "Wszystko TAK" : "Wszystkie zaznaczone → OK";
+    $("allOk").textContent = ask ? T("Wszystko TAK", "All YES") : T("Wszystkie zaznaczone → OK", "All marked → OK");
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
@@ -1155,7 +1165,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var k = draftKey(); if (!k) return Promise.resolve();
     var snap; try { snap = draftSnap(); } catch (e) { return Promise.resolve(); }
     busySpin(true);
-    return kvSet(k, snap).catch(function (e) { $("formHint").textContent = "Nie zapisano szkicu w telefonie (" + gErr(e) + ")."; })
+    return kvSet(k, snap).catch(function (e) { $("formHint").textContent = T("Nie zapisano szkicu w telefonie (", "Draft not saved on the phone (") + gErr(e) + ")."; })
       .then(function () { busySpin(pendingPh > 0 || !!restoring); });
   }
   function scheduleDraft() { if (!draftOn || cur.mode !== "one") return; clearTimeout(draftT); draftT = setTimeout(saveDraftNow, 300); }
@@ -1167,7 +1177,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       if (d && d.v === 1) restoreDraft(d, tok);
       draftOn = true;
-    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = "Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz."; } });
+    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
   function restoreDraft(d, tok) {
     var f = d.fields || {};
@@ -1197,7 +1207,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== restoring || tok !== formSeq) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
       keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
       photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
-      $("formHint").textContent = "Wczytano zapisaną inspekcję (" + ok.length + " zdj.)." + (keptSaved.length ? " Nie udało się pokazać " + keptSaved.length + " zdjęć — zostają w zapisie." : "");
+      $("formHint").textContent = T("Wczytano zapisaną inspekcję (", "Saved inspection loaded (") + ok.length + " zdj.)." + (keptSaved.length ? T(" Nie udało się pokazać ", " Could not show ") + keptSaved.length + T(" zdjęć — zostają w zapisie.", " photos — they stay in the save.") : "");
     });
   }
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
@@ -1208,13 +1218,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // „Wyczyść inspekcję” (menu ⋮): kasuje szkic, zdjęcia i etap klocka
   window.OEST_clearInspection = function () {
     if (cur.mode !== "one" || !cur.type || queueing) return; // raport właśnie się przygotowuje: nie czyścimy pod nim formularza
-    if (!confirm("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).")) return;
+    if (!confirm(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos)."))) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
     dropDraft(k).then(function () {
       if (cur.ppm && PPM && PPM.setStage) { var r = PPM.stage(cur.ppm); if (!r || r.s === "prog" || r.s === "hold") PPM.setStage(cur.ppm, null); }
       openForm(code); if (cur.ppm && PPM && PPM.setStage) { var r2 = PPM.stage(cur.ppm); if (r2 && r2.s === "prog" && !r2.manual) PPM.setStage(cur.ppm, null); }
-      renderPpmBar(); $("formHint").textContent = "Wyczyszczono. Formularz jest pusty.";
+      renderPpmBar(); $("formHint").textContent = T("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
     });
   };
 
@@ -1229,19 +1239,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
-    $("flOnL").textContent = F.points ? "Lista przycisków (sprawdzenie z apki)" : "Formularz elektroniczny";
-    $("flHint").textContent = F.points ? "Wyłączona: do raportu idą tylko zdjęcia kartki. Włączona: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach." :
-      "Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.";
+    $("flOnL").textContent = F.points ? T("Lista przycisków (sprawdzenie z apki)", "Call point list (check in the app)") : T("Formularz elektroniczny", "Electronic form");
+    $("flHint").textContent = F.points ? T("Wyłączona: do raportu idą tylko zdjęcia kartki. Włączona: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach.", "Off: only photos of the paper form go to the report. On: the report also has a call point table (Yes = vents opened from this call point and closed after reset) and photos per call point.") :
+      T("Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.", "Off: only photos of the filled-in forms go to the report. On: the filled-in Word form goes, with form photos as an extra.");
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
     $("flList").innerHTML = F.taps.map(function (name, i) {
       var t = fl.taps[i], pics = tapPhotos(i), open = fl.open[i] || t.note;
       return (heads[i] ? '<div class="fl-grp">' + esc(heads[i]) + "</div>" : "") + '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(name) + '</div><div class="seg">' +
         [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]].map(function (o) { return '<button type="button" data-fl="' + i + '" data-s="' + o[0] + '" class="' + o[2] + (t.state === o[0] ? " on" : "") + '">' + o[1] + "</button>"; }).join("") +
-        '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="Zdjęcie: ' + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
-        '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="Notatka: ' + esc(name) + '">📝</button></div>' +
-        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="Notatka (trafi do kolumny NOTES)">' : "") +
-        (pics.length ? '<div class="fl-pics">' + pics.map(function (p) { return '<span><img alt="" src="' + p.url + '"><button type="button" data-fldel="' + photos.indexOf(p) + '" aria-label="Usuń zdjęcie">×</button></span>'; }).join("") + "</div>" : "") + "</div>";
+        '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="' + T('Zdjęcie: ', 'Photo: ') + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
+        '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="' + T('Notatka: ', 'Note: ') + esc(name) + '">📝</button></div>' +
+        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="'+T('Notatka (trafi do kolumny NOTES)', 'Note (goes to the NOTES column)')+'">' : "") +
+        (pics.length ? '<div class="fl-pics">' + pics.map(function (p) { return '<span><img alt="" src="' + p.url + '"><button type="button" data-fldel="' + photos.indexOf(p) + '" aria-label="'+T('Usuń zdjęcie', 'Delete photo')+'">×</button></span>'; }).join("") + "</div>" : "") + "</div>";
     }).join("");
   }
   var flTap = null;
@@ -1343,11 +1353,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
           '<div class="chips rs">' + c.reasons.map(function (r) {
             var prev = last && last.r.indexOf(r.id) >= 0;
-            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(r.pl) + "</button>";
+            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(T(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl)) + "</button>";
           }).join("") + "</div>" : "";
-        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(c.q) +
+        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(T(c.q, c.qen || c.q)) +
           (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
-          '<div class="seg" role="group" aria-label="' + esc(c.q) + '">' +
+          '<div class="seg" role="group" aria-label="' + esc(T(c.q, c.qen || c.q)) + '">' +
           '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
           '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
           "</div>" + rs + "</div>";
@@ -1359,12 +1369,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var s = states[i], head = "", tail = "";
       if (c.room && (!i || cks[i - 1].room !== c.room)) head = '<div class="room-h"><b>' + esc(c.roomName) + "</b><span>" + esc(c.roomLoc) + "</span></div>";
       if (c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length)
-        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="Co jest nie tak? (trafi do raportu)" aria-label="Uwagi: ' + esc(c.roomName) + '">';
+        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="'+T('Co jest nie tak? (trafi do raportu)', 'What is wrong? (goes to the report)')+'" aria-label="' + T('Uwagi: ', 'Remarks: ') + esc(c.roomName) + '">';
       return head + '<div class="ck-row ' + s + '"><div class="txt">' + esc(c.room ? c.cp : s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
         '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
         '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
-        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="Nie OK" aria-pressed="' + (s === "fail") + '">✗</button>' +
-        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="Pomiń" aria-pressed="' + (s === "na") + '">–</button>' +
+        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="'+T('Nie OK', 'Not OK')+'" aria-pressed="' + (s === "fail") + '">✗</button>' +
+        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="'+T('Pomiń', 'Skip')+'" aria-pressed="' + (s === "na") + '">–</button>' +
         "</div></div>" + tail;
     }).join("");
   }
@@ -1375,7 +1385,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
     $("faults").innerHTML = faultsFor(cur.type).map(function (f) {
-      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(f.pl) + "</button>";
+      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(T(f.pl, f.enl)) + "</button>";
     }).join("");
   }
   $("faults").addEventListener("click", function (e) {
@@ -1444,7 +1454,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.type;
     // Bez IndexedDB zapis zniknąłby po zamknięciu apki, a obiecujemy wznowienie: nie udaję, że się zapisało
     return dbP.then(function (db) {
-      if (!db) throw new Error("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji");
+      if (!db) throw new Error(T("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji", "this browser does not keep data permanently, so the inspection cannot be paused and resumed"));
       return kvSet(batchKey(t), batch);
     }).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
   }
@@ -1483,15 +1493,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var all = devices(t), codes = Object.keys(batch.items), fails = codes.filter(function (c) { return batch.items[c].fails; }).length;
     var nextUp = all.filter(function (d) { return !batch.items[d.code]; })[0];
     bar.innerHTML = '<div class="label">Zlecenie: ' + esc(t.batch) + "</div>" +
-      "<div>Zapisane: " + codes.length + " z " + all.length + " · z uwagami: " + fails + (batch.started ? " · zaczęte " + esc(fmtDate(new Date(batch.started))) : "") + "</div>" +
-      (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">Wznów od ' + esc(nextUp.code) + "</button></div>" : "") +
-      '<p class="hint">Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.</p>' +
-      '<div class="row"><button class="go" type="button" id="batchEnd">Zakończ zlecenie</button></div>' +
-      (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">Zacznij od nowa</button></div>' : "");
+      "<div>"+T("Zapisane:", "Saved:")+" " + codes.length + T(" z ", " of ") + all.length + T(" · z uwagami: ", " · with remarks: ") + fails + (batch.started ? T(" · zaczęte ", " · started ") + esc(fmtDate(new Date(batch.started))) : "") + "</div>" +
+      (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">'+T('Wznów od', 'Resume from')+' ' + esc(nextUp.code) + "</button></div>" : "") +
+      '<p class="hint">'+T('Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.', 'Each device is saved on the phone straight away. You can stop, close the app and come back tomorrow.')+'</p>' +
+      '<div class="row"><button class="go" type="button" id="batchEnd">'+T('Zakończ zlecenie', 'Finish job')+'</button></div>' +
+      (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">'+T('Zacznij od nowa', 'Start again')+'</button></div>' : "");
     $("batchEnd").addEventListener("click", openSum);
     if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
     if ($("batchClear")) $("batchClear").addEventListener("click", function () {
-      if (confirm("Usunąć wszystkie zapisy tego zlecenia?")) clearBatch(t).then(renderList, function (e) { alert("Nie udało się usunąć zlecenia (" + gErr(e) + "). Zapisy zostają."); });
+      if (confirm(T("Usunąć wszystkie zapisy tego zlecenia?", "Delete all saves of this job?"))) clearBatch(t).then(renderList, function (e) { alert(T("Nie udało się usunąć zlecenia (", "Could not delete the job (") + gErr(e) + T("). Zapisy zostają.", "). The saves stay.")); });
     });
   }
   // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
@@ -1537,8 +1547,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }, function (e) {
       if (batch.items[code] === item) { if (prev) batch.items[code] = prev; else delete batch.items[code]; }
       b.disabled = false;
-      if (cur.code !== code) { alert("Nie zapisano " + code + " w telefonie (" + gErr(e) + "). Otwórz go i zapisz ponownie."); return; }
-      $("formHint").textContent = "Nie zapisano w telefonie (" + gErr(e) + "). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.";
+      if (cur.code !== code) { alert(T("Nie zapisano ", "Not saved ") + code + T(" w telefonie (", " on the phone (") + gErr(e) + T("). Otwórz go i zapisz ponownie.", "). Open it and save again.")); return; }
+      $("formHint").textContent = T("Nie zapisano w telefonie (", "Not saved on the phone (") + gErr(e) + T("). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.", "). The form stays — try again or remove some photos.");
     });
   });
   function photoFromSaved(sp, code, wh) {
@@ -1569,7 +1579,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== restoring || cur.code !== code) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
       keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
       photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
-      if (keptSaved.length) $("formHint").textContent = "Nie udało się pokazać " + keptSaved.length + " zapisanych zdjęć. Zostają w zapisie urządzenia.";
+      if (keptSaved.length) $("formHint").textContent = T("Nie udało się pokazać ", "Could not show ") + keptSaved.length + T(" zapisanych zdjęć. Zostają w zapisie urządzenia.", " saved photos. They stay in the device save.");
     });
   }
   function openSum() {
@@ -1577,7 +1587,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     resetForm();
     cur.mode = "sum"; cur.formType = t.id; cur.code = t.batch;
     cur.sumDevs = all; // rejestr zamrożony na czas podsumowania (odświeżenie z Code.gs nie zmieni raportu po potwierdzeniu)
-    cur.restOk = !missing.length || confirm(missing.length + " urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone");
+    cur.restOk = !missing.length || confirm(missing.length + T(" urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone", " devices without a save. Count them as checked with no remarks?\\n\\nOK = yes, I checked them all\\nCancel = record them as not checked"));
     var locs = [];
     all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
     cur.loc = locs.join(", "); cur.where = cur.loc;
@@ -1593,10 +1603,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var lost = ps.filter(function (p) { return !p; }).length; ps = ps.filter(Boolean);
       if (my !== restoring || cur.mode !== "sum") { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
       photos = ps.concat(photos); restoring = 0; renderPhotos(); suggestDate(); updateFormHint();
-      if (lost) $("formHint").textContent = "Nie udało się odczytać " + lost + " zapisanych zdjęć — raport pójdzie bez nich.";
+      if (lost) $("formHint").textContent = T("Nie udało się odczytać ", "Could not read ") + lost + T(" zapisanych zdjęć — raport pójdzie bez nich.", " saved photos — the report will go without them.");
     }, function () {
       if (my !== restoring) return;
-      restoring = 0; updateFormHint(); $("formHint").textContent = "Nie udało się wczytać zapisanych zdjęć — raport pójdzie bez nich.";
+      restoring = 0; updateFormHint(); $("formHint").textContent = T("Nie udało się wczytać zapisanych zdjęć — raport pójdzie bez nich.", "Could not load the saved photos — the report will go without them.");
     });
     renderSum(); show("form"); updateFormHint();
   }
@@ -1604,7 +1614,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var d = batchData(reportDate());
     $("sumBox").innerHTML = '<div class="label">Podsumowanie (trafi do raportu)</div><ul class="sumlist">' +
       d.punkty.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" +
-      '<p class="hint">Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.</p>';
+      '<p class="hint">'+T('Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.', 'Photos from saved devices are added automatically. You can add general ones.')+'</p>';
   }
   function batchData(w) {
     var t = cur.type, all = cur.sumDevs || devices(t), items = batch.items;
@@ -1635,7 +1645,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Ten sam zestaw funkcji (getSetup, translate, submit) przez google.script.run albo POST na …/exec
   function api(fn, arg) {
     if (IN_GAS) return gs(fn, arg, window.GAS_KEY || ""); // klucz wstawia doGet
-    if (!cfg.api) return Promise.reject(new Error("brak adresu skryptu w Ustawieniach"));
+    if (!cfg.api) return Promise.reject(new Error(T("brak adresu skryptu w Ustawieniach", "no script address in Settings")));
     return fetch(cfg.api, {
       method: "POST", redirect: "follow",
       headers: { "Content-Type": "text/plain;charset=utf-8" }, // bez preflight CORS
@@ -1644,7 +1654,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     }).then(function (t) {
-      var j; try { j = JSON.parse(t); } catch (e) { throw new Error("skrypt zwrócił stronę zamiast danych — sprawdź dostęp „Każdy” we wdrożeniu"); }
+      var j; try { j = JSON.parse(t); } catch (e) { throw new Error(T("skrypt zwrócił stronę zamiast danych — sprawdź dostęp „Każdy” we wdrożeniu", "the script returned a page instead of data — check “Anyone” access in the deployment")); }
       if (j.error) throw new Error(j.error);
       return j.result;
     });
@@ -1662,17 +1672,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function renderTranslate() {
     var can = !!nativeTr() || (online() && (IN_GAS || cfg.api));
     $("translate").hidden = !can;
-    if (!can && !$("trHint").textContent) $("trHint").textContent = "Bez sieci tłumaczenie nie działa — użyj gotowych usterek albo wpisz po angielsku.";
+    if (!can && !$("trHint").textContent) $("trHint").textContent = T("Bez sieci tłumaczenie nie działa — użyj gotowych usterek albo wpisz po angielsku.", "Translation does not work offline — use the ready defects or type in English.");
     if (can && /^Bez sieci/.test($("trHint").textContent)) $("trHint").textContent = "";
   }
   $("translate").addEventListener("click", function () {
     var txt = $("komentarz").value.trim(); if (!txt) return;
-    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? "Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)" : "Tłumaczę…";
+    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? T("Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)", "Translating… (first time downloading the dictionary, about 30 MB)") : T("Tłumaczę…", "Translating…");
     (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
-      if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = "Gotowe. Możesz poprawić tekst ręcznie."; if (mdReady) runModel(true); }
-      else $("trHint").textContent = "Brak odpowiedzi — spróbuj jeszcze raz.";
-    }).catch(function (e) { $("trHint").textContent = "Nie udało się przetłumaczyć: " + gErr(e); })
+      if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = T("Gotowe. Możesz poprawić tekst ręcznie.", "Done. You can edit the text by hand."); if (mdReady) runModel(true); }
+      else $("trHint").textContent = T("Brak odpowiedzi — spróbuj jeszcze raz.", "No answer — try again.");
+    }).catch(function (e) { $("trHint").textContent = T("Nie udało się przetłumaczyć: ", "Translation failed: ") + gErr(e); })
       .then(function () { b.disabled = false; });
   });
   $("undoTr").addEventListener("click", function () { if (trOriginal != null) { $("komentarz").value = trOriginal; trOriginal = null; } this.hidden = true; $("trHint").textContent = ""; });
@@ -1690,13 +1700,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var notes = txt.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
     var tok = ++mdSeq, form = formSeq; mdInput = txt; $("mdRun").disabled = true;
     $("mdWarn").textContent = ""; $("mdBox").hidden = true;
-    $("trHint").textContent = (auto ? "Przetłumaczone. " : "") + "Model układa tekst na telefonie… (pierwszy raz do ~20 s)";
+    $("trHint").textContent = (auto ? T("Przetłumaczone. ", "Translated. ") : "") + T("Model układa tekst na telefonie… (pierwszy raz do ~20 s)", "The model is writing the text on the phone… (first time up to ~20 s)");
     (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
       if (tok !== mdSeq || form !== formSeq) return;
       $("mdOut").value = out; $("mdBox").hidden = false;
       var miss = OESTModel.missingNumbers(original, out);
-      $("mdWarn").textContent = miss.length ? "⚠ W propozycji brakuje: " + miss.join(", ") + " — sprawdź." : "";
-      $("trHint").textContent = "Propozycja gotowa. Nic nie wstawiam bez Twojej zgody.";
+      $("mdWarn").textContent = miss.length ? "⚠ W propozycji brakuje: " + miss.join(", ") + T(" — sprawdź.", " — check.") : "";
+      $("trHint").textContent = T("Propozycja gotowa. Nic nie wstawiam bez Twojej zgody.", "Suggestion ready. Nothing is inserted without your OK.");
     }).catch(function (e) { if (tok === mdSeq) $("trHint").textContent = e.message; })
       .then(function () { if (tok === mdSeq) $("mdRun").disabled = false; });
   }
@@ -1704,13 +1714,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // zmiana komentarza unieważnia propozycję (w toku i pokazaną), żeby nie nadpisać nowych poprawek
   $("komentarz").addEventListener("input", function () {
     if (mdInput === null) return; mdSeq++; mdInput = null; $("mdBox").hidden = true; $("mdRun").disabled = false; $("mdWarn").textContent = "";
-    if (/^(Propozycja|Model układa|Przetłumaczone\. Model)/.test($("trHint").textContent)) $("trHint").textContent = "Komentarz zmieniony — „✨ Ułóż po angielsku”, gdy skończysz.";
+    if (/^(Propozycja|Model układa|Przetłumaczone\. Model)/.test($("trHint").textContent)) $("trHint").textContent = T("Komentarz zmieniony — „✨ Ułóż po angielsku”, gdy skończysz.", "Comment changed — tap “✨ Write in English” when you finish.");
   });
   $("mdUse").addEventListener("click", function () {
     var out = $("mdOut").value.trim(); if (!out) return;
-    if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = "Komentarz się zmienił — ułóż jeszcze raz."; return; }
+    if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = T("Komentarz się zmienił — ułóż jeszcze raz.", "The comment changed — write it again."); return; }
     if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
-    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = "Wstawione. Możesz poprawić ręcznie albo cofnąć.";
+    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = T("Wstawione. Możesz poprawić ręcznie albo cofnąć.", "Inserted. You can edit by hand or undo.");
   });
   $("mdDrop").addEventListener("click", function () { mdSeq++; $("mdBox").hidden = true; $("trHint").textContent = ""; });
   renderModel();
@@ -1720,7 +1730,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
-    $("photoInfo").textContent = "Zmniejszam…";
+    $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
@@ -1733,8 +1743,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         });
       });
     }, Promise.resolve()).then(function () {
-      $("photoInfo").textContent = photos.length ? "Zdjęć: " + photos.length + " · zmniejszone do maks. 1920 px." : "Zdjęcia są zmniejszane od razu po dodaniu.";
-    }).catch(function () { $("photoInfo").textContent = "Nie udało się wczytać zdjęcia."; })
+      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + " · zmniejszone do maks. 1920 px." : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
+    }).catch(function () { $("photoInfo").textContent = T("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
   // Zdjęcie przez wspólny moduł aparatu (zdjęcie → podgląd OK / Edytuj / Powtórz); w przeglądarce zwykły wybór pliku
@@ -1750,11 +1760,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     photos.forEach(function (p, i) {
       if (p.tap != null) return; // zdjęcie kranu (Flushing): pokazane przy kranie
       var d = document.createElement("div"); d.className = "thumb";
-      d.innerHTML = '<img alt="Zdjęcie ' + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="Usuń zdjęcie ' + (i + 1) + '">×</button>' +
+      d.innerHTML = '<img alt="' + T('Zdjęcie ', 'Photo ') + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="' + T('Usuń zdjęcie ', 'Delete photo ') + (i + 1) + '">×</button>' +
         (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
       d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
       if (window.OESTAparat && OESTAparat.available()) {
-        var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", "Edytuj zdjęcie " + (i + 1));
+        var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", T("Edytuj zdjęcie ", "Edit photo ") + (i + 1));
         eb.addEventListener("click", function () {
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob).then(function (nb) {
@@ -1782,9 +1792,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var pd = isoDay(p.when), today = isoDay(new Date());
     if (!dateTouched) $("dzien").value = pd;
     box.hidden = false;
-    box.innerHTML = "<span>" + (p.exif ? "Zdjęcie zrobione " : "Plik zdjęcia z ") + esc(fmtDate(p.when) + " " + fmtTime(p.when)) + ".</span>" +
+    box.innerHTML = "<span>" + (p.exif ? T("Zdjęcie zrobione ", "Photo taken ") : T("Plik zdjęcia z ", "Photo file from ")) + esc(fmtDate(p.when) + " " + fmtTime(p.when)) + ".</span>" +
       ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(fmtDate(p.when)) + "</button>" : "") +
-      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">Ustaw dziś</button>' : "");
+      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">'+T('Ustaw dziś', 'Set today')+'</button>' : "");
     updateFormHint();
   }
   $("dateSug").addEventListener("click", function (e) {
@@ -1801,7 +1811,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var ask = !!cur.type.ask, code = cur.code;
     var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
-    $("photoInfo").textContent = "Sprawdzam zdjęcie…";
+    $("photoInfo").textContent = T("Sprawdzam zdjęcie…", "Checking the photo…");
     Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
       if (cur.code !== code) return;
       ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
@@ -1812,8 +1822,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (sg.fault !== cur.type.checks[i].key) { rsel[i] = rsel[i] || []; if (rsel[i].indexOf(sg.fault) < 0) rsel[i].push(sg.fault); }
       });
       renderPhotos(); renderSugs(); renderChecks(); updateFormHint();
-      $("photoInfo").textContent = ph.sugs.length ? "Sprawdź sugestie pod zdjęciami." : "Na zdjęciu nic podejrzanego.";
-    }).catch(function () { $("photoInfo").textContent = "Nie udało się sprawdzić zdjęcia — zaznacz ręcznie."; });
+      $("photoInfo").textContent = ph.sugs.length ? T("Sprawdź sugestie pod zdjęciami.", "Check the suggestions under the photos.") : T("Na zdjęciu nic podejrzanego.", "Nothing suspicious in the photo.");
+    }).catch(function () { $("photoInfo").textContent = T("Nie udało się sprawdzić zdjęcia — zaznacz ręcznie.", "Could not check the photo — mark it by hand."); });
   }
   function renderSugs() {
     var open = [];
@@ -1821,8 +1831,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("sugBox").hidden = !open.length;
     $("sugBox").innerHTML = open.map(function (sg) {
       var f = FAULTS.filter(function (x) { return x.id === sg.fault; })[0];
-      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(f.pl) + '?</div><div class="row">' +
-        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">Tak</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">Nie</button></div></div>';
+      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(T(f.pl, f.enl)) + '?</div><div class="row">' +
+        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">'+T('Tak', 'Yes')+'</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">'+T('Nie', 'No')+'</button></div></div>';
     }).join("");
   }
   $("sugBox").addEventListener("click", function (e) {
@@ -1885,7 +1895,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
   function busySpin(on) {
     var el = $("busySpin");
-    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>Zapisuję…</b>'; document.body.appendChild(el); }
+    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
   }
   function updateFormHint() {
@@ -1895,41 +1905,41 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
-      $("formHint").textContent = "Wpisano " + filled + "/" + temps.length + "." + (bad ? " Popraw " + bad + " pole (tylko liczba)." : "") +
-        (outN ? " Poza zakresem: " + outN + " — wpis do Fault and Remedial Actions Log." : "") + (filled < temps.length ? " Puste pola zostaną puste w raporcie." : "");
+      $("formHint").textContent = "Wpisano " + filled + "/" + temps.length + "." + (bad ? T(" Popraw ", " Fix ") + bad + " pole (tylko liczba)." : "") +
+        (outN ? " Poza zakresem: " + outN + " — wpis do Fault and Remedial Actions Log." : "") + (filled < temps.length ? T(" Puste pola zostaną puste w raporcie.", " Empty fields will stay empty in the report.") : "");
       var blk = !filled || bad > 0;
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
-      $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
+      $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
     }
     if (cur.type && cur.type.flush && fl.on) {
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
       var pts = !!cur.type.flush.points, fpn = formPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
-      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : !pts && !fl.week ? "Wybierz tydzień miesiąca (1–5) — tak jak na formularzu." :
-        (pts ? "Przyciski: " : "Formularz: ") + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : " · tydzień " + fl.week) + (fpn ? " · zdjęć kartek: " + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
+      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? T("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
+        (pts ? T("Przyciski: ", "Call points: ") : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
-      $("toQueue").textContent = "Wyślij · " + fmtDate(reportDate()); return;
+      $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
     }
     if (cur.type && cur.type.folder) {
       var none = !formPhotos().length;
-      $("formHint").textContent = pendingPh ? "Zmniejszam zdjęcie…" : none ? "Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF." : "Zdjęć: " + formPhotos().length + " → jeden PDF, strona na zdjęcie.";
+      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? T("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : T("Zdjęć: ", "Photos: ") + formPhotos().length + T(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? "Dodaj zdjęcie formularza" : "Wyślij · " + fmtDate(reportDate());
+      $("toQueue").textContent = none ? T("Dodaj zdjęcie formularza", "Add form photo") : T("Wyślij · ", "Send · ") + fmtDate(reportDate());
       $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
-      $("formHint").textContent = sus ? "Odpowiedz na pytania z numerem — zdjęcie sugeruje problem." : "Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.";
-      if (pendingPh) $("formHint").textContent = "Zmniejszam zdjęcie…";
+      $("formHint").textContent = sus ? T("Odpowiedz na pytania z numerem — zdjęcie sugeruje problem.", "Answer the numbered questions — the photo suggests a problem.") : T("Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.", "Photo optional. The save stays on the phone until the job is finished.");
+      if (pendingPh) $("formHint").textContent = T("Zmniejszam zdjęcie…", "Reducing the photo…");
       $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
-      $("saveItem").textContent = (failCount() ? "Zapisz " : "Wszystko OK · ") + cur.code + " → następny"; return;
+      $("saveItem").textContent = (failCount() ? T("Zapisz ", "Save ") : T("Wszystko OK · ", "All OK · ")) + cur.code + T(" → następny", " → next"); return;
     }
-    if (restoring) h.push("Wczytuję zapisane zdjęcia…");
+    if (restoring) h.push(T("Wczytuję zapisane zdjęcia…", "Loading saved photos…"));
     $("formHint").textContent = h.join(" ");
-    if (pendingPh) h.push("Zmniejszam zdjęcie…");
+    if (pendingPh) h.push(T("Zmniejszam zdjęcie…", "Reducing the photo…"));
     var block = !!restoring || pendingPh > 0;
     $("toPreview").disabled = block; $("toQueue").disabled = block;
-    $("toQueue").textContent = block && h.length ? h[0] : "Wyślij · " + fmtDate(reportDate());
+    $("toQueue").textContent = block && h.length ? h[0] : T("Wyślij · ", "Send · ") + fmtDate(reportDate());
   }
 
   // ---------- dane raportu ----------
@@ -2033,11 +2043,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function tplState(err) {
     var n = $("tplNotice");
     if (serverTpl) {
-      n.hidden = !err; if (err) n.innerHTML = "<b>Bez połączenia z Google:</b> " + esc(err) + ". Działam na zapisanym szablonie.";
-      $("tplName").textContent = "Używany: " + serverTpl.name + " (kopia z Google Drive)";
+      n.hidden = !err; if (err) n.innerHTML = "<b>"+T("Bez połączenia z Google:", "No Google connection:")+"</b> " + esc(err) + T(". Działam na zapisanym szablonie.", ". Working with the saved template.");
+      $("tplName").textContent = T("Używany: ", "In use: ") + serverTpl.name + T(" (kopia z Google Drive)", " (copy from Google Drive)");
       return;
     }
-    if (err) { n.hidden = false; n.innerHTML = "<b>Szablon:</b> " + esc(err); $("tplName").textContent = "Brak — używany przykładowy wzór."; }
+    if (err) { n.hidden = false; n.innerHTML = "<b>" + T("Szablon:", "Template:") + "</b> " + esc(err); $("tplName").textContent = T("Brak — używany przykładowy wzór.", "None — the sample template is used."); }
   }
   function applySetup(r) {
     if (!cfg.email) cfg.email = r.email || "";
@@ -2057,7 +2067,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       t.checks = !qs[t.id].length ? t.baseChecks : qs[t.id].map(function (x, i) {
         // klucze z treści (nie z kolejności), żeby przestawienie pytań w CFG nie zmieniło znaczenia zapisanych odpowiedzi
         var k = x.key || x.q;
-        return { key: k, q: x.q, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
+        return { key: k, q: x.q, qen: x.qen, en: x.en, note: !!x.note, def: "ok", reasons: (x.reasons || []).map(function (r) { return { id: r.id || k + "|" + r.pl, pl: r.pl, en: r.en, note: !!r.note }; }) };
       });
       // otwarty formularz tego rodzaju: odpowiedzi idą za kluczem pytania, nie za pozycją
       if (cur.type === t && cur.code && old !== t.checks) {
@@ -2073,7 +2083,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   function loadSetup() {
-    $("tplName").textContent = "Ładuję z Google Drive…";
+    $("tplName").textContent = T("Ładuję z Google Drive…", "Loading from Google Drive…");
     return api("getSetup", cfg.folder || "").then(function (r) {
       applySetup(r);
       save("cfg", cfg); fillSettings();
@@ -2102,7 +2112,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked; cfg.wifiOnly = $("s-wifi").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
-    $("setToast").textContent = "Zapisano w tej przeglądarce";
+    $("setToast").textContent = T("Zapisano w tej przeglądarce", "Saved in this browser");
     clearTimeout(readSettings.t); readSettings.t = setTimeout(function () { $("setToast").textContent = ""; }, 1800);
   }
   ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
@@ -2324,14 +2334,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function freeBuilt() { if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); built = null; } }
   $("toPreview").addEventListener("click", function () {
     if (queueing) return;
-    var b = this; b.disabled = true; b.textContent = "Przygotowuję…"; queueing = true;
+    var b = this; b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); queueing = true;
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
       r.from = from; built = r; renderPreview(); show("preview");
     }).catch(function (e) {
-      $("formHint").textContent = "Nie udało się przygotować raportu: " + buildErr(e);
-    }).then(function () { queueing = false; b.disabled = false; b.textContent = "Podgląd raportu"; });
+      $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
+    }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });
   });
   function buildErr(e) { return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
@@ -2341,18 +2351,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> (wzór firmy)<br>" + esc(built.name) + "<em>.pdf</em>";
+      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> "+T("(wzór firmy)", "(company template)")+"<br>" + esc(built.name) + "<em>.pdf</em>";
       return;
     }
     if (d.folder && d.flush) {
       var ff = d.flush;
-      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + " · tydzień " + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
+      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + T(" · tydzień ", " · week ") + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
         ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; });
           return (gname ? '<tr><td colspan="2"><b>' + esc(gname) + "</b></td></tr>" : "") + '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
         built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> (wzór firmy)<br>") + esc(built.name) + "<em>.pdf</em>";
+      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> "+T("(wzór firmy)", "(company template)")+"<br>") + esc(built.name) + "<em>.pdf</em>";
       return;
     }
     if (d.folder) {
@@ -2377,11 +2387,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
       '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
       '<tr><td colspan="2" style="height:44px">Signed: ' + esc(d.inspektor) + "</td></tr></table>" + foot +
-      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="Zdjęcie ' + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
+      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="' + T('Zdjęcie ', 'Photo ') + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
     $("paper").innerHTML = html;
     $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
     $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
-      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> (tylko na Drive)" : "");
+      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> "+T("(tylko na Drive)", "(Drive only)")+"" : "");
   }
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
@@ -2401,15 +2411,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       status: "wait", err: ""
     };
     // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
-    if (sendBtn && sendBtn.step) sendBtn.step("Dodaję do kolejki…");
+    if (sendBtn && sendBtn.step) sendBtn.step(T("Dodaję do kolejki…", "Adding to the queue…"));
     return dbP.then(function (db) {
       if (db) return qPut(it);
-      if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");
+      if (!online()) throw new Error(T("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg", "this browser does not keep the queue and there is no network. The report stays in the form — send it when the signal returns"));
       // ponowna próba wysyła ten sam raport (to samo id), żeby serwer nie zrobił duplikatu, gdy zginęła tylko odpowiedź
       if (unsent) { it = unsent; d = unsentData; }
       return api("submit", submitArg(it)).then(function (r) { unsent = null; markSent(it, r); return qPut(it); }, function (e) {
         unsent = it; unsentData = d;
-        throw new Error("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (" + gErr(e) + "). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian");
+        throw new Error(T("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (", "this browser does not keep the queue, so the report has to go at once, and sending failed (") + gErr(e) + T("). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian", "). The form stays — a retry sends the same report, without later changes"));
       });
     }).then(function () {
       queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
@@ -2422,7 +2432,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var done = Promise.resolve();
       if (from.mode === "sum") {
         if (from.type.ask) saveHist(from.type, d.data);
-        done = clearBatch(from.type).catch(function (e) { alert("Raport jest w kolejce, ale zlecenie nie wyczyściło się (" + gErr(e) + "). Usuń je przyciskiem „Zacznij od nowa”."); });
+        done = clearBatch(from.type).catch(function (e) { alert(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
       }
       if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
       if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // raport wyszedł do kolejki: szkic niepotrzebny
@@ -2435,13 +2445,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (queueing) return;
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
-    if (fix && !confirm("Ta inspekcja za termin " + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + " jest już " + (PPM.stage(cur.ppm).s === "done" ? "zakończona" : "wysłana") + ".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.")) return;
-    queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: "Przygotowuję raport", keep: false }) : null;
-    if (!sendBtn) { b.disabled = true; b.textContent = "Przygotowuję…"; }
+    if (fix && !confirm("Ta inspekcja za termin " + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + T(" jest już ", " is already ") + (PPM.stage(cur.ppm).s === "done" ? T("zakończona", "completed") : T("wysłana", "sent")) + T(".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.", ".\\nSend again as a correction? The due date will not change."))) return;
+    queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
+    if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
     from = Object.assign({}, from, { fix: fix, draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
-      fail = "Nie udało się przygotować raportu: " + buildErr(e);
+      fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {
       queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
@@ -2458,32 +2468,32 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function renderNet() {
     var n = pending().length, off = !online();
     $("netbar").className = "netbar" + (off ? " off" : "");
-    $("netTxt").textContent = (off ? "Bez sieci" : "Online") + " · " +
-      (n ? "w kolejce: " + n + (sending ? " (wysyłam…)" : "") : "kolejka pusta");
+    $("netTxt").textContent = (off ? T("Bez sieci", "No network") : "Online") + " · " + // i18n-ok: „Online” tak samo po polsku i po angielsku
+      (n ? T("w kolejce: ", "queued: ") + n + (sending ? T(" (wysyłam…)", " (sending…)") : "") : T("kolejka pusta", "queue empty"));
   }
   function qBusy() { return sending || (gm() && OESTSender.busy()); }
   function renderQueue() {
     var n = pending().length, busy = qBusy();
     var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
-    $("qSub").textContent = n ? "Do wysłania: " + n : "Wszystko wysłane";
+    $("qSub").textContent = n ? T("Do wysłania: ", "To send: ") + n : T("Wszystko wysłane", "All sent");
     $("qList").innerHTML = list.length ? list.map(function (q) {
-      var st = q.status === "sent" ? '<span class="st ok">✓ wysłane ' + esc(fmtTime(new Date(q.sentAt))) + "</span>" :
-        q.status === "sending" ? '<span class="st">wysyłam…</span>' :
-        q.status === "err" ? '<span class="st err">błąd</span>' : '<span class="st">czeka</span>';
+      var st = q.status === "sent" ? '<span class="st ok">'+T('✓ wysłane', '✓ sent')+' ' + esc(fmtTime(new Date(q.sentAt))) + "</span>" :
+        q.status === "sending" ? '<span class="st">'+T('wysyłam…', 'sending…')+'</span>' :
+        q.status === "err" ? '<span class="st err">'+T('błąd', 'error')+'</span>' : '<span class="st">czeka</span>';
       return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + kb(q.docx.length + q.pdf.length) +
         (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">Usuń</button>' : "") +
+        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+T('Usuń', 'Delete')+'</button>' : "") +
         "</small></div>" + st + "</div>";
-    }).join("") : '<p class="hint">Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.</p>';
+    }).join("") : '<p class="hint">'+T('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
     $("qSend").disabled = busy || !n;
-    $("qSend").textContent = busy ? "Wysyłam…" : "Wyślij wszystko";
-    $("qHint").textContent = gm() ? "Idzie prosto z Twojego Gmaila na " + (myEmail() || "adres z Ustawień") + ". Stan wysyłki widać na pasku na dole." : shareApi() ? "Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google." : !cfg.email ? "Ustaw e-mail w Ustawieniach." :
-      (!online() ? "Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta)." : "Idzie z Twojego Gmaila na " + cfg.email + " i do folderu „" + cfg.folder + "” na Drive.");
+    $("qSend").textContent = busy ? T("Wysyłam…", "Sending…") : T("Wyślij wszystko", "Send all");
+    $("qHint").textContent = gm() ? T("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || T("adres z Ustawień", "the address in Settings")) + T(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.") : shareApi() ? T("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.") : !cfg.email ? T("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.") :
+      (!online() ? T("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : T("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + T(" i do folderu „", " and to the folder “") + cfg.folder + T("” na Drive.", "” on Drive."));
     renderNet();
   }
   $("qList").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
-    if (!confirm("Usunąć ten raport z kolejki? Nie zostanie wysłany.")) return;
+    if (!confirm(T("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
     var id = b.getAttribute("data-del");
     var gone = queue.filter(function (q) { return q.id === id; })[0];
     qDel(id).then(function () {
@@ -2531,7 +2541,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     it.status = "sending"; refresh();
     return shareApi().share({ subject: it.subject, body: it.body, to: to ? [to] : [], files: files }).then(function () {
       markSent(it, null); return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); alert("Nie udało się otworzyć Gmaila: " + it.err + ". Raport czeka w kolejce."); return qPut(it); }).then(refresh);
+    }, function (e) { it.status = "err"; it.err = gErr(e); alert(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
   }
   function sendQueue(manual) {
     if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
@@ -2554,7 +2564,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         });
       });
     }, Promise.resolve(false)).catch(function (e) {
-      $("qHint").textContent = "Błąd zapisu kolejki w telefonie: " + gErr(e);
+      $("qHint").textContent = T("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e);
     }).then(function () { sending = false; refresh(); });
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
@@ -2588,7 +2598,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
     });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
-    return online() ? loadSetup() : tplState("brak sieci");
+    return online() ? loadSetup() : tplState(T("brak sieci", "no network"));
   }).then(function () { if (cfg.auto) sendQueue(); });
 
   // ---------- wejście z listy PPM w apce (#ppm=id) ----------
@@ -2597,7 +2607,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     document.querySelectorAll(".ppmbar").forEach(function (el) {
       el.hidden = !t; if (!t) return;
       var due = PPM.due(t), left = PPM.daysLeft(due);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="Termin z systemu"></label>' +
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 
@@ -2617,8 +2627,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
-    sel.innerHTML = [["", "○ Nie rozpoczęta"], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", "✓ Zakończona"]]
-      .concat(s === "queued" ? [["queued", "⏳ W kolejce"]] : s === "sent" ? [["sent", "✓ Wysłana"]] : [])
+    sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", T("✓ Zakończona", "✓ Completed")]]
+      .concat(s === "queued" ? [["queued", T("⏳ W kolejce", "⏳ Queued")]] : s === "sent" ? [["sent", T("✓ Wysłana", "✓ Sent")]] : [])
       .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
     sel.className = "ppmpill s-" + (s || "none");
   }

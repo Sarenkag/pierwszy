@@ -26,11 +26,12 @@
   var menu = document.createElement("div");
   menu.className = "kmenu"; menu.hidden = true;
   menu.innerHTML = '<div class="kupd"></div>' +
-    '<button type="button" data-k="def">Przywróć domyślne (wszystko OK)</button>' +
+    '<button type="button" data-k="def" data-en="Restore defaults (all OK)">Przywróć domyślne (wszystko OK)</button>' +
     '<button type="button" data-k="more">Overall / Quote</button>' +
-    '<button type="button" data-k="prev">Podgląd raportu</button>' +
-    '<button type="button" data-k="clear" class="kclear">Wyczyść inspekcję</button>';
+    '<button type="button" data-k="prev" data-en="Report preview">Podgląd raportu</button>' +
+    '<button type="button" data-k="clear" class="kclear" data-en="Clear inspection">Wyczyść inspekcję</button>';
   top.appendChild(kb); top.appendChild(menu);
+  if (window.OESTBledy) OESTBledy.applyDom(menu);
   if (bar) menu.querySelector(".kupd").appendChild(bar);
   kb.addEventListener("click", function () { menu.hidden = !menu.hidden; });
   document.addEventListener("click", function (e) { if (!menu.hidden && !e.target.closest(".kmenu,.kebab")) menu.hidden = true; });

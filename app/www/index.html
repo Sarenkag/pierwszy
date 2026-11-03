@@ -142,11 +142,11 @@ input[type=text], input[type=email], input[type=date], select {
     <div class="auth">
       <button class="btn go" type="button" id="googleBtn">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" opacity=".75" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="currentColor" opacity=".55" d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="currentColor" opacity=".9" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z"/></svg>
-        Zaloguj przez Google
+        <span data-en="Sign in with Google">Zaloguj przez Google</span>
       </button>
-      <p class="hint">Rejestracja i odzyskiwanie hasła odbywają się przez konto Google. Po pierwszym logowaniu apka otwiera się także bez internetu.</p>
+      <p class="hint" data-en="Registration and password recovery go through your Google account. After the first sign-in the app also opens without internet.">Rejestracja i odzyskiwanie hasła odbywają się przez konto Google. Po pierwszym logowaniu apka otwiera się także bez internetu.</p>
       <p class="err" id="authErr" hidden></p>
-      <button class="linkish" type="button" id="skipBtn" hidden>Wejdź bez logowania (do czasu ustawienia Google)</button>
+      <button class="linkish" type="button" id="skipBtn" hidden data-en="Enter without signing in (until Google is set up)">Wejdź bez logowania (do czasu ustawienia Google)</button>
     </div>
   </section>
 
@@ -181,7 +181,7 @@ input[type=text], input[type=email], input[type=date], select {
         <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
         <div><b>Handover</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
-      <button class="tile" type="button" data-go="soon" data-title="Stats">
+      <button class="tile" type="button" data-go="soon">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/></svg>
         <div><b data-en="Stats">Statystyki</b></div><span class="arrow" aria-hidden="true">›</span>
       </button>
@@ -194,23 +194,23 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Inspections -->
   <section class="view" id="v-ppm" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 data-en="Inspections">Inspekcje</h1></div></div>
     <div class="days" id="ppmDays"></div>
     <div class="chips" id="ppmChips"></div>
     <div class="ppm" id="ppmList"></div>
-    <button class="btn" type="button" data-href="inspekcje/index.html#queue">Kolejka raportów i wysyłka</button>
+    <button class="btn" type="button" data-href="inspekcje/index.html#queue" data-en="Report queue and sending">Kolejka raportów i wysyłka</button>
   </section>
 
   <!-- Kalendarz: miesiąc, zmiany z grafiku, inspekcje do zrobienia -->
   <section class="view" id="v-cal" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Back">‹</button>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 id="calTitle" data-en="Calendar">Kalendarz</h1></div>
-      <button class="calnav" type="button" data-cm="-1" aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Next month">▶</button>
-      <button class="calnav" type="button" data-go="profile" aria-label="Mój grafik">⚙</button></div>
+      <button class="calnav" type="button" data-cm="-1" aria-label="Poprzedni miesiąc" data-en-aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Następny miesiąc" data-en-aria-label="Next month">▶</button>
+      <button class="calnav" type="button" data-go="profile" aria-label="Mój grafik" data-en-aria-label="My shifts">⚙</button></div>
     <div class="calgrid" id="calGrid"></div>
     <div class="callegend"><span class="sh" data-en="Shift">Zmiana</span><span class="dn" data-en="Vantify job">Zlecenie Vantify</span><span class="dn pl" data-en="Planned">Planowane</span></div>
-    <button class="calhint" id="calNoShift" type="button" data-go="profile" hidden>Brak grafiku – ustaw swoje zmiany w <b>Mój profil → Mój grafik</b> ›</button>
+    <button class="calhint" id="calNoShift" type="button" data-go="profile" hidden><span data-en="No shift pattern – set your shifts in ">Brak grafiku – ustaw swoje zmiany w </span><b data-en="My Profile → My shifts">Mój profil → Mój grafik</b> ›</button>
     <div class="ppm" id="calDay"></div>
   </section>
 
@@ -219,14 +219,14 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Moduł w przygotowaniu -->
   <section class="view" id="v-soon" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 id="soonTitle" data-en="Stats">Statystyki</h1></div></div>
-    <div class="panel"><p class="hint">Ten moduł powstanie w kolejnych krokach.</p></div>
+    <div class="panel"><p class="hint" data-en="This module will be built in the next steps.">Ten moduł powstanie w kolejnych krokach.</p></div>
   </section>
 
   <!-- Settings -->
   <section class="view" id="v-settings" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz">‹</button>
+    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
       <div class="t"><h1 data-en="Settings">Ustawienia</h1></div></div>
     <div class="tiles">
       <button class="tile" type="button" data-go="profile">
@@ -246,12 +246,12 @@ input[type=text], input[type=email], input[type=date], select {
 
   <!-- Ustawienia aplikacji -->
   <section class="view" id="v-appset" hidden>
-    <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz">‹</button>
-      <div class="t"><h1>Ustawienia aplikacji</h1></div></div>
+    <div class="top"><button class="back" type="button" data-go="settings" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
+      <div class="t"><h1 data-en="App settings">Ustawienia aplikacji</h1></div></div>
     <div class="panel">
       <div class="who"><img id="accPic" alt="" hidden><div><b id="accName">—</b><div class="sub" id="accMail"></div></div></div>
       <button class="btn" type="button" id="logoutBtn" data-en="Sign out">Wyloguj</button>
-      <p class="hint">Wylogowanie nie usuwa profilu, inspekcji ani kolejki raportów z telefonu.</p>
+      <p class="hint" data-en="Signing out does not remove the profile, inspections or the report queue from the phone.">Wylogowanie nie usuwa profilu, inspekcji ani kolejki raportów z telefonu.</p>
     </div>
   </section>
 
@@ -411,11 +411,9 @@ input[type=text], input[type=email], input[type=date], select {
     });
   });
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
+  function T(pl, en) { return uiLang() === "en" ? en : pl; }
   function uiLang() { try { return localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
-  function applyLang() {
-    var en = uiLang() === "en";
-    document.querySelectorAll("[data-en]").forEach(function (el) { if (el.dataset.pl == null) el.dataset.pl = el.textContent; el.textContent = en ? el.dataset.en : el.dataset.pl; });
-  }
+  function applyLang() { if (window.OESTBledy) OESTBledy.applyDom(document); } // stały HTML: data-en / data-en-aria-label …
   window.addEventListener("oest:lang", function () { applyLang(); liveRefresh(); });
   applyLang();
   // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
@@ -445,16 +443,16 @@ input[type=text], input[type=email], input[type=date], select {
   $("googleBtn").addEventListener("click", function () {
     var b = this; b.disabled = true; $("authErr").hidden = true;
     googleReady().then(function (ok) {
-      if (!ok) throw new Error(native ? "Logowanie Google nie jest jeszcze ustawione w tej wersji apki." : "Logowanie Google działa tylko w apce na telefonie.");
+      if (!ok) throw new Error(native ? T("Logowanie Google nie jest jeszcze ustawione w tej wersji apki.", "Google sign-in is not set up in this app version yet.") : T("Logowanie Google działa tylko w apce na telefonie.", "Google sign-in works only in the phone app."));
       return Social.login({ provider: "google", options: { scopes: ["email", "profile"] } });
     }).then(function (res) {
       var p = (res && res.result && res.result.profile) || {};
-      if (!p.email) throw new Error("Google nie zwrócił adresu e-mail.");
+      if (!p.email) throw new Error(T("Google nie zwrócił adresu e-mail.", "Google did not return an email address."));
       setAccount({ provider: "google", id: p.id || "", email: p.email, name: p.name || "", first: p.givenName || "", last: p.familyName || "", pic: p.imageUrl || "", t: Date.now() });
       seedProfile();
       history.replaceState({ n: 0 }, "", "#home"); render("home");
     }).catch(function (e) {
-      $("authErr").textContent = (e && e.message) || String(e); $("authErr").hidden = false;
+      $("authErr").textContent = window.OESTBledy ? OESTBledy.text(e) : (e && e.message) || String(e); $("authErr").hidden = false;
       $("skipBtn").hidden = false; // gdy Google zawiedzie, zawsze da się wejść bez logowania (praca nie może stanąć)
     }).then(function () { b.disabled = false; });
   });
@@ -489,7 +487,8 @@ input[type=text], input[type=email], input[type=date], select {
   // filtry (Grzegorz 03/11): kilka grup naraz + „Rozpoczęte”; włączone wyglądają na wciśnięte; „All” = brak filtra; bez „Aktywa”
   var P = window.OEST_PPM, ppmSel = load("ppm.sel", null), ppmDay = "", ppmOpen = {};
   if (!Array.isArray(ppmSel)) { var og = load("ppm.group", "all"); ppmSel = og && og !== "all" && og !== "assets" ? [og] : []; }
-  var DAYS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
+  var DAYS = [["Nd", "Su"], ["Pn", "Mo"], ["Wt", "Tu"], ["Śr", "We"], ["Cz", "Th"], ["Pt", "Fr"], ["So", "Sa"]];
+  function dayName(i) { return T(DAYS[i][0], DAYS[i][1]); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
   // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
@@ -500,37 +499,37 @@ input[type=text], input[type=email], input[type=date], select {
     return AS.map(function (a) {
       var tasks = a.app.map(function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
       var color = a.kind === "hvac" ? grp("mech").color : grp("elec").color;
-      var own = tasks.length ? "Inspekcja w apce: " + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : "Tylko zlecenia Vantify — brak inspekcji w apce";
-      var info = ["#" + a.id, a.freq.join(" + ") || "bez częstotliwości", a.doc].filter(Boolean).join(" · ");
+      var own = tasks.length ? T("Inspekcja w apce: ", "In-app inspection: ") + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : T("Tylko zlecenia Vantify — brak inspekcji w apce", "Vantify jobs only — no in-app inspection");
+      var info = ["#" + a.id, a.freq.join(" + ") || T("bez częstotliwości", "no frequency"), a.doc].filter(Boolean).join(" · ");
       return '<button class="prow as" type="button"' + (tasks.length ? ' data-id="' + esc(tasks[0].id) + '"' : " disabled") + '><span class="bar" style="background:' + color + '"></span>' +
         '<span><div class="nm">' + esc(a.name) + '</div><div class="dt">' + esc(info) + '</div><div class="dt">' + (tasks.length ? "✓ " : "○ ") + esc(own) + "</div></span></button>";
     }).join("");
   }
   // klocek v2 (Grzegorz 02/11): typ z lewej, krótka nazwa + etap, budynek · częstotliwość, termin + %, pasek, punkty/usterki/zdjęcia
-  var ST = { prog: ["◐ W trakcie", "c1", 50], hold: ["⏸ Wstrzymana", "c1", 50], done: ["✓ Zakończona", "c2", 100], queued: ["⏳ W kolejce", "c4", 100], sent: ["✓ Wysłana", "c2", 100] };
-  var FREQ_EN = { "1W": "weekly", "1M": "monthly", "3M": "quarterly", "6M": "6-monthly", "12M": "annual" };
-  var FREQ_PL = { "1W": "co tydzień", "1M": "co miesiąc", "3M": "co kwartał", "6M": "co pół roku", "12M": "co rok" };
-  function freqName(f) { return (uiLang() === "en" ? FREQ_EN : FREQ_PL)[f] || f; }
-  var ICON_APP = '<svg class="ty" viewBox="0 0 24 24" aria-label="Inspekcja w apce"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 9l2 2 3-4M8 16l2 2 3-4M15 9h2M15 16h2"/></svg>';
-  var ICON_FOLDER = '<svg class="ty" viewBox="0 0 24 24" aria-label="Ze zdjęć kartki"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2.6"/></svg>';
-  function dshort(d) { return DAYS[d.getDay()].toLowerCase() + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  var ST = { prog: [["◐ W trakcie", "◐ In progress"], "c1", 50], hold: [["⏸ Wstrzymana", "⏸ On hold"], "c1", 50], done: [["✓ Zakończona", "✓ Completed"], "c2", 100], queued: [["⏳ W kolejce", "⏳ Queued"], "c4", 100], sent: [["✓ Wysłana", "✓ Sent"], "c2", 100] };
+  function stName(x) { return T(x[0][0], x[0][1]); }
+  var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "12M": ["co rok", "annual"] };
+  function freqName(f) { return FREQ[f] ? T(FREQ[f][0], FREQ[f][1]) : f; }
+  function ICON_APP() { return '<svg class="ty" viewBox="0 0 24 24" aria-label="' + T("Inspekcja w apce", "In-app inspection") + '"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 9l2 2 3-4M8 16l2 2 3-4M15 9h2M15 16h2"/></svg>'; }
+  function ICON_FOLDER() { return '<svg class="ty" viewBox="0 0 24 24" aria-label="' + T("Ze zdjęć kartki", "From photos of the paper form") + '"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2.6"/></svg>'; }
+  function dshort(d) { return dayName(d.getDay()).toLowerCase() + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
   function ppmCard(r) {
     var t = r.t, g = grp(t.group), sh = P.short(t), st = P.stage ? P.stage(t) : null, a = assetOf(t);
     var stg = st ? ST[st.s] : null, late = !stg && r.left !== null && r.left < 0;
     // dwa statusy (Grzegorz 02/11): etap inspekcji w rogu + wysyłka na dole; zrobione i wysłane → szare, na koniec listy
     var insp = !st ? null : st.s === "queued" || st.s === "sent" ? ST.done : ST[st.s];
-    var badge = insp ? '<span class="kst ' + insp[1] + '">' + insp[0] + "</span>" : late ? '<span class="kst c3">! Zaległa</span>' : '<span class="kst c0">○ Nie rozpoczęta</span>';
-    var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">📤 Wysłana</span>' : st.s === "queued" ? '<span class="ksend c4">⏳ W kolejce</span>' : st.s === "done" ? '<span class="ksend c3">✉ Niewysłana</span>' : "";
+    var badge = insp ? '<span class="kst ' + insp[1] + '">' + stName(insp) + "</span>" : late ? '<span class="kst c3">' + T("! Zaległa", "! Overdue") + '</span>' : '<span class="kst c0">' + T("○ Nie rozpoczęta", "○ Not started") + '</span>';
+    var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">' + T("📤 Wysłana", "📤 Sent") + '</span>' : st.s === "queued" ? '<span class="ksend c4">' + T("⏳ W kolejce", "⏳ Queued") + '</span>' : st.s === "done" ? '<span class="ksend c3">' + T("✉ Niewysłana", "✉ Not sent") + '</span>' : "";
     var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
-    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? "Zakończona " : st.s === "sent" ? "Wysłana " : "W kolejce ") + dshort(new Date(st.at)) + " · następna " + dshort(r.due)
-      : "Termin <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? "dziś, " : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " dni temu</span>" : r.left > 0 ? " · za " + r.left + " dni" : "")) : "Brak terminu — ustaw w inspekcji (Update)";
+    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.due)
+      : T("Termin", "Due") + " <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
     var pc = stg ? stg[2] : 0, col = stg ? { c1: "#f0c75e", c2: "#3fb27f", c4: "#79b8ff" }[stg[1]] : "transparent";
-    var foot = t.form === "folder" ? (st && st.photos ? st.photos + " zdj. kartki → PDF" : "Zdjęcia kartki → PDF") :
-      [st && st.total ? st.total + " punktów" : t.cfg ? "formularz do konfiguracji" : "", st && st.total ? (st.issues ? st.issues + (st.issues === 1 ? " usterka" : " usterki") : "bez usterek") : "", st && st.photos ? st.photos + " zdj." : ""].filter(Boolean).join(" · ");
-    var go = !st ? "Zacznij ›" : st.s === "prog" || st.s === "hold" ? "Kontynuuj ›" : "Otwórz ›";
+    var foot = t.form === "folder" ? (st && st.photos ? st.photos + T(" zdj. kartki → PDF", " form photos → PDF") : T("Zdjęcia kartki → PDF", "Form photos → PDF")) :
+      [st && st.total ? st.total + T(" punktów", " points") : t.cfg ? T("formularz do konfiguracji", "form to configure") : "", st && st.total ? (st.issues ? st.issues + (st.issues === 1 ? T(" usterka", " defect") : T(" usterki", " defects")) : T("bez usterek", "no defects")) : "", st && st.photos ? st.photos + T(" zdj.", " photos") : ""].filter(Boolean).join(" · ");
+    var go = !st ? T("Zacznij ›", "Start ›") : st.s === "prog" || st.s === "hold" ? T("Kontynuuj ›", "Continue ›") : T("Otwórz ›", "Open ›");
     var thumb = st && st.thumb ? '<img class="kth" alt="" src="' + st.thumb + '">' : "";
     return '<button class="prow k2' + (st && st.s === "sent" ? " kdone" : "") + '" type="button" data-id="' + esc(t.id) + '" style="--g:' + g.color + '">' +
-      '<div class="kr">' + (t.form === "folder" ? ICON_FOLDER : ICON_APP) + '<div class="knm">' + (sh.bld ? '<span class="kbl">' + sh.bld + "</span>" : "") + esc(sh.name) + "</div>" + badge + "</div>" +
+      '<div class="kr">' + (t.form === "folder" ? ICON_FOLDER() : ICON_APP()) + '<div class="knm">' + (sh.bld ? '<span class="kbl">' + sh.bld + "</span>" : "") + esc(sh.name) + "</div>" + badge + "</div>" +
       '<div class="kr"><div class="kloc">' + esc(where) + "</div></div>" +
       '<div class="kr"><div class="kd">' + due + '</div><div class="kpc">' + pc + "%</div></div>" +
       '<div class="kbar"><i style="width:' + pc + "%;background:" + col + '"></i></div>' +
@@ -546,11 +545,10 @@ input[type=text], input[type=email], input[type=date], select {
     for (var i = 0; i < 14; i++) {
       var d = new Date(today); d.setDate(d.getDate() + i);
       var k = P.iso(d), n = count[k] || 0;
-      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? "Dziś" : DAYS[d.getDay()]) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
+      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? T("Dziś", "Today") : dayName(d.getDay())) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
     }
     $("ppmDays").innerHTML = html;
-    var en = uiLang() === "en";
-    var chips = [{ id: "all", name: en ? "All" : "Wszystkie" }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: en ? g.name : g.pl || g.name }; }), [{ id: "started", name: en ? "◐ Started" : "◐ Rozpoczęte" }]);
+    var chips = [{ id: "all", name: T("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: T(g.pl || g.name, g.name) }; }), [{ id: "started", name: T("◐ Rozpoczęte", "◐ Started") }]);
     $("ppmChips").innerHTML = chips.map(function (g) {
       var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
       return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
@@ -577,10 +575,10 @@ input[type=text], input[type=email], input[type=date], select {
       if (r.fam) {
         var gg = grp(r.t.group);
         return '<button class="prow fam" type="button" data-fam="' + esc(r.fam) + '"><span class="bar" style="background:' + gg.color + '"></span>' +
-          '<span><div class="nm">' + esc(r.fam) + " (" + r.rows.length + ')</div><div class="dt">' + (ppmOpen[r.fam] ? "▾ zwiń" : "▸ rozwiń") + " · " + esc(P.endsText(r.left)) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+          '<span><div class="nm">' + esc(r.fam) + " (" + r.rows.length + ')</div><div class="dt">' + (ppmOpen[r.fam] ? T("▾ zwiń", "▾ collapse") : T("▸ rozwiń", "▸ expand")) + " · " + esc(P.endsText(r.left)) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
       }
       return ppmCard(r);
-    }).join("") : '<p class="hint">Brak inspekcji dla tego filtra.</p>';
+    }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>';
     var noDate = rows.filter(function (r) { return !r.due; }).length;
 
   }
@@ -620,7 +618,7 @@ input[type=text], input[type=email], input[type=date], select {
     var start = new Date(y, m, 1 - lead), end = new Date(y, m, 42 - lead);
     var from = P.iso(start), to = P.iso(end), today = P.iso(new Date()), by = calDue(from, to);
     $("calTitle").textContent = first.toLocaleDateString(uiLang() === "en" ? "en-GB" : "pl-PL", { month: "long", year: "numeric" });
-    var h = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(function (d) { return '<b class="cw">' + d + "</b>"; }).join("");
+    var h = [1, 2, 3, 4, 5, 6, 0].map(function (d) { return '<b class="cw">' + dayName(d) + "</b>"; }).join("");
     for (var k = 0; k < 42; k++) {
       var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length, pl = n && (by[iso] || []).every(function (e) { return e.plan; });
       h += '<button type="button" class="cd' + (day.getMonth() !== m ? " ot" : "") + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i" + (pl ? ' class="pl"' : "") + ">" + n + "</i>" : "") + "</button>";
@@ -628,10 +626,10 @@ input[type=text], input[type=email], input[type=date], select {
     $("calGrid").innerHTML = h;
     var list = by[calSel] || [];
     $("calDay").innerHTML = calSel ? (list.length ? list.map(function (e) {
-      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, stc = cur && P.stage && P.stage(t), stx = stc && ST[stc.s] ? ST[stc.s][0] + " · " : "";
-      var info = [t.freq.join(" + "), e.job ? "Vantify " + e.job : "", e.plan ? "planowane (jeszcze nie w Vantify)" : ""].filter(Boolean).join(" · ");
+      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, stc = cur && P.stage && P.stage(t), stx = stc && ST[stc.s] ? stName(ST[stc.s]) + " · " : "";
+      var info = [t.freq.join(" + "), e.job ? "Vantify " + e.job : "", e.plan ? T("planowane (jeszcze nie w Vantify)", "planned (not in Vantify yet)") : ""].filter(Boolean).join(" · ");
       return '<button class="prow' + (e.plan ? " plan" : "") + '" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(stx) + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span></span></button>';
-    }).join("") : '<p class="hint">No inspections on this day.</p>') : "";
+    }).join("") : '<p class="hint">' + T("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
     var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0; } catch (e2) {}
     $("calNoShift").hidden = hasShift;
   }
@@ -648,7 +646,7 @@ input[type=text], input[type=email], input[type=date], select {
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
   if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
   if (account()) {
-    try { seedProfile(); } catch (e) { $("authErr").textContent = "Settings: " + e.message; $("authErr").hidden = false; }
+    try { seedProfile(); } catch (e) { $("authErr").textContent = T("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message); $("authErr").hidden = false; }
   }
   var start = (location.hash || "").slice(1);
   if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");

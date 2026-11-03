@@ -247,10 +247,11 @@ window.OEST_PPM = {
     return Math.round((due - today) / 864e5);
   };
   P.endsText = function (left) {
-    if (left === null) return "No date – set Update";
-    if (left === 0) return "Today";
-    if (left < 0) return "Overdue " + -left + "d";
-    return "Ends in " + left + "d";
+    var T = function (pl, en) { return window.OESTT ? window.OESTT(pl, en) : en; };
+    if (left === null) return T("Brak terminu – ustaw w Update", "No date – set Update");
+    if (left === 0) return T("Dziś", "Today");
+    if (left < 0) return T("Po terminie " + -left + " dni", "Overdue " + -left + "d");
+    return T("Zostało " + left + " dni", "Ends in " + left + "d");
   };
 
   // ---------- etap inspekcji na klocku (02/11/2026) ----------

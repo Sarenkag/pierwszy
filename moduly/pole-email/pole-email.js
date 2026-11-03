@@ -35,7 +35,8 @@
     input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
     var ic = document.createElement("span"); ic.className = "oest-em-ic"; ic.innerHTML = ICONS; wrap.appendChild(ic);
     var hp = document.createElement("em"); hp.className = "oest-em-hp"; hp.setAttribute("aria-live", "polite");
-    hp.textContent = input.multiple ? "Wpisz poprawne adresy (oddziel przecinkiem)" : "Wpisz poprawny adres e-mail";
+    var T = function (pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; };
+    hp.textContent = input.multiple ? T("Wpisz poprawne adresy (oddziel przecinkiem)", "Enter valid addresses (separate with commas)") : T("Wpisz poprawny adres e-mail", "Enter a valid email address");
     wrap.after(hp);
     var touched = false;
     function check() {

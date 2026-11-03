@@ -14,10 +14,10 @@
       var result=await Promise.race([social.login({provider:'google',options:{scopes:['email','profile'].concat(scopes)}}),new Promise(function(_,rej){setTimeout(function(){rej(Error('GOOGLE_LOGIN_TIMEOUT'));},90000);})]);
       var r=result.result||{};return {email:r.profile&&r.profile.email,token:r.accessToken&&r.accessToken.token};
     },ask:function(kind,why){ // okno „Połącz ponownie / Anuluj” (moduly/przycisk), tylko gdy Grzegorz właśnie coś kliknął
-      var P=root.OESTPrzycisk;if(!P||!P.ask)return Promise.resolve(false);
-      var what={drive:'Dysku Google',gmail:'Gmaila',contacts:'kontaktów Google',calendar:'Kalendarza Google'}[kind]||'Google';
-      if(why==='offline')return P.ask({title:'Brak internetu',text:'Telefon nie ma teraz połączenia z internetem. Włącz Wi‑Fi albo dane i spróbuj ponownie.',ok:'Spróbuj ponownie'});
-      return P.ask({title:'Połączenie wygasło',text:'Pozwolenie dla '+what+' wygasło. Połączyć ponownie? Potem operacja dokończy się sama.',ok:'Połącz ponownie'});
+      var P=root.OESTPrzycisk;if(!P||!P.ask)return Promise.resolve(false);var T=function(pl,en){return root.OESTT?root.OESTT(pl,en):pl;};
+      var what={drive:T('Dysku Google','Google Drive'),gmail:T('Gmaila','Gmail'),contacts:T('kontaktów Google','Google Contacts'),calendar:T('Kalendarza Google','Google Calendar')}[kind]||'Google';
+      if(why==='offline')return P.ask({title:T('Brak internetu','No internet'),text:T('Telefon nie ma teraz połączenia z internetem. Włącz Wi‑Fi albo dane i spróbuj ponownie.','The phone has no internet connection right now. Turn on Wi‑Fi or mobile data and try again.'),ok:T('Spróbuj ponownie','Try again')});
+      return P.ask({title:T('Połączenie wygasło','Connection expired'),text:T('Pozwolenie dla '+what+' wygasło. Połączyć ponownie? Potem operacja dokończy się sama.','Permission for '+what+' has expired. Reconnect? The operation will then finish by itself.'),ok:T('Połącz ponownie','Reconnect')});
     },online:function(){return root.navigator.onLine!==false;},store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
       get:function(){try{return JSON.parse(root.sessionStorage.getItem('oest.gsess')||'{}');}catch(_){return {};}},
       set:function(v){try{root.sessionStorage.setItem('oest.gsess',JSON.stringify(v));}catch(_){}}

@@ -12,6 +12,7 @@
  *
  * Moduł pilnuje: unikalnego kodu, znanego typu, istniejącego miejsca, braku pętli w miejscach,
  * powiązań tylko do istniejących obiektów. Nowe wpisy mają status „propozycja” – zatwierdza człowiek.
+ * i18n-ok-file: moduł nie ma jeszcze ekranu (03/11/2026); nazwy typów/relacji to dane bazy. Ekran, który go użyje, musi dać EN.
  * Magazyn podaje się z zewnątrz ({ load(), update(fn) } – update atomowo: stan → { stan, wynik }), więc moduł działa też w testach i w innych apkach.
  */
 (function (root, factory) {
