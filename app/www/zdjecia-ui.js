@@ -82,6 +82,21 @@
       var u = URL.createObjectURL(b); urls.push(u); nodes[i].style.backgroundImage = 'url("' + u + '")';
     }
   }
+  // usuwanie (Grzegorz 03/11): z telefonu i z Dysku, po potwierdzeniu
+  async function delPhoto(r) {
+    var P = w.OESTPrzycisk, txt = r.driveId ? 'Zniknie z telefonu i z Dysku Google.' : 'Zniknie z telefonu.';
+    var yes = P && P.ask ? await P.ask({ title: 'Usunąć zdjęcie?', text: r.name + '. ' + txt, ok: 'Usuń', cancel: 'Anuluj' }) : w.confirm('Usunąć zdjęcie? ' + txt);
+    if (!yes) return false;
+    // trwa wysyłka na Dysk: czekamy, aż skończy, i bierzemy świeże dane (zdjęcie mogło właśnie dostać driveId)
+    for (var i = 0; Z.busy() && i < 600; i++) await new Promise(function (ok) { setTimeout(ok, 500); });
+    if (Z.busy()) throw Error('Trwa wysyłka zdjęć na Dysk – spróbuj usunąć za chwilę.');
+    r = (await Z.list()).filter(function (x) { return x.id === r.id; })[0] || r;
+    if (r.driveId && G) {
+      try { await G.foreground(function () { return G.removeFile(r.driveId); }); }
+      catch (e) { if (!/404/.test(String(e && e.message))) throw e; }
+    }
+    await Z.remove(r.id); return true;
+  }
   function bind(root, found) {
     root.querySelector('.back').onclick = function () { navigate('settings'); }; // przy historii wstecz obsługuje index.html
     root.querySelector('[data-zd="sync"]').onclick = function () {
@@ -102,8 +117,19 @@
         if (!blob) { msg = (r ? r.name : 'Zdjęcie') + ' jest już tylko na Dysku (folder ' + (r ? r.folder.join(' / ') : '') + ').'; render(); return; }
         var u = URL.createObjectURL(blob); urls.push(u);
         var o = w.document.createElement('div'); o.className = 'zd-full';
-        o.innerHTML = '<img alt="" src="' + u + '"><p>' + esc(r.name) + '<br><span class="hint">' + esc(r.folder.join(' / ')) + ' · ' + mb(r.size) + '</span></p>';
-        o.onclick = function () { o.remove(); }; w.document.body.appendChild(o);
+        o.innerHTML = '<img alt="" src="' + u + '"><p>' + esc(r.name) + '<br><span class="hint">' + esc(r.folder.join(' / ')) + ' · ' + mb(r.size) + '</span></p>' +
+          '<div class="zd-act"><button type="button" class="btn" data-a="del">🗑 Usuń</button><button type="button" class="btn" data-a="close">Zamknij</button></div>';
+        // Wstecz telefonu zamyka podgląd zamiast cofać apkę (OESTOverlay w index.html)
+        var O = w.OESTOverlay; w.document.body.appendChild(o);
+        if (O) O.open(function () { o.remove(); });
+        var shut = function () { if (!o.isConnected) return; if (O) O.close(); else o.remove(); }; // tylko ten podgląd, jeśli jest jeszcze otwarty
+        o.onclick = function (e) {
+          var a = e.target.closest('[data-a]');
+          if (!a) { if (e.target === o || e.target.tagName === 'IMG') shut(); return; }
+          if (a.dataset.a === 'close') { shut(); return; }
+          var er = o.querySelector('.zd-err'); if (er) er.remove();
+          delPhoto(r).then(function (ok) { if (ok) { shut(); msg = 'Usunięto: ' + r.name + '.'; render(); } }, function (err) { var p = w.document.createElement('p'); p.className = 'zd-err'; p.textContent = 'Nie usunięto: ' + errText(err); o.appendChild(p); });
+        };
       };
     });
     thumbs(root);
@@ -115,7 +141,7 @@
     '.zd-ph{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:#222 center/cover no-repeat;padding:0;overflow:hidden}' +
     '.zd-ph small{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.zd-cloud{position:absolute;top:4px;right:4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:6px}' +
-    '.zd-full{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;color:#fff;text-align:center}.zd-full img{max-width:100%;max-height:80vh;object-fit:contain}';
+    '.zd-full{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;color:#fff;text-align:center}.zd-full img{max-width:100%;max-height:72vh;object-fit:contain}.zd-act{display:flex;gap:10px;margin-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom),var(--safe-area-inset-bottom,0px))}.zd-act .btn{min-width:120px}.zd-err{color:#ffb4b4;margin:8px 0 0;max-width:90%}';
   w.document.head.appendChild(css);
 
   Z.onChange(function () { render(); });

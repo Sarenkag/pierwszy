@@ -962,8 +962,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var PPM = window.OEST_PPM || null;
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
   function show(v) {
-    if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { leave("../index.html#ppm"); return; }
-    if (APP && v === "home" && location.hash === "#queue") { leave("../index.html#ppm"); return; } // z kolejki wracamy do listy inspekcji
+    if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { leave(backUrl()); return; }
+    if (APP && v === "home" && location.hash === "#queue") { leave(backUrl()); return; } // z kolejki wracamy do listy inspekcji
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
     if (v === "home") renderHome();
     if (v === "list") renderList();
@@ -972,6 +972,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     window.scrollTo(0, 0);
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
+  // powrót tam, skąd przyszedłem (lista PPM, kalendarz, kolejka…) – zapisane przez app/www/index.html goInsp()
+  function backUrl() { var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); } catch (e) {} return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
   function leave(url) { saveDraftNow().then(function () { return gm() ? OESTSender.whenIdle() : null; }).then(function () { location.href = url; }); } // szkic zapisany, zanim strona zniknie
   // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }

@@ -20,7 +20,9 @@
       latest = a ? { n: n, url: a.browser_download_url, size: a.size } : null; return latest;
     });
   }
-  function setStatus(t) { var e = document.getElementById("updStatus"); if (e) e.textContent = t; }
+  // ostatni komunikat pamiętamy: przełączenie PL/EN albo powrót do Ustawień rysuje panel od nowa i nie może zgubić postępu (Grzegorz 03/11)
+  var lastStatus = "";
+  function setStatus(t) { lastStatus = t; var e = document.getElementById("updStatus"); if (e) e.textContent = t; }
   // pasek tylko na ekranie głównym (nie zasłania przycisków na dole innych ekranów); po „Anuluj” znika do następnego uruchomienia
   var dismissed = false, wanted = false;
   function onHome() { var h = location.hash.replace(/^#/, ""); return h === "" || h === "home"; }
@@ -82,7 +84,8 @@
     return '<div class="panel"><b>Aktualizacja aplikacji</b>' +
       '<p class="hint">Wersja w telefonie: <b id="updMine">' + esc(mine === null ? "…" : mine) + '</b></p>' +
       '<button class="btn" type="button" data-upd="check">Sprawdź aktualizację</button>' +
-      '<p class="hint" id="updStatus"></p></div>';
+      (latest && mine !== null && latest.n > mine ? '<button id="updInstall" class="btn" type="button" data-upd="install">Pobierz i zainstaluj wersję ' + esc(latest.n) + '</button>' : '') +
+      '<p class="hint" id="updStatus">' + esc(lastStatus) + '</p></div>';
   }
   document.addEventListener("click", function (e) {
     var t = e.target && e.target.closest && e.target.closest("[data-upd]"); if (!t) return;
