@@ -55,7 +55,7 @@
     if(a.childNodes.length!==b.childNodes.length)return; // inna budowa (panel dorysowany przez moduł): zostawiamy jak jest
     for(var i=0;i<a.childNodes.length;i++)swapText(a.childNodes[i],b.childNodes[i]);
   }
-  function relang(){var page=route.split('/')[1];if(page&&!titles[page])page=null;applyTheme();document.documentElement.lang=lang;var t=document.createElement('div');t.innerHTML=html(page);var r=root();if(r.childNodes.length!==t.childNodes.length){open(route);return;}for(var i=0;i<r.childNodes.length;i++)swapText(r.childNodes[i],t.childNodes[i]);}
+  function relang(){var page=route.split('/')[1];if(page&&!titles[page])page=null;applyTheme();document.documentElement.lang=lang;var t=document.createElement('div');t.innerHTML=html(page);var r=root();if(r.childNodes.length!==t.childNodes.length){open(route);return;}for(var i=0;i<r.childNodes.length;i++)swapText(r.childNodes[i],t.childNodes[i]);var ls=r.querySelector('[data-path="appearance.language"]');if(ls)ls.value=lang;}
   function open(next){route=next==='profile'?'settings/profile':next==='appset'?'settings/account':next;applyTheme();var page=route.split('/')[1],r=root();
     if(page&&!titles[page])page=null;dirty=false;
     r.className='view settings-page';r.hidden=false;document.documentElement.lang=lang;

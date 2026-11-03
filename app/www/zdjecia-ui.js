@@ -122,7 +122,7 @@
         // Wstecz telefonu zamyka podgląd zamiast cofać apkę (OESTOverlay w index.html)
         var O = w.OESTOverlay; w.document.body.appendChild(o);
         if (O) O.open(function () { o.remove(); });
-        var shut = function () { if (O) O.close(); else o.remove(); };
+        var shut = function () { if (!o.isConnected) return; if (O) O.close(); else o.remove(); }; // tylko ten podgląd, jeśli jest jeszcze otwarty
         o.onclick = function (e) {
           var a = e.target.closest('[data-a]');
           if (!a) { if (e.target === o || e.target.tagName === 'IMG') shut(); return; }
