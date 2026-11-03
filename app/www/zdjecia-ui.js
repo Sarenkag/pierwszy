@@ -87,6 +87,10 @@
     var P = w.OESTPrzycisk, txt = r.driveId ? 'Zniknie z telefonu i z Dysku Google.' : 'Zniknie z telefonu.';
     var yes = P && P.ask ? await P.ask({ title: 'Usunąć zdjęcie?', text: r.name + '. ' + txt, ok: 'Usuń', cancel: 'Anuluj' }) : w.confirm('Usunąć zdjęcie? ' + txt);
     if (!yes) return false;
+    // trwa wysyłka na Dysk: czekamy, aż skończy, i bierzemy świeże dane (zdjęcie mogło właśnie dostać driveId)
+    for (var i = 0; Z.busy() && i < 600; i++) await new Promise(function (ok) { setTimeout(ok, 500); });
+    if (Z.busy()) throw Error('Trwa wysyłka zdjęć na Dysk – spróbuj usunąć za chwilę.');
+    r = (await Z.list()).filter(function (x) { return x.id === r.id; })[0] || r;
     if (r.driveId && G) {
       try { await G.foreground(function () { return G.removeFile(r.driveId); }); }
       catch (e) { if (!/404/.test(String(e && e.message))) throw e; }
