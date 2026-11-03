@@ -1109,6 +1109,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $("flushBox").hidden = !cur.type.flush || m === "sum";
   }
   function resetForm() {
+    if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
     draftOn = false; clearTimeout(draftT); draftT = 0;
     roomNotes = {};
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
@@ -1145,7 +1146,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function saveDraftNow() {
     clearTimeout(draftT); draftT = 0;
-    if (!draftOn || cur.mode !== "one" || !cur.type || queueing) return Promise.resolve();
+    // w trakcie wczytywania zdjęć szkicu nie zapisujemy (zapis bez nich skasowałby zdjęcia w szkicu); po wczytaniu zapis rusza sam
+    if (!draftOn || cur.mode !== "one" || !cur.type || queueing || restoring) return Promise.resolve();
     var k = draftKey(); if (!k) return Promise.resolve();
     var snap; try { snap = draftSnap(); } catch (e) { return Promise.resolve(); }
     busySpin(true);
@@ -1201,7 +1203,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   window.addEventListener("pagehide", function () { saveDraftNow(); });
   // „Wyczyść inspekcję” (menu ⋮): kasuje szkic, zdjęcia i etap klocka
   window.OEST_clearInspection = function () {
-    if (cur.mode !== "one" || !cur.type) return;
+    if (cur.mode !== "one" || !cur.type || queueing) return; // raport właśnie się przygotowuje: nie czyścimy pod nim formularza
     if (!confirm("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).")) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
@@ -2378,6 +2380,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       status: "wait", err: ""
     };
     // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
+    if (sendBtn && sendBtn.step) sendBtn.step("Dodaję do kolejki…");
     return dbP.then(function (db) {
       if (db) return qPut(it);
       if (!online()) throw new Error("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg");

@@ -53,6 +53,9 @@
     if (/ACCOUNT_MISMATCH/.test(m)) return "wybrano inne konto Google niż to, na które jesteś zalogowany";
     if (/HTTP_403/.test(m)) return "Gmail odmówił" + (/has not been used|disabled/i.test(m) ? " – włącz Gmail API w Google Cloud" : /scope|insufficient/i.test(m) ? " – brak zgody na wysyłanie; Ustawienia → Konto → Rozłącz sesje i Ponów" : "") + " (" + m.replace(/^.*?HTTP_403:?\s*/, "").slice(0, 120) + ")";
     if (/HTTP_401/.test(m)) return "sesja Google wygasła, ponów";
+    if (/GOOGLE_OFFLINE/.test(m)) return "brak internetu";
+    if (/GOOGLE_CANCELLED/.test(m)) return "anulowano ponowne połączenie";
+    if (/LOGIN_TIMEOUT/.test(m)) return "okno Google nie odpowiedziało, ponów";
     if (/HTTP_413/.test(m)) return "raport za duży dla Gmaila";
     if (/RESULT_UNCERTAIN/.test(m)) return "nie doczekałem się odpowiedzi Gmaila (słaby zasięg albo duży raport); sprawdź „Wysłane”, zanim ponowisz";
     if (/EMAIL_INVALID/.test(m)) return "brak adresu e-mail w Ustawieniach";
@@ -72,7 +75,12 @@
   function run(o) {
     o = o || {};
     if (!active()) return Promise.resolve();
+    // bez kliknięcia (sieć wróciła, start apki): praca w tle, Google nie pokaże okna ponownego połączenia
     if (lock) return lock; // dwa wywołania naraz nie mogą wysłać tego samego raportu dwa razy
+    if (!o.wrap && G() && G().background) { // kliknięcie = foreground (może zapytać o połączenie), reszta = tło
+      var w = o.login ? G().foreground : G().background;
+      if (w) return w(function () { return run(Object.assign({}, o, { wrap: true })); });
+    }
     return (lock = ready.then(loadAll).then(function () {
       var me = (account().email || "").toLowerCase();
       // błędy (też „brak odpowiedzi” = mail mógł dojść) ponawia tylko przycisk Ponów; cudze raporty nigdy, stare bez konta tylko po kliknięciu
