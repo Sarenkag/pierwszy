@@ -233,10 +233,11 @@
     if (op === "reconnect") job = function () { if (!G) throw Error("GOOGLE_SETUP"); return G.connect("drive"); };
     var run = w.OESTPrzycisk ? w.OESTPrzycisk.run(btn, job) : Promise.resolve().then(job);
     Promise.resolve(run).then(function (r) {
+      if (popKind !== "drive") return; // okienko zamknięte albo inne – nie nadpisuj
       fillDrive();
       if (op === "sync") msg(r && r.skipped ? T("Czekam na Wi‑Fi.", "Waiting for Wi‑Fi.") : T("Wysłano: ", "Uploaded: ") + ((r && r.sent) || 0) + ".");
       else msg(T("Połączono z Dyskiem.", "Connected to Drive."));
-    }, function (e) { fillDrive(); msg(U && U.errText ? U.errText(e) : (w.OESTBledy ? w.OESTBledy.text(e) : String(e))); });
+    }, function (e) { if (popKind !== "drive") return; fillDrive(); msg(U && U.errText ? U.errText(e) : (w.OESTBledy ? w.OESTBledy.text(e) : String(e))); });
   }
 
   function init(o) {
