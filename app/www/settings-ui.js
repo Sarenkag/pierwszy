@@ -45,10 +45,21 @@
     if(page==='account'){var a=JSON.parse(localStorage.getItem('oest.account')||'{}');return panel('<b>'+esc(a.email||L('Podgląd lokalny','Local preview'))+'</b>'+hint('Połączenia Google są osobne od logowania. Zapisany podpis i kontakty pozostają na telefonie; używaj blokady ekranu systemu.','Google service connections are separate from sign-in. Signature and contacts remain on this phone; use the system screen lock.')+button(L('Rozłącz sesje usług Google','Disconnect Google service sessions'),'disconnect')+button(L('Wyloguj z aplikacji','Sign out'),'logout'))+notice('Biometria / PIN aplikacji nie są jeszcze podłączone. Nie pokazujemy pozornej ochrony.','App biometrics / PIN are not integrated yet. No simulated protection.')+(w.OESTUpdate?w.OESTUpdate.panelHtml():'');}
     return '';
   }
+  function html(page){return '<div class="top"><button class="back" type="button" data-route="'+(page?'':'home')+'" aria-label="'+L('Wstecz','Back')+'">‹</button><div class="t"><div class="settings-eyebrow">OEST / Settings</div><h1>'+ (page?L.apply(null,titles[page]):'Settings')+'</h1></div><button type="button" class="settings-language" data-action="language" aria-label="'+L('Przełącz język na angielski','Switch language to Polish')+'">'+(lang==='pl'?'EN':'PL')+'</button></div>'+(page?'<form id="settingsForm" novalidate>'+detail(page)+( ['temperature','account','backup'].indexOf(page)<0?'<div class="save-bar"><button class="btn go" type="submit">'+L('Zapisz ustawienia','Save settings')+'</button></div>':'')+'</form>':hub())+'<div role="status" aria-live="polite" id="settingsMessage"></div>';}
+  // PL/EN (Grzegorz 03/11): nie rysujemy ekranu od nowa, tylko podmieniamy teksty w miejscu – wpisane pola, postęp pobierania i panele zostają
+  var KEEP={modelBox:1,updStatus:1,settingsMessage:1,restorePreview:1};
+  function swapText(a,b){
+    if(a.nodeType===3){if(b.nodeType===3&&a.nodeValue!==b.nodeValue)a.nodeValue=b.nodeValue;return;}
+    if(a.nodeType!==1||b.nodeType!==1||a.tagName!==b.tagName||KEEP[a.id])return;
+    ['aria-label','placeholder','title'].forEach(function(k){var v=b.getAttribute(k);if(v!==null&&a.getAttribute(k)!==v)a.setAttribute(k,v);});
+    if(a.childNodes.length!==b.childNodes.length)return; // inna budowa (panel dorysowany przez moduł): zostawiamy jak jest
+    for(var i=0;i<a.childNodes.length;i++)swapText(a.childNodes[i],b.childNodes[i]);
+  }
+  function relang(){var page=route.split('/')[1];if(page&&!titles[page])page=null;applyTheme();document.documentElement.lang=lang;var t=document.createElement('div');t.innerHTML=html(page);var r=root();if(r.childNodes.length!==t.childNodes.length){open(route);return;}for(var i=0;i<r.childNodes.length;i++)swapText(r.childNodes[i],t.childNodes[i]);}
   function open(next){route=next==='profile'?'settings/profile':next==='appset'?'settings/account':next;applyTheme();var page=route.split('/')[1],r=root();
     if(page&&!titles[page])page=null;dirty=false;
     r.className='view settings-page';r.hidden=false;document.documentElement.lang=lang;
-    r.innerHTML='<div class="top"><button class="back" type="button" data-route="'+(page?'':'home')+'" aria-label="'+L('Wstecz','Back')+'">‹</button><div class="t"><div class="settings-eyebrow">OEST / Settings</div><h1>'+ (page?L.apply(null,titles[page]):'Settings')+'</h1></div><button type="button" class="settings-language" data-action="language" aria-label="'+L('Przełącz język na angielski','Switch language to Polish')+'">'+(lang==='pl'?'EN':'PL')+'</button></div>'+(page?'<form id="settingsForm" novalidate>'+detail(page)+( ['temperature','account','backup'].indexOf(page)<0?'<div class="save-bar"><button class="btn go" type="submit">'+L('Zapisz ustawienia','Save settings')+'</button></div>':'')+'</form>':hub())+'<div role="status" aria-live="polite" id="settingsMessage"></div>';
+    r.innerHTML=html(page);
     r.querySelectorAll('[data-route]').forEach(function(b){b.onclick=function(){if(canLeave())navigate(b.dataset.route==='questions'?'questions':b.dataset.route==='zdjecia'?'zdjecia':b.dataset.route==='home'?'home':b.dataset.route?'settings/'+b.dataset.route:'settings');};});
     r.querySelectorAll('[data-action]').forEach(function(b){b.onclick=function(){action(b.dataset.action);};});
     var form=document.getElementById('settingsForm');if(form){form.addEventListener('input',function(e){if(!/^shift/.test(e.target.id||''))dirty=true;});/* pola grafiku zapisuje „Dodaj wersję grafiku”, nie „Zapisz” */form.addEventListener('submit',function(e){e.preventDefault();saveForm();});}
@@ -73,7 +84,7 @@
     if(dirty&&name!=='language'&&name!=='logout'&& !w.confirm(L('Ta akcja użyje zapisanych ustawień i może odświeżyć ekran. Kontynuować?','This action uses saved settings and may refresh the screen. Continue?')))return;
     uploading=true;root().setAttribute('aria-busy','true');
     try{
-      if(name==='language'){if(!canLeave())return;store.update(function(s){s.appearance.language=lang==='pl'?'en':'pl';});dirty=false;open(route);}
+      if(name==='language'){var wasDirty=dirty;store.update(function(s){s.appearance.language=lang==='pl'?'en':'pl';});relang();dirty=wasDirty;}
       else if(name.startsWith('connect-')){await google.connect(name.slice(8));open(route);message(L('Połączono w tej sesji.','Connected this session.'));}
       else if(name==='disconnect'){google.disconnect();message(L('Rozłączono sesje aplikacji. Uprawnienia konta odwołasz w ustawieniach Google.','App sessions disconnected. Revoke account permissions in Google settings.'));}
       else if(name==='logout'){if(!canLeave())return;google.disconnect();document.getElementById('logoutBtn').click();}
