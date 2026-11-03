@@ -65,7 +65,11 @@ window.OEST_PPM = {
       TB: { title: "Weekly Taps/Shower Flushing Record Tower B", building: "B", taps: ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room",
         "Hairdresser Room", "Disable Toilet LG", "Studio", "Fitness 1", "Fitness 2 Learner", "SPA", "Cycle Store", "Office Sink",
         "Shower Disable Toilet", "Shower in SPA", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107"] },
-      P: { title: "Weekly Taps/Shower Flushing Record Pavilion", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"] } },
+      P: { title: "Weekly Taps/Shower Flushing Record Pavilion", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"] },
+      // AOV Tower B (Grzegorz 03/11/2026): 3 przyciski pod 2 grupami klap. Lista punktów (bez tygodnia i bez wzoru Word): tak jak krany, Yes/No/N/A + 📷 + 📝, domyślnie Yes.
+      "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
+        groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
+        taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },
     tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", tpl: "TPL_TEMP_TB", slots: [
       ["Roof", "cold"], ["Spa Chemical Room", "hot"], ["Spa Chemical Room", "cold"], ["Bin Area", "cold"],
       ["Spa Hall Tap", "hot"], ["Spa Hall Tap", "cold"], ["Massage Hall", "cold"], ["Massage Room", "hot"], ["Massage Room", "cold"],
@@ -95,7 +99,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-016", group: "elec", form: "ats", name: "Automatic Transfer Switches (TB, UG)", freq: ["1M"] },
     { id: "EFA-INS-017", group: "elec", form: "ats", name: "Automatic Transfer Switches (TB, R2)", freq: ["1M"] },
     { id: "EFA-INS-018", group: "elec", form: "ats", name: "Automatic Transfer Switches (TA, R1)", freq: ["1M"] },
-    { id: "EFA-INS-019", form: "folder", group: "fire", name: "AOV Operation Test (TB)", freq: ["1W"] },
+    { id: "EFA-INS-019", form: "folder", flush: "AOV-TB", group: "fire", name: "AOV Operation Test (TB)", freq: ["1W"] },
     { id: "EFA-INS-020", group: "mech", form: "plantM", name: "Monthly Plant Room Inspections", freq: ["1M"] },
     { id: "EFA-INS-021", group: "mech", form: "plantW", name: "Weekly Plant Status Checks", freq: ["1W"] },
     { id: "EFA-INS-022", group: "elec", form: "lighting", name: "Monthly Lighting Checks", freq: ["1M"] },
