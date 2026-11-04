@@ -1131,8 +1131,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.ppm; if (noTrack || !t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
     var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts());
-    if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
-    if (!r && !open) return;
+    if (r && (r.s === "queued" || r.s === "sent")) return; // wysłana: klocek pokazuje to, co poszło w raporcie
+    // Gotowa: liczniki (zdjęcia, usterki) zawsze aktualne, status zostaje. Nie rozpoczęta + zmiana (np. zdjęcie kranu) = W trakcie.
+    if (!r && !open && !photos.length && !ppmCounts().used) return;
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
@@ -1289,7 +1290,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
-      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
+      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
@@ -3070,15 +3071,23 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
       sel.addEventListener("change", function () {
         var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
+        var was = PPM.stage(tt), closed = was && (was.s === "done" || was.s === "queued" || was.s === "sent");
+        if (this.value === "done") { if (!closed) $("finishIns").click(); return; } // „Zakończona” z listy = to samo co ✓ Zakończ inspekcję (Gotowa, zielony klocek); ustawia tylko Grzegorz
+        // cofnięcie „Gotowa” (Grzegorz 04/11: Zakończ → Nie rozpoczęta → inspekcja zniknęła): termin wraca na ten sprzed Zakończ,
+        // a szkic traci znacznik Gotowa, żeby nic go nie wyczyściło. Odpowiedzi i zdjęcia zostają zawsze.
+        if (closed && this.value !== "done") {
+          if (was.period) PPM.setDue(tt, was.period);
+          var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
+        }
         if (!this.value) PPM.setStage(tt, null); else PPM.setStage(tt, { s: this.value, manual: true, day: isoDay(new Date()) });
-        renderPpmBar();
+        renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
       });
       top.insertBefore(sel, top.firstChild);
     }
     if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
-    sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", T("✓ Zakończona", "✓ Completed")]]
+    sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", T("◐ W trakcie", "◐ In progress")], ["hold", T("⏸ Wstrzymana", "⏸ On hold")], ["done", T("✓ Zakończona", "✓ Completed")]]
       .concat(s === "queued" || s === "sent" ? [[s, T("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
       .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
     sel.className = "ppmpill s-" + (s || "none");

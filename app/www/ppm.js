@@ -268,7 +268,7 @@ window.OEST_PPM = {
   P.setStage = function (t, patch) {
     var a = stages(), r = alive(a[t.id]) ? a[t.id] : {};
     if (patch === null) delete a[t.id];
-    else { r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = Date.now(); a[t.id] = r; }
+    else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r; }
     try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
