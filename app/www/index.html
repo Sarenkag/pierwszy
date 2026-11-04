@@ -129,6 +129,7 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="questions.css">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="moduly/wyglad/wyglad.css"><!-- jedna skala czcionek i przycisków: zawsze ostatni -->
 </head>
 <body>
 <div class="wrap">
@@ -158,7 +159,7 @@ input[type=text], input[type=email], input[type=date], select {
       <div class="hm-logo" aria-hidden="true">OEST</div>
       <div class="hm-name"><b>ONE EASTSIDE</b><span><span id="hmDate"></span><button class="hm-wx" id="hmWx" type="button" hidden aria-label="Prognoza pogody" data-en-aria-label="Weather forecast"><span class="i"></span><span class="v"></span></button></span></div>
       <div class="hm-icons">
-        <button class="hm-lang" id="hmLang" type="button" aria-label="Język" data-en-aria-label="Language"><i data-l="en">EN</i><i data-l="pl">PL</i></button>
+        <button class="oest-sw" data-sw="lang" id="hmLang" type="button" aria-label="Język" data-en-aria-label="Language"><span class="th" aria-hidden="true"></span><i data-v="pl">PL</i><i data-v="en">EN</i></button>
         <button class="hm-sq" id="hmBell" type="button" aria-label="Powiadomienia" data-en-aria-label="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><span class="hm-badge" hidden></span></button>
         <button class="hm-sq hm-me" type="button" data-go="profile" aria-label="Mój profil" data-en-aria-label="My Profile"><span id="hmIni"></span></button>
       </div>
@@ -168,40 +169,7 @@ input[type=text], input[type=email], input[type=date], select {
       <button type="button" id="hmDrive" aria-label="Google Drive"><i class="l"></i><span></span></button>
     </div>
     <div class="days hm-days" id="hmDays"></div>
-    <div class="tiles">
-      <button class="tile" type="button" data-go="ppm">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/></svg>
-        <div><b data-en="Inspections">Inspekcje</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="reactive">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/></svg>
-        <div><b>Reactive</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="powertrace">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 5L13 27h10l-3 16 15-23H25z"/></svg>
-        <div><b>Power trace</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="cal">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/></svg>
-        <div><b data-en="Calendar">Kalendarz</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="keys">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/></svg>
-        <div><b data-en="Keys">Klucze</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="handover">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/></svg>
-        <div><b>Handover</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="soon">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/></svg>
-        <div><b data-en="Stats">Statystyki</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-      <button class="tile" type="button" data-go="settings">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/></svg>
-        <div><b data-en="Settings">Ustawienia</b></div><span class="arrow" aria-hidden="true">›</span>
-      </button>
-    </div>
+    <div class="tiles kf-grid" id="hmTiles"></div>
   </section>
 
   <div class="hm-pop" id="hmPop" hidden><div class="hm-card" role="dialog"><div class="hm-pc"></div></div></div>
@@ -276,6 +244,14 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="moduly/bledy/bledy.js"></script>
+<!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
+<script src="moduly/ladowanie/ladowanie.js"></script>
+<script src="moduly/znacznik/znacznik.js"></script>
+<script src="moduly/klocek/klocek.js"></script>
+<script src="moduly/kafelek/kafelek.js"></script>
+<script src="moduly/przelacznik/przelacznik.js"></script>
+<script src="moduly/naglowek/naglowek.js"></script>
+<script src="moduly/wyglad/wyglad.js"></script>
 <script src="config.js"></script>
 <script src="vantify-plan.js"></script>
 <script src="ppm.js"></script>
@@ -327,6 +303,19 @@ input[type=text], input[type=email], input[type=date], select {
   var CONF = window.OEST_CONFIG || {};
   var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   var Social = native && window.Capacitor.Plugins ? window.Capacitor.Plugins.SocialLogin : null;
+
+    // kafelki ekranu głównego: jeden kafelek (moduly/kafelek) powielony z listy – dodanie modułu = jedna linia
+    var HOME_TILES = [
+      { go: "ppm", t: ["Inspekcje", "Inspections"], icon: '<rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/>' },
+      { go: "reactive", t: ["Reactive", "Reactive"], icon: '<path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/>' },
+      { go: "powertrace", t: ["Power trace", "Power trace"], icon: '<path d="M27 5L13 27h10l-3 16 15-23H25z"/>' },
+      { go: "cal", t: ["Kalendarz", "Calendar"], icon: '<rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/>' },
+      { go: "keys", t: ["Klucze", "Keys"], icon: '<circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/>' },
+      { go: "handover", t: ["Handover", "Handover"], icon: '<rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/>' },
+      { go: "soon", t: ["Statystyki", "Stats"], icon: '<path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/>' },
+      { go: "settings", t: ["Ustawienia", "Settings"], icon: '<circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/>' }
+    ];
+    $("hmTiles").innerHTML = HOME_TILES.map(function (t) { return window.OESTKafelek.html({ name: t.t[0], en: t.t[1], icon: t.icon, data: { go: t.go } }); }).join("");
 
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
@@ -390,6 +379,11 @@ input[type=text], input[type=email], input[type=date], select {
   window.addEventListener("popstate", function () {
     if (window.OESTOverlay.stack.length) { var c = window.OESTOverlay.stack.pop(); try { c(); } catch (e) {} return; }
     if (renderedRoute.indexOf("reactive") === 0 && !window.OESTReactiveUI.canLeave()) {
+      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
+      return;
+    }
+    // Ustawienia: Wstecz telefonu pyta o niezapisane zmiany tak samo jak strzałka ‹ (04/11)
+    if ((renderedRoute === "settings" || renderedRoute.indexOf("settings/") === 0) && !window.OESTSettingsUI.canLeave()) {
       history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
       return;
     }
@@ -539,16 +533,18 @@ input[type=text], input[type=email], input[type=date], select {
     var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.due)
       : T("Termin", "Due") + " <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
     var pc = stg ? stg[2] : 0, col = stg ? { c1: "#f0c75e", c2: "#3fb27f", c4: "#79b8ff" }[stg[1]] : "transparent";
-    var foot = t.form === "folder" ? (st && st.photos ? st.photos + T(" zdj. kartki → PDF", " form photos → PDF") : T("Zdjęcia kartki → PDF", "Form photos → PDF")) :
-      [st && st.total ? st.total + T(" punktów", " points") : t.cfg ? T("formularz do konfiguracji", "form to configure") : "", st && st.total ? (st.issues ? st.issues + (st.issues === 1 ? T(" usterka", " defect") : T(" usterki", " defects")) : T("bez usterek", "no defects")) : "", st && st.photos ? st.photos + T(" zdj.", " photos") : ""].filter(Boolean).join(" · ");
+    // stopka: ikonki z liczbą (moduly/znacznik) – ✓ punkty, ⚠ usterki, 📷 zdjęcia
+    var foot = t.form === "folder" ? T("Zdjęcia kartki → PDF", "Form photos → PDF") : st && st.total ? (st.issues ? "" : T("bez usterek", "no defects")) : t.cfg ? T("formularz do konfiguracji", "form to configure") : "";
+    var marks = [st && st.total ? { i: "✓", n: st.total } : null, st && st.issues ? { i: "⚠", n: st.issues, tone: 3 } : null, st && st.photos ? { i: "📷", n: st.photos } : null];
     var go = !st ? T("Zacznij ›", "Start ›") : st.s === "prog" || st.s === "hold" ? T("Kontynuuj ›", "Continue ›") : T("Otwórz ›", "Open ›");
-    var thumb = st && st.thumb ? '<img class="kth" alt="" src="' + st.thumb + '">' : "";
-    return '<button class="prow k2' + (st && st.s === "sent" ? " kdone" : "") + '" type="button" data-id="' + esc(t.id) + '" style="--g:' + g.color + '">' +
-      '<div class="kr">' + (t.form === "folder" ? ICON_FOLDER() : ICON_APP()) + '<div class="knm">' + (sh.bld ? '<span class="kbl">' + sh.bld + "</span>" : "") + esc(sh.name) + "</div>" + badge + "</div>" +
-      '<div class="kr"><div class="kloc">' + esc(where) + "</div></div>" +
-      '<div class="kr"><div class="kd">' + due + '</div><div class="kpc">' + pc + "%</div></div>" +
-      '<div class="kbar"><i style="width:' + pc + "%;background:" + col + '"></i></div>' +
-      '<div class="kr"><div class="kft">' + esc(foot) + "</div>" + send + thumb + '<div class="kgo">' + go + "</div></div></button>";
+    // jeden klocek dla całej apki (moduly/klocek, Grzegorz 04/11): tu tylko podstawiamy dane inspekcji
+    return window.OESTKlocek.html({
+      id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
+      status: insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("! Zaległa", "! Overdue"), tone: 3 } : { text: T("○ Nie rozpoczęta", "○ Not started"), tone: 0 },
+      desc: where, due: due, pct: pc, barColor: col, foot: foot, marks: marks,
+      send: !st ? null : st.s === "sent" ? { text: T("📤 Wysłana", "📤 Sent"), tone: 2 } : st.s === "queued" ? { text: T("⏳ W kolejce", "⏳ Queued"), tone: 4 } : st.s === "done" ? { text: T("✉ Niewysłana", "✉ Not sent"), tone: 3 } : null,
+      thumb: st && st.thumb, go: go, done: !!(st && st.s === "sent")
+    });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
   function renderPpm() {
@@ -589,8 +585,12 @@ input[type=text], input[type=email], input[type=date], select {
     $("ppmList").innerHTML = list.length ? list.map(function (r) {
       if (r.fam) {
         var gg = grp(r.t.group);
-        return '<button class="prow fam" type="button" data-fam="' + esc(r.fam) + '"><span class="bar" style="background:' + gg.color + '"></span>' +
-          '<span><div class="nm">' + esc(r.fam) + " (" + r.rows.length + ')</div><div class="dt">' + (ppmOpen[r.fam] ? T("▾ zwiń", "▾ collapse") : T("▸ rozwiń", "▸ expand")) + " · " + esc(P.endsText(r.left)) + '</div></span><span class="st ' + stOf(r.left) + '" aria-hidden="true"></span></button>';
+        // grupa (np. 18 DB) – ten sam klocek, w miejscu akcji „rozwiń / zwiń”
+        var fl = r.left;
+        return window.OESTKlocek.html({ data: { fam: r.fam }, color: gg.color, icon: ICON_APP(), name: r.fam + " (" + r.rows.length + ")",
+          status: fl === null ? { text: T("○ Bez terminu", "○ No due date"), tone: 0 } : fl < 0 ? { text: T("! Zaległa", "! Overdue"), tone: 3 } : fl <= 2 ? { text: T("● Wkrótce", "● Soon"), tone: 1 } : { text: T("● W terminie", "● On time"), tone: 2 },
+          desc: [r.t.freq.map(freqName).join(" + "), r.rows.length + T(" urządzeń", " devices")].join(" · "), due: esc(P.endsText(r.left)),
+          foot: T("Grupa inspekcji", "Inspection group"), go: ppmOpen[r.fam] ? T("▾ Zwiń", "▾ Collapse") : T("▸ Rozwiń", "▸ Expand") });
       }
       return ppmCard(r);
     }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>';
@@ -642,8 +642,12 @@ input[type=text], input[type=email], input[type=date], select {
     var list = by[calSel] || [];
     $("calDay").innerHTML = calSel ? (list.length ? list.map(function (e) {
       var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, stc = cur && P.stage && P.stage(t), stx = stc && ST[stc.s] ? stName(ST[stc.s]) + " · " : "";
-      var info = [t.freq.join(" + "), e.job ? "Vantify " + e.job : "", e.plan ? T("planowane (jeszcze nie w Vantify)", "planned (not in Vantify yet)") : ""].filter(Boolean).join(" · ");
-      return '<button class="prow' + (e.plan ? " plan" : "") + '" type="button" data-id="' + t.id + '"><span class="bar" style="background:' + g.color + '"></span><span><div class="nm">' + esc(stx) + esc(t.name) + '</div><div class="dt">' + esc(info) + '</div></span><span></span></button>';
+      var cd = calSel.split("-"), info = [T("Termin ", "Due ") + dshort(new Date(+cd[0], +cd[1] - 1, +cd[2])), e.job ? "Vantify " + e.job : ""].filter(Boolean).join(" · ");
+      // ten sam klocek co na liście Inspekcji (moduly/klocek)
+      var sh = P.short(t), so = stc && ST[stc.s];
+      return window.OESTKlocek.html({ id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
+        status: so ? { text: stName(so), tone: +so[1].slice(1) } : e.plan ? { text: T("◌ Planowane", "◌ Planned"), tone: 0 } : { text: T("○ Do zrobienia", "○ To do"), tone: 0 },
+        desc: [sh.where, t.freq.map(freqName).join(" + ")].filter(Boolean).join(" · "), due: esc(info), foot: e.plan ? T("Jeszcze nie w Vantify", "Not in Vantify yet") : "", go: T("Otwórz ›", "Open ›"), plan: e.plan });
     }).join("") : '<p class="hint">' + T("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
     var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0; } catch (e2) {}
     $("calNoShift").hidden = hasShift;

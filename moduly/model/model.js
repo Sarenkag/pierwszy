@@ -75,8 +75,8 @@
         (s.downloading ? '<button type="button" class="btn" data-model-act="remove">' + T('Anuluj pobieranie', 'Cancel download') + '</button>' : '') +
         (s.ready ? '<button type="button" class="btn" data-model-act="remove">' + T('Usuń model z telefonu', 'Remove model from phone') + '</button>' : '') + '</div>';
       var sel = el.querySelector('[data-model-key]'); sel.oninput = function (e) { e.stopPropagation(); }; sel.onchange = function (e) { e.stopPropagation(); setKey(e.target.value); refresh(); };
-      el.querySelectorAll('[data-model-act]').forEach(function (b) { b.onclick = function () {
-        var a = b.getAttribute('data-model-act'); if (a === 'remove' && !w.confirm(T('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?'))) return;
+      el.querySelectorAll('[data-model-act]').forEach(function (b) { b.onclick = async function () {
+        var a = b.getAttribute('data-model-act'); if (a === 'remove' && !(await (w.OESTPytaj ? w.OESTPytaj(T('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?')) : w.confirm(T('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?'))))) return;
         (a === 'download' ? download() : remove()).then(refresh, function (e) { refresh(w.OESTBledy ? w.OESTBledy.text(e) : e.message); });
       }; });
       clearInterval(timer); if (s.downloading) timer = setInterval(refresh, 3000);

@@ -1,0 +1,129 @@
+/* Moduł wyglądu (moduly/wyglad) – jedna skala czcionek i przycisków dla wszystkich ekranów OEST (Grzegorz 04/11/2026):
+   ten sam przycisk ma wszędzie ten sam rozmiar, krój i zaokrąglenie. Ładowany jako OSTATNI arkusz (po theme.css i stylach ekranów).
+   Animacje: wyglad.js. „Ogranicz animacje” w Ustawieniach i systemowe „mniej ruchu” wyłączają ruch. */
+:root{
+  /* czcionki: 5 stopni na całą apkę */
+  --fs-xs:12px;   /* drobne: znaczniki, liczniki, podpisy pod ikonami */
+  --fs-s:13px;    /* pomocnicze: podpowiedzi, opisy pól, pigułki filtrów */
+  --fs-m:15px;    /* zwykły tekst, pola, przyciski */
+  --fs-l:17px;    /* nagłówek sekcji / okienka */
+  --fs-xl:19px;   /* tytuł ekranu */
+  /* wysokości */
+  --h-main:52px;  /* główna akcja ekranu: Wyślij, Zapisz ustawienia, Zapisz */
+  --h-btn:48px;   /* zwykły przycisk */
+  --h-btn-s:40px; /* mały przycisk (w wierszu, w okienku) */
+  --h-field:48px; /* pole tekstowe, lista wyboru */
+  --h-chip:34px;  /* pigułka filtra / statusu */
+  --h-icon:40px;  /* przycisk-ikona w nagłówku: ‹, ⋮, ⚙, EN */
+  /* zaokrąglenia */
+  --r-btn:14px;--r-field:12px;--r-chip:999px;--r-card:16px;--r-panel:18px;
+  /* ruch */
+  --wy-ease:cubic-bezier(.2,.8,.2,1);--wy-fast:.16s;--wy-mid:.24s;
+}
+
+/* ---------- tekst ---------- */
+html body{font-size:var(--fs-m)}
+html body h1,html body .settings-page h1{font-family:var(--font-body)!important;font-size:var(--fs-xl)!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important}
+html body h2,html body .settings-page h2,html body .handover-page h2{font-family:var(--font-body)!important;font-size:var(--fs-l)!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important}
+html body h3{font-size:var(--fs-m)!important;font-weight:650}
+html body .panel>.label,html body .panel .label,html body .settings-group>.settings-eyebrow,html body .fl-grp,html body #v-reactive .panel .label{font-family:var(--font-body)!important;font-size:var(--fs-xs)!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase;color:var(--muted)}
+html body :is(.hint,.sub,.settings-foot,.settings-status,.ho-original,.ho-context,.rx-sub,.calhint,.notice,.toast){font-size:var(--fs-s)!important;line-height:1.4}
+html body .field>span,html body .field>label{font-size:var(--fs-s)!important;color:var(--muted)}
+
+/* ---------- przyciski ---------- */
+/* zwykły przycisk: każdy .btn w każdym module */
+html body :is(.btn,.settings-actions .btn,.ho-file,.keys-file,.pt-file,.rx-file,.qq-file){min-height:var(--h-btn)!important;border-radius:var(--r-btn)!important;font-family:var(--font-body)!important;font-size:var(--fs-m)!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;padding:0 16px;line-height:1.2;box-sizing:border-box}
+/* mały przycisk: w wierszach listy, w okienkach, obok pola */
+html body :is(.btn.small,.settings-page .btn.small,#v-reactive .rx-pics .btn,.kmenu .btn){min-height:var(--h-btn-s)!important;font-size:var(--fs-m)!important;padding:0 14px!important}
+/* główna akcja ekranu: ten sam wygląd w inspekcjach, Reactive, Handover i Ustawieniach */
+html body :is(#toQueue,.save-bar .btn,.settings-page .save-bar .btn,#v-reactive .rx-footer>.btn,#v-reactive .rx-row>.btn,.ho-save,#qSend,#prevQueue){min-height:var(--h-main)!important;border-radius:16px!important;font-family:var(--font-body)!important;font-size:16px!important;font-weight:700!important;letter-spacing:.01em!important;text-transform:none!important}
+html body .go{font-family:var(--font-body)!important;text-transform:none!important;letter-spacing:.01em!important}
+/* „Wyślij” w inspekcji po wysłaniu (mniejszy) zostaje mały */
+html body #toQueue.compact{min-height:var(--h-btn)!important;font-size:var(--fs-m)!important}
+/* przycisk z ikoną zdjęcia/notatki (pasek pod nagłówkiem inspekcji) */
+html body .pbtn{min-height:var(--h-btn)!important;border-radius:var(--r-btn)!important;font-size:var(--fs-s)!important;font-weight:600}
+
+/* przyciski-ikony w nagłówku: Wstecz ‹, menu ⋮, ⚙, ◀ ▶, EN – jeden rozmiar */
+html body .top :is(.back,.kebab,.calnav,.rx-gear,.settings-language:not(.oest-sw)){width:var(--h-icon)!important;min-width:var(--h-icon);height:var(--h-icon)!important;min-height:0!important;padding:0!important;flex:none;display:grid!important;place-items:center;border-radius:12px!important;line-height:1}
+html body .top .back{font-size:26px!important;border:0!important;background:transparent!important;color:var(--ink)!important}
+html body .top :is(.kebab,.calnav,.rx-gear){font-size:18px!important;border:0!important;background:transparent!important;color:var(--ink)!important}
+html body .top .settings-language:not(.oest-sw){width:auto!important;padding:0 10px!important;font-size:var(--fs-xs)!important;font-weight:700!important;border:1px solid var(--line)!important;background:var(--panel)!important}
+html body .top .back svg,html body .top .kebab svg{width:22px;height:22px}
+html body .top{min-height:var(--h-icon);gap:8px}
+
+/* pigułki: filtry list, statusy, wybór – wszędzie ta sama wysokość i krój */
+html body :is(.chip,.qq-chip,.rchip):not(label){min-height:var(--h-chip)!important;padding:0 12px!important;border-radius:var(--r-chip)!important;font-size:var(--fs-s)!important;font-weight:600;line-height:1.1;box-sizing:border-box}
+html body #v-reactive .rxk .rxr .chip{min-height:22px!important;padding:0 8px!important;font-size:var(--fs-xs)!important}
+html body label.chip>span{min-height:var(--h-chip);font-size:var(--fs-s)!important;border-radius:var(--r-chip)!important}
+html body .ppmpill{font-size:var(--fs-xs)!important}
+/* zakładki (Pytania: Baza pytań / Inspekcje) jak pigułki */
+html body .qq-tabs .btn{min-height:var(--h-chip)!important;border-radius:var(--r-chip)!important;font-size:var(--fs-s)!important;padding:0 14px!important}
+
+/* ---------- pola ---------- */
+html body :is(input[type=text],input[type=email],input[type=number],input[type=tel],input[type=search],input[type=url],input[type=password],input[type=date],input[type=time],input:not([type]),select):not(.icb input):not(.rx-fr input):not(.v){min-height:var(--h-field)!important;border-radius:var(--r-field)!important;font-size:var(--fs-m)!important;box-sizing:border-box}
+html body textarea{border-radius:var(--r-field)!important;font-size:var(--fs-m)!important;font-family:inherit}
+/* wybór pliku: zamiast szarego systemowego guzika – taki sam mały przycisk jak w apce */
+html body input[type=file]{font-size:var(--fs-s)!important;color:var(--muted);max-width:100%}
+html body input[type=file]::file-selector-button{min-height:var(--h-btn-s);margin-right:10px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 var(--fs-m) var(--font-body);cursor:pointer}
+/* ramka grupy pól (np. Grupy inspekcji, Tagi) jak karta, nie systemowa */
+html body fieldset{border:1px solid var(--line);border-radius:var(--r-card);padding:8px 12px 10px;margin:0}
+html body fieldset>legend{font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+
+/* rozwijane sekcje (details): jeden wygląd, strzałka obraca się płynnie */
+html body summary{font-family:var(--font-body)!important;font-size:var(--fs-m)!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important;min-height:40px;display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer}
+html body summary::-webkit-details-marker{display:none}
+html body summary::before{content:"›";display:inline-block;flex:none;width:12px;font-size:18px;line-height:1;color:var(--muted);transition:transform var(--wy-mid) var(--wy-ease)}
+html body details[open]>summary::before{transform:rotate(90deg)}
+html body .settings-tools>summary{justify-content:flex-end;font-size:var(--fs-s)!important;font-weight:600!important;color:var(--muted)}
+html body .settings-tools>summary::before{content:none}
+
+/* karty wyboru (inspekcje: Distribution boards / ATS / Isolators) jak kafelki – bez wielkich liter */
+html body .type b{font-family:var(--font-body)!important;font-size:16px!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important}
+
+/* ---------- ruch ---------- */
+/* stany (wybrany / włączony / kolor) zmieniają się płynnie, nie skokowo */
+:where(button,.btn,.chip,.tile,.prow,.day,.cd,.settings-card,.pbtn,input,select,textarea,summary){transition:transform var(--wy-fast) var(--wy-ease),background-color var(--wy-mid),border-color var(--wy-mid),color var(--wy-mid),box-shadow var(--wy-mid),opacity var(--wy-mid),filter var(--wy-mid)}
+.ck-row .seg button{transition:transform .2s var(--wy-ease),box-shadow .2s,background .2s,border-color .2s}
+.kbar i,.zd-bar i,[class*=bar]>i{transition:width .45s var(--wy-ease)}
+/* wejście ekranu (wyglad.js dokłada klasę): do przodu z prawej, wstecz z lewej */
+@keyframes wyIn{from{opacity:0;transform:translateX(var(--wy-dx,14px))}to{opacity:1;transform:none}}
+@keyframes wyUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes wyPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes wyOut{from{opacity:1;transform:none}to{opacity:0;transform:scale(.86)}}
+@keyframes wyFade{from{opacity:0}to{opacity:1}}
+.wy-enter{animation:wyIn var(--wy-mid) var(--wy-ease) both}
+.wy-enter.wy-back{--wy-dx:-14px}
+.wy-item{animation:wyUp .3s var(--wy-ease) both;animation-delay:calc(var(--wy-i,0) * 22ms)}
+/* okienka: rosną z miejsca stuknięcia, zamykają się pomniejszeniem (origin ustawia wyglad.js) */
+.wy-pop{animation:wyPop .22s var(--wy-ease) both}
+.wy-pop-out{animation:wyOut .18s ease-in both!important;pointer-events:none!important}
+.wy-dim{animation:wyFade .2s ease-out both}
+.wy-dim-out{animation:wyFade .18s ease-in reverse both!important;pointer-events:none!important}
+/* rozwijane sekcje rozwijają się płynnie (Chrome 131+, telefon Pixel); starsze – bez animacji */
+@supports (interpolate-size:allow-keywords){
+  :root{interpolate-size:allow-keywords}
+  details::details-content{height:0;overflow:clip;transition:height var(--wy-mid) var(--wy-ease),content-visibility var(--wy-mid) allow-discrete}
+  details[open]::details-content{height:auto}
+}
+/* menu ⋮ w inspekcji i podobne rozwijane okienka */
+.kmenu:not([hidden]){animation:wyPop .2s var(--wy-ease) both;transform-origin:calc(100% - 18px) -6px}
+/* komunikat „Zapisano” itp. pojawia się łagodnie */
+.settings-status:not(:empty),.toast:not(:empty){animation:wyUp .25s var(--wy-ease) both}
+
+@media (prefers-reduced-motion:reduce){
+  .wy-enter,.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}
+  details::details-content{transition:none!important}
+}
+:root[data-settings-motion=reduce] :is(.wy-enter,.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty)){animation:none!important}
+:root[data-settings-motion=reduce] details::details-content{transition:none!important}
+
+/* „Dodaj / Nowe …” – główny przycisk listy w każdym module: pełna szerokość, kolor akcji (Reactive, Klucze, Power trace, Pytania) */
+html body #v-reactive .rx-top .btn{width:100%!important;min-height:var(--h-btn)!important;font-size:var(--fs-m)!important;padding:0 16px!important}
+
+/* ---------- płynność przewijania (telefon) ---------- */
+/* rozmycie tła pod każdą kartą listy liczy się przy każdym przesunięciu palcem; tło za kartami jest gładkim gradientem,
+   więc wygląd się nie zmienia, a lista przewija się płynniej. Rozmycie zostaje tylko w okienkach na wierzchu. */
+html body :is(.panel,.prow,.chip,.btn,.day,.cd,.tile,.kf,.pbtn,.sm,.settings-card,.settings-hero,.settings-group){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* tło apki jako osobna, przyklejona warstwa zamiast background-attachment:fixed (to przemalowywało cały ekran przy przewijaniu) */
+html{background:#0a0e1f!important}
+html::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 15% 0%,#26357f 0,transparent 42%),radial-gradient(circle at 100% 55%,#4a2478 0,transparent 45%),#0a0e1f}

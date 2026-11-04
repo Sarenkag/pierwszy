@@ -4,6 +4,7 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
+  function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
   var form = $("v-form"); if (!form) return;
   var top = form.querySelector(".top"), bar = form.querySelector(".ppmbar");
 
@@ -27,7 +28,7 @@
   menu.className = "kmenu"; menu.hidden = true;
   menu.innerHTML = '<div class="kupd"></div>' +
     '<button type="button" data-k="def" data-en="Restore defaults (all OK)">Przywróć domyślne (wszystko OK)</button>' +
-    '<button type="button" data-k="more">Overall / Quote</button>' +
+    '<button type="button" data-k="more" data-en="Overall / Quote">Ocena ogólna / wycena</button>' +
     '<button type="button" data-k="prev" data-en="Report preview">Podgląd raportu</button>' +
     '<button type="button" data-k="clear" class="kclear" data-en="Clear inspection">Wyczyść inspekcję</button>';
   top.appendChild(kb); top.appendChild(menu);
@@ -47,10 +48,11 @@
   // ---- nagłówek: Imię ☐  Data ☐ | ile do końca, licznik ----
   var head = document.createElement("div");
   head.className = "ihead";
-  head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">Name</span></label>' +
-    '<label class="icb"><input type="checkbox" id="dateOn" checked><span>Date</span></label></div>' +
-    '<div class="iright"><div id="iEnds"></div><div id="iCntBox"><b id="iCnt"></b> answered</div></div>';
+  head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">' + T("Imię", "Name") + '</span></label>' +
+    '<label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span></label></div>' +
+    '<div class="iright"><div id="iEnds"></div><div id="iCntBox" title="OK / pytania"><b id="iCnt"></b> OK</div></div>';
   top.after(head);
+  if (window.OESTBledy) OESTBledy.applyDom(head);
   var dz = $("dzien"), pd = $("podpis"), datePanel = dz.closest(".panel");
   head.querySelector("#dateOn").closest("label").appendChild(dz);
   datePanel.classList.add("gone");
@@ -69,8 +71,9 @@
   if (labels[0]) relabel(labels[0], "Photo");
   var note = document.createElement("button");
   note.type = "button"; note.className = "pbtn";
-  note.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg>Note';
+  note.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg><span data-en="Note">Notatka</span>';
   btns.appendChild(note);
+  if (window.OESTBledy) OESTBledy.applyDom(note);
   var kp = $("komentarz").closest(".panel"); kp.classList.add("fold");
   note.addEventListener("click", function () { kp.classList.add("open"); $("komentarz").focus(); });
 
@@ -92,7 +95,7 @@
     $("iCntBox").hidden = !rows.length;
     var b = bar && bar.querySelector("b");
     $("iEnds").textContent = b ? b.textContent : "";
-    $("nameTx").textContent = $("nameOn").checked ? (pd.value || "Name") : "Name";
+    $("nameTx").textContent = $("nameOn").checked ? (pd.value || T("Imię", "Name")) : T("Imię", "Name");
   }
   new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   if (bar) new MutationObserver(syncHead).observe(bar, { childList: true, subtree: true });
