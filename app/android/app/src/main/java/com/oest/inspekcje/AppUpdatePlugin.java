@@ -34,6 +34,8 @@ public class AppUpdatePlugin extends Plugin {
     }
 
     private void installSession(File apk) throws Exception {
+        UpdateStatusReceiver.lastApk = apk;
+        UpdateStatusReceiver.activity = new java.lang.ref.WeakReference<>(getActivity());
         PackageInstaller pi = getContext().getPackageManager().getPackageInstaller();
         PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
         params.setAppPackageName(getContext().getPackageName());
