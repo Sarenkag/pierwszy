@@ -1253,7 +1253,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
       if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
-      if (!d) offerRestore(tok);
+      // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
+      if (!d || !(d.photos && d.photos.length)) offerRestore(tok);
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
@@ -1297,13 +1298,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var b = $("restoreIns"); b.hidden = true; restoreList = [];
     if (!window.OESTZdjecia || cur.mode !== "one" || !cur.type) return;
     var ctx = copyCtx(), st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
-    var from = st && st.day ? st.day : isoDay(new Date(Date.now() - 864e5)); // od dnia wysłania (albo wczoraj)
+    var y = isoDay(new Date(Date.now() - 864e5)), from = st && st.day && st.day < y ? st.day : y; // od dnia wysłania, ale najpóźniej od wczoraj
     OESTZdjecia.list().then(function (all) {
       if (tok !== formSeq || photos.length) return;
       restoreList = all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
         .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
       if (!restoreList.length) return;
       b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + restoreList.length + ")";
+      var hd = document.querySelector("#v-form .ihead"); if (hd && b.previousElementSibling !== hd) hd.after(b); // na górze, od razu widoczny (Grzegorz 04/11: „nie ma takich przycisków”)
     }).catch(function () {});
   }
   $("restoreIns").addEventListener("click", function () {
@@ -2855,7 +2857,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
     sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", T("✓ Zakończona", "✓ Completed")]]
-      .concat(s === "queued" ? [["queued", T("⏳ W kolejce", "⏳ Queued")]] : s === "sent" ? [["sent", T("✓ Wysłana", "✓ Sent")]] : [])
+      .concat(s === "queued" || s === "sent" ? [[s, T("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
       .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
     sel.className = "ppmpill s-" + (s || "none");
   }
