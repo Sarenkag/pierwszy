@@ -466,6 +466,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
     <button class="go" type="button" id="toQueue" data-m="one sum" data-en="Send">Wyślij</button>
     <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
+    <button class="go" type="button" id="restoreIns" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</button>
     <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
     <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
     <p class="hint" id="formHint"></p>
@@ -1198,7 +1199,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   });
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
-    draftOn = false; clearTimeout(draftT); draftT = 0;
+    draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; }
     roomNotes = {};
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
@@ -1251,6 +1252,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       if (d && d.v === 1 && d.fin && !(cur.ppm && PPM.stage && PPM.stage(cur.ppm))) { dropDraft(k); d = null; }
+      if (!d) offerRestore(tok);
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
@@ -1286,6 +1288,42 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("formHint").textContent = T("Wczytano zapisaną inspekcję (", "Saved inspection loaded (") + ok.length + " zdj.)." + (keptSaved.length ? T(" Nie udało się pokazać ", " Could not show ") + keptSaved.length + T(" zdjęć — zostają w zapisie.", " photos — they stay in the save.") : "");
     });
   }
+  // ---------- odzyskanie inspekcji skasowanej przez starą wersję „Wyślij” (04/11/2026) ----------
+  // Stara wersja po „Wyślij” kasowała szkic. Kopie zdjęć zostały w module zdjęć (kategoria + kod tej inspekcji),
+  // więc pusty formularz z kopiami z ostatnich dni proponuje „↺ Przywróć inspekcję”: zdjęcia wracają, inspekcja znów W trakcie.
+  var restoreList = [];
+  function offerRestore(tok) {
+    var b = $("restoreIns"); b.hidden = true; restoreList = [];
+    if (!window.OESTZdjecia || cur.mode !== "one" || !cur.type) return;
+    var ctx = copyCtx(), st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
+    var from = st && st.day ? st.day : isoDay(new Date(Date.now() - 864e5)); // od dnia wysłania (albo wczoraj)
+    OESTZdjecia.list().then(function (all) {
+      if (tok !== formSeq || photos.length) return;
+      restoreList = all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
+        .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
+      if (!restoreList.length) return;
+      b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + restoreList.length + ")";
+    }).catch(function () {});
+  }
+  $("restoreIns").addEventListener("click", function () {
+    var b = this, list = restoreList.slice(), tok = formSeq; if (!list.length || queueing) return;
+    b.disabled = true;
+    var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
+    if (t && st && (st.s === "queued" || st.s === "sent" || st.s === "done")) {
+      // okres znów otwarty: termin wraca, raport z kolejki zostaje (wyjdzie sam) jako ✉ przy otwartej inspekcji
+      var q = queue.filter(function (x) { return x.ppm === t.id; }).sort(function (a, c) { return c.created - a.created; })[0];
+      if (st.period) PPM.setDue(t, st.period);
+      PPM.setStage(t, { s: "prog", manual: false, mail: q ? (q.status === "sent" ? "sent" : "queued") : "", mailId: q ? q.id : "", mailSig: "" });
+      renderPpmBar();
+    }
+    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? new File([bl], r.name || "zdjecie.jpg", { type: bl.type || "image/jpeg", lastModified: Date.parse(r.created) || Date.now() }) : null; }); }))
+      .then(function (files) {
+        files = files.filter(Boolean); if (tok !== formSeq) return;
+        draftOn = true; b.hidden = true; b.disabled = false; restoreList = [];
+        addFiles(files, null, false, true);
+        $("formHint").textContent = T("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + T(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
+      }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
+  });
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
   ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function () { setTimeout(scheduleDraft, 0); }); });
   // apka schowana / zamykana: zapis od razu, bez czekania
@@ -1804,7 +1842,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   renderModel();
 
   // ---------- zdjęcia ----------
-  function addFiles(input, tap, sheet) {
+  function addFiles(input, tap, sheet, noCopy) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
@@ -1813,7 +1851,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          if (tok === formSeq) keepCopy(f, when, ctx);
+          if (tok === formSeq && !noCopy) keepCopy(f, when, ctx);
           return processPhoto(f, when).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; if (tap != null) ph.tap = tap;
@@ -1824,6 +1862,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         });
       });
     }, Promise.resolve()).then(function () {
+      if (tok === formSeq) scheduleDraft();
       $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + " · zmniejszone do maks. 1920 px." : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
     }).catch(function () { $("photoInfo").textContent = T("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
