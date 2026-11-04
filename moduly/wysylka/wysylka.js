@@ -105,7 +105,7 @@
           return p.then(function (stop) {
             if (stop || !online()) return true;
             if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
-            pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
+            var t0 = Date.now(); pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
             return put(it).then(function () { return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; done++;
               if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
@@ -114,8 +114,10 @@
               var m = e && e.message || "";
               if (/GOOGLE_BUSY|GOOGLE_OFFLINE/.test(m)) { it.status = "wait"; it.err = ""; return put(it).then(function () { changed(it); return true; }); } // Drive zajęty / brak sieci: spróbuję przy następnym razie
               if (!/RESULT_UNCERTAIN/.test(m)) { it.status = "err"; it.err = errText(e); return put(it).then(function () { changed(it); return true; }); }
-              // „brak odpowiedzi” (04/11): jeśli telefon w ogóle nie ma internetu, mail nie mógł wyjść → czeka i wyjdzie sam po powrocie sieci
-              return reachable().then(function (ok) {
+              // „brak odpowiedzi” (04/11): błąd w pierwszych sekundach + brak internetu = wysyłka nie zdążyła ruszyć → czeka i wyjdzie sam.
+              // Dłuższa próba mogła dojść do Gmaila: wtedy zostaje „niepewne” i ponawia tylko Grzegorz (bez podwójnych maili).
+              var quick = Date.now() - t0 < 5000;
+              return (quick ? reachable() : Promise.resolve(true)).then(function (ok) {
                 if (ok) { it.status = "err"; it.err = errText(e); } else { it.status = "wait"; it.err = ""; }
                 return put(it).then(function () { changed(it); return true; });
               });

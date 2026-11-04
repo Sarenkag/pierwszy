@@ -1226,7 +1226,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     draftFields().forEach(function (el) { f[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
     if (f.nameOn === false && $("podpis").dataset.v) f.podpis = $("podpis").dataset.v; // Name odznaczone: podpis schowany, ale pamiętany
     return {
-      v: 1, t: Date.now(), fin: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? Date.now() : undefined, qk: cur.type.checks.map(function (c) { return c.key; }),
+      v: 1, t: Date.now(), fin: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? Date.now() : undefined, finPeriod: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? PPM.stage(cur.ppm).period : undefined, qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
@@ -1251,7 +1251,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     kvGet(k).then(function (d) {
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
-      if (d && d.v === 1 && d.fin && !(cur.ppm && PPM.stage && PPM.stage(cur.ppm))) { dropDraft(k); d = null; }
+      // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
+      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
       if (!d) offerRestore(tok);
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       draftOn = true;
@@ -2679,7 +2680,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!t.open || cur.mode === "sum") PPM.close(t, day); // następny termin z grafiku/Vantify; ta inspekcja zostaje z napisem Gotowa
     }
     markDone(cur.type, cur.code);
-    if (cur.mode === "one" && cur.type) { var k = draftKey(); try { var sn = draftSnap(); sn.fin = Date.now(); await kvSet(k, sn); } catch (e) {} }
+    if (t && cur.mode === "one" && cur.type) { var k = draftKey(); try { await kvSet(k, draftSnap()); } catch (e) {} } // szkic z oznaczeniem Gotowa (fin + termin)
     renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || T("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {

@@ -278,7 +278,7 @@ window.OEST_PPM = {
   // qid = id raportu w kolejce: inspekcja otwarta po „Wyślij” (s = prog/hold, mail = queued) dostaje ✉ wysłany tylko za swój ostatni raport
   P.markSent = function (id, qid) {
     var t = P.byId(id); if (!t) return; var a = stages(), r = a[id]; if (!r) return;
-    if (r.s === "queued" || r.s === "sent") { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ }
+    if ((r.s === "queued" || r.s === "sent") && (!qid || !r.mailId || r.mailId === qid)) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ }
     else if (!(r.mail && (!qid || !r.mailId || r.mailId === qid))) return;
     if (r.mail && (!qid || !r.mailId || r.mailId === qid)) { r.mail = "sent"; r.mailSentAt = Date.now(); }
     try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
