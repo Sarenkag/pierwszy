@@ -97,10 +97,12 @@
       }).sort(function (a, b) { return a.created - b.created; });
       if (!todo.length || !online()) return;
       if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return;
-      var g = G();
-      if (!g.connected("gmail") && !o.login) return;
-      sending = true; loginErr = ""; var done = 0; render();
-      return (g.connected("gmail") ? Promise.resolve() : g.connect("gmail")).then(function () {
+      var g = G(), done = 0;
+      // połączenie z Gmailem sprawdza tylko OESTGoogle.ready (cichy token, bez okna); okno logowania tylko po kliknięciu
+      return (g.ready ? g.ready("gmail") : Promise.resolve(g.connected("gmail"))).then(function (ok) {
+      if (!ok && !o.login) return;
+      sending = true; loginErr = ""; render();
+      return (ok ? Promise.resolve() : g.connect("gmail")).then(function () {
         return todo.reduce(function (p, it, i) {
           return p.then(function (stop) {
             if (stop || !online()) return true;
@@ -126,6 +128,7 @@
         }, Promise.resolve(false));
       }, function (e) { loginErr = errText(e); }).then(function () {
         if (done) say(T("Wysłano ✓ ", "Sent ✓ ") + (done === 1 ? T("raport ", "report ") + todo[0].code : done + T(" raporty", " reports")));
+      });
       });
     }).catch(function (e) { loginErr = T("błąd kolejki w telefonie: ", "phone queue error: ") + errText(e); }).then(function () {
       sending = false; pos = null; skipWifi = false; lock = null; render();
