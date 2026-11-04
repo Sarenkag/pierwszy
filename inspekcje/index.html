@@ -1254,8 +1254,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
       if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
-      if (!d || !(d.photos && d.photos.length) || cur.type.flush) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
+      // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
+      if (!d || !(d.photos && d.photos.length) || cur.type.flush) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
@@ -1302,7 +1303,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
     var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
     var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
-      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length; }).sort(function (a, c) { return c.created - a.created; })[0];
+      var since = Date.parse(from + "T00:00:00"); // tylko raport z tego okresu (od dnia etapu / wczoraj), nigdy zeszłotygodniowy
+      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length && q.created >= since; }).sort(function (a, c) { return c.created - a.created; })[0];
       return it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;
     }).catch(function () { return null; });
     var settle = function () { return new Promise(function (r) { (function w() { if (restoring || pendingPh) setTimeout(w, 200); else r(); })(); }); }; // szkic najpierw wczyta swoje zdjęcia
@@ -1312,7 +1314,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // z raportu tylko krany, które w inspekcji nie mają jeszcze zdjęcia (nic się nie dubluje)
       var have = {}; photos.forEach(function (p) { if (p.tap != null) have[p.tap] = 1; });
       var rp = rs[1]; if (rp) { rp.photos = rp.photos.filter(function (p) { return p.tap != null && !have[p.tap]; }); }
-      restorePdf = rp && rp.photos.length ? rp : null;
+      // odpowiedzi też się liczą (e-formularz nie wymaga zdjęć): jest co przywrócić, gdy raport ma zdjęcia brakujących kranów
+      // albo odpowiedź / notatkę / tydzień, których w inspekcji jeszcze nie ma
+      var ans = rp && (rp.taps.some(function (x, i) { var c = fl.taps[i]; return c && c.state === "yes" && !c.note && (x.state !== "yes" || x.note); }) || (rp.week && !fl.week));
+      restorePdf = rp && (rp.photos.length || ans) ? rp : null;
       if (photos.length && !restorePdf) return;
       restoreList = photos.length ? [] : all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
         .sort(function (a, c) { return a.created < c.created ? -1 : 1; });

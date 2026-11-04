@@ -107,10 +107,12 @@
     var REV = {}; Object.keys(LABEL).forEach(function (k) { REV[LABEL[k]] = k; });
     var states = items.filter(function (it) { return it.kind === "t" && near(it.x, 110 * PT) && REV[it.text] != null; });
     if (states.length !== names.length) return null; // inny układ: nie zgadujemy
-    out.taps = states.map(function (s) {
-      var note = items.filter(function (it) { return it.kind === "t" && it.page === s.page && near(it.x, 135 * PT) && it.y <= s.y + 0.5 && it.y > s.y - 5 * PT * 50; });
-      var next = states[states.indexOf(s) + 1], lim = next && next.page === s.page ? next.y : -1e9;
-      return { state: REV[s.text], note: note.filter(function (it) { return it.y > lim + 0.5; }).map(function (it) { return it.text; }).join(" ").trim() };
+    // notatka kranu: wszystkie kawałki z kolumny Notes od jego odpowiedzi do odpowiedzi następnego kranu (także na następnej stronie)
+    var pos = states.map(function (s) { return items.indexOf(s); });
+    out.taps = states.map(function (s, k) {
+      var end = k + 1 < pos.length ? pos[k + 1] : items.length, part = [];
+      for (var j = pos[k] - 2 < 0 ? 0 : pos[k] - 2; j < end; j++) { var it = items[j]; if (it.kind === "t" && near(it.x, 135 * PT) && (j > pos[k] || (it.page === s.page && Math.abs(it.y - s.y) < 1))) part.push(it.text); }
+      return { state: REV[s.text], note: part.join(" ").trim() };
     });
     var pf = {}; items.forEach(function (it) { if (it.kind === "t" && / – photos$/.test(it.text)) pf[it.page] = 1; });
     var used = {};
@@ -120,7 +122,10 @@
       var jpg = bytes.slice(o.s, o.e), tap = null;
       if (pf[it.page]) {
         var cap = items.slice(k + 1).filter(function (c) { return c.kind === "t" && c.page === it.page; })[0], txt = cap ? cap.text : "";
-        for (var j = 0; j < names.length; j++) if (txt && (names[j] === txt || names[j].indexOf(txt) === 0)) { tap = j; if (!used[j]) break; }
+        // najpierw dokładna nazwa; skrócony podpis tylko, gdy pasuje do jednego kranu
+        var ex = [], pre = []; names.forEach(function (n, j) { if (n === txt) ex.push(j); else if (txt && n.indexOf(txt) === 0) pre.push(j); });
+        var cand = ex.length ? ex : pre.length === 1 ? pre : [];
+        cand.forEach(function (j) { if (tap == null && !used[j]) tap = j; }); if (tap == null && cand.length) tap = cand[0];
         if (tap == null) return; // zdjęcie bez rozpoznanego kranu: pomijamy (zostaje w module zdjęć)
         used[tap] = 1;
       }

@@ -27,3 +27,12 @@ test('fromPdf reads answers, week and photo→outlet from the queued report PDF'
   assert.equal(r.photos[0].bytes[0], 0xff); assert.equal(r.photos[0].bytes[1], 0xd8);
   assert.equal(F.fromPdf(new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf'))), names.slice(0, 5)), null); // inna lista kranów: nie zgadujemy
 });
+test('fromPdf: exact outlet name wins over a prefix; ambiguous short caption is not guessed', () => {
+  const F = require('../../inspekcje/flush.js'), fs = require('node:fs'), path = require('node:path');
+  const pdf = new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf')));
+  const base = ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room", "Studio", "Pool Hall", "Gym", "Cycle Store", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107", "x1", "x2", "x3", "x4", "x5", "x6"];
+  const a = base.slice(); a[3] = "Massage Hall East"; // prefiks „Massage Hall” przed dokładną nazwą
+  assert.deepEqual(F.fromPdf(pdf, a).photos.map(p => p.tap), [0, 2, 4]);
+  const b = base.slice(); b[0] = "Roof A"; b[1] = "Roof B"; // podpis „Roof” pasuje do dwóch kranów: zdjęcie pominięte
+  assert.deepEqual(F.fromPdf(pdf, b).photos.map(p => p.tap), [2, 4]);
+});
