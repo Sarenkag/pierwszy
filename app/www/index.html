@@ -546,8 +546,8 @@ input[type=text], input[type=email], input[type=date], select {
     // jeden klocek dla całej apki (moduly/klocek, Grzegorz 04/11): tu tylko podstawiamy dane inspekcji
     return window.OESTKlocek.html({
       id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
-      status: insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("Zaległa", "Overdue"), tone: 3 } : { text: T("Nie rozpoczęta", "Not started"), tone: 0 },
-      desc: where, due: due, foot: foot, form: form, marks: marks, go: go, done: !!(st && st.s === "sent")
+      status: st && (st.s === "done" || st.s === "queued" || st.s === "sent") ? { text: T("✓ GOTOWA", "✓ READY"), tone: 2, ready: true } : insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("Zaległa", "Overdue"), tone: 3 } : { text: T("Nie rozpoczęta", "Not started"), tone: 0 },
+      desc: where, due: due, foot: foot, form: form, marks: marks, go: go, done: false /* gotowa nie szarzeje (04/11) */
     });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
