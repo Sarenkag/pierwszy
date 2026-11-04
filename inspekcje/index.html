@@ -1514,7 +1514,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
   function buildTempPdf(d) {
-    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4" });
     pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
     pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
     var L = 20, y = 22;
@@ -2095,7 +2095,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Zdjęcie do raportu (jedno miejsce dla wszystkich inspekcji): zmniejszone do realnej wielkości jak w izolatorach (28/10),
   // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
-  var REPORT_PX = 1024, REPORT_Q = 0.65, SHEET_PX = 1600, SHEET_Q = 0.7;
+  var REPORT_PX = 400, REPORT_Q = 0.55, SHEET_PX = 1600, SHEET_Q = 0.7;
   function finalPhoto(p, d) {
     var src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : REPORT_PX) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
@@ -2393,7 +2393,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return { L: L, W: W, header: header, footer: footer, lab: lab, rows: rows };
   }
   function newPdf(landscape) {
-    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: landscape ? "l" : "p" });
+    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4", orientation: landscape ? "l" : "p" });
     pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
     pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
     return pdf;
@@ -2516,7 +2516,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return out.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
   function buildPhotoPdf(pics) {
-    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4" });
     addFull(pdf, pics, true);
     return new Uint8Array(pdf.output("arraybuffer"));
   }
