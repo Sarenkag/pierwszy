@@ -71,7 +71,10 @@
     res(pagesRoot.dict);
     var items = []; // {page, kind:'t'|'i', x, y, text | img}
     kids.forEach(function (pg, pi) {
-      if (!pg) return; res(pg.dict);
+      if (!pg) return;
+      var mb = (pg.dict.match(/\/MediaBox\s*\[\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)/) || []).slice(1).map(Number);
+      if (mb.length === 4 && mb[2] - mb[0] > mb[3] - mb[1]) return; // strona pozioma = pełny formularz firmy (04/11): odpowiedzi czytamy z listy basic form
+      res(pg.dict);
       var cs = []; (pg.dict.match(/\/Contents\s*(\[[^\]]*\]|\d+ 0 R)/) || ["", ""])[1].replace(/(\d+) 0 R/g, function (_, id) { if (objs[id] && objs[id].data != null) cs.push(objs[id].data); });
       var src = cs.join("\n"), tok = /<([0-9a-fA-F]*)>|\((?:\\.|[^\\)])*\)|\[|\]|\/[^\s/<>\[\]()]+|[-+]?\d*\.?\d+|[A-Za-z*'"]+/g, t, stack = [], font = null, tx = 0, ty = 0, tl = 0, cm = [1, 0, 0, 1, 0, 0], arr = null;
       function dec(str, isHex) {

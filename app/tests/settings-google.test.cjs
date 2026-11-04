@@ -20,7 +20,7 @@ test('mail test validates recipient and explicit one-message body',async()=>{
 });
 test('expired token is cleared and API errors never become success',async()=>{
   const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async()=>({ok:false,status:401})});
-  await g.connect('drive');await assert.rejects(g.folders(),/GOOGLE_HTTP_401/);assert.equal(g.connected('drive'),false);
+  await g.connect('drive');await assert.rejects(g.folders(),/GOOGLE_HTTP_401|GOOGLE_CONNECT/);assert.equal(g.connected('drive'),false); // 401 → jedna cicha próba odnowienia; bez niej GOOGLE_CONNECT, nigdy sukces
 });
 test('account change invalidates existing connections before a request',async()=>{
   let user='me@example.com',n=0;const g=createGoogle({account:()=>({email:user}),login:async()=>({email:user,token:'T'}),fetch:async()=>{n++;throw Error('no');}});
@@ -60,4 +60,25 @@ test('ready(): one check for lamp, Settings and sending; silent token, never a w
   assert.equal(await g.ready('drive'),true);
   assert.equal(g.connected('drive'),true);
   assert.equal(await g.ready('drive'),true);assert.equal(calls,3);assert.equal(logins,0);
+});
+test('big report (>4 MB, e.g. Flushing with 13 photos) goes natively via /upload, small stays JSON (04/11)',async()=>{
+  let web=0,nat;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),
+    fetch:async()=>{web++;return {ok:true,status:200,json:async()=>({id:'w'})};},
+    nativeFetch:async(url,o)=>{nat={url,o};return {ok:true,status:200,json:async()=>({id:'n'})};}});
+  await g.connect('gmail');
+  const big=new Uint8Array(6*1024*1024).map((_,i)=>i%251);
+  const r=await g.sendMail({to:['me@example.com','eng@example.com'],subject:'Weekly Flushing TB',body:'x',files:[{name:'a.pdf',mime:'application/pdf',bytes:big}]});
+  assert.equal(r.id,'n');assert.equal(web,0);
+  assert.equal(nat.url,'https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media');
+  assert.equal(nat.o.headers['Content-Type'],'message/rfc822');assert.equal(nat.o.headers.Authorization,'Bearer T');
+  assert.match(nat.o.body,/^To: me@example.com, eng@example.com\r\n/);assert.ok(nat.o.timeout>30000);
+  const s=await g.sendMail({to:'me@example.com',subject:'s',files:[{name:'b.pdf',mime:'application/pdf',bytes:new Uint8Array([1,2,3])}]});
+  assert.equal(s.id,'w');assert.equal(web,1);
+});
+test('native send: network failure or no answer = uncertain, Gmail error stays an error (04/11)',async()=>{
+  let mode='net';const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async()=>{throw Error('web must not be used');},
+    nativeFetch:async()=>{if(mode==='net')throw new TypeError('x');return {ok:false,status:400,json:async()=>({error:{message:'bad'}})};}});
+  await g.connect('gmail');const big=new Uint8Array(6*1024*1024);
+  await assert.rejects(g.sendMail({to:'me@example.com',subject:'s',files:[{name:'a.pdf',mime:'application/pdf',bytes:big}]}),/EMAIL_RESULT_UNCERTAIN/);
+  mode='http';await assert.rejects(g.sendMail({to:'me@example.com',subject:'s',files:[{name:'a.pdf',mime:'application/pdf',bytes:big}]}),/GOOGLE_HTTP_400: bad/);
 });

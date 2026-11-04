@@ -5,7 +5,13 @@
   else {
     // ostatnie dotknięcie ekranu: okno ponownego połączenia tylko po świadomym kliknięciu, nigdy w tle
     var lastTap=0;try{root.document.addEventListener('pointerdown',function(){lastTap=Date.now();},true);}catch(_){}
-    root.OESTGoogle=api.createGoogle({recentTap:function(){return Date.now()-lastTap<120000;},fetch:root.fetch.bind(root),account:function(){return JSON.parse(root.localStorage.getItem('oest.account')||'null');},login:async function(scopes){
+    root.OESTGoogle=api.createGoogle({recentTap:function(){return Date.now()-lastTap<120000;},fetch:root.fetch.bind(root),
+    // 04/11: duży raport (np. Flushing z 13 zdjęciami ~10 MB) idzie natywnie przez /upload Gmaila (do 35 MB).
+    // Zwykły fetch z WebView nie dostaje od /upload nagłówków CORS, a zwykły adres przyjmuje tylko ~5 MB → „brak odpowiedzi”.
+    nativeFetch:(function(){var cap=root.Capacitor,h=cap&&cap.isNativePlatform&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.CapacitorHttp;if(!h)return null;
+      return function(url,o){return h.request({url:url,method:o.method||'GET',headers:o.headers||{},data:o.body,connectTimeout:30000,readTimeout:o.timeout||30000}).then(function(r){
+        return {ok:r.status>=200&&r.status<300,status:r.status,json:function(){return Promise.resolve(typeof r.data==='string'?JSON.parse(r.data||'{}'):r.data||{});}};
+      },function(e){var t=new TypeError(e&&e.message||'native http failed');throw t;});};})(),account:function(){return JSON.parse(root.localStorage.getItem('oest.account')||'null');},login:async function(scopes){
       var cap=root.Capacitor,config=root.OEST_CONFIG||{};
       if(!cap||!cap.isNativePlatform()||!cap.Plugins.SocialLogin||!config.googleWebClientId)throw Error('GOOGLE_SETUP');
       var social=cap.Plugins.SocialLogin;
@@ -29,6 +35,7 @@
   }
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
+  var BIG_MAIL=6500000,MAX_MAIL=35000000; // znaki: do BIG_MAIL sprawdzona droga JSON (raport 4 MB przeszedł 04/11), powyżej /upload natywnie; MAX_MAIL = limit Gmaila
   var SCOPES={contacts:['https://www.googleapis.com/auth/contacts.readonly'],drive:['https://www.googleapis.com/auth/drive.file'],gmail:['https://www.googleapis.com/auth/gmail.send'],calendar:['https://www.googleapis.com/auth/calendar.calendarlist.readonly']};
   function createGoogle(opts){
     var store=opts.store||{get:function(){return {};},set:function(){}},sessions=store.get()||{},busy=false;
@@ -76,7 +83,9 @@
       if(busy)throw Error('GOOGLE_BUSY');busy=true;
       var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},(options&&options.timeout)||30000);
       try{
-        var response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:Object.assign({Authorization:'Bearer '+session.token},options&&options.headers)}));
+        var hdrs=Object.assign({Authorization:'Bearer '+session.token},options&&options.headers),response;
+        if(options&&options.native)response=await Promise.race([opts.nativeFetch(url,Object.assign({},options,{headers:hdrs})),new Promise(function(_,rej){controller.signal.addEventListener('abort',function(){var e=Error('aborted');e.name='AbortError';rej(e);});})]);
+        else response=await opts.fetch(url,Object.assign({},options,{signal:controller.signal,headers:hdrs}));
         if(!response.ok){if(response.status===401){sessions[kind]=Object.assign({},sessions[kind],{until:0});store.set(sessions);}
           var why='';try{var j=await response.json();why=j&&j.error&&j.error.message?String(j.error.message).slice(0,160):'';}catch(_){}
           throw Error('GOOGLE_HTTP_'+response.status+(why?': '+why:''));}
@@ -158,7 +167,12 @@
       var mime=buildMime(m);
       // zwykły adres (JSON), nie /upload: przy błędzie /upload nie daje nagłówków CORS i WebView widzi tylko „brak odpowiedzi”
       var bytes=new TextEncoder().encode(mime),raw=b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-      try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw}),timeout:Math.min(600000,30000+Math.ceil(raw.length/20000)*1000)});} // duży raport na słabym zasięgu: ok. 1 s na 20 KB
+      var wait=Math.min(600000,30000+Math.ceil(raw.length/20000)*1000); // duży raport na słabym zasięgu: ok. 1 s na 20 KB
+      // zwykły adres przyjmuje ok. 5 MB; większy raport natywnie przez /upload (do 35 MB), bo tam WebView nie widzi odpowiedzi
+      if(raw.length>BIG_MAIL&&opts.nativeFetch){if(mime.length>MAX_MAIL)throw Error('GOOGLE_HTTP_413');
+        try{return await request('gmail','https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media',{method:'POST',headers:{'Content-Type':'message/rfc822'},body:mime,timeout:wait,native:true});}
+        catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}}
+      try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw}),timeout:wait});}
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
