@@ -77,7 +77,7 @@
     var t = today();
     $("hmDate").textContent = t.toLocaleDateString(loc(), { weekday: "short", day: "numeric", month: "short" });
     $("hmIni").textContent = initials();
-    d.querySelectorAll("#hmLang [data-l]").forEach(function (i) { i.classList.toggle("on", i.dataset.l === (en() ? "en" : "pl")); });
+    if (w.OESTPrzelacznik) w.OESTPrzelacznik.set($("hmLang"), en() ? "en" : "pl"); // jeden przełącznik PL/EN (moduly/przelacznik)
     var c = wxCache(), b = $("hmWx");
     if (c && c.now) { b.hidden = false; b.querySelector(".i").textContent = wxIcon(c.now.c); b.querySelector(".v").textContent = c.now.temp + "°C"; }
     else b.hidden = true;

@@ -125,20 +125,21 @@
   // ---------- pasek ----------
   // cienki pełny pasek przyklejony do dołu ekranu (pod appką, nieprzezroczysty); rozwinięcie otwiera się nad nim
   var css = ":root{--oest-sbar-h:calc(30px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))}" +
-    ".oest-sbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column-reverse;background:#151a22;color:#e8eaed;" +
-    "border-top:1px solid #2a313c;padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));font:13px/1.2 system-ui,sans-serif}" +
+    ".oest-sbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column-reverse;background:rgba(14,18,40,.96);color:var(--ink,#eef1ff);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);" +
+    "border-top:1px solid var(--line,rgba(255,255,255,.12));padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));font:13px/1.2 var(--font-body,system-ui),sans-serif}" +
     ".oest-sbar .r{display:flex;align-items:center;gap:8px;height:29px;padding:0 12px;cursor:pointer;white-space:nowrap}" +
     ".oest-sbar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.oest-sbar .r>span:last-child{opacity:.6;font-size:11px}" +
     ".oest-sbar .i{width:10px;height:10px;flex:none;border-radius:50%;box-sizing:border-box}" +
-    ".oest-sbar.run .i{width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:#f0b23a;animation:oestspin .8s linear infinite}" +
+    // to samo kółko co w całej apce (moduly/ladowanie)
+    ".oest-sbar.run .i{width:12px;height:12px;background:conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));animation:oest-spin .9s linear infinite}" +
     ".oest-sbar.ok .i{background:#3fb27f}.oest-sbar.wait .i{background:#e3b341}.oest-sbar.err .i{background:#e5534b}" +
-    ".oest-sbar .p{height:2px;background:#f0b23a;transition:width .3s;align-self:flex-start}" +
-    ".oest-sbar .m{display:none;padding:10px 12px 6px;gap:8px;flex-wrap:wrap;border-bottom:1px solid #2a313c}.oest-sbar.open .m{display:flex}" +
-    ".oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:8px;border:1px solid #3a4250;background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:600;padding:8px 10px}" +
-    ".oest-sbar .m button.go{background:#f0b23a;color:#1a1405;border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75;font-size:12px}" +
-    ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid #2a313c;opacity:.85}" +
-    ".oest-sbar .n i{width:8px;height:8px;border-radius:50%;background:#3fb27f}.oest-sbar .n.mid i{background:#e3b341}.oest-sbar .n.off i{background:#e5534b}" +
-    "@keyframes oestspin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
+    ".oest-sbar .p{height:2px;background:var(--grad,linear-gradient(90deg,#5b7cff,#a35bff));transition:width .3s;align-self:flex-start}" +
+    ".oest-sbar .m{display:none;padding:10px 12px 6px;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line,rgba(255,255,255,.12))}.oest-sbar.open .m{display:flex}" +
+    ".oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.18));background:var(--panel,rgba(255,255,255,.06));color:inherit;font:inherit;font-size:15px;font-weight:600;padding:8px 12px}" +
+    ".oest-sbar .m button.go{background:var(--grad,linear-gradient(90deg,#5b7cff,#a35bff));color:#fff;border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75;font-size:12px}" +
+    ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid var(--line,rgba(255,255,255,.12));opacity:.85}" +
+    // lampka sieci: moduly/znacznik (ten sam wzór co na ekranie głównym)
+    "@keyframes oest-spin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
     "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}body.oest-sbar-on #updBanner{bottom:calc(var(--oest-sbar-h) + 8px)!important}";
   var el = null;
   function mount() {

@@ -276,6 +276,18 @@ window.OEST_PPM = {
   P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
   P.unqueue = function (id) { var t = P.byId(id), r = stages()[id]; if (t && r && r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, null); } }; // termin wraca na ten sprzed wysłania
+  // ---------- co ta inspekcja wymaga (Grzegorz 04/11/2026) ----------
+  // localStorage "oest.ppm.needs" = { id: { q: pytania aktywne, p: zdjęcia wymagane, f: zdjęcie formularza wymagane } }
+  // Każda inspekcja ma pytania, ale nie w każdej są aktywne; włącza się je w inspekcji. Nieaktywne → szara ikonka na klocku.
+  var NK = "oest.ppm.needs";
+  function needsAll() { try { return JSON.parse(localStorage.getItem(NK) || "{}") || {}; } catch (e) { return {}; } }
+  P.needsDefault = function (t) { var folder = t.form === "folder"; return { q: !folder && !t.cfg, p: !folder, f: folder }; };
+  P.needs = function (t) { return Object.assign(P.needsDefault(t), needsAll()[t.id] || {}); };
+  P.setNeeds = function (t, patch) {
+    var a = needsAll(); a[t.id] = Object.assign(P.needs(t), patch);
+    try { localStorage.setItem(NK, JSON.stringify(a)); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
+  };
   // krótka nazwa na klocek (pełna zostaje w raporcie) + budynek ze znaczka w nawiasie
   var BLD = { TA: "Tower A", TB: "Tower B", P: "Pavilion" };
   P.short = function (t) {

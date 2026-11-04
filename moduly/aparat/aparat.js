@@ -153,7 +153,7 @@
           } else if (b.getAttribute('data-a') === 'cancel') return close(null);
           else if (b.getAttribute('data-a') === 'save') {
             if (!realShapes().length && !normCrop(crop, W, H)) return close(null);
-            b.disabled = true; b.textContent = T('Zapisuję…', 'Saving…');
+            b.disabled = true; b.innerHTML = (root.OESTLadowanie ? root.OESTLadowanie.ring() + ' ' : '') + T('Zapisuję…', 'Saving…');
             return renderFinal(bmp, realShapes(), crop).then(function (out) { close(out || null); }, function () { close(null); });
           }
           mark();

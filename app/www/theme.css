@@ -86,11 +86,10 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .cd.sh{background:linear-gradient(135deg,rgba(91,124,255,.35),rgba(163,91,255,.35));border-color:rgba(160,150,255,.45)}
 .cd{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.08)}.cd.ot{opacity:.38}
 .cd.td{box-shadow:0 0 0 2px #b9a8ff inset}.cd.on{box-shadow:0 0 14px rgba(124,132,255,.7);border-color:#fff}
-.cd i{position:absolute;right:3px;bottom:3px;min-width:16px;height:16px;border-radius:8px;background:#ff8a3d;color:#1a0d00;font-size:.65rem;font-style:normal;font-weight:800;display:grid;place-items:center;padding:0 3px}
 .callegend{display:flex;gap:14px;font-size:.8rem;color:var(--muted)}
 .callegend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .callegend .sh::before{background:linear-gradient(135deg,#5b7cff,#a35bff)}.callegend .dn::before{background:#ff8a3d;border-radius:50%}
-.cd i.pl,.callegend .dn.pl::before{background:transparent;border:1.5px dashed #ff8a3d;color:#ff8a3d}
+.callegend .dn.pl::before{background:transparent;border:1.5px dashed #ff8a3d;color:#ff8a3d}
 .prow.plan{opacity:.6}
 .calhint{display:block;width:100%;margin:8px 0 0;padding:10px 12px;border-radius:10px;border:1px dashed var(--line,#444);background:transparent;color:var(--muted);text-align:left;font:inherit;font-size:.85rem}
 .calhint[hidden]{display:none}
@@ -112,24 +111,8 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .rx-voice audio{flex:1;min-width:0}
 #v-reactive .rx-voice .tx{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;font:600 15px system-ui;white-space:nowrap}
 #v-reactive .rx-voice .del{width:40px;height:40px;border-radius:50%;border:0;background:#e53935;color:#fff;font:700 22px system-ui;flex:none}
-/* klocek PPM v2 (02/11/2026): stała wysokość, nazwa w 1 linii, etap w prawym górnym rogu */
-.prow.k2{position:relative;display:flex!important;flex-direction:column;align-items:stretch!important;justify-content:space-between;gap:5px;height:136px;box-sizing:border-box;padding:11px 14px 9px 18px!important;border-radius:16px!important;text-align:left;color:var(--ink);overflow:hidden;width:100%}
-.prow.k2:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--g)}
-.k2 .kr{display:flex;align-items:center;gap:8px;min-width:0}
-.k2 .ty{width:21px;height:21px;flex:none;fill:none;stroke:var(--steel);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.k2 .knm{flex:1;min-width:0;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.k2 .kbl{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.12);color:var(--steel);margin-right:6px;vertical-align:2px}
-.k2 .kst{flex:none;font-size:12px;font-weight:700}
-.k2 .c0{color:#c3c9e8}.k2 .c1{color:#f0c75e}.k2 .c2{color:#5fd6a0}.k2 .c3{color:#ff7b72}.k2 .c4{color:#79b8ff}
-.k2 .kloc,.k2 .kd,.k2 .kft{flex:1;min-width:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.k2 .kd b{color:var(--ink);font-weight:600}.k2 .red{color:#ff7b72!important}
-.k2 .kpc{font-size:13px;font-weight:700}
-.k2 .kbar{flex:none;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.k2 .kbar i{display:block;height:100%;border-radius:3px}
-.k2 .kth{width:30px;height:30px;border-radius:7px;object-fit:cover;border:1px solid rgba(255,255,255,.2);flex:none}
-.k2 .kgo{font-size:13px;font-weight:700;flex:none}
+/* klocek listy: moduly/klocek (jeden wzór dla całej apki, 04/11/2026) */
 .prow.as{margin-left:0!important;width:100%!important}
-.k2 .ksend{flex:none;font-size:12px;font-weight:700}
-.prow.k2.kdone{opacity:.5;filter:grayscale(.6)}
 /* Reactive 02/11/2026: lista jak w inspekcjach, zwarte pola formularza */
 #v-reactive .top .rx-gear{margin-left:auto}
 #v-reactive .rx-top{margin:4px 0 8px}#v-reactive .rx-top .btn{width:auto;min-height:40px;padding:8px 14px;font-size:.92rem}

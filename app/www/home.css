@@ -7,21 +7,13 @@
 .hm-name>span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);white-space:nowrap}
 .hm-wx{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .hm-icons{display:flex;gap:6px;align-items:center;flex:none}
-.hm-lang{display:flex;padding:0;border:1px solid var(--line);border-radius:9px;overflow:hidden;font:inherit;font-size:.7rem;font-weight:700;background:var(--panel);cursor:pointer}
-.hm-lang i{font-style:normal;padding:5px 6px;color:var(--muted);transition:background .2s,color .2s}
-.hm-lang i.on{background:var(--grad);color:#fff}
 .hm-sq{position:relative;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:grid;place-items:center;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
 .hm-sq svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.hm-badge{position:absolute;top:-5px;right:-5px;min-width:16px;box-sizing:border-box;background:#ff4d5e;color:#fff;font-size:.62rem;line-height:16px;border-radius:9px;padding:0 4px;text-align:center}
 .hm-me:after{content:"";position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--ok);border:2px solid #0a0e1f}
 .hm-act{border-color:#8f7bff!important;box-shadow:0 0 12px rgba(143,123,255,.7)}
 .hm-wx.hm-act{color:#fff}
 .hm-st{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}
 .hm-st button{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.78rem;cursor:pointer}
-.hm-st .l{width:8px;height:8px;border-radius:50%;background:var(--na)}
-.hm-st .l.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
-.hm-st .l.mid{background:var(--warn);box-shadow:0 0 6px var(--warn)}
-.hm-st .l.off{background:var(--bad);box-shadow:0 0 6px var(--bad)}
 .hm-days{margin:0 0 12px;padding:2px}
 .hm-day{width:50px!important;padding:7px 0 5px!important}
 .hm-day em{display:block;font-style:normal;font-size:.8rem;height:1.2em;line-height:1.2em}

@@ -58,11 +58,12 @@
     }).catch(function (e) { if (manual) var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
   }
   var busySince = 0;
-  function install() {
+  function ask(t) { return w.OESTPytaj ? w.OESTPytaj(t, { ok: T("Pobierz", "Download") }) : Promise.resolve(w.confirm(t)); } // okienko apki zamiast systemowego
+  async function install() {
     if (busy && Date.now() - busySince > 180000) busy = false; // poprzednie pobieranie utknęło (>3 min) – pozwól zacząć od nowa
     if (busy) { setStatus("Pobieranie już trwa – postęp widać na pasku na dole ekranu głównego.", "Download already running – progress is on the bar at the bottom of the home screen."); return; }
     if (!latest) return; var p = api(); if (!p) return;
-    if (!w.confirm(T("Pobrać i zainstalować wersję ", "Download and install version ") + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?")) { dismissed = true; banner(false); return; }
+    if (!(await ask(T("Pobrać i zainstalować wersję ", "Download and install version ") + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?"))) { dismissed = true; banner(false); return; }
     busy = true; busySince = Date.now(); setStatus("Pobieram wersję " + latest.n + "…", "Downloading version " + latest.n + "…");
     var b = document.getElementById("updBanner"); if (b) setBanner("Pobieram wersję " + latest.n + "…", "Downloading version " + latest.n + "…");
     // procenty na pasku i w Ustawieniach (58 MB na danych mobilnych trwa – bez postępu wyglądało na zawieszone)

@@ -66,7 +66,7 @@
         '<label class="field"><span>' + T('Limit na Dysku (MB)', 'Drive limit (MB)') + '</span><input id="zdDrive" type="number" min="100" step="100" value="' + s.driveLimitMB + '"></label>' +
         '<label class="check"><input id="zdWifi" type="checkbox"' + (s.wifiOnly ? ' checked' : '') + '><span>' + T('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') + '</span></label>' +
         '<p class="hint">' + T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded are never deleted. Over the Drive limit, the oldest are removed from Drive.') + '</p>' +
-        '<button class="btn" type="button" data-zd="save">' + T('Zapisz ustawienia', 'Save settings') + '</button></div>' +
+        '<button class="btn go" type="button" data-zd="save">' + T('Zapisz ustawienia', 'Save settings') + '</button></div>' +
       '<div class="panel"><label class="field"><span>' + T('Szukaj: dzień (2026-11-01), kod, miejsce, rodzaj', 'Search: day (2026-11-01), code, place, type') + '</span><input id="zdSearch" type="text" inputmode="search" value="' + esc(query) + '" placeholder="' + T('np. ISO-027 albo 2026-11-01', 'e.g. ISO-027 or 2026-11-01') + '"></label>' +
         (found.length ? Object.keys(days).map(function (d) {
           return '<div class="zd-day"><b>' + esc(d) + '</b> <span class="hint">' + days[d].length + '</span><div class="zd-grid">' + days[d].map(function (r) {

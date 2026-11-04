@@ -156,7 +156,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .fl-row.no .txt { color: var(--bad); } .fl-row.na .txt { color: var(--muted); }
 .fl-row .seg button { width: 44px; font-size: .85rem; }
 .fl-ic { width: 36px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); cursor: pointer; font-size: 1rem; position: relative; }
-.fl-ic b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: .7rem; line-height: 16px; }
+/* licznik zdjęć przy punkcie: moduly/znacznik */
 .fl-note { margin-top: 6px; }
 .fl-pics { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .fl-pics span { position: relative; } .fl-pics img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; display: block; }
@@ -234,7 +234,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; font-size: 0.95rem; }
 .steps li > div { min-width: 0; overflow-wrap: anywhere; }
 .sdot { width: 14px; height: 14px; margin-top: 4px; border-radius: 50%; border: 2px solid var(--line); }
-.s-run .sdot { border-color: var(--accent); border-top-color: transparent; animation: spin 0.8s linear infinite; }
+/* trwa: to samo kółko co w całej apce (moduly/ladowanie) */
+.s-run .sdot { border: 0; background: conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg); -webkit-mask: radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px)); mask: radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px)); animation: spin .9s linear infinite; }
 .s-ok .sdot { background: var(--ok); border-color: var(--ok); }
 .s-err .sdot { background: var(--bad); border-color: var(--bad); }
 .steps small { display: block; color: var(--muted); }
@@ -299,6 +300,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 </style>
 <link rel="stylesheet" href="../theme.css">
 <link rel="stylesheet" href="form-ui.css">
+<link rel="stylesheet" href="../moduly/wyglad/wyglad.css">
 </head>
 <body>
 
@@ -309,7 +311,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" data-en-aria-label="App menu" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1><span data-en="Inspections">Inspekcje</span><span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
     <div class="notice" id="tplNotice" hidden></div>
     <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue" data-en="Queue">Kolejka</button></div>
-    <div class="types" id="types"></div>
+    <div class="types tiles kf-grid" id="types"></div>
     <details class="panel" id="settings">
       <summary data-en="Settings">Ustawienia</summary>
       <div class="set">
@@ -408,6 +410,28 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
       <p class="hint" id="photoInfo" data-en="Photos are reduced straight after adding. Each goes on a separate page of the report.">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
     </div>
 
+    <div class="panel" data-m="one" id="sheetBox">
+      <div class="label"><span data-en="Form photo">Zdjęcie formularza</span> <span id="sheetState"></span></div>
+      <div class="photo-btns">
+        <label class="pbtn"><input id="shCamIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie formularza" data-en-aria-label="Take a photo of the form">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
+        <label class="pbtn"><input id="shGalIn" type="file" accept="image/*" multiple aria-label="Dodaj zdjęcie formularza z galerii" data-en-aria-label="Add a form photo from the gallery">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span data-en="From gallery">Z galerii</span></label>
+      </div>
+      <div class="photos" id="sheetPhotos"></div>
+      <p class="hint" id="sheetInfo"></p>
+    </div>
+
+    <div class="panel" data-m="one" id="needsBox" hidden>
+      <div class="label" data-en="Required in this inspection">Wymagane w tej inspekcji</div>
+      <div class="needs">
+        <label class="need"><input type="checkbox" id="needQ"><span data-en="Questions">Pytania</span></label>
+        <label class="need"><input type="checkbox" id="needP"><span data-en="Photos">Zdjęcia</span></label>
+        <label class="need"><input type="checkbox" id="needF"><span data-en="Form photo">Zdjęcie formularza</span></label>
+      </div>
+      <p class="hint" id="needsHint" data-en="Switch on only what this inspection needs. Switched off = grey icon on the inspection card.">Włącz tylko to, czego ta inspekcja potrzebuje. Wyłączone = szara ikonka na klocku inspekcji.</p>
+    </div>
+
     <div class="panel" data-m="one sum">
       <div class="grid">
         <div class="f"><label for="dzien" data-en="Date done">Data wykonania</label><input id="dzien" type="date"></div>
@@ -475,6 +499,11 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../moduly/bledy/bledy.js"></script>
+<script src="../moduly/ladowanie/ladowanie.js"></script>
+<script src="../moduly/znacznik/znacznik.js"></script>
+<script src="../moduly/kafelek/kafelek.js"></script>
+<script src="../moduly/naglowek/naglowek.js"></script>
+<script src="../moduly/wyglad/wyglad.js"></script>
 <script src="../vantify-plan.js"></script>
 <script src="../ppm.js"></script>
 <script src="../config.js"></script>
@@ -1007,6 +1036,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
       var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + T(" · od ", " · since ") + esc(fmtDate(new Date(pr.started))) + " "+T("· dotknij, by wznowić", "· tap to resume")+"</span>" :
         '<span class="sub">' + all.length + T(" urządzeń · dziś zrobione: ", " devices · done today: ") + done + "</span>";
+      // jeden kafelek dla całej apki (moduly/kafelek, Grzegorz 04/11)
+      if (window.OESTKafelek) return OESTKafelek.html({ name: t.name, sub: (pr && pr.n ? "◐ " : "") + sub.replace(/<[^>]+>/g, "").trim(), badge: pr && pr.n ? pr.n + "/" + all.length : "", cls: "type",
+        icon: '<rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/>', data: { type: t.id } });
       return '<button class="type" type="button" data-type="' + t.id + '">' +
         '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
         "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
@@ -1016,7 +1048,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       b.addEventListener("click", function () {
         cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
         (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
-          alert(T("Nie udało się odczytać zapisanego zlecenia (", "Could not read the saved job (") + gErr(e) + T("). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.", "). Close and reopen the app — nothing was deleted."));
+          say(T("Nie udało się odczytać zapisanego zlecenia (", "Could not read the saved job (") + gErr(e) + T("). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.", "). Close and reopen the app — nothing was deleted."));
         });
       });
     });
@@ -1090,12 +1122,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // etap inspekcji na klocku listy PPM: otwarcie = W trakcie (jeśli nie wysłana w tym okresie), zdjęcia i usterki na bieżąco
   var thumbFor = null, noTrack = false;
+  // liczniki na klocek (Grzegorz 04/11): zdjęcie formularza (jest / brak), zdjęcia bez formularza, OK / pytania w użyciu (jak licznik w formularzu – N/A się nie liczy)
+  function ppmCounts() {
+    var ck = cur.type && cur.type.checks, folder = cur.type && cur.type.folder;
+    return { photos: folder ? photos.filter(function (p) { return p.tap != null; }).length : photos.filter(function (p) { return !p.sheet; }).length,
+      sheet: folder ? formPhotos().length : sheetPhotos().length, issues: ck ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: ck ? ck.length : 0,
+      ok: ck ? states.filter(function (x) { return x === "ok"; }).length : 0, used: ck ? states.filter(function (x) { return x !== "na"; }).length : 0 };
+  }
   function ppmTrack(open) {
     var t = cur.ppm; if (noTrack || !t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
+    var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts());
     if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
     if (!r && !open) return;
-    var patch = { s: r ? r.s : "prog", photos: photos.length, issues: cur.type && cur.type.checks ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: cur.type && cur.type.checks ? cur.type.checks.length : 0 };
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
@@ -1117,11 +1156,45 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
     $("tempBox").hidden = !temp || m === "sum";
-    if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; }); // raport pomiarów nie ma zdjęć
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
     if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     $("flushBox").hidden = !cur.type.flush || m === "sum";
+    applyNeeds();
   }
+  // ---------- co ta inspekcja wymaga (Grzegorz 04/11): pytania aktywne, zdjęcia, zdjęcie formularza ----------
+  // Zapis na stałe dla tej inspekcji z listy PPM (ppm.js → P.needs). Pytania wyłączone: checklista schowana, wszystkie „–” (nie idą do raportu).
+  var qSaved = null;
+  function needsNow() { return cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : null; }
+  function qPossible() { return !!(cur.type && cur.type.checks && cur.type.checks.length && !cur.type.folder && !cur.type.temp); }
+  function applyNeeds(toggled) { // toggled = Grzegorz właśnie włączył pytania przełącznikiem (tylko wtedy wracają domyślne odpowiedzi)
+    var n = needsNow(), box = $("needsBox");
+    box.hidden = !n || cur.mode !== "one";
+    if (!n) return;
+    var canQ = qPossible();
+    $("needQ").checked = canQ && n.q; $("needQ").disabled = !canQ;
+    $("needQ").closest("label").title = canQ ? "" : T("Pytania do tej inspekcji jeszcze nieustalone", "Questions for this inspection not agreed yet");
+    $("needP").checked = !!n.p; $("needF").checked = !!n.f;
+    if (!canQ || cur.mode !== "one") return;
+    var ckp = $("ck").closest(".panel");
+    if (!n.q) {
+      ckp.hidden = true; $("faults").closest(".panel").hidden = true;
+      if (states.some(function (x) { return x !== "na"; })) { qSaved = states.slice(); states = states.map(function () { return "na"; }); renderChecks(); renderFaults(); }
+    } else {
+      ckp.hidden = false;
+      if (qSaved && states.every(function (x) { return x === "na"; })) { states = qSaved; renderChecks(); renderFaults(); }
+      else if (toggled && states.length && states.every(function (x) { return x === "na"; })) { states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults(); }
+      qSaved = null;
+    }
+  }
+  [["needQ", "q"], ["needP", "p"], ["needF", "f"]].forEach(function (x) {
+    $(x[0]).addEventListener("change", function () {
+      if (!cur.ppm || !PPM || !PPM.setNeeds) return;
+      var patch = {}; patch[x[1]] = this.checked; PPM.setNeeds(cur.ppm, patch);
+      if (x[1] === "q") { formMode(); applyNeeds(true); try { suggestOverall(); updateFormHint(); } catch (e) {} } else applyNeeds();
+      ppmTrack(false);
+    });
+  });
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
     draftOn = false; clearTimeout(draftT); draftT = 0;
@@ -1155,7 +1228,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap }; }).concat(keptSaved)
+      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }).concat(keptSaved)
     };
   }
   function saveDraftNow() {
@@ -1196,7 +1269,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (d.temps && d.temps.length === temps.length) temps = d.temps.slice();
     var F = cur.type.flush;
     if (F && d.fl && d.fl.taps && d.fl.taps.length === F.taps.length) fl = d.fl;
-    renderChecks(); renderFaults(); renderTemps(); renderFlush();
+    renderChecks(); renderFaults(); renderTemps(); renderFlush(); applyNeeds();
     try { $("v-form").dispatchEvent(new CustomEvent("oest:restored")); } catch (e) {}
     var list = d.photos || [];
     if (!list.length) { updateFormHint(); return; }
@@ -1216,9 +1289,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   document.addEventListener("visibilitychange", function () { if (document.hidden) saveDraftNow(); });
   window.addEventListener("pagehide", function () { saveDraftNow(); });
   // „Wyczyść inspekcję” (menu ⋮): kasuje szkic, zdjęcia i etap klocka
-  window.OEST_clearInspection = function () {
+  window.OEST_clearInspection = async function () {
     if (cur.mode !== "one" || !cur.type || queueing) return; // raport właśnie się przygotowuje: nie czyścimy pod nim formularza
-    if (!confirm(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos)."))) return;
+    if (!(await ask(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos).")))) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
     dropDraft(k).then(function () {
@@ -1231,6 +1304,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
   var fl = { on: false, week: 0, open: {}, taps: [] };
   function formPhotos() { return photos.filter(function (p) { return p.tap == null; }); }
+  // zdjęcie wypełnionego formularza (osobny przycisk w inspekcji, Grzegorz 04/11) – w raporcie na końcu, po zdjęciach z inspekcji
+  function sheetPhotos() { return photos.filter(function (p) { return p.sheet; }); }
   function tapPhotos(i) { return photos.filter(function (p) { return p.tap === i; }); }
   function renderFlush() {
     var F = cur.type && cur.type.flush;
@@ -1500,8 +1575,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">'+T('Zacznij od nowa', 'Start again')+'</button></div>' : "");
     $("batchEnd").addEventListener("click", openSum);
     if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
-    if ($("batchClear")) $("batchClear").addEventListener("click", function () {
-      if (confirm(T("Usunąć wszystkie zapisy tego zlecenia?", "Delete all saves of this job?"))) clearBatch(t).then(renderList, function (e) { alert(T("Nie udało się usunąć zlecenia (", "Could not delete the job (") + gErr(e) + T("). Zapisy zostają.", "). The saves stay.")); });
+    if ($("batchClear")) $("batchClear").addEventListener("click", async function () {
+      if (await ask(T("Usunąć wszystkie zapisy tego zlecenia?", "Delete all saves of this job?"))) clearBatch(t).then(renderList, function (e) { say(T("Nie udało się usunąć zlecenia (", "Could not delete the job (") + gErr(e) + T("). Zapisy zostają.", "). The saves stay.")); });
     });
   }
   // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
@@ -1530,7 +1605,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
       lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif }; }).concat(keptSaved),
+      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, sheet: p.sheet || undefined }; }).concat(keptSaved),
       t: Date.now()
     };
     var code = cur.code, prev = batch.items[code];
@@ -1547,7 +1622,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     }, function (e) {
       if (batch.items[code] === item) { if (prev) batch.items[code] = prev; else delete batch.items[code]; }
       b.disabled = false;
-      if (cur.code !== code) { alert(T("Nie zapisano ", "Not saved ") + code + T(" w telefonie (", " on the phone (") + gErr(e) + T("). Otwórz go i zapisz ponownie.", "). Open it and save again.")); return; }
+      if (cur.code !== code) { say(T("Nie zapisano ", "Not saved ") + code + T(" w telefonie (", " on the phone (") + gErr(e) + T("). Otwórz go i zapisz ponownie.", "). Open it and save again.")); return; }
       $("formHint").textContent = T("Nie zapisano w telefonie (", "Not saved on the phone (") + gErr(e) + T("). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.", "). The form stays — try again or remove some photos.");
     });
   });
@@ -1555,7 +1630,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     return createImageBitmap(sp.blob).then(function (img) {
       var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
       c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
-      return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, code: code, where: wh };
+      return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh };
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
@@ -1582,12 +1657,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (keptSaved.length) $("formHint").textContent = T("Nie udało się pokazać ", "Could not show ") + keptSaved.length + T(" zapisanych zdjęć. Zostają w zapisie urządzenia.", " saved photos. They stay in the device save.");
     });
   }
-  function openSum() {
+  async function openSum() {
     var t = cur.type, all = devices(t), missing = all.filter(function (d) { return !batch.items[d.code]; });
     resetForm();
     cur.mode = "sum"; cur.formType = t.id; cur.code = t.batch;
     cur.sumDevs = all; // rejestr zamrożony na czas podsumowania (odświeżenie z Code.gs nie zmieni raportu po potwierdzeniu)
-    cur.restOk = !missing.length || confirm(missing.length + T(" urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone", " devices without a save. Count them as checked with no remarks?\\n\\nOK = yes, I checked them all\\nCancel = record them as not checked"));
+    cur.restOk = !missing.length || await ask(missing.length + T(" urządzeń bez zapisu. Policzyć je jako sprawdzone bez uwag?\n\nOK = tak, sprawdziłem wszystkie\nAnuluj = wpisz je jako niesprawdzone", " devices without a save. Count them as checked with no remarks?\n\nOK = yes, I checked them all\nCancel = record them as not checked"));
     var locs = [];
     all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
     cur.loc = locs.join(", "); cur.where = cur.loc;
@@ -1612,7 +1687,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function renderSum() {
     var d = batchData(reportDate());
-    $("sumBox").innerHTML = '<div class="label">Podsumowanie (trafi do raportu)</div><ul class="sumlist">' +
+    $("sumBox").innerHTML = '<div class="label">' + T("Podsumowanie (trafi do raportu)", "Summary (goes into the report)") + '</div><ul class="sumlist">' +
       d.punkty.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" +
       '<p class="hint">'+T('Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.', 'Photos from saved devices are added automatically. You can add general ones.')+'</p>';
   }
@@ -1726,7 +1801,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   renderModel();
 
   // ---------- zdjęcia ----------
-  function addFiles(input, tap) {
+  function addFiles(input, tap, sheet) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
@@ -1738,7 +1813,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           if (tok === formSeq) keepCopy(f, when, ctx);
           return processPhoto(f, when).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
-            ph.exif = !!ex; if (tap != null) ph.tap = tap; photos.push(ph); renderPhotos(); suggestDate(); if (tap == null) analyze(ph);
+            ph.exif = !!ex; if (tap != null) ph.tap = tap;
+            // zdjęcia formularza zawsze na końcu (ostatnie strony raportu), zwykłe przed nimi
+            if (sheet) { ph.sheet = true; photos.push(ph); } else { var at = photos.findIndex(function (q) { return q.sheet; }); if (at < 0) photos.push(ph); else photos.splice(at, 0, ph); }
+            renderPhotos(); suggestDate(); if (tap == null && !sheet) analyze(ph);
           });
         });
       });
@@ -1755,10 +1833,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   });
   $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
+  $("shCamIn").addEventListener("click", function (e) {
+    if (!(window.OESTAparat && OESTAparat.available())) return;
+    e.preventDefault();
+    OESTAparat.take().then(function (b) { if (b) addFiles([new File([b], "formularz.jpg", { type: "image/jpeg", lastModified: Date.now() })], null, true); }, function (er) { $("sheetInfo").textContent = er.message; });
+  });
+  $("shCamIn").addEventListener("change", function () { addFiles(this, null, true); });
+  $("shGalIn").addEventListener("change", function () { addFiles(this, null, true); });
   function renderPhotos() {
-    $("photos").innerHTML = ""; if (cur.type) ppmTrack(false);
+    $("photos").innerHTML = ""; $("sheetPhotos").innerHTML = ""; if (cur.type) ppmTrack(false);
     photos.forEach(function (p, i) {
       if (p.tap != null) return; // zdjęcie kranu (Flushing): pokazane przy kranie
+      var grid = p.sheet ? $("sheetPhotos") : $("photos");
       var d = document.createElement("div"); d.className = "thumb";
       d.innerHTML = '<img alt="' + T('Zdjęcie ', 'Photo ') + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="' + T('Usuń zdjęcie ', 'Delete photo ') + (i + 1) + '">×</button>' +
         (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
@@ -1774,13 +1860,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
               URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos();
             });
-          }).catch(function (e) { alert(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
+          }).catch(function (e) { say(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
         });
         d.appendChild(eb);
       }
-      $("photos").appendChild(d);
+      grid.appendChild(d);
     });
-    var fp = formPhotos().length; $("photoCount").textContent = fp ? "(" + fp + ")" : "";
+    var shn = sheetPhotos().length, Z = window.OESTZnacznik, nd = typeof needsNow === "function" ? needsNow() : null, req = !!(nd && nd.f);
+    if (cur.type && cur.type.folder) shn = formPhotos().length; // inspekcja „z kartki”: każde jej zdjęcie to strona formularza
+    var fst = shn ? "ok" : req ? "blad" : "";
+    $("sheetState").innerHTML = Z && fst ? Z.formularz(fst) : "";
+    // wymóg formularza widać na samym przycisku „Formularz” (Grzegorz 04/11) – bez dodatkowego okna, układ ten sam w każdej inspekcji
+    var fb = $("shCamIn").closest("label"), fbd = fb.querySelector(".fbadge");
+    if (!fbd) { fbd = document.createElement("span"); fbd.className = "fbadge"; fb.appendChild(fbd); }
+    fbd.innerHTML = Z && fst ? Z.formularz(fst) : ""; fb.classList.toggle("req", fst === "blad");
+    $("sheetInfo").textContent = shn ? T("Dodane: ", "Added: ") + shn + T(" — w raporcie na końcu.", " — at the end of the report.") : T("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
+    var fp = cur.type && cur.type.folder ? formPhotos().length : photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").innerHTML) renderSugs();
     updateFormHint(); scheduleDraft();
@@ -1893,7 +1988,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
+  // okienka apki zamiast systemowych (moduly/przycisk): rosną z miejsca stuknięcia, Wstecz = Anuluj (Grzegorz 04/11)
+  function ask(t) { return window.OESTPytaj ? OESTPytaj(t) : Promise.resolve(window.confirm(t)); }
+  function say(t) { if (window.OESTKomunikat) OESTKomunikat(t); else window.alert(t); }
   function busySpin(on) {
+    // jedno kółko w całej apce (moduly/ladowanie); stare #busySpin tylko jako zapas
+    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(T('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; return; }
     var el = $("busySpin");
     if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
@@ -2432,7 +2532,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var done = Promise.resolve();
       if (from.mode === "sum") {
         if (from.type.ask) saveHist(from.type, d.data);
-        done = clearBatch(from.type).catch(function (e) { alert(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
+        done = clearBatch(from.type).catch(function (e) { say(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
       }
       if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
       if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // raport wyszedł do kolejki: szkic niepotrzebny
@@ -2441,11 +2541,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   var sendBtn = null; // wspólny przycisk akcji (moduly/przycisk): kręciołek → ✓ Gotowe, zanim formularz zniknie
   function sendOk() { return sendBtn ? sendBtn.ok() : null; }
-  function queueBtn(b, fromPreview) {
+  async function queueBtn(b, fromPreview) {
     if (queueing) return;
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
-    if (fix && !confirm("Ta inspekcja za termin " + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + T(" jest już ", " is already ") + (PPM.stage(cur.ppm).s === "done" ? T("zakończona", "completed") : T("wysłana", "sent")) + T(".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.", ".\\nSend again as a correction? The due date will not change."))) return;
+    if (fix && !await ask(T("Ta inspekcja za termin ", "This inspection for the period ") + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + T(" jest już ", " is already ") + (PPM.stage(cur.ppm).s === "done" ? T("zakończona", "completed") : T("wysłana", "sent")) + T(".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.", ".\nSend again as a correction? The due date will not change."))) return;
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
@@ -2459,7 +2559,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
   }
   $("toQueue").addEventListener("click", function () {
-    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("camIn").click(); return; } // „Dodaj zdjęcie kartki”
+    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
   });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
@@ -2491,9 +2591,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       (!online() ? T("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : T("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + T(" i do folderu „", " and to the folder “") + cfg.folder + T("” na Drive.", "” on Drive."));
     renderNet();
   }
-  $("qList").addEventListener("click", function (e) {
+  $("qList").addEventListener("click", async function (e) {
     var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
-    if (!confirm(T("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
+    if (!await ask(T("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
+    // w czasie pytania mogła ruszyć wysyłka w tle (sieć wróciła, minutnik): wtedy nie usuwamy raportu, który już wychodzi
+    if (qBusy()) { say(T("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
     var id = b.getAttribute("data-del");
     var gone = queue.filter(function (q) { return q.id === id; })[0];
     qDel(id).then(function () {
@@ -2541,7 +2643,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     it.status = "sending"; refresh();
     return shareApi().share({ subject: it.subject, body: it.body, to: to ? [to] : [], files: files }).then(function () {
       markSent(it, null); return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); alert(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
+    }, function (e) { it.status = "err"; it.err = gErr(e); say(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
   }
   function sendQueue(manual) {
     if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
