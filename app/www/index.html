@@ -553,7 +553,12 @@ input[type=text], input[type=email], input[type=date], select {
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
   function renderPpm() {
     var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    var rows = P.tasks.map(function (t) { var due = P.due(t), left = P.daysLeft(due); return { t: t, due: due, left: left, day: due ? P.iso(left < 0 ? today : due) : "" }; });
+    var rows = P.tasks.map(function (t) {
+      var due = P.due(t), st = P.stage && P.stage(t);
+      // Gotowa (04/11): klocek zostaje w swoim dniu, zielony; następny termin pokaże się dopiero, gdy ten minie
+      if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
+      var left = P.daysLeft(due); return { t: t, due: due, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
+    });
     var count = {};
     rows.forEach(function (r) { if (r.day) count[r.day] = (count[r.day] || 0) + 1; });
     var html = "";
