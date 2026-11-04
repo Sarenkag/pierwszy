@@ -42,3 +42,14 @@ test('gmail session survives page change through the store',async()=>{
   const mk=()=>createGoogle({store,account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async()=>({ok:true,status:200,json:async()=>({})})});
   await mk().connect('gmail');assert.equal(mk().connected('gmail'),true);
 });
+test('expired permission renews silently without a window when consent was given (04/11)',async()=>{
+  let asked=0,logins=0,auth='';const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>{logins++;return {email:'me@example.com',token:'L'};},ask:async()=>{asked++;return true;},
+    silent:async(scopes,email)=>{assert.ok(scopes[0].includes('gmail.send'));assert.equal(email,'me@example.com');return {email,token:'S'};},
+    fetch:async(url,opts)=>{auth=opts.headers.Authorization;return {ok:true,status:200,json:async()=>({id:'m'})};}});
+  await g.background(()=>g.sendMail({to:'work@example.com',subject:'s',files:[]}));
+  assert.equal(auth,'Bearer S');assert.equal(asked,0);assert.equal(logins,0);assert.equal(g.connected('gmail'),true);
+});
+test('no silent token in background → GOOGLE_CONNECT, never a fake send',async()=>{
+  let n=0;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'L'}),silent:async()=>null,recentTap:()=>false,fetch:async()=>{n++;return {ok:true,status:200,json:async()=>({})};}});
+  await assert.rejects(g.background(()=>g.sendMail({to:'work@example.com',subject:'s',files:[]})),/GOOGLE_CONNECT/);assert.equal(n,0);
+});

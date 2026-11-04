@@ -40,6 +40,13 @@
     return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && (root.OEST_CONFIG || {}).googleWebClientId && !c.api && account() && account().email);
   }
   function online() { return root.navigator.onLine !== false; }
+  // szybki test internetu (5 s): czy w ogóle dochodzimy do Google
+  function reachable() {
+    if (!online()) return Promise.resolve(false);
+    var c = root.AbortController ? new root.AbortController() : null, t = setTimeout(function () { if (c) c.abort(); }, 5000);
+    return root.fetch("https://www.gstatic.com/generate_204", { mode: "no-cors", cache: "no-store", signal: c ? c.signal : undefined })
+      .then(function () { return true; }, function () { return false; }).then(function (ok) { clearTimeout(t); return ok; });
+  }
   function onWifi() { var c = root.navigator.connection; return !!(c && (c.type === "wifi" || c.type === "ethernet")); } // nieznana sieć = jak komórkowa (czeka na kliknięcie)
   function myEmail() { // tylko z ustawień obecnego konta; brak adresu = raport czeka (nigdy adres innego konta)
     var c = cfg(); if (c.email) return c.email;
@@ -101,12 +108,17 @@
             pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
             return put(it).then(function () { return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; done++;
-              if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm); // klocek PPM: W kolejce → Wysłana
+              if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
             }, function (e) {
-              if (/GOOGLE_BUSY/.test(e && e.message)) { it.status = "wait"; it.err = ""; } // Drive akurat zajęty: spróbuję przy następnym razie
-              else { it.status = "err"; it.err = errText(e); }
-              return put(it).then(function () { changed(it); return true; });
+              var m = e && e.message || "";
+              if (/GOOGLE_BUSY|GOOGLE_OFFLINE/.test(m)) { it.status = "wait"; it.err = ""; return put(it).then(function () { changed(it); return true; }); } // Drive zajęty / brak sieci: spróbuję przy następnym razie
+              if (!/RESULT_UNCERTAIN/.test(m)) { it.status = "err"; it.err = errText(e); return put(it).then(function () { changed(it); return true; }); }
+              // „brak odpowiedzi” (04/11): jeśli telefon w ogóle nie ma internetu, mail nie mógł wyjść → czeka i wyjdzie sam po powrocie sieci
+              return reachable().then(function (ok) {
+                if (ok) { it.status = "err"; it.err = errText(e); } else { it.status = "wait"; it.err = ""; }
+                return put(it).then(function () { changed(it); return true; });
+              });
             }); });
           });
         }, Promise.resolve(false));

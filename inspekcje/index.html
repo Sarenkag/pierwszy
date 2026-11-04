@@ -465,6 +465,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     </div>
 
     <button class="go" type="button" id="toQueue" data-m="one sum" data-en="Send">Wyślij</button>
+    <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
     <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
     <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
     <p class="hint" id="formHint"></p>
@@ -1224,7 +1225,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     draftFields().forEach(function (el) { f[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
     if (f.nameOn === false && $("podpis").dataset.v) f.podpis = $("podpis").dataset.v; // Name odznaczone: podpis schowany, ale pamiętany
     return {
-      v: 1, t: Date.now(), qk: cur.type.checks.map(function (c) { return c.key; }),
+      v: 1, t: Date.now(), fin: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? Date.now() : undefined, qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
@@ -1248,7 +1249,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     draftOn = false;
     kvGet(k).then(function (d) {
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
-      if (d && d.v === 1) restoreDraft(d, tok);
+      // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
+      if (d && d.v === 1 && d.fin && !(cur.ppm && PPM.stage && PPM.stage(cur.ppm))) { dropDraft(k); d = null; }
+      if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
@@ -1998,7 +2001,16 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
   }
-  function updateFormHint() {
+  function updateFormHint() { updateFormHint0(); syncFinish(); }
+  // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport
+  function syncFinish() {
+    var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
+    var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null, same = mailSame(st);
+    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { f.disabled = true; f.textContent = T("✓ Zakończona ", "✓ Finished ") + fmtDate(new Date(st.at || Date.now())); return; }
+    f.disabled = q.disabled || (q.classList.contains("compact") && !same);
+    f.textContent = T("✓ Zakończ inspekcję", "✓ Finish inspection");
+  }
+  function updateFormHint0() {
     busySpin(pendingPh > 0 || !!restoring || (draftT && draftOn));
     var h = [];
     $("toQueue").classList.remove("compact");
@@ -2522,42 +2534,123 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         throw new Error(T("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (", "this browser does not keep the queue, so the report has to go at once, and sending failed (") + gErr(e) + T("). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian", "). The form stays — a retry sends the same report, without later changes"));
       });
     }).then(function () {
-      queue.push(it); markDone(from.type, it.code); lastQueued = it.code;
+      queue.push(it); lastQueued = it.code;
+      if (!from.finish) {
+        // „Wyślij” (Grzegorz 03/11 12:12, 04/11): raport idzie do kolejki, a inspekcja ZOSTAJE otwarta — szkic, zdjęcia, zlecenie
+        // i termin bez zmian; można poprawić i wysłać jeszcze raz. Kończy dopiero „Zakończ inspekcję”.
+        if (from.ppm && PPM.setStage && !from.fix) { ppmTrack(true); var r0 = PPM.stage(from.ppm); PPM.setStage(from.ppm, { s: r0 && r0.s === "hold" ? "hold" : "prog", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), mailSig: from.sig || "", mailDate: d.data || "" }); }
+        if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
+        lastMailHint = mailHint(it);
+        return Promise.resolve(saveDraftNow()).then(function () { return sendBtn ? sendBtn.ok(mailState(it)) : null; }).then(function () { show("form"); renderPpmBar(); });
+      }
+      markDone(from.type, it.code);
       if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
         // etap na klocku: zapisany termin okresu, zanim termin przesunie się na następny
         if (PPM.setStage && !from.fix) { ppmTrack(true); // ostatnie liczniki (usterki, zdjęcia) z formularza, który właśnie wyszedł
- var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
+ var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
         if (!from.fix && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
       }
-      var done = Promise.resolve();
-      if (from.mode === "sum") {
-        if (from.type.ask) saveHist(from.type, d.data);
-        done = clearBatch(from.type).catch(function (e) { say(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
-      }
-      if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
-      if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // raport wyszedł do kolejki: szkic niepotrzebny
-      return done.then(sendOk).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+      return closeUp(from, d);
     });
   }
+  // wspólne zakończenie inspekcji (Grzegorz 04/11 09:49: „nie ma znikać, ale ma być ładny napis, że się zakończyła”).
+  // Inspekcja z listy PPM zostaje na ekranie i w telefonie (szkic z oznaczeniem fin) aż do następnego terminu; klocek pokazuje „✓ Zakończona”.
+  function closeUp(from, d) {
+    var done = Promise.resolve();
+    if (from.queued !== false) { if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(queue[queue.length - 1]); else if (cfg.auto) sendQueue(); }
+    if (from.mode === "sum") {
+      // izolatory: zlecenie musi się wyczyścić, żeby następne zaczęło się od zera
+      if (from.type.ask) saveHist(from.type, d.data);
+      done = clearBatch(from.type).catch(function (e) { say(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
+      return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+    }
+    if (from.ppm && from.draft) {
+      var snap = null; try { snap = draftSnap(); snap.fin = Date.now(); } catch (e) {}
+      if (snap) done = kvSet(from.draft, snap).catch(function () {});
+      return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () {
+        show("form"); renderPpmBar(); lastMailHint = finHint();
+      });
+    }
+    if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // bez karty PPM: nie ma gdzie pokazać „Zakończona”
+    return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+  }
+  function finHint() {
+    var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null; if (!st) return "";
+    return T("✓ Inspekcja zakończona ", "✓ Inspection finished ") + fmtDate(new Date(st.at || Date.now())) + " · " +
+      (st.s === "sent" ? T("raport wysłany.", "report sent.") : st.s === "queued" ? T("raport czeka w kolejce i wyjdzie sam.", "the report is waiting in the queue and will go by itself.") : T("bez raportu.", "no report.")) +
+      T(" Zostaje tu do następnego terminu.", " It stays here until the next due date.");
+  }
+  // stan raportu po „Wyślij”, prawdziwy — nigdy „wysłane”, dopóki mail nie wyszedł (zasada 03/11)
+  function waitsWifi() { var c = navigator.connection; return gm() && cfg.wifiOnly !== false && !(c && (c.type === "wifi" || c.type === "ethernet")); }
+  function mailState(it) { return it.status === "sent" ? T("Wysłano", "Sent") : !online() ? T("W kolejce · brak sieci", "Queued · no network") : waitsWifi() ? T("W kolejce · czeka na Wi‑Fi", "Queued · waiting for Wi‑Fi") : T("W kolejce", "Queued"); }
+  function mailHint(it) {
+    var s = it.status === "sent" ? T("Raport wysłany.", "Report sent.") : !online() ? T("Raport czeka w kolejce — nie ma sieci. Wyjdzie sam, gdy wróci zasięg.", "The report is waiting in the queue — no network. It goes out by itself when the signal returns.") :
+      waitsWifi() ? T("Raport czeka w kolejce na Wi‑Fi (nie jest jeszcze wysłany). Przez dane: pasek na dole → „Wyślij przez dane”.", "The report is waiting in the queue for Wi‑Fi (not sent yet). Over mobile data: bar at the bottom → “Send over data”.") : T("Raport w kolejce — stan wysyłki na pasku na dole.", "Report queued — sending status on the bar at the bottom.");
+    return s + T(" Inspekcja zostaje otwarta: możesz poprawić i wysłać ponownie. Gdy skończysz — „Zakończ inspekcję”.", " The inspection stays open: you can correct it and send again. When you are done — “Finish inspection”.");
+  }
+  // podpis treści formularza: czy po ostatnim „Wyślij” coś się zmieniło (wtedy „Zakończ” wysyła nową wersję)
+  function formSig() {
+    try {
+      var sn = draftSnap(); sn.t = 0;
+      sn.photos = sn.photos.map(function (p) { return [p.when, p.tap, p.width, p.height, p.sheet ? 1 : 0, p.blob ? p.blob.size : 0]; });
+      var str = JSON.stringify(sn) + (cur.mode === "sum" ? JSON.stringify(batch.items) : ""), h = 5381;
+      for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+      return cur.mode + ":" + (h >>> 0).toString(36) + ":" + str.length;
+    } catch (e) { return ""; }
+  }
+  function mailSame(st) {
+    if (!st || !st.mail || !st.mailSig || st.s === "queued" || st.s === "sent" || st.s === "done") return false;
+    if (!queue.some(function (q) { return q.id === st.mailId; })) return false; // raport usunięty z kolejki: trzeba wysłać od nowa
+    return st.mailSig === formSig();
+  }
+  var lastMailHint = "";
   var sendBtn = null; // wspólny przycisk akcji (moduly/przycisk): kręciołek → ✓ Gotowe, zanim formularz zniknie
   function sendOk() { return sendBtn ? sendBtn.ok() : null; }
-  async function queueBtn(b, fromPreview) {
+  async function queueBtn(b, fromPreview, finish) {
     if (queueing) return;
+    lastMailHint = "";
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
     if (fix && !await ask(T("Ta inspekcja za termin ", "This inspection for the period ") + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + T(" jest już ", " is already ") + (PPM.stage(cur.ppm).s === "done" ? T("zakończona", "completed") : T("wysłana", "sent")) + T(".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.", ".\nSend again as a correction? The due date will not change."))) return;
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
-    from = Object.assign({}, from, { fix: fix, draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
+    from = Object.assign({}, from, { fix: fix, finish: !!finish, sig: formSig(), draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {
       queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
       if (fail) $("formHint").textContent = fail; // błąd ma zostać widoczny, nie nadpisany zwykłą podpowiedzią
+      else if (lastMailHint) $("formHint").textContent = lastMailHint; // po „Wyślij”: prawdziwy stan raportu (kolejka / Wi‑Fi / wysłany)
     });
   }
+  // „Zakończ inspekcję”: raport wysłany i bez zmian → tylko zamyka; inaczej najpierw wysyła aktualną wersję (Grzegorz 03/11 12:13)
+  $("finishIns").addEventListener("click", async function () {
+    if (queueing) return;
+    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; }
+    var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
+    if (!mailSame(st)) {
+      // raport musi wyjść (Grzegorz 03/11 12:13), ale bez zaskoczenia: pytamy
+      var why = st && st.mail ? T("Po ostatnim „Wyślij” coś zmieniłeś.", "You changed something after the last “Send”.") : T("Raport z tej inspekcji nie był jeszcze wysłany.", "The report for this inspection has not been sent yet.");
+      var qq = why + T("\nWysłać aktualny raport i zakończyć inspekcję?", "\nSend the current report and finish the inspection?");
+      if (!(await (window.OESTPrzycisk && OESTPrzycisk.confirm ? OESTPrzycisk.confirm(qq, { ok: T("Wyślij i zakończ", "Send and finish"), danger: false }) : ask(qq)))) return;
+      queueBtn(this, false, true); return;
+    }
+    var b = this; lastMailHint = ""; queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Kończę inspekcję", "Finishing the inspection"), keep: false }) : null;
+    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()), queued: false, draft: cur.mode === "one" ? draftKey() : "" };
+    try {
+      markDone(from.type, cur.code);
+      if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
+        var dd = PPM.due(from.ppm), sent = st.mail === "sent";
+        PPM.setStage(from.ppm, { s: sent ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false });
+        if (!from.ppm.open || from.mode === "sum") PPM.close(from.ppm, from.day);
+      }
+      await closeUp(from, { data: st.mailDate || fmtDate(reportDate()) });
+    } catch (e) { $("formHint").textContent = T("Nie udało się zakończyć: ", "Could not finish: ") + gErr(e); }
+    queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; updateFormHint();
+    if (lastMailHint) $("formHint").textContent = lastMailHint;
+  });
   $("toQueue").addEventListener("click", function () {
     if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
@@ -2601,7 +2694,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     qDel(id).then(function () {
       queue = queue.filter(function (q) { return q.id !== id; }); renderQueue();
       // usunięty niewysłany raport: klocek PPM wraca z „W kolejce” (okres znów otwarty)
-      if (gone && gone.ppm && gone.status !== "sent" && PPM && PPM.unqueue) PPM.unqueue(gone.ppm);
+      if (gone && gone.ppm && gone.status !== "sent" && PPM && PPM.unqueue) PPM.unqueue(gone.ppm, gone.id);
     });
   });
   $("qSend").addEventListener("click", function () { sendQueue(true); });
@@ -2615,7 +2708,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
-    if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm);
+    if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm, it.id);
     it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
   }
   // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
