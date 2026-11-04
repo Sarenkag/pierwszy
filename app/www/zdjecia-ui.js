@@ -42,7 +42,7 @@
   function paused() { try { return w.localStorage.getItem('oest.zdjecia.pause') === '1'; } catch (_) { return false; } }
   function auto() {
     if (!G || Z.busy() || paused()) return; // „Wstrzymaj” z okienka Dysku na ekranie głównym
-    G.ready('drive').then(function (ok) { if (!ok || Z.busy()) return; return G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false); }).then(function (r) { if (r && r.sent) { msg = T('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
+    G.ready('drive').then(function (ok) { if (!ok || Z.busy() || paused()) return; /* „Wstrzymaj” mogło przyjść w trakcie sprawdzania */ return G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false); }).then(function (r) { if (r && r.sent) { msg = T('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
   }
 
   async function render() {
