@@ -1,23 +1,26 @@
 package com.oest.inspekcje;
 
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
-import androidx.core.content.FileProvider;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-// Aktualizacja z GitHub Releases: numer wersji w telefonie, pobranie APK do cache i otwarcie instalatora Androida.
+// Aktualizacja z GitHub Releases: numer wersji w telefonie, pobranie APK do cache i cicha instalacja przez PackageInstaller.
 @CapacitorPlugin(name = "AppUpdate")
 public class AppUpdatePlugin extends Plugin {
     @PluginMethod public void info(PluginCall call) {
@@ -28,6 +31,26 @@ public class AppUpdatePlugin extends Plugin {
             r.put("versionName", pi.versionName);
             call.resolve(r);
         } catch (Exception e) { call.reject("INFO", e); }
+    }
+
+    private void installSession(File apk) throws Exception {
+        PackageInstaller pi = getContext().getPackageManager().getPackageInstaller();
+        PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(getContext().getPackageName());
+        params.setSize(apk.length());
+        if (Build.VERSION.SDK_INT >= 31) params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED);
+        int id = pi.createSession(params);
+        try (PackageInstaller.Session session = pi.openSession(id)) {
+            try (InputStream in = new FileInputStream(apk); OutputStream o = session.openWrite("base.apk", 0, apk.length())) {
+                byte[] buf = new byte[65536]; int n;
+                while ((n = in.read(buf)) > 0) o.write(buf, 0, n);
+                session.fsync(o);
+            }
+            Intent cb = new Intent(getContext(), UpdateStatusReceiver.class);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+            PendingIntent pend = PendingIntent.getBroadcast(getContext(), id, cb, flags);
+            session.commit(pend.getIntentSender());
+        }
     }
 
     @PluginMethod public void install(PluginCall call) {
@@ -69,11 +92,9 @@ public class AppUpdatePlugin extends Plugin {
                     }
                 } finally { c.disconnect(); }
                 if (total > 0 && done != total) throw new IllegalStateException("przerwane (" + (done / 1048576) + " z " + (total / 1048576) + " MB)");
-                Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out);
-                Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setDataAndType(uri, "application/vnd.android.package-archive");
-                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(i);
+                // Android 12+: sesja PackageInstaller z USER_ACTION_NOT_REQUIRED – apka aktualizuje sama siebie bez potwierdzania palcem.
+                // Gdy system jednak wymaga potwierdzenia (np. pierwszy raz), UpdateStatusReceiver pokaże jego okno.
+                installSession(out);
                 call.resolve();
             } catch (Exception e) { call.reject("Pobieranie nie powiodło się: " + e.getMessage(), e); }
         }).start();
