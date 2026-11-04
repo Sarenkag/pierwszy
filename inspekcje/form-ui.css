@@ -8,15 +8,16 @@
 .kmenu button:active{background:rgba(255,255,255,.08)}
 .kmenu .ppmbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:.9rem}
 .kmenu .ppmbar[hidden]{display:none}
-.ihead{display:flex;justify-content:space-between;gap:10px;font-size:.92rem;margin:-4px 0 2px}
+/* nagłówek: stałe miejsca (Grzegorz 04/11) – lewa kolumna i prawa (etap + termin) nigdy na siebie nie zachodzą */
+.ihead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,9.5em);gap:10px;font-size:.92rem;margin:-4px 0 2px}
 .ileft{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
 .icb{display:flex;align-items:center;gap:8px}
 .icb input[type=checkbox]{width:18px;height:18px;accent-color:#7c84ff;margin:0}
-.icb input[type=date]{min-height:30px!important;padding:0 8px!important;width:auto!important;font-size:.9rem}
+.icb{min-width:0}.icb input[type=date]{min-height:30px!important;padding:0 8px!important;width:auto!important;min-width:0!important;max-width:100%!important;flex:0 1 auto;font-size:.9rem}
 .icb input[type=date]:disabled{opacity:.35}
-.iright{text-align:right;color:var(--muted);min-width:0;flex:0 1 auto;max-width:46%;display:flex;flex-direction:column;align-items:flex-end}
-.iright .ppmpill{max-width:100%!important;font-size:.78rem!important;padding:3px 8px!important;min-height:30px!important;text-overflow:ellipsis}
-#iEnds{white-space:nowrap}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
+.iright{text-align:right;color:var(--muted);min-width:0;display:flex;flex-direction:column;align-items:stretch}
+.iright .ppmpill{width:100%!important;margin:0 0 6px!important;overflow:hidden;white-space:nowrap;max-width:100%!important;font-size:.78rem!important;padding:3px 8px!important;min-height:30px!important;text-overflow:ellipsis}
+#iEnds{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
 .iphotos{padding:10px!important;gap:10px!important}.iphotos .label{display:none}
 .iphotos .photo-btns{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px}
 .isheet{padding:10px!important;gap:8px!important}.isheet .photo-btns,.isheet .hint{display:none}

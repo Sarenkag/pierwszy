@@ -1305,6 +1305,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
       if (!restoreList.length) return;
       b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + restoreList.length + ")";
+      var hd = document.querySelector("#v-form .ihead"); if (hd && b.previousElementSibling !== hd) hd.after(b); // na górze, od razu widoczny (Grzegorz 04/11: „nie ma takich przycisków”)
     }).catch(function () {});
   }
   $("restoreIns").addEventListener("click", function () {
@@ -2856,7 +2857,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
     sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", "◐ W trakcie"], ["hold", "⏸ Wstrzymana"], ["done", T("✓ Zakończona", "✓ Completed")]]
-      .concat(s === "queued" ? [["queued", T("⏳ W kolejce", "⏳ Queued")]] : s === "sent" ? [["sent", T("✓ Wysłana", "✓ Sent")]] : [])
+      .concat(s === "queued" || s === "sent" ? [[s, T("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
       .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
     sel.className = "ppmpill s-" + (s || "none");
   }
