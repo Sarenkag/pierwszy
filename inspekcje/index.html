@@ -2455,7 +2455,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         pdf.setFontSize(fs); pdf.text(sl, cx, ty + 0.4); pdf.setFontSize(10.5);
         pdf.setDrawColor(208); pdf.setLineWidth(0.2); pdf.line(L + 1.5, ty + h - 3.0, L + W - 1.5, ty + h - 3.0); pdf.setDrawColor(0); pdf.setLineWidth(0.4);
         ty += h; return; } // checkpointy
-      var ls = p ? pdf.splitTextToSize(p, W - 4) : [""]; room(ls.length * lh); pdf.text(ls, L + 1.5, ty); ty += ls.length * lh;
+      var ls = p ? pdf.splitTextToSize(p, W - 4) : [""];
+      for (var q = 0; q < ls.length; q += 30) { var part = ls.slice(q, q + 30); room(part.length * lh); pdf.text(part, L + 1.5, ty); ty += part.length * lh; } // długi akapit (np. notatka kranu) dzielony między strony
     });
     if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
     room(7 + 7 + 18 + 4); // Works Complete + Quote + Signed zawsze razem
