@@ -2594,6 +2594,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("qList").addEventListener("click", async function (e) {
     var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
     if (!await ask(T("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
+    // w czasie pytania mogła ruszyć wysyłka w tle (sieć wróciła, minutnik): wtedy nie usuwamy raportu, który już wychodzi
+    if (qBusy()) { say(T("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
     var id = b.getAttribute("data-del");
     var gone = queue.filter(function (q) { return q.id === id; })[0];
     qDel(id).then(function () {

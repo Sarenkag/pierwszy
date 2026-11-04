@@ -44,7 +44,7 @@ html body #toQueue.compact{min-height:var(--h-btn)!important;font-size:var(--fs-
 html body .pbtn{min-height:var(--h-btn)!important;border-radius:var(--r-btn)!important;font-size:var(--fs-s)!important;font-weight:600}
 
 /* przyciski-ikony w nagłówku: Wstecz ‹, menu ⋮, ⚙, ◀ ▶, EN – jeden rozmiar */
-html body .top :is(.back,.kebab,.calnav,.rx-gear,.settings-language:not(.oest-sw)){width:var(--h-icon)!important;min-width:var(--h-icon);height:var(--h-icon)!important;min-height:0!important;padding:0!important;flex:none;display:grid!important;place-items:center;border-radius:12px!important;line-height:1}
+html body .top :is(.back,.kebab,.calnav,.rx-gear,.settings-language:not(.oest-sw)):not([hidden]){width:var(--h-icon)!important;min-width:var(--h-icon);height:var(--h-icon)!important;min-height:0!important;padding:0!important;flex:none;display:grid!important;place-items:center;border-radius:12px!important;line-height:1}
 html body .top .back{font-size:26px!important;border:0!important;background:transparent!important;color:var(--ink)!important}
 html body .top :is(.kebab,.calnav,.rx-gear){font-size:18px!important;border:0!important;background:transparent!important;color:var(--ink)!important}
 html body .top .settings-language:not(.oest-sw){width:auto!important;padding:0 10px!important;font-size:var(--fs-xs)!important;font-weight:700!important;border:1px solid var(--line)!important;background:var(--panel)!important}
