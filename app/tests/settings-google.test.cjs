@@ -53,3 +53,11 @@ test('no silent token in background → GOOGLE_CONNECT, never a fake send',async
   let n=0;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'L'}),silent:async()=>null,recentTap:()=>false,fetch:async()=>{n++;return {ok:true,status:200,json:async()=>({})};}});
   await assert.rejects(g.background(()=>g.sendMail({to:'work@example.com',subject:'s',files:[]})),/GOOGLE_CONNECT/);assert.equal(n,0);
 });
+test('ready(): one check for lamp, Settings and sending; silent token, never a window, never throws (04/11)',async()=>{
+  let logins=0,calls=0;const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>{logins++;return {email:'me@example.com',token:'L'};},silent:async()=>{calls++;if(calls===1)return null;if(calls===2)throw Error('NEEDS_UI');return {email:'me@example.com',token:'S'};},fetch:async()=>({ok:true,status:200,json:async()=>({})})});
+  assert.equal(await g.ready('drive'),false);
+  assert.equal(await g.ready('drive'),false);
+  assert.equal(await g.ready('drive'),true);
+  assert.equal(g.connected('drive'),true);
+  assert.equal(await g.ready('drive'),true);assert.equal(calls,3);assert.equal(logins,0);
+});

@@ -59,14 +59,18 @@
   }
   var photo = { pending: 0, bytes: 0 };
   function drivePaused() { return !!(w.OESTZdjeciaUI && w.OESTZdjeciaUI.paused && w.OESTZdjeciaUI.paused()); }
+  var gOk = null; // stan połączenia z Dyskiem: tylko z OESTGoogle.ready (to samo źródło co Ustawienia i wysyłka)
+  function driveOn() { var G = w.OESTGoogle; return !!(G && G.connected && G.connected("drive")) || gOk === true; }
   function driveState() {
+    if (gOk === false && !driveOn()) return { k: "off", t: T("Dysk · brak połączenia", "Drive · not connected") };
     if (drivePaused()) return { k: "off", t: T("Dysk · wstrzymany", "Drive · paused") };
     if (photo.pending) return { k: "mid", t: T("Dysk · " + photo.pending + " w kolejce", "Drive · " + photo.pending + " queued") };
     return { k: "on", t: T("Dysk · zsynchronizowany", "Drive · synced") };
   }
   function photoStats() {
-    var Z = w.OESTZdjecia; if (!Z || !Z.list) return Promise.resolve();
-    return Z.list().then(function (rs) { var s = Z.stats(rs); photo = { pending: s.pending, bytes: s.pendingBytes }; }).catch(function () {});
+    var G = w.OESTGoogle, g = G && G.ready ? G.ready("drive").then(function (ok) { gOk = ok; }, function () { gOk = false; }) : Promise.resolve();
+    var Z = w.OESTZdjecia; if (!Z || !Z.list) return g;
+    return g.then(function () { return Z.list(); }).then(function (rs) { var s = Z.stats(rs); photo = { pending: s.pending, bytes: s.pendingBytes }; }).catch(function () {});
   }
   function lamps() {
     var n = net(), dr = driveState();
@@ -167,7 +171,7 @@
   }
   function mb(b) { return (b / 1048576).toLocaleString(loc(), { maximumFractionDigits: 1 }) + " MB"; }
   function fillDrive() {
-    var G = w.OESTGoogle, on = !!(G && G.connected && G.connected("drive")), p = drivePaused();
+    var on = driveOn(), p = drivePaused();
     var h = head("Google Drive", on ? T("połączony", "connected") : T("niepołączony", "not connected"));
     h += '<button class="hm-op" type="button" data-hop="sync"><span>' + T("Synchronizuj teraz", "Sync now") + "</span><small>" +
       (photo.pending ? T("zdjęcia: ", "photos: ") + photo.pending + " · " + mb(photo.bytes) : T("nic do wysłania", "nothing to upload")) + "</small></button>";

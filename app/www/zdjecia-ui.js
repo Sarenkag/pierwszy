@@ -34,15 +34,15 @@
 
   async function syncNow(force, h) {
     if (!G) throw Error('GOOGLE_SETUP');
-    if (!G.connected('drive')) await G.connect('drive');
+    if (!(await G.ready('drive'))) await G.connect('drive'); // jedno sprawdzenie: OESTGoogle.ready
     if (h) h.step(T('Wysyłam na Dysk…', 'Uploading to Drive…'));
     return Z.sync(drive(), force);
   }
-  // automatycznie: tylko na Wi-Fi i tylko gdy Dysk jest już połączony w tej sesji (bez wyskakujących okien)
+  // automatycznie: tylko na Wi-Fi; połączenie sprawdza OESTGoogle.ready (cichy token, bez wyskakujących okien)
   function paused() { try { return w.localStorage.getItem('oest.zdjecia.pause') === '1'; } catch (_) { return false; } }
   function auto() {
-    if (!G || !G.connected('drive') || Z.busy() || paused()) return; // „Wstrzymaj” z okienka Dysku na ekranie głównym
-    (G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false)).then(function (r) { if (r && r.sent) { msg = T('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
+    if (!G || Z.busy() || paused()) return; // „Wstrzymaj” z okienka Dysku na ekranie głównym
+    G.ready('drive').then(function (ok) { if (!ok || Z.busy() || paused()) return; /* „Wstrzymaj” mogło przyjść w trakcie sprawdzania */ return G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false); }).then(function (r) { if (r && r.sent) { msg = T('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
   }
 
   async function render() {
