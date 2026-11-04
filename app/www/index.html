@@ -531,19 +531,22 @@ input[type=text], input[type=email], input[type=date], select {
     var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">' + T("📤 Wysłana", "📤 Sent") + '</span>' : st.s === "queued" ? '<span class="ksend c4">' + T("⏳ W kolejce", "⏳ Queued") + '</span>' : st.s === "done" ? '<span class="ksend c3">' + T("✉ Niewysłana", "✉ Not sent") + '</span>' : "";
     var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
     var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.due)
-      : T("Termin", "Due") + " <b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
-    var pc = stg ? stg[2] : 0, col = stg ? { c1: "#f0c75e", c2: "#3fb27f", c4: "#79b8ff" }[stg[1]] : "transparent";
-    // stopka: ikonki z liczbą (moduly/znacznik) – ✓ punkty, ⚠ usterki, 📷 zdjęcia
-    var foot = t.form === "folder" ? T("Zdjęcia kartki → PDF", "Form photos → PDF") : st && st.total ? (st.issues ? "" : T("bez usterek", "no defects")) : t.cfg ? T("formularz do konfiguracji", "form to configure") : "";
-    var marks = [st && st.total ? { i: "✓", n: st.total } : null, st && st.issues ? { i: "⚠", n: st.issues, tone: 3 } : null, st && st.photos ? { i: "📷", n: st.photos } : null];
-    var go = !st ? T("Zacznij ›", "Start ›") : st.s === "prog" || st.s === "hold" ? T("Kontynuuj ›", "Continue ›") : T("Otwórz ›", "Open ›");
+      : "<b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
+    // dolny wiersz (makieta Grzegorza 04/11): termin · raport · zdjęcia · punkty OK / pytania
+    var foot = t.form === "folder" ? T("zdjęcia kartki → PDF", "form photos → PDF") : t.cfg && !st ? T("formularz do konfiguracji", "form to configure") : "";
+    // co inspekcja wymaga (ustawiane w inspekcji): niewymagane = szara, przygaszona ikonka
+    var nd = P.needs ? P.needs(t) : { q: true, p: true, f: false };
+    // zdjęcie formularza: wymagane → czerwone ✗, dopóki nie dodane, potem zielone ✓; niewymagane → szary dokument (✓, jeśli i tak dodane)
+    var form = st && st.sheet ? "ok" : nd.f ? "blad" : "brak";
+    var used = st && st.used != null ? st.used : st && st.total || 0, ok = st && st.ok != null ? st.ok : 0, ph = st ? st.photos || 0 : 0;
+    // zdjęcia bez formularza · odpowiedzi OK / pytania
+    var marks = [{ i: "zdjecia", n: ph, off: !nd.p && !ph }, { i: "punkty", n: nd.q ? (st ? ok + "/" + used : "–") : "–", off: !nd.q }, nd.q && st && st.issues ? { i: "usterki", n: st.issues, tone: 3 } : null];
+    var go = !st ? T("Zacznij", "Start") : st.s === "prog" || st.s === "hold" ? T("Kontynuuj", "Continue") : T("Otwórz", "Open");
     // jeden klocek dla całej apki (moduly/klocek, Grzegorz 04/11): tu tylko podstawiamy dane inspekcji
     return window.OESTKlocek.html({
       id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
-      status: insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("! Zaległa", "! Overdue"), tone: 3 } : { text: T("○ Nie rozpoczęta", "○ Not started"), tone: 0 },
-      desc: where, due: due, pct: pc, barColor: col, foot: foot, marks: marks,
-      send: !st ? null : st.s === "sent" ? { text: T("📤 Wysłana", "📤 Sent"), tone: 2 } : st.s === "queued" ? { text: T("⏳ W kolejce", "⏳ Queued"), tone: 4 } : st.s === "done" ? { text: T("✉ Niewysłana", "✉ Not sent"), tone: 3 } : null,
-      thumb: st && st.thumb, go: go, done: !!(st && st.s === "sent")
+      status: insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("Zaległa", "Overdue"), tone: 3 } : { text: T("Nie rozpoczęta", "Not started"), tone: 0 },
+      desc: where, due: due, foot: foot, form: form, marks: marks, go: go, done: !!(st && st.s === "sent")
     });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
@@ -590,7 +593,7 @@ input[type=text], input[type=email], input[type=date], select {
         return window.OESTKlocek.html({ data: { fam: r.fam }, color: gg.color, icon: ICON_APP(), name: r.fam + " (" + r.rows.length + ")",
           status: fl === null ? { text: T("○ Bez terminu", "○ No due date"), tone: 0 } : fl < 0 ? { text: T("! Zaległa", "! Overdue"), tone: 3 } : fl <= 2 ? { text: T("● Wkrótce", "● Soon"), tone: 1 } : { text: T("● W terminie", "● On time"), tone: 2 },
           desc: [r.t.freq.map(freqName).join(" + "), r.rows.length + T(" urządzeń", " devices")].join(" · "), due: esc(P.endsText(r.left)),
-          foot: T("Grupa inspekcji", "Inspection group"), go: ppmOpen[r.fam] ? T("▾ Zwiń", "▾ Collapse") : T("▸ Rozwiń", "▸ Expand") });
+          foot: T("grupa inspekcji", "inspection group"), go: ppmOpen[r.fam] ? T("Zwiń", "Collapse") : T("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
       }
       return ppmCard(r);
     }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>';

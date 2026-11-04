@@ -18,8 +18,15 @@
 .iright .ppmpill{max-width:100%!important;font-size:.78rem!important;padding:3px 8px!important;min-height:30px!important;text-overflow:ellipsis}
 #iEnds{white-space:nowrap}.iright b,#iEnds{color:#b9a8ff;font-weight:700}
 .iphotos{padding:10px!important;gap:10px!important}.iphotos .label{display:none}
-.iphotos .photo-btns{grid-template-columns:repeat(3,1fr)!important;gap:8px}
-.iphotos .pbtn{min-height:42px!important;font-size:.9rem}
+.iphotos .photo-btns{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px}
+.isheet{padding:10px!important;gap:8px!important}.isheet .photo-btns,.isheet .hint{display:none}
+.isheet .label{display:flex;align-items:center;gap:6px}
+.isheet:has(#sheetPhotos:empty){display:none}
+.iphotos .pbtn{position:relative}.pbtn .fbadge{position:absolute;top:-7px;right:-7px;display:grid;place-items:center;border-radius:50%;background:var(--bg,#0b1022)}.pbtn .fbadge:empty{display:none}
+.pbtn.req{border-color:rgba(239,59,54,.65)!important}
+html body .iphotos .pbtn{min-height:58px!important;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px!important;font-size:12.5px!important;line-height:1.15;text-align:center}
+.iphotos .pbtn svg{width:22px;height:22px;flex:none}
+.iphotos .pbtn span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .fold:not(.open){display:none!important}
 .isec #ckTitle{cursor:pointer;display:flex;justify-content:space-between;text-transform:none;font-size:.9rem;letter-spacing:0;color:var(--ink);font-family:inherit}
 .isec #ckTitle::after{content:"⌃"}.isec.shut #ckTitle::after{content:"⌄"}.isec.shut #ck{display:none}
@@ -56,3 +63,8 @@
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));
   animation:oestSpin .9s linear infinite}
 @keyframes oestSpin{to{transform:rotate(360deg)}}
+
+/* W tej inspekcji: pytania / zdjęcia / zdjęcie formularza (04/11) */
+.needs{display:flex;flex-wrap:wrap;gap:8px 16px}
+.need{display:flex;align-items:center;gap:8px;font-size:14px;min-height:32px}
+.need:has(input:disabled){opacity:.5}

@@ -74,6 +74,15 @@
   note.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg><span data-en="Note">Notatka</span>';
   btns.appendChild(note);
   if (window.OESTBledy) OESTBledy.applyDom(note);
+  // ---- zdjęcie formularza (Grzegorz 04/11): osobny przycisk obok zwykłych zdjęć, miniatury pod spodem ----
+  var sh = $("sheetBox");
+  if (sh) {
+    var shCam = $("shCamIn").closest("label");
+    shCam.querySelector("svg").outerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10l1.5 1.5 2.5-3M8.5 16l1.5 1.5 2.5-3M14.5 10h1.5M14.5 16h1.5"/></svg>'; // podkładka z kartką (inna niż „Notatka”)
+    var FL = ["Formularz", "Form"], sp = shCam.querySelector("span"); sp.textContent = T(FL[0], FL[1]); sp.dataset.en = FL[1]; sp.dataset.pl = FL[0];
+    btns.insertBefore(shCam, note);
+    sh.classList.add("isheet"); ph.after(sh);
+  }
   var kp = $("komentarz").closest(".panel"); kp.classList.add("fold");
   note.addEventListener("click", function () { kp.classList.add("open"); $("komentarz").focus(); });
 
@@ -92,7 +101,7 @@
       if (st === "na") return; used++; if (st === "ok") ok++;
     });
     $("iCnt").textContent = ok + "/" + used;
-    $("iCntBox").hidden = !rows.length;
+    $("iCntBox").hidden = !rows.length || $("ck").closest(".panel").hidden; // pytania wyłączone w tej inspekcji: bez licznika
     var b = bar && bar.querySelector("b");
     $("iEnds").textContent = b ? b.textContent : "";
     $("nameTx").textContent = $("nameOn").checked ? (pd.value || T("Imię", "Name")) : T("Imię", "Name");
