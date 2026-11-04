@@ -1315,8 +1315,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var all = rs[0];
       if (tok !== formSeq) return;
       // z raportu tylko krany, które w inspekcji nie mają jeszcze zdjęcia (nic się nie dubluje)
-      var have = {}; photos.forEach(function (p) { if (p.tap != null) have[p.tap] = 1; });
-      var rp = rs[1]; if (rp) { rp.photos = rp.photos.filter(function (p) { return p.tap != null && !have[p.tap]; }); }
+      // zdjęcia bez kranu (np. karta papierowa) tylko wtedy, gdy inspekcja nie ma jeszcze żadnego takiego zdjęcia
+      var have = {}, loose = false; photos.forEach(function (p) { if (p.tap != null) have[p.tap] = 1; else loose = true; });
+      var rp = rs[1]; if (rp) { rp.photos = rp.photos.filter(function (p) { return p.tap != null ? !have[p.tap] : !loose; }); }
       // odpowiedzi też się liczą (e-formularz nie wymaga zdjęć): jest co przywrócić, gdy raport ma zdjęcia brakujących kranów
       // albo odpowiedź / notatkę / tydzień, których w inspekcji jeszcze nie ma
       var ans = rp && (rp.taps.some(function (x, i) { var c = fl.taps[i]; return c && c.state === "yes" && !c.note && (x.state !== "yes" || x.note); }) || (rp.week && !fl.week));
