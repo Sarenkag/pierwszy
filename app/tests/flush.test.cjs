@@ -15,3 +15,15 @@ test('bieżący rok i miesiąc na zielono, lata od bieżącego',()=>{const {xml}
 test('nagłówek: TOWER A / TOWER B / PAVILION',()=>{assert.match(text(doc('TA').hdr),/TOWER\| A/);assert.match(text(doc('TB').hdr),/TOWER\| B/);const p=text(doc('P').hdr);assert.match(p,/PAVILION/);assert.doesNotMatch(p,/TOWER/);});
 test('podsumowanie: niezalane krany → Fault Log',()=>{assert.equal(F.summary({taps:[{state:'yes'},{state:'na'}]}),'All outlets flushed (1 N/A)');assert.match(F.summary({taps:[{state:'no'}]}),/Fault and Remedial/);});
 test('Date odznaczone: kolumna daty pusta, Yes zostaje',()=>{const f=P.forms.flush.P,z=new PizZip(Buffer.from(window.TPL_FLUSH,'base64'));const xml=F.fill(z.file('word/document.xml').asText(),{building:'Pavilion',year:2026,month:0,week:1,date:new Date(2026,0,5),noDate:true,name:'',taps:f.taps.map(n=>({name:n,state:'yes',note:''}))});assert.doesNotMatch(xml,/05\.01\.2026/);assert.match(xml,/>Yes</);});
+
+// 04/11: odtworzenie Flushingu z PDF-a raportu w kolejce (PDF z apki: tydzień 3, kran 2 = No z notatką, zdjęcia przy kranach 1, 3, 5)
+test('fromPdf reads answers, week and photo→outlet from the queued report PDF', () => {
+  const F = require('../../inspekcje/flush.js'), fs = require('node:fs'), path = require('node:path');
+  const names = ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room", "Studio", "Pool Hall", "Gym", "Cycle Store", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107", "x1", "x2", "x3", "x4", "x5", "x6"];
+  const r = F.fromPdf(new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf'))), names);
+  assert.equal(r.week, 3); assert.equal(r.taps.length, 20);
+  assert.deepEqual(r.taps[1], { state: 'no', note: 'Valve stiff, reported' }); assert.equal(r.taps[0].state, 'yes');
+  assert.deepEqual(r.photos.map(p => p.tap), [0, 2, 4]);
+  assert.equal(r.photos[0].bytes[0], 0xff); assert.equal(r.photos[0].bytes[1], 0xd8);
+  assert.equal(F.fromPdf(new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf'))), names.slice(0, 5)), null); // inna lista kranów: nie zgadujemy
+});

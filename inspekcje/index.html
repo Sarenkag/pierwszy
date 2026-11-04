@@ -1199,7 +1199,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   });
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
-    draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; }
+    draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
     roomNotes = {};
     restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
@@ -1254,7 +1254,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
       if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
-      if (!d || !(d.photos && d.photos.length)) offerRestore(tok);
+      if (!d || !(d.photos && d.photos.length) || cur.type.flush) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
@@ -1295,21 +1295,35 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // więc pusty formularz z kopiami z ostatnich dni proponuje „↺ Przywróć inspekcję”: zdjęcia wracają, inspekcja znów W trakcie.
   var restoreList = [];
   function offerRestore(tok) {
-    var b = $("restoreIns"); b.hidden = true; restoreList = [];
+    var b = $("restoreIns"); b.hidden = true; restoreList = []; restorePdf = null;
     if (!window.OESTZdjecia || cur.mode !== "one" || !cur.type) return;
     var ctx = copyCtx(), st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
     var y = isoDay(new Date(Date.now() - 864e5)), from = st && st.day && st.day < y ? st.day : y; // od dnia wysłania, ale najpóźniej od wczoraj
-    OESTZdjecia.list().then(function (all) {
-      if (tok !== formSeq || photos.length) return;
-      restoreList = all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
+    // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
+    var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
+    var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
+      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length; }).sort(function (a, c) { return c.created - a.created; })[0];
+      return it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;
+    }).catch(function () { return null; });
+    var settle = function () { return new Promise(function (r) { (function w() { if (restoring || pendingPh) setTimeout(w, 200); else r(); })(); }); }; // szkic najpierw wczyta swoje zdjęcia
+    Promise.all([OESTZdjecia.list(), fromQ, settle()]).then(function (rs) {
+      var all = rs[0];
+      if (tok !== formSeq) return;
+      // z raportu tylko krany, które w inspekcji nie mają jeszcze zdjęcia (nic się nie dubluje)
+      var have = {}; photos.forEach(function (p) { if (p.tap != null) have[p.tap] = 1; });
+      var rp = rs[1]; if (rp) { rp.photos = rp.photos.filter(function (p) { return p.tap != null && !have[p.tap]; }); }
+      restorePdf = rp && rp.photos.length ? rp : null;
+      if (photos.length && !restorePdf) return;
+      restoreList = photos.length ? [] : all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
         .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
-      if (!restoreList.length) return;
-      b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + restoreList.length + ")";
+      if (!restoreList.length && !restorePdf) return;
+      b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + (restorePdf ? restorePdf.photos.length : restoreList.length) + ")";
       var hd = document.querySelector("#v-form .ihead"); if (hd && b.previousElementSibling !== hd) hd.after(b); // na górze, od razu widoczny (Grzegorz 04/11: „nie ma takich przycisków”)
     }).catch(function () {});
   }
+  var restorePdf = null;
   $("restoreIns").addEventListener("click", function () {
-    var b = this, list = restoreList.slice(), tok = formSeq; if (!list.length || queueing) return;
+    var b = this, list = restoreList.slice(), tok = formSeq, rp = restorePdf; if ((!list.length && !rp) || queueing) return;
     b.disabled = true;
     var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
     if (t && st && (st.s === "queued" || st.s === "sent" || st.s === "done")) {
@@ -1318,6 +1332,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (st.period) PPM.setDue(t, st.period);
       PPM.setStage(t, { s: "prog", manual: false, mail: q ? (q.status === "sent" ? "sent" : "queued") : "", mailId: q ? q.id : "", mailSig: "" });
       renderPpmBar();
+    }
+    if (rp) { // z raportu w kolejce: odpowiedzi, tydzień, notatki i zdjęcia przy tych samych kranach co w raporcie
+      fl.on = true; if (rp.week) fl.week = rp.week;
+      // odpowiedź z raportu tylko tam, gdzie w inspekcji jest jeszcze domyślne Yes bez notatki (nic, co już wpisane, się nie nadpisuje)
+      rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
+      renderFlush(); updateFormHint();
+      draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
+      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: Date.now() })], p.tap, false, true); });
+      var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
+      $("formHint").textContent = T("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
+        "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
+      return;
     }
     Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? new File([bl], r.name || "zdjecie.jpg", { type: bl.type || "image/jpeg", lastModified: Date.parse(r.created) || Date.now() }) : null; }); }))
       .then(function (files) {
@@ -2743,7 +2769,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
     if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm, it.id);
-    it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0); it.photos = []; // pliki są już na Drive
+    it.docx = new Uint8Array(0); it.photos = []; // pliki są już na Drive; PDF zostaje w telefonie (odtworzenie inspekcji, 04/11)
   }
   // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
   var reportShare = null;
@@ -2819,7 +2845,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (window.OESTSender) OESTSender.init({
       onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
         var q = queue.filter(function (x) { return x.id === it.id; })[0]; if (!q) return;
-        q.status = it.status; q.err = it.err || ""; if (it.status === "sent") { q.sentAt = it.sentAt; q.docx = new Uint8Array(0); q.pdf = new Uint8Array(0); q.photos = []; }
+        q.status = it.status; q.err = it.err || ""; if (it.status === "sent") { q.sentAt = it.sentAt; q.docx = new Uint8Array(0); q.photos = []; }
         refresh();
       },
       onQueue: function () { show("queue"); },
