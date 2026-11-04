@@ -40,6 +40,7 @@ public class AppUpdatePlugin extends Plugin {
         params.setSize(apk.length());
         if (Build.VERSION.SDK_INT >= 31) params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED);
         int id = pi.createSession(params);
+        boolean committed = false;
         try (PackageInstaller.Session session = pi.openSession(id)) {
             try (InputStream in = new FileInputStream(apk); OutputStream o = session.openWrite("base.apk", 0, apk.length())) {
                 byte[] buf = new byte[65536]; int n;
@@ -50,6 +51,10 @@ public class AppUpdatePlugin extends Plugin {
             int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
             PendingIntent pend = PendingIntent.getBroadcast(getContext(), id, cb, flags);
             session.commit(pend.getIntentSender());
+            committed = true;
+        } finally {
+            // nieudane wgrywanie (np. brak miejsca): porzuć sesję, żeby nie zostawiać połowy APK w systemie
+            if (!committed) try { pi.abandonSession(id); } catch (Exception ignored) {}
         }
     }
 
