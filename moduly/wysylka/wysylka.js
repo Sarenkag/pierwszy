@@ -55,6 +55,16 @@
       return st && st.profile && st.profile.companyEmail || "";
     } catch (e) { return ""; }
   }
+  // adresaci raportu (Grzegorz 04/11 11:34): Ja = adres firmowy, Inżynier / Manager = kontakty z Ustawień → Wysyłka (te same co w Handover)
+  // sel: { sm, se, sg } → { list: [adresy], me, eng, man }
+  function recipients(sel) {
+    sel = sel || { sm: true };
+    var st = null; try { var a = account() || {}; st = JSON.parse(root.localStorage.getItem("oest.settings.v1." + encodeURIComponent(String(a.id || a.email || ""))) || "null"); } catch (e) {}
+    function contact(id) { var c = st && id ? (st.contacts || []).filter(function (x) { return x.id === id && x.active !== false; })[0] : null; return c && c.email || ""; }
+    var mail = (st && st.mail) || {}, out = { me: myEmail(), eng: contact(mail.engineerId), man: contact(mail.managerId) };
+    out.list = [sel.sm && out.me, sel.se && out.eng, sel.sg && out.man].filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+    return out;
+  }
   function errText(e) {
     var m = e && e.message ? e.message : String(e);
     if (/GOOGLE_SETUP/.test(m)) return T("zaloguj się do Google w apce", "sign in to Google in the app");
@@ -73,6 +83,7 @@
 
   // ---------- wysyłka ----------
   function files(it) {
+    if (it.files && it.files.length) return it.files; // pliki złożone w inspekcji wg tick boxów pod Wyślij
     var f = [];
     if (it.pdf && it.pdf.length) f.push({ name: it.name + ".pdf", mime: "application/pdf", bytes: it.pdf });
     if (it.docx && it.docx.length) f.push({ name: it.name + ".docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", bytes: it.docx });
@@ -108,8 +119,8 @@
             if (stop || !online()) return true;
             if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
             var t0 = Date.now(); pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
-            return put(it).then(function () { return g.sendMail({ to: it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
-              it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.photos = []; done++; // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
+            return put(it).then(function () { return g.sendMail({ to: it.toList && it.toList.length ? it.toList : it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
+              it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.photos = []; it.files = []; done++; // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
               if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
             }, function (e) {
@@ -240,5 +251,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients };
 })(window);

@@ -384,9 +384,9 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="panel" data-m="one" id="flushBox" hidden>
       <div class="label" id="flWeekL" data-en="Week of the month (as on the form)">Tydzień miesiąca (jak na formularzu)</div>
       <div class="fl-week" id="flWeek"><button type="button" data-w="1">1</button><button type="button" data-w="2">2</button><button type="button" data-w="3">3</button><button type="button" data-w="4">4</button><button type="button" data-w="5">5</button></div>
-      <label class="fl-on"><input type="checkbox" id="flOn"> <span id="flOnL" data-en="Electronic form">Formularz elektroniczny</span></label>
+      <label class="fl-on" hidden><input type="checkbox" id="flOn"> <span id="flOnL" data-en="Electronic form">Formularz elektroniczny</span></label>
       <div class="fl-list off" id="flList"></div>
-      <p class="hint" id="flHint" data-en="Off: only photos of the filled paper forms go to the report. On: the filled Word form goes, photos of the forms are an extra.">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
+      <p class="hint" id="flHint" data-en="“Our report” in ⚙ next to Send off: only photos of the filled paper forms go to the report. On: the filled Word form goes, photos of the forms are an extra.">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
       <input id="flCam" type="file" accept="image/*" capture="environment" hidden>
     </div>
 
@@ -422,15 +422,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
       <p class="hint" id="sheetInfo"></p>
     </div>
 
-    <div class="panel" data-m="one" id="needsBox" hidden>
-      <div class="label" data-en="Required in this inspection">Wymagane w tej inspekcji</div>
-      <div class="needs">
-        <label class="need"><input type="checkbox" id="needQ"><span data-en="Questions">Pytania</span></label>
-        <label class="need"><input type="checkbox" id="needP"><span data-en="Photos">Zdjęcia</span></label>
-        <label class="need"><input type="checkbox" id="needF"><span data-en="Form photo">Zdjęcie formularza</span></label>
-      </div>
-      <p class="hint" id="needsHint" data-en="Switch on only what this inspection needs. Switched off = grey icon on the inspection card.">Włącz tylko to, czego ta inspekcja potrzebuje. Wyłączone = szara ikonka na klocku inspekcji.</p>
-    </div>
 
     <div class="panel" data-m="one sum">
       <div class="grid">
@@ -464,7 +455,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         <div class="row"><button class="btn" type="button" id="mdUse" data-en="✓ Insert into comment">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop" data-en="Discard">Odrzuć</button></div></div>
     </div>
 
-    <button class="go" type="button" id="toQueue" data-m="one sum" data-en="Send">Wyślij</button>
+    <div class="sendrow" data-m="one sum"><button class="go" type="button" id="toQueue" data-en="Send">Wyślij</button><button class="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+    <p class="hint" id="sendHint" data-m="one"></p>
     <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
     <button class="go" type="button" id="restoreIns" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</button>
     <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
@@ -1169,15 +1161,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var qSaved = null;
   function needsNow() { return cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : null; }
   function qPossible() { return !!(cur.type && cur.type.checks && cur.type.checks.length && !cur.type.folder && !cur.type.temp); }
-  function applyNeeds(toggled) { // toggled = Grzegorz właśnie włączył pytania przełącznikiem (tylko wtedy wracają domyślne odpowiedzi)
-    var n = needsNow(), box = $("needsBox");
-    box.hidden = !n || cur.mode !== "one";
-    if (!n) return;
-    var canQ = qPossible();
-    $("needQ").checked = canQ && n.q; $("needQ").disabled = !canQ;
-    $("needQ").closest("label").title = canQ ? "" : T("Pytania do tej inspekcji jeszcze nieustalone", "Questions for this inspection not agreed yet");
-    $("needP").checked = !!n.p; $("needF").checked = !!n.f;
-    if (!canQ || cur.mode !== "one") return;
+  function applyNeeds(toggled) { // toggled = Grzegorz właśnie włączył pytania (tylko wtedy wracają domyślne odpowiedzi)
+    var n = needsNow(), F = cur.type && cur.type.flush;
+    if (!n) { syncSendHint(); return; }
+    // Flushing / AOV: „Nasz raport” = formularz elektroniczny (wcześniej osobny przełącznik w Flushingu)
+    if (F) { if (fl.on !== !!n.q) { fl.on = !!n.q; renderFlush(); } syncSendHint(); return; }
+    syncSendHint();
+    if (!qPossible() || cur.mode !== "one") return;
     var ckp = $("ck").closest(".panel");
     if (!n.q) {
       ckp.hidden = true; $("faults").closest(".panel").hidden = true;
@@ -1189,14 +1179,57 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       qSaved = null;
     }
   }
-  [["needQ", "q"], ["needP", "p"], ["needF", "f"]].forEach(function (x) {
-    $(x[0]).addEventListener("change", function () {
-      if (!cur.ppm || !PPM || !PPM.setNeeds) return;
-      var patch = {}; patch[x[1]] = this.checked; PPM.setNeeds(cur.ppm, patch);
-      if (x[1] === "q") { formMode(); applyNeeds(true); try { suggestOverall(); updateFormHint(); } catch (e) {} } else applyNeeds();
-      ppmTrack(false);
+  // ---------- ustawienia wysyłki: ⚙ obok Wyślij (Grzegorz 04/11 11:37) ----------
+  // Okienko (to samo co „Na pewno?”) z tick boxami: co wysłać, scalone / osobno, PDF / Word, do kogo.
+  // „Zapisz jako domyślne” = zapamiętane dla tej inspekcji; Wyślij wysyła jednym stuknięciem wg zapisanych ustawień.
+  function sendParts() { // co ta inspekcja w ogóle ma do wysłania (reszta w okienku wyszarzona)
+    var F = cur.type && cur.type.flush;
+    return { q: qPossible() || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Nasz raport (pytania)", "Our report (questions)") };
+  }
+  function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? (cur.type.folder ? !!(F && !F.points && fl.on) : true) : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
+  function syncSendHint() {
+    var n = needsNow(), h = $("sendHint"); if (!h) return;
+    if (!n || cur.mode !== "one") { h.textContent = ""; return; }
+    var to = recipientsFor(n), what = [], off = [];
+    if (n.q && sendParts().q) what.push(T("raport", "report"));
+    if (n.f) what.push(T("zdjęcia formularza", "form photos"));
+    if (n.p || n.t) what.push(T("zdjęcia", "photos"));
+    if (!n.f && sheetPhotos().length) off.push(T("zdjęcia formularza", "form photos") + " (" + sheetPhotos().length + ")");
+    if (!n.p && genPhotos().length) off.push(T("zdjęcia ogólne", "general photos") + " (" + genPhotos().length + ")");
+    if (!n.t && photos.some(function (p) { return p.tap != null; })) off.push(T("zdjęcia do pytań", "question photos") + " (" + photos.filter(function (p) { return p.tap != null; }).length + ")");
+    h.textContent = "⚙ " + (what.join(" + ") || T("nic", "nothing")) + " · " + (n.one ? T("jeden dokument", "one document") : T("osobne pliki", "separate files")) + " · " +
+      [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || T("brak adresata", "no recipient")) +
+      (off.length ? T(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") : "") + ".";
+  }
+  $("sendCfg").addEventListener("click", function () {
+    var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
+    var sp = sendParts(), to = recipientsFor({ sm: 1, se: 1, sg: 1 });
+    function cb(k, label, dis, note) { return '<label class="need' + (dis ? " dis" : "") + '"><input type="checkbox" data-sn="' + k + '"' + (n[k] && !dis ? " checked" : "") + (dis ? " disabled" : "") + "><span>" + esc(label) + (note ? " <small>" + esc(note) + "</small>" : "") + "</span></label>"; }
+    var box = document.createElement("div"); box.className = "sendcfg-box";
+    box.innerHTML = '<div class="sct">' + T("Co wysłać", "What to send") + "</div>" +
+      cb("f", T("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")) +
+      cb("q", sp.qLabel, !sp.q) +
+      cb("p", T("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")) +
+      cb("t", T("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t) +
+      '<div class="sct">' + T("Jak", "How") + "</div>" +
+      '<label class="need"><input type="radio" name="sn-one" value="1"' + (n.one ? " checked" : "") + "><span>" + T("Scalone w jeden dokument", "Merged into one document") + "</span></label>" +
+      '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + T("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
+      '<div class="sct">' + T("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, T("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
+      '<div class="sct">' + T("Do kogo", "To") + "</div>" +
+      cb("sm", T("Ja", "Me"), !to.me, to.me || T("brak adresu w My Profile", "no address in My Profile")) +
+      cb("se", T("Inżynier", "Engineer"), !to.eng, to.eng || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
+      cb("sg", T("Manager", "Manager"), !to.man, to.man || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
+    OESTPrzycisk.ask({ title: T("Ustawienia wysyłki", "Sending settings"), node: box, ok: T("Zapisz jako domyślne", "Save as default"), cancel: T("Zamknij", "Close") }).then(function (save) {
+      if (!save || !cur.ppm || !PPM.setNeeds) return;
+      var patch = {}; box.querySelectorAll("input[data-sn]:not(:disabled)").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
+      var r = box.querySelector('input[name="sn-one"]:checked'); patch.one = !r || r.value === "1";
+      var qWas = !!n.q; PPM.setNeeds(cur.ppm, patch);
+      if (patch.q != null && patch.q !== qWas && !cur.type.flush) formMode();
+      applyNeeds(patch.q && !qWas); ppmTrack(false); try { suggestOverall(); } catch (e) {} updateFormHint(); scheduleDraft();
     });
   });
+  // dodane zdjęcie = chcę je w raporcie: odznaczona kategoria zaznacza się sama (Grzegorz 04/11 11:28)
+  function needOn(k) { var n = needsNow(); if (n && !n[k] && cur.ppm && PPM.setNeeds) { var p = {}; p[k] = true; PPM.setNeeds(cur.ppm, p); applyNeeds(); } }
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
     draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
@@ -1276,7 +1309,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     roomNotes = Object.assign({}, d.roomNotes); dateTouched = !!d.dateTouched;
     if (d.temps && d.temps.length === temps.length) temps = d.temps.slice();
     var F = cur.type.flush;
-    if (F && d.fl && d.fl.taps && d.fl.taps.length === F.taps.length) fl = d.fl;
+    if (F && d.fl && d.fl.taps && d.fl.taps.length === F.taps.length) { fl = d.fl; if (fl.on && cur.ppm && PPM.setNeeds && !(needsNow() || {}).q) PPM.setNeeds(cur.ppm, { q: true }); } // szkic z włączonym formularzem elektronicznym zostaje z nim
     renderChecks(); renderFaults(); renderTemps(); renderFlush(); applyNeeds();
     try { $("v-form").dispatchEvent(new CustomEvent("oest:restored")); } catch (e) {}
     var list = d.photos || [];
@@ -1343,7 +1376,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       renderPpmBar();
     }
     if (rp) { // z raportu w kolejce: odpowiedzi, tydzień, notatki i zdjęcia przy tych samych kranach co w raporcie
-      fl.on = true; if (rp.week && !fl.week) fl.week = rp.week; // wybrany już tydzień zostaje
+      fl.on = true; if (PPM.setNeeds && cur.ppm) PPM.setNeeds(cur.ppm, { q: true, t: true }); applyNeeds(); if (rp.week && !fl.week) fl.week = rp.week; // wybrany już tydzień zostaje
       // odpowiedź z raportu tylko tam, gdzie w inspekcji jest jeszcze domyślne Yes bez notatki (nic, co już wpisane, się nie nadpisuje)
       rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
       renderFlush(); updateFormHint();
@@ -1386,6 +1419,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // zdjęcie wypełnionego formularza (osobny przycisk w inspekcji, Grzegorz 04/11) – w raporcie na końcu, po zdjęciach z inspekcji
   function sheetPhotos() { return photos.filter(function (p) { return p.sheet; }); }
   function tapPhotos(i) { return photos.filter(function (p) { return p.tap === i; }); }
+  function genPhotos() { return photos.filter(function (p) { return p.tap == null && !p.sheet; }); } // zdjęcia ogólne (bez kranu / punktu, nie formularz)
+  function recipientsFor(n) { return window.OESTSender && OESTSender.recipients ? OESTSender.recipients(n) : { list: cfg.email ? [cfg.email] : [], me: cfg.email }; }
   function renderFlush() {
     var F = cur.type && cur.type.flush;
     if (!F) { $("flList").innerHTML = ""; return; }
@@ -1394,8 +1429,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
     $("flOnL").textContent = F.points ? T("Lista przycisków (sprawdzenie z apki)", "Call point list (check in the app)") : T("Formularz elektroniczny", "Electronic form");
-    $("flHint").textContent = F.points ? T("Wyłączona: do raportu idą tylko zdjęcia kartki. Włączona: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach.", "Off: only photos of the paper form go to the report. On: the report also has a call point table (Yes = vents opened from this call point and closed after reset) and photos per call point.") :
-      T("Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.", "Off: only photos of the filled-in forms go to the report. On: the filled-in Word form goes, with form photos as an extra.");
+    $("flHint").textContent = F.points ? T("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia kartki. Włączony: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach.", "“Our report” in ⚙ next to Send off: only photos of the paper form go to the report. On: the report also has a call point table (Yes = vents opened from this call point and closed after reset) and photos per call point.") :
+      T("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.", "“Our report” in ⚙ next to Send off: only photos of the filled-in forms go to the report. On: the filled-in Word form goes, with form photos as an extra.");
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
     $("flList").innerHTML = F.taps.map(function (name, i) {
@@ -1894,6 +1929,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; if (tap != null) ph.tap = tap;
             // zdjęcia formularza zawsze na końcu (ostatnie strony raportu), zwykłe przed nimi
+            needOn(sheet ? "f" : tap != null ? "t" : "p");
             if (sheet) { ph.sheet = true; photos.push(ph); } else { var at = photos.findIndex(function (q) { return q.sheet; }); if (at < 0) photos.push(ph); else photos.splice(at, 0, ph); }
             renderPhotos(); suggestDate(); if (tap == null && !sheet) analyze(ph);
           });
@@ -2410,6 +2446,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     pdf.rect(L, y, W, 18); pdf.setFont("DV", "bold"); pdf.text("Signed:", L + 1.5, y + 9.5); pdf.text(d.inspektor || "", L + 22, y + 9.5); y += 18;
     footer();
+    addFull(pdf, pics.filter(function (p) { return p.sheet; })); // zdjęcia formularza: strona po stronie, zaraz po raporcie (Grzegorz 04/11)
+    pics = pics.filter(function (p) { return !p.sheet; });
     for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
       var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
       pdf.addPage(); var top2 = header(), areaH = 274 - top2;
@@ -2425,14 +2463,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
 
   // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
-  function buildPhotoPdf(pics) {
-    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" }), M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
+  // jedno zdjęcie = jedna strona A4, jak najwięcej miejsca (zdjęcia formularza, zdjęcia ogólne). Wspólne dla wszystkich raportów.
+  function addFull(pdf, pics, first) {
+    var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
     pics.forEach(function (p, i) {
-      if (i) pdf.addPage();
+      if (i || !first) pdf.addPage();
       var iw = PW, ih = iw * p.height / p.width;
       if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
       pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
     });
+  }
+  function buildPhotoPdf(pics) {
+    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    addFull(pdf, pics, true);
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   function fillFlushDocx(f) {
@@ -2450,11 +2493,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!yes) return "No call points tested (all N/A)";
     return (na ? yes + " of " + f.taps.length + " call points tested – AOVs opened and reset correctly (" + na + " N/A, not tested)" : "All call points tested – AOVs opened and reset correctly");
   }
-  function buildFlushPdf(d, pics) {
+  // o.table === false: bez tabeli (sam plik zdjęć). Kolejność: tabela → zdjęcia formularza → zdjęcia przy kranach (z nazwą) → zdjęcia ogólne
+  function buildFlushPdf(d, pics, o) {
+    o = o || {};
     var f = d.flush, pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
     pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
     pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
-    var L = 15, y = 20;
+    var L = 15, y = 20, page1 = o.table !== false;
+    var sp = pics.filter(function (p) { return p.sheet; }), tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null && !p.sheet; });
+    if (page1) {
     pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(f.title, L, y); y += 7;
     pdf.setFont("DV", "normal"); pdf.setFontSize(10);
     pdf.text((f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), L, y); y += 8;
@@ -2475,48 +2522,78 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     y += 3; if (y > 285) { pdf.addPage(); y = 20; }
     pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize((f.points ? pointsSummary(f) : OESTFlush.summary(f)) + ".", 180), L, y);
-    var tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null; });
+    }
+    addFull(pdf, sp, !page1); if (sp.length) page1 = true;
     if (tp.length) {
       var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;
       tp.forEach(function (p, i) {
-        var k = i % 12; if (!k) { pdf.addPage(); pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
+        var k = i % 12; if (!k) { if (page1 || i) pdf.addPage(); page1 = true; pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
         var cx = x0 + (k % COLS) * (W + GAP), cy = 20 + Math.floor(k / COLS) * (H + 10);
         var iw = W, ih = iw * p.height / p.width; if (ih > H) { ih = H; iw = ih * p.width / p.height; }
         pdf.addImage(p.bytes, "JPEG", cx + (W - iw) / 2, cy + (H - ih) / 2, iw, ih);
         pdf.text(pdf.splitTextToSize(f.taps[p.tap] ? f.taps[p.tap].name : "", W)[0] || "", cx + W / 2, cy + H + 4.5, { align: "center" });
       });
     }
-    fp.forEach(function (p) {
-      pdf.addPage(); var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M, iw = PW, ih = iw * p.height / p.width;
-      if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
-    });
+    addFull(pdf, fp, !page1);
     return new Uint8Array(pdf.output("arraybuffer"));
   }
+  // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
+  // scalone w jeden dokument albo osobne pliki, PDF / Word. r.pdf = pełny PDF (podgląd, kopia w telefonie do odtworzenia inspekcji),
+  // r.files = to, co faktycznie idzie mailem.
   function buildAll() {
-    var d = formData(), name = makeName(cfg.pattern, d, reportDate());
+    var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
+    var PDF = "application/pdf";
+    function file(suffix, mime, bytes) { return { name: name + suffix + (mime === PDF ? ".pdf" : ".docx"), mime: mime, bytes: bytes }; }
+    function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
+    function done(r, form) { // form: { pdf: fn(pics) → bajty raportu (z wybranymi zdjęciami), docx: bajty Worda | null }
+      var sel = pick(r.pics), files = [], sh = sel.filter(function (p) { return p.sheet; }), rest = sel.filter(function (p) { return !p.sheet; });
+      var wantForm = !!form, word = n.xw && form && form.docx && form.docx.length;
+      if (n.one) { // jeden dokument: raport → zdjęcia formularza → zdjęcia (Word nie scala zdjęć: idzie obok, gdy zaznaczony)
+        if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); }
+        else if (sel.length) files.push(file(" - photos", PDF, photosPdf(sel)));
+        if (word) files.push(file("", MIME_DOCX, form.docx));
+      } else {
+        if (wantForm && n.xp) files.push(file(" - report", PDF, form.pdf([])));
+        if (word) files.push(file(" - report", MIME_DOCX, form.docx));
+        if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh)));
+        if (rest.length) files.push(file(" - photos", PDF, photosPdf(rest)));
+      }
+      r.files = files; return r;
+    }
+    // plik zdjęć: przy kranach / punktach z ich nazwą (także bez formularza elektronicznego), reszta strona po stronie
+    function photosPdf(pics) {
+      var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
+      return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })));
+    }
+    function fin(ph) { return finalPhoto(ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
-      return { name: name, data: d, docx: fillTempDocx(d), pdf: buildTempPdf(d), pics: [], info: {}, logoUrl: "" };
+      var docx = fillTempDocx(d), pdf = buildTempPdf(d);
+      return { name: name, data: d, docx: docx, pdf: pdf, pics: [], info: {}, logoUrl: "", files: [n.xp || !n.xw ? file("", PDF, pdf) : null, n.xw ? file("", MIME_DOCX, docx) : null].filter(Boolean) };
     });
     if (cur.type.folder) {
-      var useTaps = !!d.flush, list = useTaps ? photos.slice() : formPhotos(); // bez formularza zdjęcia kranów nie idą
-      return list.reduce(function (p, ph) {
-        return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { f.tap = ph.tap; arr.push(f); return arr; }); });
-      }, Promise.resolve([])).then(function (pics) {
-        if (!useTaps) return { name: name, data: d, docx: new Uint8Array(0), pdf: buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
+      // Flushing / AOV / zdjęcia kartki: wszystkie zdjęcia z oznaczeniem (kran / formularz / ogólne)
+      return photos.reduce(function (p, ph) { return p.then(function (arr) { return fin(ph).then(function (f) { arr.push(f); return arr; }); }); }, Promise.resolve([])).then(function (pics) {
+        // stare inspekcje kartkowe: zdjęcie dodane zwykłym aparatem też jest zdjęciem kartki
+        if (!cur.type.flush) pics.forEach(function (p) { if (p.tap == null) p.sheet = true; });
+        if (!d.flush) {
+          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
+          return done(r0, null);
+        }
         d.stan_ogolny = d.stan = d.flush.points ? pointsSummary(d.flush) : OESTFlush.summary(d.flush);
         d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
-        return { name: name, data: d, docx: d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush), pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
+        var docx = d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush);
+        var r = { name: name, data: d, docx: docx, pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
+        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx });
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
     return photos.reduce(function (p, ph) {
-      return p.then(function (arr) { return finalPhoto(ph, d).then(function (f) { arr.push(f); return arr; }); });
+      return p.then(function (arr) { return fin(ph).then(function (f) { arr.push(f); return arr; }); });
     }, Promise.resolve([])).then(function (pics) {
-      var pdf = buildPdf(d, pics, info);
-      var docx = fillDocx(PizZip, docxtemplater, tpl, d, pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+      var pdf = buildPdf(d, pics, info), sel = pick(pics);
+      var docx = fillDocx(PizZip, docxtemplater, tpl, d, n.one ? sel : []).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
       var logoUrl = info.logo ? URL.createObjectURL(new Blob([info.logo], { type: info.logoType === "PNG" ? "image/png" : "image/jpeg" })) : "";
-      return { name: name, data: d, docx: docx, pdf: pdf, pics: pics, info: info, logoUrl: logoUrl };
+      return done({ name: name, data: d, docx: docx, pdf: pdf, pics: pics, info: info, logoUrl: logoUrl }, { pdf: function (s2) { return buildPdf(d, s2, info); }, docx: docx });
     });
   }
 
@@ -2598,6 +2675,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
         d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n",
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
+      files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
     };
     // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
