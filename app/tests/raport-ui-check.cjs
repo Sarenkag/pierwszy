@@ -30,7 +30,7 @@ const ids = [...new Set(fs.readFileSync(path.join(root, 'ppm.js'), 'utf8').match
       await pg.click('#toQueue'); await pg.waitForTimeout(3500);
       const files = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { try { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => res(g.result.length ? (g.result[g.result.length - 1].files || []).map(f => f.name) : null); } catch (e) { res(null); } }; rq.onerror = () => res(null); }));
       await ctx.close();
-      if (!files) continue; // np. inspekcja bez pytań, która nic nie wysyła (nic nie trafiło do kolejki)
+      if (!files) { bad.push(id + ': Wyślij nie dodało raportu do kolejki' + (errs.length ? ' (' + errs.join(' | ') + ')' : '')); continue; }
       checked++; done.push(id);
       const pdf = files.filter(n => n.endsWith('.pdf')), word = files.filter(n => n.endsWith('.docx'));
       if (!pdf.length || !word.length) bad.push(id + ': ' + JSON.stringify(files));
