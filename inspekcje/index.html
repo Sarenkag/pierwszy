@@ -1131,8 +1131,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.ppm; if (noTrack || !t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
     var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts());
-    if (r && r.s !== "prog" && r.s !== "hold") return; // wysłana / zakończona: poprawka nie zmienia klocka
-    if (!r && !open) return;
+    if (r && (r.s === "queued" || r.s === "sent")) return; // wysłana: klocek pokazuje to, co poszło w raporcie
+    // Gotowa: liczniki (zdjęcia, usterki) zawsze aktualne, status zostaje. Nie rozpoczęta + zmiana (np. zdjęcie kranu) = W trakcie.
+    if (!r && !open && !photos.length && !ppmCounts().used) return;
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
