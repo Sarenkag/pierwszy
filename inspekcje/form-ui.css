@@ -46,7 +46,7 @@ html body .iphotos .pbtn{min-height:58px!important;min-width:0;display:flex;flex
 .ck-row .seg button.on::after{color:#0a0e1f}
 #toQueue{min-height:50px;border-radius:16px!important}
 #finishIns{display:block;width:auto!important;margin:10px auto 0!important;min-height:40px;padding:8px 18px!important;border-radius:999px!important;font-weight:700;color:#2bf07f!important;border:1.5px solid #2bf07f!important;background:rgba(43,240,127,.1)!important}
-#finishIns:disabled{opacity:1;color:#04210f!important;background:#2bf07f!important}
+#finishIns.ready,#finishIns.ready:disabled{opacity:1;color:#04210f!important;background:#2bf07f!important;box-shadow:0 0 14px rgba(43,240,127,.55)}
 
 /* 03/11 test w terenie */
 #v-form .top{align-items:center}

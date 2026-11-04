@@ -2044,9 +2044,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport
   function syncFinish() {
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
-    var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null, same = mailSame(st);
-    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { f.disabled = true; f.textContent = T("✓ Zakończona ", "✓ Finished ") + fmtDate(new Date(st.at || Date.now())); return; }
-    f.disabled = q.disabled || (q.classList.contains("compact") && !same);
+    var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null;
+    var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
+    f.classList.toggle("ready", ready); f.disabled = ready;
+    if (ready) { f.textContent = T("✓ GOTOWA ", "✓ READY ") + fmtDate(new Date(st.at || Date.now())); return; }
     f.textContent = T("✓ Zakończ inspekcję", "✓ Finish inspection");
   }
   function updateFormHint0() {
@@ -2552,7 +2553,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var d = r.data;
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      ppm: from.ppm && !from.fix ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
+      ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: d.folder ? r.name : "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
       body: d.folder ? d.tytul + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") + "\n" :
         d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
@@ -2577,7 +2578,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!from.finish) {
         // „Wyślij” (Grzegorz 03/11 12:12, 04/11): raport idzie do kolejki, a inspekcja ZOSTAJE otwarta — szkic, zdjęcia, zlecenie
         // i termin bez zmian; można poprawić i wysłać jeszcze raz. Kończy dopiero „Zakończ inspekcję”.
-        if (from.ppm && PPM.setStage && !from.fix) { ppmTrack(true); var r0 = PPM.stage(from.ppm); PPM.setStage(from.ppm, { s: r0 && r0.s === "hold" ? "hold" : "prog", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), mailSig: from.sig || "", mailDate: d.data || "" }); }
+        if (from.ppm && PPM.setStage) { if (!from.fix) ppmTrack(true); var r0 = PPM.stage(from.ppm); PPM.setStage(from.ppm, { s: r0 && r0.s !== "prog" ? (r0.s === "sent" || r0.s === "queued" || r0.s === "done" ? (it.status === "sent" ? "sent" : "queued") : r0.s) : "prog", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), mailSig: from.sig || "", mailDate: d.data || "" }); }
         if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
         lastMailHint = mailHint(it);
         return Promise.resolve(saveDraftNow()).then(function () { return sendBtn ? sendBtn.ok(mailState(it)) : null; }).then(function () { show("form"); renderPpmBar(); });
@@ -2615,9 +2616,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function finHint() {
     var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null; if (!st) return "";
-    return T("✓ Inspekcja zakończona ", "✓ Inspection finished ") + fmtDate(new Date(st.at || Date.now())) + " · " +
-      (st.s === "sent" ? T("raport wysłany.", "report sent.") : st.s === "queued" ? T("raport czeka w kolejce i wyjdzie sam.", "the report is waiting in the queue and will go by itself.") : T("bez raportu.", "no report.")) +
-      T(" Zostaje tu do następnego terminu.", " It stays here until the next due date.");
+    if (st.s !== "queued" && st.s !== "sent" && st.s !== "done") return "";
+    return T("✓ GOTOWA od ", "✓ READY since ") + fmtDate(new Date(st.at || Date.now())) + " · " +
+      (st.s === "sent" ? T("raport wysłany.", "report sent.") : st.s === "queued" ? T("raport czeka w kolejce.", "report waiting in the queue.") : T("raport jeszcze nie wysłany.", "report not sent yet.")) +
+      T(" Wszystko zostaje w telefonie.", " Everything stays on the phone.");
   }
   // stan raportu po „Wyślij”, prawdziwy — nigdy „wysłane”, dopóki mail nie wyszedł (zasada 03/11)
   function waitsWifi() { var c = navigator.connection; return gm() && cfg.wifiOnly !== false && !(c && (c.type === "wifi" || c.type === "ethernet")); }
@@ -2625,6 +2627,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function mailHint(it) {
     var s = it.status === "sent" ? T("Raport wysłany.", "Report sent.") : !online() ? T("Raport czeka w kolejce — nie ma sieci. Wyjdzie sam, gdy wróci zasięg.", "The report is waiting in the queue — no network. It goes out by itself when the signal returns.") :
       waitsWifi() ? T("Raport czeka w kolejce na Wi‑Fi (nie jest jeszcze wysłany). Przez dane: pasek na dole → „Wyślij przez dane”.", "The report is waiting in the queue for Wi‑Fi (not sent yet). Over mobile data: bar at the bottom → “Send over data”.") : T("Raport w kolejce — stan wysyłki na pasku na dole.", "Report queued — sending status on the bar at the bottom.");
+    if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) return s + T(" Inspekcja zostaje oznaczona jako GOTOWA.", " The inspection stays marked READY.");
     return s + T(" Inspekcja zostaje otwarta: możesz poprawić i wysłać ponownie. Gdy skończysz — „Zakończ inspekcję”.", " The inspection stays open: you can correct it and send again. When you are done — “Finish inspection”.");
   }
   // podpis treści formularza: czy po ostatnim „Wyślij” coś się zmieniło (wtedy „Zakończ” wysyła nową wersję)
@@ -2650,7 +2653,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     lastMailHint = "";
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
-    if (fix && !await ask(T("Ta inspekcja za termin ", "This inspection for the period ") + fmtDate(new Date(PPM.stage(cur.ppm).period || Date.now())) + T(" jest już ", " is already ") + (PPM.stage(cur.ppm).s === "done" ? T("zakończona", "completed") : T("wysłana", "sent")) + T(".\nWysłać jeszcze raz jako poprawkę? Termin się nie zmieni.", ".\nSend again as a correction? The due date will not change."))) return;
+    // „Gotowa” to tylko znacznik Grzegorza (04/11): ponowne Wyślij bez pytań; termin się nie przesuwa (fix)
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
@@ -2664,31 +2667,20 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       else if (lastMailHint) $("formHint").textContent = lastMailHint; // po „Wyślij”: prawdziwy stan raportu (kolejka / Wi‑Fi / wysłany)
     });
   }
-  // „Zakończ inspekcję”: raport wysłany i bez zmian → tylko zamyka; inaczej najpierw wysyła aktualną wersję (Grzegorz 03/11 12:13)
+  // „✓ Zakończ inspekcję” (Grzegorz 04/11 10:00): TYLKO znacznik dla Grzegorza „gotowe, nie muszę tu zaglądać”.
+  // Nic nie wysyła, o nic nie pyta, niczego nie kasuje. Na liście jaskrawe zielone „GOTOWA”.
   $("finishIns").addEventListener("click", async function () {
     if (queueing) return;
-    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; }
-    var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
-    if (!mailSame(st)) {
-      // raport musi wyjść (Grzegorz 03/11 12:13), ale bez zaskoczenia: pytamy
-      var why = st && st.mail ? T("Po ostatnim „Wyślij” coś zmieniłeś.", "You changed something after the last “Send”.") : T("Raport z tej inspekcji nie był jeszcze wysłany.", "The report for this inspection has not been sent yet.");
-      var qq = why + T("\nWysłać aktualny raport i zakończyć inspekcję?", "\nSend the current report and finish the inspection?");
-      if (!(await (window.OESTPrzycisk && OESTPrzycisk.confirm ? OESTPrzycisk.confirm(qq, { ok: T("Wyślij i zakończ", "Send and finish"), danger: false }) : ask(qq)))) return;
-      queueBtn(this, false, true); return;
+    var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
+    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) return; // już Gotowa
+    if (t) {
+      var dd = PPM.due(t), day = isoDay(reportDate());
+      PPM.setStage(t, { s: st && st.mail === "sent" ? "sent" : st && st.mail === "queued" ? "queued" : "done", period: dd ? isoDay(dd) : day, day: isoDay(new Date()), manual: false });
+      if (!t.open || cur.mode === "sum") PPM.close(t, day); // następny termin z grafiku/Vantify; ta inspekcja zostaje z napisem Gotowa
     }
-    var b = this; lastMailHint = ""; queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Kończę inspekcję", "Finishing the inspection"), keep: false }) : null;
-    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()), queued: false, draft: cur.mode === "one" ? draftKey() : "" };
-    try {
-      markDone(from.type, cur.code);
-      if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
-        var dd = PPM.due(from.ppm), sent = st.mail === "sent";
-        PPM.setStage(from.ppm, { s: sent ? "sent" : "queued", period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false });
-        if (!from.ppm.open || from.mode === "sum") PPM.close(from.ppm, from.day);
-      }
-      await closeUp(from, { data: st.mailDate || fmtDate(reportDate()) });
-    } catch (e) { $("formHint").textContent = T("Nie udało się zakończyć: ", "Could not finish: ") + gErr(e); }
-    queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; updateFormHint();
-    if (lastMailHint) $("formHint").textContent = lastMailHint;
+    markDone(cur.type, cur.code);
+    if (cur.mode === "one" && cur.type) { var k = draftKey(); try { var sn = draftSnap(); sn.fin = Date.now(); await kvSet(k, sn); } catch (e) {} }
+    renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || T("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {
     if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”

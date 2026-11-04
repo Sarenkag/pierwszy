@@ -284,12 +284,13 @@ window.OEST_PPM = {
     try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
+  // raport usunięty z kolejki przed wysłaniem: okres znów otwarty, termin wraca na ten sprzed wysłania.
+  // Inspekcja wraca do „W trakcie” (nie do „Nie rozpoczęta”), żeby formularz i zdjęcia zostały w telefonie (04/11).
   P.unqueue = function (id, qid) {
     var t = P.byId(id), r = stages()[id]; if (!t || !r) return;
-    // termin wraca na ten sprzed wysłania; inspekcja znów „W trakcie” (formularz zostaje w telefonie, nic nie znika)
+    if (qid && r.mailId && r.mailId !== qid) return; // to nie ostatni raport tej inspekcji
     if (r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, { s: "prog", mail: "", mailId: "", mailSig: "", manual: false }); return; }
-    // inspekcja otwarta: usunięty raport z „Wyślij” → znika tylko znaczek ✉, inspekcja zostaje jak była
-    if (r.mail === "queued" && (!qid || r.mailId === qid)) P.setStage(t, { mail: "", mailId: "", mailSig: "" });
+    if (r.mail === "queued") P.setStage(t, { mail: "", mailId: "", mailSig: "" }); // otwarta inspekcja: znika tylko znaczek ✉
   };
   // ---------- co ta inspekcja wymaga (Grzegorz 04/11/2026) ----------
   // localStorage "oest.ppm.needs" = { id: { q: pytania aktywne, p: zdjęcia wymagane, f: zdjęcie formularza wymagane } }
