@@ -65,7 +65,7 @@
         '<label class="field"><span>' + T('Limit na telefonie (MB)', 'Phone limit (MB)') + '</span><input id="zdPhone" type="number" min="100" step="100" value="' + s.phoneLimitMB + '"></label>' +
         '<label class="field"><span>' + T('Limit na Dysku (MB)', 'Drive limit (MB)') + '</span><input id="zdDrive" type="number" min="100" step="100" value="' + s.driveLimitMB + '"></label>' +
         '<label class="check"><input id="zdWifi" type="checkbox"' + (s.wifiOnly ? ' checked' : '') + '><span>' + T('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') + '</span></label>' +
-        '<p class="hint">' + T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded are never deleted. Over the Drive limit, the oldest are removed from Drive.') + '</p>' +
+        '<p class="hint">' + T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych i tych w inspekcjach apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded or in inspections are never deleted. Over the Drive limit, the oldest are removed from Drive.') + '</p>' +
         '<button class="btn go" type="button" data-zd="save">' + T('Zapisz ustawienia', 'Save settings') + '</button></div>' +
       '<div class="panel"><label class="field"><span>' + T('Szukaj: dzień (2026-11-01), kod, miejsce, rodzaj', 'Search: day (2026-11-01), code, place, type') + '</span><input id="zdSearch" type="text" inputmode="search" value="' + esc(query) + '" placeholder="' + T('np. ISO-027 albo 2026-11-01', 'e.g. ISO-027 or 2026-11-01') + '"></label>' +
         (found.length ? Object.keys(days).map(function (d) {
@@ -87,6 +87,8 @@
   }
   // usuwanie (Grzegorz 03/11): z telefonu i z Dysku, po potwierdzeniu
   async function delPhoto(r) {
+    // zdjęcie w inspekcji (Grzegorz 04/11: inspekcje i zdjęcia nigdy nie znikają): usunąć je można tylko z samej inspekcji
+    if (r.hold) { var K = w.OESTKomunikat; var t0 = T('To zdjęcie jest w inspekcji, więc tutaj nie da się go usunąć. Najpierw usuń je w inspekcji.', 'This photo is in an inspection, so it cannot be deleted here. Delete it in the inspection first.'); if (K) K(t0); else w.alert(t0); return false; }
     var P = w.OESTPrzycisk, txt = r.driveId ? T('Zniknie z telefonu i z Dysku Google.', 'It will be removed from the phone and Google Drive.') : T('Zniknie z telefonu.', 'It will be removed from the phone.');
     var yes = P && P.ask ? await P.ask({ title: T('Usunąć zdjęcie?', 'Delete photo?'), text: r.name + '. ' + txt, ok: T('Usuń', 'Delete'), cancel: T('Anuluj', 'Cancel') }) : w.confirm(T('Usunąć zdjęcie? ', 'Delete photo? ') + txt);
     if (!yes) return false;

@@ -1,6 +1,12 @@
 /* Moduł zdjęć (moduly/zdjecia) – wielokrotnego użytku, bez kodu inspekcji.
  *
- * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, when })
+ * JEDYNE miejsce zapisu zdjęć w apkach OEST (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze, pozostałe moduły
+ * korzystają z jednego miejsca”). Inspekcje, szkice i raporty trzymają tylko id zdjęcia, nie własne kopie.
+ *
+ * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, hold, when }) → { id, blob, width, height, … }
+ *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
+ *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
+ *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
  * Moduł sam:  kompresuje (jakość z ustawień), zapisuje w osobnym magazynie na telefonie (IndexedDB „oest-zdjecia”),
  *             pilnuje limitu miejsca, nadaje nazwę i folder (dzień / kategoria), a przez sync() wysyła na dysk.
  * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), upload(parentId, name, blob), remove(id) },
@@ -8,6 +14,7 @@
  *
  * Zasady bezpieczeństwa danych:
  *  - z telefonu znikają tylko zdjęcia, które są już na dysku (niewysłanych nie kasujemy nigdy),
+ *  - zdjęcia trzymane przez inspekcję (hold) nie znikają z telefonu nawet po wysłaniu na dysk,
  *  - z dysku znikają najstarsze, gdy przekroczony jest limit dysku (wpis w apce zostaje oznaczony, że go tam już nie ma).
  */
 (function (root, factory) {
@@ -17,7 +24,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var MB = 1024 * 1024;
+  var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
   var PRESETS = {
     standard: { max: 1920, q: 0.8, pl: 'Standard (do 1920 px, ok. 0,5 MB)', en: 'Standard (up to 1920 px, about 0.5 MB)' },
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
@@ -44,7 +51,7 @@
     var d = when instanceof Date && !isNaN(when) ? when : new Date();
     var month = d.getFullYear() + '-' + pad(d.getMonth() + 1), day = pad(d.getDate());
     var category = safe(meta.category) || (meta.source === 'reactive' ? 'Reactive' : 'Inne'); // i18n-ok: nazwa folderu na Dysku
-    var label = [safe(meta.location), safe(meta.code)].filter(Boolean).join(' ') || category;
+    var label = [safe(meta.location), safe(meta.code), safe(meta.point)].filter(Boolean).join(' ') || category;
     var time = pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
     return { folder: [month, day, category], name: label + ' ' + time + '.jpg', day: month + '-' + day };
   }
@@ -66,6 +73,7 @@
     var phoneBytes = local.reduce(function (t, r) { return t + (r.size || 0); }, 0), phoneRemove = [];
     for (var j = 0; j < local.length && phoneBytes > s.phoneLimitMB * MB; j++) {
       if (!local[j].driveId) continue; // niewysłane zostają na telefonie
+      if (local[j].hold) continue; // zdjęcie w inspekcji zostaje na telefonie
       phoneRemove.push(local[j].id); phoneBytes -= local[j].size || 0;
     }
     return { driveRemove: driveRemove, phoneRemove: phoneRemove, phoneOver: phoneBytes > s.phoneLimitMB * MB };
@@ -85,14 +93,14 @@
   function search(records, query) {
     var words = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
     return records.filter(function (r) {
-      var hay = [r.day, r.code, r.location, r.category, r.name, r.source].join(' ').toLowerCase();
+      var hay = [r.day, r.code, r.location, r.point, r.category, r.name, r.source].join(' ').toLowerCase();
       return words.every(function (w) { return hay.indexOf(w) >= 0; });
     }).sort(function (a, b) { return a.created < b.created ? 1 : -1; });
   }
 
   /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset), wifi(), now() } */
   function createStore(deps) {
-    var syncing = null, listeners = [], savedListeners = [];
+    var syncing = null, enforcing = Promise.resolve(), listeners = [], savedListeners = [];
     function emit(list) { (list || listeners).forEach(function (f) { try { f(); } catch (_) {} }); }
     // każde konto ma osobne zdjęcia i osobny stan Dysku (inne konto na tym samym telefonie ich nie widzi)
     function owner() { return String((deps.owner && deps.owner()) || ''); }
@@ -107,13 +115,39 @@
       var when = info.when instanceof Date && !isNaN(info.when) ? info.when : new Date(deps.now());
       var s = settings(), out = await deps.compress(file, s.preset);
       var p = place(info, when);
-      var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), day: p.day, folder: p.folder, name: p.name,
+      var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), saved: new Date(deps.now()).toISOString(), day: p.day, folder: p.folder, name: p.name,
         source: safe(info.source) || 'inne', category: safe(info.category), code: safe(info.code), location: safe(info.location),
+        point: safe(info.point), hold: safe(info.hold),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
-      await enforce(null);
-      emit(); emit(savedListeners);
-      return meta(rec);
+      // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11)
+      enforcing = enforcing.then(function () { return enforce(null); }).catch(function () {}).then(function () { emit(); });
+      emit(savedListeners);
+      var m = meta(rec); m.blob = out.blob; m.thumb = out.thumb || null; // ten sam plik (i miniatura) dla wołającego: bez drugiej kopii
+      return m;
+    }
+
+    /* Oznacza istniejące zdjęcia jako trzymane przez `holder` (np. kopie wracające do przywróconej inspekcji). */
+    async function keep(ids, holder) {
+      holder = safe(holder); if (!holder) return 0;
+      var n = 0;
+      for (var i = 0; i < (ids || []).length; i++) { var r = await deps.db.get(ids[i]); if (r && r.hold !== holder) { r.hold = holder; await deps.db.put(r); n++; } }
+      if (n) emit();
+      return n;
+    }
+
+    /* Zwalnia zdjęcia trzymane przez `holder`, których id nie ma w `keep` (lista id albo Set) i które są starsze niż
+       minAgeMs (świeże mogą jeszcze czekać na zapis szkicu). Zwolnione zdjęcie zostaje w folderze OEST – tylko podlega limitowi. */
+    async function release(holder, keep, minAgeMs) {
+      holder = safe(holder); if (!holder) return 0;
+      var ks = keep instanceof Set ? keep : new Set(keep || []), edge = deps.now() - (minAgeMs || 0), n = 0, all = await mine();
+      for (var i = 0; i < all.length; i++) {
+        var r = all[i];
+        if (r.hold !== holder || ks.has(r.id) || Date.parse(r.saved || r.created) > edge) continue; // wiek od zapisu (zdjęcie z galerii może mieć starą datę)
+        r.hold = ''; await deps.db.put(r); n++;
+      }
+      if (n) { await enforce(null); emit(); }
+      return n;
     }
 
     async function enforce(drive) {
@@ -176,7 +210,7 @@
     async function remove(id) { await deps.db.del(id); emit(); }
     function onChange(f) { listeners.push(f); }
     function onSaved(f) { savedListeners.push(f); }
-    return { save: save, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
+    return { save: save, keep: keep, release: release, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
       onChange: onChange, onSaved: onSaved, busy: function () { return !!syncing; } };
   }
 
@@ -216,9 +250,12 @@
       c.width = f.width; c.height = f.height;
       var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
       if (img.close) img.close();
-      var blob = await new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); });
-      if (!blob) throw Error('IMAGE_COMPRESSION');
-      return { blob: blob, width: f.width, height: f.height };
+      // miniatura z tego samego płótna (bez drugiego dekodowania), dla ekranów z podglądem
+      var k = Math.min(1, THUMB / Math.max(f.width, f.height)), t = win.document.createElement('canvas');
+      t.width = Math.max(1, Math.round(f.width * k)); t.height = Math.max(1, Math.round(f.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      var both = await Promise.all([new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); }), new Promise(function (res) { t.toBlob(res, 'image/jpeg', 0.8); })]);
+      if (!both[0]) throw Error('IMAGE_COMPRESSION');
+      return { blob: both[0], thumb: both[1], width: f.width, height: f.height };
     };
   }
   function createBrowser(win) {

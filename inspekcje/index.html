@@ -1268,7 +1268,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }).concat(keptSaved)
+      photos: photos.map(savedPhoto).concat(keptSaved)
     };
   }
   function saveDraftNow() {
@@ -1386,17 +1386,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
       renderFlush(); updateFormHint();
       draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
-      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false, true); });
+      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false); });
       var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
       $("formHint").textContent = T("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
         "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
       return;
     }
-    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? new File([bl], r.name || "zdjecie.jpg", { type: bl.type || "image/jpeg", lastModified: Date.parse(r.created) || Date.now() }) : null; }); }))
-      .then(function (files) {
-        files = files.filter(Boolean); if (tok !== formSeq) return;
+    // kopie są już w folderze OEST: wracają do inspekcji jako te same zdjęcia (bez drugiego zapisu), znów trzymane przez inspekcję
+    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? makePhoto(bl, { zid: r.id, width: r.width, height: r.height, when: new Date(Date.parse(r.created) || Date.now()) }) : null; }); }))
+      .then(function (ps) {
+        ps = ps.filter(Boolean); var files = ps; if (tok !== formSeq) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+        if (Zd.keep) Zd.keep(ps.map(function (p) { return p.zid; }), HOLD).catch(function () {});
         draftOn = true; b.hidden = true; b.disabled = false; restoreList = [];
-        addFiles(files, null, false, true);
+        if (ps.length) needOn("p"); photos = photos.concat(ps); renderPhotos(); suggestDate();
         $("formHint").textContent = T("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + T(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
       }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
   });
@@ -1724,7 +1726,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
       lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, sheet: p.sheet || undefined }; }).concat(keptSaved),
+      photos: photos.map(savedPhoto).concat(keptSaved),
       t: Date.now()
     };
     var code = cur.code, prev = batch.items[code];
@@ -1745,11 +1747,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("formHint").textContent = T("Nie zapisano w telefonie (", "Not saved on the phone (") + gErr(e) + T("). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.", "). The form stays — try again or remove some photos.");
     });
   });
+  // zapisane zdjęcie: nowe szkice mają tylko id (zid) w module zdjęć, starsze (sprzed 05/11) jeszcze własną kopię (blob)
   function photoFromSaved(sp, code, wh) {
-    return createImageBitmap(sp.blob).then(function (img) {
-      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
-      c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
-      return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh };
+    var get = sp.zid && Zd ? Zd.blob(sp.zid).then(function (b) { return b || sp.blob; }, function () { return sp.blob; }) : Promise.resolve(sp.blob);
+    return get.then(function (b) {
+      if (!b) throw new Error("PHOTO_MISSING");
+      return makePhoto(b, { zid: sp.zid, width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh });
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
@@ -1920,17 +1923,17 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   renderModel();
 
   // ---------- zdjęcia ----------
-  function addFiles(input, tap, sheet, noCopy) {
+  function addFiles(input, tap, sheet) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
+    ctx.point = tap != null ? tapName(tap) : ""; // zdjęcie przy kranie / punkcie: nazwa punktu w folderze OEST
     $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          if (tok === formSeq && !noCopy) keepCopy(f, when, ctx);
-          return processPhoto(f, when).then(function (ph) {
+          return storePhoto(f, when, ctx).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; if (tap != null) ph.tap = tap;
             // zdjęcia formularza zawsze na końcu (ostatnie strony raportu), zwykłe przed nimi
@@ -1942,7 +1945,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     }, Promise.resolve()).then(function () {
       if (tok === formSeq) scheduleDraft();
-      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + " · zmniejszone do maks. 1920 px." : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
+      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + T(" · zapisane raz w folderze OEST.", " · saved once in the OEST folder.") : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
     }).catch(function () { $("photoInfo").textContent = T("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
@@ -1976,7 +1979,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob).then(function (nb) {
             if (!nb) return;
-            return processPhoto(nb, p.when).then(function (np) {
+            var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : "";
+            return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
               URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos();
@@ -2028,7 +2032,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
     $("photoInfo").textContent = T("Sprawdzam zdjęcie…", "Checking the photo…");
-    Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
+    bitmap(ph.blob).then(function (img) {
+      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
+      return window.INSP_ANALYZE(c, cur.type.id);
+    }).then(function (list) {
       if (cur.code !== code) return;
       ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
         .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: !ask }; });
@@ -2076,10 +2083,35 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.type || {};
     return { source: "inspekcja", category: t.name || t.title || "Inspekcja", code: cur.mode === "sum" ? "" : cur.code, location: cur.where || cur.loc || "" };
   }
-  function keepCopy(file, when, ctx) {
-    if (!window.OESTZdjecia) return;
-    window.OESTZdjecia.save(file, Object.assign({}, ctx, { when: when })).catch(function () {});
+  // ---------- jeden zapis zdjęcia (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze”) ----------
+  // Zdjęcie zapisuje się RAZ w module zdjęć (folder OEST, z nazwą kranu / punktu, trzymane przez inspekcję, więc sprzątanie
+  // go nie skasuje). Szkic, zlecenie i raport mają tylko jego id. W pamięci jest mała miniatura, duże zdjęcie czyta się z pliku
+  // dopiero do raportu i modelu (wcześniej każde zdjęcie trzymało ok. 11 MB pamięci, przy Flushing TB setki MB).
+  var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
+  function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
+  function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
+  function bitmap(blob) { return createImageBitmap(blob, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(blob); }); }
+  // miniatury po kolei (jedno duże zdjęcie naraz w pamięci); przy błędzie podgląd z samego pliku
+  function thumbUrl(blob) {
+    var job = thumbQ.then(function () {
+      return bitmap(blob).then(function (img) {
+        var k = Math.min(1, THUMB_PX / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (img.close) img.close();
+        return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.8); });
+      }).then(function (tb) { return URL.createObjectURL(tb || blob); }, function () { return URL.createObjectURL(blob); });
+    });
+    thumbQ = job.catch(function () {});
+    return job;
   }
+  function makePhoto(blob, o, thumb) { return (thumb ? Promise.resolve(URL.createObjectURL(thumb)) : thumbUrl(blob)).then(function (url) { return Object.assign({ blob: blob, url: url }, o); }); }
+  function storePhoto(file, when, ctx) {
+    if (!Zd) return processPhoto(file, when);
+    return Zd.save(file, Object.assign({}, ctx, { when: when, hold: HOLD })).then(function (r) {
+      return makePhoto(r.blob, { zid: r.id, width: r.width, height: r.height, when: when }, r.thumb);
+    }, function () { return processPhoto(file, when); }); // folder OEST nie przyjął zdjęcia (np. brak miejsca): zostaje w samej inspekcji
+  }
+  // zapas bez modułu zdjęć: własna kopia w szkicu (jak przed 05/11)
   function processPhoto(file, when) {
     return loadImage(file).then(function (img) {
       var w = img.width, h = img.height, MAX = 1920;
@@ -2088,10 +2120,28 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       c.getContext("2d").drawImage(img, 0, 0, w, h);
       if (img.close) img.close();
       return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
-        return { canvas: c, blob: blob, url: URL.createObjectURL(blob), width: w, height: h, when: when };
+        return makePhoto(blob, { width: w, height: h, when: when });
       });
     });
   }
+  // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 7 dniach
+  // przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
+  function releaseUnused() {
+    if (!Zd || !Zd.release) return;
+    dbP.then(function (db) {
+      if (!db) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
+      return idb("kv", "readonly", function (st) { return st.getAll(); }).then(function (vals) {
+        var ids = new Set();
+        (function walk(v, depth) {
+          if (!v || typeof v !== "object" || depth > 8 || v instanceof Blob || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) return;
+          if (typeof v.zid === "string") ids.add(v.zid);
+          Object.keys(v).forEach(function (k) { walk(v[k], depth + 1); });
+        })(vals, 0);
+        return Zd.release(HOLD, ids, 7 * 864e5);
+      });
+    }).catch(function () {});
+  }
+  setTimeout(releaseUnused, 15000);
   // Zdjęcie do raportu (jedno miejsce dla wszystkich inspekcji): ok. 25 KB na zdjęcie (Grzegorz 04/11: dwa razy izolatory z 28/10),
   // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
@@ -2099,9 +2149,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var REPORT_SIZE = { zwykla: { px: 600, q: 0.6 }, flush: { px: 960, q: 0.65 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
   function finalPhoto(p, d) {
-    var rs = reportSize(), src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+    return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
+  }
+  function finalFrom(src, p, d) {
+    var rs = reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
-    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h);
+    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
     if (cfg.stamp) {
       var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja);
       var fs = Math.max(16, Math.round(w / 40));
