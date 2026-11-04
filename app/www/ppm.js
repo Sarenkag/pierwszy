@@ -257,6 +257,8 @@ window.OEST_PPM = {
   // ---------- etap inspekcji na klocku (02/11/2026) ----------
   // localStorage "oest.ppm.stage" = { id: { s, at, period, photos, thumb, issues, total, manual } }
   // s: prog = W trakcie, hold = Wstrzymana, done = Zakończona (bez wysyłki), queued = W kolejce, sent = Wysłana.
+  // mail (04/11): stan ostatniego raportu z „Wyślij” przy otwartej inspekcji: queued / sent (+ mailId, mailAt, mailSig, mailDate).
+  // „Wyślij” nie zamyka inspekcji; queued/sent w s ustawia dopiero „Zakończ inspekcję”.
   // period = termin (RRRR-MM-DD), którego dotyczy wpis. Wpis „zamyka” okres, dopóki nie minie ten termin (albo dzień wysłania, jeśli po terminie).
   var SK = "oest.ppm.stage";
   function stages() { try { return JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
@@ -273,9 +275,23 @@ window.OEST_PPM = {
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
-  P.markSent = function (id) { var t = P.byId(id); if (!t) return; var r = stages()[id]; if (r && (r.s === "queued" || r.s === "sent")) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ var a = stages(); a[id] = r; try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {} } };
+  // qid = id raportu w kolejce: inspekcja otwarta po „Wyślij” (s = prog/hold, mail = queued) dostaje ✉ wysłany tylko za swój ostatni raport
+  P.markSent = function (id, qid) {
+    var t = P.byId(id); if (!t) return; var a = stages(), r = a[id]; if (!r) return;
+    if ((r.s === "queued" || r.s === "sent") && (!qid || !r.mailId || r.mailId === qid)) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ }
+    else if (!(r.mail && (!qid || !r.mailId || r.mailId === qid))) return;
+    if (r.mail && (!qid || !r.mailId || r.mailId === qid)) { r.mail = "sent"; r.mailSentAt = Date.now(); }
+    try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
+  };
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
-  P.unqueue = function (id) { var t = P.byId(id), r = stages()[id]; if (t && r && r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, null); } }; // termin wraca na ten sprzed wysłania
+  // raport usunięty z kolejki przed wysłaniem: okres znów otwarty, termin wraca na ten sprzed wysłania.
+  // Inspekcja wraca do „W trakcie” (nie do „Nie rozpoczęta”), żeby formularz i zdjęcia zostały w telefonie (04/11).
+  P.unqueue = function (id, qid) {
+    var t = P.byId(id), r = stages()[id]; if (!t || !r) return;
+    if (qid && r.mailId && r.mailId !== qid) return; // to nie ostatni raport tej inspekcji
+    if (r.s === "queued") { if (r.period) P.setDue(t, r.period); P.setStage(t, { s: "prog", mail: "", mailId: "", mailSig: "", manual: false }); return; }
+    if (r.mail === "queued") P.setStage(t, { mail: "", mailId: "", mailSig: "" }); // otwarta inspekcja: znika tylko znaczek ✉
+  };
   // ---------- co ta inspekcja wymaga (Grzegorz 04/11/2026) ----------
   // localStorage "oest.ppm.needs" = { id: { q: pytania aktywne, p: zdjęcia wymagane, f: zdjęcie formularza wymagane } }
   // Każda inspekcja ma pytania, ale nie w każdej są aktywne; włącza się je w inspekcji. Nieaktywne → szara ikonka na klocku.

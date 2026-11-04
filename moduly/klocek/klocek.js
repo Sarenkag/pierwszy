@@ -41,7 +41,10 @@
     ".k2 .kths:empty{display:none}" +
     ".k2 .kgo{position:absolute;right:10px;top:50%;width:22px;height:22px;margin-top:-11px;fill:none;stroke:var(--muted);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}" +
     ".k2 .kgo.open{transform:rotate(90deg)}" +
-    ".prow.k2.kdone{opacity:.5;filter:grayscale(.6)}.prow.k2.kplan{opacity:.6}";
+    ".prow.k2.kdone{opacity:.5;filter:grayscale(.6)}.prow.k2.kplan{opacity:.6}" +
+    // gotowa (Grzegorz 04/11 09:58): jaskrawy zielony, pełny napis — widać z daleka, nic nie szarzeje
+    ".k2 .kst.ready{color:#04210f!important;background:#2bf07f!important;border-color:#2bf07f!important;font-size:13px;letter-spacing:.04em;padding:6px 12px;box-shadow:0 0 14px rgba(43,240,127,.55)}" +
+    ".prow.k2.kready{box-shadow:inset 0 0 0 2px rgba(43,240,127,.55)}";
   function css() {
     if (!w.document || w.document.getElementById("oest-klocek-css")) return;
     var s = w.document.createElement("style"); s.id = "oest-klocek-css"; s.textContent = CSS;
@@ -57,14 +60,14 @@
     var data = "";
     if (o.id != null) data += ' data-id="' + esc(o.id) + '"';
     Object.keys(o.data || {}).forEach(function (k) { data += " data-" + k + '="' + esc(o.data[k]) + '"'; });
-    var st = o.status ? '<span class="kst c' + (o.status.tone | 0) + '">' + esc(bare(o.status.text)) + "</span>" : "";
+    var st = o.status ? '<span class="kst c' + (o.status.tone | 0) + (o.status.ready ? " ready" : "") + '">' + esc(bare(o.status.text)) + "</span>" : "";
     var icon = !o.icon ? "" : /^\s*</.test(o.icon) ? o.icon : '<span class="ty em" aria-hidden="true">' + esc(o.icon) + "</span>";
     var thumb = o.thumb ? '<img class="kth" alt="" src="' + esc(o.thumb) + '">' : o.thumbAttr ? '<span class="kths" ' + o.thumbAttr + "></span>" : "";
     // znaczki w dolnym wierszu – jeden wzór: moduly/znacznik (raport, zdjęcia, punkty, usterki)
     var marks = (o.form && Z ? Z.formularz(o.form) : "") + (o.marks || []).filter(function (m) { return m && m.n !== "" && m.n != null; }).map(function (m) { return Z ? Z.ikona(m.i, m.n, m.off ? "off" : m.tone) : esc(m.i + m.n); }).join("") + thumb;
     var desc = [o.desc, o.foot].filter(Boolean).join(" · ");
     var due = o.due ? '<div class="kd"><span class="oest-ic termin">' + CAL + "</span><span>" + o.due + "</span></div>" : '<div class="kd"></div>';
-    return '<button class="prow k2' + (o.done ? " kdone" : "") + (o.plan ? " kplan" : "") + '" type="button"' + data + ' style="--g:' + esc(o.color || "#8b949e") + '"' + (o.disabled ? " disabled" : "") + (o.go ? ' aria-description="' + esc(bare(o.go).replace(/[›▸▾]/g, "").trim()) + '"' : "") + ">" +
+    return '<button class="prow k2' + (o.done ? " kdone" : "") + (o.status && o.status.ready ? " kready" : "") + (o.plan ? " kplan" : "") + '" type="button"' + data + ' style="--g:' + esc(o.color || "#8b949e") + '"' + (o.disabled ? " disabled" : "") + (o.go ? ' aria-description="' + esc(bare(o.go).replace(/[›▸▾]/g, "").trim()) + '"' : "") + ">" +
       '<div class="kr">' + icon + '<div class="knm">' + (o.tag ? '<span class="kbl">' + esc(o.tag) + "</span>" : "") + esc(o.name) + "</div>" + st + "</div>" +
       '<div class="kr"><div class="kloc">' + esc(desc || "") + "</div></div>" +
       '<div class="kr kinfo">' + due + (marks ? '<div class="km">' + marks + "</div>" : "") + "</div>" +

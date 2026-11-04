@@ -44,9 +44,9 @@ test('etap klocka: wysłana zamyka okres do terminu, poprawka nie przesuwa termi
   assert.strictEqual(P.stage(t).s, 'sent');
   assert.ok(P.closed(t));
   store['oest.ppm.stage'] = keep;
-  // raport usunięty z kolejki: etap znika, termin wraca
+  // raport usunięty z kolejki: okres znów otwarty (W trakcie – formularz zostaje w telefonie), termin wraca
   P.unqueue('EFA-INS-003');
-  assert.strictEqual(P.stage(t), null);
+  assert.strictEqual(P.stage(t).s, 'prog');
   assert.strictEqual(P.iso(P.due(t)), '2020-01-01');
   assert.strictEqual(P.short(P.byId('EFA-INS-014')).name, 'ATS L13');
 });

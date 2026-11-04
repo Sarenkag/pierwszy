@@ -13,6 +13,10 @@
       // okno Google czasem nie wraca (03/11 „Łączę z Dyskiem…” bez końca): po 90 s zgłaszamy błąd zamiast wisieć
       var result=await Promise.race([social.login({provider:'google',options:{scopes:['email','profile'].concat(scopes)}}),new Promise(function(_,rej){setTimeout(function(){rej(Error('GOOGLE_LOGIN_TIMEOUT'));},90000);})]);
       var r=result.result||{};return {email:r.profile&&r.profile.email,token:r.accessToken&&r.accessToken.token};
+    },silent:async function(scopes,email){ // 04/11: nowy token bez okna, gdy zgoda była już dana (GoogleTokenPlugin)
+      var cap=root.Capacitor;if(!cap||!cap.isNativePlatform||!cap.isNativePlatform()||!cap.registerPlugin)return null;
+      var p=root.__oestGTok||(root.__oestGTok=cap.registerPlugin('OESTGoogleToken'));
+      try{var r=await Promise.race([p.token({scopes:scopes,email:email}),new Promise(function(_,rej){setTimeout(function(){rej(Error('SILENT_TIMEOUT'));},15000);})]);return r&&r.token?{email:email,token:r.token}:null;}catch(_){return null;}
     },ask:function(kind,why){ // okno „Połącz ponownie / Anuluj” (moduly/przycisk), tylko gdy Grzegorz właśnie coś kliknął
       var P=root.OESTPrzycisk;if(!P||!P.ask)return Promise.resolve(false);var T=function(pl,en){return root.OESTT?root.OESTT(pl,en):pl;};
       var what={drive:T('Dysku Google','Google Drive'),gmail:T('Gmaila','Gmail'),contacts:T('kontaktów Google','Google Contacts'),calendar:T('Kalendarza Google','Google Calendar')}[kind]||'Google';
@@ -36,6 +40,12 @@
       if(!r.email||r.email.toLowerCase()!==expected||accountEmail()!==expected)throw Error('GOOGLE_ACCOUNT_MISMATCH');
       if(!r.token)throw Error('GOOGLE_TOKEN');sessions[kind]={token:r.token,email:expected,until:Date.now()+50*60*1000};store.set(sessions);return true;
     }
+    async function silent(kind){
+      if(!opts.silent||!SCOPES[kind]||!accountEmail())return false;
+      var expected=accountEmail(),r=await opts.silent(SCOPES[kind],expected);
+      if(!r||!r.token||accountEmail()!==expected)return false;
+      sessions[kind]={token:r.token,email:expected,until:Date.now()+50*60*1000};store.set(sessions);return true;
+    }
     function disconnect(){sessions={};store.set(sessions);}
     // Przed operacją: internet i ważne pozwolenie. Brak → (po kliknięciu) okno „Połącz ponownie / Anuluj”, potem operacja idzie dalej.
     // praca w tle (automatyczna wysyłka zdjęć/raportów) oznacza się sama: wtedy nigdy nie pokazujemy okna, nawet tuż po dotknięciu ekranu
@@ -50,6 +60,7 @@
         await new Promise(function(r){setTimeout(r,1500);}); // chwila na złapanie sieci po „Spróbuj ponownie”
       }
       if(connected(kind))return;
+      if(await silent(kind))return; // pozwolenie było już dane: nowy token po cichu, bez okna (także w tle)
       if(!interactive||!opts.ask)throw Error('GOOGLE_CONNECT');
       if(sessions[kind]&&!(await opts.ask(kind,'expired')))throw Error('GOOGLE_CANCELLED'); // pierwsze połączenie w sesji: od razu okno Google
       await connect(kind);

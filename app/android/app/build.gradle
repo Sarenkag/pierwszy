@@ -55,6 +55,7 @@ repositories {
 
 dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.1'
+    implementation 'com.google.android.gms:play-services-auth:21.4.0' // GoogleTokenPlugin: ciche odnowienie tokenu
     implementation 'com.google.mlkit:translate:17.0.3'
     // model tekstowy na telefonie (Gemma 4 E2B/E4B, plik .litertlm pobierany raz przez Wi-Fi); biblioteka skompilowana Kotlinem 2.4
     implementation 'com.google.ai.edge.litertlm:litertlm-android:0.19.0'
