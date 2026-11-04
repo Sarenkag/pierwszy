@@ -46,6 +46,13 @@ jobs:
           npm ci
           npm run sync
 
+      # ZASADA Grzegorza (04/11/2026): każdy raport w dwóch identycznych wersjach, Word i PDF. Bez tego APK się nie zbuduje.
+      - name: Testy (każda inspekcja daje Word i PDF)
+        run: |
+          npm test
+          npm i --no-save playwright-core@1.48.2
+          OEST_PLAYWRIGHT_PATH=playwright-core OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)" node tests/raport-ui-check.cjs
+
       - name: Klucz podpisu
         id: key
         env:

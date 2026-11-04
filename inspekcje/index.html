@@ -610,7 +610,8 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
         for (c = 0; c < g.cols; c++) {
           var k = r * g.cols + c, ph = chunk[k], i = start + k;
           t += '<w:tc><w:tcPr><w:tcW w:w="' + cw + '" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p>' + P0 +
-            (ph ? drawing(ph, i, (rh - 160) * 635, (cw - 160) * 635) : "") + "</w:p></w:tc>";
+            (ph ? drawing(ph, i, (rh - (ph.caption ? 420 : 160)) * 635, (cw - 160) * 635) : "") + "</w:p>" +
+            (ph && ph.caption ? "<w:p>" + P0 + '<w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t xml:space="preserve">' + String(ph.caption).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }) + "</w:t></w:r></w:p>" : "") + "</w:tc>"; // zdjęcie przy kranie/punkcie: podpis jego nazwą (04/11)
         }
         t += "</w:tr>";
       }
@@ -1186,7 +1187,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var F = cur.type && cur.type.flush;
     return { q: qPossible() || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Nasz raport (pytania)", "Our report (questions)") };
   }
-  function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? (cur.type.folder ? !!(F && !F.points && fl.on) : true) : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
+  function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? true : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
   function syncSendHint() {
     var n = needsNow(), h = $("sendHint"); if (!h) return;
     if (!n || cur.mode !== "one") { h.textContent = ""; return; }
@@ -2087,10 +2088,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     });
   }
+  // Zdjęcie do raportu (jedno miejsce dla wszystkich inspekcji): zmniejszone do realnej wielkości jak w izolatorach (28/10),
+  // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
+  // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
+  var REPORT_PX = 1024, REPORT_Q = 0.65, SHEET_PX = 1600, SHEET_Q = 0.7;
   function finalPhoto(p, d) {
-    var src = p.canvas, w = src.width, h = src.height;
+    var src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : REPORT_PX) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
-    var g = c.getContext("2d"); g.drawImage(src, 0, 0);
+    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h);
     if (cfg.stamp) {
       var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja);
       var fs = Math.max(16, Math.round(w / 40));
@@ -2099,7 +2104,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       g.fillStyle = "rgba(10,16,20,0.62)"; g.fillRect(w - pw - fs * 0.6, h - ph - fs * 0.6, pw, ph);
       g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(txt, w - pw - fs * 0.1, h - ph / 2 - fs * 0.6, tw);
     }
-    return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
+    return new Promise(function (res) { c.toBlob(res, "image/jpeg", p.sheet ? SHEET_Q : REPORT_Q); }).then(function (blob) {
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, url: URL.createObjectURL(blob) }; });
     });
   }
@@ -2345,10 +2350,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("s-wifi").addEventListener("change", function () { if (gm()) { OESTSender.render(); if (cfg.auto) OESTSender.run(); } }); // wyłączone czekanie od razu puszcza kolejkę
   fillSettings();
   // ---------- PDF w układzie raportu ----------
-  function buildPdf(d, pics, info) {
-    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
-    pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
-    pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
+  // basic form Smart (wzór OEST-basic): nagłówek z logo, stopka, wiersze Site/Date/Engineer — jedno miejsce dla wszystkich raportów PDF
+  function basicKit(pdf, info) {
     var L = 25.4, W = 158.7;
     var title = (info.headerText || "Engineers Report").split("\n").pop();
     function header() {
@@ -2370,23 +2373,38 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       pdf.setFont("DV", "bold"); pdf.setFontSize(6.5); pdf.setTextColor(0, 0, 0);
       lines.forEach(function (s, i) { pdf.text(s, L + 0, 283.5 + i * 3); });
     }
-    // układ jak wzór OEST-basic: Site/Date/Engineer, tytuł, Overall Condition + Location, opis, Works/Quote/Signed
-    var y = header(); pdf.setLineWidth(0.4); pdf.setTextColor(0, 0, 0);
-    var c1 = 24.7, F = 12;
     function lab(t, x, yy, w) { pdf.setFont("DV", "bold"); pdf.setFontSize(10.5); pdf.text(t, x + w - 1.5, yy, { align: "right" }); }
-    function row(label, value, h, center) {
-      pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(label, L, y + h / 2 + 1.6, c1);
-      pdf.setFont("DV", center ? "bold" : "normal"); pdf.setFontSize(F);
-      if (center) pdf.text(String(value || "").toUpperCase(), L + c1 + (W - c1) / 2, y + h / 2 + 1.6, { align: "center" });
-      else pdf.text(value || "", L + c1 + 1.5, y + h / 2 + 1.6);
-      y += h;
+    // Site / Date / Engineer od y; zwraca y pod wierszami
+    function rows(d, y) {
+      var c1 = 24.7; pdf.setLineWidth(0.4); pdf.setTextColor(0, 0, 0);
+      [["Site:", d.site, true], ["Date:", d.data], ["Engineer:", d.inspektor]].forEach(function (r) {
+        var h = 10; pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(r[0], L, y + h / 2 + 1.6, c1);
+        pdf.setFont("DV", r[2] ? "bold" : "normal"); pdf.setFontSize(12);
+        if (r[2]) pdf.text(String(r[1] || "").toUpperCase(), L + c1 + (W - c1) / 2, y + h / 2 + 1.6, { align: "center" });
+        else pdf.text(r[1] || "", L + c1 + 1.5, y + h / 2 + 1.6);
+        y += h;
+      });
+      return y;
     }
-    row("Site:", d.site, 10, true); row("Date:", d.data, 10); row("Engineer:", d.inspektor, 10);
+    return { L: L, W: W, header: header, footer: footer, lab: lab, rows: rows };
+  }
+  function newPdf(landscape) {
+    var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: landscape ? "l" : "p" });
+    pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
+    pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
+    return pdf;
+  }
+  // into: istniejący PDF (np. po formularzu Flushing) — basic form dokładany od nowej strony pionowej
+  function buildPdf(d, pics, info, into) {
+    var pdf = into || newPdf(); if (into) pdf.addPage("a4", "p");
+    var K = basicKit(pdf, info), L = K.L, W = K.W, header = K.header, footer = K.footer, lab = K.lab;
+    // układ jak wzór OEST-basic: Site/Date/Engineer, tytuł, Overall Condition + Location, opis, Works/Quote/Signed
+    var y = K.rows(d, header()), F = 12;
     var top = y, ty = y + 6, lh = 5;
     function room(h) {
       if (ty + h <= 266) return;
       pdf.rect(L, top, W, ty - top + 1); footer();
-      pdf.addPage(); top = header(); pdf.setLineWidth(0.4); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
+      pdf.addPage("a4", "p"); top = header(); pdf.setLineWidth(0.4); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
     }
     pdf.setFont("DV", "bold"); pdf.setFontSize(F);
     var tl = pdf.splitTextToSize(d.tytul || "", W - 6); pdf.text(tl, L + W / 2, ty, { align: "center" }); ty += tl.length * 5.5 + 3;
@@ -2450,16 +2468,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     pics = pics.filter(function (p) { return !p.sheet; });
     for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
       var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
-      pdf.addPage(); var top2 = header(), areaH = 274 - top2;
+      pdf.addPage("a4", "p"); var top2 = header(), areaH = 274 - top2;
       var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
       chunk.forEach(function (p, k) {
         var col = k % g.cols, row = Math.floor(k / g.cols), iw = cw, ih = iw * p.height / p.width;
         if (ih > chh) { ih = chh; iw = ih * p.width / p.height; }
-        pdf.addImage(p.bytes, "JPEG", L + col * (cw + gap) + (cw - iw) / 2, top2 + row * (chh + gap) + (chh - ih) / 2, iw, ih);
+        var capH = p.caption ? 4.5 : 0; if (capH && ih > chh - capH) { ih = chh - capH; iw = ih * p.width / p.height; }
+        var iy = top2 + row * (chh + gap) + (chh - ih - capH) / 2;
+        pdf.addImage(p.bytes, "JPEG", L + col * (cw + gap) + (cw - iw) / 2, iy, iw, ih);
+        if (capH) { pdf.setFont("DV", "normal"); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(String(p.caption), cw)[0] || "", L + col * (cw + gap) + cw / 2, iy + ih + 3.5, { align: "center" }); } // zdjęcie przy kranie/punkcie: podpis jego nazwą, jak w Wordzie
       });
       footer();
     }
-    return new Uint8Array(pdf.output("arraybuffer"));
+    return into ? pdf : new Uint8Array(pdf.output("arraybuffer"));
   }
 
   // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
@@ -2467,11 +2488,27 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function addFull(pdf, pics, first) {
     var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
     pics.forEach(function (p, i) {
-      if (i || !first) pdf.addPage();
+      if (i || !first) pdf.addPage("a4", "p");
       var iw = PW, ih = iw * p.height / p.width;
       if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
       pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
     });
+  }
+  // Word z samych zdjęć (zdjęcia formularza wypełnionego ręcznie): jedno zdjęcie = jedna strona A4, jak buildPhotoPdf —
+  // ten sam formularz w Wordzie i w PDF-ie (Grzegorz 04/11)
+  var PHOTO_DOCX = null;
+  function photoDocx(pics) {
+    if (!PHOTO_DOCX) {
+      var z = new PizZip();
+      z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+      z.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+      z.file("word/_rels/document.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
+      z.file("word/document.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>{%zdjecia}</w:t></w:r></w:p><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="340" w:right="340" w:bottom="340" w:left="340" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>');
+      PHOTO_DOCX = z.generate({ type: "uint8array" });
+    }
+    var out = fillDocx(PizZip, docxtemplater, PHOTO_DOCX, {}, pics), x = out.file("word/document.xml").asText();
+    out.file("word/document.xml", x.replace('<w:r><w:br w:type="page"/></w:r>', "")); // pierwsze zdjęcie bez pustej strony przed nim
+    return out.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
   function buildPhotoPdf(pics) {
     var pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
@@ -2486,6 +2523,21 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
+  // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
+  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
+  // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
+  function flushBasic(d, pics) {
+    var f = d.flush, dd = Object.assign({}, d), sum = f.points ? pointsSummary(f) : OESTFlush.summary(f);
+    dd.condition = dd.stan_ogolny = sum; dd.title = dd.tytul = d.tytul || f.title;
+    var heads = {}, at = 0; (f.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
+    dd.details = dd.opis = [(f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), ""]
+      .concat([].concat.apply([], f.taps.map(function (t, i) { return (heads[i] ? ["", heads[i] + ":"] : []).concat([t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : "")]); })))
+      .concat(["", sum + "."]).join("\n");
+    var ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })).map(function (p) {
+      return p.tap != null && f.taps[p.tap] ? Object.assign({}, p, { caption: f.taps[p.tap].name }) : p;
+    });
+    return { d: dd, pics: ph };
+  }
   function pointsSummary(f) {
     var no = f.taps.filter(function (t) { return t.state === "no"; }).length, na = f.taps.filter(function (t) { return t.state === "na"; }).length;
     var yes = f.taps.length - no - na;
@@ -2493,41 +2545,87 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!yes) return "No call points tested (all N/A)";
     return (na ? yes + " of " + f.taps.length + " call points tested – AOVs opened and reset correctly (" + na + " N/A, not tested)" : "All call points tested – AOVs opened and reset correctly");
   }
-  // o.table === false: bez tabeli (sam plik zdjęć). Kolejność: tabela → zdjęcia formularza → zdjęcia przy kranach (z nazwą) → zdjęcia ogólne
+  // Wzory firmy wczytane raz: logo Smart z formularza Flushing i nagłówek/stopka basic form (OEST-basic)
+  var flushLogo = null, basicInfoC = null;
+  function flushLogoImg() { if (!flushLogo) { var z = new PizZip(b64ToBytes(window.TPL_FLUSH)), f = z.file("word/media/image1.png"); flushLogo = f ? f.asUint8Array() : new Uint8Array(0); } return flushLogo; }
+  function basicInfo() { return basicInfoC || (basicInfoC = templateInfo(PizZip, b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL))); }
+  // Pełny formularz Weekly Taps/Shower Flushing Record w PDF — ten sam układ co Word (tpl-flush.js), poziomo, 5 tygodni,
+  // wypełniony tylko wybrany tydzień (Grzegorz 04/11: „w PDF-ie jedna wersja, w docu druga” → obie takie same)
+  function flushForm(pdf, d) {
+    var f = d.flush, GREEN = [146, 208, 80], tower = String(f.building || "").length === 1;
+    var title = "WEEKLY TAPS/SHOWER FLUSHING RECORD " + (tower ? "TOWER " + f.building : String(f.building || "").toUpperCase());
+    var p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    var dateTxt = f.noDate || !f.date ? "" : p2(f.date.getDate()) + "." + p2(f.date.getMonth() + 1) + "." + f.date.getFullYear();
+    var X0 = 10, XO = 69.6, WK = 30.8, XN = XO + 5 * WK, XT = XN + 26.4, XE = 285, RH = 6.5, BOT = 186;
+    function top(first) {
+      var logo = flushLogoImg();
+      if (logo.length) try { var pr = pdf.getImageProperties(logo), lh = 13, lw = lh * pr.width / pr.height; pdf.addImage(logo, "PNG", 263 - lw, 8, lw, lh); } catch (e) {}
+      pdf.setTextColor(0, 0, 0); pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(title, X0, 27);
+      if (first) { pdf.setFont("DV", "normal"); pdf.setFontSize(6.5); pdf.text("Circle / highlight sampling year and month as applicable", X0, 31); }
+      pdf.setDrawColor(0); pdf.setLineWidth(0.25); pdf.setFont("DV", "normal"); pdf.setFontSize(7);
+      pdf.rect(34, 190, 57, 5.5); pdf.rect(91, 190, 57, 5.5); pdf.rect(148, 190, 57, 5.5); pdf.rect(205, 190, 57, 5.5);
+      pdf.text("Document Ref: QHS - 032", 36, 193.8); pdf.text("Original Issue Date:     01.07.2019", 93, 193.8); pdf.text("Review frequency: Annual", 150, 193.8); pdf.text("Current Version:   02", 207, 193.8);
+    }
+    function cell(x, y, w, h, fill) { if (fill) { pdf.setFillColor(fill[0], fill[1], fill[2]); pdf.rect(x, y, w, h, "FD"); } else pdf.rect(x, y, w, h); }
+    function mid(t, x, y, w, h, size, bold, font) { pdf.setFont(font || "times", bold ? "bold" : "normal"); pdf.setFontSize(size); var ls = pdf.splitTextToSize(t, w - 1); pdf.text(ls, x + w / 2, y + h / 2 - (ls.length - 1) * size * 0.18 + size * 0.12, { align: "center" }); }
+    function head(y) { // nagłówek tabeli: OUTLET | WEEK RECORD (5 tygodni × COMPLETED Y/N, DATE) | NAME | NOTES
+      pdf.setLineWidth(0.25);
+      cell(X0, y, XO - X0, 21); mid("OUTLET IDENTIFICATION", X0, y, XO - X0, 21, 7, true);
+      cell(XO, y, XN - XO, 6); mid("WEEK RECORD", XO, y, XN - XO, 6, 7, true);
+      ["1ST", "2ND", "3RD", "4TH", "5TH"].forEach(function (n, i) {
+        var x = XO + i * WK; cell(x, y + 6, WK, 6); mid(n + " WK IN MONTH", x, y + 6, WK, 6, 6.5);
+        cell(x, y + 12, WK / 2, 9); mid("COMPLETED Y/N", x, y + 12, WK / 2, 9, 5.5); cell(x + WK / 2, y + 12, WK / 2, 9); mid("DATE", x + WK / 2, y + 12, WK / 2, 9, 5.5);
+      });
+      cell(XN, y, XT - XN, 21); mid("NAME", XN, y, XT - XN, 21, 7); cell(XT, y, XE - XT, 21); mid("NOTES", XT, y, XE - XT, 21, 7);
+      return y + 21;
+    }
+    top(true);
+    // rok i miesiąc: zaznaczone na zielono jak w Wordzie
+    var YW = 37.6, YL = 54.5, yy = 33.5; pdf.setLineWidth(0.25);
+    cell(X0, yy, YL, 5.2); mid("YEAR", X0, yy, YL, 5.2, 6.5, true, "DV"); cell(X0, yy + 5.2, YL, 10.4); mid("MONTH", X0, yy + 5.2, YL, 10.4, 6.5, true, "DV");
+    for (var i = 0; i < 6; i++) {
+      var x = X0 + YL + i * YW;
+      cell(x, yy, YW, 5.2, i === 0 ? GREEN : null); mid(String(f.year + i), x, yy, YW, 5.2, 6.5, false, "DV");
+      cell(x, yy + 5.2, YW, 5.2, f.month === i ? GREEN : null); mid(OESTFlush.MONTHS[i], x, yy + 5.2, YW, 5.2, 6.5, false, "DV");
+      cell(x, yy + 10.4, YW, 5.2, f.month === i + 6 ? GREEN : null); mid(OESTFlush.MONTHS[i + 6], x, yy + 10.4, YW, 5.2, 6.5, false, "DV");
+    }
+    pdf.setLineWidth(0.6); pdf.rect(X0, yy, YL + 6 * YW, 15.6); pdf.setLineWidth(0.25);
+    var y = head(53), wx = XO + (f.week - 1) * WK;
+    f.taps.forEach(function (t) {
+      var note = t.note ? pdf.setFont("times", "normal").setFontSize(7).splitTextToSize(t.note, XE - XT - 2) : [], h = Math.max(RH, note.length * 2.8 + 1.5);
+      if (y + h > BOT) { pdf.addPage("a4", "l"); top(false); y = head(30); }
+      cell(X0, y, XO - X0, h); pdf.setFont("times", "bold"); pdf.setFontSize(10.5); pdf.text(pdf.splitTextToSize(t.name, XO - X0 - 1)[0], X0 + 0.8, y + h / 2 + 1.4);
+      for (var k = 0; k < 10; k++) cell(XO + k * WK / 2, y, WK / 2, h);
+      cell(XN, y, XT - XN, h); cell(XT, y, XE - XT, h);
+      mid(OESTFlush.LABEL[t.state] || "", wx, y, WK / 2, h, 7.5);
+      if (t.state !== "na") mid(dateTxt, wx + WK / 2, y, WK / 2, h, 7.5);
+      mid(f.name || "", XN, y, XT - XN, h, 7);
+      if (note.length) { pdf.setFont("times", "normal"); pdf.setFontSize(7); pdf.text(note, XT + 1, y + 3); }
+      y += h;
+    });
+    if (y + 12 > BOT) { pdf.addPage("a4", "l"); top(false); y = 30; }
+    pdf.setFont("DV", "bold"); pdf.setFontSize(7.5);
+    pdf.text(pdf.splitTextToSize("IF THERE ARE ANY ISSUES WITH ASSETS/WATER SYSTEM, THIS MUST BE RECORDED ON THE FAULT AND REMEDIAL ACTIONS LOG WITH DETAILS OF ACTIONS TAKEN TO RECTIFY THE FAULT", 250), 148.5, y + 6, { align: "center" });
+  }
+  // o.table === false: sam plik zdjęć (zdjęcia formularza → przy kranach z nazwą → ogólne).
+  // Raport: Flushing = formularz firmy + basic form, AOV = basic form; zdjęcia w gridzie basic form, podpisane kranem/punktem.
+  // (OESTFlush.fromPdf czyta tylko stare PDF-y z listą w kolumnach 110/135 mm — nowe inspekcje i tak nie znikają po Wyślij.)
   function buildFlushPdf(d, pics, o) {
     o = o || {};
-    var f = d.flush, pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
-    pdf.addFileToVFS("DejaVuSans.ttf", FONT_REG); pdf.addFont("DejaVuSans.ttf", "DV", "normal");
-    pdf.addFileToVFS("DejaVuSans-Bold.ttf", FONT_BOLD); pdf.addFont("DejaVuSans-Bold.ttf", "DV", "bold");
-    var L = 15, y = 20, page1 = o.table !== false;
+    var f = d.flush, page1 = o.table !== false, full = page1 && !f.points, pdf = newPdf(full);
+    var L = 15;
     var sp = pics.filter(function (p) { return p.sheet; }), tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null && !p.sheet; });
-    if (page1) {
-    pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(f.title, L, y); y += 7;
-    pdf.setFont("DV", "normal"); pdf.setFontSize(10);
-    pdf.text((f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), L, y); y += 8;
-    pdf.setFont("DV", "bold"); pdf.text(f.points ? "Call point" : "Outlet", L, y); pdf.text(f.points ? (f.col || "Result") : "Completed", 110, y); pdf.text("Notes", 145, y); y += 2; pdf.line(L, y, 195, y); y += 5;
-    pdf.setFont("DV", "normal");
-    var heads = {}, at = 0; (f.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
-    f.taps.forEach(function (t, ti) {
-      if (heads[ti]) { if (y + 12 > 287) { pdf.addPage(); y = 20; } y += 1; pdf.setFont("DV", "bold"); pdf.text(heads[ti], L, y); pdf.setFont("DV", "normal"); y += 6; }
-      var note = pdf.splitTextToSize(t.note || "", 60), name = pdf.splitTextToSize(t.name, 92), lines = Math.max(1, note.length, name.length);
-      // długa notatka: dzielona na kawałki, każdy mieści się na stronie
-      for (var k = 0; k < lines; k += 50) {
-        var part = note.slice(k, k + 50), h = Math.max(1, part.length, k ? 0 : name.length) * 5 + 1.5;
-        if (y + h > 287) { pdf.addPage(); y = 20; }
-        if (!k) { pdf.text(name, L, y); pdf.text(OESTFlush.LABEL[t.state], 110, y); }
-        if (part.length) pdf.text(part, 135, y);
-        y += h;
-      }
-    });
-    y += 3; if (y > 285) { pdf.addPage(); y = 20; }
-    pdf.setFont("DV", "bold"); pdf.text(pdf.splitTextToSize((f.points ? pointsSummary(f) : OESTFlush.summary(f)) + ".", 180), L, y);
+    if (page1) { // Flushing: formularz firmy (jak Word) + basic form; AOV i inne listy punktów: sam basic form. Zawsze jak w Wordzie.
+      var b = flushBasic(d, pics);
+      if (!full) return buildPdf(b.d, b.pics, basicInfo());
+      flushForm(pdf, d); buildPdf(b.d, b.pics, basicInfo(), pdf);
+      return new Uint8Array(pdf.output("arraybuffer"));
     }
     addFull(pdf, sp, !page1); if (sp.length) page1 = true;
     if (tp.length) {
       var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;
       tp.forEach(function (p, i) {
-        var k = i % 12; if (!k) { if (page1 || i) pdf.addPage(); page1 = true; pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
+        var k = i % 12; if (!k) { if (page1 || i) pdf.addPage("a4", "p"); page1 = true; pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
         var cx = x0 + (k % COLS) * (W + GAP), cy = 20 + Math.floor(k / COLS) * (H + 10);
         var iw = W, ih = iw * p.height / p.width; if (ih > H) { ih = H; iw = ih * p.width / p.height; }
         pdf.addImage(p.bytes, "JPEG", cx + (W - iw) / 2, cy + (H - ih) / 2, iw, ih);
@@ -2547,15 +2645,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
     function done(r, form) { // form: { pdf: fn(pics) → bajty raportu (z wybranymi zdjęciami), docx: bajty Worda | null }
       var sel = pick(r.pics), files = [], sh = sel.filter(function (p) { return p.sheet; }), rest = sel.filter(function (p) { return !p.sheet; });
-      var wantForm = !!form, word = n.xw && form && form.docx && form.docx.length;
+      var wantForm = !!form, word = n.xw && form && ((form.docx && form.docx.length) || form.basic), main = form && form.docx && form.docx.length;
       if (n.one) { // jeden dokument: raport → zdjęcia formularza → zdjęcia (Word nie scala zdjęć: idzie obok, gdy zaznaczony)
         if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); }
         else if (sel.length) files.push(file(" - photos", PDF, photosPdf(sel)));
-        if (word) files.push(file("", MIME_DOCX, form.docx));
+        if (!form && n.xw && sel.length) files.push(file("", MIME_DOCX, photoDocx(sh.concat(rest)))); // sam formularz ze zdjęć: ten sam w Wordzie
+        if (word && main) files.push(file("", MIME_DOCX, form.docx));
+        if (word && form.basic) files.push(file(main ? " - basic" : "", MIME_DOCX, form.basic(sel))); // Flushing: basic form Smart z listą kranów i zdjęciami
       } else {
         if (wantForm && n.xp) files.push(file(" - report", PDF, form.pdf([])));
-        if (word) files.push(file(" - report", MIME_DOCX, form.docx));
+        if (word && main) files.push(file(" - report", MIME_DOCX, form.docx));
+        if (word && form.basic) files.push(file(main ? " - basic" : " - report", MIME_DOCX, form.basic([])));
         if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh)));
+        if (sh.length && n.xw) files.push(file(" - form", MIME_DOCX, photoDocx(sh)));
         if (rest.length) files.push(file(" - photos", PDF, photosPdf(rest)));
       }
       r.files = files; return r;
@@ -2565,7 +2667,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
       return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })));
     }
-    function fin(ph) { return finalPhoto(ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; return f; }); }
+    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
       var docx = fillTempDocx(d), pdf = buildTempPdf(d);
       return { name: name, data: d, docx: docx, pdf: pdf, pics: [], info: {}, logoUrl: "", files: [n.xp || !n.xw ? file("", PDF, pdf) : null, n.xw ? file("", MIME_DOCX, docx) : null].filter(Boolean) };
@@ -2583,7 +2685,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
         var docx = d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush);
         var r = { name: name, data: d, docx: docx, pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
-        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx });
+        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx, basic: function (sel) { return flushBasicDocx(d, sel); } });
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
