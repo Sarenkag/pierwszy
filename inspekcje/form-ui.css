@@ -71,3 +71,16 @@ html body .iphotos .pbtn{min-height:58px!important;min-width:0;display:flex;flex
 .needs{display:flex;flex-wrap:wrap;gap:8px 16px}
 .need{display:flex;align-items:center;gap:8px;font-size:14px;min-height:32px}
 .need:has(input:disabled){opacity:.5}
+/* Wyślij + ⚙ ustawienia wysyłki (Grzegorz 04/11 11:37): zębatka obok, bez tick boxów na ekranie */
+.sendrow{display:flex;gap:8px;align-items:stretch}
+.sendrow #toQueue{flex:1;min-width:0}
+.sendrow .sendcfg{flex:0 0 52px;width:52px;padding:0;display:grid;place-items:center}
+.sendrow .sendcfg svg{width:24px;height:24px}
+#sendHint{margin-top:6px}
+.sendcfg-box{text-align:left}
+.sendcfg-box .sct{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin:12px 0 4px}
+.sendcfg-box .sct:first-child{margin-top:0}
+.sendcfg-box .need{display:flex;align-items:center;gap:10px;min-height:40px;font-size:15px}
+.sendcfg-box .need input{width:20px;height:20px;flex:0 0 auto;min-height:0}
+.sendcfg-box .need.dis{opacity:.45}
+.sendcfg-box small{display:block;opacity:.7;font-size:12px}

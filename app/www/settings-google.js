@@ -145,9 +145,10 @@
     function wrap76(t){return t.replace(/.{1,76}/g,'$&\r\n');}
     function hdr(t){return /^[\x20-\x7e]*$/.test(t)?t:'=?UTF-8?B?'+b64(new TextEncoder().encode(t))+'?=';}
     function buildMime(m){
-      if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(m.to||''))throw Error('EMAIL_INVALID');
+      var to=(Array.isArray(m.to)?m.to:[m.to]).filter(Boolean); // kilku adresatów (Ja / Inżynier / Manager, 04/11)
+      if(!to.length||to.some(function(a){return !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(a);}))throw Error('EMAIL_INVALID');
       var subject=String(m.subject||'').replace(/[\r\n]+/g,' '),boundary='oest_'+Date.now().toString(36)+Math.random().toString(36).slice(2);
-      var out='To: '+m.to+'\r\nSubject: '+hdr(subject)+'\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="'+boundary+'"\r\n\r\n';
+      var out='To: '+to.join(', ')+'\r\nSubject: '+hdr(subject)+'\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="'+boundary+'"\r\n\r\n';
       out+='--'+boundary+'\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n'+wrap76(b64(new TextEncoder().encode(m.body||'')));
       (m.files||[]).forEach(function(f){var n=String(f.name).replace(/["\r\n\\]/g,'_');
         out+='--'+boundary+'\r\nContent-Type: '+(f.mime||'application/octet-stream')+'; name="'+n+'"\r\nContent-Disposition: attachment; filename="'+n+'"\r\nContent-Transfer-Encoding: base64\r\n\r\n'+wrap76(b64(f.bytes));});

@@ -16,6 +16,7 @@
     ".oest-ask b{display:block;font-size:17px;font-weight:650;margin-bottom:6px}.oest-ask p{margin:0 0 14px;color:#c3c9e8}" +
     ".oest-ask .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.oest-ask button{min-height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:#222746;color:#fff;font:600 15px var(--font-body,system-ui)}" +
     ".oest-ask button.ok{border:0;background:linear-gradient(90deg,#5b7cff,#a35bff)}" +
+    ".oest-ask-body{max-height:62vh;overflow:auto;margin:0 0 14px}" +
     ".oest-ask .row.one{grid-template-columns:1fr}.oest-ask button.ok.danger{background:linear-gradient(90deg,#ff5d6c,#e0405a)}" +
     ".oest-busy .oest-done{display:inline-flex;align-items:center;gap:.4em;animation:oest-pop .25s ease-out}" +
     "@keyframes oest-spin{to{transform:rotate(360deg)}}@keyframes oest-pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}" +
@@ -44,14 +45,16 @@
   // Rośnie z miejsca stuknięcia i zamyka się pomniejszeniem (moduly/wyglad); Wstecz telefonu i stuknięcie obok = Anuluj.
   //   ask({ title, text, ok: "Usuń", cancel: "Anuluj", danger: true }) → Promise<true|false>
   //   ask({ title, text, alert: true }) → tylko „OK” (komunikat)
+  //   ask({ title, node: element, ok: "Zapisz" }) → okienko z własną treścią (element zostaje do odczytu po zamknięciu)
   function ask(o) {
     o = o || {}; css();
     return new Promise(function (done) {
       var box = document.createElement("div"); box.className = "oest-ask"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
       var okTxt = o.ok || (o.alert ? "OK" : T("Połącz ponownie", "Reconnect"));
-      box.innerHTML = "<div>" + (o.title ? "<b>" + esc(o.title) + "</b>" : "") + (o.text ? "<p>" + esc(o.text).replace(/\n/g, "<br>") + "</p>" : "") + '<div class="row' + (o.alert ? " one" : "") + '">' +
+      box.innerHTML = "<div>" + (o.title ? "<b>" + esc(o.title) + "</b>" : "") + (o.text ? "<p>" + esc(o.text).replace(/\n/g, "<br>") + "</p>" : "") + (o.node ? '<div class="oest-ask-body"></div>' : "") + '<div class="row' + (o.alert ? " one" : "") + '">' +
         (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + "</button>") +
         '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>";
+      if (o.node) box.querySelector(".oest-ask-body").appendChild(o.node); // własna treść okienka (np. tick boxy ustawień wysyłki)
       var res = !!o.alert, over = false, O = w.OESTOverlay, own = false;
       function finish() { if (over) return; over = true; document.removeEventListener("keydown", key, true); w.removeEventListener("popstate", pop); box.remove(); done(res); }
       function closeVia(v) { res = v; if (O && O.stack && O.stack.indexOf(finish) >= 0) O.close(); else if (own) history.back(); else finish(); }
