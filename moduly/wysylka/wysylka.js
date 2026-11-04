@@ -83,7 +83,7 @@
 
   // ---------- wysyłka ----------
   function files(it) {
-    if (it.files && it.files.length) return it.files; // pliki złożone w inspekcji wg tick boxów pod Wyślij
+    if (Array.isArray(it.files)) return it.files; // pliki złożone w inspekcji wg ⚙ (pusta lista = świadomie nic, nie pełny PDF)
     var f = [];
     if (it.pdf && it.pdf.length) f.push({ name: it.name + ".pdf", mime: "application/pdf", bytes: it.pdf });
     if (it.docx && it.docx.length) f.push({ name: it.name + ".docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", bytes: it.docx });
@@ -119,7 +119,7 @@
             if (stop || !online()) return true;
             if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
             var t0 = Date.now(); pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
-            return put(it).then(function () { return g.sendMail({ to: it.toList && it.toList.length ? it.toList : it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
+            return put(it).then(function () { return g.sendMail({ to: Array.isArray(it.toList) ? it.toList : it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
               it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.photos = []; it.files = []; done++; // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
               if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
