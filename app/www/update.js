@@ -75,7 +75,7 @@
     }); } catch (er) { sub = null; }
     function unsub() { try { if (sub && sub.then) sub.then(function (h) { h.remove(); }); else if (sub && sub.remove) sub.remove(); } catch (er) {} }
     p.install({ url: latest.url, name: "OEST-" + latest.n + ".apk" }).then(function () {
-      unsub(); setStatus("Otwieram instalator…", "Opening the installer…"); banner(false);
+      unsub(); setStatus("Instaluję wersję " + latest.n + "… Apka sama się zamknie – otwórz ją ponownie.", "Installing version " + latest.n + "… The app will close itself – open it again."); banner(false);
     }).catch(function (e) {
       unsub(); b = document.getElementById("updBanner"); if (b) b.style.background = "linear-gradient(90deg,#3b82f6,#8b5cf6)";
       var m = e && e.message || String(e), perm = /PERMISSION/.test(m);
