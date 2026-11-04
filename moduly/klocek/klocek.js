@@ -44,7 +44,7 @@
     ".prow.k2.kdone{opacity:.5;filter:grayscale(.6)}.prow.k2.kplan{opacity:.6}" +
     // gotowa (Grzegorz 04/11 09:58): jaskrawy zielony, pełny napis — widać z daleka, nic nie szarzeje
     ".k2 .kst.ready{color:#04210f!important;background:#2bf07f!important;border-color:#2bf07f!important;font-size:13px;letter-spacing:.04em;padding:6px 12px;box-shadow:0 0 14px rgba(43,240,127,.55)}" +
-    ".prow.k2.kready{box-shadow:inset 0 0 0 2px rgba(43,240,127,.55)}";
+    ".prow.k2.kready{background:linear-gradient(180deg,rgba(43,240,127,.22),rgba(43,240,127,.10))!important;box-shadow:inset 0 0 0 2px rgba(43,240,127,.85),0 0 16px rgba(43,240,127,.30)}" /* Gotowa: cały klocek świeci na zielono (04/11) */;
   function css() {
     if (!w.document || w.document.getElementById("oest-klocek-css")) return;
     var s = w.document.createElement("style"); s.id = "oest-klocek-css"; s.textContent = CSS;

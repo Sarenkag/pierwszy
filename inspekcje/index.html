@@ -1289,7 +1289,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
-      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { dropDraft(k); d = null; } }
+      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
@@ -3070,8 +3070,15 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
       sel.addEventListener("change", function () {
         var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
+        var was = PPM.stage(tt), closed = was && (was.s === "done" || was.s === "queued" || was.s === "sent");
+        // cofnięcie „Gotowa” (Grzegorz 04/11: Zakończ → Nie rozpoczęta → inspekcja zniknęła): termin wraca na ten sprzed Zakończ,
+        // a szkic traci znacznik Gotowa, żeby nic go nie wyczyściło. Odpowiedzi i zdjęcia zostają zawsze.
+        if (closed && this.value !== "done") {
+          if (was.period) PPM.setDue(tt, was.period);
+          var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
+        }
         if (!this.value) PPM.setStage(tt, null); else PPM.setStage(tt, { s: this.value, manual: true, day: isoDay(new Date()) });
-        renderPpmBar();
+        renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
       });
       top.insertBefore(sel, top.firstChild);
     }
