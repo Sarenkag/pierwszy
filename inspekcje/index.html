@@ -1303,9 +1303,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
     var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
     var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
+      var me = (function () { try { return ((JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || "").toLowerCase(); } catch (e) { return ""; } })(); // tylko raporty tego konta
       var since = Date.parse(from + "T00:00:00"); // tylko raport z tego okresu (od dnia etapu / wczoraj), nigdy zeszłotygodniowy
-      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length && q.created >= since; }).sort(function (a, c) { return c.created - a.created; })[0];
-      return it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;
+      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length && q.created >= since && (!q.acct || q.acct.toLowerCase() === me); }).sort(function (a, c) { return c.created - a.created; })[0];
+      var rr = it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;
+      if (rr) rr.created = it.created; // czas raportu = czas zdjęć (nie dzień przywrócenia)
+      return rr;
     }).catch(function () { return null; });
     var settle = function () { return new Promise(function (r) { (function w() { if (restoring || pendingPh) setTimeout(w, 200); else r(); })(); }); }; // szkic najpierw wczyta swoje zdjęcia
     Promise.all([OESTZdjecia.list(), fromQ, settle()]).then(function (rs) {
@@ -1339,12 +1342,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       renderPpmBar();
     }
     if (rp) { // z raportu w kolejce: odpowiedzi, tydzień, notatki i zdjęcia przy tych samych kranach co w raporcie
-      fl.on = true; if (rp.week) fl.week = rp.week;
+      fl.on = true; if (rp.week && !fl.week) fl.week = rp.week; // wybrany już tydzień zostaje
       // odpowiedź z raportu tylko tam, gdzie w inspekcji jest jeszcze domyślne Yes bez notatki (nic, co już wpisane, się nie nadpisuje)
       rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
       renderFlush(); updateFormHint();
       draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
-      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: Date.now() })], p.tap, false, true); });
+      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false, true); });
       var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
       $("formHint").textContent = T("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
         "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
