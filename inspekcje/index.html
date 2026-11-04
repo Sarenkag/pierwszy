@@ -2095,9 +2095,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Zdjęcie do raportu (jedno miejsce dla wszystkich inspekcji): ok. 25 KB na zdjęcie (Grzegorz 04/11: dwa razy izolatory z 28/10),
   // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
-  var REPORT_PX = 600, REPORT_Q = 0.6, SHEET_PX = 1600, SHEET_Q = 0.7;
+  // Rozmiar zdjęcia w siatce wg rodzaju inspekcji (Grzegorz 04/11): zwykłe (izolatory itd.) ok. 25 KB, Flushing ok. 60 KB.
+  var REPORT_SIZE = { zwykla: { px: 600, q: 0.6 }, flush: { px: 960, q: 0.65 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
+  function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
   function finalPhoto(p, d) {
-    var src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : REPORT_PX) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+    var rs = reportSize(), src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
     var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h);
     if (cfg.stamp) {
@@ -2108,7 +2110,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       g.fillStyle = "rgba(10,16,20,0.62)"; g.fillRect(w - pw - fs * 0.6, h - ph - fs * 0.6, pw, ph);
       g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(txt, w - pw - fs * 0.1, h - ph / 2 - fs * 0.6, tw);
     }
-    return new Promise(function (res) { c.toBlob(res, "image/jpeg", p.sheet ? SHEET_Q : REPORT_Q); }).then(function (blob) {
+    return new Promise(function (res) { c.toBlob(res, "image/jpeg", p.sheet ? SHEET_Q : rs.q); }).then(function (blob) {
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, url: URL.createObjectURL(blob) }; });
     });
   }
