@@ -1156,7 +1156,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
     $("tempBox").hidden = !temp || m === "sum";
-    if (temp) [$("faults"), $("ck"), $("photos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; }); // raport pomiarów nie ma zdjęć
     if (cur.type.plain) $("faults").closest(".panel").hidden = true;
     if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
     $("flushBox").hidden = !cur.type.flush || m === "sum";
@@ -1167,7 +1167,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var qSaved = null;
   function needsNow() { return cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : null; }
   function qPossible() { return !!(cur.type && cur.type.checks && cur.type.checks.length && !cur.type.folder && !cur.type.temp); }
-  function applyNeeds() {
+  function applyNeeds(toggled) { // toggled = Grzegorz właśnie włączył pytania przełącznikiem (tylko wtedy wracają domyślne odpowiedzi)
     var n = needsNow(), box = $("needsBox");
     box.hidden = !n || cur.mode !== "one";
     if (!n) return;
@@ -1183,7 +1183,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     } else {
       ckp.hidden = false;
       if (qSaved && states.every(function (x) { return x === "na"; })) { states = qSaved; renderChecks(); renderFaults(); }
-      else if (states.length && states.every(function (x) { return x === "na"; })) { states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults(); }
+      else if (toggled && states.length && states.every(function (x) { return x === "na"; })) { states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults(); }
       qSaved = null;
     }
   }
@@ -1191,7 +1191,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     $(x[0]).addEventListener("change", function () {
       if (!cur.ppm || !PPM || !PPM.setNeeds) return;
       var patch = {}; patch[x[1]] = this.checked; PPM.setNeeds(cur.ppm, patch);
-      if (x[1] === "q") { formMode(); try { suggestOverall(); updateFormHint(); } catch (e) {} } else applyNeeds();
+      if (x[1] === "q") { formMode(); applyNeeds(true); try { suggestOverall(); updateFormHint(); } catch (e) {} } else applyNeeds();
       ppmTrack(false);
     });
   });
