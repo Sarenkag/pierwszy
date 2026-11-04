@@ -531,7 +531,7 @@ input[type=text], input[type=email], input[type=date], select {
     var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">' + T("📤 Wysłana", "📤 Sent") + '</span>' : st.s === "queued" ? '<span class="ksend c4">' + T("⏳ W kolejce", "⏳ Queued") + '</span>' : st.s === "done" ? '<span class="ksend c3">' + T("✉ Niewysłana", "✉ Not sent") + '</span>' :
       st.mail === "sent" ? '<span class="ksend c2">' + T("📤 Raport wysłany", "📤 Report sent") + '</span>' : st.mail === "queued" ? '<span class="ksend c4">' + T("⏳ Raport w kolejce", "⏳ Report queued") + '</span>' : ""; // „Wyślij” przy otwartej inspekcji (04/11)
     var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
-    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.due)
+    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.next || r.due)
       : "<b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
     // dolny wiersz (makieta Grzegorza 04/11): termin · raport · zdjęcia · punkty OK / pytania
     var foot = t.form === "folder" ? T("zdjęcia kartki → PDF", "form photos → PDF") : t.cfg && !st ? T("formularz do konfiguracji", "form to configure") : "";
@@ -554,10 +554,10 @@ input[type=text], input[type=email], input[type=date], select {
   function renderPpm() {
     var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     var rows = P.tasks.map(function (t) {
-      var due = P.due(t), st = P.stage && P.stage(t);
+      var due = P.due(t), next = due, st = P.stage && P.stage(t);
       // Gotowa (04/11): klocek zostaje w swoim dniu, zielony; następny termin pokaże się dopiero, gdy ten minie
       if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
-      var left = P.daysLeft(due); return { t: t, due: due, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
+      var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
     });
     var count = {};
     rows.forEach(function (r) { if (r.day) count[r.day] = (count[r.day] || 0) + 1; });
