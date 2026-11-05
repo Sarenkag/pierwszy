@@ -601,8 +601,8 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     // zdjęcia kartek formularza: każde na całą stronę (jak w PDF, addFull), potem zwykłe zdjęcia w siatce
     var all = photos.map(function (p, i) { return { p: p, i: i }; }), grid = all.filter(function (x) { return !x.p.sheet; });
     all.filter(function (x) { return x.p.sheet; }).forEach(function (x) { out.push("<w:p>" + P0 + drawing(x.p, x.i, usableH * 635, availW * 635) + "</w:p>"); });
-    for (var start = 0; start < grid.length; start += 12) {
-      var chunkX = grid.slice(start, start + 12), chunk = chunkX.map(function (x) { return x.p; }), g = photoGrid(chunk.length);
+    photoPages(grid).forEach(function (pg) {
+      var chunkX = pg.items, chunk = chunkX.map(function (x) { return x.p; }), g = pg.g;
       var cw = Math.floor(availW / g.cols), rh = Math.floor(usableH / g.rows);
       var t = '<w:tbl><w:tblPr><w:tblW w:w="' + cw * g.cols + '" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>' +
         '<w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>';
@@ -620,7 +620,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
       }
       t += "</w:tbl>";
       out.push(t);
-    }
+    });
     return out.join('<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>') +
       '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>';
   }
@@ -672,6 +672,16 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   return out;
 }
 
+// Strony ze zdjęciami (Grzegorz 05/11/2026), wspólne dla Worda i PDF-u:
+//  - zdjęcia przy pytaniu / kranie / urządzeniu (z podpisem): do 12 na stronę, nazwa punktu POD zdjęciem,
+//  - zdjęcia ogólne: na pół strony A4 (2 na stronę, jedno pod drugim), bez rozciągania.
+// Zdjęcia formularza (sheet) idą osobno, każde na całą stronę.
+function photoPages(list) {
+  var pts = list.filter(function (x) { var p = x.p || x; return p.caption || p.tap != null; }), gen = list.filter(function (x) { var p = x.p || x; return !(p.caption || p.tap != null); }), out = [];
+  for (var a = 0; a < pts.length; a += 12) { var c = pts.slice(a, a + 12); out.push({ items: c, g: photoGrid(c.length) }); }
+  for (var b = 0; b < gen.length; b += 2) out.push({ items: gen.slice(b, b + 2), g: { cols: 1, rows: 2 } });
+  return out;
+}
 // układ zdjęć na stronie wg liczby: 1, 2 (jedno pod drugim), 2×2, 2×3, 3×3, 3×4
 function photoGrid(n) {
   return n <= 1 ? { cols: 1, rows: 1 } : n === 2 ? { cols: 1, rows: 2 } : n <= 4 ? { cols: 2, rows: 2 } : n <= 6 ? { cols: 2, rows: 3 } : n <= 9 ? { cols: 3, rows: 3 } : { cols: 3, rows: 4 };
@@ -2156,12 +2166,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
   // Rozmiar zdjęcia w siatce wg rodzaju inspekcji (Grzegorz 04/11): zwykłe (izolatory itd.) ok. 25 KB, Flushing ok. 60 KB.
   var REPORT_SIZE = { zwykla: { px: 600, q: 0.6 }, flush: { px: 960, q: 0.65 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
+  var HALF_PX = 1200, HALF_Q = 0.7; // zdjęcie ogólne na pół strony A4 (Grzegorz 05/11): ok. 150 dpi, bez rozciągania
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
   function finalPhoto(p, d) {
     return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
   }
   function finalFrom(src, p, d) {
-    var rs = reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
     var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
     if (cfg.stamp) {
@@ -2535,8 +2546,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     footer();
     addFull(pdf, pics.filter(function (p) { return p.sheet; })); // zdjęcia formularza: strona po stronie, zaraz po raporcie (Grzegorz 04/11)
     pics = pics.filter(function (p) { return !p.sheet; });
-    for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
-      var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
+    photoPages(pics).forEach(function (pg) { // przy pytaniach do 12 na stronę, ogólne po 2 (pół strony), jak w Wordzie
+      var chunk = pg.items, g = pg.g, gap = 3;
       pdf.addPage("a4", "p"); var top2 = header(), areaH = 274 - top2;
       var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
       chunk.forEach(function (p, k) {
@@ -2548,12 +2559,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (capH) { pdf.setFont("DV", "normal"); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(String(p.caption), cw)[0] || "", L + col * (cw + gap) + cw / 2, iy + ih + 3.5, { align: "center" }); } // zdjęcie przy kranie/punkcie: podpis jego nazwą, jak w Wordzie
       });
       footer();
-    }
+    });
     return into ? pdf : new Uint8Array(pdf.output("arraybuffer"));
   }
 
   // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
   // jedno zdjęcie = jedna strona A4, jak najwięcej miejsca (zdjęcia formularza, zdjęcia ogólne). Wspólne dla wszystkich raportów.
+  // zdjęcia ogólne: dwa na stronę A4, każde na pół strony (Grzegorz 05/11)
+  function addHalf(pdf, pics, first) {
+    var M = 8, PW = 210 - 2 * M, HH = (297 - 3 * M) / 2;
+    pics.forEach(function (p, i) {
+      if (i % 2 === 0 && (i || !first)) pdf.addPage("a4", "p");
+      var iw = PW, ih = iw * p.height / p.width;
+      if (ih > HH) { ih = HH; iw = ih * p.width / p.height; }
+      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, M + (i % 2) * (HH + M) + (HH - ih) / 2, iw, ih);
+    });
+  }
   function addFull(pdf, pics, first) {
     var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
     pics.forEach(function (p, i) {
@@ -2581,7 +2602,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function buildPhotoPdf(pics) {
     var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4" });
-    addFull(pdf, pics, true);
+    var sh = pics.filter(function (p) { return p.sheet; }), gen = pics.filter(function (p) { return !p.sheet; });
+    addFull(pdf, sh, true); addHalf(pdf, gen, !sh.length); // formularz na całą stronę, ogólne na pół strony
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   function fillFlushDocx(f) {
@@ -2704,7 +2726,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         pdf.text(pdf.splitTextToSize(f.taps[p.tap] ? f.taps[p.tap].name : "", W)[0] || "", cx + W / 2, cy + H + 4.5, { align: "center" });
       });
     }
-    addFull(pdf, fp, !page1);
+    addHalf(pdf, fp, !page1);
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
@@ -2739,7 +2761,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
       return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })));
     }
-    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; return f; }); }
+    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
       var docx = fillTempDocx(d), pdf = buildTempPdf(d);
       return { name: name, data: d, docx: docx, pdf: pdf, pics: [], info: {}, logoUrl: "", files: [n.xp || !n.xw ? file("", PDF, pdf) : null, n.xw ? file("", MIME_DOCX, docx) : null].filter(Boolean) };

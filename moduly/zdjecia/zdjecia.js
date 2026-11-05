@@ -31,7 +31,7 @@
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
     oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
-  var DEFAULTS = { preset: 'standard', phoneLimitMB: 1024, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
+  var DEFAULTS = { preset: 'standard', phoneLimitMB: 100, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
 
   function cleanSettings(s) {
     var out = Object.assign({}, DEFAULTS, s || {});
@@ -271,7 +271,8 @@
       owner: who,
       db: idb(win),
       settings: {
-        load: function () { try { return JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { return {}; } },
+        // limit telefonu 100 MB (Grzegorz 05/11/2026): stary domyślny 1024 MB zapisany w ustawieniach zamieniamy raz na 100 MB
+        load: function () { var o; try { o = JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { o = {}; } if (!o.limitV2) { if (o.phoneLimitMB === 1024) o.phoneLimitMB = 100; o.limitV2 = 1; try { win.localStorage.setItem(KEY(), JSON.stringify(o)); } catch (_) {} } return o; },
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
       compress: compressIn(win),
