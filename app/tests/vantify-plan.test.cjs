@@ -1,6 +1,9 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path'), vm = require('vm');
-function load(store) {
+function fakeDate(day) { const D = Date; return class extends D { constructor(...a) { super(...(a.length ? a : [day + 'T12:00:00'])); } static now() { return new D(day + 'T12:00:00').getTime(); } }; }
+function load(store, day) {
   const ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
+  if (day) ctx.Date = fakeDate(day); // zegar apki w teście = podany dzień
+  else ctx.Date = fakeDate('2026-11-05');
   ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
   for (const f of ['vantify-plan.js', 'ppm.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
   return ctx.window;
@@ -12,9 +15,8 @@ test('zlecenia Vantify: tylko id kart z ppm.js, bez danych osobowych', () => {
 });
 // Grzegorz 05/11/2026: terminy DOKŁADNIE jak w pliku Vantify; apka niczego nie przesuwa; inspekcję kończy tylko on.
 // Dziś w testach = 05/11/2026 (dzień zgłoszenia: Water Feature Checks 2985235 zniknęła z 06/11).
-const D = global.Date;
-function at(day, fn) { global.Date = class extends D { constructor(...a) { super(...(a.length ? a : [day + 'T12:00:00'])); } static now() { return new D(day + 'T12:00:00').getTime(); } }; try { return fn(); } finally { global.Date = D; } }
-function loadAt(day, store) { return at(day, () => { const w = load(store); return { w, P: w.OEST_PPM, due: t => at(day, () => w.OEST_PPM.iso(w.OEST_PPM.due(t))) }; }); }
+function at(day, fn) { return fn(); }
+function loadAt(day, store) { const w = load(store, day); return { w, P: w.OEST_PPM, due: t => w.OEST_PPM.iso(w.OEST_PPM.due(t)) }; }
 test('scenariusz Grzegorza 05/11: stare zapisy z testów nie przesuwają terminu – Water Feature 2985235 i AOV TA na 06/11', () => {
   const stage = { 'EFA-INS-007': { s: 'done', day: '2026-10-31', period: '' }, 'EFA-INS-003': { s: 'sent', day: '2026-11-01', period: '2026-10-31' } };
   const store = { 'oest.ppm.stage': JSON.stringify(stage), 'oest.ppm.due': JSON.stringify({ 'EFA-INS-007': '2026-11-13', 'EFA-INS-003': '2026-11-20' }), 'oest.ppm.vantify': '2026-11-02-24b2ce48' };
@@ -37,11 +39,11 @@ test('zapisany/ręczny termin w telefonie nie zmienia terminu z pliku; P.close n
 test('dopiero gdy Grzegorz zakończy inspekcję dla tego zlecenia, karta pokazuje następne zlecenie z pliku', () => {
   for (const s of ['done', 'queued', 'sent']) {
     const store = { 'oest.ppm.stage': JSON.stringify({ 'EFA-INS-007': { s, day: '2026-11-06', period: '2026-11-06' } }) };
-    assert.strictEqual(loadAt('2026-11-06', store).due(load(store).OEST_PPM.byId('EFA-INS-007')), '2026-11-13', s);
+    { const r = loadAt('2026-11-06', store); assert.strictEqual(r.due(r.P.byId('EFA-INS-007')), '2026-11-13', s); }
   }
   // w trakcie / wstrzymana – nie jest zakończona
   const prog = { 'oest.ppm.stage': JSON.stringify({ 'EFA-INS-007': { s: 'prog', day: '2026-11-06', period: '2026-11-06' } }) };
-  assert.strictEqual(loadAt('2026-11-06', prog).due(load(prog).OEST_PPM.byId('EFA-INS-007')), '2026-11-06');
+  { const r = loadAt('2026-11-06', prog); assert.strictEqual(r.due(r.P.byId('EFA-INS-007')), '2026-11-06'); }
 });
 test('niezrobione zlecenie po terminie zostaje (zaległe), jak w Vantify', () => {
   const r = loadAt('2026-11-08', {});
@@ -51,7 +53,7 @@ test('niezrobione zlecenie po terminie zostaje (zaległe), jak w Vantify', () =>
   assert.strictEqual(r2.due(r2.P.byId('EFA-INS-007')), '2026-11-13');
 });
 test('occurrences: tylko zlecenia z pliku, dalej planowane; sync telefonu używa tego samego', () => at('2026-11-02', () => {
-  const w = load({}), P = w.OEST_PPM, t = P.byId('EFA-INS-003'), jobs = P.jobs(t);
+  const w = load({}, '2026-11-02'), P = w.OEST_PPM, t = P.byId('EFA-INS-003'), jobs = P.jobs(t);
   const o = P.occurrences(t, '2026-11-01', '2026-12-31');
   assert.deepStrictEqual(o.filter(x => x.job).map(x => x.d), jobs.map(j => j.due));
   assert.ok(!o.some(x => x.d === '2026-11-13'));   // w pliku Vantify nie ma zlecenia na 13/11
@@ -61,3 +63,29 @@ test('occurrences: tylko zlecenia z pliku, dalej planowane; sync telefonu używa
   assert.deepStrictEqual(ev.map(e => e.date), ['2026-11-06', '2026-11-20', '2026-11-27']);
 }));
 function ctxCore(w) { const m = { exports: {} }; new Function('module', 'exports', 'window', 'globalThis', fs.readFileSync(path.join(__dirname, '..', 'www', 'calendar-core.js'), 'utf8'))(m, m.exports, w, w); if (!w.OESTCalendarCore) w.OESTCalendarCore = m.exports; }
+
+test('zakończenie zostaje, gdy rozpoczynam następną inspekcję (06/11 zrobione, 07/11 start kolejnej)', () => {
+  const store = {}, r = loadAt('2026-11-06', store), t = r.P.byId('EFA-INS-007');
+  r.P.setStage(t, { s: 'done' });
+  assert.strictEqual(r.due(t), '2026-11-13');
+  const r2 = loadAt('2026-11-07', store), t2 = r2.P.byId('EFA-INS-007');
+  r2.P.setStage(t2, { s: 'prog' });
+  assert.strictEqual(r2.due(t2), '2026-11-13');
+  assert.strictEqual(r2.P.stage(t2).period, '2026-11-13');
+});
+test('cofnięcie Gotowa/Zakończona otwiera to samo zlecenie, termin z pliku bez zmian', () => {
+  const store = {}, r = loadAt('2026-11-06', store), t = r.P.byId('EFA-INS-007');
+  r.P.setStage(t, { s: 'done' });
+  assert.strictEqual(r.due(t), '2026-11-13');
+  r.P.setStage(t, { s: 'prog', manual: true });
+  assert.strictEqual(r.due(t), '2026-11-06');
+  r.P.setStage(t, { s: 'sent' }); r.P.setStage(t, null);
+  assert.strictEqual(r.due(t), '2026-11-06');
+});
+test('za ostatnim zleceniem z pliku: następny termin liczony od ostatniego zlecenia, nie ze starej daty w telefonie', () => {
+  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+  const store = { 'oest.ppm.due': JSON.stringify({ 'EFA-INS-007': '2026-11-13' }), 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [last] }) };
+  const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
+  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
+  assert.strictEqual(r.due(t), r.P.iso(d));
+});

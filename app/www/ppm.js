@@ -191,8 +191,24 @@ window.OEST_PPM = {
   // Stare zapisy z testów (period sprzed zlecenia) niczego nie przesuwają.
   function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
   function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
-  function stageRaw(id) { try { return (JSON.parse(localStorage.getItem("oest.ppm.stage") || "{}") || {})[id] || null; } catch (e) { return null; } }
-  function doneFor(id, due) { var r = stageRaw(id); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done") && !!r.period && r.period >= due; }
+  // Zakończone terminy trzymane osobno od bieżącego etapu (localStorage "oest.ppm.done" = { id: ["RRRR-MM-DD", ...] }),
+  // żeby rozpoczęcie następnej inspekcji nie otwierało z powrotem poprzedniego zlecenia. Zapis/cofnięcie: P.setStage.
+  var DK = "oest.ppm.done";
+  function doneAll() {
+    var a = null; try { a = JSON.parse(localStorage.getItem(DK) || "null"); } catch (e) {}
+    if (a && typeof a === "object") return a;
+    a = {}; // pierwsze uruchomienie: zakończone etapy zapisane wcześniej w telefonie
+    var st = {}; try { st = JSON.parse(localStorage.getItem("oest.ppm.stage") || "{}") || {}; } catch (e) {}
+    Object.keys(st).forEach(function (id) { var r = st[id]; if (r && r.period && (r.s === "queued" || r.s === "sent" || r.s === "done")) a[id] = [r.period]; });
+    try { localStorage.setItem(DK, JSON.stringify(a)); } catch (e) {}
+    return a;
+  }
+  P._done = function (id, period, on) {
+    if (!period) return; var a = doneAll(), l = (a[id] || []).filter(function (x) { return x !== period; });
+    if (on) l.push(period); l.sort(); if (l.length > 60) l = l.slice(-60); if (l.length) a[id] = l; else delete a[id];
+    try { localStorage.setItem(DK, JSON.stringify(a)); } catch (e) {}
+  };
+  function doneFor(id, due) { return (doneAll()[id] || []).some(function (p) { return p >= due; }); }
   function vantifyDue(id) {
     var j = jobsOf(id); if (!j.length) return null;
     var td = today0(), i = 0;
@@ -204,15 +220,20 @@ window.OEST_PPM = {
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
   P.byId = function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0] || null; };
-  P.due = function (t) { var v = vantifyDue(t.id); if (v) return parse(v); var s = all()[t.id]; return s ? parse(s) : null; };
+  P.due = function (t) {
+    var v = vantifyDue(t.id); if (v) return parse(v);
+    var s = all()[t.id], j = jobsOf(t.id);
+    if (v === "" && t.freq.length && (!s || s <= j[j.length - 1].due)) return next(t, parse(j[j.length - 1].due)); // za ostatnim zleceniem z pliku: od niego
+    return s ? parse(s) : null;
+  };
   P.setDue = function (t, day) { put(t.id, day); };
   // Raport wysłany (dzień raportu „day”): bez terminu liczy od dnia raportu, z terminem przesuwa go o jeden okres
   // Z zleceniem w Vantify: następny termin = kolejne zlecenie po obecnym terminie (jak w Vantify), dalej z częstotliwości.
   P.close = function (t, day) {
     if (!t.freq.length) return;
     if (vantifyDue(t.id)) return; // termin z pliku Vantify: następne zlecenie wynika z pliku, apka nic nie zapisuje
-    var d = P.due(t), j = jobsOf(t.id), last = j.length ? parse(j[j.length - 1].due) : null;
-    put(t.id, iso(next(t, d || last || parse(day))));
+    var d = P.due(t);
+    put(t.id, iso(next(t, d || parse(day))));
   };
   P.jobs = function (t) { return jobsOf(t.id); };
   // Terminy karty w zakresie [from, to] (RRRR-MM-DD): zlecenia Vantify od bieżącego terminu, bieżący termin (także
@@ -261,8 +282,10 @@ window.OEST_PPM = {
   P.stage = function (t) { var r = stages()[t.id]; return alive(r) ? r : null; };
   P.setStage = function (t, patch) {
     var a = stages(), r = alive(a[t.id]) ? a[t.id] : {};
-    if (patch === null) delete a[t.id];
-    else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r; }
+    var CL = function (x) { return !!x && (x.s === "queued" || x.s === "sent" || x.s === "done"); };
+    if (patch === null) { if (CL(r)) P._done(t.id, r.period, false); delete a[t.id]; } // cofnięcie zakończenia: zlecenie znów otwarte
+    else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r;
+      if (CL(r)) P._done(t.id, r.period, true); else if (CL(was)) P._done(t.id, was.period, false); }
     try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
