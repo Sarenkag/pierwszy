@@ -134,14 +134,37 @@ test('release zwalnia tylko nieużywane i nie świeże, keep znów trzyma', asyn
   assert.strictEqual(rows.get(b.id).hold, 'inspekcja');
 });
 
-test('rozmiar wg rodzaju w Standardzie: formularz 1920, ogólne 1600, przy pytaniu 1280', () => {
+test('rozmiar wg rodzaju w Standardzie: formularz 1920, ogólne 1600, przy pytaniu 800', () => {
   assert.strictEqual(Z.fit(4080, 3072, 'standard', 'formularz').width, 1920);
   assert.strictEqual(Z.fit(4080, 3072, 'standard', 'ogolne').width, 1600);
-  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'punkt').width, 1280);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'punkt').width, 800);
   assert.strictEqual(Z.fit(4080, 3072, 'standard').width, 1920, 'bez rodzaju jak formularz');
   assert.strictEqual(Z.fit(4080, 3072, 'wysoka', 'punkt').width, 3000, 'inne ustawienia jakości bez zmian');
 });
 
-test('zdjęcie na dowód (krany, izolatory) 960 px', () => {
-  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'dowod').width, 960);
+test('zdjęcie na dowód (krany, izolatory) Małe 800 px', () => {
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'dowod').width, 800);
+});
+
+test('ogólne do wyboru: Duże 2560 / Średnie 1600 / Małe 800, domyślnie Średnie, zła wartość → Średnie', async () => {
+  assert.deepStrictEqual(Z.GENERAL.map(g => Z.fit(4080, 3072, 'standard', g.kind).width), [2560, 1600, 800]);
+  assert.strictEqual(Z.cleanSettings({}).general, 'srednie');
+  assert.strictEqual(Z.cleanSettings({ general: 'xx' }).general, 'srednie');
+  let saved = {}, seen = [];
+  const store = Z.createStore({ owner: () => 'a', db: { all: async () => [], get: async () => null, put: async () => {}, del: async () => {} },
+    settings: { load: () => saved, save: s => { saved = s; } }, compress: async (f, preset, kind) => { seen.push(kind); return { blob: { size: 1 }, width: 1, height: 1 }; },
+    wifi: () => true, now: () => 0, id: () => 'x' + seen.length });
+  await store.save({}, { kind: 'ogolne' });
+  store.setSettings({ general: 'duze' }); await store.save({}, { kind: 'ogolne' });
+  store.setSettings({ general: 'male' }); await store.save({}, { kind: 'ogolne' });
+  await store.save({}, { kind: 'dowod' });
+  assert.deepStrictEqual(seen, ['ogolne', 'duze', 'male', 'dowod']);
+});
+
+test('folder 200 MB, ostrzeżenia osobno od 100 MB (Grzegorz 05/11)', () => {
+  const s = Z.cleanSettings({});
+  assert.strictEqual(s.phoneLimitMB, 200);
+  assert.strictEqual(s.warnMB, 100);
+  assert.strictEqual(Z.cleanSettings({ warnMB: 'x' }).warnMB, 100);
+  assert.strictEqual(Z.cleanSettings({ phoneLimitMB: 300, warnMB: 150 }).warnMB, 150);
 });

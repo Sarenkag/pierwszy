@@ -57,7 +57,7 @@
     if (c && c.type && c.type !== "unknown") return { k: "mid", t: T("Dane komórkowe", "Mobile data") };
     return { k: "on", t: T("Online", "Online") };
   }
-  var photo = { pending: 0, bytes: 0, phone: 0, limit: 0 };
+  var photo = { pending: 0, bytes: 0, phone: 0, limit: 0, warn: 0 };
   function drivePaused() { return !!(w.OESTZdjeciaUI && w.OESTZdjeciaUI.paused && w.OESTZdjeciaUI.paused()); }
   var gOk = null; // stan połączenia z Dyskiem: tylko z OESTGoogle.ready (to samo źródło co Ustawienia i wysyłka)
   function driveOn() { var G = w.OESTGoogle; return !!(G && G.connected && G.connected("drive")) || gOk === true; }
@@ -70,15 +70,16 @@
   function photoStats() {
     var G = w.OESTGoogle, g = G && G.ready ? G.ready("drive").then(function (ok) { gOk = ok; }, function () { gOk = false; }) : Promise.resolve();
     var Z = w.OESTZdjecia; if (!Z || !Z.list) return g;
-    return g.then(function () { return Z.list(); }).then(function (rs) { var s = Z.stats(rs); photo = { pending: s.pending, bytes: s.pendingBytes, phone: s.phoneBytes, limit: (Z.settings().phoneLimitMB || 100) * 1048576 }; }).catch(function () {});
+    return g.then(function () { return Z.list(); }).then(function (rs) { var s = Z.stats(rs); photo = { pending: s.pending, bytes: s.pendingBytes, phone: s.phoneBytes, limit: (Z.settings().phoneLimitMB || 200) * 1048576, warn: (Z.settings().warnMB || 100) * 1048576 }; }).catch(function () {});
   }
   function lamps() {
     var n = net(), dr = driveState();
     $("hmNet").querySelector(".l").className = "l " + n.k; $("hmNet").querySelector("span").textContent = n.t;
     $("hmDrive").querySelector(".l").className = "l " + dr.k; $("hmDrive").querySelector("span").textContent = dr.t;
-    // folder zdjęć OEST: ile zajmuje (Grzegorz 05/11): <50% limitu zielony, <75% pomarańczowy, <90% czerwony, wyżej czerwony z ⚠
+    // folder zdjęć OEST: ile zajmuje (Grzegorz 05/11). Kolory liczone od progu ostrzeżeń (osobne ustawienie, domyślnie 100 MB),
+    // nie od limitu folderu (200 MB = bufor): <50% zielony, <75% pomarańczowy, <90% czerwony, wyżej czerwony z ⚠
     var ph = $("hmPhotos"); if (ph) {
-      var mb = photo.phone / 1048576, f = photo.limit ? photo.phone / photo.limit : 0;
+      var mb = photo.phone / 1048576, base = photo.warn || photo.limit, f = base ? photo.phone / base : 0;
       ph.className = "hm-ph-size " + (f < 0.5 ? "ok" : f < 0.75 ? "mid" : f < 0.9 ? "hi" : "full");
       ph.querySelector("span").textContent = T("Zdjęcia ", "Photos ") + (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + " / " + Math.round(photo.limit / 1048576) + " MB";
     }
