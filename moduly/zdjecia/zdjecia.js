@@ -4,7 +4,7 @@
  * korzystają z jednego miejsca”). Inspekcje, szkice i raporty trzymają tylko id zdjęcia, nie własne kopie.
  *
  * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, kind, hold, when })
- *               kind  = 'formularz' | 'ogolne' | 'punkt' – rozmiar w Standardzie: 1920 / 1600 / 1280 px → { id, blob, width, height, … }
+ *               kind  = 'formularz' | 'ogolne' | 'punkt' | 'dowod' – rozmiar w Standardzie: 1920 / 1600 / 1280 / 960 px → { id, blob, width, height, … }
  *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
  *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
  *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
@@ -60,7 +60,8 @@
   /* Wymiary po kompresji (bez powiększania). */
   // Rozmiar wg rodzaju zdjęcia w Standardzie (Grzegorz 05/11/2026): formularz na całą stronę A4 musi być czytelny,
   // ogólne trochę mniejsze, przy pytaniu / kranie najmniejsze (w raporcie są małe). Bez rodzaju = jak formularz.
-  var KINDS = { formularz: { max: 1920, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, punkt: { max: 1280, q: 0.75 } };
+  // dowod = zdjęcie tylko na dowód wykonania (krany Flushingu, izolatory – Grzegorz 05/11): rozmiar jak w raporcie, ok. 0,1 MB.
+  var KINDS = { formularz: { max: 1920, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, punkt: { max: 1280, q: 0.75 }, dowod: { max: 960, q: 0.72 } };
   function fit(w, h, preset, kind) {
     var p = PRESETS[preset] || PRESETS.standard;
     if (p === PRESETS.standard && KINDS[kind]) p = KINDS[kind];

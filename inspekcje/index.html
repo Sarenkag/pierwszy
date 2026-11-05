@@ -2091,7 +2091,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
   // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.
   // Inspekcja „z kartki” (folder bez listy kranów): każde jej zdjęcie to strona formularza.
-  function photoKind(tap, sheet) { return tap != null ? "punkt" : sheet || (cur.type && cur.type.folder && !cur.type.flush) ? "formularz" : "ogolne"; }
+  // Krany / punkty Flushingu i AOV oraz izolatory: zdjęcie tylko na dowód wykonania (Grzegorz 05/11) → 960 px, jak w raporcie.
+  function photoKind(tap, sheet) {
+    if (sheet || (cur.type && cur.type.folder && !cur.type.flush && tap == null)) return "formularz";
+    if (tap != null || (cur.type && cur.type.batch)) return "dowod";
+    return "ogolne";
+  }
   function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
   function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
   function bitmap(blob) { return createImageBitmap(blob, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(blob); }); }

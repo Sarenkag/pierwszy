@@ -141,3 +141,7 @@ test('rozmiar wg rodzaju w Standardzie: formularz 1920, ogólne 1600, przy pytan
   assert.strictEqual(Z.fit(4080, 3072, 'standard').width, 1920, 'bez rodzaju jak formularz');
   assert.strictEqual(Z.fit(4080, 3072, 'wysoka', 'punkt').width, 3000, 'inne ustawienia jakości bez zmian');
 });
+
+test('zdjęcie na dowód (krany, izolatory) 960 px', () => {
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'dowod').width, 960);
+});
