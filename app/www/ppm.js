@@ -298,11 +298,11 @@ window.OEST_PPM = {
   var NK = "oest.ppm.needs";
   function needsAll() { try { return JSON.parse(localStorage.getItem(NK) || "{}") || {}; } catch (e) { return {}; } }
   // Ustawienia wysyłki (⚙ obok Wyślij, Grzegorz 04/11 11:33–11:37): f zdjęcie formularza, q pytania (w Flushing/AOV = formularz elektroniczny),
-  // p zdjęcia ogólne, t zdjęcia do pytań (przy kranie / punkcie). Wysyłka (11:34): do sm mnie / se inżyniera / sg managera,
+  // p zdjęcia ogólne, t zdjęcia do pytań (przy kranie / punkcie). Wysyłka (11:34): do sp mój prywatny (05/11) / sm mój firmowy / se inżyniera / sg managera,
   // format xp PDF / xw Word, one = jeden dokument (false = osobne pliki). Jedno miejsce dla wszystkich inspekcji, pamiętane dla każdej.
   P.needsDefault = function (t) {
     var folder = t.form === "folder", pts = !!t.flush;
-    return { q: !folder && !t.cfg, p: true, t: pts, f: folder, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
+    return { q: !folder && !t.cfg, p: true, t: pts, f: folder, sp: false, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
   };
   P.needs = function (t) { return Object.assign(P.needsDefault(t), needsAll()[t.id] || {}); };
   P.setNeeds = function (t, patch) {

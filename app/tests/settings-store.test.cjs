@@ -96,3 +96,13 @@ test('calendar preferences migrate old Settings without enabling or selecting a 
   f.data.set('oest.settings.v1.a',JSON.stringify(s));s=f.store.get();assert.equal(s.calendar.enabled,false);assert.equal(s.calendar.weeks,8);assert.equal(s.calendar.shiftMarkers,false);assert.equal(s.calendar.nativeCalendarId,'');
   assert.throws(()=>f.store.update(x=>{x.calendar.weeks=0;}),/CALENDAR/);
 });
+// Prywatny e-mail w Mój profil (Grzegorz 05/11/2026)
+test('private email: saved, validated, old settings without it still load',()=>{
+  const f=fixture(); f.store.update(s=>{s.profile.companyEmail='work@example.com';});
+  const k=[...f.data.keys()].find(x=>x.startsWith('oest.settings.v1.')),old=JSON.parse(f.data.get(k));delete old.profile.privateEmail;f.data.set(k,JSON.stringify(old));
+  assert.equal(f.store.get().profile.privateEmail,'');
+  f.store.update(s=>{s.profile.privateEmail='me@gmail.com';});
+  assert.equal(f.store.get().profile.privateEmail,'me@gmail.com');
+  assert.equal(f.store.get().profile.companyEmail,'work@example.com');
+  assert.throws(()=>f.store.update(s=>{s.profile.privateEmail='zly adres';}),/EMAIL_INVALID/);
+});

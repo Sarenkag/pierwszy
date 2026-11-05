@@ -1221,7 +1221,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   $("sendCfg").addEventListener("click", function () {
     var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
-    var sp = sendParts(), to = recipientsFor({ sm: 1, se: 1, sg: 1 });
+    var sp = sendParts(), to = recipientsFor({ sp: 1, sm: 1, se: 1, sg: 1 });
     function cb(k, label, dis, note) { return '<label class="need' + (dis ? " dis" : "") + '"><input type="checkbox" data-sn="' + k + '"' + (n[k] && !dis ? " checked" : "") + (dis ? " disabled" : "") + "><span>" + esc(label) + (note ? " <small>" + esc(note) + "</small>" : "") + "</span></label>"; }
     var box = document.createElement("div"); box.className = "sendcfg-box";
     box.innerHTML = '<div class="sct">' + T("Co wysłać", "What to send") + "</div>" +
@@ -1234,7 +1234,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + T("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
       '<div class="sct">' + T("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, T("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
       '<div class="sct">' + T("Do kogo", "To") + "</div>" +
-      cb("sm", T("Ja", "Me"), !to.me, to.me || T("brak adresu w My Profile", "no address in My Profile")) +
+      cb("sp", T("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || T("brak adresu w Mój profil", "no address in My Profile")) +
+      cb("sm", T("Mój firmowy e-mail", "My work email"), !to.me, to.me || T("brak adresu w Mój profil", "no address in My Profile")) +
       cb("se", T("Inżynier", "Engineer"), !to.eng, to.eng || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
       cb("sg", T("Manager", "Manager"), !to.man, to.man || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
     OESTPrzycisk.ask({ title: T("Ustawienia wysyłki", "Sending settings"), node: box, ok: T("Zapisz jako domyślne", "Save as default"), cancel: T("Zamknij", "Close") }).then(function (save) {
