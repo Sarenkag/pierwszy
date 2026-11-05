@@ -99,3 +99,16 @@ test('zakończenie ostatniego zlecenia z pliku przesuwa termin tylko o jeden okr
   const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
   assert.strictEqual(r.due(t), r.P.iso(d));
 });
+
+test('ostatnie zlecenie: zakończ → zdejmij Gotowa → zakończ znów = ten sam następny termin', () => {
+  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+  const store = { 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [jobs[jobs.length - 2].due] }) };
+  const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
+  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
+  r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
+  assert.strictEqual(r.due(t), r.P.iso(d));
+  const was = r.P.stage(t); r.P.setDue(t, was.period); r.P.setStage(t, { s: 'prog', manual: true }); // jak unready() w inspekcje/index.html
+  assert.strictEqual(r.due(t), last);
+  r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
+  assert.strictEqual(r.due(t), r.P.iso(d));
+});

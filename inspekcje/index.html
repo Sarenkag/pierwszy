@@ -3019,8 +3019,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function unready(t) {
     if (!t) return;
     var was = PPM.stage(t);
-    // termin spoza pliku Vantify (np. podwykonawcy, za ostatnim zleceniem): wraca na ten z zakończonej inspekcji
-    if (was && was.period && !(PPM.jobFor && PPM.jobFor(t, was.period))) PPM.setDue(t, was.period);
+    // zapisany termin wraca na ten z zakończonej inspekcji (spoza pliku: podwykonawcy, za ostatnim zleceniem);
+    // dla zleceń z pliku termin i tak bierze się z pliku – zapis tylko zapobiega podwójnemu przesunięciu po ostatnim zleceniu
+    if (was && was.period) PPM.setDue(t, was.period);
     PPM.setStage(t, { s: "prog", manual: true });
     var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
     renderPpmBar(); updateFormHint(); $("formHint").textContent = T("Zdjęto znacznik Gotowa. Wszystko zostało bez zmian.", "Ready flag removed. Nothing else changed.");
