@@ -232,6 +232,9 @@ window.OEST_PPM = {
   P.close = function (t, day) {
     if (!t.freq.length) return;
     if (vantifyDue(t.id)) return; // termin z pliku Vantify: następne zlecenie wynika z pliku, apka nic nie zapisuje
+    var j = jobsOf(t.id), sv = all()[t.id];
+    // właśnie zakończone ostatnie zlecenie z pliku: następny termin = ostatnie zlecenie + okres (raz, bez podwójnego przesunięcia)
+    if (j.length && (!sv || sv <= j[j.length - 1].due)) { put(t.id, iso(next(t, parse(j[j.length - 1].due)))); return; }
     var d = P.due(t);
     put(t.id, iso(next(t, d || parse(day))));
   };

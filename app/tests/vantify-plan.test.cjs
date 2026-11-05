@@ -89,3 +89,13 @@ test('za ostatnim zleceniem z pliku: następny termin liczony od ostatniego zlec
   const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
   assert.strictEqual(r.due(t), r.P.iso(d));
 });
+
+test('zakończenie ostatniego zlecenia z pliku przesuwa termin tylko o jeden okres', () => {
+  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+  const store = { 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [jobs[jobs.length - 2].due] }) };
+  const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
+  assert.strictEqual(r.due(t), last);
+  r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
+  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
+  assert.strictEqual(r.due(t), r.P.iso(d));
+});
