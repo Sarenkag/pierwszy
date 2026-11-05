@@ -3,7 +3,8 @@
  * JEDYNE miejsce zapisu zdjęć w apkach OEST (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze, pozostałe moduły
  * korzystają z jednego miejsca”). Inspekcje, szkice i raporty trzymają tylko id zdjęcia, nie własne kopie.
  *
- * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, hold, when }) → { id, blob, width, height, … }
+ * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, kind, hold, when })
+ *               kind  = 'formularz' | 'ogolne' | 'punkt' – rozmiar w Standardzie: 1920 / 1600 / 1280 px → { id, blob, width, height, … }
  *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
  *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
  *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
@@ -26,7 +27,7 @@
 
   var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
   var PRESETS = {
-    standard: { max: 1920, q: 0.8, pl: 'Standard (do 1920 px, ok. 0,5 MB)', en: 'Standard (up to 1920 px, about 0.5 MB)' },
+    standard: { max: 1920, q: 0.8, pl: 'Standard (formularz 1920 px, ogólne 1600 px, przy pytaniu 1280 px)', en: 'Standard (form 1920 px, general 1600 px, at a question 1280 px)' },
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
     oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
@@ -57,8 +58,12 @@
   }
 
   /* Wymiary po kompresji (bez powiększania). */
-  function fit(w, h, preset) {
+  // Rozmiar wg rodzaju zdjęcia w Standardzie (Grzegorz 05/11/2026): formularz na całą stronę A4 musi być czytelny,
+  // ogólne trochę mniejsze, przy pytaniu / kranie najmniejsze (w raporcie są małe). Bez rodzaju = jak formularz.
+  var KINDS = { formularz: { max: 1920, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, punkt: { max: 1280, q: 0.75 } };
+  function fit(w, h, preset, kind) {
     var p = PRESETS[preset] || PRESETS.standard;
+    if (p === PRESETS.standard && KINDS[kind]) p = KINDS[kind];
     var s = p.max ? Math.min(1, p.max / Math.max(w, h)) : 1;
     return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)), quality: p.q };
   }
@@ -93,12 +98,12 @@
   function search(records, query) {
     var words = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
     return records.filter(function (r) {
-      var hay = [r.day, r.code, r.location, r.point, r.category, r.name, r.source].join(' ').toLowerCase();
+      var hay = [r.day, r.code, r.location, r.point, r.kind, r.category, r.name, r.source].join(' ').toLowerCase();
       return words.every(function (w) { return hay.indexOf(w) >= 0; });
     }).sort(function (a, b) { return a.created < b.created ? 1 : -1; });
   }
 
-  /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset), wifi(), now() } */
+  /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset, kind), wifi(), now() } */
   function createStore(deps) {
     var syncing = null, enforcing = Promise.resolve(), listeners = [], savedListeners = [];
     function emit(list) { (list || listeners).forEach(function (f) { try { f(); } catch (_) {} }); }
@@ -113,11 +118,11 @@
     async function save(file, info) {
       info = info || {};
       var when = info.when instanceof Date && !isNaN(info.when) ? info.when : new Date(deps.now());
-      var s = settings(), out = await deps.compress(file, s.preset);
+      var kind = KINDS[info.kind] ? info.kind : '', s = settings(), out = await deps.compress(file, s.preset, kind);
       var p = place(info, when);
       var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), saved: new Date(deps.now()).toISOString(), day: p.day, folder: p.folder, name: p.name,
         source: safe(info.source) || 'inne', category: safe(info.category), code: safe(info.code), location: safe(info.location),
-        point: safe(info.point), hold: safe(info.hold),
+        point: safe(info.point), kind: kind, hold: safe(info.hold),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
       // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11)
@@ -243,10 +248,10 @@
     };
   }
   function compressIn(win) {
-    return async function (file, preset) {
+    return async function (file, preset, kind) {
       var img;
       try { img = await win.createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (_) { img = await win.createImageBitmap(file); }
-      var f = fit(img.width, img.height, preset), c = win.document.createElement('canvas');
+      var f = fit(img.width, img.height, preset, kind), c = win.document.createElement('canvas');
       c.width = f.width; c.height = f.height;
       var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
       if (img.close) img.close();

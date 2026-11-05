@@ -133,3 +133,11 @@ test('release zwalnia tylko nieużywane i nie świeże, keep znów trzyma', asyn
   await store.keep([b.id], 'inspekcja');
   assert.strictEqual(rows.get(b.id).hold, 'inspekcja');
 });
+
+test('rozmiar wg rodzaju w Standardzie: formularz 1920, ogólne 1600, przy pytaniu 1280', () => {
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'formularz').width, 1920);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'ogolne').width, 1600);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'punkt').width, 1280);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard').width, 1920, 'bez rodzaju jak formularz');
+  assert.strictEqual(Z.fit(4080, 3072, 'wysoka', 'punkt').width, 3000, 'inne ustawienia jakości bez zmian');
+});

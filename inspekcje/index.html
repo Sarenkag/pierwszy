@@ -1928,6 +1928,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
     ctx.point = tap != null ? tapName(tap) : ""; // zdjęcie przy kranie / punkcie: nazwa punktu w folderze OEST
+    ctx.kind = photoKind(tap, sheet);
     $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
@@ -1979,7 +1980,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob).then(function (nb) {
             if (!nb) return;
-            var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : "";
+            var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : ""; ectx.kind = photoKind(p.tap, p.sheet);
             return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
@@ -2088,6 +2089,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // go nie skasuje). Szkic, zlecenie i raport mają tylko jego id. W pamięci jest mała miniatura, duże zdjęcie czyta się z pliku
   // dopiero do raportu i modelu (wcześniej każde zdjęcie trzymało ok. 11 MB pamięci, przy Flushing TB setki MB).
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
+  // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.
+  // Inspekcja „z kartki” (folder bez listy kranów): każde jej zdjęcie to strona formularza.
+  function photoKind(tap, sheet) { return tap != null ? "punkt" : sheet || (cur.type && cur.type.folder && !cur.type.flush) ? "formularz" : "ogolne"; }
   function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
   function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
   function bitmap(blob) { return createImageBitmap(blob, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(blob); }); }
