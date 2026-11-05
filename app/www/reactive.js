@@ -124,5 +124,6 @@
   }}
   /* tłumacz PL→EN na telefonie (ten sam co w inspekcjach) */let trPlugin=null;function translator(){const C2=w.Capacitor;if(!C2?.isNativePlatform?.())return null;if(!trPlugin)trPlugin=C2.registerPlugin?C2.registerPlugin('Translate'):C2.Plugins?.Translate||null;return trPlugin;}
   function findParent(id,node=T.tree){for(const child of node.children||[]){if(child.id===id)return node.id;const found=findParent(id,child);if(found)return found;}return null;}
+  setTimeout(()=>{repo.releasePhotos?.().catch(()=>{});},20000);/* nieużywane zdjęcia Reactive przestają być trzymane (Codex #69) */
   w.OESTReactiveUI={open,canLeave,setNavigate:fn=>navigate=fn,repository:repo};w.addEventListener('beforeunload',e=>{if(writing||error||voice.recording){e.preventDefault();e.returnValue='';}});
 })(window);
