@@ -2173,8 +2173,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
   // Rozmiar zdjęcia w siatce wg rodzaju inspekcji (Grzegorz 04/11): zwykłe (izolatory itd.) ok. 25 KB, Flushing ok. 60 KB.
-  var REPORT_SIZE = { zwykla: { px: 600, q: 0.6 }, flush: { px: 960, q: 0.65 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
-  var HALF_PX = 1200, HALF_Q = 0.7; // zdjęcie ogólne na pół strony A4 (Grzegorz 05/11): ok. 150 dpi, bez rozciągania
+  // Zdjęcia w raporcie (Grzegorz 05/11/2026 08:09): raport Word i PDF poniżej 1 MB. Przy pytaniach / kranach / izolatorach
+  // (12 na stronę, ok. 4,5 cm) 480 px ≈ 270 dpi, ok. 10–20 KB. Ogólne na pół A4 1000 px, ok. 45–70 KB. Kartka formularza 1600 px (czytelna).
+  var REPORT_SIZE = { zwykla: { px: 480, q: 0.55 }, flush: { px: 480, q: 0.55 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
+  var HALF_PX = 1000, HALF_Q = 0.6; // zdjęcie ogólne na pół strony A4: bez rozciągania
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
   function finalPhoto(p, d) {
     return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
