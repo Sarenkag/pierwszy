@@ -3177,7 +3177,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     document.querySelectorAll(".ppmbar").forEach(function (el) {
       el.hidden = !t; if (!t) return;
       var due = PPM.due(t), left = PPM.daysLeft(due);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
+      // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
+      var vj = due && PPM.jobFor ? PPM.jobFor(t, isoDay(due)) : null;
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 

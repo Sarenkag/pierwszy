@@ -181,44 +181,38 @@ window.OEST_PPM = {
       delete a[k]; moved = true;
     });
     if (moved) try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {}
-    return fromVantify(a);
-  }
-  // Zlecenia z Vantify (vantify-plan.js): raz na eksport termin karty = najbliższe otwarte zlecenie
-  // (jeśli inspekcja z tego zlecenia jest już wysłana/zakończona w apce → kolejne zlecenie).
-  function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
-  function fromVantify(a) {
-    var V = window.OEST_VANTIFY, mk = "oest.ppm.vantify";
-    if (!V || !V.jobs) return a;
-    try { if (localStorage.getItem(mk) === V.exported) return a; } catch (e) { return a; }
-    var st = stages();
-    function span(f) { var n = parseInt(f, 10) || 1; return /W$/.test(f) ? 7 * n : 31 * n; }
-    function gap(x, y) { return Math.round((parse(x) - parse(y)) / 864e5); }
-    Object.keys(V.jobs).forEach(function (id) {
-      var j = V.jobs[id], t = P.byId(id);
-      if (a[id] && j.some(function (x) { return x.due === a[id]; })) return; // termin już jest zleceniem Vantify (np. po wysłaniu) – nie cofać
-      // wysłana / zakończona w apce (także gdy etap na klocku już wygasł): które zlecenie objęła?
-      var r = st[id], c = null;
-      if (r && r.day && (r.s === "queued" || r.s === "sent" || r.s === "done")) {
-        c = j.filter(function (x) { return x.due === r.period; })[0] || j.filter(function (x) { return x.due >= r.day; })[0] || null;
-        if (c && c.due !== r.period && gap(c.due, r.day) > span(c.f)) c = null; // wpis z wcześniejszego okresu
-      }
-      var nx = c ? j[j.indexOf(c) + 1] : j[0];
-      if (nx) a[id] = nx.due; else if (c && t && t.freq.length) a[id] = iso(next(t, parse(c.due)));
-    });
-    try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); localStorage.setItem(mk, V.exported); } catch (e) {}
     return a;
+  }
+  // Zlecenia z Vantify (vantify-plan.js) – Grzegorz 05/11/2026: terminy DOKŁADNIE jak w pliku Vantify.
+  // Apka niczego nie przelicza ani nie przesuwa. Termin karty = zlecenie z pliku:
+  // - ostatnie zlecenie, którego termin minął, jeśli nie jest zrobione w apce (zaległe, jak w Vantify),
+  // - inaczej najbliższe zlecenie od dziś, które nie jest zrobione w apce.
+  // „Zrobione w apce” = inspekcja zakończona/wysłana DLA TEGO terminu (period ≥ termin zlecenia).
+  // Stare zapisy z testów (period sprzed zlecenia) niczego nie przesuwają.
+  function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
+  function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
+  function stageRaw(id) { try { return (JSON.parse(localStorage.getItem("oest.ppm.stage") || "{}") || {})[id] || null; } catch (e) { return null; } }
+  function doneFor(id, due) { var r = stageRaw(id); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done") && !!r.period && r.period >= due; }
+  function vantifyDue(id) {
+    var j = jobsOf(id); if (!j.length) return null;
+    var td = today0(), i = 0;
+    while (i < j.length && j[i].due < td) i++;
+    if (i > 0 && !doneFor(id, j[i - 1].due)) return j[i - 1].due;
+    for (; i < j.length; i++) if (!doneFor(id, j[i].due)) return j[i].due;
+    return ""; // wszystkie zlecenia z pliku zrobione – dalej termin z apki (częstotliwość)
   }
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
   P.byId = function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0] || null; };
-  P.due = function (t) { var s = all()[t.id]; return s ? parse(s) : null; };
+  P.due = function (t) { var v = vantifyDue(t.id); if (v) return parse(v); var s = all()[t.id]; return s ? parse(s) : null; };
   P.setDue = function (t, day) { put(t.id, day); };
   // Raport wysłany (dzień raportu „day”): bez terminu liczy od dnia raportu, z terminem przesuwa go o jeden okres
   // Z zleceniem w Vantify: następny termin = kolejne zlecenie po obecnym terminie (jak w Vantify), dalej z częstotliwości.
   P.close = function (t, day) {
     if (!t.freq.length) return;
-    var d = P.due(t), cur = d ? iso(d) : day, nj = jobsOf(t.id).filter(function (j) { return j.due > cur; })[0];
-    put(t.id, nj ? nj.due : iso(next(t, d || parse(day))));
+    if (vantifyDue(t.id)) return; // termin z pliku Vantify: następne zlecenie wynika z pliku, apka nic nie zapisuje
+    var d = P.due(t), j = jobsOf(t.id), last = j.length ? parse(j[j.length - 1].due) : null;
+    put(t.id, iso(next(t, d || last || parse(day))));
   };
   P.jobs = function (t) { return jobsOf(t.id); };
   // Terminy karty w zakresie [from, to] (RRRR-MM-DD): zlecenia Vantify od bieżącego terminu, bieżący termin (także
