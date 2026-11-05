@@ -56,13 +56,14 @@
     } catch (e) { return ""; }
   }
   // adresaci raportu (Grzegorz 04/11 11:34): Ja = adres firmowy, Inżynier / Manager = kontakty z Ustawień → Wysyłka (te same co w Handover)
-  // sel: { sm, se, sg } → { list: [adresy], me, eng, man }
+  // Prywatny e-mail (Grzegorz 05/11): sp = mój prywatny adres z Mój profil, sm = firmowy
+  // sel: { sp, sm, se, sg } → { list: [adresy], priv, me, eng, man }
   function recipients(sel) {
     sel = sel || { sm: true };
     var st = null; try { var a = account() || {}; st = JSON.parse(root.localStorage.getItem("oest.settings.v1." + encodeURIComponent(String(a.id || a.email || ""))) || "null"); } catch (e) {}
     function contact(id) { var c = st && id ? (st.contacts || []).filter(function (x) { return x.id === id && x.active !== false; })[0] : null; return c && c.email || ""; }
-    var mail = (st && st.mail) || {}, out = { me: myEmail(), eng: contact(mail.engineerId), man: contact(mail.managerId) };
-    out.list = [sel.sm && out.me, sel.se && out.eng, sel.sg && out.man].filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+    var mail = (st && st.mail) || {}, out = { priv: st && st.profile && st.profile.privateEmail || "", me: myEmail(), eng: contact(mail.engineerId), man: contact(mail.managerId) };
+    out.list = [sel.sp && out.priv, sel.sm && out.me, sel.se && out.eng, sel.sg && out.man].filter(function (x, i, a) { return x && a.indexOf(x) === i; });
     return out;
   }
   function errText(e) {
