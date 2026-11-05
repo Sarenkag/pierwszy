@@ -560,13 +560,14 @@ input[type=text], input[type=email], input[type=date], select {
       if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
       var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
     });
-    var count = {};
-    rows.forEach(function (r) { if (r.day) count[r.day] = (count[r.day] || 0) + 1; });
+    // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień
+    var count = {}, doneN = {};
+    rows.forEach(function (r) { if (!r.day) return; count[r.day] = (count[r.day] || 0) + 1; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) doneN[r.day] = (doneN[r.day] || 0) + 1; });
     var html = "";
     for (var i = 0; i < 14; i++) {
       var d = new Date(today); d.setDate(d.getDate() + i);
       var k = P.iso(d), n = count[k] || 0;
-      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? T("Dziś", "Today") : dayName(d.getDay())) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n || "") + "</i></button>";
+      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? T("Dziś", "Today") : dayName(d.getDay())) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n ? (doneN[k] || 0) + "/" + n : "") + "</i></button>";
     }
     $("ppmDays").innerHTML = html;
     var chips = [{ id: "all", name: T("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: T(g.pl || g.name, g.name) }; }), [{ id: "started", name: T("◐ Rozpoczęte", "◐ Started") }]);

@@ -2236,7 +2236,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
     var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null;
     var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
-    f.classList.toggle("ready", ready); f.disabled = ready;
+    f.classList.toggle("ready", ready); f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
+    f.title = ready ? T("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
     if (ready) { f.textContent = T("✓ GOTOWA ", "✓ READY ") + fmtDate(new Date(st.at || Date.now())); return; }
     f.textContent = T("✓ Zakończ inspekcję", "✓ Finish inspection");
   }
@@ -3013,10 +3014,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // „✓ Zakończ inspekcję” (Grzegorz 04/11 10:00): TYLKO znacznik dla Grzegorza „gotowe, nie muszę tu zaglądać”.
   // Nic nie wysyła, o nic nie pyta, niczego nie kasuje. Na liście jaskrawe zielone „GOTOWA”.
+  // Zdjęcie znacznika Gotowa/Zakończona (Grzegorz 05/11): to NIE reset. Odpowiedzi, zdjęcia, raport i stan wysyłki (✉) zostają;
+  // inspekcja wraca do „W trakcie”, zlecenie z pliku Vantify znów jest otwarte (termin bez zmian, nic się nie przesuwa).
+  function unready(t) {
+    if (!t) return;
+    var was = PPM.stage(t);
+    // zapisany termin wraca na ten z zakończonej inspekcji (spoza pliku: podwykonawcy, za ostatnim zleceniem);
+    // dla zleceń z pliku termin i tak bierze się z pliku – zapis tylko zapobiega podwójnemu przesunięciu po ostatnim zleceniu
+    if (was && was.period) PPM.setDue(t, was.period);
+    PPM.setStage(t, { s: "prog", manual: true });
+    var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
+    renderPpmBar(); updateFormHint(); $("formHint").textContent = T("Zdjęto znacznik Gotowa. Wszystko zostało bez zmian.", "Ready flag removed. Nothing else changed.");
+  }
   $("finishIns").addEventListener("click", async function () {
     if (queueing) return;
     var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
-    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) return; // już Gotowa
+    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { unready(t); return; } // już Gotowa → zdjęcie znacznika
     if (t) {
       var dd = PPM.due(t), day = isoDay(reportDate());
       PPM.setStage(t, { s: st && st.mail === "sent" ? "sent" : st && st.mail === "queued" ? "queued" : "done", period: dd ? isoDay(dd) : day, day: isoDay(new Date()), manual: false });
@@ -3177,7 +3190,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     document.querySelectorAll(".ppmbar").forEach(function (el) {
       el.hidden = !t; if (!t) return;
       var due = PPM.due(t), left = PPM.daysLeft(due);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '" aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
+      // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
+      var vj = due && PPM.jobFor ? PPM.jobFor(t, isoDay(due)) : null;
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 
@@ -3193,6 +3208,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (this.value === "done") { if (!closed) $("finishIns").click(); return; } // „Zakończona” z listy = to samo co ✓ Zakończ inspekcję (Gotowa, zielony klocek); ustawia tylko Grzegorz
         // cofnięcie „Gotowa” (Grzegorz 04/11: Zakończ → Nie rozpoczęta → inspekcja zniknęła): termin wraca na ten sprzed Zakończ,
         // a szkic traci znacznik Gotowa, żeby nic go nie wyczyściło. Odpowiedzi i zdjęcia zostają zawsze.
+        if (closed && this.value === "prog") { unready(tt); return; }
         if (closed && this.value !== "done") {
           if (was.period) PPM.setDue(tt, was.period);
           var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
