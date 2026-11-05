@@ -2178,11 +2178,32 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var REPORT_SIZE = { zwykla: { px: 480, q: 0.55 }, flush: { px: 480, q: 0.55 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
   var HALF_PX = 1000, HALF_Q = 0.6; // zdjęcie ogólne na pół strony A4: bez rozciągania
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
+  // Raport ponad 1 MB (Grzegorz 05/11/2026 08:20): przed wysłaniem pytamy, czy zmniejszyć zdjęcia, czy zostawić.
+  // „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie (kartka formularza bez zmian, zdjęcia w folderze bez zmian).
+  var REPORT_LIMIT = 1024 * 1024, reportShrink = 1;
+  function bigFile(r) { return (r && r.files || []).reduce(function (m, f) { return f.bytes && f.bytes.length > m ? f.bytes.length : m; }, 0); }
+  function mb1(n) { return (n / 1048576).toFixed(1).replace(".", T(",", ".")); }
+  async function fitReport(r, rebuild) {
+    var big = bigFile(r); if (big < REPORT_LIMIT) return r;
+    var yes = window.OESTPrzycisk && OESTPrzycisk.confirm ? await OESTPrzycisk.confirm(
+      T("Plik raportu będzie miał " + mb1(big) + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
+        "The report file will be " + mb1(big) + " MB (limit 1 MB). Make the photos in the report smaller, or keep them as they are?"),
+      { ok: T("Zmniejsz zdjęcia", "Make smaller"), cancel: T("Zostaw tak", "Keep as is"), danger: false }) : false;
+    if (!yes) return r;
+    try {
+      for (var i = 0; i < 4 && big >= REPORT_LIMIT; i++) {
+        reportShrink = Math.max(0.35, reportShrink * Math.sqrt(REPORT_LIMIT * 0.9 / big));
+        if (r === built) freeBuilt(); else (r.pics || []).forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+        r = await rebuild(); big = bigFile(r);
+      }
+    } finally { reportShrink = 1; }
+    return r;
+  }
   function finalPhoto(p, d) {
     return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
   }
   function finalFrom(src, p, d) {
-    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink)) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
     var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
     if (cfg.stamp) {
@@ -2980,7 +3001,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
     from = Object.assign({}, from, { fix: fix, finish: !!finish, sig: formSig(), draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
-    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
+    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return fitReport(r, buildAll); }).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {

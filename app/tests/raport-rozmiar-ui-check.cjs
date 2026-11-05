@@ -4,6 +4,7 @@
 // i mierzy gotowe pliki w kolejce. Uruchamiany w CI przed budową APK.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+let askText = '';
 const LIMIT = 1024 * 1024, GENERAL = +(process.env.OEST_GENERAL || 3);
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {
@@ -37,14 +38,19 @@ async function photo(pg, i) {
     for (let i = 0; i < GENERAL; i++) { await pg.setInputFiles('#galIn', await photo(pg, 30 + i)); await pg.waitForFunction(n => document.querySelectorAll('#photos .thumb').length >= n, i + 1, { timeout: 60000 }); }
     await pg.setInputFiles('#shGalIn', await photo(pg, 51)); await pg.waitForTimeout(2500);
     if (await pg.locator('#flWeek [data-w="1"]:not(.on)').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
-    await pg.click('#toQueue'); await pg.waitForTimeout(8000);
+    await pg.click('#toQueue');
+    // dużo zdjęć ogólnych: apka pyta przed wysłaniem (Grzegorz 05/11 08:20); OEST_ANSWER=no → „Zostaw tak”
+    const asked = await pg.waitForSelector('.oest-ask', { timeout: 20000 }).then(() => true, () => false);
+    if (asked) { askText = await pg.locator('.oest-ask').innerText(); await pg.click('.oest-ask [data-a="' + (process.env.OEST_ANSWER || 'ok') + '"]'); }
+    await pg.waitForTimeout(asked ? 15000 : 8000);
     const files = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const it = g.result.sort((a, b) => a.created - b.created).pop(); res(it ? (it.files || []).map(f => ({ name: f.name, size: (f.bytes || f.data || []).byteLength || (f.bytes || f.data || []).length || 0 })) : []); }; }; }));
     await ctx.close();
     const kb = files.map(f => f.name + ' ' + Math.round(f.size / 1024) + ' KB').join(', ');
     assert.ok(files.some(f => f.name.endsWith('.pdf')) && files.some(f => f.name.endsWith('.docx')), 'brak Word lub PDF: ' + kb);
     assert.deepEqual(errs, [], 'błędy strony');
     const over = files.filter(f => f.size >= LIMIT);
-    assert.deepEqual(over.map(f => f.name), [], 'raport ponad 1 MB (zasada Grzegorza): ' + kb);
-    console.log('raport-rozmiar-ui-check: Flushing TB, ' + taps + ' kranów + ' + GENERAL + ' ogólne (Duże) + kartka: ' + kb);
+    if (process.env.OEST_ANSWER === 'no') assert.ok(asked && over.length, '„Zostaw tak” ma zostawić duży raport: ' + kb);
+    else assert.deepEqual(over.map(f => f.name), [], 'raport ponad 1 MB (zasada Grzegorza): ' + kb);
+    console.log('raport-rozmiar-ui-check: Flushing TB, ' + taps + ' kranów + ' + GENERAL + ' ogólne (Duże) + kartka: ' + kb + (asked ? ' | pytanie: ' + askText.replace(/\s+/g, ' ') : ''));
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e.message || e); process.exitCode = 1; });

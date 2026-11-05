@@ -4,7 +4,7 @@
  * korzystają z jednego miejsca”). Inspekcje, szkice i raporty trzymają tylko id zdjęcia, nie własne kopie.
  *
  * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, kind, hold, when })
- *               kind  = 'formularz' | 'ogolne' | 'punkt' | 'dowod' – rozmiar w Standardzie: 1920 / wybór Duże 2560, Średnie 1600, Małe 800 / 800 / 800 px → { id, blob, width, height, … }
+ *               kind  = 'formularz' | 'ogolne' | 'punkt' | 'dowod' – rozmiar w Standardzie: 1600 / wybór Duże 2560, Średnie 1600, Małe 800 / 800 / 800 px → { id, blob, width, height, … }
  *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
  *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
  *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
@@ -27,7 +27,7 @@
 
   var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
   var PRESETS = {
-    standard: { max: 1920, q: 0.8, pl: 'Standard (formularz 1920 px, ogólne do wyboru 2560 / 1600 / 800 px, przy pytaniu 800 px)', en: 'Standard (form 1920 px, general 2560 / 1600 / 800 px to choose, at a question 800 px)' },
+    standard: { max: 1920, q: 0.8, pl: 'Standard (formularz 1600 px, ogólne do wyboru 2560 / 1600 / 800 px, przy pytaniu 800 px)', en: 'Standard (form 1600 px, general 2560 / 1600 / 800 px to choose, at a question 800 px)' },
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
     oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
@@ -64,8 +64,8 @@
   // ogólne trochę mniejsze, przy pytaniu / kranie najmniejsze (w raporcie są małe). Bez rodzaju = jak formularz.
   // dowod = zdjęcie tylko na dowód wykonania (krany Flushingu, izolatory – Grzegorz 05/11): rozmiar jak w raporcie, ok. 0,1 MB.
   // 05/11 07:38: przy pytaniach / kranach / izolatorach zawsze Małe 800 px; ogólne – wybór Duże 2560 / Średnie 1600 / Małe 800
-  // (przełącznik przy przycisku zdjęć, pamiętany w ustawieniach, domyślnie Średnie). Formularz 1920.
-  var KINDS = { formularz: { max: 1920, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, duze: { max: 2560, q: 0.8 }, male: { max: 800, q: 0.75 },
+  // (przełącznik przy przycisku zdjęć, pamiętany w ustawieniach, domyślnie Średnie). Formularz 1600 (08:24).
+  var KINDS = { formularz: { max: 1600, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, duze: { max: 2560, q: 0.8 }, male: { max: 800, q: 0.75 },
     punkt: { max: 800, q: 0.75 }, dowod: { max: 800, q: 0.75 } };
   // rozmiar zdjęć ogólnych: wartość ustawienia → rodzaj w KINDS (jedno miejsce dla inspekcji i Reactive)
   var GENERAL = [{ v: 'duze', kind: 'duze', pl: 'Duże', en: 'Large' }, { v: 'srednie', kind: 'ogolne', pl: 'Średnie', en: 'Medium' }, { v: 'male', kind: 'male', pl: 'Małe', en: 'Small' }];
