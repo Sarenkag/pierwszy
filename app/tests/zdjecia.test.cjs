@@ -108,3 +108,63 @@ test('save powiadamia onSaved, sync nie', async () => {
   await store.save({ size: MB }, {}); await store.sync(fakeDrive());
   assert.strictEqual(saved, 1);
 });
+
+test('jeden zapis: zwraca plik, nazwa z punktem, zdjęcie w inspekcji nie znika przy sprzątaniu', async () => {
+  const { store, rows } = fakeStore();
+  store.setSettings({ phoneLimitMB: 100, driveLimitMB: 1000 });
+  const a = await store.save({ size: 60 * MB }, { category: 'Weekly Flushing', code: 'TB', point: 'L13 Kitchen tap', hold: 'inspekcja', when: new Date(2026, 10, 4, 9, 0, 0) });
+  assert.ok(a.blob && a.blob.size === 60 * MB, 'wołający dostaje ten sam plik');
+  assert.strictEqual(a.name, 'TB L13 Kitchen tap 090000.jpg');
+  assert.deepStrictEqual(Z.search(await store.list(), 'kitchen').map(r => r.id), [a.id]);
+  for (let i = 0; i < 2; i++) await store.save({ size: 60 * MB }, { code: 'X' + i, when: new Date(2026, 10, 4, 10, i) });
+  await store.sync(fakeDrive());
+  assert.ok(rows.get(a.id).blob, 'trzymane przez inspekcję zostaje na telefonie mimo limitu');
+  assert.deepStrictEqual([...rows.values()].filter(r => r.blob).map(r => r.id), [a.id], 'pozostałe wysłane sprzątnięte po limicie');
+});
+
+test('release zwalnia tylko nieużywane i nie świeże, keep znów trzyma', async () => {
+  const { store, rows } = fakeStore();
+  const a = await store.save({ size: 1 }, { hold: 'inspekcja' }), b = await store.save({ size: 1 }, { hold: 'inspekcja' }), c = await store.save({ size: 1 }, { hold: 'reactive' });
+  assert.strictEqual(await store.release('inspekcja', [a.id], 60 * 60 * 1000), 0, 'świeże (godzina) zostają trzymane');
+  assert.strictEqual(await store.release('inspekcja', new Set([a.id]), 0), 1);
+  assert.strictEqual(rows.get(a.id).hold, 'inspekcja');
+  assert.strictEqual(rows.get(b.id).hold, '');
+  assert.strictEqual(rows.get(c.id).hold, 'reactive', 'cudze trzymanie nietknięte');
+  await store.keep([b.id], 'inspekcja');
+  assert.strictEqual(rows.get(b.id).hold, 'inspekcja');
+});
+
+test('rozmiar wg rodzaju w Standardzie: formularz 1600, ogólne 1600, przy pytaniu 800', () => {
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'formularz').width, 1600);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'ogolne').width, 1600);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'punkt').width, 800);
+  assert.strictEqual(Z.fit(4080, 3072, 'standard').width, 1920, 'bez rodzaju (inne moduły) 1920');
+  assert.strictEqual(Z.fit(4080, 3072, 'wysoka', 'punkt').width, 3000, 'inne ustawienia jakości bez zmian');
+});
+
+test('zdjęcie na dowód (krany, izolatory) Małe 800 px', () => {
+  assert.strictEqual(Z.fit(4080, 3072, 'standard', 'dowod').width, 800);
+});
+
+test('ogólne do wyboru: Duże 2560 / Średnie 1600 / Małe 800, domyślnie Średnie, zła wartość → Średnie', async () => {
+  assert.deepStrictEqual(Z.GENERAL.map(g => Z.fit(4080, 3072, 'standard', g.kind).width), [2560, 1600, 800]);
+  assert.strictEqual(Z.cleanSettings({}).general, 'srednie');
+  assert.strictEqual(Z.cleanSettings({ general: 'xx' }).general, 'srednie');
+  let saved = {}, seen = [];
+  const store = Z.createStore({ owner: () => 'a', db: { all: async () => [], get: async () => null, put: async () => {}, del: async () => {} },
+    settings: { load: () => saved, save: s => { saved = s; } }, compress: async (f, preset, kind) => { seen.push(kind); return { blob: { size: 1 }, width: 1, height: 1 }; },
+    wifi: () => true, now: () => 0, id: () => 'x' + seen.length });
+  await store.save({}, { kind: 'ogolne' });
+  store.setSettings({ general: 'duze' }); await store.save({}, { kind: 'ogolne' });
+  store.setSettings({ general: 'male' }); await store.save({}, { kind: 'ogolne' });
+  await store.save({}, { kind: 'dowod' });
+  assert.deepStrictEqual(seen, ['ogolne', 'duze', 'male', 'dowod']);
+});
+
+test('folder 200 MB, ostrzeżenia osobno od 100 MB (Grzegorz 05/11)', () => {
+  const s = Z.cleanSettings({});
+  assert.strictEqual(s.phoneLimitMB, 200);
+  assert.strictEqual(s.warnMB, 100);
+  assert.strictEqual(Z.cleanSettings({ warnMB: 'x' }).warnMB, 100);
+  assert.strictEqual(Z.cleanSettings({ phoneLimitMB: 300, warnMB: 150 }).warnMB, 150);
+});

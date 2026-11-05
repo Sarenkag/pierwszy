@@ -179,6 +179,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 /* Zdjęcia */
+.photo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
+#photoSize.off { visibility: hidden; }
 .photo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pbtn {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px;
@@ -398,7 +400,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     </div>
 
     <div class="panel">
-      <div class="label"><span data-en="Photos">Zdjęcia</span> <span id="photoCount"></span></div>
+      <div class="photo-head"><div class="label"><span data-en="Photos">Zdjęcia</span> <span id="photoCount"></span></div><span id="photoSize"></span></div>
       <div class="photo-btns">
         <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie" data-en-aria-label="Take photo">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
@@ -507,6 +509,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/aparat/aparat.js"></script>
 <script src="../moduly/checkbox/checkbox.js"></script>
 <script src="../moduly/przycisk/przycisk.js"></script>
+<script src="../moduly/przelacznik/przelacznik.js"></script>
 <script src="../moduly/pole-email/pole-email.js"></script>
 <script src="../moduly/model/model.js"></script>
 <script src="tpl-temp-tb.js"></script>
@@ -601,8 +604,8 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     // zdjęcia kartek formularza: każde na całą stronę (jak w PDF, addFull), potem zwykłe zdjęcia w siatce
     var all = photos.map(function (p, i) { return { p: p, i: i }; }), grid = all.filter(function (x) { return !x.p.sheet; });
     all.filter(function (x) { return x.p.sheet; }).forEach(function (x) { out.push("<w:p>" + P0 + drawing(x.p, x.i, usableH * 635, availW * 635) + "</w:p>"); });
-    for (var start = 0; start < grid.length; start += 12) {
-      var chunkX = grid.slice(start, start + 12), chunk = chunkX.map(function (x) { return x.p; }), g = photoGrid(chunk.length);
+    photoPages(grid).forEach(function (pg) {
+      var chunkX = pg.items, chunk = chunkX.map(function (x) { return x.p; }), g = pg.g;
       var cw = Math.floor(availW / g.cols), rh = Math.floor(usableH / g.rows);
       var t = '<w:tbl><w:tblPr><w:tblW w:w="' + cw * g.cols + '" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>' +
         '<w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>';
@@ -620,7 +623,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
       }
       t += "</w:tbl>";
       out.push(t);
-    }
+    });
     return out.join('<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>') +
       '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>';
   }
@@ -672,6 +675,16 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   return out;
 }
 
+// Strony ze zdjęciami (Grzegorz 05/11/2026), wspólne dla Worda i PDF-u:
+//  - zdjęcia przy pytaniu / kranie / urządzeniu (z podpisem): do 12 na stronę, nazwa punktu POD zdjęciem,
+//  - zdjęcia ogólne: na pół strony A4 (2 na stronę, jedno pod drugim), bez rozciągania.
+// Zdjęcia formularza (sheet) idą osobno, każde na całą stronę.
+function photoPages(list) {
+  var pts = list.filter(function (x) { var p = x.p || x; return p.caption || p.tap != null; }), gen = list.filter(function (x) { var p = x.p || x; return !(p.caption || p.tap != null); }), out = [];
+  for (var a = 0; a < pts.length; a += 12) { var c = pts.slice(a, a + 12); out.push({ items: c, g: photoGrid(c.length) }); }
+  for (var b = 0; b < gen.length; b += 2) out.push({ items: gen.slice(b, b + 2), g: { cols: 1, rows: 2 } });
+  return out;
+}
 // układ zdjęć na stronie wg liczby: 1, 2 (jedno pod drugim), 2×2, 2×3, 3×3, 3×4
 function photoGrid(n) {
   return n <= 1 ? { cols: 1, rows: 1 } : n === 2 ? { cols: 1, rows: 2 } : n <= 4 ? { cols: 2, rows: 2 } : n <= 6 ? { cols: 2, rows: 3 } : n <= 9 ? { cols: 3, rows: 3 } : { cols: 3, rows: 4 };
@@ -1268,7 +1281,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }).concat(keptSaved)
+      photos: photos.map(savedPhoto).concat(keptSaved)
     };
   }
   function saveDraftNow() {
@@ -1386,17 +1399,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
       renderFlush(); updateFormHint();
       draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
-      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false, true); });
+      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false); });
       var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
       $("formHint").textContent = T("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
         "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
       return;
     }
-    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? new File([bl], r.name || "zdjecie.jpg", { type: bl.type || "image/jpeg", lastModified: Date.parse(r.created) || Date.now() }) : null; }); }))
-      .then(function (files) {
-        files = files.filter(Boolean); if (tok !== formSeq) return;
+    // kopie są już w folderze OEST: wracają do inspekcji jako te same zdjęcia (bez drugiego zapisu), znów trzymane przez inspekcję
+    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? makePhoto(bl, { zid: r.id, width: r.width, height: r.height, when: new Date(Date.parse(r.created) || Date.now()) }) : null; }); }))
+      .then(function (ps) {
+        ps = ps.filter(Boolean); var files = ps; if (tok !== formSeq) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
+        if (Zd.keep) Zd.keep(ps.map(function (p) { return p.zid; }), HOLD).catch(function () {});
         draftOn = true; b.hidden = true; b.disabled = false; restoreList = [];
-        addFiles(files, null, false, true);
+        if (ps.length) needOn("p"); photos = photos.concat(ps); renderPhotos(); suggestDate();
         $("formHint").textContent = T("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + T(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
       }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
   });
@@ -1724,7 +1739,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       qk: cur.type.checks.map(function (c) { return c.key; }),
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn),
       lines: itemLines(), fails: failCount(), rsel: JSON.parse(JSON.stringify(rsel)),
-      photos: photos.map(function (p) { return { blob: p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, sheet: p.sheet || undefined }; }).concat(keptSaved),
+      photos: photos.map(savedPhoto).concat(keptSaved),
       t: Date.now()
     };
     var code = cur.code, prev = batch.items[code];
@@ -1745,11 +1760,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       $("formHint").textContent = T("Nie zapisano w telefonie (", "Not saved on the phone (") + gErr(e) + T("). Formularz zostaje — spróbuj ponownie albo usuń część zdjęć.", "). The form stays — try again or remove some photos.");
     });
   });
+  // zapisane zdjęcie: nowe szkice mają tylko id (zid) w module zdjęć, starsze (sprzed 05/11) jeszcze własną kopię (blob)
   function photoFromSaved(sp, code, wh) {
-    return createImageBitmap(sp.blob).then(function (img) {
-      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
-      c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
-      return { canvas: c, blob: sp.blob, url: URL.createObjectURL(sp.blob), width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh };
+    var get = sp.zid && Zd ? Zd.blob(sp.zid).then(function (b) { return b || sp.blob; }, function () { return sp.blob; }) : Promise.resolve(sp.blob);
+    return get.then(function (b) {
+      if (!b) throw new Error("PHOTO_MISSING");
+      return makePhoto(b, { zid: sp.zid, width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh });
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
@@ -1920,17 +1936,18 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   renderModel();
 
   // ---------- zdjęcia ----------
-  function addFiles(input, tap, sheet, noCopy) {
+  function addFiles(input, tap, sheet) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
+    ctx.point = tap != null ? tapName(tap) : ""; // zdjęcie przy kranie / punkcie: nazwa punktu w folderze OEST
+    ctx.kind = photoKind(tap, sheet);
     $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
         return exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
-          if (tok === formSeq && !noCopy) keepCopy(f, when, ctx);
-          return processPhoto(f, when).then(function (ph) {
+          return storePhoto(f, when, ctx).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
             ph.exif = !!ex; if (tap != null) ph.tap = tap;
             // zdjęcia formularza zawsze na końcu (ostatnie strony raportu), zwykłe przed nimi
@@ -1942,7 +1959,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     }, Promise.resolve()).then(function () {
       if (tok === formSeq) scheduleDraft();
-      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + " · zmniejszone do maks. 1920 px." : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
+      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + T(" · zapisane raz w folderze OEST.", " · saved once in the OEST folder.") : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
     }).catch(function () { $("photoInfo").textContent = T("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
@@ -1976,7 +1993,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob).then(function (nb) {
             if (!nb) return;
-            return processPhoto(nb, p.when).then(function (np) {
+            var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : ""; ectx.kind = photoKind(p.tap, p.sheet);
+            return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
               URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos();
@@ -1996,6 +2014,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!fbd) { fbd = document.createElement("span"); fbd.className = "fbadge"; fb.appendChild(fbd); }
     fbd.innerHTML = Z && fst ? Z.formularz(fst) : ""; fb.classList.toggle("req", fst === "blad");
     $("sheetInfo").textContent = shn ? T("Dodane: ", "Added: ") + shn + T(" — w raporcie na końcu.", " — at the end of the report.") : T("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
+    photoSizeShow();
     var fp = cur.type && cur.type.folder ? formPhotos().length : photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").innerHTML) renderSugs();
@@ -2028,7 +2047,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
     $("photoInfo").textContent = T("Sprawdzam zdjęcie…", "Checking the photo…");
-    Promise.resolve(window.INSP_ANALYZE(ph.canvas, cur.type.id)).then(function (list) {
+    bitmap(ph.blob).then(function (img) {
+      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
+      return window.INSP_ANALYZE(c, cur.type.id);
+    }).then(function (list) {
       if (cur.code !== code) return;
       ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
         .map(function (sg) { return { fault: sg.fault, x: sg.x, y: sg.y, n: ++sugN, open: !ask }; });
@@ -2076,10 +2098,47 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var t = cur.type || {};
     return { source: "inspekcja", category: t.name || t.title || "Inspekcja", code: cur.mode === "sum" ? "" : cur.code, location: cur.where || cur.loc || "" };
   }
-  function keepCopy(file, when, ctx) {
-    if (!window.OESTZdjecia) return;
-    window.OESTZdjecia.save(file, Object.assign({}, ctx, { when: when })).catch(function () {});
+  // ---------- jeden zapis zdjęcia (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze”) ----------
+  // Zdjęcie zapisuje się RAZ w module zdjęć (folder OEST, z nazwą kranu / punktu, trzymane przez inspekcję, więc sprzątanie
+  // go nie skasuje). Szkic, zlecenie i raport mają tylko jego id. W pamięci jest mała miniatura, duże zdjęcie czyta się z pliku
+  // dopiero do raportu i modelu (wcześniej każde zdjęcie trzymało ok. 11 MB pamięci, przy Flushing TB setki MB).
+  var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
+  // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
+  if ($("photoSize") && Zd && Zd.sizeSwitch) $("photoSize").innerHTML = Zd.sizeSwitch();
+  // przełącznik rozmiaru tylko tam, gdzie są zdjęcia ogólne (w formularzach papierowych przyciski dodają kartki – zawsze 1920)
+  function photoSizeShow() { var b = $("photoSize"); if (b) b.classList.toggle("off", photoKind(null, false) !== "ogolne"); }
+  // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.
+  // Inspekcja „z kartki” (folder bez listy kranów): każde jej zdjęcie to strona formularza.
+  // Krany / punkty Flushingu i AOV oraz izolatory: zdjęcie tylko na dowód wykonania (Grzegorz 05/11) → 960 px, jak w raporcie.
+  function photoKind(tap, sheet) {
+    if (sheet || (cur.type && cur.type.folder && !cur.type.flush && tap == null)) return "formularz";
+    if (tap != null || (cur.type && cur.type.batch)) return "dowod";
+    return "ogolne";
   }
+  function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
+  function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
+  function bitmap(blob) { return loadImage(blob); } // ten sam odczyt co przy dodawaniu (także zapas przez <img> bez createImageBitmap)
+  // miniatury po kolei (jedno duże zdjęcie naraz w pamięci); przy błędzie podgląd z samego pliku
+  function thumbUrl(blob) {
+    var job = thumbQ.then(function () {
+      return bitmap(blob).then(function (img) {
+        var k = Math.min(1, THUMB_PX / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (img.close) img.close();
+        return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.8); });
+      }).then(function (tb) { return URL.createObjectURL(tb || blob); }, function () { return URL.createObjectURL(blob); });
+    });
+    thumbQ = job.catch(function () {});
+    return job;
+  }
+  function makePhoto(blob, o, thumb) { return (thumb ? Promise.resolve(URL.createObjectURL(thumb)) : thumbUrl(blob)).then(function (url) { return Object.assign({ blob: blob, url: url }, o); }); }
+  function storePhoto(file, when, ctx) {
+    if (!Zd) return processPhoto(file, when);
+    return Zd.save(file, Object.assign({}, ctx, { when: when, hold: HOLD })).then(function (r) {
+      return makePhoto(r.blob, { zid: r.id, width: r.width, height: r.height, when: when }, r.thumb);
+    }, function () { return processPhoto(file, when); }); // folder OEST nie przyjął zdjęcia (np. brak miejsca): zostaje w samej inspekcji
+  }
+  // zapas bez modułu zdjęć: własna kopia w szkicu (jak przed 05/11)
   function processPhoto(file, when) {
     return loadImage(file).then(function (img) {
       var w = img.width, h = img.height, MAX = 1920;
@@ -2088,20 +2147,65 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       c.getContext("2d").drawImage(img, 0, 0, w, h);
       if (img.close) img.close();
       return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
-        return { canvas: c, blob: blob, url: URL.createObjectURL(blob), width: w, height: h, when: when };
+        return makePhoto(blob, { width: w, height: h, when: when });
       });
     });
   }
+  // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 7 dniach
+  // przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
+  function releaseUnused() {
+    if (!Zd || !Zd.release) return;
+    dbP.then(function (db) {
+      if (!db) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
+      return idb("kv", "readonly", function (st) { return st.getAll(); }).then(function (vals) {
+        var ids = new Set();
+        (function walk(v, depth) {
+          if (!v || typeof v !== "object" || depth > 8 || v instanceof Blob || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) return;
+          if (typeof v.zid === "string") ids.add(v.zid);
+          Object.keys(v).forEach(function (k) { walk(v[k], depth + 1); });
+        })(vals, 0);
+        return Zd.release(HOLD, ids, 7 * 864e5);
+      });
+    }).catch(function () {});
+  }
+  setTimeout(releaseUnused, 15000);
   // Zdjęcie do raportu (jedno miejsce dla wszystkich inspekcji): ok. 25 KB na zdjęcie (Grzegorz 04/11: dwa razy izolatory z 28/10),
   // żeby raport z kilkunastoma zdjęciami był mały i przechodził przez Gmaila (Flushing TB 04/11: 13 zdjęć ≈ 10 MB nie przeszło).
   // zdjęcie kartki formularza idzie na całą stronę → więcej pikseli, żeby dało się przeczytać pismo
   // Rozmiar zdjęcia w siatce wg rodzaju inspekcji (Grzegorz 04/11): zwykłe (izolatory itd.) ok. 25 KB, Flushing ok. 60 KB.
-  var REPORT_SIZE = { zwykla: { px: 600, q: 0.6 }, flush: { px: 960, q: 0.65 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
+  // Zdjęcia w raporcie (Grzegorz 05/11/2026 08:09): raport Word i PDF poniżej 1 MB. Przy pytaniach / kranach / izolatorach
+  // (12 na stronę, ok. 4,5 cm) 480 px ≈ 270 dpi, ok. 10–20 KB. Ogólne na pół A4 1000 px, ok. 45–70 KB. Kartka formularza 1600 px (czytelna).
+  var REPORT_SIZE = { zwykla: { px: 480, q: 0.55 }, flush: { px: 480, q: 0.55 } }, SHEET_PX = 1600, SHEET_Q = 0.7;
+  var HALF_PX = 1000, HALF_Q = 0.6; // zdjęcie ogólne na pół strony A4: bez rozciągania
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
+  // Raport ponad 1 MB (Grzegorz 05/11/2026 08:20): przed wysłaniem pytamy, czy zmniejszyć zdjęcia, czy zostawić.
+  // „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie (kartka formularza bez zmian, zdjęcia w folderze bez zmian).
+  var REPORT_LIMIT = 1024 * 1024, reportShrink = 1;
+  function bigFile(r) { return (r && r.files || []).reduce(function (m, f) { return f.bytes && f.bytes.length > m ? f.bytes.length : m; }, 0); }
+  function mb1(n) { return (n / 1048576).toFixed(1).replace(".", T(",", ".")); }
+  async function fitReport(r, rebuild) {
+    var big = bigFile(r); if (big < REPORT_LIMIT) return r;
+    var yes = window.OESTPrzycisk && OESTPrzycisk.confirm ? await OESTPrzycisk.confirm(
+      T("Plik raportu będzie miał " + mb1(big) + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
+        "The report file will be " + mb1(big) + " MB (limit 1 MB). Make the photos in the report smaller, or keep them as they are?"),
+      { ok: T("Zmniejsz zdjęcia", "Make smaller"), cancel: T("Zostaw tak", "Keep as is"), danger: false }) : false;
+    if (!yes) return r;
+    try {
+      for (var i = 0; i < 4 && big >= REPORT_LIMIT; i++) {
+        reportShrink = Math.max(0.35, reportShrink * Math.sqrt(REPORT_LIMIT * 0.9 / big));
+        if (r === built) freeBuilt(); else (r.pics || []).forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+        r = await rebuild(); big = bigFile(r);
+      }
+    } finally { reportShrink = 1; }
+    return r;
+  }
   function finalPhoto(p, d) {
-    var rs = reportSize(), src = p.canvas, k = Math.min(1, (p.sheet ? SHEET_PX : rs.px) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+    return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
+  }
+  function finalFrom(src, p, d) {
+    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink)) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
-    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h);
+    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
     if (cfg.stamp) {
       var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja);
       var fs = Math.max(16, Math.round(w / 40));
@@ -2473,8 +2577,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     footer();
     addFull(pdf, pics.filter(function (p) { return p.sheet; })); // zdjęcia formularza: strona po stronie, zaraz po raporcie (Grzegorz 04/11)
     pics = pics.filter(function (p) { return !p.sheet; });
-    for (var st = 0; st < pics.length; st += 12) { // do 12 zdjęć na stronę, jak w Wordzie
-      var chunk = pics.slice(st, st + 12), g = photoGrid(chunk.length), gap = 3;
+    photoPages(pics).forEach(function (pg) { // przy pytaniach do 12 na stronę, ogólne po 2 (pół strony), jak w Wordzie
+      var chunk = pg.items, g = pg.g, gap = 3;
       pdf.addPage("a4", "p"); var top2 = header(), areaH = 274 - top2;
       var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
       chunk.forEach(function (p, k) {
@@ -2486,12 +2590,22 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         if (capH) { pdf.setFont("DV", "normal"); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(String(p.caption), cw)[0] || "", L + col * (cw + gap) + cw / 2, iy + ih + 3.5, { align: "center" }); } // zdjęcie przy kranie/punkcie: podpis jego nazwą, jak w Wordzie
       });
       footer();
-    }
+    });
     return into ? pdf : new Uint8Array(pdf.output("arraybuffer"));
   }
 
   // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
   // jedno zdjęcie = jedna strona A4, jak najwięcej miejsca (zdjęcia formularza, zdjęcia ogólne). Wspólne dla wszystkich raportów.
+  // zdjęcia ogólne: dwa na stronę A4, każde na pół strony (Grzegorz 05/11)
+  function addHalf(pdf, pics, first) {
+    var M = 8, PW = 210 - 2 * M, HH = (297 - 3 * M) / 2;
+    pics.forEach(function (p, i) {
+      if (i % 2 === 0 && (i || !first)) pdf.addPage("a4", "p");
+      var iw = PW, ih = iw * p.height / p.width;
+      if (ih > HH) { ih = HH; iw = ih * p.width / p.height; }
+      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, M + (i % 2) * (HH + M) + (HH - ih) / 2, iw, ih);
+    });
+  }
   function addFull(pdf, pics, first) {
     var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
     pics.forEach(function (p, i) {
@@ -2519,7 +2633,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function buildPhotoPdf(pics) {
     var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4" });
-    addFull(pdf, pics, true);
+    var sh = pics.filter(function (p) { return p.sheet; }), gen = pics.filter(function (p) { return !p.sheet; });
+    addFull(pdf, sh, true); addHalf(pdf, gen, !sh.length); // formularz na całą stronę, ogólne na pół strony
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   function fillFlushDocx(f) {
@@ -2642,7 +2757,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         pdf.text(pdf.splitTextToSize(f.taps[p.tap] ? f.taps[p.tap].name : "", W)[0] || "", cx + W / 2, cy + H + 4.5, { align: "center" });
       });
     }
-    addFull(pdf, fp, !page1);
+    addHalf(pdf, fp, !page1);
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
@@ -2677,7 +2792,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
       return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })));
     }
-    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; return f; }); }
+    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
       var docx = fillTempDocx(d), pdf = buildTempPdf(d);
       return { name: name, data: d, docx: docx, pdf: pdf, pics: [], info: {}, logoUrl: "", files: [n.xp || !n.xw ? file("", PDF, pdf) : null, n.xw ? file("", MIME_DOCX, docx) : null].filter(Boolean) };
@@ -2886,7 +3001,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
     from = Object.assign({}, from, { fix: fix, finish: !!finish, sig: formSig(), draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
-    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return enqueue(r, from); }).catch(function (e) {
+    (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return fitReport(r, buildAll); }).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {

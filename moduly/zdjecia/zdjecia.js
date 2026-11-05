@@ -1,6 +1,13 @@
 /* Moduł zdjęć (moduly/zdjecia) – wielokrotnego użytku, bez kodu inspekcji.
  *
- * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, when })
+ * JEDYNE miejsce zapisu zdjęć w apkach OEST (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze, pozostałe moduły
+ * korzystają z jednego miejsca”). Inspekcje, szkice i raporty trzymają tylko id zdjęcia, nie własne kopie.
+ *
+ * Apka woła:  OESTZdjecia.save(plik, { source, category, code, location, point, kind, hold, when })
+ *               kind  = 'formularz' | 'ogolne' | 'punkt' | 'dowod' – rozmiar w Standardzie: 1600 / wybór Duże 2560, Średnie 1600, Małe 800 / 800 / 800 px → { id, blob, width, height, … }
+ *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
+ *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
+ *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
  * Moduł sam:  kompresuje (jakość z ustawień), zapisuje w osobnym magazynie na telefonie (IndexedDB „oest-zdjecia”),
  *             pilnuje limitu miejsca, nadaje nazwę i folder (dzień / kategoria), a przez sync() wysyła na dysk.
  * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), upload(parentId, name, blob), remove(id) },
@@ -8,6 +15,7 @@
  *
  * Zasady bezpieczeństwa danych:
  *  - z telefonu znikają tylko zdjęcia, które są już na dysku (niewysłanych nie kasujemy nigdy),
+ *  - zdjęcia trzymane przez inspekcję (hold) nie znikają z telefonu nawet po wysłaniu na dysk,
  *  - z dysku znikają najstarsze, gdy przekroczony jest limit dysku (wpis w apce zostaje oznaczony, że go tam już nie ma).
  */
 (function (root, factory) {
@@ -17,20 +25,22 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
-  var MB = 1024 * 1024;
+  var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
   var PRESETS = {
-    standard: { max: 1920, q: 0.8, pl: 'Standard (do 1920 px, ok. 0,5 MB)', en: 'Standard (up to 1920 px, about 0.5 MB)' },
+    standard: { max: 1920, q: 0.8, pl: 'Standard (formularz 1600 px, ogólne do wyboru 2560 / 1600 / 800 px, przy pytaniu 800 px)', en: 'Standard (form 1600 px, general 2560 / 1600 / 800 px to choose, at a question 800 px)' },
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
     oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
-  var DEFAULTS = { preset: 'standard', phoneLimitMB: 1024, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
+  var DEFAULTS = { preset: 'standard', phoneLimitMB: 200, warnMB: 100, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia', general: 'srednie' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
 
   function cleanSettings(s) {
     var out = Object.assign({}, DEFAULTS, s || {});
     if (!PRESETS[out.preset]) out.preset = DEFAULTS.preset;
     out.phoneLimitMB = clampInt(out.phoneLimitMB, 100, 100000, DEFAULTS.phoneLimitMB);
+    out.warnMB = clampInt(out.warnMB, 10, 100000, DEFAULTS.warnMB); // ostrzeżenia licznika (osobno od limitu folderu)
     out.driveLimitMB = clampInt(out.driveLimitMB, 100, 1000000, DEFAULTS.driveLimitMB);
     out.wifiOnly = out.wifiOnly !== false;
+    if (!GENERAL.some(function (g) { return g.v === out.general; })) out.general = DEFAULTS.general;
     out.rootName = typeof out.rootName === 'string' && out.rootName.trim() ? out.rootName.trim().slice(0, 100) : DEFAULTS.rootName;
     return out;
   }
@@ -44,14 +54,25 @@
     var d = when instanceof Date && !isNaN(when) ? when : new Date();
     var month = d.getFullYear() + '-' + pad(d.getMonth() + 1), day = pad(d.getDate());
     var category = safe(meta.category) || (meta.source === 'reactive' ? 'Reactive' : 'Inne'); // i18n-ok: nazwa folderu na Dysku
-    var label = [safe(meta.location), safe(meta.code)].filter(Boolean).join(' ') || category;
+    var label = [safe(meta.location), safe(meta.code), safe(meta.point)].filter(Boolean).join(' ') || category;
     var time = pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
     return { folder: [month, day, category], name: label + ' ' + time + '.jpg', day: month + '-' + day };
   }
 
   /* Wymiary po kompresji (bez powiększania). */
-  function fit(w, h, preset) {
+  // Rozmiar wg rodzaju zdjęcia w Standardzie (Grzegorz 05/11/2026): formularz na całą stronę A4 musi być czytelny,
+  // ogólne trochę mniejsze, przy pytaniu / kranie najmniejsze (w raporcie są małe). Bez rodzaju = jak formularz.
+  // dowod = zdjęcie tylko na dowód wykonania (krany Flushingu, izolatory – Grzegorz 05/11): rozmiar jak w raporcie, ok. 0,1 MB.
+  // 05/11 07:38: przy pytaniach / kranach / izolatorach zawsze Małe 800 px; ogólne – wybór Duże 2560 / Średnie 1600 / Małe 800
+  // (przełącznik przy przycisku zdjęć, pamiętany w ustawieniach, domyślnie Średnie). Formularz 1600 (08:24).
+  var KINDS = { formularz: { max: 1600, q: 0.8 }, ogolne: { max: 1600, q: 0.78 }, duze: { max: 2560, q: 0.8 }, male: { max: 800, q: 0.75 },
+    punkt: { max: 800, q: 0.75 }, dowod: { max: 800, q: 0.75 } };
+  // rozmiar zdjęć ogólnych: wartość ustawienia → rodzaj w KINDS (jedno miejsce dla inspekcji i Reactive)
+  var GENERAL = [{ v: 'duze', kind: 'duze', pl: 'Duże', en: 'Large' }, { v: 'srednie', kind: 'ogolne', pl: 'Średnie', en: 'Medium' }, { v: 'male', kind: 'male', pl: 'Małe', en: 'Small' }];
+  function generalKind(v) { for (var i = 0; i < GENERAL.length; i++) if (GENERAL[i].v === v) return GENERAL[i].kind; return 'ogolne'; }
+  function fit(w, h, preset, kind) {
     var p = PRESETS[preset] || PRESETS.standard;
+    if (p === PRESETS.standard && KINDS[kind]) p = KINDS[kind];
     var s = p.max ? Math.min(1, p.max / Math.max(w, h)) : 1;
     return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)), quality: p.q };
   }
@@ -66,6 +87,7 @@
     var phoneBytes = local.reduce(function (t, r) { return t + (r.size || 0); }, 0), phoneRemove = [];
     for (var j = 0; j < local.length && phoneBytes > s.phoneLimitMB * MB; j++) {
       if (!local[j].driveId) continue; // niewysłane zostają na telefonie
+      if (local[j].hold) continue; // zdjęcie w inspekcji zostaje na telefonie
       phoneRemove.push(local[j].id); phoneBytes -= local[j].size || 0;
     }
     return { driveRemove: driveRemove, phoneRemove: phoneRemove, phoneOver: phoneBytes > s.phoneLimitMB * MB };
@@ -85,14 +107,14 @@
   function search(records, query) {
     var words = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
     return records.filter(function (r) {
-      var hay = [r.day, r.code, r.location, r.category, r.name, r.source].join(' ').toLowerCase();
+      var hay = [r.day, r.code, r.location, r.point, r.kind, r.category, r.name, r.source].join(' ').toLowerCase();
       return words.every(function (w) { return hay.indexOf(w) >= 0; });
     }).sort(function (a, b) { return a.created < b.created ? 1 : -1; });
   }
 
-  /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset), wifi(), now() } */
+  /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset, kind), wifi(), now() } */
   function createStore(deps) {
-    var syncing = null, listeners = [], savedListeners = [];
+    var syncing = null, enforcing = Promise.resolve(), listeners = [], savedListeners = [];
     function emit(list) { (list || listeners).forEach(function (f) { try { f(); } catch (_) {} }); }
     // każde konto ma osobne zdjęcia i osobny stan Dysku (inne konto na tym samym telefonie ich nie widzi)
     function owner() { return String((deps.owner && deps.owner()) || ''); }
@@ -105,15 +127,41 @@
     async function save(file, info) {
       info = info || {};
       var when = info.when instanceof Date && !isNaN(info.when) ? info.when : new Date(deps.now());
-      var s = settings(), out = await deps.compress(file, s.preset);
+      var s = settings(), kind = info.kind === 'ogolne' ? generalKind(s.general) : KINDS[info.kind] ? info.kind : '', out = await deps.compress(file, s.preset, kind);
       var p = place(info, when);
-      var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), day: p.day, folder: p.folder, name: p.name,
+      var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), saved: new Date(deps.now()).toISOString(), day: p.day, folder: p.folder, name: p.name,
         source: safe(info.source) || 'inne', category: safe(info.category), code: safe(info.code), location: safe(info.location),
+        point: safe(info.point), kind: kind, hold: safe(info.hold),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
-      await enforce(null);
-      emit(); emit(savedListeners);
-      return meta(rec);
+      // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11)
+      enforcing = enforcing.then(function () { return enforce(null); }).catch(function () {}).then(function () { emit(); });
+      emit(savedListeners);
+      var m = meta(rec); m.blob = out.blob; m.thumb = out.thumb || null; // ten sam plik (i miniatura) dla wołającego: bez drugiej kopii
+      return m;
+    }
+
+    /* Oznacza istniejące zdjęcia jako trzymane przez `holder` (np. kopie wracające do przywróconej inspekcji). */
+    async function keep(ids, holder) {
+      holder = safe(holder); if (!holder) return 0;
+      var n = 0;
+      for (var i = 0; i < (ids || []).length; i++) { var r = await deps.db.get(ids[i]); if (r && r.hold !== holder) { r.hold = holder; await deps.db.put(r); n++; } }
+      if (n) emit();
+      return n;
+    }
+
+    /* Zwalnia zdjęcia trzymane przez `holder`, których id nie ma w `keep` (lista id albo Set) i które są starsze niż
+       minAgeMs (świeże mogą jeszcze czekać na zapis szkicu). Zwolnione zdjęcie zostaje w folderze OEST – tylko podlega limitowi. */
+    async function release(holder, keep, minAgeMs) {
+      holder = safe(holder); if (!holder) return 0;
+      var ks = keep instanceof Set ? keep : new Set(keep || []), edge = deps.now() - (minAgeMs || 0), n = 0, all = await mine();
+      for (var i = 0; i < all.length; i++) {
+        var r = all[i];
+        if (r.hold !== holder || ks.has(r.id) || Date.parse(r.saved || r.created) > edge) continue; // wiek od zapisu (zdjęcie z galerii może mieć starą datę)
+        r.hold = ''; await deps.db.put(r); n++;
+      }
+      if (n) { await enforce(null); emit(); }
+      return n;
     }
 
     async function enforce(drive) {
@@ -176,7 +224,7 @@
     async function remove(id) { await deps.db.del(id); emit(); }
     function onChange(f) { listeners.push(f); }
     function onSaved(f) { savedListeners.push(f); }
-    return { save: save, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
+    return { save: save, keep: keep, release: release, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
       onChange: onChange, onSaved: onSaved, busy: function () { return !!syncing; } };
   }
 
@@ -209,16 +257,19 @@
     };
   }
   function compressIn(win) {
-    return async function (file, preset) {
+    return async function (file, preset, kind) {
       var img;
       try { img = await win.createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (_) { img = await win.createImageBitmap(file); }
-      var f = fit(img.width, img.height, preset), c = win.document.createElement('canvas');
+      var f = fit(img.width, img.height, preset, kind), c = win.document.createElement('canvas');
       c.width = f.width; c.height = f.height;
       var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
       if (img.close) img.close();
-      var blob = await new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); });
-      if (!blob) throw Error('IMAGE_COMPRESSION');
-      return { blob: blob, width: f.width, height: f.height };
+      // miniatura z tego samego płótna (bez drugiego dekodowania), dla ekranów z podglądem
+      var k = Math.min(1, THUMB / Math.max(f.width, f.height)), t = win.document.createElement('canvas');
+      t.width = Math.max(1, Math.round(f.width * k)); t.height = Math.max(1, Math.round(f.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      var both = await Promise.all([new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); }), new Promise(function (res) { t.toBlob(res, 'image/jpeg', 0.8); })]);
+      if (!both[0]) throw Error('IMAGE_COMPRESSION');
+      return { blob: both[0], thumb: both[1], width: f.width, height: f.height };
     };
   }
   function createBrowser(win) {
@@ -228,7 +279,8 @@
       owner: who,
       db: idb(win),
       settings: {
-        load: function () { try { return JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { return {}; } },
+        // folder telefonu 200 MB, ostrzeżenia od 100 MB (Grzegorz 05/11/2026): stary domyślny 1024 MB zamieniamy raz na 200 MB
+        load: function () { var o; try { o = JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { o = {}; } if (!o.limitV2) { if (o.phoneLimitMB === 1024) o.phoneLimitMB = 200; o.limitV2 = 1; try { win.localStorage.setItem(KEY(), JSON.stringify(o)); } catch (_) {} } return o; },
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
       compress: compressIn(win),
@@ -236,10 +288,30 @@
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
     });
-    store.PRESETS = PRESETS; store.place = place; store.stats = stats; store.search = search;
+    // Przełącznik rozmiaru zdjęć ogólnych (Duże / Średnie / Małe) – JEDEN dla całej apki (inspekcje, Reactive).
+    // Wygląd z moduly/przelacznik; trzy pola tej samej szerokości; wybór zapisany w ustawieniach (ostatni pamiętany).
+    function tt(g) { return win.OESTT ? win.OESTT(g.pl, g.en) : g.pl; }
+    store.sizeSwitch = function () {
+      var P = win.OESTPrzelacznik; if (!P) return '';
+      return '<span class="oest-photo-size">' + P.html({ name: 'photoSize', value: store.settings().general, label: tt({ pl: 'Rozmiar zdjęć ogólnych', en: 'General photo size' }),
+        options: GENERAL.map(function (g) { return { v: g.v, t: tt(g) }; }) }) + '</span>';
+    };
+    if (win.document && win.addEventListener) {
+      var st = win.document.createElement('style'); st.textContent = '.oest-photo-size .oest-sw{width:16.5em}'; (win.document.head || win.document.documentElement).appendChild(st);
+      win.document.addEventListener('click', function (e) {
+        var sw = e.target.closest && e.target.closest('.oest-sw[data-sw="photoSize"]'); if (!sw) return;
+        var i = e.target.closest('i[data-v]'), opts = GENERAL.map(function (g) { return g.v; });
+        var v = i ? i.dataset.v : opts[(opts.indexOf(sw.dataset.val) + 1) % opts.length];
+        store.setSettings({ general: v }); if (win.OESTPrzelacznik) win.OESTPrzelacznik.set('photoSize', v);
+      });
+      win.addEventListener('oest:lang', function () {
+        [].forEach.call(win.document.querySelectorAll('.oest-sw[data-sw="photoSize"] i[data-v]'), function (i) { var g = GENERAL.filter(function (x) { return x.v === i.dataset.v; })[0]; if (g) i.textContent = tt(g); });
+      });
+    }
+    store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stats = stats; store.search = search;
     return store;
   }
 
-  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, cleanSettings: cleanSettings, place: place, fit: fit, plan: plan, stats: stats,
+  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, cleanSettings: cleanSettings, place: place, fit: fit, plan: plan, stats: stats,
     search: search, createStore: createStore, createBrowser: createBrowser };
 });

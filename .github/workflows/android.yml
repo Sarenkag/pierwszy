@@ -52,6 +52,8 @@ jobs:
           npm test
           npm i --no-save playwright-core@1.48.2
           OEST_PLAYWRIGHT_PATH=playwright-core OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)" node tests/raport-ui-check.cjs
+          # ZASADA Grzegorza (05/11/2026): każdy plik raportu poniżej 1 MB – prawdziwy Flushing TB z 20 różnymi zdjęciami
+          OEST_PLAYWRIGHT_PATH=playwright-core OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)" node tests/raport-rozmiar-ui-check.cjs
 
       - name: Klucz podpisu
         id: key

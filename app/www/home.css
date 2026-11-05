@@ -14,6 +14,10 @@
 .hm-wx.hm-act{color:#fff}
 .hm-st{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}
 .hm-st button{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.78rem;cursor:pointer}
+/* rozmiar folderu zdjęć OEST (Grzegorz 05/11): do 50% limitu zielony, do 75% pomarańczowy, do 90% czerwony, powyżej czerwony z ⚠ (miejsce na ⚠ zawsze zarezerwowane) */
+.hm-ph-size span{font-variant-numeric:tabular-nums;font-weight:600;min-width:9.5em;text-align:left}
+.hm-ph-size.ok span{color:var(--ok)}.hm-ph-size.mid span{color:var(--attention)}.hm-ph-size.hi span,.hm-ph-size.full span,.hm-ph-size .hm-warn{color:var(--bad)}
+.hm-ph-size .hm-warn{visibility:hidden;font-size:.9rem;line-height:1}.hm-ph-size.full .hm-warn{visibility:visible}
 .hm-days{margin:0 0 12px;padding:2px}
 .hm-day{width:50px!important;padding:7px 0 5px!important}
 .hm-day em{display:block;font-style:normal;font-size:.8rem;height:1.2em;line-height:1.2em}
