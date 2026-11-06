@@ -13,11 +13,11 @@
 
 ## Aktualny stan — ustalenia z audytu 06/11/2026
 
-`app/package.json` uruchamia `node --test tests/*.test.cjs`, a `.github/workflows/android.yml` zawiera `npm test`, następnie przeglądarkowe `raport-ui-check.cjs` i `raport-rozmiar-ui-check.cjs`, potem budowę APK. Repo zawiera też inne testy `*-ui-check.cjs`, które powinny zostać objęte oceną uruchamiania w CI. Samo istnienie testu nie oznacza jego wykonania.
+`app/package.json` uruchamia `node --test tests/*.test.cjs`, a `.github/workflows/android.yml` zawiera `npm test`, następnie przeglądarkowe `raport-ui-check.cjs` i `raport-rozmiar-ui-check.cjs`, potem budowę APK. Audyt wykazał **8 testów `*-ui-check.cjs`, z których CI wykonuje 2**. Pozostałe obszary to: `questions`, `settings`, `reactive`, `keys`, `handover`, `powertrace` (zweryfikuj aktualne nazwy plików przy wdrożeniu bramek). `scripts/check-lang.js` działa obecnie jako kontrola przy `npm run sync`; jej zakres i moment uruchomienia należy zachować i udokumentować, nie usuwać. Samo istnienie testu nie oznacza jego wykonania.
 
 **Znane ryzyka wymagające odrębnego zadania naprawczego:**
 1. `app/tests/raport-ui-check.cjs` pomija formularze przy niedostępnym przycisku; minimalny próg pięciu nie dowodzi kontroli całego katalogu.
-2. `app/tests/vantify-plan.test.cjs` ma przypadki wyliczania przyszłych terminów po końcu źródłowego importu; granica między prognozą a oficjalnym terminem wymaga sprawdzalnego kontraktu.
+2. `app/tests/vantify-plan.test.cjs` (audyt: okolice L85–93) i `app/www/ppm.js` (okolice L226) akceptują/wyliczają daty po ostatnim zleceniu. **To sprzeczne z zatwierdzoną regułą: aplikacja nigdy nie wylicza kolejnych terminów Vantify.** Po ostatnim zleceniu nie powstaje nowe zadanie ani data; ewentualne wymaganie innego zachowania wymaga nowej decyzji właściciela. Samo naprawienie kodu i testu jest odrębnym zleceniem.
 3. `moduly/zdjecia/zdjecia.js` zapisuje lokalny `driveId` po uploadzie; awaria pomiędzy działaniami może skutkować duplikatem lub osieroconym zdalnym plikiem.
 4. Zmiany PL/EN, Android Back i wszystkie drogi wejścia do ekranu wymagają testów end-to-end.
 5. Obecny workflow ma uprawnienie `contents: write` dla całego joba; przyszły podział build/release i ochrona bramek wymagają osobnej decyzji i konfiguracji.
@@ -27,7 +27,7 @@
 
 | Gate | Kontrola | Narzędzie / kryterium |
 |---|---|---|
-| G0 | syntax, podstawowe testy, PL/EN | istniejące `npm test`, `scripts/check-lang.js`, lint w razie wdrożenia |
+| G0 | syntax, podstawowe testy, PL/EN | istniejące `npm test`; `scripts/check-lang.js` działa przy `npm run sync` (nie twierdzić, że obejmuje wszystkie PR bez potwierdzenia); lint w razie wdrożenia |
 | G1 | architektura i kontrakty | walidator zależności skryptów, jawne API i jego konsumenci, wykrywanie nowych cykli/duplikacji |
 | G2 | przepływy E2E | wszystkie obowiązkowe testy UI, liczność sprawdzonych scenariuszy, brak cichych skip |
 | G3 | raporty i dane | otwieralność Word/PDF, tożsamość treści, zdjęcia, limity, reopen, offline, sync/retry |
@@ -44,16 +44,16 @@
 - **QG-022 — integralność:** utwórz rekord + zdjęcia, zapisz, zamknij, uruchom ponownie, odczytaj i porównaj; osobno zdalnie zweryfikuj, jeśli twierdzisz, że dane trafiły do centrum.
 - **QG-023 — zakłócenia:** testuj zerwanie Wi-Fi, wygaśnięcie OAuth, zmianę konta, awarię pomiędzy uploadem i zapisem `driveId`, ponowienie e-mail i brak podwójnej wysyłki.
 - **QG-024 — UX:** testy zmian PL/EN, modal, back na każdej ścieżce, stany przycisków, zachowanie długich formularzy, brak losowych zmian zatwierdzonej geometrii.
-- **QG-025 — terminy:** oficjalny termin Vantify pozostaje zgodny z źródłowym importem; obliczana prognoza nie podszywa się pod zlecenie.
+- **QG-025 — terminy:** każde zadanie Vantify ma oryginalny numer i datę z importu; aplikacja **nie wylicza żadnego następnego terminu**, także po ostatniej pozycji. Zakończenie zadania nie zmienia terminów pozostałych. Test obecnie aprobuje niezgodne zachowanie i musi być naprawiony w osobnym zadaniu.
 - **QG-026 — API modułów:** moduł REUSABLE musi przejść autonomiczne testy kontraktu i użycia poza OEST, niezależnie od testów integracyjnych nowego konsumenta.
 
 ## Lista znanych odstępstw (baseline)
 
-Zastany kod może mieć liczne naruszenia. Można zatwierdzić rejestr `quality/baselines/` z konkretną regułą, lokalizacją, uzasadnieniem i właścicielem naprawy. Walidatory blokują nowe niezatwierdzone naruszenia. Baseline zwykle maleje; uzasadniony wyjątek wymaga jawnej akceptacji. Nie dopuszczaj wyjątków ukrywających utratę danych, wyciek sekretów lub pominięcie krytycznego testu.
+Zastany kod może mieć liczne naruszenia. Można zatwierdzić rejestr `quality/baselines/` z konkretną regułą, lokalizacją, uzasadnieniem i właścicielem naprawy. Walidatory blokują nowe niezatwierdzone naruszenia. Baseline **może tylko maleć automatycznie**; zwiększenie, reset lub wymiana istniejących wyjątków wymaga wyraźnej zgody właściciela, diffu przyczyn i weryfikacji rzeczywistego regresu. Nie dopuszczaj wyjątków ukrywających utratę danych, wyciek sekretów lub pominięcie krytycznego testu.
 
 ## CI, merge, uprawnienia
 
-- **REL-010:** automatyczny merge wyłącznie po zleceniu właściciela i pełnym przejściu wymaganych testów; bez samowolnego rozszerzania zakresu.
+- **REL-010:** docelowo automatyczny merge wyłącznie w zakresie zleconego zadania i po technicznie egzekwowanym przejściu wymaganych testów; bez samowolnego rozszerzania zakresu. **Do czasu ochrony `main` wymuszającej co najmniej G0–G2 każdy merge wymaga wyraźnej zgody właściciela dla konkretnego PR.** Dotyczy to również dokumentacyjnego PR #73.
 - **REL-011:** status checks mają być wymagane w ustawieniach gałęzi, nie tylko opisane w markdown.
 - **REL-012:** zmiany `app/tests/`, `.github/workflows/`, `quality/` i dokumentów kontraktowych nie mogą osłabiać bramek bez jawnej zgody. `CODEOWNERS` sam w sobie nie zapewnia kontroli bez odpowiednich ustawień ochrony gałęzi i uprawnień.
 - **REL-013:** minimalne uprawnienia GitHub Actions; możliwość publikowania APK odizolować od build/test.
