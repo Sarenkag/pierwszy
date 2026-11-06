@@ -15,18 +15,23 @@
 - **UX-024:** Android Back przywraca ekran faktycznego wejścia, kontekst/scroll i niezapisane dane; nie zawsze ekran główny. Testuj ścieżki wejścia z kalendarza, PPM, ustawień i historii.
 - **UX-025:** oba języki PL/EN mają odpowiadające sobie etykiety, bez migotania i resetowania bieżącego formularza. Data dla użytkownika DD/MM/YYYY, przy zachowaniu formatu danych ISO wewnętrznie, gdy jest używany.
 - **UX-026:** kolor nie jest jedynym wskaźnikiem statusu: zastosuj ikonę i tekst; zachowaj kontrast, czytelność w warunkach technicznych, odpowiedni obszar dotyku i powiększenie tekstu.
+- **UX-028:** przyciski w jednej grupie mają tę samą geometrię i stałe pozycje, także przy zmianie PL/EN i liczników; nie mogą drgać, skakać ani zmieniać rozmiaru po aktualizacji danych. Dłuższe tłumaczenie obsługuj świadomym układem, nie przypadkowym przesunięciem.
+- **UX-029:** komunikaty błędów są zrozumiałe dla użytkownika po polsku lub angielsku zgodnie z wybranym językiem. Nie pokazuj surowych kodów wyjątków/HTTP; kod diagnostyczny może trafić do logu, a wspólną obsługę prezentacji prowadzi `moduly/bledy`.
 - **UX-027:** respektuj ograniczenie animacji (`prefers-reduced-motion`) i utrzymuj fokus, stan klawiatury i przewijanie podczas zmian widoku.
 
 ## Zatwierdzone zachowania OEST
 
 - Nagłówek: **One Eastside** bez „Tower”; pod nim data i pogoda, przełącznik języka, powiadomienia, czytelne wskaźniki Wi-Fi i Google Drive.
 - Pogoda: kliknięcie otwiera 7-dniowy pop-up, który nie przesuwa strony i zamyka się przewidywalnie.
-- Kalendarz: jeden wiersz z dniem bieżącym centralnie, grafik 4 on/4 off (dni pracy przyciemnione), małe ikony pogody, liczba inspekcji.
+- Kalendarz: pasek dni zgodny z zatwierdzonym widokiem (w audycie wskazany wariant 14-dniowy, PR #56 — do potwierdzenia na bieżącym UI), dzień bieżący ma być wyraźnie zaznaczony; nie wymuszaj nowego wyśrodkowania przed porównaniem z zatwierdzonym frontem. Grafik 4 on/4 off pochodzi z edytowalnego profilu (dni pracy przyciemnione); małe ikony pogody, liczba inspekcji.
 - Główne kafelki: wyśrodkowane, oszczędny tekst, te same ikony i gradienty co zatwierdzony ekran; lekka reakcja wciśnięcia.
 - Kafelek inspekcji: nazwa, status, etap, grupa, miejsce, termin/dni do końca, znacznik wykonania, opcjonalnie procent bez paska postępu. Zmienia wygląd naturalnie wraz z realnym stanem.
 - Ekran szczegółów: bez paska postępu; procent jako tekst; stałe ikony bez ramek: formularz, obraz, checkbox; zielone kółko OK i czerwone kółko X; stała geometria dla 1/99, 01/99 i liczb zdjęć.
 - „Zakończ/Ready”: jedno tapnięcie zmienia stan, nigdy nie ukrywa inspekcji. „Wyślij” jest wyłącznie operacją wysyłki.
 - Pasek stanu: wąski na dole, czytelne statusy sieci, synchronizacji, kolejki; komunikat błędu ma działanie ponowienia, nie ukryty kod.
+- Zasady językowe: **treść zdań firmowego raportu jest po angielsku w obu wersjach interfejsu**; źródłowa baza pytań pozostaje po polsku, jeśli tak ustalono dla danego zestawu; folder na Google Drive zachowuje nazwę `OEST Zdjęcia`. Nie tłumacz nazw technicznych lub obowiązujących szablonów automatycznie.
+- Google OAuth: zminimalizuj ponawiane pop-upy logowania; korzystaj z istniejącego mechanizmu odświeżenia tokenu (`GoogleTokenPlugin`) bez angażowania użytkownika, jeśli uprawnienia pozostają ważne; błędy autoryzacji pokazuj jawnie, nie symuluj powodzenia.
+- Znana rozbieżność do osobnego zadania: `app/www/index.html` może nadal wyświetlać `One East Side Tower` na ekranie startowym mimo zatwierdzonego `One Eastside`; obecny PR nie zmienia implementacji.
 
 ## Animacje i wydajność
 
