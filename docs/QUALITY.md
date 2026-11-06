@@ -13,7 +13,7 @@
 
 ## Aktualny stan — ustalenia z audytu 06/11/2026
 
-`app/package.json` uruchamia `node --test tests/*.test.cjs`, a `.github/workflows/android.yml` zawiera `npm test`, następnie przeglądarkowe `raport-ui-check.cjs` i `raport-rozmiar-ui-check.cjs`, potem budowę APK. Audyt wykazał **8 testów `*-ui-check.cjs`, z których CI wykonuje 2**. Pozostałe obszary to: `questions`, `settings`, `reactive`, `keys`, `handover`, `powertrace` (zweryfikuj aktualne nazwy plików przy wdrożeniu bramek). `scripts/check-lang.js` działa obecnie jako kontrola przy `npm run sync`; jej zakres i moment uruchomienia należy zachować i udokumentować, nie usuwać. Samo istnienie testu nie oznacza jego wykonania.
+`app/package.json` uruchamia `node --test tests/*.test.cjs`, a `.github/workflows/android.yml` zawiera `npm test`, następnie przeglądarkowe `raport-ui-check.cjs` i `raport-rozmiar-ui-check.cjs`, potem budowę APK. Audyt wykazał **8 testów `*-ui-check.cjs`, z których CI wykonuje 2**. Pozostałe obszary to: `questions`, `settings`, `reactive`, `keys`, `handover`, `powertrace` (zweryfikuj aktualne nazwy plików przy wdrożeniu bramek). `scripts/check-lang.js` działa przy `npm run sync`, a aktualne CI uruchamia `npm run sync` na PR objętych filtrem ścieżek. `.github/workflows/android.yml` (audyt 06/11/2026, L11–13) uruchamia workflow tylko dla zmian w `app/`, `inspekcje/`, `moduly/` lub samym pliku workflow. **PR zmieniający wyłącznie dokumentację, jak #73, nie uruchamia obecnie tych kontroli.** Przed ustawieniem obowiązkowych checków na `main` trzeba objąć dokumentacyjne PR-y osobnym, rzeczywiście uruchamianym workflow lub odpowiednio zmienić filtry i wymagane statusy; inaczej merge może utknąć bez statusu. Sama dokumentacja nie wprowadza tej zmiany. Samo istnienie testu nie oznacza jego wykonania.
 
 **Znane ryzyka wymagające odrębnego zadania naprawczego:**
 1. `app/tests/raport-ui-check.cjs` pomija formularze przy niedostępnym przycisku; minimalny próg pięciu nie dowodzi kontroli całego katalogu.
@@ -27,7 +27,7 @@
 
 | Gate | Kontrola | Narzędzie / kryterium |
 |---|---|---|
-| G0 | syntax, podstawowe testy, PL/EN | istniejące `npm test`; `scripts/check-lang.js` działa przy `npm run sync` (nie twierdzić, że obejmuje wszystkie PR bez potwierdzenia); lint w razie wdrożenia |
+| G0 | syntax, podstawowe testy, PL/EN | istniejące `npm test`; `scripts/check-lang.js` działa przy `npm run sync` w CI dla PR pasujących do filtrów ścieżek; PR wyłącznie dokumentacyjny obecnie pomija cały workflow; lint w razie wdrożenia |
 | G1 | architektura i kontrakty | walidator zależności skryptów, jawne API i jego konsumenci, wykrywanie nowych cykli/duplikacji |
 | G2 | przepływy E2E | wszystkie obowiązkowe testy UI, liczność sprawdzonych scenariuszy, brak cichych skip |
 | G3 | raporty i dane | otwieralność Word/PDF, tożsamość treści, zdjęcia, limity, reopen, offline, sync/retry |
