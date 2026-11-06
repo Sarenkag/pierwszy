@@ -18,6 +18,6 @@ Ten plik jest **punktem wejścia**, nie konkurencyjną kopią zasad. Claude musi
 - Zasady dotyczące wysyłki, zdjęć, terminów Vantify, Word/PDF, historii i statusów opisuje `docs/PRODUCT.md`.
 - Rzeczywisty stan repozytorium może się zmieniać. **Zawsze sprawdź kod i testy przed deklaracją gotowości.**
 
-**Tryb A:** omawianie nie pozwala nawet na edycję plików na gałęzi. **Automatyczny merge:** wstrzymany do czasu technicznego wymuszenia G0–G2, chyba że właściciel wyraźnie zaakceptuje dany PR. 
+**Tryb A:** omawianie nie pozwala nawet na edycję plików na gałęzi. **Automatyczny merge:** wstrzymany do czasu technicznego wymuszenia G0–G2, chyba że właściciel wyraźnie zaakceptuje dany PR.
 
 **Nie próbuj „ulepszać” produktu poza zleceniem.** Wskazuj sugestie oddzielnie; wykonuj dopiero po poleceniu.
