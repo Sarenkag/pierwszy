@@ -23,7 +23,17 @@
 | UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 
-Ten rejestr nie oznacza, że wszystkie moduły są już używane, poprawnie izolowane lub certyfikowane.
+### Status integracji i przenośności (stan audytowy, nie certyfikat)
+
+| Moduł | Integracja | Przenośność / uwagi |
+|---|---|---|
+| `moduly/wiedza` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL / kandydat REUSABLE |
+| `moduly/odczyt` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL / kandydat REUSABLE |
+| `moduly/naglowek` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL; zamierzony komponent |
+| `moduly/wysylka` | INTEGRATED | INTERNAL; zależy m.in. od `OEST_PPM.markSent` oraz danych inspekcji |
+| pozostałe moduły | stan ustalany z analizy kodu i testów | INTERNAL, dopóki nie zaliczą REUSE-004 |
+
+Ten rejestr nie oznacza, że wszystkie moduły są już używane, poprawnie izolowane lub certyfikowane. Statusy aktualizuje się na podstawie kodu/testów, nie intuicji. Żaden przygotowany moduł nie jest usuwany wyłącznie dlatego, że nie ma jeszcze konsumenta.
 
 ## Granice odpowiedzialności
 
@@ -38,7 +48,7 @@ Ten rejestr nie oznacza, że wszystkie moduły są już używane, poprawnie izol
 ## Przenośność między aplikacjami
 
 - **REUSE-001:** docelowy podział: (A) ogólne biblioteki UI/usług, (B) konfigurowalne moduły biznesowe, (C) adaptery oraz procesy typowe wyłącznie dla OEST.
-- **REUSE-002:** nowy moduł ogólnego przeznaczenia nie może wymagać nazw budynków, kodów PPM, `OEST_PPM`, określonych odbiorców e-mail ani stałych kluczy `oest.*`. Wstrzykuj konfigurację/adaptory zamiast zaszytych zależności.
+- **REUSE-002:** nowy moduł ogólnego przeznaczenia nie może wymagać nazw budynków, kodów PPM, `OEST_PPM`, określonych odbiorców e-mail ani stałych kluczy `oest.*`. Eliminuj także ukryte zależności: `OESTT` z `moduly/bledy`, nazwy natywnych wtyczek Android (`OESTKeys.capture`), oraz bezpośrednią zależność od IndexedDB `inspekcje` używanej przez `wysylka`. Wstrzykuj konfigurację/adaptory zamiast zaszytych zależności. To zasada nowych modułów i kryterium przyszłej migracji, nie zgoda na bieżącą refaktoryzację istniejących.
 - **REUSE-003:** istniejące moduły OEST mogą pozostać INTERNAL do czasu bezpiecznej izolacji. Nie udawaj, że są REUSABLE tylko dlatego, że znajdują się w `moduly/`.
 - **REUSE-004:** moduł można oznaczyć REUSABLE po niezależnym teście kontraktowym, dokumentacji API, znanych zależnościach, udokumentowanym sposobie obsługi błędów oraz działającym teście integracji poza OEST. Integrowany projekt nadal testuje własne scenariusze.
 - **REUSE-005:** osobne wersje i paczki publikacyjne wdrażaj, gdy drugi konsument rzeczywiście tego wymaga; wcześniej dokumentuj zmiany API i zgodność konsumentów w repo.
@@ -56,6 +66,6 @@ Ten rejestr nie oznacza, że wszystkie moduły są już używane, poprawnie izol
 
 ## Integracja i audyt
 
-Mapa zależności ma pochodzić z kodu (w tym DOM, globalnych API i importów), a nie tylko z deklaracji AI. Wizualne narzędzia mogą wyświetlać mapę, ale nie stanowią źródła prawdy. Każdy moduł powinien mieć w swoim README: kontrakt publiczny, zależności, stan użycia, testy, kompatybilność, ograniczenia.
+Mapa zależności ma pochodzić z kodu (w tym DOM, globalnych API i importów), a nie tylko z deklaracji AI. Wizualne narzędzia mogą wyświetlać mapę, ale nie stanowią źródła prawdy. **ARCH-027:** każdy moduł ma mieć własny `README.md` zawierający: kontrakt publiczny, zależności, stan użycia, testy, kompatybilność, ograniczenia.
 
-**Rzeczy do zweryfikowania, nie potwierdzone jako naprawione:** zależności łańcuchów skryptów, wykorzystanie modułów `wiedza`/`odczyt`/`naglowek`, przerwanie uploadu `zdjecia.js` po utworzeniu pliku zdalnego i przed utrwaleniem `driveId`, rozdzielenie UI od formularzy w monolicie. Zmiany tych obszarów wymagają osobnego zlecenia.
+**Rzeczy do zweryfikowania, nie potwierdzone jako naprawione:** przejścia `location.href` w inspekcjach i niespójny Android Back (weryfikacja historii nawigacji), brak README w `moduly/bledy` i `moduly/zdjecia`,  zależności łańcuchów skryptów, wykorzystanie modułów `wiedza`/`odczyt`/`naglowek`, przerwanie uploadu `zdjecia.js` po utworzeniu pliku zdalnego i przed utrwaleniem `driveId`, rozdzielenie UI od formularzy w monolicie. Zmiany tych obszarów wymagają osobnego zlecenia.
