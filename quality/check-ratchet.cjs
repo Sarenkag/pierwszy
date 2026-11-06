@@ -66,6 +66,6 @@ for (const n of notes) console.log('Informacja: ' + n);
 for (const w of warnings) console.log('::warning title=Ratchet::' + w);
 for (const e of errors) console.log('::error title=Ratchet – osłabienie bramki::' + e);
 const status = errors.length ? 'FAIL' : 'PASS';
-if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, base: BASE, errors, warnings, notes }, null, 2));
+if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, base: BASE, errors, warnings, notes }, null, 2));
 console.log('Ratchet ' + status + ` (baza ${BASE}; błędy ${errors.length}, ostrzeżenia ${warnings.length})`);
 process.exitCode = status === 'PASS' ? 0 : 1;

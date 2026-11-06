@@ -158,7 +158,7 @@ function main() {
   for (const v of fresh) console.log('::error title=G1 nowe naruszenie (' + v.rule + ')::' + v.detail);
   for (const id of stale) console.log('::error title=G1 baseline nieaktualny::' + id + ' już nie występuje – usuń wpis z quality/baselines/architecture.json (baseline może tylko maleć).');
   const status = fresh.length || stale.length ? 'FAIL' : 'PASS';
-  if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages }, null, 2));
+  if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages }, null, 2));
   console.log('G1 ' + status);
   process.exitCode = status === 'PASS' ? 0 : 1;
 }
