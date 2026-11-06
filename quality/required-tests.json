@@ -1,0 +1,123 @@
+{
+  "schema": "oest.quality.required-tests",
+  "version": 1,
+  "note": "Lista obowiązkowych testów Quality Gate. Usunięcie pozycji lub dodanie wyjątku (allowedSkips) wymaga wyraźnej zgody właściciela – kontrola check-ratchet.cjs blokuje takie zmiany w PR.",
+  "node": [
+    {
+      "file": "app/tests/aktywa.test.cjs"
+    },
+    {
+      "file": "app/tests/calendar-sync.test.cjs"
+    },
+    {
+      "file": "app/tests/calendar.test.cjs"
+    },
+    {
+      "file": "app/tests/flush.test.cjs"
+    },
+    {
+      "file": "app/tests/handover.test.cjs"
+    },
+    {
+      "file": "app/tests/keys-store.test.cjs"
+    },
+    {
+      "file": "app/tests/keys.test.cjs"
+    },
+    {
+      "file": "app/tests/model.test.cjs"
+    },
+    {
+      "file": "app/tests/odczyt.test.cjs"
+    },
+    {
+      "file": "app/tests/powertrace-store.test.cjs"
+    },
+    {
+      "file": "app/tests/powertrace.test.cjs"
+    },
+    {
+      "file": "app/tests/questions-store.test.cjs"
+    },
+    {
+      "file": "app/tests/questions.test.cjs"
+    },
+    {
+      "file": "app/tests/raport-rozmiar.test.cjs"
+    },
+    {
+      "file": "app/tests/reactive-report.test.cjs"
+    },
+    {
+      "file": "app/tests/reactive.test.cjs"
+    },
+    {
+      "file": "app/tests/report-template.test.cjs"
+    },
+    {
+      "file": "app/tests/settings-google.test.cjs"
+    },
+    {
+      "file": "app/tests/settings-routing.test.cjs"
+    },
+    {
+      "file": "app/tests/settings-store.test.cjs"
+    },
+    {
+      "file": "app/tests/vantify-plan.test.cjs"
+    },
+    {
+      "file": "app/tests/wiedza.test.cjs"
+    },
+    {
+      "file": "app/tests/wysylka-adresaci.test.cjs"
+    },
+    {
+      "file": "app/tests/zdjecia.test.cjs"
+    }
+  ],
+  "browser": [
+    {
+      "file": "app/tests/handover-ui-check.cjs",
+      "passMarker": "HANDOVER UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/keys-ui-check.cjs",
+      "passMarker": "KEYS UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/powertrace-ui-check.cjs",
+      "passMarker": "POWER UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/questions-ui-check.cjs",
+      "passMarker": "QUESTIONS UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/raport-rozmiar-ui-check.cjs",
+      "passMarker": "raport-rozmiar-ui-check: ",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/raport-ui-check.cjs",
+      "passMarker": "raport-ui-check: ",
+      "timeoutSec": 900,
+      "scenarios": "ppm-inspections"
+    },
+    {
+      "file": "app/tests/reactive-ui-check.cjs",
+      "passMarker": "REACTIVE UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/settings-ui-check.cjs",
+      "passMarker": "UI PASS: ",
+      "timeoutSec": 900
+    }
+  ],
+  "allowedSkips": []
+}
