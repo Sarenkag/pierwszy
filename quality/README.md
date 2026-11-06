@@ -32,7 +32,7 @@ node quality/run-gate.cjs --part node
 OEST_PLAYWRIGHT_PATH=$PWD/quality/node_modules/playwright-core OEST_BROWSER_PATH=$(command -v google-chrome) node quality/run-gate.cjs --part browser
 node quality/check-architecture.cjs
 node quality/check-ratchet.cjs --base origin/main
-node --test quality/tests/
+node --test quality/tests/*.test.cjs
 ```
 
 ## Zmiany kryteriów

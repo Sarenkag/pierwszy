@@ -64,7 +64,7 @@ jobs:
           npm ci
           npm run copy-web
       - name: Testy samej bramki (czy kontrole łapią błędy)
-        run: node --test quality/tests/
+        run: node --test quality/tests/*.test.cjs
       - name: Zależności modułów i kolejność skryptów
         if: ${{ !cancelled() }}
         run: node quality/check-architecture.cjs --json quality-results/architecture.json
