@@ -6,9 +6,10 @@
  * kadrowanie, cofnij). Decyzja Grzegorza 01/11/2026: edytory Google nie otwierają plików z wnętrza apki
  * („Editing is not supported for this image”), więc nie używamy OESTPhotoEdit. Działa offline, nic nie trafia do Galerii.
  *
- *   OESTAparat.take()  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
+ *   OESTAparat.take(opts?)  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
+ *     opts.max = dłuższy bok (px), w jakim zdjęcie i tak zostanie zapisane; edycja zapisze je od razu w tym rozmiarze (bez = pełny)
  *   OESTAparat.available()           → true w apce Android
- *   OESTAparat.edit(blob) → Promise<Blob|null>   (null = bez zmian / anulowane)
+ *   OESTAparat.edit(blob, opts?) → Promise<Blob|null>   (null = bez zmian / anulowane; opts.max jak wyżej)
  *   OESTAparat.review(blob) → Promise<{blob}|{retake:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz
  *   OESTAparat.button(label?)        → gotowy <button> „✏️ Edytuj” do wstawienia pod zdjęciem
  */
@@ -86,16 +87,26 @@
     var w = Math.min(W, Math.max(c.x1, c.x2)) - x, h = Math.min(H, Math.max(c.y1, c.y2)) - y;
     return w > 20 && h > 20 ? { x: x, y: y, w: w, h: h } : null;
   }
-  /* Gotowe zdjęcie w pełnej rozdzielczości: zdjęcie + kształty, potem kadr. */
-  function renderFinal(bmp, shapes, crop) {
-    var W = bmp.width, H = bmp.height, full = document.createElement('canvas'); full.width = W; full.height = H;
+  /* Gotowe zdjęcie: zdjęcie + kształty, potem kadr. max (px, dłuższy bok) > 0 = od razu w rozmiarze, w jakim moduł zdjęć je zapisze
+     (audyt wydajności 07/11/2026: bez pełnego płótna 12 MP i bez JPEG 12 MP, który i tak zaraz się zmniejsza). Bez max – jak dawniej. */
+  function renderFinal(bmp, shapes, crop, max) {
+    var W = bmp.width, H = bmp.height, c = normCrop(crop, W, H) || { x: 0, y: 0, w: W, h: H };
+    var k = max > 0 ? Math.min(1, max / Math.max(c.w, c.h)) : 1;
+    if (k < 1) {
+      var out = document.createElement('canvas'); out.width = Math.max(1, Math.round(c.w * k)); out.height = Math.max(1, Math.round(c.h * k));
+      var o = out.getContext('2d'); o.imageSmoothingQuality = 'high'; o.scale(k, k); o.translate(-c.x, -c.y); o.drawImage(bmp, 0, 0);
+      shapes.forEach(function (sh) { drawShape(o, sh, 1); });
+      return new Promise(function (ok) { out.toBlob(ok, 'image/jpeg', 0.9); });
+    }
+    var full = document.createElement('canvas'); full.width = W; full.height = H;
     var g = full.getContext('2d'); g.drawImage(bmp, 0, 0); shapes.forEach(function (sh) { drawShape(g, sh, 1); });
-    var c = normCrop(crop, W, H), out = full;
-    if (c) { out = document.createElement('canvas'); out.width = Math.round(c.w); out.height = Math.round(c.h); out.getContext('2d').drawImage(full, c.x, c.y, c.w, c.h, 0, 0, out.width, out.height); }
-    return new Promise(function (ok) { out.toBlob(ok, 'image/jpeg', 0.9); });
+    var cc = normCrop(crop, W, H), res = full;
+    if (cc) { res = document.createElement('canvas'); res.width = Math.round(cc.w); res.height = Math.round(cc.h); res.getContext('2d').drawImage(full, cc.x, cc.y, cc.w, cc.h, 0, 0, res.width, res.height); }
+    return new Promise(function (ok) { res.toBlob(ok, 'image/jpeg', 0.9); });
   }
 
-  function editor(blob) {
+  function editor(blob, opts) {
+    var max = opts && opts.max > 0 ? opts.max : 0;
     return createImageBitmap(blob, { imageOrientation: 'from-image' }).catch(function () { return createImageBitmap(blob); }).then(function (bmp) {
       return new Promise(function (done) {
         var W = bmp.width, H = bmp.height, unit = Math.max(W, H) / 1000;
@@ -191,7 +202,7 @@
           else if (b.getAttribute('data-a') === 'save') {
             if (!realShapes().length && !normCrop(crop, W, H)) return close(null);
             b.disabled = true; b.innerHTML = (root.OESTLadowanie ? root.OESTLadowanie.ring() + ' ' : '') + T('Zapisuję…', 'Saving…');
-            return renderFinal(bmp, realShapes(), crop).then(function (out) { close(out || null); }, function () { close(null); });
+            return renderFinal(bmp, realShapes(), crop, max).then(function (out) { close(out || null); }, function () { close(null); });
           }
           mark();
         });
@@ -205,9 +216,9 @@
   var api = {
     available: function () { return !!plugin(); },
     // Edycja: własny edytor w apce (działa też w przeglądarce). null = bez zmian / anulowane.
-    edit: function (blob) { return editor(blob); },
+    edit: function (blob, opts) { return editor(blob, opts); },
     _drawShape: drawShape, _normCrop: normCrop,
-    take: function () {
+    take: function (opts) {
       var C = root.Capacitor, cam = C && C.Plugins && C.Plugins.OESTKeys;
       if (!api.available() || !cam) return Promise.reject(new Error(T('Aparat działa w aplikacji na telefonie.', 'The camera works in the phone app.')));
       function shot() {
@@ -217,12 +228,12 @@
               function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
         }, function (e) { if (/CANCELLED/.test(String(e && e.message || e))) return null; throw e; });
       }
-      function loop() { return shot().then(function (b) { if (!b) return null; return api.review(b).then(function (r) { return r.retake ? loop() : r.blob; }); }); }
+      function loop() { return shot().then(function (b) { if (!b) return null; return api.review(b, opts).then(function (r) { return r.retake ? loop() : r.blob; }); }); }
       return loop();
     },
     /* Podgląd po zdjęciu: duże zdjęcie + „✓ OK”, „✏️ Edytuj”, „↺ Powtórz”.
        review(blob) → Promise<{blob}|{retake:true}>; Edytuj otwiera edytor z telefonu i wraca do podglądu. */
-    review: function (blob) {
+    review: function (blob, opts) {
       return new Promise(function (done) {
         var cur = blob, url = '', box = document.createElement('div');
         box.className = 'oest-review';
@@ -241,7 +252,7 @@
           var r = b.getAttribute('data-r');
           if (r === 'ok') close({ blob: cur });
           else if (r === 'retake') close({ retake: true });
-          else { busy = true; msg.textContent = ''; api.edit(cur).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? T('Zapisano zmiany.', 'Changes saved.') : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
+          else { busy = true; msg.textContent = ''; api.edit(cur, opts).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? T('Zapisano zmiany.', 'Changes saved.') : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
         });
         show(); document.body.appendChild(box);
       });
