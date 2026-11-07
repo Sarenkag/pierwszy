@@ -115,15 +115,16 @@
     ".ki .kic{width:21px;height:21px;flex:none;fill:none;stroke:var(--steel);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ki .kic .kz{stroke-width:2.2}" +
     // lokalizacja: stałe pole pod najdłuższy wpis (TB/L13), puste = pusty kwadrat
     ".ki .klok{flex:none;width:51px;height:24px;box-sizing:border-box;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.12);font-size:11px;font-weight:800;color:var(--steel);letter-spacing:.02em;white-space:nowrap;overflow:hidden}" +
-    ".ki .kcz{flex:none;width:28px;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden}" +
-    ".ki .kdt{flex:none;width:104px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kdt b{color:var(--ink)}" +
+    ".ki .kcz{flex:none;width:34px;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden}" +
+    ".ki .kdt{flex:none;width:118px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kdt b{color:var(--ink)}" +
     ".ki .kdt.t-jutro,.ki .kdt.t-jutro b{color:" + ORANGE + "}.ki .kdt.t-red,.ki .kdt.t-red b{color:" + RED + "}" +
     ".ki .ksep{flex:none;width:1px;height:19px;background:rgba(255,255,255,.18)}" +
     // linia 3 sięga pod strzałkę (strzałka stoi na wysokości linii 2), żeby zmieściła się także na wąskim ekranie (uwaga Codex w PR #87)
     ".ki .kr3{gap:6px;margin-right:-26px}" +
-    // ekran węższy niż 400 px (np. 360): te same stałe miejsca, tylko ciaśniej i czcionka 12 px – nic nie wypada poza klocek
-    "@media (max-width:399px){.ki .kr3{gap:4px}.ki .kr3 .kdt,.ki .kr3 .kn{font-size:12px}.ki .kdt{width:96px}.ki .kn2{width:17px}.ki .kn5{width:37px}.ki .kus{width:40px}}" +
-    ".ki .kn{flex:none;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kn2{width:20px}.ki .kn5{width:40px}" +
+    // ekran węższy niż 400 px (np. 360): te same stałe miejsca, tylko ciaśniej i czcionka 12 px – nic nie wypada poza klocek.
+    // Szerokości pól z zapasem na najszerszą czcionkę zastępczą (DejaVu Sans na serwerze CI), nie tylko Roboto/Inter z telefonu.
+    "@media (max-width:399px){.ki .kr3{gap:3px}.ki .kr3 .kdt,.ki .kr3 .kn{font-size:12px}.ki .kr3 .kdt{width:108px}.ki .kr3 .kn2{width:18px}.ki .kr3 .kn5{width:40px}.ki .kr3 .kus{width:40px}}" +
+    ".ki .kn{flex:none;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kn2{width:20px}.ki .kn5{width:44px}" +
     ".ki .kus{flex:none;display:flex;align-items:center;gap:4px;width:44px;height:21px;color:" + ORANGE + "}.ki .kus:empty{visibility:hidden}" +
     ".oest-ask.ki-info>div{text-align:left}.oest-ask.ki-info{--ruch-okno-easing:var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1))}" +
     ".ki-info .kir{display:flex;gap:10px;align-items:center;margin:10px 0;font-size:14px;line-height:1.35}" +
