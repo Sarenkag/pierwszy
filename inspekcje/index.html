@@ -2219,23 +2219,46 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     } finally { reportShrink = 1; }
     return r;
   }
-  function finalPhoto(p, d) {
-    return bitmap(p.blob).then(function (src) { return finalFrom(src, p, d); });
+  // Zdjęcie do raportu zmniejszane RAZ (audyt wydajności 07/11/2026): wynik zapamiętany przy samym zdjęciu (WeakMap po blobie),
+  // więc Podgląd → Wyślij, „Zmniejsz zdjęcia” i ponowne budowanie nie liczą go od nowa. Klucz = wszystko, od czego zależy wynik
+  // (rozmiar, jakość, stempel); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
+  var finalCache = typeof WeakMap === "function" ? new WeakMap() : null;
+  function finalOpts(p, d) {
+    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
+    var px = p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink), q = p.sheet ? SHEET_Q : rs.q;
+    var stamp = cfg.stamp ? fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
+    return { px: px, q: q, stamp: stamp, key: px + "|" + q + "|" + stamp };
   }
-  function finalFrom(src, p, d) {
-    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize(), k = Math.min(1, (p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink)) / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
+  function finalPhoto(p, d) {
+    var o = finalOpts(p, d), byKey = finalCache && p.blob && typeof p.blob === "object" ? finalCache.get(p.blob) : null, hit = byKey && byKey[o.key];
+    if (!hit) {
+      hit = bitmap(p.blob).then(function (src) { return finalFrom(src, o); });
+      if (finalCache && p.blob && typeof p.blob === "object") { if (!byKey) { byKey = {}; finalCache.set(p.blob, byKey); } byKey[o.key] = hit; hit.catch(function () { delete byKey[o.key]; }); }
+    }
+    // każdy raport dostaje własny adres podglądu (freeBuilt go zwalnia), bajty JPEG są wspólne
+    return hit.then(function (r) { return { bytes: r.bytes, width: r.width, height: r.height, url: URL.createObjectURL(r.blob) }; });
+  }
+  // zdjęcia raportu po kilka naraz (kolejność zachowana); 3 naraz = ok. 3 zdekodowane zdjęcia w pamięci
+  function mapLimit(list, n, fn) {
+    var out = new Array(list.length), i = 0;
+    function next() { if (i >= list.length) return Promise.resolve(); var at = i++; return fn(list[at]).then(function (r) { out[at] = r; return next(); }); }
+    var run = []; for (var k = 0; k < Math.min(n, list.length); k++) run.push(next());
+    return Promise.all(run).then(function () { return out; });
+  }
+  function finalFrom(src, o) {
+    var k = Math.min(1, o.px / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
     var c = document.createElement("canvas"); c.width = w; c.height = h;
     var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
-    if (cfg.stamp) {
-      var txt = fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja);
+    if (o.stamp) {
+      var txt = o.stamp;
       var fs = Math.max(16, Math.round(w / 40));
       g.font = "600 " + fs + "px Barlow, system-ui, sans-serif";
       var tw = Math.min(g.measureText(txt).width, w - fs * 2.2), pw = tw + fs, ph = fs * 1.8;
       g.fillStyle = "rgba(10,16,20,0.62)"; g.fillRect(w - pw - fs * 0.6, h - ph - fs * 0.6, pw, ph);
       g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(txt, w - pw - fs * 0.1, h - ph / 2 - fs * 0.6, tw);
     }
-    return new Promise(function (res) { c.toBlob(res, "image/jpeg", p.sheet ? SHEET_Q : rs.q); }).then(function (blob) {
-      return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, url: URL.createObjectURL(blob) }; });
+    return new Promise(function (res) { c.toBlob(res, "image/jpeg", o.q); }).then(function (blob) {
+      return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, blob: blob }; });
     });
   }
   // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
@@ -2820,7 +2843,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     });
     if (cur.type.folder) {
       // Flushing / AOV / zdjęcia kartki: wszystkie zdjęcia z oznaczeniem (kran / formularz / ogólne)
-      return photos.reduce(function (p, ph) { return p.then(function (arr) { return fin(ph).then(function (f) { arr.push(f); return arr; }); }); }, Promise.resolve([])).then(function (pics) {
+      return mapLimit(photos, 3, fin).then(function (pics) {
         // stare inspekcje kartkowe: zdjęcie dodane zwykłym aparatem też jest zdjęciem kartki
         if (!cur.type.flush) pics.forEach(function (p) { if (p.tap == null) p.sheet = true; });
         if (!d.flush) {
@@ -2835,9 +2858,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
-    return photos.reduce(function (p, ph) {
-      return p.then(function (arr) { return fin(ph).then(function (f) { arr.push(f); return arr; }); });
-    }, Promise.resolve([])).then(function (pics) {
+    return mapLimit(photos, 3, fin).then(function (pics) {
       var pdf = buildPdf(d, pics, info), sel = pick(pics);
       var docx = fillDocx(PizZip, docxtemplater, tpl, d, n.one ? sel : []).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
       var logoUrl = info.logo ? URL.createObjectURL(new Blob([info.logo], { type: info.logoType === "PNG" ? "image/png" : "image/jpeg" })) : "";
