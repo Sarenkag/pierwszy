@@ -20,7 +20,11 @@
     "html body .kf small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px!important;line-height:1.3;color:var(--muted)}" +
     "html body .kf small:empty{display:none}" +
     // licznik w rogu: moduly/znacznik (.kf-n)
-    "html body .kf:disabled{opacity:.45}";
+    "html body .kf:disabled{opacity:.45}" +
+    // ruch kafelka z tabeli ruchu (moduly/wyglad/wyglad.css, rola „kafelek”): naciśnięcie i płynna zmiana stanu; w nawiasie wartości zapasowe
+    ":where(.tile){transition:transform var(--ruch-kafelek-czas,.16s) var(--ruch-kafelek-easing,cubic-bezier(.2,.8,.2,1)),background-color var(--ruch-stan-czas,.24s),border-color var(--ruch-stan-czas,.24s),color var(--ruch-stan-czas,.24s),box-shadow var(--ruch-stan-czas,.24s),opacity var(--ruch-stan-czas,.24s),filter var(--ruch-stan-czas,.24s);-webkit-tap-highlight-color:transparent;backface-visibility:hidden}" +
+    ":where(.tile:active:not(:disabled)){transform:var(--ruch-kafelek-nacisk,scale(.97))}" +
+    "@media (prefers-reduced-motion:reduce){:where(.tile:active:not(:disabled)){transform:none}}:root[data-settings-motion=reduce] :where(.tile:active:not(:disabled)){transform:none}";
   function css() {
     if (d.getElementById("oest-kafelek-css")) return;
     var s = d.createElement("style"); s.id = "oest-kafelek-css"; s.textContent = CSS; (d.head || d.documentElement).appendChild(s);
@@ -44,5 +48,6 @@
       (o.badge ? '<span class="kf-n">' + esc(o.badge) + "</span>" : "") + "</button>";
   }
   function grid(list, cls) { return '<div class="tiles kf-grid' + (cls ? " " + esc(cls) : "") + '">' + (list || []).map(html).join("") + "</div>"; }
+  css(); // ruch kafelka działa też dla kafelków zbudowanych bez OESTKafelek.html (np. stare .tile)
   w.OESTKafelek = { html: html, grid: grid, css: css };
 })(window, document);

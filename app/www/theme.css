@@ -24,7 +24,8 @@ h1 span{color:inherit}
 .settings-group{background:transparent!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 .back{width:38px!important;height:38px!important;border:0!important;background:transparent!important;font-size:1.6rem!important;color:var(--ink)!important}
 /* karty szklane */
-.panel,.tile,.prow,.settings-card,.settings-hero,.settings-group,.day,.chip,.btn:not(.go),.pbtn,.sm{background:var(--panel)!important;border:1px solid var(--line)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+/* B4 (07/11/2026): bez .settings-group – grupy Ustawień są bez ramki (reguła wyżej), ta lista ją nadpisywała */
+.panel,.tile,.prow,.settings-card,.settings-hero,.day,.chip,.btn:not(.go),.pbtn,.sm{background:var(--panel)!important;border:1px solid var(--line)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .panel,.settings-hero{border-radius:18px!important}
 .btn,.pbtn{border-radius:14px!important;min-height:46px}
 .btn.go,button.go,.save-bar .btn{background:var(--grad)!important;border:0!important;color:#fff!important;box-shadow:0 8px 24px rgba(120,90,255,.4)}
