@@ -49,6 +49,7 @@
     SHIFT_DATE: ['Nieprawidłowa data zmiany.', 'Invalid shift date.'],
     SHIFT_ARCHIVED: ['Ta zmiana jest już zarchiwizowana.', 'This shift is already archived.'],
     CONTACT_LABEL: ['Wybierz etykietę kontaktów.', 'Choose a contacts label.'],
+    CONTACT_INVALID: ['Wpisz imię lub nazwę działu.', 'Enter a name or department.'],
     CONTACT_LABEL_TOO_LARGE: ['Etykieta ma za dużo kontaktów.', 'The label has too many contacts.'],
     CONTACT_PARTIAL: ['Pobrano tylko część kontaktów.', 'Only some contacts were loaded.'],
     // kalendarz
