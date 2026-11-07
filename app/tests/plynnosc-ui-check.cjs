@@ -43,7 +43,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const errors = [];
 
     // ---------- B1: pierwszy obraz inspekcji przy wolnym internecie (5 s opóźnienia każdego zapytania na zewnątrz) ----------
-    console.error('[krok] B1: pierwszy obraz inspekcji przy wolnym internecie (5 s opó');
     {
       const c = await ctx();
       await c.route(/^https?:\/\/(?!127\.0\.0\.1)/, async r => { await new Promise(z => setTimeout(z, 5000)); r.abort(); });
@@ -67,7 +66,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const setLang = l => p.evaluate(l => { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); }, l);
 
     // ---------- B2: geometria przy zmianie PL → EN na 11 ekranach ----------
-    console.error('[krok] B2: geometria przy zmianie PL → EN na 11 ekranach');
     // Nic nie może zmienić pozycji w pionie ani wysokości. W poziomie wolno tylko w rzędzie przewijanym w bok (pasek dni, filtry Inspekcji – wariant A).
     const SEL = 'button,.tile,.k2,.chip,.day,.oest-sw,[role=button],.settings-card,.prow';
     const snap = () => p.evaluate(SEL => {
@@ -99,7 +97,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await setLang('pl');
 
     // ---------- B5/B6: elementy tej samej klasy w jednej grupie mają tę samą wysokość (rozmiar układu, bez efektu wciśnięcia) ----------
-    console.error('[krok] B5/B6: elementy tej samej klasy w jednej grupie mają tę samą');
     R.grupy = {};
     for (const rt of ['home', 'ppm', 'settings', 'reactive', 'questions']) {
       await p.goto(url + '/index.html#' + rt); await p.waitForTimeout(600);
@@ -129,7 +126,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await p.setViewportSize({ width: 412, height: 915 }); await setLang('pl');
 
     // ---------- B2: filtry Inspekcji w jednym rzędzie, lista zawsze w tym samym miejscu ----------
-    console.error('[krok] B2: filtry Inspekcji w jednym rzędzie, lista zawsze w tym sa');
     await p.goto(url + '/index.html#ppm'); await p.waitForTimeout(700);
     R.filtry = await p.evaluate(() => { const c = document.getElementById('ppmChips'); return { rzedy: new Set([...c.children].map(e => e.offsetTop)).size, listaOdY: Math.round(document.getElementById('ppmList').getBoundingClientRect().top) }; });
     check(R.filtry.rzedy === 1, `B2: filtry Inspekcji w ${R.filtry.rzedy} rzędach (ma być 1)`);
@@ -143,7 +139,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(R.filtry.przewiniecieRzedu.przed === 0 || R.filtry.przewiniecieRzedu.po > 0, `B2: stuknięcie filtra przewinęło rząd na początek (${R.filtry.przewiniecieRzedu.przed} → ${R.filtry.przewiniecieRzedu.po})`);
 
     // ---------- B3: animacje listy tylko dla nowych kart ----------
-    console.error('[krok] B3: animacje listy tylko dla nowych kart');
     R.animacjeListy = {};
     const tap = async (sel, key) => {
       await p.evaluate(() => { window.__anim = []; window.__ids = new Set([...document.querySelectorAll('#ppmList [data-id],#ppmList [data-fam]')].map(e => e.getAttribute('data-id') || e.getAttribute('data-fam'))); });
@@ -161,14 +156,12 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(R.animacjeListy['powrót do apki'].animacje === 0, `B3: powrót do apki uruchamia ${R.animacjeListy['powrót do apki'].animacje} animacji`);
 
     // ---------- B7: odmiana dzień/dni ----------
-    console.error('[krok] B7: odmiana dzień/dni');
     R.odmiana = await p.evaluate(() => ({ m1: OEST_PPM.endsText(-1), m3: OEST_PPM.endsText(-3), p1: OEST_PPM.endsText(1), p5: OEST_PPM.endsText(5), dni: [OEST_PPM.dni && OEST_PPM.dni(1), OEST_PPM.dni && OEST_PPM.dni(2)] }));
     check(R.odmiana.m1 === 'Po terminie 1 dzień' && R.odmiana.m3 === 'Po terminie 3 dni' && R.odmiana.p1 === 'Został 1 dzień' && R.odmiana.p5 === 'Zostało 5 dni', 'B7: odmiana ' + JSON.stringify(R.odmiana));
     const listText = await p.evaluate(() => document.getElementById('ppmList').textContent);
     check(!/\b1 dni\b/.test(listText) && !/\b1 days\b/.test(listText), 'B7: lista Inspekcji zawiera „1 dni” / „1 days”');
 
     // ---------- Wstecz: wraca na ten sam ekran, przewinięcie i wybór ----------
-    console.error('[krok] Wstecz: wraca na ten sam ekran, przewinięcie i wybór');
     R.wstecz = {};
     await p.goto(url + '/index.html#home'); await p.waitForTimeout(500);
     await p.click('[data-go=ppm]'); await p.waitForTimeout(600); await p.evaluate(() => scrollTo(0, 900)); await p.waitForTimeout(200);
@@ -192,7 +185,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(R.wstecz.ustawienia.po.startsWith('#settings ') && Math.abs(R.wstecz.ustawienia.y - y0) <= 10, 'Wstecz z podstrony Ustawień: ' + JSON.stringify(R.wstecz.ustawienia));
 
     // ---------- płynność: czas klatek przy przewijaniu listy i przejściu ekranu (Chromium, nie telefon) ----------
-    console.error('[krok] płynność: czas klatek przy przewijaniu listy i przejściu ekr');
     await p.goto(url + '/index.html#ppm'); await p.waitForTimeout(700);
     R.plynnosc = await p.evaluate(async () => {
       const frames = [], longT = []; let last = performance.now();
@@ -211,7 +203,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(R.plynnosc.przejscie.maxMs < 200, `płynność: najdłuższa klatka przejścia ekranu ${R.plynnosc.przejscie.maxMs} ms (próg 200 ms)`);
 
     // ---------- tabela ruchu: wartości domyślne = dotychczasowy ruch, podmiana działa wszędzie bez zmian na ekranach ----------
-    console.error('[krok] tabela ruchu: wartości domyślne = dotychczasowy ruch, podmia');
     R.tabelaRuchu = await p.evaluate(() => {
       const W = window.OESTWyglad && OESTWyglad.ruch; if (!W) return { brak: true };
       const el = document.createElement('div'); el.className = 'wy-pop'; document.body.appendChild(el);
@@ -233,7 +224,6 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await c.close();
 
     // ---------- tryb ograniczonych animacji: zero animacji (poza kółkiem ładowania) na ekranach, filtrze, Wstecz i okienku ----------
-    console.error('[krok] tryb ograniczonych animacji: zero animacji (poza kółkiem ład');
     {
       const c2 = await ctx({ reducedMotion: 'reduce' });
       await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
@@ -251,7 +241,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(errors.length === 0, 'błędy JS na stronie: ' + errors.slice(0, 3).join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }
 
-  console.log(JSON.stringify(R, null, 1));
+  console.log('POMIARY ' + JSON.stringify(R)); // wszystkie liczby w jednej linii (artefakt Quality Gate)
   if (process.env.OEST_PLYNNOSC_OUT) fs.writeFileSync(process.env.OEST_PLYNNOSC_OUT, JSON.stringify({ wyniki: R, bledy: fails }, null, 1));
   if (fails.length) { console.error('PLYNNOSC UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
   console.log(`PLYNNOSC UI PASS: B1 inspekcja ${R.pierwszyObraz.inspekcja} ms przy wolnym internecie, PL/EN ${ROUTES.length} ekranów bez przesunięć, filtry 1 rząd, animacje tylko nowych kart, Ustawienia równe, odmiana, Wstecz ×3, przewijanie p95 ${R.plynnosc.p95Ms} ms, tabela ruchu, mniej ruchu = 0 animacji.`);
