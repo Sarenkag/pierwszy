@@ -292,7 +292,20 @@ window.OEST_PPM = {
     else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r;
       if (CL(r)) P._done(t.id, r.period, true); else if (CL(was)) P._done(t.id, was.period, false); }
     try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {}
+    if (patch !== null) P.setUnstarted(t, null); // każdy ustawiony etap kończy ręczne „Nie rozpoczęta”
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
+  };
+  // ręczne „Nie rozpoczęta” (Grzegorz 07/11/2026: „co update wracają, że są w trakcie”): samo otwarcie inspekcji
+  // i wczytanie zapisanych zdjęć/odpowiedzi nie zmienia go na „W trakcie”. Zapamiętane liczniki z chwili ustawienia;
+  // dopiero inna liczba zdjęć/odpowiedzi (nowe zdjęcie, zmiana odpowiedzi) = W trakcie. Szkic i zdjęcia zostają bez zmian.
+  // localStorage "oest.ppm.unstarted" = { id: { photos, sheet, used, ok } }
+  var UK = "oest.ppm.unstarted";
+  function unstartedAll() { try { return JSON.parse(localStorage.getItem(UK) || "{}") || {}; } catch (e) { return {}; } }
+  P.unstarted = function (t) { return unstartedAll()[t.id] || null; };
+  P.setUnstarted = function (t, counts) {
+    var a = unstartedAll(); if (!counts && !a[t.id]) return;
+    if (counts) a[t.id] = { photos: counts.photos || 0, sheet: counts.sheet || 0, used: counts.used || 0, ok: counts.ok || 0 }; else delete a[t.id];
+    try { localStorage.setItem(UK, JSON.stringify(a)); } catch (e) {}
   };
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
