@@ -37,7 +37,7 @@
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
 .wrap {
   max-width: 560px; margin: 0 auto; min-height: 100vh;
-  padding: max(14px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  padding: max(14px, var(--oest-gora,env(safe-area-inset-top,0px))) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
   display: flex; flex-direction: column; gap: 14px;
 }
 [hidden] { display: none !important; }
@@ -109,6 +109,10 @@ input[type=text], input[type=email], input[type=date], select {
 .day.on { border-color: var(--accent); }
 .day.today small { color: var(--accent); }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+/* B2 (Grzegorz 07/11/2026, wariant A): filtry Inspekcji w jednym rzędzie przewijanym w bok, jak pasek dni – PL/EN nie zmienia wysokości, lista nie skacze */
+#ppmChips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+#ppmChips::-webkit-scrollbar { display: none; }
+#ppmChips .chip { flex: none; white-space: nowrap; }
 .chip { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
@@ -248,6 +252,7 @@ input[type=text], input[type=email], input[type=date], select {
 <!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
+<script src="moduly/pasek-dni/pasek-dni.js"></script>
 <script src="moduly/klocek/klocek.js"></script>
 <script src="moduly/kafelek/kafelek.js"></script>
 <script src="moduly/przelacznik/przelacznik.js"></script>
@@ -533,7 +538,7 @@ input[type=text], input[type=email], input[type=date], select {
       st.mail === "sent" ? '<span class="ksend c2">' + T("📤 Raport wysłany", "📤 Report sent") + '</span>' : st.mail === "queued" ? '<span class="ksend c4">' + T("⏳ Raport w kolejce", "⏳ Report queued") + '</span>' : ""; // „Wyślij” przy otwartej inspekcji (04/11)
     var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
     var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.next || r.due)
-      : "<b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + T(" dni temu", " days ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + T(" dni", " days") : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
+      : "<b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " " + T(P.dni(r.left)[0] + " temu", P.dni(r.left)[1] + " ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + " " + T(P.dni(r.left)[0], P.dni(r.left)[1]) : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
     // dolny wiersz (makieta Grzegorza 04/11): termin · raport · zdjęcia · punkty OK / pytania
     var foot = t.form === "folder" ? T("zdjęcia kartki → PDF", "form photos → PDF") : t.cfg && !st ? T("formularz do konfiguracji", "form to configure") : "";
     // co inspekcja wymaga (ustawiane w inspekcji): niewymagane = szara, przygaszona ikonka
@@ -552,29 +557,40 @@ input[type=text], input[type=email], input[type=date], select {
     });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
-  function renderPpm() {
+  // wiersze listy Inspekcji: termin i dzień w pasku (Gotowa zostaje w swoim dniu, zaległe na dziś)
+  function ppmRows() {
     var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    var rows = P.tasks.map(function (t) {
+    return P.tasks.map(function (t) {
       var due = P.due(t), next = due, st = P.stage && P.stage(t);
       // Gotowa (04/11): klocek zostaje w swoim dniu, zielony; następny termin pokaże się dopiero, gdy ten minie
       if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
       var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
     });
-    // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień
-    var count = {}, doneN = {};
-    rows.forEach(function (r) { if (!r.day) return; count[r.day] = (count[r.day] || 0) + 1; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) doneN[r.day] = (doneN[r.day] || 0) + 1; });
-    var html = "";
-    for (var i = 0; i < 14; i++) {
-      var d = new Date(today); d.setDate(d.getDate() + i);
-      var k = P.iso(d), n = count[k] || 0;
-      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? T("Dziś", "Today") : dayName(d.getDay())) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n ? (doneN[k] || 0) + "/" + n : "") + "</i></button>";
-    }
+  }
+  // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień – ten sam na głównej i w Inspekcjach
+  function ppmDayCounts(rows) {
+    var out = {};
+    rows.forEach(function (r) { if (!r.day) return; var c = out[r.day] = out[r.day] || { done: 0, all: 0 }; c.all++; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) c.done++; });
+    return out;
+  }
+  // jeden pasek dni (moduly/pasek-dni, Grzegorz 07/11): wczoraj + 13 dni, dni pracy z grafiku, pogoda z ekranu głównego
+  function dayStrip(selected, counts) {
+    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    var s = new Date(t); s.setDate(s.getDate() - 1);
+    return window.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: dayName, selected: selected,
+      isWork: calShift, counter: function (k) { return counts[k] || null; }, icon: function (k) { return window.OESTHome && window.OESTHome.wxDay ? window.OESTHome.wxDay(k) : ""; } });
+  }
+  function renderPpm() {
+    var rows = ppmRows(), html = dayStrip(ppmDay, ppmDayCounts(rows));
+    // przebudowa paska nie przewija go z powrotem na początek (stuknięcie dnia/filtra za krawędzią ekranu)
+    var keepX = { d: $("ppmDays").scrollLeft, c: $("ppmChips").scrollLeft };
     $("ppmDays").innerHTML = html;
     var chips = [{ id: "all", name: T("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: T(g.pl || g.name, g.name) }; }), [{ id: "started", name: T("◐ Rozpoczęte", "◐ Started") }]);
     $("ppmChips").innerHTML = chips.map(function (g) {
       var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
       return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
     }).join("");
+    $("ppmDays").scrollLeft = keepX.d; $("ppmChips").scrollLeft = keepX.c;
     var gs = ppmSel.filter(function (x) { return x !== "started"; }), started = ppmSel.indexOf("started") >= 0;
     var list = rows.filter(function (r) {
       if (gs.length && gs.indexOf(r.t.group) < 0) return false;
@@ -676,9 +692,8 @@ input[type=text], input[type=email], input[type=date], select {
   }
   window.OESTHome.init({
     show: show, dayName: dayName,
-    counts: function () { return ppmCounts().by; },
+    dayCounts: function () { return ppmDayCounts(ppmRows()); },
     inspToday: function () { var c = ppmCounts(); return { today: c.today, late: c.late }; },
-    hasShift: function () { try { return window.OESTSettings.get().schedules.length > 0; } catch (e) { return false; } },
     isWorkday: calShift,
     openDay: function (k) { ppmDay = k; show("ppm"); }
   });
