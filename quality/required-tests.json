@@ -110,7 +110,8 @@
     {
       "file": "app/tests/plynnosc-ui-check.cjs",
       "passMarker": "PLYNNOSC UI PASS",
-      "timeoutSec": 900
+      "timeoutSec": 900,
+      "osobno": true
     },
     {
       "file": "app/tests/questions-ui-check.cjs",
@@ -151,7 +152,8 @@
     {
       "file": "app/tests/zdjecia-szybkosc-ui-check.cjs",
       "passMarker": "ZDJECIA SZYBKOSC UI PASS",
-      "timeoutSec": 900
+      "timeoutSec": 900,
+      "osobno": true
     }
   ],
   "allowedSkips": []

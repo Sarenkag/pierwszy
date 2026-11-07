@@ -106,9 +106,17 @@ jobs:
           if-no-files-found: ignore
 
   g2:
-    name: G2 – testy przeglądarkowe (wszystkie *-ui-check.cjs)
+    # Szybkość (Grzegorz 07/11/2026, „Tak, przyspiesz”): te same testy, ale 3 maszyny naraz.
+    # „wspolne” = wszystkie *-ui-check.cjs bez "osobno" w quality/required-tests.json, po 4 naraz.
+    # Testy mierzące czas ("osobno": true) mają każdy własną maszynę, żeby inne testy nie zaburzały pomiaru.
+    # Nowy test „osobno” trzeba dopisać tutaj – inaczej summarize.cjs da mu NOT RUN i bramka nie przejdzie (nic nie znika po cichu).
+    name: G2 – testy przeglądarkowe (${{ matrix.grupa }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        grupa: [wspolne, plynnosc-ui-check.cjs, zdjecia-szybkosc-ui-check.cjs]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -131,11 +139,11 @@ jobs:
           export OEST_PLAYWRIGHT_PATH="$GITHUB_WORKSPACE/quality/node_modules/playwright-core"
           export OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)"
           "$OEST_BROWSER_PATH" --version
-          node quality/run-gate.cjs --part browser --out quality-results/browser.json --slad "$RUNNER_TEMP/wplyw-slad"
+          node quality/run-gate.cjs --part browser --grupa "${{ matrix.grupa }}" --out "quality-results/browser-${{ matrix.grupa }}.json" --slad "$RUNNER_TEMP/wplyw-slad"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: quality-g2
+          name: quality-g2-${{ strategy.job-index }}
           path: quality-results/
           if-no-files-found: ignore
 

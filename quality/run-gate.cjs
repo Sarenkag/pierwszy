@@ -3,12 +3,20 @@
 // Zasada (QUALITY.md QG-011): tylko PASS jest sukcesem. SKIPPED i NOT RUN blokują, chyba że są w allowedSkips
 // w quality/required-tests.json (dziś pusta lista; dodanie wyjątku wymaga zgody właściciela).
 // Nic tu nie zmienia testów ani ich kryteriów – runner tylko je uruchamia i czyta wynik.
-// Użycie: node quality/run-gate.cjs --part node|browser [--out quality-results/<part>.json] [--only plik] [--slad katalog]
+// Użycie: node quality/run-gate.cjs --part node|browser [--out quality-results/<part>.json] [--only plik] [--slad katalog] [--grupa wspolne|plik]
+// Testy przeglądarkowe idą po kilka naraz (OEST_G2_NARAZ, domyślnie 4 = rdzenie runnera). Testy z "osobno": true w required-tests.json
+// (mierzą czas, np. płynność) zawsze idą same, po grupie wspólnej. --grupa wspolne = tylko testy wspólne, --grupa <plik> = tylko ten test
+// (CI: osobne joby, żeby test mierzący czas miał własną maszynę). Brak któregoś testu w wynikach = NOT RUN w summarize.cjs.
 'use strict';
-const fs = require('node:fs'), path = require('node:path'), { spawnSync } = require('node:child_process');
+const fs = require('node:fs'), path = require('node:path'), { spawnSync, spawn } = require('node:child_process');
+// jak spawnSync, ale bez blokowania – kilka testów naraz; ten sam wynik { status, stdout, stderr, error }
+const spawnAsync = (cmd, args, o) => new Promise(res => { const p = spawn(cmd, args, { cwd: o.cwd, env: o.env }); let out = '', err = '', done = false, error; const fin = r => { if (!done) { done = true; clearTimeout(tm); res(r); } };
+  const tm = setTimeout(() => { error = Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }); p.kill('SIGKILL'); }, o.timeout);
+  p.stdout.on('data', d => { out += d; }); p.stderr.on('data', d => { err += d; }); p.on('error', e => fin({ status: null, stdout: out, stderr: err, error: e })); p.on('close', code => fin({ status: code, stdout: out, stderr: err, error })); });
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
 const ROOT = path.resolve(arg('--root', path.resolve(__dirname, '..'))), APP = path.join(ROOT, 'app'); // --root: tylko do testów samej bramki
-const PART = arg('--part', ''), OUT = arg('--out', ''), ONLY = arg('--only', '');
+const PART = arg('--part', ''), OUT = arg('--out', ''), ONLY = arg('--only', ''), GRUPA = arg('--grupa', ''), NARAZ = Math.max(1, +(process.env.OEST_G2_NARAZ || 4));
+const wGrupie = t => !GRUPA || (GRUPA === 'wspolne' ? !t.osobno : t.file.endsWith('/' + GRUPA));
 const SLAD = arg('--slad', ''); // katalog na ślad wczytanych plików (analiza wpływu, tryb „tylko-raport”)
 if (SLAD) fs.mkdirSync(SLAD, { recursive: true });
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'quality', 'required-tests.json'), 'utf8'));
@@ -67,19 +75,19 @@ function ppmScenarioCheck(out) {
   return { expected: ids.length, checked: ids.filter(id => checked.has(id)).length, missing, reportedSkip, silent: missing.filter(id => !reportedSkip.includes(id)) };
 }
 
-function runBrowser() {
+async function runBrowser() {
   const env = browserEnv();
-  const tests = discover('-ui-check.cjs', manifest.browser).filter(t => !ONLY || t.file.endsWith(ONLY));
+  const tests = discover('-ui-check.cjs', manifest.browser).filter(t => (!ONLY || t.file.endsWith(ONLY)) && wGrupie(t));
   if (!fs.existsSync(path.join(APP, 'www', 'inspekcje', 'index.html'))) {
     for (const t of tests) record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Brak zbudowanej strony app/www/inspekcje (npm run copy-web nie został wykonany).' });
     return;
   }
-  for (const t of tests) {
+  const one = async t => {
     const abs = path.join(ROOT, t.file), t0 = Date.now();
-    if (!fs.existsSync(abs)) { record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Plik testu nie istnieje (usunięty lub przeniesiony).' }); continue; }
+    if (!fs.existsSync(abs)) { record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Plik testu nie istnieje (usunięty lub przeniesiony).' }); return; }
     // ślad wczytanych plików dla analizy wpływu (quality/wplyw-slad.cjs) – tylko zapis, test działa tak samo
     const slad = SLAD ? path.join(SLAD, path.basename(t.file) + '.json') : '';
-    const p = spawnSync(process.execPath, [...(slad ? ['-r', path.join(__dirname, 'wplyw-slad.cjs')] : []), abs], { cwd: APP, env: slad ? { ...env, OEST_WPLYW_PLIK: slad, OEST_WPLYW_WWW: path.join(APP, 'www') } : env, encoding: 'utf8', timeout: (t.timeoutSec || 900) * 1000, maxBuffer: 64 << 20 });
+    const p = await spawnAsync(process.execPath, [...(slad ? ['-r', path.join(__dirname, 'wplyw-slad.cjs')] : []), abs], { cwd: APP, env: slad ? { ...env, OEST_WPLYW_PLIK: slad, OEST_WPLYW_WWW: path.join(APP, 'www') } : env, timeout: (t.timeoutSec || 900) * 1000 });
     let wczytane; if (slad) try { wczytane = JSON.parse(fs.readFileSync(slad, 'utf8')); } catch {}
     const out = (p.stdout || '') + (p.stderr || ''), seconds = +((Date.now() - t0) / 1000).toFixed(1);
     let status, detail = '', scenarios;
@@ -97,7 +105,12 @@ function runBrowser() {
     }
     if (t.unregistered) detail = (detail ? detail + ' | ' : '') + 'Test spoza listy quality/required-tests.json – dopisz go do listy.';
     record({ id: t.file, kind: 'browser', status, seconds, detail, ...(scenarios ? { scenarios } : {}), ...(wczytane ? { wczytane } : {}) });
-  }
+  };
+  // najpierw wspólne po NARAZ naraz (najdłuższe na początek wg kolejności listy), potem każdy „osobno” sam
+  const kolejka = tests.filter(t => !t.osobno);
+  await Promise.all(Array.from({ length: NARAZ }, async () => { while (kolejka.length) await one(kolejka.shift()); }));
+  for (const t of tests.filter(t => t.osobno)) await one(t);
+  const kol = id => tests.findIndex(t => t.file === id); results.sort((a, b) => kol(a.id) - kol(b.id));
 }
 
 function runLang() {
@@ -106,13 +119,15 @@ function runLang() {
   record({ id: 'app/scripts/check-lang.js', kind: 'lang', status: p.error ? 'NOT RUN' : p.status === 0 ? 'PASS' : 'FAIL', seconds: +((Date.now() - t0) / 1000).toFixed(1), detail: tail(out, 15) });
 }
 
+(async () => {
 const started = new Date().toISOString();
-if (PART === 'node') runNode(); else if (PART === 'lang') runLang(); else runBrowser();
-for (const t of PART === 'lang' ? [] : manifest[PART]) if (ONLY && !t.file.endsWith(ONLY)) continue; else if (!results.some(r => r.id === t.file)) record({ id: t.file, kind: PART, status: 'NOT RUN', seconds: 0, detail: 'Test z listy obowiązkowej nie został uruchomiony.' });
+if (PART === 'node') runNode(); else if (PART === 'lang') runLang(); else await runBrowser();
+for (const t of PART === 'lang' ? [] : manifest[PART]) if ((ONLY && !t.file.endsWith(ONLY)) || (PART === 'browser' && !wGrupie(t))) continue; else if (!results.some(r => r.id === t.file)) record({ id: t.file, kind: PART, status: 'NOT RUN', seconds: 0, detail: 'Test z listy obowiązkowej nie został uruchomiony.' });
 const tally = s => results.filter(r => r.status === s).length;
-const summary = { part: PART, started, finished: new Date().toISOString(), node: process.version, sha: process.env.GITHUB_SHA || '', counts: { PASS: tally('PASS'), FAIL: tally('FAIL'), SKIPPED: tally('SKIPPED'), 'NOT RUN': tally('NOT RUN') }, status: results.every(r => r.status === 'PASS') && results.length ? 'PASS' : 'FAIL', results };
+const summary = { part: PART, ...(GRUPA ? { grupa: GRUPA } : {}), started, finished: new Date().toISOString(), node: process.version, sha: process.env.GITHUB_SHA || '', counts: { PASS: tally('PASS'), FAIL: tally('FAIL'), SKIPPED: tally('SKIPPED'), 'NOT RUN': tally('NOT RUN') }, status: results.every(r => r.status === 'PASS') && results.length ? 'PASS' : 'FAIL', results };
 if (PART === 'lang') summary.detail = results[0].detail;
 if (OUT) { fs.mkdirSync(path.dirname(path.resolve(OUT)), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(summary, null, 2)); }
 console.log(`\n${PART}: ${JSON.stringify(summary.counts)} → ${summary.status}`);
 for (const r of results) if (r.status !== 'PASS') console.log(`::error title=${r.status}: ${path.basename(r.id)}::${(r.detail || '').replace(/\r?\n/g, '%0A')}`);
 process.exitCode = summary.status === 'PASS' ? 0 : 1;
+})();

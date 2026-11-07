@@ -2,17 +2,25 @@
 // Zbiera wyniki części bramki (quality-results/*.json + stany jobów) w jeden raport PASS/FAIL/SKIPPED/NOT RUN.
 // Wynik: Markdown na standardowe wyjście (w CI trafia do podsumowania joba) i kod wyjścia 1, jeśli cokolwiek nie jest PASS.
 // Brak pliku wyników danej części = NOT RUN (np. job anulowany lub przerwany przed zapisem).
-// Użycie: NEEDS='${{ toJSON(needs) }}' node quality/summarize.cjs quality-results
+// Użycie: NEEDS='${{ toJSON(needs) }}' node quality/summarize.cjs quality-results [lista-testów.json]
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
 const dir = path.resolve(process.argv[2] || 'quality-results');
 const read = f => { const p = path.join(dir, f); try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; } };
 let needs = {}; try { needs = JSON.parse(process.env.NEEDS || '{}'); } catch {}
-const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'required-tests.json'), 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(process.argv[3] ? path.resolve(process.argv[3]) : path.join(__dirname, 'required-tests.json'), 'utf8')); // 2. argument: tylko testy samej bramki
 const esc = s => String(s || '').replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
 const rows = [], md = [];
 
-const node = read('node.json'), browser = read('browser.json'), g1 = read('architecture.json'), ratchet = read('ratchet.json'), lang = read('lang.json');
+// G2 może przyjść w kilku częściach (browser.json albo browser-<grupa>.json z osobnych jobów) – łączę je w jedną;
+// test z listy obowiązkowej, którego nie ma w żadnej części, dostaje NOT RUN (żaden nie znika po cichu).
+const browserParts = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /^browser(-.+)?\.json$/.test(f)).sort().map(read).filter(Boolean) : [];
+const browser = browserParts.length ? (() => {
+  const results = browserParts.flatMap(b => b.results), have = new Set(results.map(r => r.id));
+  for (const t of manifest.browser) if (!have.has(t.file)) results.push({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Brak wyniku tego testu w żadnej części G2 (job nie doszedł do testów albo test nie jest przypisany do żadnej grupy w workflow).' });
+  return { results };
+})() : null;
+const node = read('node.json'), g1 = read('architecture.json'), ratchet = read('ratchet.json'), lang = read('lang.json');
 const part = (data, kind) => {
   if (data) for (const r of data.results) rows.push({ gate: kind === 'node' ? 'G0' : 'G2', id: r.id, status: r.status, detail: r.detail || '', seconds: r.seconds, counts: r.counts });
   else for (const t of manifest[kind]) rows.push({ gate: kind === 'node' ? 'G0' : 'G2', id: t.file, status: 'NOT RUN', detail: 'Brak wyników tej części (job nie doszedł do testów).' });

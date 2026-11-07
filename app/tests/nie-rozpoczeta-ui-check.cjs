@@ -3,6 +3,7 @@
 // Scenariusz Grzegorza na prawdziwych stronach apki (app/www po npm run copy-web), ten sam origin = te same dane co w telefonie:
 // inspekcja z danymi → ręcznie „Nie rozpoczęta” → restart apki (jak po aktualizacji) → lista → otwarcie → restart → otwarcie.
 // Wymagane: status zostaje „Nie rozpoczęta”, zdjęcia i odpowiedzi zostają (nic nie ginie); dopiero nowe zdjęcie = „W trakcie”.
+// Szybkość (Grzegorz 07/11/2026): 4 przypadki idą naraz, każdy w osobnym kontekście przeglądarki (osobne dane), kroki i czekania bez zmian.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/nie-rozpoczeta-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
@@ -24,7 +25,7 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
   const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
-    for (const C of CASES) {
+    await Promise.all(CASES.map(async C => {
       const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, serviceWorkers: 'block' });
       await ctx.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' })); });
       const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(C.id + ': ' + e.message));
@@ -87,7 +88,7 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
       await pg.setInputFiles('#galIn', { name: 'nowe.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1200);
       check(await stage() === 'prog', C.id + ': nowe zdjęcie nie zmieniło statusu na „W trakcie” (' + await stage() + ')');
       await ctx.close();
-    }
+    }));
     // bez zmian: nietknięta inspekcja po otwarciu = „W trakcie” (zasada z 02/11)
     { const ctx = await browser.newContext({ serviceWorkers: 'block' }), pg = await ctx.newPage();
       await pg.goto(B + '/inspekcje/index.html#ppm=EFA-INS-015'); await pg.waitForTimeout(2000);
