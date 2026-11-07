@@ -121,3 +121,15 @@ test('jedna lista osób i działów: bez e-maila, ręcznie, import nie wyłącza
   assert.throws(()=>store.removeEntry('people/1'),/CONTACT_INVALID/);
   assert.throws(()=>store.addEntry('person','  '),/CONTACT_INVALID/);
 });
+
+test('ręczny wpis nie reaktywuje kontaktu Google zdjętego z etykiety',()=>{
+  const {store}=fixture();
+  store.importContacts('contactGroups/a',[{id:'people/9',first:'Boss',last:'',email:'boss@example.com'}]);
+  store.update(s=>{s.mail.managerId='people/9';});
+  store.importContacts('contactGroups/a',[]);
+  assert.equal(store.recipients('handover').length,0);
+  store.addEntry('person','Boss');
+  assert.equal(store.recipients('handover').length,0);
+  const m=store.get().contacts.find(c=>c.id.startsWith('manual:'));
+  assert.ok(m);store.removeEntry(m.id);
+});

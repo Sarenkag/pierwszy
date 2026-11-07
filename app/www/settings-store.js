@@ -121,7 +121,7 @@
     function nameOf(c){return [c.first,c.last].filter(Boolean).join(' ').trim()||c.email;}
     function people(){var s=get(),out={people:[],departments:[]};s.contacts.forEach(function(c){if(!c.active)return;var n=nameOf(c);if(!n)return;var list=c.kind==='department'?out.departments:out.people;if(list.indexOf(n)<0)list.push(n);});return out;}
     function addEntry(kind,name){name=String(name||'').trim().slice(0,120);if(!name)fail('CONTACT_INVALID');if(['person','department'].indexOf(kind)<0)fail('CONTACT_INVALID');
-      return update(function(s){var same=s.contacts.find(function(c){return (c.kind||'person')===kind&&nameOf(c).toLowerCase()===name.toLowerCase();});
+      return update(function(s){var same=s.contacts.find(function(c){return !c.labelId&&(c.kind||'person')===kind&&nameOf(c).toLowerCase()===name.toLowerCase();}); // tylko wpisy ręczne; nie budzimy kontaktów z importu Google
         if(same){same.active=true;return;}
         s.contacts.push({id:'manual:'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),first:name,last:'',email:'',position:'',role:'other',labelId:'',active:true,kind:kind});});}
     function removeEntry(id){return update(function(s){var i=s.contacts.findIndex(function(c){return c.id===id&&!c.labelId;});if(i<0)fail('CONTACT_INVALID');s.contacts.splice(i,1);});}
