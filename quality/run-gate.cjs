@@ -3,12 +3,14 @@
 // Zasada (QUALITY.md QG-011): tylko PASS jest sukcesem. SKIPPED i NOT RUN blokują, chyba że są w allowedSkips
 // w quality/required-tests.json (dziś pusta lista; dodanie wyjątku wymaga zgody właściciela).
 // Nic tu nie zmienia testów ani ich kryteriów – runner tylko je uruchamia i czyta wynik.
-// Użycie: node quality/run-gate.cjs --part node|browser [--out quality-results/<part>.json] [--only plik]
+// Użycie: node quality/run-gate.cjs --part node|browser [--out quality-results/<part>.json] [--only plik] [--slad katalog]
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), { spawnSync } = require('node:child_process');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
 const ROOT = path.resolve(arg('--root', path.resolve(__dirname, '..'))), APP = path.join(ROOT, 'app'); // --root: tylko do testów samej bramki
 const PART = arg('--part', ''), OUT = arg('--out', ''), ONLY = arg('--only', '');
+const SLAD = arg('--slad', ''); // katalog na ślad wczytanych plików (analiza wpływu, tryb „tylko-raport”)
+if (SLAD) fs.mkdirSync(SLAD, { recursive: true });
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'quality', 'required-tests.json'), 'utf8'));
 const allowed = new Set((manifest.allowedSkips || []).map(s => s.id));
 if (!['node', 'browser', 'lang'].includes(PART)) { console.error('Podaj --part node, browser albo lang'); process.exit(2); }
@@ -75,7 +77,10 @@ function runBrowser() {
   for (const t of tests) {
     const abs = path.join(ROOT, t.file), t0 = Date.now();
     if (!fs.existsSync(abs)) { record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Plik testu nie istnieje (usunięty lub przeniesiony).' }); continue; }
-    const p = spawnSync(process.execPath, [abs], { cwd: APP, env, encoding: 'utf8', timeout: (t.timeoutSec || 900) * 1000, maxBuffer: 64 << 20 });
+    // ślad wczytanych plików dla analizy wpływu (quality/wplyw-slad.cjs) – tylko zapis, test działa tak samo
+    const slad = SLAD ? path.join(SLAD, path.basename(t.file) + '.json') : '';
+    const p = spawnSync(process.execPath, [...(slad ? ['-r', path.join(__dirname, 'wplyw-slad.cjs')] : []), abs], { cwd: APP, env: slad ? { ...env, OEST_WPLYW_PLIK: slad, OEST_WPLYW_WWW: path.join(APP, 'www') } : env, encoding: 'utf8', timeout: (t.timeoutSec || 900) * 1000, maxBuffer: 64 << 20 });
+    let wczytane; if (slad) try { wczytane = JSON.parse(fs.readFileSync(slad, 'utf8')); } catch {}
     const out = (p.stdout || '') + (p.stderr || ''), seconds = +((Date.now() - t0) / 1000).toFixed(1);
     let status, detail = '', scenarios;
     if (p.error && p.error.code === 'ETIMEDOUT') { status = 'FAIL'; detail = `Przekroczony czas ${t.timeoutSec || 900}s.\n` + tail(out); }
@@ -91,7 +96,7 @@ function runBrowser() {
       }
     }
     if (t.unregistered) detail = (detail ? detail + ' | ' : '') + 'Test spoza listy quality/required-tests.json – dopisz go do listy.';
-    record({ id: t.file, kind: 'browser', status, seconds, detail, ...(scenarios ? { scenarios } : {}) });
+    record({ id: t.file, kind: 'browser', status, seconds, detail, ...(scenarios ? { scenarios } : {}), ...(wczytane ? { wczytane } : {}) });
   }
 }
 
