@@ -53,7 +53,7 @@
     ".oest-st{display:inline-block;flex:none;box-sizing:border-box;width:var(--oest-st-w,98px);padding:5px 6px;border-radius:999px;border:1px solid currentColor;" +
     "background:color-mix(in srgb,currentColor 16%,transparent);font:700 12px/1 var(--font-body,system-ui);letter-spacing:0;text-align:center;white-space:nowrap;overflow:hidden;" +
     "box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,0,0,.35),0 3px 6px rgba(0,0,0,.45);text-shadow:0 1px 1px rgba(0,0,0,.4)}" +
-    ".oest-st.zalegla{color:#ff7b72}.oest-st.nierozpoczeta{color:#c3c9e8}.oest-st.wtrakcie{color:#f0c75e}.oest-st.wstrzymana{color:#79b8ff}.oest-st.gotowa{color:#5fd6a0}" +
+    ".oest-st.zalegla{color:#ef3b36}.oest-st.nierozpoczeta{color:#c3c9e8}.oest-st.wtrakcie{color:#f0c75e}.oest-st.wstrzymana{color:#79b8ff}.oest-st.gotowa{color:#00d84a}" +
     // mniej ruchu: także ikonki formularza (.oest-rp) – wcześniej pominięte (07/11/2026)
     "@media (prefers-reduced-motion:reduce){:is(" + N + ",.oest-rp svg){animation:none}}:root[data-settings-motion=reduce] :is(" + N + ",.oest-rp svg){animation:none}";
   function css() {

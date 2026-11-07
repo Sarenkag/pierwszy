@@ -14,11 +14,11 @@ const server = http.createServer((req, res) => {
 });
 // zatwierdzone wartości (README modułu) – zmiana wymaga zgody Grzegorza
 const TRYBY = {
-  zalegla: { pl: 'Zaległa', en: 'Overdue', kolor: 'rgb(255, 123, 114)' },
+  zalegla: { pl: 'Zaległa', en: 'Overdue', kolor: 'rgb(239, 59, 54)' },
   nierozpoczeta: { pl: '– – – –', en: '– – – –', kolor: 'rgb(195, 201, 232)' },
   wtrakcie: { pl: 'W trakcie', en: 'In progress', kolor: 'rgb(240, 199, 94)' },
   wstrzymana: { pl: 'Wstrzymana', en: 'On hold', kolor: 'rgb(121, 184, 255)' },
-  gotowa: { pl: 'Gotowa', en: 'Ready', kolor: 'rgb(95, 214, 160)' }
+  gotowa: { pl: 'Gotowa', en: 'Ready', kolor: 'rgb(0, 216, 74)' }
 };
 const SZEROKOSC = 98;
 const fails = [], R = {};

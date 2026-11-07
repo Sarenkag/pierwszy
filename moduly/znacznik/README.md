@@ -29,11 +29,11 @@ Zmienia się tylko kolor i napis. Nie nadpisywać tych wartości na ekranach –
 
 | Tryb | PL | EN | Kolor |
 |---|---|---|---|
-| `zalegla` | Zaległa | Overdue | czerwony #ff7b72 |
+| `zalegla` | Zaległa | Overdue | czerwony #ef3b36 |
 | `nierozpoczeta` | – – – – | – – – – | szary #c3c9e8 |
 | `wtrakcie` | W trakcie | In progress | żółty #f0c75e |
 | `wstrzymana` | Wstrzymana | On hold | niebieski #79b8ff |
-| `gotowa` | Gotowa | Ready | zielony #5fd6a0 |
+| `gotowa` | Gotowa | Ready | zielony #00d84a |
 
 Kolory to te same, które już są w klocku (moduly/klocek, TONE). PL/EN: ta sama szerokość, nic nie skacze.
 Test: `app/tests/pigulka-statusu-ui-check.cjs` (wymagany w Quality Gate).
