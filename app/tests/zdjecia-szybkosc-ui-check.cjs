@@ -37,6 +37,8 @@ async function run(browser, url, worker) {
     if (!w) delete window.OffscreenCanvas; // stary WebView bez OffscreenCanvas → zapas w głównym wątku
     window.__dec = 0; const cib = window.createImageBitmap; window.createImageBitmap = function () { window.__dec++; return cib.apply(this, arguments); };
     window.__lt = 0; window.__on = false;
+    // kodowanie JPEG dużego płótna w głównym wątku (to właśnie blokuje ekran); miniatury < 0,3 MP się nie liczą
+    window.__enc = 0; const tb = HTMLCanvasElement.prototype.toBlob; HTMLCanvasElement.prototype.toBlob = function () { if (window.__on && this.width * this.height >= 300000) window.__enc++; return tb.apply(this, arguments); };
     try { new PerformanceObserver(l => { if (window.__on) for (const e of l.getEntries()) window.__lt += e.duration; }).observe({ type: 'longtask' }); } catch (_) {}
   }, worker);
   await pg.goto(url + 'inspekcje/index.html#ppm=EFA-INS-026'); await pg.waitForTimeout(2000);
@@ -53,7 +55,7 @@ async function run(browser, url, worker) {
   for (let i = 0; i < GENERAL; i++) { await pg.click('#camIn'); await pg.waitForFunction(n => document.querySelectorAll('#photos .thumb').length >= n, i + 1, { timeout: 120000 }); }
   await pg.click('#shCamIn'); await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos .thumb').length >= 1, null, { timeout: 120000 });
   const addMs = Date.now() - t0;
-  const r = await pg.evaluate(() => { window.__on = false; return { lt: window.__lt, dec: window.__dec, via: window.OESTZdjecia.compressedIn() }; });
+  const r = await pg.evaluate(() => { window.__on = false; return { lt: window.__lt, enc: window.__enc, dec: window.__dec, via: window.OESTZdjecia.compressedIn() }; });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   r.addMs = addMs;
   r.saved = (await pg.evaluate(() => window.OESTZdjecia.list())).sort((a, b) => a.saved < b.saved ? -1 : 1).map(x => ({ kind: x.kind, w: x.width, h: x.height, size: x.size }));
@@ -147,10 +149,13 @@ async function editorCheck(browser, url) {
       assert.ok(Math.abs(s.size - m.size) <= Math.max(2048, m.size * 0.03), 'rozmiar zdjęcia ' + i + ': ' + s.size + ' vs ' + m.size);
     });
     const dims = [...new Set(W.saved.map(s => s.kind + ' ' + Math.max(s.w, s.h) + ' px'))].join(', ');
-    assert.ok(W.lt < M.lt * 0.6, 'Worker ma krócej blokować ekran: ' + Math.round(W.lt) + ' ms vs ' + Math.round(M.lt) + ' ms');
+    // Blokada ekranu: twardo sprawdzamy przyczynę, nie czas. Pomiar long tasks pod CDP throttle bywa na CI losowy
+    // (PR #88: raz 157/222 ms, raz 0/0 ms), więc czas tylko raportujemy. Worker = zero kodowań dużych zdjęć w głównym wątku.
+    assert.equal(W.enc, 0, 'Worker: duże zdjęcia nie mogą być kodowane w głównym wątku (' + W.enc + ')');
+    assert.ok(M.enc >= M.saved.length, 'bez Workera każde zdjęcie kodowane w głównym wątku (' + M.enc + '/' + M.saved.length + ')');
     const kb = W.files.map(f => f.name + ' ' + Math.round(f.size / 1024) + ' KB').join(', ');
     console.log('ZDJECIA SZYBKOSC UI PASS: Flushing TB ' + W.taps + ' kranów + ' + GENERAL + ' ogólne + kartka (' + W.saved.length + ' zdjęć 12 MP, ' + dims + '). ' +
-      'Blokada ekranu przy dodawaniu (CPU 4×): Worker ' + Math.round(W.lt) + ' ms, główny wątek ' + Math.round(M.lt) + ' ms; czas dodawania ' + W.addMs + ' / ' + M.addMs + ' ms. ' +
+      'Kodowania dużych zdjęć w głównym wątku: Worker ' + W.enc + ', bez Workera ' + M.enc + '. Blokada ekranu przy dodawaniu (CPU 4×, tylko informacja): Worker ' + Math.round(W.lt) + ' ms, główny wątek ' + Math.round(M.lt) + ' ms; czas dodawania ' + W.addMs + ' / ' + M.addMs + ' ms. ' +
       'Edytor 12 MP → ' + E.max.w + '×' + E.max.h + ' (' + Math.round(E.max.size / 1024) + ' KB, ' + E.max.ms + ' ms) zamiast ' + E.pelne.w + '×' + E.pelne.h + ' (' + Math.round(E.pelne.size / 1024) + ' KB, ' + E.pelne.ms + ' ms), różnica obrazu ' + E.diff.max + '/' + E.diff.maxKadr + '. ' +
       'Wyślij: 1. raz ' + W.decFirst + ' zmniejszeń, 2. raz ' + W.decSecond + '. Kolejka: ' + kb);
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
