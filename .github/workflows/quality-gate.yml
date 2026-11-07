@@ -8,6 +8,10 @@ on:
   pull_request:
   push:
     branches: [main]
+    # Bez dublowania (Grzegorz 07/11/2026): gdy KAŻDY zmieniony plik jest w ścieżkach Android APK, bramkę na tym samym SHA
+    # uruchamia android.yml (job gate, workflow_call) przed wydaniem. Lista MUSI być identyczna z on.push.paths w android.yml.
+    # Commit zmieniający też coś spoza tej listy uruchamia bramkę tutaj (i ewentualnie drugi raz w android.yml) – żaden nie zostaje bez kontroli.
+    paths-ignore: ["app/**", "inspekcje/**", "moduly/**", ".github/workflows/android.yml"]
   merge_group:
   workflow_dispatch:
   workflow_call: # android.yml: wydanie APK dopiero po zielonej bramce na tym samym SHA (wariant A, Grzegorz 07/11/2026)
