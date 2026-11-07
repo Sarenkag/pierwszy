@@ -1202,7 +1202,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // „Zapisz jako domyślne” = zapamiętane dla tej inspekcji; Wyślij wysyła jednym stuknięciem wg zapisanych ustawień.
   function sendParts() { // co ta inspekcja w ogóle ma do wysłania (reszta w okienku wyszarzona)
     var F = cur.type && cur.type.flush;
-    return { q: qPossible() || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Nasz raport (pytania)", "Our report (questions)") };
+    return { q: qPossible() || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Pytania w raporcie", "Questions in the report") };
   }
   function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? true : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
   function syncSendHint() {
@@ -2895,6 +2895,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
   function enqueue(r, from) {
     var d = r.data;
+    if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
@@ -2996,6 +2997,10 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   async function queueBtn(b, fromPreview, finish) {
     if (queueing) return;
     lastMailHint = "";
+    // ⚙ bez adresata: nic nie wychodzi (nigdy po cichu „do mnie”, Codex #64)
+    var nS = cur.mode === "one" ? needsNow() : null;
+    if (nS && !nS.xp && !nS.xw) { say(T("Zaznacz w ⚙ obok Wyślij format: PDF albo Word.", "Tick a format in ⚙ next to Send: PDF or Word.")); return; }
+    if (nS && !recipientsFor(nS).list.length) { say(T("Nie zaznaczono, do kogo wysłać (⚙ obok Wyślij) albo zaznaczona osoba nie ma adresu w Ustawieniach.", "No recipient ticked (⚙ next to Send), or the ticked person has no address in Settings.")); return; }
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
     // „Gotowa” to tylko znacznik Grzegorza (04/11): ponowne Wyślij bez pytań; termin się nie przesuwa (fix)
@@ -3118,11 +3123,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   function shareSend(it) {
     var files = [];
-    if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: bytesToB64(it.pdf) });
-    if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: bytesToB64(it.docx) });
-    var to = it.to || myEmail();
+    if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
+    else {
+      if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: bytesToB64(it.pdf) });
+      if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: bytesToB64(it.docx) });
+    }
+    var to = Array.isArray(it.toList) ? it.toList : [it.to || myEmail()].filter(Boolean);
     it.status = "sending"; refresh();
-    return shareApi().share({ subject: it.subject, body: it.body, to: to ? [to] : [], files: files }).then(function () {
+    return shareApi().share({ subject: it.subject, body: it.body, to: to, files: files }).then(function () {
       markSent(it, null); return qPut(it);
     }, function (e) { it.status = "err"; it.err = gErr(e); say(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
   }
