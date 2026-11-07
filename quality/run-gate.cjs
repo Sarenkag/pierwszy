@@ -51,14 +51,18 @@ function browserEnv() {
   return env;
 }
 
-// raport-ui-check: każda inspekcja z listy PPM (app/www/ppm.js) musi być sprawdzona. Pominięta = SKIPPED (QG-002).
+// raport-ui-check: każda inspekcja z FAKTYCZNEJ listy PPM (window.OEST_PPM.tasks w app/www/ppm.js, ten sam odczyt co w teście:
+// app/tests/ppm-lista.cjs) musi być sprawdzona. Komentarze w kodzie się nie liczą. Pominięta = SKIPPED (QG-002).
 function ppmScenarioCheck(out) {
-  const ids = [...new Set((fs.readFileSync(path.join(APP, 'www', 'ppm.js'), 'utf8').match(/EFA-INS-0\d\d/g) || []))].sort();
+  let ids;
+  try { ids = require(path.join(__dirname, '..', 'app', 'tests', 'ppm-lista.cjs')).inspections(path.join(APP, 'www')); }
+  catch (e) { return { expected: 0, checked: 0, missing: ['(lista PPM nieczytelna: ' + e.message + ')'], reportedSkip: [], silent: [] }; }
   const line = (out.match(/^raport-ui-check: .*$/m) || [''])[0];
-  const checked = new Set(((line.split(': ')[2] || '').split('|')[0].match(/EFA-INS-\d{3}/g)) || []);
-  const reportedSkip = ((line.split('|')[1] || '').match(/EFA-INS-\d{3}/g)) || [];
+  const head = line.split(' | ')[0], tailTxt = line.slice(head.length);
+  const checked = new Set((head.split('PDF: ')[1] || '').match(/EFA-INS-\d{3}/g) || []);
+  const reportedSkip = ((tailTxt.match(/pominięte[^|]*/) || [''])[0].match(/EFA-INS-\d{3}/g)) || [];
   const missing = ids.filter(id => !checked.has(id) && !allowed.has('app/tests/raport-ui-check.cjs#' + id));
-  return { expected: ids.length, checked: checked.size, missing, reportedSkip, silent: missing.filter(id => !reportedSkip.includes(id)) };
+  return { expected: ids.length, checked: ids.filter(id => checked.has(id)).length, missing, reportedSkip, silent: missing.filter(id => !reportedSkip.includes(id)) };
 }
 
 function runBrowser() {

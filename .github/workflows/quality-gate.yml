@@ -10,12 +10,14 @@ on:
     branches: [main]
   merge_group:
   workflow_dispatch:
+  workflow_call: # android.yml: wydanie APK dopiero po zielonej bramce na tym samym SHA (wariant A, Grzegorz 07/11/2026)
 
 permissions:
   contents: read
 
 concurrency:
-  group: quality-gate-${{ github.event.pull_request.number || github.ref }}
+  # github.workflow odróżnia samodzielny Quality Gate od wywołania z Android APK (inaczej jeden anulowałby drugi na main)
+  group: quality-gate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

@@ -86,11 +86,13 @@ test('Runner przeglądarkowy: kod 0 bez potwierdzenia PASS = NOT RUN; brak zbudo
 test('Runner: pominięta inspekcja w raport-ui-check = SKIPPED, także gdy test jej nie zgłosił', () => {
   const m = { node: [], browser: [{ file: 'app/tests/raport-ui-check.cjs', passMarker: 'raport-ui-check: ', scenarios: 'ppm-inspections' }], allowedSkips: [] };
   const d = project(m, {
-    'app/www/inspekcje/index.html': '', 'app/www/ppm.js': "['EFA-INS-001','EFA-INS-002','EFA-INS-003']",
+    'app/www/inspekcje/index.html': '',
+    // lista jak w apce; EFA-INS-099 tylko w komentarzu – nie jest zadaniem i nie może być wymagane
+    'app/www/ppm.js': "// EFA-INS-099 usunięte z listy\nwindow.OEST_PPM = { tasks: [ { id: 'EFA-INS-001' }, { id: 'EFA-INS-002' }, { id: 'EFA-INS-003' }, { id: 'db-X' }, { id: 's-y' } ] };",
     'app/tests/raport-ui-check.cjs': "console.log('raport-ui-check: 1 inspekcji, każda ma Word i PDF: EFA-INS-001 | pominięte (wymagają odpowiedzi): EFA-INS-002')"
   });
   const r = gate(d, 'browser'), row = r.json.results[0];
-  assert.equal(row.status, 'SKIPPED'); assert.deepEqual(row.scenarios.missing, ['EFA-INS-002', 'EFA-INS-003']); assert.deepEqual(row.scenarios.silent, ['EFA-INS-003']);
+  assert.equal(row.status, 'SKIPPED'); assert.deepEqual(row.scenarios.missing, ['EFA-INS-002', 'EFA-INS-003']); assert.deepEqual(row.scenarios.silent, ['EFA-INS-003']); assert.equal(row.scenarios.expected, 3, 'tylko EFA-INS z listy zadań, bez komentarzy');
   assert.equal(r.code, 1);
 });
 
