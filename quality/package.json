@@ -1,0 +1,8 @@
+{
+  "name": "oest-quality-gate",
+  "private": true,
+  "description": "Narzędzia Quality Gate OEST (CI). Ta sama wersja Playwright co w android.yml, ale przypięta w package-lock.json.",
+  "devDependencies": {
+    "playwright-core": "1.48.2"
+  }
+}

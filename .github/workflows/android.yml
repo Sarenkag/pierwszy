@@ -3,6 +3,8 @@
 # skąd można go pobrać prosto na telefon.
 # Podpis: sekrety ANDROID_KEYSTORE_B64 i ANDROID_KEYSTORE_PASSWORD (instrukcja: app/README.md).
 # Bez nich powstaje wersja testowa z losowym podpisem (logowanie Google w niej nie zadziała).
+# Wydanie (wariant A, Grzegorz 07/11/2026): APK trafia do Releases TYLKO, gdy w tym samym uruchomieniu i na tym samym SHA
+# przeszedł cały Quality Gate (G0–G2, .github/workflows/quality-gate.yml). Prawo zapisu (contents: write) ma tylko job wydania.
 name: Android APK
 
 on:
@@ -14,11 +16,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  # Quality Gate przed wydaniem: tylko dla push na main (jedyna droga do Releases). PR mają osobny workflow Quality Gate.
+  gate:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    uses: ./.github/workflows/quality-gate.yml
+    permissions:
+      contents: read
+
   apk:
     runs-on: ubuntu-latest
+    outputs:
+      signed: ${{ steps.key.outputs.signed }}
+      sha: ${{ steps.sha.outputs.sha }}
     defaults:
       run:
         working-directory: app
@@ -26,6 +38,10 @@ jobs:
       APP_VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: SHA budowanego kodu
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -90,10 +106,31 @@ jobs:
           name: OEST-apk-${{ github.run_number }}
           path: ${{ runner.temp }}/OEST-*.apk
 
-      - name: Wydanie (Releases)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.key.outputs.signed == 'true'
-        uses: softprops/action-gh-release@v2
+  release:
+    name: Wydanie (Releases) – po zielonym Quality Gate
+    needs: [gate, apk]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.apk.outputs.signed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Quality Gate i APK z tego samego SHA
+        env:
+          GATE: ${{ needs.gate.result }}
+          APK_SHA: ${{ needs.apk.outputs.sha }}
+        run: |
+          echo "Quality Gate: $GATE · APK z $APK_SHA · uruchomienie dla ${GITHUB_SHA}"
+          if [ "$GATE" != "success" ]; then echo "::error title=Wydanie wstrzymane::Quality Gate = $GATE. APK nie trafia do Releases."; exit 1; fi
+          if [ "$APK_SHA" != "$GITHUB_SHA" ]; then echo "::error title=Wydanie wstrzymane::APK zbudowany z $APK_SHA, a bramka sprawdzała $GITHUB_SHA."; exit 1; fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: OEST-apk-${{ github.run_number }}
+          path: apk
+
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-${{ github.run_number }}
           name: OEST ${{ github.run_number }}
-          files: ${{ runner.temp }}/OEST-*.apk
+          target_commitish: ${{ github.sha }}
+          files: apk/OEST-*.apk

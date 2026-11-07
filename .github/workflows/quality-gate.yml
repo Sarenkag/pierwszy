@@ -1,0 +1,144 @@
+# Quality Gate OEST (etap 2) – docs/QUALITY.md, bramki G0–G2.
+# Uruchamia się dla KAŻDEGO PR (bez filtra ścieżek), więc PR z samą dokumentacją też dostaje wynik.
+# Wymagany status do ustawienia w ochronie gałęzi main: „Quality Gate” (job quality-gate poniżej).
+# Każdy test ma wynik PASS / FAIL / SKIPPED / NOT RUN; tylko PASS jest sukcesem. Nie buduje APK – to robi android.yml (bez zmian).
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+  workflow_call: # android.yml: wydanie APK dopiero po zielonej bramce na tym samym SHA (wariant A, Grzegorz 07/11/2026)
+
+permissions:
+  contents: read
+
+concurrency:
+  # github.workflow odróżnia samodzielny Quality Gate od wywołania z Android APK (inaczej jeden anulowałby drugi na main)
+  group: quality-gate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  g0:
+    name: G0 – testy Node i PL/EN
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Zależności apki
+        working-directory: app
+        run: npm ci
+      - name: PL/EN (scripts/check-lang.js)
+        run: node quality/run-gate.cjs --part lang --out quality-results/lang.json
+      - name: Testy Node (wszystkie app/tests/*.test.cjs)
+        if: ${{ !cancelled() }}
+        run: node quality/run-gate.cjs --part node --out quality-results/node.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: quality-g0
+          path: quality-results/
+          if-no-files-found: ignore
+
+  g1:
+    name: G1 – architektura i ochrona kryteriów
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Paczka strony (jak w APK)
+        working-directory: app
+        run: |
+          npm ci
+          npm run copy-web
+      - name: Testy samej bramki (czy kontrole łapią błędy)
+        run: node --test quality/tests/*.test.cjs
+      - name: Zależności modułów i kolejność skryptów
+        if: ${{ !cancelled() }}
+        run: node quality/check-architecture.cjs --json quality-results/architecture.json
+      - name: Ochrona kryteriów (lista testów i baseline mogą tylko maleć)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          mkdir -p quality-results
+          BASE="$BASE_SHA"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin main && BASE=origin/main
+          fi
+          node quality/check-ratchet.cjs --base "$BASE" --json quality-results/ratchet.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: quality-g1
+          path: quality-results/
+          if-no-files-found: ignore
+
+  g2:
+    name: G2 – testy przeglądarkowe (wszystkie *-ui-check.cjs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            quality/package-lock.json
+      - name: Paczka strony (jak w APK)
+        working-directory: app
+        run: |
+          npm ci
+          npm run copy-web
+      - name: Playwright (wersja przypięta w quality/package-lock.json)
+        working-directory: quality
+        run: npm ci
+      - name: Testy przeglądarkowe
+        run: |
+          export OEST_PLAYWRIGHT_PATH="$GITHUB_WORKSPACE/quality/node_modules/playwright-core"
+          export OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)"
+          "$OEST_BROWSER_PATH" --version
+          node quality/run-gate.cjs --part browser --out quality-results/browser.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: quality-g2
+          path: quality-results/
+          if-no-files-found: ignore
+
+  quality-gate:
+    name: Quality Gate
+    needs: [g0, g1, g2]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: quality
+      - uses: actions/download-artifact@v4
+        continue-on-error: true # brak wyników części = NOT RUN w podsumowaniu, nie cichy sukces
+        with:
+          pattern: quality-g*
+          path: quality-results
+          merge-multiple: true
+      - name: Wynik bramki (PASS / FAIL / SKIPPED / NOT RUN)
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: node quality/summarize.cjs quality-results
