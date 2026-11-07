@@ -93,6 +93,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/pasek-dni-ui-check.cjs",
+      "passMarker": "PASEK DNI UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/plynnosc-ui-check.cjs",
       "passMarker": "PLYNNOSC UI PASS",
       "timeoutSec": 900
