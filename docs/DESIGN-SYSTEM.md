@@ -23,7 +23,7 @@
 
 - Nagłówek: **One Eastside** bez „Tower”; pod nim data i pogoda, przełącznik języka, powiadomienia, czytelne wskaźniki Wi-Fi i Google Drive.
 - Pogoda: kliknięcie otwiera 7-dniowy pop-up, który nie przesuwa strony i zamyka się przewidywalnie.
-- Kalendarz: pasek dni zgodny z zatwierdzonym widokiem (w audycie wskazany wariant 14-dniowy, PR #56 — do potwierdzenia na bieżącym UI), dzień bieżący ma być wyraźnie zaznaczony; nie wymuszaj nowego wyśrodkowania przed porównaniem z zatwierdzonym frontem. Grafik 4 on/4 off pochodzi z edytowalnego profilu (dni pracy przyciemnione); małe ikony pogody, liczba inspekcji.
+- Kalendarz: pasek dni zgodny z zatwierdzonym widokiem (w audycie wskazany wariant 14-dniowy, PR #56 — do potwierdzenia na bieżącym UI), dzień bieżący ma być wyraźnie zaznaczony; nie wymuszaj nowego wyśrodkowania przed porównaniem z zatwierdzonym frontem. Grafik 4 on/4 off pochodzi z edytowalnego profilu: dni pracy wyróżnione tym samym fioletowym gradientem co w kalendarzu miesiąca, dni wolne nieprzygaszone (przygaszony tylko dzień miniony) — decyzja Grzegorza 07/11/2026; małe ikony pogody, licznik zrobione/wszystkie. Ekran główny i lista Inspekcji używają jednego modułu `moduly/pasek-dni`.
 - Główne kafelki: wyśrodkowane, oszczędny tekst, te same ikony i gradienty co zatwierdzony ekran; lekka reakcja wciśnięcia.
 - Kafelek inspekcji: nazwa, status, etap, grupa, miejsce, termin/dni do końca, znacznik wykonania, opcjonalnie procent bez paska postępu. Zmienia wygląd naturalnie wraz z realnym stanem.
 - Ekran szczegółów: bez paska postępu; procent jako tekst; stałe ikony bez ramek: formularz, obraz, checkbox; zielone kółko OK i czerwone kółko X; stała geometria dla 1/99, 01/99 i liczb zdjęć.

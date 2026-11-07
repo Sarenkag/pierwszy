@@ -8,7 +8,7 @@ Automatyczna bramka jakości według `docs/QUALITY.md` (G0–G2). Workflow: `.gi
 | G1 | zależności modułów i kolejność `<script>` w zbudowanej paczce (`app/www`), baseline zastanych naruszeń | `check-architecture.cjs`, `baselines/architecture.json` |
 | G1 | ochrona kryteriów: lista testów, wyjątki i baseline mogą tylko maleć; usunięcie pliku testu = FAIL | `check-ratchet.cjs`, `required-tests.json` |
 | G1 | testy samej bramki – dowód, że kontrole łapią błędy | `tests/gate.test.cjs` |
-| G2 | wszystkie 10 `app/tests/*-ui-check.cjs` (w tym `plynnosc-ui-check` – B1–B7 z audytu 07/11/2026: pierwszy obraz inspekcji bez internetu, geometria PL/EN, animacje tylko nowych kart, Wstecz, mniej ruchu, tabela ruchu; `pasek-systemowy-ui-check` – czarne tło pod godziną i baterią na każdym ekranie) w Chrome (Playwright przypięty w `package-lock.json`); `raport-ui-check` – każda inspekcja EFA-INS z faktycznej listy `window.OEST_PPM.tasks` (`app/tests/ppm-lista.cjs`), treść Word/PDF przez `app/tests/raport-tresc.cjs` | `run-gate.cjs --part browser` |
+| G2 | wszystkie 11 `app/tests/*-ui-check.cjs` (w tym `pasek-dni-ui-check` – jeden pasek dni z dniami pracy z grafiku, 07/11/2026; `plynnosc-ui-check` – B1–B7 z audytu 07/11/2026: pierwszy obraz inspekcji bez internetu, geometria PL/EN, animacje tylko nowych kart, Wstecz, mniej ruchu, tabela ruchu; `pasek-systemowy-ui-check` – czarne tło pod godziną i baterią na każdym ekranie) w Chrome (Playwright przypięty w `package-lock.json`); `raport-ui-check` – każda inspekcja EFA-INS z faktycznej listy `window.OEST_PPM.tasks` (`app/tests/ppm-lista.cjs`), treść Word/PDF przez `app/tests/raport-tresc.cjs` | `run-gate.cjs --part browser` |
 
 ## Wyniki
 

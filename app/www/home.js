@@ -1,6 +1,6 @@
 /* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”):
  * nagłówek (logo, ONE EASTSIDE, data, pogoda, EN/PL, dzwonek, profil), lampki Wi‑Fi i Dysk,
- * pasek dni (pogoda + liczba zadań, dni wolne z grafiku przyciemnione) i okienka:
+ * pasek dni (moduly/pasek-dni: pogoda, zrobione/wszystkie, dni pracy z grafiku) i okienka:
  * prognoza 7 dni, powiadomienia, Dysk, sieć. Okienka rosną z miejsca stuknięcia i chowają się przez pomniejszenie,
  * także po stuknięciu obok i po systemowym Wstecz (OESTOverlay). Zmiana języka podmienia tylko teksty w miejscu. */
 (function (w) {
@@ -93,17 +93,13 @@
     if (c && c.now) { b.hidden = false; b.querySelector(".i").textContent = wxIcon(c.now.c); b.querySelector(".v").textContent = c.now.temp + "°C"; }
     else b.hidden = true;
   }
+  function wxDay(k) { var c = wxCache(), dd = (c && c.days) || {}; return dd[k] ? wxIcon(dd[k].c) : ""; }
+  // pasek dni: jeden moduł z listą Inspekcji (moduly/pasek-dni, Grzegorz 07/11) – wczoraj + 13 dni, dni pracy z grafiku
   function days() {
-    var t = today(), c = wxCache(), dd = (c && c.days) || {}, cnt = deps.counts(), sh = deps.hasShift(), h = "";
-    for (var i = -1; i < 13; i++) {
-      var x = new Date(t); x.setDate(x.getDate() + i);
-      var k = iso(x), n = cnt[k] || 0, off = sh && !deps.isWorkday(k), wx = dd[k];
-      h += '<button class="day hm-day' + (i === 0 ? " today on" : "") + (off ? " off" : "") + (i < 0 ? " past" : "") + '" type="button" data-hday="' + k + '">' +
-        "<small>" + (i === 0 ? T("Dziś", "Today") : esc(deps.dayName(x.getDay()))) + "</small><b>" + x.getDate() + "</b>" +
-        '<em>' + (wx ? wxIcon(wx.c) : "") + '</em><i class="' + (n ? "n" : "") + '">' + (n || "–") + "</i></button>";
-    }
-    var box = $("hmDays"), sl = box.scrollLeft;
-    box.innerHTML = h;
+    var t = today(), s = new Date(t); s.setDate(s.getDate() - 1);
+    var box = $("hmDays"), sl = box.scrollLeft, cnt = deps.dayCounts();
+    box.innerHTML = w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: deps.dayName,
+      isWork: deps.isWorkday, counter: function (k) { return cnt[k] || null; }, icon: wxDay });
     box.scrollLeft = sl;
   }
   function render() {
@@ -263,7 +259,7 @@
       try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
       catch (e) { try { w.localStorage.setItem("oest.lang", next); w.dispatchEvent(new CustomEvent("oest:lang")); } catch (e2) {} }
     });
-    $("hmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-hday]"); if (b) deps.openDay(b.dataset.hday); });
+    $("hmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (b) deps.openDay(b.dataset.day); });
     $("hmPop").addEventListener("click", function (e) {
       if (e.target.closest("[data-hx]") || !e.target.closest(".hm-card")) { closePop(); return; }
       var g = e.target.closest("[data-hgo]"); if (g) { goFromPop(g.dataset.hgo); return; }
@@ -278,5 +274,5 @@
     if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener("change", function () { lamps(); if (popKind === "net") fillNet(); });
     if (w.OESTZdjecia && w.OESTZdjecia.onChange) w.OESTZdjecia.onChange(function () { photoStats().then(function () { lamps(); badge(); if (popKind === "drive") fillDrive(); }); });
   }
-  w.OESTHome = { init: init, render: render, close: closePop, _wxIcon: wxIcon };
+  w.OESTHome = { init: init, render: render, close: closePop, wxDay: wxDay, _wxIcon: wxIcon };
 })(window);

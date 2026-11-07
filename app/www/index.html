@@ -252,6 +252,7 @@ input[type=text], input[type=email], input[type=date], select {
 <!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
+<script src="moduly/pasek-dni/pasek-dni.js"></script>
 <script src="moduly/klocek/klocek.js"></script>
 <script src="moduly/kafelek/kafelek.js"></script>
 <script src="moduly/przelacznik/przelacznik.js"></script>
@@ -556,23 +557,31 @@ input[type=text], input[type=email], input[type=date], select {
     });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
-  function renderPpm() {
+  // wiersze listy Inspekcji: termin i dzień w pasku (Gotowa zostaje w swoim dniu, zaległe na dziś)
+  function ppmRows() {
     var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    var rows = P.tasks.map(function (t) {
+    return P.tasks.map(function (t) {
       var due = P.due(t), next = due, st = P.stage && P.stage(t);
       // Gotowa (04/11): klocek zostaje w swoim dniu, zielony; następny termin pokaże się dopiero, gdy ten minie
       if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
       var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
     });
-    // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień
-    var count = {}, doneN = {};
-    rows.forEach(function (r) { if (!r.day) return; count[r.day] = (count[r.day] || 0) + 1; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) doneN[r.day] = (doneN[r.day] || 0) + 1; });
-    var html = "";
-    for (var i = 0; i < 14; i++) {
-      var d = new Date(today); d.setDate(d.getDate() + i);
-      var k = P.iso(d), n = count[k] || 0;
-      html += '<button class="day' + (i === 0 ? " today" : "") + (ppmDay === k ? " on" : "") + '" type="button" data-day="' + k + '"><small>' + (i === 0 ? T("Dziś", "Today") : dayName(d.getDay())) + "</small><b>" + d.getDate() + '</b><i class="' + (n ? "n" : "") + '">' + (n ? (doneN[k] || 0) + "/" + n : "") + "</i></button>";
-    }
+  }
+  // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień – ten sam na głównej i w Inspekcjach
+  function ppmDayCounts(rows) {
+    var out = {};
+    rows.forEach(function (r) { if (!r.day) return; var c = out[r.day] = out[r.day] || { done: 0, all: 0 }; c.all++; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) c.done++; });
+    return out;
+  }
+  // jeden pasek dni (moduly/pasek-dni, Grzegorz 07/11): wczoraj + 13 dni, dni pracy z grafiku, pogoda z ekranu głównego
+  function dayStrip(selected, counts) {
+    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    var s = new Date(t); s.setDate(s.getDate() - 1);
+    return window.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: dayName, selected: selected,
+      isWork: calShift, counter: function (k) { return counts[k] || null; }, icon: function (k) { return window.OESTHome && window.OESTHome.wxDay ? window.OESTHome.wxDay(k) : ""; } });
+  }
+  function renderPpm() {
+    var rows = ppmRows(), html = dayStrip(ppmDay, ppmDayCounts(rows));
     // przebudowa paska nie przewija go z powrotem na początek (stuknięcie dnia/filtra za krawędzią ekranu)
     var keepX = { d: $("ppmDays").scrollLeft, c: $("ppmChips").scrollLeft };
     $("ppmDays").innerHTML = html;
@@ -683,9 +692,8 @@ input[type=text], input[type=email], input[type=date], select {
   }
   window.OESTHome.init({
     show: show, dayName: dayName,
-    counts: function () { return ppmCounts().by; },
+    dayCounts: function () { return ppmDayCounts(ppmRows()); },
     inspToday: function () { var c = ppmCounts(); return { today: c.today, late: c.late }; },
-    hasShift: function () { try { return window.OESTSettings.get().schedules.length > 0; } catch (e) { return false; } },
     isWorkday: calShift,
     openDay: function (k) { ppmDay = k; show("ppm"); }
   });
