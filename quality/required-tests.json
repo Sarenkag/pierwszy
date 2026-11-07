@@ -93,6 +93,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/pasek-dni-ui-check.cjs",
+      "passMarker": "PASEK DNI UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/plynnosc-ui-check.cjs",
       "passMarker": "PLYNNOSC UI PASS",
       "timeoutSec": 900
@@ -122,6 +127,11 @@
       "file": "app/tests/settings-ui-check.cjs",
       "passMarker": "UI PASS: ",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/pasek-systemowy-ui-check.cjs",
+      "passMarker": "PASEK SYSTEMOWY UI PASS",
+      "timeoutSec": 300
     }
   ],
   "allowedSkips": []

@@ -20,7 +20,7 @@
 | Aparat | `moduly/aparat`, pluginy Android | przechwytywanie i edycja |
 | Magazyn zdjęć | `moduly/zdjecia` | pojedynczy magazyn, referencje, synchronizacja |
 | Wysyłka | `moduly/wysylka`, `settings-google.js` | Gmail, kolejka, stan |
-| UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
+| UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `pasek-dni`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 
 ### Status integracji i przenośności (stan audytowy, nie certyfikat)
