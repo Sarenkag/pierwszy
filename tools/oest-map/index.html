@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OEST · Mapa połączeń</title>
+<style>
+:root{color-scheme:dark;--bg:#10151b;--panel:#19212b;--line:#34404e;--ink:#ebf1f5;--muted:#a1b0bd;--accent:#4fcea4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,Arial,sans-serif}
+header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{margin:0;font-size:21px}header p{margin:2px 0;color:var(--muted)}
+button,input,select{font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:9px 12px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}button:disabled{opacity:.5;cursor:wait}
+.controls{padding:12px 22px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+input{min-width:220px;flex:1;max-width:380px}select{max-width:200px}
+#status{color:var(--muted)}.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:70vh}
+#mapwrap{overflow:auto;max-height:calc(100vh - 170px);background:radial-gradient(circle at 50% 20%,#203043 0,#10151b 68%)}
+svg{display:block;min-width:100%;min-height:60vh}#detail{padding:18px 20px;border-left:1px solid var(--line);overflow-wrap:anywhere}
+#detail h2{font-size:17px;margin:0 0 10px}#detail p{color:var(--muted)}#detail ul{padding-left:18px}
+#detail li{margin:8px 0}a{color:#86d8e9}small{color:var(--muted)}
+.type{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 5px;margin:3px;color:var(--muted)}
+#error{color:#ff9696;padding:4px 22px}footer{padding:12px 22px;color:var(--muted);border-top:1px solid var(--line)}
+@media(max-width:900px){.layout{display:flex;flex-direction:column}#mapwrap{max-height:60vh}#detail{border-left:none;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header><div><h1>OEST / Mapa połączeń</h1><p>Odczyt na żywo z repozytorium · bez zmian w aplikacji</p></div><span id="revision">GitHub main</span></header>
+<div class="controls">
+<input id="search" type="search" placeholder="Wyszukaj ekran, moduł lub plik…" aria-label="Wyszukaj plik">
+<select id="scope" aria-label="Zakres mapy"><option value="focus">Wybrany + powiązania</option><option value="all">Wszystkie pliki</option></select>
+<button id="reload">Odśwież kod</button><button id="download" disabled>Eksport JSON</button>
+<span id="status">Uruchamiam analizę…</span>
+</div>
+<div id="error" role="alert"></div>
+<div class="layout"><div id="mapwrap"><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa połączeń plików"></svg></div>
+<aside id="detail"><h2>Wybierz element</h2><p>Kliknij węzeł. Zobaczysz odwołania potwierdzone w kodzie i odnośniki do plików GitHub.</p></aside></div>
+<footer>Linia ciągła = statyczny import przez &lt;script&gt; / &lt;link&gt;. Linia przerywana = odwołanie do globalnego API window.OEST*. Zależności dynamiczne, natywne, runtime i synchronizacja danych nie są tutaj potwierdzone. Brak połączenia na mapie nie oznacza braku zależności.</footer>
+<script>
+(function(){
+'use strict';
+const OWNER='Sarenkag', REPO='pierwszy', REF='main';
+const api='https://api.github.com/repos/'+OWNER+'/'+REPO;
+const raw='https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+REF+'/';
+const $=id=>document.getElementById(id);
+const ns='http://www.w3.org/2000/svg';
+let nodes=[],links=[],selected='moduly/zdjecia/zdjecia.js',revision='',failures=[];
+const escPath=p=>p.split('/').map(encodeURIComponent).join('/');
+function svg(tag,props,text){const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(props||{}))e.setAttribute(k,String(v));if(text!=null)e.textContent=text;return e}
+function kind(path){
+ if(path.endsWith('.html'))return 'Ekran / HTML';
+ if(path.startsWith('moduly/'))return 'Moduł wspólny';
+ if(path.startsWith('inspekcje/'))return 'Formularze / raporty';
+ return 'Logika aplikacji';
+}
+function label(path){const p=path.split('/');return p.length>2&&p[0]==='moduly'?p[1]+'/'+p[p.length-1]:p[p.length-1]}
+function sourceHref(p){return 'https://github.com/'+OWNER+'/'+REPO+'/blob/'+REF+'/'+p}
+function normalizeFrom(origin,src){
+ const s=src.split(/[?#]/)[0];
+ if(!s||/^(https?:|data:|javascript:|\/\/)/i.test(s))return null;
+ // Android copy-web flattens app/www/ into the web root; scripts in inspekcje/ resolve against that virtual root.
+ let base=origin==='inspekcje/index.html'?'inspekcje/':'';
+ let combined=base+s;
+ const stack=[];
+ for(const part of combined.split('/')){if(part==='..')stack.pop();else if(part&&part!=='.')stack.push(part)}
+ let rel=stack.join('/');
+ if(rel.startsWith('moduly/')||rel.startsWith('inspekcje/'))return rel;
+ if(rel.startsWith('app/'))return rel;
+ return 'app/www/'+rel;
+}
+function scanGlobals(src){
+ const found=new Set();
+ const rx=/\b(?:window|globalThis)\s*\.\s*(OEST[A-Za-z0-9_$]+)\s*(?==|\|\|=|\?\?=)/g;
+ let m;while((m=rx.exec(src)))found.add(m[1]);
+ return found;
+}
+function scanReferences(src){
+ const s=new Set();const rx=/\b(?:window|globalThis)\s*\.\s*(OEST[A-Za-z0-9_$]+)\b/g;
+ let m;while((m=rx.exec(src)))s.add(m[1]);return s;
+}
+function group(p){return kind(p)}
+function edge(a,b,type,evidence){
+ if(a===b||!nodes.some(n=>n.id===b))return;
+ if(!links.some(e=>e.from===a&&e.to===b&&e.type===type))links.push({from:a,to:b,type,evidence});
+}
+async function load(){
+ $('reload').disabled=true;$('download').disabled=true;$('error').textContent='';$('status').textContent='Pobieram listę plików…';
+ failures=[];nodes=[];links=[];
+ try{
+ const t=await fetch(api+'/git/trees/'+REF+'?recursive=1',{headers:{Accept:'application/vnd.github+json'}});
+ if(!t.ok)throw Error('GitHub API: HTTP '+t.status);
+ const data=await t.json();if(data.truncated)throw Error('GitHub zwrócił niepełne drzewo. Nie pokazuję fragmentarycznej mapy jako pełnej.');
+ revision=data.sha;$('revision').textContent='main · '+revision.slice(0,8);
+ const paths=new Set(data.tree.filter(x=>x.type==='blob').map(x=>x.path));
+ const wanted=[...paths].filter(p=>p==='app/www/index.html'||p==='inspekcje/index.html'||(/\.js$/.test(p)&&(p.startsWith('app/www/')||p.startsWith('moduly/')||p.startsWith('inspekcje/'))));
+ nodes=wanted.map(id=>({id,kind:kind(id),label:label(id)}));
+ const content=new Map();
+ const queue=wanted.slice();let complete=0;
+ async function worker(){while(queue.length){const p=queue.shift();try{
+   const r=await fetch(raw+escPath(p),{cache:'no-cache'});if(!r.ok)throw Error('HTTP '+r.status);
+   content.set(p,await r.text());
+ }catch(e){failures.push(p+': '+e.message)}
+ complete++;$('status').textContent='Analiza plików: '+complete+'/'+wanted.length;
+ }}
+ await Promise.all(Array.from({length:8},worker));
+ if(failures.length)throw Error('Nie udało się odczytać '+failures.length+' plików: '+failures.slice(0,4).join(' | ')+'. Mapa niekompletna.');
+ const exports=new Map();
+ for(const [p,s] of content)for(const symbol of scanGlobals(s)){if(!exports.has(symbol))exports.set(symbol,[]);exports.get(symbol).push(p)}
+ for(const [p,s] of content){
+  if(p.endsWith('.html')){
+   const re=/<(?:script|link)\b[^>]*\b(?:src|href)\s*=\s*["']([^"']+)["'][^>]*>/gi;let m;
+   while((m=re.exec(s))){
+    const target=normalizeFrom(p,m[1]);if(target)edge(p,target,'asset',m[1]);
+   }
+  }
+  for(const symbol of scanReferences(s)){
+   for(const target of (exports.get(symbol)||[]))edge(p,target,'global',symbol);
+  }
+ }
+ $('status').textContent=nodes.length+' plików · '+links.length+' wykrytych powiązań';
+ $('download').disabled=false;
+ if(!nodes.some(n=>n.id===selected))selected='app/www/index.html';
+ render();
+ }catch(e){$('error').textContent='BŁĄD: '+e.message;$('status').textContent='Mapa niekompletna';$('graph').replaceChildren();$('detail').textContent='Nie wyświetlam niezweryfikowanych połączeń.'}
+ finally{$('reload').disabled=false}
+}
+function setDetail(){
+ const panel=$('detail');panel.replaceChildren();
+ const node=nodes.find(n=>n.id===selected);
+ if(!node)return;
+ const h=document.createElement('h2');h.textContent=node.label;panel.append(h);
+ const p=document.createElement('p');p.textContent=node.id;panel.append(p);
+ const type=document.createElement('span');type.className='type';type.textContent=node.kind;panel.append(type);
+ const a=document.createElement('p'),link=document.createElement('a');link.href=sourceHref(node.id);link.target='_blank';link.rel='noopener noreferrer';link.textContent='Otwórz źródło na GitHubie';a.append(link);panel.append(a);
+ const related=links.filter(e=>e.from===selected||e.to===selected);
+ const hd=document.createElement('h3');hd.textContent='Powiązania: '+related.length;panel.append(hd);
+ const ul=document.createElement('ul');
+ for(const e of related){
+ const li=document.createElement('li');const button=document.createElement('button');
+ const other=e.from===selected?e.to:e.from;
+ button.textContent=(e.from===selected?'Używa → ':'← Używany przez ')+other;button.addEventListener('click',()=>{selected=other;render()});
+ li.append(button);
+ const d=document.createElement('small');d.textContent=' '+(e.type==='asset'?'Skrypt/zasób: ':'Globalne API: ')+e.evidence;li.append(document.createElement('br'),d);ul.append(li);
+ }panel.append(ul);
+ const note=document.createElement('p');note.textContent='To wynik analizy statycznej. Nie potwierdza wykonania funkcji ani działania na telefonie.';panel.append(note);
+}
+function render(){
+ const search=$('search').value.trim().toLowerCase();const scope=$('scope').value;
+ let visible=nodes.filter(n=>scope==='all'||n.id===selected||links.some(e=>(e.from===selected&&e.to===n.id)||(e.to===selected&&e.from===n.id)));
+ if(search)visible=visible.filter(n=>n.id.toLowerCase().includes(search)||n.id===selected);
+ const ids=new Set(visible.map(n=>n.id));const edges=links.filter(e=>ids.has(e.from)&&ids.has(e.to));
+ const groups=['Ekran / HTML','Logika aplikacji','Moduł wspólny','Formularze / raporty'];
+ const byGroup=groups.map(g=>visible.filter(n=>n.kind===g).sort((a,b)=>a.label.localeCompare(b.label)));
+ const xPositions=[35,315,595,875], positions=new Map();let height=600;
+ const graph=$('graph');graph.replaceChildren();
+ for(let i=0;i<groups.length;i++){
+  const names=byGroup[i];let y=72;
+  names.forEach(n=>{positions.set(n.id,{x:xPositions[i],y});y+=58});
+  height=Math.max(height,y+30);
+ }
+ graph.setAttribute('viewBox','0 0 1140 '+height);
+ graph.setAttribute('width','1140');graph.setAttribute('height',String(height));
+ for(let i=0;i<groups.length;i++)graph.append(svg('text',{x:xPositions[i],y:32,fill:'#aab9c6','font-size':15,'font-weight':600},groups[i]+' ('+byGroup[i].length+')'));
+ for(const e of edges){
+  const a=positions.get(e.from),b=positions.get(e.to);if(!a||!b)continue;
+  const line=svg('path',{d:'M'+(a.x+218)+' '+(a.y+18)+' C'+(a.x+250)+' '+(a.y+18)+' '+(b.x-30)+' '+(b.y+18)+' '+b.x+' '+(b.y+18),fill:'none',stroke:e.type==='asset'?'#4fcea4':'#749bd1','stroke-width':1.3,'stroke-opacity':0.6});
+  if(e.type==='global')line.setAttribute('stroke-dasharray','4 5');
+  const title=svg('title',{},e.from+' → '+e.to+' ('+e.evidence+')');line.append(title);graph.append(line);
+ }
+ for(const n of visible){
+  const pos=positions.get(n.id),g=svg('g',{role:'button',tabindex:'0','aria-label':n.id});
+  g.style.cursor='pointer';
+  const chosen=n.id===selected;
+  g.append(svg('rect',{x:pos.x,y:pos.y,width:218,height:38,rx:8,fill:chosen?'#254b46':'#1c2936',stroke:chosen?'#4fcea4':'#4a5b6a','stroke-width':chosen?2:1}));
+  const name=n.label.length>27?n.label.slice(0,25)+'…':n.label;
+  g.append(svg('text',{x:pos.x+9,y:pos.y+24,fill:'#e9f1f5','font-size':12},name));
+  g.append(svg('title',{},n.id));
+  const pick=()=>{selected=n.id;render()};g.addEventListener('click',pick);g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();pick()}});graph.append(g);
+ }
+ setDetail();
+}
+$('search').addEventListener('input',render);$('scope').addEventListener('change',render);
+$('reload').addEventListener('click',load);
+$('download').addEventListener('click',()=>{
+ const payload={repository:OWNER+'/'+REPO,ref:REF,sha:revision,method:'static script/link and window.OEST* references',limitations:'not exhaustive; not runtime verification',nodes,edges:links};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='oest-map-'+revision.slice(0,8)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+});
+load();
+})();
+</script>
+</body>
+</html>
