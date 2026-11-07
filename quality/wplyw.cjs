@@ -50,10 +50,31 @@ function builtPath(f) {
 function ppmTouched() {
   const vm = require('node:vm');
   const load = src => { const sb = { window: {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, console }; sb.window.localStorage = sb.localStorage; sb.self = sb.window; vm.runInNewContext(src, sb, { timeout: 5000 }); const P = sb.window.OEST_PPM; if (!P || !Array.isArray(P.tasks)) throw Error('brak OEST_PPM.tasks'); return { tasks: P.tasks, P }; };
-  let before, after;
-  try { before = load(git('show', `${BASE}:app/www/ppm.js`)); after = load(fs.readFileSync(path.join(ROOT, 'app', 'www', 'ppm.js'), 'utf8')); } catch { return null; }
-  const rest = P => JSON.stringify(Object.keys(P).sort().filter(k => k !== 'tasks' && k !== 'forms').map(k => [k, typeof P[k] === 'function' ? String(P[k]) : JSON.stringify(P[k], (_, v) => typeof v === 'function' ? String(v) : v)]));
-  if (rest(before.P) !== rest(after.P)) return null;
+  // Kod poza literałami danych „tasks: […]” i „forms: {…}” musi być identyczny co do znaku (także prywatne funkcje),
+  // inaczej zmiana może dotyczyć każdej inspekcji. Nie da się wyciąć literałów = wszystkie.
+  const skeleton = src => {
+    let out = src;
+    for (const key of ['tasks', 'forms']) {
+      const m = new RegExp('(?:^|[{,])\\s*' + key + '\\s*:\\s*([\\[{])', 'm').exec(out); if (!m) return null;
+      let i = m.index + m[0].length - 1, depth = 0, q = '';
+      for (; i < out.length; i++) {
+        const c = out[i];
+        if (q) { if (c === '\\') i++; else if (c === q) q = ''; continue; }
+        if (c === '"' || c === "'" || c === '`') q = c;
+        else if (c === '/' && out[i + 1] === '/') { while (i < out.length && out[i] !== '\n') i++; }
+        else if (c === '/' && out[i + 1] === '*') { i = out.indexOf('*/', i + 2); if (i < 0) return null; i++; }
+        else if (c === '[' || c === '{') depth++;
+        else if ((c === ']' || c === '}') && --depth === 0) break;
+      }
+      if (depth !== 0) return null;
+      out = out.slice(0, m.index) + '\u0000' + key + '\u0000' + out.slice(i + 1);
+    }
+    return out;
+  };
+  let before, after, srcA, srcB;
+  try { srcA = git('show', `${BASE}:app/www/ppm.js`); srcB = fs.readFileSync(path.join(ROOT, 'app', 'www', 'ppm.js'), 'utf8'); before = load(srcA); after = load(srcB); } catch { return null; }
+  const skA = skeleton(srcA), skB = skeleton(srcB);
+  if (skA === null || skB === null || skA !== skB) return null;
   const form = (P, t) => JSON.stringify(t && t.form ? (P.forms || {})[t.form] : null);
   // forms bez zadania o tej nazwie (np. plantRooms, flush) czyta strona inspekcji przy budowie formularzy – nie wiadomo których: wszystkie
   const used = new Set([...before.tasks, ...after.tasks].map(t => t.form).filter(Boolean));

@@ -174,6 +174,9 @@ test('Wpływ: dane formularza (ppm.js) = lista dotkniętych inspekcji; zmiana fu
   assert.equal(w.zmiany[0].klasa, 'dane formularza'); assert.deepEqual(w.inspekcje, ['EFA-INS-002']); assert.ok(sel(w).includes('raport-ui-check.cjs'));
   w = impact({ 'app/www/ppm.js': PPM('Zimny').replace('return 1', 'return 2') });
   assert.equal(w.inspekcje, null, 'kod (nie dane) w ppm.js = wszystkie inspekcje');
+  const priv = f => `(function(w){ function alive(r){ return ${f}; }\n w.OEST_PPM = {\n  tasks: [ { id: 'EFA-INS-001', form: 'a' } ],\n  forms: { a: { slots: [] } },\n  stage(r){ return alive(r); } }; })(window);`;
+  w = impact({ 'app/www/ppm.js': priv('false') }, 'pull_request', (d, g) => { write(d, { 'app/www/ppm.js': priv('true') }); g('commit', '-qam', 'prywatna'); g('branch', '-f', 'main'); });
+  assert.equal(w.inspekcje, null, 'zmiana prywatnej funkcji (niewidoczna w eksporcie) = wszystkie inspekcje');
   w = impact({ 'app/www/ppm.js': PPM('Zimny').replace("forms: {", "forms: { wspolne: { rooms: ['B2'] },") });
   assert.equal(w.inspekcje, null, 'zmiana formularza bez zadania o tej nazwie (dane wspólne, np. plantRooms) = wszystkie inspekcje');
 });
