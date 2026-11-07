@@ -153,6 +153,11 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     // Kalendarz: ten sam klocek
     await p.goto(url + '/index.html#cal'); await p.waitForTimeout(500);
     R.kalendarz = await p.evaluate(() => { const b = [...document.querySelectorAll('#calGrid [data-cd]')].find(x => x.querySelector('i')); b.click(); const k = document.querySelector('#calDay .ki'); return k ? { linie: k.querySelectorAll(':scope > .kr').length, st: !!k.querySelector('.oest-st'), dzien: k.dataset.day } : null; });
+    // przyszły termin w Kalendarzu: okno bez postępu bieżącej inspekcji (uwaga Codex w PR #87)
+    R.kalendarzInfo = await p.evaluate(st => new Promise(res => { localStorage.setItem('oest.ppm.stage', st); const o = window.OESTPrzycisk.ask; window.OESTPrzycisk.ask = a => { res(a.node.textContent); window.OESTPrzycisk.ask = o; return Promise.resolve(true); };
+      const el = document.createElement('div'); el.className = 'ki'; el.dataset.id = 'EFA-INS-024'; el.dataset.day = '2026-12-30'; document.getElementById('calDay').appendChild(el);
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 })); setTimeout(() => { el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); el.remove(); }, 600); }), JSON.stringify(STAGE(Date.now())));
+    check(/zrobiono 0/.test(R.kalendarzInfo) && !/OK 8/.test(R.kalendarzInfo) && !/Usterki/.test(R.kalendarzInfo), 'okno dla przyszłego terminu pokazuje postęp bieżącej inspekcji: ' + R.kalendarzInfo);
     check(R.kalendarz && R.kalendarz.linie === 3 && R.kalendarz.st && /^\d{4}-\d\d-\d\d$/.test(R.kalendarz.dzien), 'Kalendarz: klocek ' + JSON.stringify(R.kalendarz));
     await c.close();
     // wąskie i szerokie ekrany: każdy element klocka w całości wewnątrz klocka (uwaga Codex w PR #87: 360 px ucinało usterki)
@@ -184,7 +189,7 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     check(errors.length === 0, 'błędy strony: ' + errors.join(' | '));
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
-  console.log(JSON.stringify({ klocki: R.pl && R.pl.length, wzor: R.pl && R.pl[0], tresc: R.tresc, termin: R.termin, info: R.info, kalendarz: R.kalendarz, ekrany: R.ekrany }, null, 1));
+  console.log(JSON.stringify({ klocki: R.pl && R.pl.length, wzor: R.pl && R.pl[0], tresc: R.tresc, termin: R.termin, info: R.info, kalendarz: R.kalendarz, kalendarzInfo: R.kalendarzInfo, ekrany: R.ekrany }, null, 1));
   if (fails.length) { console.error('KLOCEK INSPEKCJI UI FAIL\n- ' + fails.slice(0, 40).join('\n- ')); process.exit(1); }
   console.log('KLOCEK INSPEKCJI UI PASS (' + R.pl.length + ' klocków × PL/EN, stałe miejsca, okno informacji)');
 })();

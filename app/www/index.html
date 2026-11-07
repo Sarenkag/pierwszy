@@ -544,6 +544,9 @@ input[type=text], input[type=email], input[type=date], select {
   function ppmInfo(id, dayIso) {
     var t = P.byId(id); if (!t) return;
     var due = dayIso ? new Date(+dayIso.slice(0, 4), +dayIso.slice(5, 7) - 1, +dayIso.slice(8, 10)) : P.due(t), k = kiData(t, due, P.daysLeft(due));
+    // inny termin niż bieżąca inspekcja (np. grudzień w Kalendarzu): bez jej zdjęć, odpowiedzi i usterek – jak na klocku (uwaga Codex w PR #87)
+    var now = P.due(t), cur = !dayIso || (k.st && k.st.period === dayIso) || (now && P.iso(now) === dayIso);
+    if (!cur) { k.st = null; k.photos = 0; k.qa = null; k.issues = 0; k.form = k.nd.f ? "blad" : "brak"; }
     var vt = P.vantifyTask(t, k.freq), job = due ? P.jobFor(t, P.iso(due)) : null;
     var rows = [
       { ic: "lok", html: k.loc.full ? (k.loc.code ? "<b>" + esc(k.loc.code.split("/")[0]) + "</b>" + esc(k.loc.full.slice(k.loc.code.split("/")[0].length)) : esc(k.loc.full)) : esc(T("Lokalizacja nieprzypisana", "No location assigned")) },
