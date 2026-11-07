@@ -18,8 +18,39 @@
   /* zaokrąglenia */
   --r-btn:14px;--r-field:12px;--r-chip:999px;--r-card:16px;--r-panel:18px;
   /* ruch */
-  --wy-ease:cubic-bezier(.2,.8,.2,1);--wy-fast:.16s;--wy-mid:.24s;
+  --wy-ease:var(--ruch-easing);--wy-fast:var(--ruch-przycisk-czas);--wy-mid:var(--ruch-stan-czas); /* stare nazwy = aliasy tabeli ruchu */
 }
+
+/* ---------- TABELA RUCHU (07/11/2026) ----------
+   Jedno miejsce na każdą animację w apce. Rola → czas, easing, efekt (nazwa @keyframes z biblioteki niżej) i wariant (parametr efektu).
+   Podmiana animacji = zmiana wartości tutaj albo w locie: OESTWyglad.ruch.ustaw("okno", "zanikanie") – bez zmian na ekranach.
+   Wartości domyślne = dotychczasowy ruch OEST (nic nie wygląda inaczej). Opis: moduly/wyglad/README.md. */
+:root{
+  --ruch-easing:cubic-bezier(.2,.8,.2,1);
+  /* przycisk: naciśnięcie (moduly/przycisk) */
+  --ruch-przycisk-czas:.16s;--ruch-przycisk-easing:var(--ruch-easing);--ruch-przycisk-nacisk:scale(.97);
+  /* kafelek: naciśnięcie (moduly/kafelek) */
+  --ruch-kafelek-czas:.16s;--ruch-kafelek-easing:var(--ruch-easing);--ruch-kafelek-nacisk:scale(.97);
+  /* stan: zmiana koloru/tła/ramki po wybraniu, włączeniu, zmianie statusu */
+  --ruch-stan-czas:.24s;
+  /* status: komunikat „Zapisano”, toast */
+  --ruch-status-czas:.25s;--ruch-status-easing:var(--ruch-easing);--ruch-status-efekt:wyUp;
+  /* okno: okienko na wierzchu i menu ⋮ (otwarcie, zamknięcie, przyciemnione tło) */
+  --ruch-okno-czas:.22s;--ruch-okno-easing:var(--ruch-easing);--ruch-okno-efekt:wyPop;
+  --ruch-okno-zamkniecie-czas:.18s;--ruch-okno-zamkniecie-efekt:wyOut;--ruch-okno-tlo-czas:.2s;--ruch-menu-czas:.2s;
+  /* ekran: przejście między ekranami; wariant = przesunięcie (do przodu z prawej, Wstecz z lewej) */
+  --ruch-ekran-czas:.24s;--ruch-ekran-easing:var(--ruch-easing);--ruch-ekran-efekt:wyIn;--ruch-ekran-przesuniecie:14px;
+  /* znacznik: licznik w rogu i ikonki stanu na klocku pojawiają się „wyskokiem” (moduly/znacznik) */
+  --ruch-znacznik-czas:.28s;--ruch-znacznik-easing:cubic-bezier(.34,1.56,.64,1);--ruch-znacznik-efekt:oest-n-in;
+  /* lista: karty pojawiają się kolejno; wariant = odstęp między kartami */
+  --ruch-lista-czas:.3s;--ruch-lista-easing:var(--ruch-easing);--ruch-lista-efekt:wyUp;--ruch-lista-odstep:22ms;
+}
+/* ograniczenie ruchu: jedno miejsce dla systemowego „mniej ruchu” i „Ogranicz animacje” w Ustawieniach */
+@media (prefers-reduced-motion:reduce){:root{--ruch-przycisk-nacisk:none;--ruch-kafelek-nacisk:none;--ruch-znacznik-efekt:none}}
+:root[data-settings-motion=reduce]{--ruch-przycisk-nacisk:none;--ruch-kafelek-nacisk:none;--ruch-znacznik-efekt:none}
+/* przebudowa ekranu bez zmiany treści (zmiana języka, powrót do apki): nowo wstawione elementy nie „wyskakują” od nowa (wyglad.js) */
+/* tylko animacje „pojawienia się” (stan końcowy = zwykły wygląd); animacje, które dopiero ustawiają stan końcowy (np. ✓ w polu e-mail), zostają */
+:is(.wy-cisza,.wy-cisza *):is(.oest-n,.hm-badge,.kf-n,.fl-ic b,.cd i,.oest-rp svg,.wy-item){animation:none!important}
 
 /* ---------- tekst ---------- */
 html body{font-size:var(--fs-m)}
@@ -86,19 +117,20 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
 .ck-row .seg button{transition:transform .2s var(--wy-ease),box-shadow .2s,background .2s,border-color .2s}
 .kbar i,.zd-bar i,[class*=bar]>i{transition:width .45s var(--wy-ease)}
 /* wejście ekranu (wyglad.js dokłada klasę): do przodu z prawej, wstecz z lewej */
-@keyframes wyIn{from{opacity:0;transform:translateX(var(--wy-dx,14px))}to{opacity:1;transform:none}}
+/* biblioteka efektów – nowy efekt = nowy @keyframes tutaj + jego nazwa w tabeli ruchu */
+@keyframes wyIn{from{opacity:0;transform:translateX(var(--wy-dx,var(--ruch-ekran-przesuniecie)))}to{opacity:1;transform:none}}
 @keyframes wyUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes wyPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
 @keyframes wyOut{from{opacity:1;transform:none}to{opacity:0;transform:scale(.86)}}
 @keyframes wyFade{from{opacity:0}to{opacity:1}}
-.wy-enter{animation:wyIn var(--wy-mid) var(--wy-ease) both}
-.wy-enter.wy-back{--wy-dx:-14px}
-.wy-item{animation:wyUp .3s var(--wy-ease) both;animation-delay:calc(var(--wy-i,0) * 22ms)}
+.wy-enter{animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) both}
+.wy-enter.wy-back{--wy-dx:calc(-1 * var(--ruch-ekran-przesuniecie))}
+.wy-item{animation:var(--ruch-lista-efekt) var(--ruch-lista-czas) var(--ruch-lista-easing) both;animation-delay:calc(var(--wy-i,0) * var(--ruch-lista-odstep))}
 /* okienka: rosną z miejsca stuknięcia, zamykają się pomniejszeniem (origin ustawia wyglad.js) */
-.wy-pop{animation:wyPop .22s var(--wy-ease) both}
-.wy-pop-out{animation:wyOut .18s ease-in both!important;pointer-events:none!important}
-.wy-dim{animation:wyFade .2s ease-out both}
-.wy-dim-out{animation:wyFade .18s ease-in reverse both!important;pointer-events:none!important}
+.wy-pop{animation:var(--ruch-okno-efekt) var(--ruch-okno-czas) var(--ruch-okno-easing) both}
+.wy-pop-out{animation:var(--ruch-okno-zamkniecie-efekt) var(--ruch-okno-zamkniecie-czas) ease-in both!important;pointer-events:none!important}
+.wy-dim{animation:wyFade var(--ruch-okno-tlo-czas) ease-out both}
+.wy-dim-out{animation:wyFade var(--ruch-okno-zamkniecie-czas) ease-in reverse both!important;pointer-events:none!important}
 /* rozwijane sekcje rozwijają się płynnie (Chrome 131+, telefon Pixel); starsze – bez animacji */
 @supports (interpolate-size:allow-keywords){
   :root{interpolate-size:allow-keywords}
@@ -106,9 +138,9 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
   details[open]::details-content{height:auto}
 }
 /* menu ⋮ w inspekcji i podobne rozwijane okienka */
-.kmenu:not([hidden]){animation:wyPop .2s var(--wy-ease) both;transform-origin:calc(100% - 18px) -6px}
+.kmenu:not([hidden]){animation:var(--ruch-okno-efekt) var(--ruch-menu-czas) var(--ruch-okno-easing) both;transform-origin:calc(100% - 18px) -6px}
 /* komunikat „Zapisano” itp. pojawia się łagodnie */
-.settings-status:not(:empty),.toast:not(:empty){animation:wyUp .25s var(--wy-ease) both}
+.settings-status:not(:empty),.toast:not(:empty){animation:var(--ruch-status-efekt) var(--ruch-status-czas) var(--ruch-status-easing) both}
 
 @media (prefers-reduced-motion:reduce){
   .wy-enter,.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}

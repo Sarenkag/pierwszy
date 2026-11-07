@@ -93,6 +93,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/plynnosc-ui-check.cjs",
+      "passMarker": "PLYNNOSC UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/questions-ui-check.cjs",
       "passMarker": "QUESTIONS UI PASS",
       "timeoutSec": 900
