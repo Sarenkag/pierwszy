@@ -162,4 +162,5 @@ html::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 /* pasek systemowy telefonu (godzina, bateria) zawsze czytelny: stałe czarne tło na całej szerokości pod paskiem,
    na każdym ekranie i nad każdym okienkiem; treść przewija się POD nim (Grzegorz 07/11/2026, zrzut z apk-274).
    Wysokość = wysokość paska z Androida (Capacitor SystemBars podaje --safe-area-inset-top), w przeglądarce 0. */
-html::after{content:"";position:fixed;top:0;left:0;right:0;height:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));background:#000;z-index:2147483647;pointer-events:none}
+:root{--oest-gora:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px))} /* jedna wysokość paska: używają jej czarny pas i odstęp treści od góry na każdym ekranie */
+html::after{content:"";position:fixed;top:0;left:0;right:0;height:var(--oest-gora);background:#000;z-index:2147483647;pointer-events:none}

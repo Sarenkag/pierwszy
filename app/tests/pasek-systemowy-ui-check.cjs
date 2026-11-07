@@ -38,6 +38,16 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       const zalogowany = await p.evaluate(() => !(document.getElementById('v-start') && document.getElementById('v-start').offsetParent) && document.body.innerText.length > 50);
       check(zalogowany, `${e}: ekran się nie otworzył (logowanie albo pusto)`);
       const a = await pasek();
+      // przed przewinięciem nic widocznego (tekst, przycisk, ikona) nie może zaczynać się pod czarnym pasem (uwaga Codex w PR #81)
+      const zasloniete = await p.evaluate(h => [...document.querySelectorAll('body *')].filter(el => {
+        if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return false;
+        const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+        if (r.width < 2 || r.height < 2 || r.bottom <= 0 || s.visibility === 'hidden' || +s.opacity === 0) return false;
+        const tresc = /^(BUTTON|A|INPUT|SELECT|TEXTAREA|IMG|svg|H1|H2|H3)$/.test(el.tagName) || [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+        return tresc && r.top < h;
+      }).map(el => (el.id || el.getAttribute('class') || el.tagName).toString().slice(0, 30) + '@' + Math.round(el.getBoundingClientRect().top)), PASEK);
+      R[e + ' zasloniete'] = zasloniete.slice(0, 5);
+      check(zasloniete.length === 0, `${e}: pod czarnym pasem jest treść przed przewinięciem: ${zasloniete.slice(0, 4).join(', ')}`);
       await p.evaluate(() => { scrollTo(0, 600); document.querySelectorAll('*').forEach(el => { if (el.scrollHeight > el.clientHeight + 50 && /auto|scroll/.test(getComputedStyle(el).overflowY)) el.scrollTop = 600; }); });
       await p.waitForTimeout(200);
       const b = await pasek();
