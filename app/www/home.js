@@ -62,10 +62,10 @@
   var gOk = null; // stan połączenia z Dyskiem: tylko z OESTGoogle.ready (to samo źródło co Ustawienia i wysyłka)
   function driveOn() { var G = w.OESTGoogle; return !!(G && G.connected && G.connected("drive")) || gOk === true; }
   function driveState() {
-    if (gOk === false && !driveOn()) return { k: "off", t: T("Dysk · brak połączenia", "Drive · not connected") };
-    if (drivePaused()) return { k: "off", t: T("Dysk · wstrzymany", "Drive · paused") };
-    if (photo.pending) return { k: "mid", t: T("Dysk · " + photo.pending + " w kolejce", "Drive · " + photo.pending + " queued") };
-    return { k: "on", t: T("Dysk · zsynchronizowany", "Drive · synced") };
+    if (gOk === false && !driveOn()) return { k: "off", t: T("HDD · brak połączenia", "HDD · not connected") };
+    if (drivePaused()) return { k: "off", t: T("HDD · wstrzymany", "HDD · paused") };
+    if (photo.pending) return { k: "mid", t: T("HDD · " + photo.pending + " w kolejce", "HDD · " + photo.pending + " queued") };
+    return { k: "on", t: T("HDD · zsynchronizowany", "HDD · synced") };
   }
   function photoStats() {
     var G = w.OESTGoogle, g = G && G.ready ? G.ready("drive").then(function (ok) { gOk = ok; }, function () { gOk = false; }) : Promise.resolve();
@@ -81,7 +81,8 @@
     var ph = $("hmPhotos"); if (ph) {
       var mb = photo.phone / 1048576, base = photo.warn || photo.limit, f = base ? photo.phone / base : 0;
       ph.className = "hm-ph-size " + (f < 0.5 ? "ok" : f < 0.75 ? "mid" : f < 0.9 ? "hi" : "full");
-      ph.querySelector("span").textContent = T("Zdjęcia ", "Photos ") + (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + " / " + Math.round(photo.limit / 1048576) + " MB";
+      // sam licznik bez słowa „Zdjęcia”, np. 13/200MB – mieści się w jednej linii z Wi‑Fi i HDD (Grzegorz 07/11)
+      ph.querySelector("span").textContent = (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + "/" + Math.round(photo.limit / 1048576) + "MB";
     }
   }
   function header() {

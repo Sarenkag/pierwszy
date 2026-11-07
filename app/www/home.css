@@ -1,5 +1,10 @@
 /* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”). Logika: home.js */
-#v-home{padding-top:max(6px,var(--oest-gora,env(safe-area-inset-top,0px)))}
+/* Ekran główny mieści się w całości na telefonie i się nie przewija (Grzegorz 07/11):
+   odstęp od czarnego paska daje już .wrap (--oest-gora) – tu bez drugiego odstępu (było ~1 cm pustego miejsca),
+   ekran ma dokładnie wysokość okna, dolny zapas 48 px → 12 px; kafelki bez zmian (moduly/kafelek).
+   Gdyby treść kiedyś się nie zmieściła (np. bardzo duża czcionka systemu), przewija się zamiast ucinać kafelki. */
+.wrap:has(>#v-home:not([hidden])){height:100vh;height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:none;padding-bottom:max(12px,env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
+#v-home{flex:1;min-height:0}
 .hm-head{display:flex;align-items:center;gap:10px;padding:6px 0 2px}
 .hm-logo{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:.8rem;letter-spacing:.05em;color:#fff;background:linear-gradient(135deg,#5b7cff,#a35bff);box-shadow:0 6px 18px rgba(120,90,255,.45)}
 .hm-name{flex:1;min-width:0}
@@ -12,10 +17,14 @@
 .hm-me:after{content:"";position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--ok);border:2px solid #0a0e1f}
 .hm-act{border-color:#8f7bff!important;box-shadow:0 0 12px rgba(143,123,255,.7)}
 .hm-wx.hm-act{color:#fff}
-.hm-st{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}
-.hm-st button{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.78rem;cursor:pointer}
+/* jedna linia: Wi‑Fi, HDD, licznik zdjęć (Grzegorz 07/11) */
+.hm-st{display:flex;gap:2px;margin:6px 0 4px;flex-wrap:nowrap;white-space:nowrap}
+.hm-st button{flex:none;min-width:0;display:inline-flex;align-items:center;gap:5px;padding:4px 6px;border-radius:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.78rem;cursor:pointer}
 /* rozmiar folderu zdjęć OEST (Grzegorz 05/11): do 50% limitu zielony, do 75% pomarańczowy, do 90% czerwony, powyżej czerwony z ⚠ (miejsce na ⚠ zawsze zarezerwowane) */
-.hm-ph-size span{font-variant-numeric:tabular-nums;font-weight:600;min-width:9.5em;text-align:left}
+/* napis HDD może się skrócić „…” tylko w najgorszym razie (dane komórkowe + zsynchronizowany + 199/200MB), żeby linia nigdy się nie łamała */
+#hmDrive{flex:0 1 auto}#hmDrive span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.hm-ph-size{margin-left:auto}
+.hm-ph-size span{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
 .hm-ph-size.ok span{color:var(--ok)}.hm-ph-size.mid span{color:var(--attention)}.hm-ph-size.hi span,.hm-ph-size.full span,.hm-ph-size .hm-warn{color:var(--bad)}
 .hm-ph-size .hm-warn{visibility:hidden;font-size:.9rem;line-height:1}.hm-ph-size.full .hm-warn{visibility:visible}
 .hm-days{margin:0 0 12px}
