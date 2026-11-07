@@ -535,7 +535,8 @@ input[type=text], input[type=email], input[type=date], select {
   function ppmCard(r) {
     var t = r.t, g = grp(t.group), sh = P.short(t), k = kiData(t, r.due, r.left);
     var go = !k.st ? T("Zacznij", "Start") : k.st.s === "prog" || k.st.s === "hold" ? T("Kontynuuj", "Continue") : T("Otwórz", "Open");
-    return window.OESTKlocek.inspekcja({ id: t.id, color: g.color, name: sh.name, status: k.tryb, loc: k.loc.code, freq: k.freq, form: k.form,
+    // data-day: termin tego klocka (Gotowa zostaje w swoim dniu) – okno informacji pokazuje to samo zlecenie (uwaga Codex w PR #87)
+    return window.OESTKlocek.inspekcja({ id: t.id, data: r.due ? { day: P.iso(r.due) } : {}, color: g.color, name: sh.name, status: k.tryb, loc: k.loc.code, freq: k.freq, form: k.form,
       due: r.due, left: r.left, dueDone: k.done, photos: k.photos, qa: k.qa, issues: k.issues, go: go, glow: k.done /* Gotowa świeci (04/11) */ });
   }
   // okno informacji po przytrzymaniu klocka (Grzegorz 07/11/2026 19:36–19:40)
@@ -637,7 +638,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (g === "all") ppmSel = []; else if (i >= 0) ppmSel.splice(i, 1); else ppmSel.push(g);
     save("ppm.sel", ppmSel); renderPpm();
   });
-  window.OESTKlocek.przytrzymaj($("ppmList"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id); });
+  window.OESTKlocek.przytrzymaj($("ppmList"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id, el.dataset.day); });
   $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
 

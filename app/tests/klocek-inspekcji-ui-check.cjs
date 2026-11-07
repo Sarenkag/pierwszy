@@ -135,6 +135,17 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     R.info.przewijanie = await p.evaluate(() => !!document.querySelector('.oest-ask.ki-info'));
     await p.mouse.move(30, 120); await p.mouse.up(); await p.waitForTimeout(300); // palec zjeżdża z klocka (przewijanie) – bez stuknięcia
     check(!R.info.przewijanie, 'ruch palca (przewijanie) otwiera okno informacji');
+    // bardzo długie przytrzymanie (2,5 s): po puszczeniu palca okno zostaje, inspekcja się nie otwiera (uwaga Codex w PR #87)
+    await p.mouse.move(bb.x + 150, bb.y + 40); await p.mouse.down(); await p.waitForTimeout(2500); await p.mouse.up(); await p.waitForTimeout(500);
+    R.info.dlugie = { okno: await p.evaluate(() => !!document.querySelector('.oest-ask.ki-info')), url: p.url() };
+    check(R.info.dlugie.okno && /index\.html#ppm$/.test(R.info.dlugie.url), 'przytrzymanie 2,5 s: ' + JSON.stringify(R.info.dlugie));
+    await p.mouse.click(30, 120); await p.waitForTimeout(500);
+    // Gotowa: okno pokazuje termin i zlecenie z klocka (zakończony okres 30/11), nie następne zlecenie (uwaga Codex w PR #87)
+    const g = p.locator('#ppmList .ki[data-id="EFA-INS-014"]'); await g.scrollIntoViewIfNeeded(); const gb = await g.boundingBox();
+    await p.mouse.move(gb.x + 150, gb.y + 40); await p.mouse.down(); await p.waitForTimeout(650); await p.mouse.up(); await p.waitForTimeout(300);
+    R.info.gotowa = await p.evaluate(() => { const b = document.querySelector('.oest-ask.ki-info'); return b ? b.textContent : null; });
+    check(/30\/11\/2026/.test(R.info.gotowa || '') && /OK 12 \/ 12/.test(R.info.gotowa || ''), 'okno informacji Gotowej: ' + R.info.gotowa);
+    await p.mouse.click(30, 120); await p.waitForTimeout(500);
     // krótkie stuknięcie dalej otwiera inspekcję
     await p.locator('#ppmList .ki[data-id="EFA-INS-024"]').click(); await p.waitForTimeout(800);
     R.info.stukniecie = p.url();
@@ -143,11 +154,37 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     await p.goto(url + '/index.html#cal'); await p.waitForTimeout(500);
     R.kalendarz = await p.evaluate(() => { const b = [...document.querySelectorAll('#calGrid [data-cd]')].find(x => x.querySelector('i')); b.click(); const k = document.querySelector('#calDay .ki'); return k ? { linie: k.querySelectorAll(':scope > .kr').length, st: !!k.querySelector('.oest-st'), dzien: k.dataset.day } : null; });
     check(R.kalendarz && R.kalendarz.linie === 3 && R.kalendarz.st && /^\d{4}-\d\d-\d\d$/.test(R.kalendarz.dzien), 'Kalendarz: klocek ' + JSON.stringify(R.kalendarz));
-    check(errors.length === 0, 'błędy strony: ' + errors.join(' | '));
     await c.close();
+    // wąskie i szerokie ekrany: każdy element klocka w całości wewnątrz klocka (uwaga Codex w PR #87: 360 px ucinało usterki)
+    R.ekrany = {};
+    for (const W of [360, 412, 448]) {
+      const c2 = await browser.newContext({ viewport: { width: W, height: 800 } });
+      await c2.addInitScript(s => { localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); localStorage.setItem('oest.ppm.stage', s); }, JSON.stringify(STAGE(Date.now())));
+      await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+      const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(e.message));
+      await p2.goto(url + '/index.html#ppm'); await p2.waitForTimeout(500);
+      R.ekrany[W] = {};
+      for (const lang of ['pl', 'en']) {
+        await p2.evaluate(l => { window.OESTSettings.update(s => { s.appearance.language = l; }); window.OESTSettingsUI.applyTheme(); }, lang); await p2.waitForTimeout(250);
+        R.ekrany[W][lang] = await p2.evaluate(() => {
+          const zle = [];
+          document.querySelectorAll('#ppmList .ki').forEach(k => {
+            const kr = k.getBoundingClientRect(), go = k.querySelector('.kgo').getBoundingClientRect();
+            k.querySelectorAll('.kr > *').forEach(e => { const r = e.getBoundingClientRect(); if (r.width && (r.right > kr.right - 6 || r.left < kr.left)) zle.push((k.dataset.id || k.dataset.fam) + ' .' + (e.getAttribute('class') || e.tagName)); });
+            k.querySelectorAll('.kr:not(.kr3) > *').forEach(e => { const r = e.getBoundingClientRect(); if (r.width && r.right > go.left - 2 && r.bottom > go.top && r.top < go.bottom) zle.push((k.dataset.id || k.dataset.fam) + ' nachodzi na strzałkę .' + e.getAttribute('class')); });
+            k.querySelectorAll('.kr3 > *').forEach(e => { const r = e.getBoundingClientRect(); if (r.width && r.top < go.bottom && r.bottom > go.top && r.right > go.left) zle.push((k.dataset.id || k.dataset.fam) + ' linia 3 nachodzi na strzałkę'); });
+            k.querySelectorAll('.kdt,.kn,.klok,.kcz').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) zle.push((k.dataset.id || k.dataset.fam) + ' nie mieści się: ' + e.textContent); });
+          });
+          return zle;
+        });
+        check(R.ekrany[W][lang].length === 0, `${W} px ${lang}: ` + R.ekrany[W][lang].slice(0, 6).join(', '));
+      }
+      await c2.close();
+    }
+    check(errors.length === 0, 'błędy strony: ' + errors.join(' | '));
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
-  console.log(JSON.stringify({ klocki: R.pl && R.pl.length, wzor: R.pl && R.pl[0], tresc: R.tresc, termin: R.termin, info: R.info, kalendarz: R.kalendarz }, null, 1));
+  console.log(JSON.stringify({ klocki: R.pl && R.pl.length, wzor: R.pl && R.pl[0], tresc: R.tresc, termin: R.termin, info: R.info, kalendarz: R.kalendarz, ekrany: R.ekrany }, null, 1));
   if (fails.length) { console.error('KLOCEK INSPEKCJI UI FAIL\n- ' + fails.slice(0, 40).join('\n- ')); process.exit(1); }
   console.log('KLOCEK INSPEKCJI UI PASS (' + R.pl.length + ' klocków × PL/EN, stałe miejsca, okno informacji)');
 })();

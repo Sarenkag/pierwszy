@@ -116,9 +116,13 @@
     // lokalizacja: stałe pole pod najdłuższy wpis (TB/L13), puste = pusty kwadrat
     ".ki .klok{flex:none;width:51px;height:24px;box-sizing:border-box;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.12);font-size:11px;font-weight:800;color:var(--steel);letter-spacing:.02em;white-space:nowrap;overflow:hidden}" +
     ".ki .kcz{flex:none;width:28px;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden}" +
-    ".ki .kdt{flex:none;width:var(--ki-dt,112px);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kdt b{color:var(--ink)}" +
+    ".ki .kdt{flex:none;width:104px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kdt b{color:var(--ink)}" +
     ".ki .kdt.t-jutro,.ki .kdt.t-jutro b{color:" + ORANGE + "}.ki .kdt.t-red,.ki .kdt.t-red b{color:" + RED + "}" +
-    ".ki .ksep{flex:none;width:1px;height:19px;background:rgba(255,255,255,.18);margin:0 2px}" +
+    ".ki .ksep{flex:none;width:1px;height:19px;background:rgba(255,255,255,.18)}" +
+    // linia 3 sięga pod strzałkę (strzałka stoi na wysokości linii 2), żeby zmieściła się także na wąskim ekranie (uwaga Codex w PR #87)
+    ".ki .kr3{gap:6px;margin-right:-26px}" +
+    // ekran węższy niż 400 px (np. 360): te same stałe miejsca, tylko ciaśniej i czcionka 12 px – nic nie wypada poza klocek
+    "@media (max-width:399px){.ki .kr3{gap:4px}.ki .kr3 .kdt,.ki .kr3 .kn{font-size:12px}.ki .kdt{width:96px}.ki .kn2{width:17px}.ki .kn5{width:37px}.ki .kus{width:40px}}" +
     ".ki .kn{flex:none;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kn2{width:20px}.ki .kn5{width:40px}" +
     ".ki .kus{flex:none;display:flex;align-items:center;gap:4px;width:44px;height:21px;color:" + ORANGE + "}.ki .kus:empty{visibility:hidden}" +
     ".oest-ask.ki-info>div{text-align:left}.oest-ask.ki-info{--ruch-okno-easing:var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1))}" +
@@ -157,7 +161,7 @@
     return '<button class="prow k2 ki' + (o.plan ? " kplan" : "") + (o.glow ? " kready" : "") + '" type="button"' + data + ' style="--g:' + esc(o.color || "#8b949e") + '"' + (o.go ? ' aria-description="' + esc(o.go) + '"' : "") + ">" +
       '<div class="kr"><div class="knm">' + esc(o.name) + "</div>" + st + "</div>" +
       '<div class="kr"><span class="klok">' + esc(o.loc || "") + "</span>" + svg("czest") + '<span class="kcz">' + esc(czest(o.freq)) + "</span>" + svg("form-" + form) + "</div>" +
-      '<div class="kr">' + svg("termin") + '<span class="kdt' + (tm.tone ? " t-" + tm.tone : "") + '">' + (tm.date ? "<b>" + tm.date + "</b>" + (tm.rest ? " " + esc(tm.rest) : "") : "–") + "</span>" +
+      '<div class="kr kr3">' + svg("termin") + '<span class="kdt' + (tm.tone ? " t-" + tm.tone : "") + '">' + (tm.date ? "<b>" + tm.date + "</b>" + (tm.rest ? " " + esc(tm.rest) : "") : "–") + "</span>" +
       '<i class="ksep"></i>' + svg("zdjecia") + '<span class="kn kn2">' + Math.min(o.photos || 0, 99) + "</span>" +
       '<i class="ksep"></i>' + svg(qa ? (qa.ok === qa.all ? "pytania-ok" : "pytania-mid") : "pytania") + '<span class="kn kn5">' + qn + "</span>" +
       '<span class="kus">' + (n ? svg("usterki") + '<span class="kn">' + n + "</span>" : "") + "</span></div>" +
@@ -167,13 +171,13 @@
   var HOLD_MS = 400;
   function przytrzymaj(root, onHold) {
     if (!root || root.__kiHold) return; root.__kiHold = true;
-    var t = 0, x = 0, y = 0, el = null, fired = 0;
+    var t = 0, x = 0, y = 0, el = null, fired = false;
     function stop() { clearTimeout(t); t = 0; }
     root.addEventListener("pointerdown", function (e) {
-      stop(); fired = 0; el = e.target.closest && e.target.closest(".ki"); if (!el || !root.contains(el)) return;
+      stop(); fired = false; el = e.target.closest && e.target.closest(".ki"); if (!el || !root.contains(el)) return;
       x = e.clientX; y = e.clientY;
       t = setTimeout(function () {
-        t = 0; fired = Date.now();
+        t = 0; fired = true;
         try { if (w.navigator && w.navigator.vibrate) w.navigator.vibrate(20); } catch (er) {}
         onHold(el);
       }, HOLD_MS);
@@ -182,8 +186,9 @@
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (k) { root.addEventListener(k, stop, { passive: true }); });
     w.addEventListener("scroll", stop, { passive: true });
     root.addEventListener("contextmenu", function (e) { if (e.target.closest && e.target.closest(".ki")) e.preventDefault(); });
-    // stuknięcie, które kończy przytrzymanie, nie otwiera inspekcji
-    root.addEventListener("click", function (e) { if (fired && Date.now() - fired < 1500) { fired = 0; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+    // stuknięcie, które kończy przytrzymanie, nie otwiera inspekcji – niezależnie od tego, jak długo palec trzymał (uwaga Codex w PR #87);
+    // stan zeruje dopiero następne dotknięcie
+    root.addEventListener("click", function (e) { if (fired) { fired = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   }
   przytrzymaj.ms = HOLD_MS;
   // treść okna informacji; okno otwiera strona: OESTPrzycisk.ask({ title, node: OESTKlocek.infoNode(rows), bare: true, cls: OESTKlocek.infoCls })
