@@ -4,7 +4,8 @@
 //   - z quality/required-tests.json zniknął obowiązkowy test, jego passMarker/scenarios albo wydłużono timeoutSec,
 //   - dodano wyjątek do allowedSkips,
 //   - przybyło wpisów w quality/baselines/*.json (baseline może tylko maleć),
-//   - usunięto lub przeniesiono plik testu w app/tests/.
+//   - usunięto lub przeniesiono plik testu w app/tests/,
+//   - mapa wpływu (quality/wplyw.json) zawęża zakres testów albo zmienia tryb „tylko-raport”.
 // Zmiany w plikach testów, workflow, quality/ i dokumentach kontraktu są wypisywane jako ostrzeżenie do przeglądu właściciela
 // (skrypt nie umie ocenić, czy zmiana asercji osłabia test – to luka opisana w raporcie).
 // Zwiększenie listy wyjątków jest możliwe tylko świadomą decyzją właściciela (scalenie z pominięciem ochrony gałęzi).
@@ -50,6 +51,19 @@ for (const f of fs.existsSync(baseDir) ? fs.readdirSync(baseDir).filter(f => f.e
   const added = now.filter(id => !was.has(id)), removed = [...was].filter(id => !now.includes(id));
   for (const id of added) errors.push(`${rel}: nowy wyjątek ${id} (baseline może tylko maleć)`);
   if (removed.length) notes.push(`${rel}: usunięto ${removed.length} wpisów – baseline maleje (dobrze).`);
+}
+
+// 2b. mapa wpływu (quality/wplyw.json, krok 2) – może tylko poszerzać zakres testów
+const baseWplywTxt = atBase('quality/wplyw.json'), wplywPath = path.join(ROOT, 'quality', 'wplyw.json');
+if (baseWplywTxt && !fs.existsSync(wplywPath)) errors.push('Usunięto mapę wpływu quality/wplyw.json');
+else if (baseWplywTxt) {
+  const b = JSON.parse(baseWplywTxt), n = JSON.parse(fs.readFileSync(wplywPath, 'utf8'));
+  if (n.tryb !== b.tryb) errors.push(`Zmieniono tryb wyboru testów: „${b.tryb}” → „${n.tryb}” (włączenie pomijania wymaga zgody właściciela)`);
+  for (const [t, pages] of Object.entries(b.testy || {})) for (const pg of pages) if (!((n.testy || {})[t] || []).includes(pg)) errors.push(`Mapa wpływu: test ${t} nie sprawdza już strony ${pg}`);
+  for (const [r, pages] of Object.entries(b.zasobyDynamiczne || {})) for (const pg of pages) if (!((n.zasobyDynamiczne || {})[r] || []).includes(pg)) errors.push(`Mapa wpływu: usunięto zależność ${pg} → ${r}`);
+  for (const pg of b.strony || []) if (!(n.strony || []).includes(pg)) errors.push(`Mapa wpływu: usunięto stronę ${pg}`);
+  for (const g of b.pelnaRegresja || []) if (!(n.pelnaRegresja || []).includes(g)) errors.push(`Mapa wpływu: usunięto regułę pełnej regresji ${g}`);
+  for (const k of ['dokumentacja', 'android']) for (const g of n[k] || []) if (!(b[k] || []).includes(g)) errors.push(`Mapa wpływu: nowy wzorzec bez testów G2 (${k}): ${g}`);
 }
 
 // 3. pliki testów i pliki chronione
