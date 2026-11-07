@@ -122,6 +122,11 @@
       "file": "app/tests/settings-ui-check.cjs",
       "passMarker": "UI PASS: ",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/pasek-systemowy-ui-check.cjs",
+      "passMarker": "PASEK SYSTEMOWY UI PASS",
+      "timeoutSec": 300
     }
   ],
   "allowedSkips": []
