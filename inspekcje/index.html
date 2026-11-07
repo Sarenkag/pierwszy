@@ -1138,24 +1138,26 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var ck = cur.type && cur.type.checks, folder = cur.type && cur.type.folder;
     return { photos: folder ? photos.filter(function (p) { return p.tap != null; }).length : photos.filter(function (p) { return !p.sheet; }).length,
       sheet: folder ? formPhotos().length : sheetPhotos().length, issues: ck ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: ck ? ck.length : 0,
-      ok: ck ? states.filter(function (x) { return x === "ok"; }).length : 0, used: ck ? states.filter(function (x) { return x !== "na"; }).length : 0, sig: ppmSig() };
+      ok: ck ? states.filter(function (x) { return x === "ok"; }).length : 0, used: ck ? states.filter(function (x) { return x !== "na"; }).length : 0 };
   }
-  // odcisk treści odpowiedzi (TAK/NIE, powody, notatki, krany Flushingu, tydzień, pomiary): ręczne „Nie rozpoczęta” zmienia się na W trakcie także przy zmianie treści, nie tylko liczby
+  // odcisk całej treści inspekcji (to samo, co idzie do szkicu: pola raportu, odpowiedzi, powody, notatki, krany, pomiary, zdjęcia),
+  // bez znaczników czasu; służy tylko do sprawdzenia, czy dotknięcie Grzegorza coś w inspekcji zmieniło
   function ppmSig() {
-    try { var j = JSON.stringify([states, rsel, override, faultsOn, roomNotes, temps, fl.week, fl.taps]), h = 0; for (var i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return j.length + ":" + h; } catch (e) { return ""; }
+    try { var d = draftSnap(); delete d.t; delete d.fin; delete d.finPeriod; var j = JSON.stringify(d), h = 0; for (var i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return j.length + ":" + h; } catch (e) { return ""; }
   }
-  function ppmTrack(open) {
+  // user = zmiana zrobiona przez Grzegorza (dotknięcie/wpis w formularzu, poprawione zdjęcie), a nie wczytanie zapisanej inspekcji
+  function ppmTrack(open, user) {
     var t = cur.ppm; if (noTrack || !t || !PPM || !PPM.setStage || cur.mode === "sum") return;
     var r = PPM.stage(t);
-    var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts()); delete patch.sig; // odcisk tylko do porównania przy „Nie rozpoczęta”
+    var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts());
     if (r && (r.s === "queued" || r.s === "sent")) return; // wysłana: klocek pokazuje to, co poszło w raporcie
     // Gotowa: liczniki (zdjęcia, usterki) zawsze aktualne, status zostaje. Nie rozpoczęta + zmiana (np. zdjęcie kranu) = W trakcie.
-    // ręcznie „Nie rozpoczęta” (07/11): otwarcie i wczytywanie szkicu nic nie zmienia; W trakcie dopiero po nowej zmianie w formularzu
-    // (zdjęcia, odpowiedzi, powody, notatki, krany, tydzień, pomiary – też w formularzach bez pytań i zdjęć)
+    // ręcznie „Nie rozpoczęta” (07/11): otwarcie i wczytywanie zapisanej inspekcji (szkic, urządzenie izolatorów) nic nie zmienia.
+    // W trakcie dopiero po zmianie zrobionej przez Grzegorza (user) albo po nowym zdjęciu ponad to, co było przy ustawieniu.
     var u = !r && PPM.unstarted ? PPM.unstarted(t) : null;
     if (u) {
-      if (open || (cur.mode === "one" && (!draftOn || restoring))) return;
-      var c = ppmCounts(); if (c.photos === u.photos && c.sheet === u.sheet && c.used === u.used && c.ok === u.ok && (!u.sig || c.sig === u.sig)) return;
+      if (open || restoring || (cur.mode === "one" && !draftOn)) return;
+      var c = ppmCounts(); if (!user && !(c.photos > u.photos || c.sheet > u.sheet)) return;
     } else if (!r && !open && !photos.length && !ppmCounts().used) return;
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
@@ -1427,7 +1429,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
   });
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
-  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function () { setTimeout(function () { scheduleDraft(); if (cur.type && cur.ppm && PPM && PPM.unstarted && PPM.unstarted(cur.ppm)) ppmTrack(false); }, 0); }); }); // ręczne „Nie rozpoczęta”: każda zmiana w formularzu (np. pomiary, krany) = W trakcie
+  // ręczne „Nie rozpoczęta” (07/11): dotknięcie, które coś w inspekcji zmieniło (odcisk przed / po), albo wpis = W trakcie
+  var sigBefore = null;
+  function unstartedNow() { return !!(cur.type && cur.ppm && PPM && PPM.unstarted && PPM.unstarted(cur.ppm)); }
+  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function (e) { if (ev === "click" && e.isTrusted && unstartedNow()) sigBefore = ppmSig(); }, true); });
+  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function (e) {
+    var mine = e.isTrusted && !(e.target && e.target.id === "ppmStage"), before = ev === "click" ? sigBefore : null;
+    setTimeout(function () { scheduleDraft(); if (mine && unstartedNow() && (ev !== "click" || ppmSig() !== before)) ppmTrack(false, true); }, 0);
+  }); });
   // apka schowana / zamykana: zapis od razu, bez czekania
   document.addEventListener("visibilitychange", function () { if (document.hidden) saveDraftNow(); });
   window.addEventListener("pagehide", function () { saveDraftNow(); });
@@ -2008,7 +2017,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
             return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
-              URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos();
+              URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos(); ppmTrack(false, true); // poprawione zdjęcie = zmiana
             });
           }).catch(function (e) { say(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
         });

@@ -296,15 +296,15 @@ window.OEST_PPM = {
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
   // ręczne „Nie rozpoczęta” (Grzegorz 07/11/2026: „co update wracają, że są w trakcie”): samo otwarcie inspekcji
-  // i wczytanie zapisanych zdjęć/odpowiedzi nie zmienia go na „W trakcie”. Zapamiętane liczniki z chwili ustawienia;
-  // dopiero inna liczba zdjęć/odpowiedzi (nowe zdjęcie, zmiana odpowiedzi) = W trakcie. Szkic i zdjęcia zostają bez zmian.
-  // localStorage "oest.ppm.unstarted" = { id: { photos, sheet, used, ok, sig } } (sig = odcisk treści odpowiedzi z inspekcji)
+  // i wczytanie zapisanych zdjęć/odpowiedzi nie zmienia go na „W trakcie”; dopiero zmiana zrobiona w inspekcji (inspekcje/index.html: ppmTrack)
+  // albo nowe zdjęcie ponad liczbę z chwili ustawienia. Szkic i zdjęcia zostają bez zmian.
+  // localStorage "oest.ppm.unstarted" = { id: { photos, sheet, used, ok } }
   var UK = "oest.ppm.unstarted";
   function unstartedAll() { try { return JSON.parse(localStorage.getItem(UK) || "{}") || {}; } catch (e) { return {}; } }
   P.unstarted = function (t) { return unstartedAll()[t.id] || null; };
   P.setUnstarted = function (t, counts) {
     var a = unstartedAll(); if (!counts && !a[t.id]) return;
-    if (counts) a[t.id] = { photos: counts.photos || 0, sheet: counts.sheet || 0, used: counts.used || 0, ok: counts.ok || 0, sig: counts.sig || "" }; else delete a[t.id];
+    if (counts) a[t.id] = { photos: counts.photos || 0, sheet: counts.sheet || 0, used: counts.used || 0, ok: counts.ok || 0 }; else delete a[t.id];
     try { localStorage.setItem(UK, JSON.stringify(a)); } catch (e) {}
   };
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)

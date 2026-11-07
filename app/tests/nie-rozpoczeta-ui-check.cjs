@@ -70,6 +70,19 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
         check(await stage() === 'prog', C.id + ': nowy pomiar nie zmienił statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#pomiar'] = await stage();
         await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
       }
+      // 5c. przycisk „Notatka” (samo otwarcie pola, bez zmiany) nic nie zmienia; wpis komentarza = „W trakcie”
+      {
+        const note = pg.locator('#v-form button.pbtn:has-text("Notatka")').first();
+        if (await note.isVisible().catch(() => false)) {
+          await note.click(); await pg.waitForTimeout(800);
+          check(await stage() === 'none', C.id + ': samo otwarcie notatki zmieniło status na „' + await stage() + '”');
+          if (await pg.locator('#komentarz').isVisible().catch(() => false)) {
+            await pg.locator('#komentarz').fill('Test komentarza'); await pg.waitForTimeout(800);
+            check(await stage() === 'prog', C.id + ': komentarz nie zmienił statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#komentarz'] = await stage();
+            await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+          } else R[C.id + '#komentarz'] = 'pole komentarza niewidoczne w tym formularzu';
+        } else R[C.id + '#komentarz'] = 'brak przycisku Notatka w tym formularzu';
+      }
       // 5. nowa zmiana (nowe zdjęcie) = „W trakcie”, jak dotąd
       await pg.setInputFiles('#galIn', { name: 'nowe.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1200);
       check(await stage() === 'prog', C.id + ': nowe zdjęcie nie zmieniło statusu na „W trakcie” (' + await stage() + ')');
@@ -80,9 +93,10 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
       await pg.goto(B + '/inspekcje/index.html#ppm=EFA-INS-015'); await pg.waitForTimeout(2000);
       const s = await pg.evaluate(() => (JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}')['EFA-INS-015'] || {}).s);
       check(s === 'prog', 'nietknięta inspekcja po otwarciu: ' + s + ' zamiast „W trakcie” (zmiana zachowania)'); await ctx.close(); }
+    check(CASES.some(c => R[c.id + '#komentarz'] === 'prog'), 'żaden formularz nie sprawdził komentarza');
     check(errors.length === 0, 'błędy JS: ' + errors.slice(0, 3).join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }
   console.log('POMIARY ' + JSON.stringify(R));
   if (fails.length) { console.error('NIE ROZPOCZETA UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
-  console.log('NIE ROZPOCZETA UI PASS: ' + CASES.map(c => c.id).join(', ') + ' – „Nie rozpoczęta” zostaje po 2 restartach i otwarciach, zdjęcia i odpowiedzi bez zmian, zamiana odpowiedzi, nowy pomiar i nowe zdjęcie = W trakcie');
+  console.log('NIE ROZPOCZETA UI PASS: ' + CASES.map(c => c.id).join(', ') + ' – „Nie rozpoczęta” zostaje po 2 restartach i otwarciach, zdjęcia i odpowiedzi bez zmian, zamiana odpowiedzi, nowy pomiar, komentarz i nowe zdjęcie (samo otwarcie notatki nic nie zmienia) = W trakcie');
 })().catch(e => { console.error(e); process.exitCode = 1; });
