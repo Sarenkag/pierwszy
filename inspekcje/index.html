@@ -1150,13 +1150,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var patch = Object.assign({ s: r ? r.s : "prog" }, ppmCounts()); delete patch.sig; // odcisk tylko do porównania przy „Nie rozpoczęta”
     if (r && (r.s === "queued" || r.s === "sent")) return; // wysłana: klocek pokazuje to, co poszło w raporcie
     // Gotowa: liczniki (zdjęcia, usterki) zawsze aktualne, status zostaje. Nie rozpoczęta + zmiana (np. zdjęcie kranu) = W trakcie.
-    if (!r && !open && !photos.length && !ppmCounts().used) return;
     // ręcznie „Nie rozpoczęta” (07/11): otwarcie i wczytywanie szkicu nic nie zmienia; W trakcie dopiero po nowej zmianie w formularzu
+    // (zdjęcia, odpowiedzi, powody, notatki, krany, tydzień, pomiary – też w formularzach bez pytań i zdjęć)
     var u = !r && PPM.unstarted ? PPM.unstarted(t) : null;
     if (u) {
       if (open || (cur.mode === "one" && (!draftOn || restoring))) return;
       var c = ppmCounts(); if (c.photos === u.photos && c.sheet === u.sheet && c.used === u.used && c.ok === u.ok && (!u.sig || c.sig === u.sig)) return;
-    }
+    } else if (!r && !open && !photos.length && !ppmCounts().used) return;
     var first = photos[0];
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
@@ -1427,7 +1427,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
   });
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
-  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function () { setTimeout(scheduleDraft, 0); }); });
+  ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function () { setTimeout(function () { scheduleDraft(); if (cur.type && cur.ppm && PPM && PPM.unstarted && PPM.unstarted(cur.ppm)) ppmTrack(false); }, 0); }); }); // ręczne „Nie rozpoczęta”: każda zmiana w formularzu (np. pomiary, krany) = W trakcie
   // apka schowana / zamykana: zapis od razu, bez czekania
   document.addEventListener("visibilitychange", function () { if (document.hidden) saveDraftNow(); });
   window.addEventListener("pagehide", function () { saveDraftNow(); });
