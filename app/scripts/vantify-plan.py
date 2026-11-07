@@ -1,5 +1,7 @@
 # Generuje app/www/vantify-plan.js z eksportu Job z Vantify (CSV). Uruchom z katalogu repo:
-#   python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js
+#   python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js [task_frequencies.csv]
+# Z eksportu Task Frequencies (opcjonalnie): pełna nazwa zadania jak w Vantify + numer zadania dla każdej częstotliwości
+# (okno informacji klocka, Grzegorz 07/11/2026). Rozdzielne zadania o tej samej nazwie i innej częstotliwości zostają osobno.
 # Bierze tylko zlecenia Planned: numer, termin (completeBy), częstotliwość. Bez danych osobowych.
 import csv,json,subprocess,re,sys
 rows=[x for x in csv.DictReader(open(sys.argv[1],encoding='utf-8-sig')) if x['jobType']=='Planned']
@@ -21,4 +23,17 @@ ver=exp+"-"+hashlib.sha1(json.dumps(out,sort_keys=True).encode()).hexdigest()[:8
 js="// Zlecenia PPM z Vantify (eksport Job "+exp+"): numer zlecenia + termin (completeBy). Bez danych osobowych.\n// Aktualizacja: nowy eksport → python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js. Klucz = id karty z ppm.js.\nwindow.OEST_VANTIFY = { exported: \""+ver+"\", jobs: {\n"
 js+=",\n".join('  "%s": [%s]'%(k,", ".join('{ no: "%s", due: "%s", f: "%s" }'%(j['no'],j['due'],j['f']) for j in out[k])) for k in sorted(out))
 js+="\n} };\n"
+tk={}
+if len(sys.argv)>3:
+    for x in csv.DictReader(open(sys.argv[3],encoding='utf-8-sig')):
+        n=x['taskName']; i=by.get(norm(n))
+        m=re.match(r'^Distribution Boards \((.+)\)$',n)
+        if not i and m: i=by.get(norm(m.group(1))) or by.get(norm(m.group(1).replace('DB-TB-','')))
+        if not i: continue
+        tk.setdefault(i,[]).append({"f":x['frequency'],"no":x['frequencyId'],"name":n})
+if tk:
+    js=js[:-len("\n} };\n")]+"\n}, tasks: {\n"
+    js+=",\n".join('  "%s": [%s]'%(k,", ".join('{ f: "%s", no: "%s", name: %s }'%(j['f'],j['no'],json.dumps(j['name'],ensure_ascii=False)) for j in tk[k])) for k in sorted(tk))
+    js+="\n} };\n"
+    print("tasks:",len(tk),file=sys.stderr)
 open(sys.argv[2],'w').write(js)

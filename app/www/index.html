@@ -509,7 +509,6 @@ input[type=text], input[type=email], input[type=date], select {
   // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
   // aktywo Vantify przypięte do karty PPM (aktywa.js): numer + nazwa na karcie, lista „Aktywa”
   var AS = window.OEST_ASSETS || [];
-  function assetOf(t) { return AS.filter(function (a) { return a.app.indexOf(t.id) >= 0; })[0] || null; }
   function assetRows() {
     return AS.map(function (a) {
       var tasks = a.app.map(function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
@@ -520,41 +519,42 @@ input[type=text], input[type=email], input[type=date], select {
         '<span><div class="nm">' + esc(a.name) + '</div><div class="dt">' + esc(info) + '</div><div class="dt">' + (tasks.length ? "✓ " : "○ ") + esc(own) + "</div></span></button>";
     }).join("");
   }
-  // klocek v2 (Grzegorz 02/11): typ z lewej, krótka nazwa + etap, budynek · częstotliwość, termin + %, pasek, punkty/usterki/zdjęcia
-  var ST = { prog: [["◐ W trakcie", "◐ In progress"], "c1", 50], hold: [["⏸ Wstrzymana", "⏸ On hold"], "c1", 50], done: [["✓ Zakończona", "✓ Completed"], "c2", 100], queued: [["⏳ W kolejce", "⏳ Queued"], "c4", 100], sent: [["✓ Wysłana", "✓ Sent"], "c2", 100] };
-  function stName(x) { return T(x[0][0], x[0][1]); }
-  var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "12M": ["co rok", "annual"] };
+  // częstotliwość słownie (okno informacji klocka)
+  var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "11M": ["co 11 miesięcy", "every 11 months"], "12M": ["co rok", "annual"] };
   function freqName(f) { return FREQ[f] ? T(FREQ[f][0], FREQ[f][1]) : f; }
-  function ICON_APP() { return '<svg class="ty" viewBox="0 0 24 24" aria-label="' + T("Inspekcja w apce", "In-app inspection") + '"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 9l2 2 3-4M8 16l2 2 3-4M15 9h2M15 16h2"/></svg>'; }
-  function ICON_FOLDER() { return '<svg class="ty" viewBox="0 0 24 24" aria-label="' + T("Ze zdjęć kartki", "From photos of the paper form") + '"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2.6"/></svg>'; }
-  function dshort(d) { return dayName(d.getDay()).toLowerCase() + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  // klocek inspekcji (Grzegorz 07/11/2026): 3 linie, każdy element w stałym miejscu – moduly/klocek (OESTKlocek.inspekcja)
+  function trybOf(st, late) { return !st ? (late ? "zalegla" : "nierozpoczeta") : st.s === "done" || st.s === "queued" || st.s === "sent" ? "gotowa" : st.s === "hold" ? "wstrzymana" : "wtrakcie"; }
+  function kiData(t, due, left) {
+    var st = P.stage ? P.stage(t) : null, nd = P.needs ? P.needs(t) : { q: true, p: true, f: false };
+    var tryb = trybOf(st, left !== null && left < 0);
+    var used = st && st.used != null ? st.used : st && st.total || 0, ok = st && st.ok != null ? st.ok : 0;
+    return { st: st, nd: nd, tryb: tryb, done: tryb === "gotowa", loc: P.loc(t), freq: P.freqNow(t, due), photos: st ? st.photos || 0 : 0,
+      qa: nd.q && st && used ? { ok: ok, all: used } : null, issues: nd.q && st && st.issues ? st.issues : 0,
+      form: st && st.sheet ? "ok" : nd.f ? "blad" : "brak" };
+  }
   function ppmCard(r) {
-    var t = r.t, g = grp(t.group), sh = P.short(t), st = P.stage ? P.stage(t) : null, a = assetOf(t);
-    var stg = st ? ST[st.s] : null, late = !stg && r.left !== null && r.left < 0;
-    // dwa statusy (Grzegorz 02/11): etap inspekcji w rogu + wysyłka na dole; zrobione i wysłane → szare, na koniec listy
-    var insp = !st ? null : st.s === "queued" || st.s === "sent" ? ST.done : ST[st.s];
-    var badge = insp ? '<span class="kst ' + insp[1] + '">' + stName(insp) + "</span>" : late ? '<span class="kst c3">' + T("! Zaległa", "! Overdue") + '</span>' : '<span class="kst c0">' + T("○ Nie rozpoczęta", "○ Not started") + '</span>';
-    var send = !st ? "" : st.s === "sent" ? '<span class="ksend c2">' + T("📤 Wysłana", "📤 Sent") + '</span>' : st.s === "queued" ? '<span class="ksend c4">' + T("⏳ W kolejce", "⏳ Queued") + '</span>' : st.s === "done" ? '<span class="ksend c3">' + T("✉ Niewysłana", "✉ Not sent") + '</span>' :
-      st.mail === "sent" ? '<span class="ksend c2">' + T("📤 Raport wysłany", "📤 Report sent") + '</span>' : st.mail === "queued" ? '<span class="ksend c4">' + T("⏳ Raport w kolejce", "⏳ Report queued") + '</span>' : ""; // „Wyślij” przy otwartej inspekcji (04/11)
-    var where = [sh.where, t.freq.map(freqName).join(" + "), a && "#" + a.id, t.by].filter(Boolean).join(" · ");
-    var due = r.due ? (st && (st.s === "sent" || st.s === "queued" || st.s === "done") ? (st.s === "done" ? T("Zakończona ", "Completed ") : st.s === "sent" ? T("Wysłana ", "Sent ") : T("W kolejce ", "Queued ")) + dshort(new Date(st.at)) + T(" · następna ", " · next ") + dshort(r.next || r.due)
-      : "<b" + (late || r.left === 0 ? ' class="red"' : "") + ">" + (r.left === 0 ? T("dziś, ", "today, ") : "") + dshort(r.due) + "</b>" + (late ? ' <span class="red">· ' + (-r.left) + " " + T(P.dni(r.left)[0] + " temu", P.dni(r.left)[1] + " ago") + "</span>" : r.left > 0 ? T(" · za ", " · in ") + r.left + " " + T(P.dni(r.left)[0], P.dni(r.left)[1]) : "")) : T("Brak terminu — ustaw w inspekcji (Update)", "No due date — set it in the inspection (Update)");
-    // dolny wiersz (makieta Grzegorza 04/11): termin · raport · zdjęcia · punkty OK / pytania
-    var foot = t.form === "folder" ? T("zdjęcia kartki → PDF", "form photos → PDF") : t.cfg && !st ? T("formularz do konfiguracji", "form to configure") : "";
-    // co inspekcja wymaga (ustawiane w inspekcji): niewymagane = szara, przygaszona ikonka
-    var nd = P.needs ? P.needs(t) : { q: true, p: true, f: false };
-    // zdjęcie formularza: wymagane → czerwone ✗, dopóki nie dodane, potem zielone ✓; niewymagane → szary dokument (✓, jeśli i tak dodane)
-    var form = st && st.sheet ? "ok" : nd.f ? "blad" : "brak";
-    var used = st && st.used != null ? st.used : st && st.total || 0, ok = st && st.ok != null ? st.ok : 0, ph = st ? st.photos || 0 : 0;
-    // zdjęcia bez formularza · odpowiedzi OK / pytania
-    var marks = [{ i: "zdjecia", n: ph, off: !nd.p && !ph }, { i: "punkty", n: nd.q ? (st ? ok + "/" + used : "–") : "–", off: !nd.q }, nd.q && st && st.issues ? { i: "usterki", n: st.issues, tone: 3 } : null];
-    var go = !st ? T("Zacznij", "Start") : st.s === "prog" || st.s === "hold" ? T("Kontynuuj", "Continue") : T("Otwórz", "Open");
-    // jeden klocek dla całej apki (moduly/klocek, Grzegorz 04/11): tu tylko podstawiamy dane inspekcji
-    return window.OESTKlocek.html({
-      id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
-      status: st && (st.s === "done" || st.s === "queued" || st.s === "sent") ? { text: T("✓ GOTOWA", "✓ READY"), tone: 2, ready: true } : insp ? { text: stName(insp), tone: +insp[1].slice(1) } : late ? { text: T("Zaległa", "Overdue"), tone: 3 } : { text: T("Nie rozpoczęta", "Not started"), tone: 0 },
-      desc: where, due: due, foot: foot, form: form, marks: marks, go: go, done: false /* gotowa nie szarzeje (04/11) */
-    });
+    var t = r.t, g = grp(t.group), sh = P.short(t), k = kiData(t, r.due, r.left);
+    var go = !k.st ? T("Zacznij", "Start") : k.st.s === "prog" || k.st.s === "hold" ? T("Kontynuuj", "Continue") : T("Otwórz", "Open");
+    return window.OESTKlocek.inspekcja({ id: t.id, color: g.color, name: sh.name, status: k.tryb, loc: k.loc.code, freq: k.freq, form: k.form,
+      due: r.due, left: r.left, dueDone: k.done, photos: k.photos, qa: k.qa, issues: k.issues, go: go, glow: k.done /* Gotowa świeci (04/11) */ });
+  }
+  // okno informacji po przytrzymaniu klocka (Grzegorz 07/11/2026 19:36–19:40)
+  function dlong(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear(); }
+  function ppmInfo(id, dayIso) {
+    var t = P.byId(id); if (!t) return;
+    var due = dayIso ? new Date(+dayIso.slice(0, 4), +dayIso.slice(5, 7) - 1, +dayIso.slice(8, 10)) : P.due(t), k = kiData(t, due, P.daysLeft(due));
+    var vt = P.vantifyTask(t, k.freq), job = due ? P.jobFor(t, P.iso(due)) : null;
+    var rows = [
+      { ic: "lok", html: k.loc.full ? (k.loc.code ? "<b>" + esc(k.loc.code.split("/")[0]) + "</b>" + esc(k.loc.full.slice(k.loc.code.split("/")[0].length)) : esc(k.loc.full)) : esc(T("Lokalizacja nieprzypisana", "No location assigned")) },
+      { ic: "czest", html: "<b>" + esc(window.OESTKlocek.czest(k.freq) || "–") + "</b>" + (k.freq ? " – " + esc(freqName(k.freq)) : "") + (vt ? " · Vantify " + esc(vt.no) : "") },
+      { ic: "termin", html: due ? T("Kończy się ", "Due ") + "<b>" + dlong(due) + "</b>" + (job ? T(" · zlecenie ", " · job ") + esc(job.no) : "") : esc(T("Brak terminu", "No due date")) },
+      { ic: "form-" + k.form, html: k.nd.f ? esc(T("Wymaga zdjęcia ręcznie wypełnionego formularza", "Requires a photo of the hand-filled form")) + " · " + (k.form === "ok" ? '<b style="color:#21c45a">' + esc(T("dodane", "added")) + "</b>" : '<b style="color:#ef3b36">' + esc(T("brak", "missing")) + "</b>")
+        : esc(T("Zdjęcie formularza niewymagane", "Form photo not required")) + (k.form === "ok" ? " · " + esc(T("dodane", "added")) : "") },
+      { ic: "zdjecia", html: esc(k.nd.p ? T("Wymaga zdjęć", "Requires photos") : T("Zdjęcia niewymagane", "Photos not required")) + " · " + esc(T("zrobiono ", "taken ")) + "<b>" + k.photos + "</b>" },
+      { ic: k.qa ? (k.qa.ok === k.qa.all ? "pytania-ok" : "pytania-mid") : "pytania", html: !k.nd.q ? esc(T("Pytania nieaktywne", "Questions not active")) : k.qa ? esc(T("Wymaga odpowiedzi na pytania", "Requires answers")) + " · OK <b>" + k.qa.ok + "</b> / <b>" + k.qa.all + "</b>" : esc(T("Wymaga odpowiedzi na pytania · jeszcze nie zaczęta", "Requires answers · not started yet")) }
+    ];
+    if (k.issues) rows.push({ ic: "usterki", html: esc(T("Usterki", "Defects")) + ": <b>" + k.issues + "</b>" });
+    window.OESTPrzycisk.ask({ title: vt ? vt.name : t.name, node: window.OESTKlocek.infoNode(rows), bare: true, cls: window.OESTKlocek.infoCls });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
   // wiersze listy Inspekcji: termin i dzień w pasku (Gotowa zostaje w swoim dniu, zaległe na dziś)
@@ -614,10 +614,12 @@ input[type=text], input[type=email], input[type=date], select {
         var gg = grp(r.t.group);
         // grupa (np. 18 DB) – ten sam klocek, w miejscu akcji „rozwiń / zwiń”
         var fl = r.left;
-        return window.OESTKlocek.html({ data: { fam: r.fam }, color: gg.color, icon: ICON_APP(), name: r.fam + " (" + r.rows.length + ")",
-          status: fl === null ? { text: T("○ Bez terminu", "○ No due date"), tone: 0 } : fl < 0 ? { text: T("! Zaległa", "! Overdue"), tone: 3 } : fl <= 2 ? { text: T("● Wkrótce", "● Soon"), tone: 1 } : { text: T("● W terminie", "● On time"), tone: 2 },
-          desc: [r.t.freq.map(freqName).join(" + "), r.rows.length + T(" urządzeń", " devices")].join(" · "), due: esc(P.endsText(r.left)),
-          foot: T("grupa inspekcji", "inspection group"), go: ppmOpen[r.fam] ? T("Zwiń", "Collapse") : T("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
+        // grupa (np. 18 DB) – ten sam klocek: status z urządzeń, ☑ = gotowe / wszystkie urządzenia
+        var ks = r.rows.map(function (x) { return kiData(x.t, x.due, x.left); }), gd = ks.filter(function (x) { return x.done; }).length;
+        var ft = gd === ks.length ? "gotowa" : ks.some(function (x) { return x.tryb === "wtrakcie"; }) ? "wtrakcie" : r.left !== null && r.left < 0 ? "zalegla" : ks.some(function (x) { return x.tryb === "wstrzymana"; }) ? "wstrzymana" : "nierozpoczeta";
+        return window.OESTKlocek.inspekcja({ data: { fam: r.fam }, color: gg.color, name: r.fam + " (" + r.rows.length + ")", status: ft, loc: "", freq: P.freqNow(r.t, r.rows[0].due), form: "brak",
+          due: r.rows[0].due, left: r.left, photos: ks.reduce(function (n, x) { return n + x.photos; }, 0), qa: { ok: gd, all: ks.length }, issues: ks.reduce(function (n, x) { return n + x.issues; }, 0),
+          go: ppmOpen[r.fam] ? T("Zwiń", "Collapse") : T("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
       }
       return ppmCard(r);
     }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>';
@@ -635,6 +637,7 @@ input[type=text], input[type=email], input[type=date], select {
     if (g === "all") ppmSel = []; else if (i >= 0) ppmSel.splice(i, 1); else ppmSel.push(g);
     save("ppm.sel", ppmSel); renderPpm();
   });
+  window.OESTKlocek.przytrzymaj($("ppmList"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id); });
   $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
 
@@ -668,19 +671,18 @@ input[type=text], input[type=email], input[type=date], select {
     $("calGrid").innerHTML = h;
     var list = by[calSel] || [];
     $("calDay").innerHTML = calSel ? (list.length ? list.map(function (e) {
-      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, stc = cur && P.stage && P.stage(t), stx = stc && ST[stc.s] ? stName(ST[stc.s]) + " · " : "";
-      var cd = calSel.split("-"), info = [T("Termin ", "Due ") + dshort(new Date(+cd[0], +cd[1] - 1, +cd[2])), e.job ? "Vantify " + e.job : ""].filter(Boolean).join(" · ");
-      // ten sam klocek co na liście Inspekcji (moduly/klocek)
-      var sh = P.short(t), so = stc && ST[stc.s];
-      return window.OESTKlocek.html({ id: t.id, color: g.color, icon: t.form === "folder" ? ICON_FOLDER() : ICON_APP(), tag: sh.bld, name: sh.name,
-        status: so ? { text: stName(so), tone: +so[1].slice(1) } : e.plan ? { text: T("◌ Planowane", "◌ Planned"), tone: 0 } : { text: T("○ Do zrobienia", "○ To do"), tone: 0 },
-        desc: [sh.where, t.freq.map(freqName).join(" + ")].filter(Boolean).join(" · "), due: esc(info), foot: e.plan ? T("Jeszcze nie w Vantify", "Not in Vantify yet") : "", go: T("Otwórz ›", "Open ›"), plan: e.plan });
+      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, cd = calSel.split("-"), day = new Date(+cd[0], +cd[1] - 1, +cd[2]);
+      // ten sam klocek co na liście Inspekcji (moduly/klocek); etap tylko dla bieżącego terminu
+      var k = kiData(t, day, P.daysLeft(day)), tryb = cur ? k.tryb : "nierozpoczeta";
+      return window.OESTKlocek.inspekcja({ id: t.id, data: { day: calSel }, color: g.color, name: P.short(t).name, status: tryb, loc: k.loc.code, freq: e.job ? (P.jobFor(t, calSel) || {}).f || k.freq : k.freq, form: cur ? k.form : (k.nd.f ? "blad" : "brak"),
+        due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: T("Otwórz", "Open"), plan: e.plan, glow: tryb === "gotowa" });
     }).join("") : '<p class="hint">' + T("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
     var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0; } catch (e2) {}
     $("calNoShift").hidden = hasShift;
   }
   document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
   $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });
+  window.OESTKlocek.przytrzymaj($("calDay"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id, el.dataset.day); });
   $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
 
   // Ekran główny: home.js (pasek dni liczy tak samo jak lista Inspekcji: zaległe na dziś)

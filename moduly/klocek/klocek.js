@@ -73,5 +73,126 @@
       '<div class="kr kinfo">' + due + (marks ? '<div class="km">' + marks + "</div>" : "") + "</div>" +
       '<svg class="kgo' + (o.open ? " open" : "") + '" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>';
   }
-  w.OESTKlocek = { html: html, esc: esc, tones: TONE, css: css };
+  // ---------- klocek inspekcji (Grzegorz 07/11/2026, zgoda na budowę 22:10) ----------
+  // Każdy element ma STAŁE miejsce i stałą (maksymalną) wielkość, także gdy jest pusty – klocki są identyczne, PL/EN bez skoków.
+  // Wszystkie ikonki: 21×21, styl „słupków” (kreska 1.8, kolor --steel); kolor ma tylko znak w środku ikony.
+  //
+  //  ┌▌ Nazwa inspekcji …………………………… (pigułka)  ┐  1: nazwa (wielokropek) + pigułka statusu (OESTZnacznik.status, 98 px)
+  //  │▌ [TB/L13] ▮▮▮ 3M  🗎✗                     › │  2: lokalizacja (pole 5–6 znaków, puste = pusty kwadrat), słupki + częstotliwość (3 znaki), formularz
+  //  └▌ 📅 30/11 za 23D │ 🖼 7 │ ☑ 8/20 │ ⚠ 2      ┘  3: termin │ zdjęcia (2 cyfry) │ OK/pytania (99/99) │ usterki (na razie pomarańczowe)
+  //
+  // OESTKlocek.inspekcja({
+  //   id, data:{fam:'DB'}, color (pasek z lewej), name, status:'zalegla'|'nierozpoczeta'|'wtrakcie'|'wstrzymana'|'gotowa',
+  //   loc:'TB/L13' ('' = pusty kwadrat), freq:'3M' (1W 1M 3M 6M 11M; 12M pokazuje się jako „Y”), form:'blad'|'ok'|'brak'
+  //   (✗ czerwony = wymagane zdjęcie formularza, jeszcze brak; ✓ zielony = dodane; same linie = niewymagane),
+  //   due: Date|null, left: dni do terminu (z OEST_PPM.daysLeft), dueDone: true (Gotowa – sama data, bez odliczania),
+  //   photos: liczba, qa: {ok, all} | null („–”), issues: liczba (0 = puste miejsce), go ('Otwórz'), open (grupa rozwinięta), plan, glow (Gotowa świeci)
+  // })   → '<button class="prow k2 ki" …>…</button>'
+  // OESTKlocek.termin(due, left, done) → { text, tone: ''|'jutro'|'red' } – „DD/MM za 4D”, „DD/MM jutro”, „DD/MM dziś”, „DD/MM −3D”; od 31 dni „za 1M”.
+  // OESTKlocek.przytrzymaj(lista, onHold) – przytrzymanie klocka ~0,4 s → onHold(klocek) + krótka wibracja; zwykłe stuknięcie działa jak dotąd.
+  // OESTKlocek.infoNode([{ic:'lok'|'czest'|'termin'|'form-blad'|'form-ok'|'form-brak'|'zdjecia'|'pytania'|'pytania-ok'|'pytania-mid'|'usterki', html}])
+  //   → treść okna informacji; strona otwiera je tym samym okienkiem apki: OESTPrzycisk.ask({ title, node, bare: true, cls: OESTKlocek.infoCls })
+  //   (bez przycisków: zostaje po puszczeniu palca, stuknięcie gdziekolwiek / Wstecz zamyka).
+  var ORANGE = "#ff8a3d", RED = "#ef3b36", GREEN = "#21c45a";
+  var DOC = '<path d="M7 3h7.5L19 7.5V19a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>';
+  var IC = {
+    lok: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0113 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+    czest: '<path d="M3 20h18"/><rect x="5" y="12" width="3" height="8" rx="1"/><rect x="10.5" y="8" width="3" height="12" rx="1"/><rect x="16" y="4" width="3" height="16" rx="1"/>',
+    termin: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    "form-blad": DOC + '<path class="kz" style="stroke:' + RED + '" d="M9.5 11l5 5M14.5 11l-5 5"/>',
+    "form-ok": DOC + '<path class="kz" style="stroke:' + GREEN + '" d="M8.8 13.6l2.3 2.4 4.3-4.8"/>',
+    "form-brak": DOC + '<path d="M8.5 11h7M8.5 15h5"/>',
+    zdjecia: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+    pytania: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.5l3 3 5.5-6.5"/>',
+    "pytania-ok": '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path class="kz" style="stroke:' + GREEN + '" d="M8 12.5l3 3 5.5-6.5"/>',
+    "pytania-mid": '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path class="kz" style="stroke:' + ORANGE + '" d="M8 12.5l3 3 5.5-6.5"/>',
+    usterki: '<path d="M12 4l9 16H3z"/><path class="kz" style="stroke:' + ORANGE + '" d="M12 10v4M12 17.2v.1"/>'
+  };
+  function svg(k) { return '<svg class="kic" viewBox="0 0 24 24" aria-hidden="true">' + (IC[k] || "") + "</svg>"; }
+  var CSS2 =
+    ".prow.k2.ki{min-height:0;gap:0!important;padding:12px 38px 12px 18px!important;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}" +
+    ".ki .kr+.kr{margin-top:9px}" +
+    ".ki .kic{width:21px;height:21px;flex:none;fill:none;stroke:var(--steel);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ki .kic .kz{stroke-width:2.2}" +
+    // lokalizacja: stałe pole pod najdłuższy wpis (TB/L13), puste = pusty kwadrat
+    ".ki .klok{flex:none;width:51px;height:24px;box-sizing:border-box;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.12);font-size:11px;font-weight:800;color:var(--steel);letter-spacing:.02em;white-space:nowrap;overflow:hidden}" +
+    ".ki .kcz{flex:none;width:28px;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden}" +
+    ".ki .kdt{flex:none;width:var(--ki-dt,112px);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kdt b{color:var(--ink)}" +
+    ".ki .kdt.t-jutro,.ki .kdt.t-jutro b{color:" + ORANGE + "}.ki .kdt.t-red,.ki .kdt.t-red b{color:" + RED + "}" +
+    ".ki .ksep{flex:none;width:1px;height:19px;background:rgba(255,255,255,.18);margin:0 2px}" +
+    ".ki .kn{flex:none;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kn2{width:20px}.ki .kn5{width:40px}" +
+    ".ki .kus{flex:none;display:flex;align-items:center;gap:4px;width:44px;height:21px;color:" + ORANGE + "}.ki .kus:empty{visibility:hidden}" +
+    ".oest-ask.ki-info>div{text-align:left}.oest-ask.ki-info{--ruch-okno-easing:var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1))}" +
+    ".ki-info .kir{display:flex;gap:10px;align-items:center;margin:10px 0;font-size:14px;line-height:1.35}" +
+    ".ki-info .kic{width:21px;height:21px;flex:none;fill:none;stroke:var(--steel,#b9c2e6);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ki-info .kic .kz{stroke-width:2.2}" +
+    ".ki-info .kir b{display:inline;font-size:inherit;margin:0;font-weight:700}.ki-info .kfoot{margin:12px 0 0;font-size:12px;opacity:.6;text-align:center}";
+  function css2() {
+    css();
+    if (!w.document || w.document.getElementById("oest-klocek-ki-css")) return;
+    var s = w.document.createElement("style"); s.id = "oest-klocek-ki-css"; s.textContent = CSS2;
+    (w.document.head || w.document.documentElement).appendChild(s);
+  }
+  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
+  function dd(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function termin(due, left, done) {
+    if (!due) return { text: "–", date: "", rest: "", tone: "" };
+    var date = dd(due), rest = "", tone = "";
+    if (done || left == null) rest = "";
+    else if (left < 0) { rest = "−" + (-left > 30 ? Math.floor(-left / 30) + "M" : -left + "D"); tone = "red"; }
+    else if (left === 0) { rest = T("dziś", "today"); tone = "red"; }
+    else if (left === 1) { rest = T("jutro", "tomorrow"); tone = "jutro"; }
+    else rest = T("za ", "in ") + (left > 30 ? Math.floor(left / 30) + "M" : left + "D");
+    return { text: date + (rest ? " " + rest : ""), date: date, rest: rest, tone: tone };
+  }
+  function czest(f) { return f === "12M" ? "Y" : String(f || "").slice(0, 3); }
+  function inspekcja(o) {
+    css2(); o = o || {};
+    var Z = w.OESTZnacznik, data = "";
+    if (o.id != null) data += ' data-id="' + esc(o.id) + '"';
+    Object.keys(o.data || {}).forEach(function (k) { data += " data-" + k + '="' + esc(o.data[k]) + '"'; });
+    var tm = termin(o.due, o.left, o.dueDone);
+    var qa = o.qa && o.qa.all ? o.qa : null, qn = qa ? Math.min(qa.ok, 99) + "/" + Math.min(qa.all, 99) : "–";
+    var form = o.form === "blad" || o.form === "ok" ? o.form : "brak";
+    var st = Z && Z.status ? Z.status(o.status) : "";
+    var n = o.issues > 0 ? Math.min(o.issues, 99) : 0;
+    return '<button class="prow k2 ki' + (o.plan ? " kplan" : "") + (o.glow ? " kready" : "") + '" type="button"' + data + ' style="--g:' + esc(o.color || "#8b949e") + '"' + (o.go ? ' aria-description="' + esc(o.go) + '"' : "") + ">" +
+      '<div class="kr"><div class="knm">' + esc(o.name) + "</div>" + st + "</div>" +
+      '<div class="kr"><span class="klok">' + esc(o.loc || "") + "</span>" + svg("czest") + '<span class="kcz">' + esc(czest(o.freq)) + "</span>" + svg("form-" + form) + "</div>" +
+      '<div class="kr">' + svg("termin") + '<span class="kdt' + (tm.tone ? " t-" + tm.tone : "") + '">' + (tm.date ? "<b>" + tm.date + "</b>" + (tm.rest ? " " + esc(tm.rest) : "") : "–") + "</span>" +
+      '<i class="ksep"></i>' + svg("zdjecia") + '<span class="kn kn2">' + Math.min(o.photos || 0, 99) + "</span>" +
+      '<i class="ksep"></i>' + svg(qa ? (qa.ok === qa.all ? "pytania-ok" : "pytania-mid") : "pytania") + '<span class="kn kn5">' + qn + "</span>" +
+      '<span class="kus">' + (n ? svg("usterki") + '<span class="kn">' + n + "</span>" : "") + "</span></div>" +
+      '<svg class="kgo' + (o.open ? " open" : "") + '" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>';
+  }
+  // przytrzymanie klocka (~0,4 s): okno informacji; ruch palca = przewijanie (bez okna); po przytrzymaniu stuknięcie nie otwiera inspekcji
+  var HOLD_MS = 400;
+  function przytrzymaj(root, onHold) {
+    if (!root || root.__kiHold) return; root.__kiHold = true;
+    var t = 0, x = 0, y = 0, el = null, fired = 0;
+    function stop() { clearTimeout(t); t = 0; }
+    root.addEventListener("pointerdown", function (e) {
+      stop(); fired = 0; el = e.target.closest && e.target.closest(".ki"); if (!el || !root.contains(el)) return;
+      x = e.clientX; y = e.clientY;
+      t = setTimeout(function () {
+        t = 0; fired = Date.now();
+        try { if (w.navigator && w.navigator.vibrate) w.navigator.vibrate(20); } catch (er) {}
+        onHold(el);
+      }, HOLD_MS);
+    }, { passive: true });
+    root.addEventListener("pointermove", function (e) { if (t && (Math.abs(e.clientX - x) > 10 || Math.abs(e.clientY - y) > 10)) stop(); }, { passive: true });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (k) { root.addEventListener(k, stop, { passive: true }); });
+    w.addEventListener("scroll", stop, { passive: true });
+    root.addEventListener("contextmenu", function (e) { if (e.target.closest && e.target.closest(".ki")) e.preventDefault(); });
+    // stuknięcie, które kończy przytrzymanie, nie otwiera inspekcji
+    root.addEventListener("click", function (e) { if (fired && Date.now() - fired < 1500) { fired = 0; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  }
+  przytrzymaj.ms = HOLD_MS;
+  // treść okna informacji; okno otwiera strona: OESTPrzycisk.ask({ title, node: OESTKlocek.infoNode(rows), bare: true, cls: OESTKlocek.infoCls })
+  function infoNode(rows) {
+    css2();
+    var n = w.document.createElement("div");
+    n.innerHTML = (rows || []).map(function (r) { return '<div class="kir">' + svg(r.ic) + "<span>" + r.html + "</span></div>"; }).join("") +
+      '<p class="kfoot">' + esc(T("Stuknij gdziekolwiek, aby zamknąć", "Tap anywhere to close")) + "</p>";
+    return n;
+  }
+  w.OESTKlocek = { html: html, esc: esc, tones: TONE, css: css, inspekcja: inspekcja, termin: termin, czest: czest, przytrzymaj: przytrzymaj, infoNode: infoNode, infoCls: "ki-info", ikony: IC };
 })(typeof window !== "undefined" ? window : globalThis);
