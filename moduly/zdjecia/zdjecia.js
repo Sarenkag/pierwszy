@@ -360,6 +360,8 @@
         [].forEach.call(win.document.querySelectorAll('.oest-sw[data-sw="photoSize"] i[data-v]'), function (i) { var g = GENERAL.filter(function (x) { return x.v === i.dataset.v; })[0]; if (g) i.textContent = tt(g); });
       });
     }
+    // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
+    store.maxPx = function () { var pr = store.settings().preset, p = PRESETS[pr] || PRESETS.standard; if (p !== PRESETS.standard) return p.max || 0; return Object.keys(KINDS).reduce(function (m, k) { return Math.max(m, KINDS[k].max); }, 0); };
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
     store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stats = stats; store.search = search;
     return store;
