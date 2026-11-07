@@ -53,23 +53,31 @@
   }).observe(d.documentElement, { attributes: true, attributeFilter: ["hidden"], subtree: true });
   // ---------- lista po zmianie (filtr, dzień, nowe zadanie) ----------
   // ten sam zestaw kart = brak animacji (np. wpisywanie w polu nie miga); nowy zestaw = karty pojawiają się kolejno
-  var sigs = new WeakMap();
+  var sigs = new WeakMap(), quietUntil = 0;
+  function hush() { quietUntil = Date.now() + 600; }
+  w.addEventListener("oest:lang", hush, true);
+  ["focus", "pageshow"].forEach(function (ev) { w.addEventListener(ev, function (e) { if (e.target === w || e.target === d) hush(); }, true); }); // tylko powrót do apki, nie fokus pola
+  d.addEventListener("visibilitychange", hush, true);
   function keyOf(el) { return el.getAttribute("data-id") || el.getAttribute("data-fam") || el.getAttribute("data-route") || el.getAttribute("data-go") || (el.textContent || "").trim().slice(0, 40); }
   new MutationObserver(function (ms) {
-    var hosts = [];
+    var hosts = [], hushNow = Date.now() < quietUntil;
     ms.forEach(function (m) {
       if (m.type !== "childList" || !m.addedNodes.length) return;
+      // zmiana języka / powrót do apki: te same treści wstawione od nowa – bez animacji „pojawienia się” (liczniki, ikonki, karty)
+      if (hushNow) for (var j = 0; j < m.addedNodes.length; j++) { var an = m.addedNodes[j]; if (an.nodeType === 1 && an.classList) an.classList.add("wy-cisza"); }
       var h = m.target; if (!h.querySelector || hosts.indexOf(h) >= 0) return;
       for (var i = 0; i < m.addedNodes.length; i++) { var n = m.addedNodes[i]; if (n.nodeType === 1 && (n.matches(CARDS) || n.querySelector(CARDS))) { hosts.push(h); break; } }
     });
     if (!hosts.length || Date.now() - navAt < 400) return; // wejście ekranu samo animuje karty
+    var quiet = Date.now() < quietUntil; // zmiana języka / powrót do apki: tylko nowe teksty, bez ruchu (B3, 07/11/2026)
     hosts.forEach(function (h) {
       var cards = [].slice.call(h.querySelectorAll(":scope > " + CARDS.split(",").join(",:scope > ")));
       if (!cards.length) return;
       var sig = cards.map(keyOf).join("\n"), old = sigs.get(h); sigs.set(h, sig);
-      if (old === undefined || old === sig) return;
+      if (old === undefined || old === sig || quiet) return;
       var before = old.split("\n");
-      stagger(h, cards.filter(function (c) { return before.indexOf(keyOf(c)) < 0 || cards.length !== before.length; }).filter(function (c) { return c.getBoundingClientRect().top < w.innerHeight; }));
+      // animują się tylko karty, których przed chwilą nie było; te, które zostały, stoją w miejscu (B3, 07/11/2026)
+      stagger(h, cards.filter(function (c) { return before.indexOf(keyOf(c)) < 0; }).filter(function (c) { return c.getBoundingClientRect().top < w.innerHeight; }));
     });
   }).observe(d.documentElement, { childList: true, subtree: true });
   // ---------- okienka na wierzchu ----------
@@ -110,6 +118,45 @@
   var rm = Element.prototype.remove, rc = Node.prototype.removeChild;
   Element.prototype.remove = function () { var el = this; if (el.dataset && el.dataset.wyPop && !el.dataset.wyOut) { popOut(el, function () { rm.call(el); }); return; } return rm.call(el); };
   Node.prototype.removeChild = function (ch) { var p = this; if (ch && ch.dataset && ch.dataset.wyPop && !ch.dataset.wyOut && p === d.body) { popOut(ch, function () { if (ch.parentNode === p) rc.call(p, ch); }); return ch; } return rc.call(p, ch); };
-  w.OESTWyglad = { stagger: stagger, enter: schedule, reduce: reduce, tap: function () { return tap; } };
+  // ---------- tabela ruchu: odczyt i podmiana w locie (07/11/2026) ----------
+  // Wartości domyślne są w wyglad.css (:root, --ruch-<rola>-<parametr>). Tu tylko API dla przyszłych ustawień animacji:
+  //   OESTWyglad.ruch.pobierz("okno") → { czas: ".22s", easing: "…", efekt: "wyPop", … }
+  //   OESTWyglad.ruch.ustaw("okno", { czas: ".3s", efekt: "wyFade" })  albo  ustaw("okno", "zanikanie")  (gotowy wariant)
+  //   OESTWyglad.ruch.domyslne()  → wszystko jak w wyglad.css
+  var ROLE = {
+    przycisk: ["czas", "easing", "nacisk"], kafelek: ["czas", "easing", "nacisk"], stan: ["czas"], znacznik: ["czas", "easing", "efekt"],
+    status: ["czas", "easing", "efekt"], okno: ["czas", "easing", "efekt", "zamkniecie-czas", "zamkniecie-efekt", "tlo-czas"],
+    ekran: ["czas", "easing", "efekt", "przesuniecie"], lista: ["czas", "easing", "efekt", "odstep"]
+  };
+  var WARIANTY = { // gotowe zestawy z efektów, które już są w wyglad.css (bez nowego wyglądu)
+    przycisk: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
+    kafelek: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
+    okno: { wzrost: { efekt: "wyPop", "zamkniecie-efekt": "wyOut" }, zanikanie: { efekt: "wyFade", "zamkniecie-efekt": "wyOut" } },
+    ekran: { wjazd: { efekt: "wyIn" }, zanikanie: { efekt: "wyFade" } },
+    lista: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
+    status: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
+    znacznik: { wyskok: { efekt: "oest-n-in" }, zanikanie: { efekt: "wyFade" }, brak: { efekt: "none" } }
+  };
+  function nazwa(rola, p) { return "--ruch-" + rola + "-" + p; }
+  var ruch = {
+    role: function () { return Object.keys(ROLE); },
+    warianty: function (rola) { return Object.keys(WARIANTY[rola] || {}); },
+    pobierz: function (rola) {
+      if (!ROLE[rola]) return null;
+      var cs = w.getComputedStyle(d.documentElement), o = {};
+      ROLE[rola].forEach(function (p) { o[p] = cs.getPropertyValue(nazwa(rola, p)).trim(); });
+      return o;
+    },
+    ustaw: function (rola, zmiany) {
+      if (!ROLE[rola]) return false;
+      if (typeof zmiany === "string") zmiany = (WARIANTY[rola] || {})[zmiany];
+      if (!zmiany) return false;
+      Object.keys(zmiany).forEach(function (p) { if (ROLE[rola].indexOf(p) >= 0) d.documentElement.style.setProperty(nazwa(rola, p), String(zmiany[p])); });
+      return true;
+    },
+    domyslne: function () { Object.keys(ROLE).forEach(function (r) { ROLE[r].forEach(function (p) { d.documentElement.style.removeProperty(nazwa(r, p)); }); }); },
+    ograniczony: reduce
+  };
+  w.OESTWyglad = { stagger: stagger, enter: schedule, reduce: reduce, tap: function () { return tap; }, ruch: ruch };
   if (d.readyState !== "loading") schedule(); else d.addEventListener("DOMContentLoaded", schedule);
 })(window, document);

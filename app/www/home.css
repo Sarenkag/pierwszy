@@ -1,5 +1,5 @@
 /* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”). Logika: home.js */
-#v-home{padding-top:max(6px,env(safe-area-inset-top))}
+#v-home{padding-top:max(6px,var(--oest-gora,env(safe-area-inset-top,0px)))}
 .hm-head{display:flex;align-items:center;gap:10px;padding:6px 0 2px}
 .hm-logo{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:.8rem;letter-spacing:.05em;color:#fff;background:linear-gradient(135deg,#5b7cff,#a35bff);box-shadow:0 6px 18px rgba(120,90,255,.45)}
 .hm-name{flex:1;min-width:0}
@@ -18,11 +18,7 @@
 .hm-ph-size span{font-variant-numeric:tabular-nums;font-weight:600;min-width:9.5em;text-align:left}
 .hm-ph-size.ok span{color:var(--ok)}.hm-ph-size.mid span{color:var(--attention)}.hm-ph-size.hi span,.hm-ph-size.full span,.hm-ph-size .hm-warn{color:var(--bad)}
 .hm-ph-size .hm-warn{visibility:hidden;font-size:.9rem;line-height:1}.hm-ph-size.full .hm-warn{visibility:visible}
-.hm-days{margin:0 0 12px;padding:2px}
-.hm-day{width:50px!important;padding:7px 0 5px!important}
-.hm-day em{display:block;font-style:normal;font-size:.8rem;height:1.2em;line-height:1.2em}
-.hm-day i{width:26px;margin:3px auto 0;border-radius:7px;background:rgba(255,255,255,.1);font-size:.72rem!important;font-weight:700}
-.hm-day.off,.hm-day.past{opacity:.4}
+.hm-days{margin:0 0 12px}
 #v-home .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 #v-home .tile{display:flex!important;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;min-height:104px;padding:12px}
 #v-home .tile svg{width:24px;height:24px;stroke-width:2.6}
