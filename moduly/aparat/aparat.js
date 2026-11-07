@@ -22,8 +22,43 @@
   var WIDTHS = [{ k: 'S', v: 4 }, { k: 'M', v: 8 }, { k: 'L', v: 14 }]; // na 1000 px dłuższego boku
   // gotowe kółka: promień na 1000 px dłuższego boku; stuknięcie stawia kółko, przeciąganie przesuwa
   var RADII = { c1: 45, c2: 90, c3: 160 };
-  var TOOLS = [['arrow', '↗', ['Strzałka', 'Arrow']], ['c1', '<span style="font-size:12px">◯</span>', null, ['Małe kółko', 'Small circle']], ['c2', '<span style="font-size:18px">◯</span>', null, ['Średnie kółko', 'Medium circle']], ['c3', '<span style="font-size:24px">◯</span>', null, ['Duże kółko', 'Large circle']],
-    ['rect', '▢', ['Kwadrat', 'Square']], ['line', '／', ['Linia', 'Line']], ['crop', '⛶', ['Kadruj', 'Crop']]];
+  // narzędzia w trzech grupach z podpisem pod grupą (lifting 07/11/2026: wszystko mieści się bez przewijania)
+  var TOOL_GROUPS = [
+    [['Rysuj', 'Draw'], [['arrow', '↗', ['Strzałka', 'Arrow']], ['line', '／', ['Linia', 'Line']], ['rect', '▢', ['Kwadrat', 'Square']]]],
+    [['Kółko', 'Circle'], [['c1', '<span style="font-size:11px">◯</span>', ['Małe kółko', 'Small circle']], ['c2', '<span style="font-size:16px">◯</span>', ['Średnie kółko', 'Medium circle']], ['c3', '<span style="font-size:22px">◯</span>', ['Duże kółko', 'Large circle']]]],
+    [['Kadruj', 'Crop'], [['crop', '⛶', ['Kadruj', 'Crop']]]]];
+  /* Wygląd edytora (lifting 07/11/2026, styl „Szkło i poświata”): tylko tokeny z theme.css i moduly/wyglad (z wartościami zapasowymi).
+     Anuluj = tekst, Cofnij = szkło z ramką, Zapisz = gradient z poświatą; aktywne narzędzie = przygaszony akcent + ramka + poświata. */
+  var CSS =
+    '.oest-editor{position:fixed;inset:0;z-index:2147483001;display:flex;flex-direction:column;touch-action:none;user-select:none;background:var(--bg,#0a0e1f);color:var(--ink,#eef1ff);font-family:var(--font-body,system-ui)}' +
+    '.oest-editor button{-webkit-tap-highlight-color:transparent;cursor:pointer}' +
+    '.oest-editor .ed-top{display:flex;gap:8px;align-items:center;padding:max(44px, calc(10px + var(--oest-gora,env(safe-area-inset-top,0px)))) 12px 8px}' +
+    '.oest-editor .ed-b{min-height:44px;border-radius:var(--r-btn,14px);padding:0 16px;font:600 var(--fs-m,15px) var(--font-body,system-ui);color:var(--ink,#eef1ff);box-sizing:border-box}' +
+    '.oest-editor .ed-ghost{background:transparent;border:1px solid transparent;color:var(--muted,#9aa3cc)}' +
+    '.oest-editor .ed-sec{background:var(--panel,rgba(255,255,255,.06));border:1px solid var(--line,rgba(255,255,255,.12))}' +
+    '.oest-editor .ed-main{background:var(--grad,linear-gradient(90deg,#5b7cff,#a35bff));border:1px solid transparent;color:#fff;font-weight:700;padding:0 20px;box-shadow:0 4px 18px rgba(124,132,255,.35)}' +
+    '.oest-editor .ed-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px}' +
+    '.oest-editor canvas{border-radius:10px}' +
+    '.oest-editor .ed-panel{margin:6px 12px max(44px, calc(14px + env(safe-area-inset-bottom, 0px)), calc(14px + var(--safe-area-inset-bottom, 0px)));padding:10px 10px 12px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-panel,18px);background:rgba(255,255,255,.04)}' +
+    '.oest-editor .ed-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}' +
+    '.oest-editor .ed-grp{display:flex;flex-direction:column;align-items:center;gap:4px}' +
+    '.oest-editor .ed-grp>small{font-size:var(--fs-xs,12px);color:var(--muted,#9aa3cc);font-weight:600}' +
+    '.oest-editor .ed-seg{display:flex;gap:2px;padding:3px;border-radius:var(--r-btn,14px);background:rgba(255,255,255,.05);border:1px solid var(--line,rgba(255,255,255,.12))}' +
+    '.oest-editor .ed-tool{width:44px;height:44px;display:grid;place-items:center;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--steel,#b9c2f0);font:600 18px var(--font-body,system-ui);padding:0;line-height:1}' +
+    '.oest-editor .ed-tool.on{background:rgba(124,132,255,.18);border-color:rgba(124,132,255,.55);color:#fff;box-shadow:0 0 14px rgba(124,132,255,.30)}' +
+    '.oest-editor .ed-sep{height:1px;background:var(--line,rgba(255,255,255,.12));margin:10px 2px}' +
+    '.oest-editor .ed-style{align-items:center}' +
+    '.oest-editor .ed-colors{display:flex;gap:2px}' +
+    '.oest-editor .ed-col{width:36px;height:44px;display:grid;place-items:center;border:0;background:transparent;padding:0}' +
+    '.oest-editor .ed-col i{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);transition:transform var(--ruch-stan-czas,.24s) var(--ruch-easing,ease),box-shadow var(--ruch-stan-czas,.24s)}' +
+    '.oest-editor .ed-col.on i{transform:scale(1.08);box-shadow:0 0 0 2px var(--bg,#0a0e1f),0 0 0 4px #fff}' +
+    '.oest-editor .ed-widths .ed-tool{width:36px}' +
+    '.oest-editor .ed-widths i{border-radius:50%;background:var(--steel,#b9c2f0);transition:background-color var(--ruch-stan-czas,.24s)}' +
+    '.oest-editor .ed-widths .on i{background:var(--dot,#fff)}';
+  function css() {
+    if (document.getElementById('oest-aparat-css')) return;
+    var s = document.createElement('style'); s.id = 'oest-aparat-css'; s.textContent = CSS; document.head.appendChild(s);
+  }
 
   /* Rysuje jeden kształt na kontekście g; k = skala z „współrzędnych zdjęcia” do pikseli płótna. */
   function drawShape(g, sh, k) {
@@ -63,17 +98,17 @@
       return new Promise(function (done) {
         var W = bmp.width, H = bmp.height, unit = Math.max(W, H) / 1000;
         var st = { tool: 'arrow', color: COLORS[0], width: WIDTHS[1].v }, shapes = [], crop = null, cur = null;
-        var btn = 'min-height:44px;min-width:44px;border-radius:12px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 15px system-ui;padding:0 10px';
+        css();
         var box = document.createElement('div'); box.className = 'oest-editor';
-        box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483001;background:#05070c;display:flex;flex-direction:column;touch-action:none;user-select:none');
         box.innerHTML =
-          '<div style="display:flex;gap:8px;padding:max(44px, calc(10px + var(--oest-gora,env(safe-area-inset-top,0px)))) 12px 6px;align-items:center"><button type="button" data-a="cancel" style="' + btn + '">' + T('✕ Anuluj', '✕ Cancel') + '</button><span style="flex:1"></span>' +
-          '<button type="button" data-a="undo" style="' + btn + '">' + T('↶ Cofnij', '↶ Undo') + '</button><button type="button" data-a="save" style="' + btn + ';border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);font-weight:700">' + T('✓ Zapisz', '✓ Save') + '</button></div>' +
-          '<div class="ed-stage" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
-          '<div style="display:flex;gap:8px;padding:6px 12px;overflow-x:auto">' + TOOLS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" aria-label="' + TT(t[3] || t[2]) + '" style="' + btn + ';flex:none">' + t[1] + (t[2] ? ' <small>' + TT(t[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>' +
-          '<div style="display:flex;gap:6px;padding:6px 12px max(44px, calc(14px + env(safe-area-inset-bottom, 0px)), calc(14px + var(--safe-area-inset-bottom, 0px)));align-items:center;flex-wrap:wrap;justify-content:center">' +
-          COLORS.map(function (c) { return '<button type="button" data-c="' + c + '" aria-label="' + T('Kolor', 'Colour') + '" style="flex:none;width:32px;height:32px;border-radius:50%;border:3px solid #3a4152;background:' + c + '"></button>'; }).join('') +
-          '<span style="width:8px"></span>' + WIDTHS.map(function (w) { return '<button type="button" data-w="' + w.v + '" style="' + btn + ';flex:none">' + w.k + '</button>'; }).join('') + '</div>';
+          '<div class="ed-top"><button type="button" class="ed-b ed-ghost" data-a="cancel">' + T('Anuluj', 'Cancel') + '</button><span style="flex:1"></span>' +
+          '<button type="button" class="ed-b ed-sec" data-a="undo">' + T('↶ Cofnij', '↶ Undo') + '</button><button type="button" class="ed-b ed-main" data-a="save">' + T('✓ Zapisz', '✓ Save') + '</button></div>' +
+          '<div class="ed-stage"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
+          '<div class="ed-panel"><div class="ed-row ed-tools">' + TOOL_GROUPS.map(function (gr) {
+            return '<div class="ed-grp"><div class="ed-seg">' + gr[1].map(function (t) { return '<button type="button" class="ed-tool" data-t="' + t[0] + '" aria-label="' + TT(t[2]) + '">' + t[1] + '</button>'; }).join('') + '</div><small>' + TT(gr[0]) + '</small></div>';
+          }).join('') + '</div><div class="ed-sep"></div>' +
+          '<div class="ed-row ed-style"><div class="ed-colors">' + COLORS.map(function (c) { return '<button type="button" class="ed-col" data-c="' + c + '" aria-label="' + T('Kolor', 'Colour') + '"><i style="background:' + c + '"></i></button>'; }).join('') + '</div>' +
+          '<div class="ed-seg ed-widths">' + WIDTHS.map(function (w) { return '<button type="button" class="ed-tool" data-w="' + w.v + '" aria-label="' + T('Grubość', 'Width') + ' ' + w.k + '"><i style="width:' + (w.v + 2) + 'px;height:' + (w.v + 2) + 'px"></i></button>'; }).join('') + '</div></div></div>';
         var cv = box.querySelector('canvas'), g = cv.getContext('2d'), stage = box.querySelector('.ed-stage'), k = 1;
         function fit() {
           var r = stage.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -90,10 +125,10 @@
             g.strokeStyle = '#fff'; g.setLineDash([8, 6]); g.lineWidth = 2; g.strokeRect(c.x * k, c.y * k, c.w * k, c.h * k); g.restore();
           }
         }
-        function mark() {
-          box.querySelectorAll('[data-t]').forEach(function (b) { b.style.background = b.getAttribute('data-t') === st.tool ? '#3b4ad8' : '#151a22'; });
-          box.querySelectorAll('[data-c]').forEach(function (b) { b.style.borderColor = b.getAttribute('data-c') === st.color ? '#fff' : '#3a4152'; });
-          box.querySelectorAll('[data-w]').forEach(function (b) { b.style.background = +b.getAttribute('data-w') === st.width ? '#3b4ad8' : '#151a22'; });
+        function mark() { // stan aktywny przez klasę .on (wygląd w CSS modułu)
+          box.querySelectorAll('[data-t]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === st.tool); });
+          box.querySelectorAll('[data-c]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-c') === st.color); });
+          box.querySelectorAll('[data-w]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-w') === st.width); b.style.setProperty('--dot', st.color); });
         }
         function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
         var drag = null;

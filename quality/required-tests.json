@@ -142,6 +142,11 @@
       "file": "app/tests/pasek-systemowy-ui-check.cjs",
       "passMarker": "PASEK SYSTEMOWY UI PASS",
       "timeoutSec": 300
+    },
+    {
+      "file": "app/tests/edytor-zdjec-ui-check.cjs",
+      "passMarker": "EDYTOR ZDJEC UI PASS",
+      "timeoutSec": 900
     }
   ],
   "allowedSkips": []
