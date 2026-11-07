@@ -127,7 +127,8 @@
       "file": "app/tests/raport-ui-check.cjs",
       "passMarker": "raport-ui-check: ",
       "timeoutSec": 900,
-      "scenarios": "ppm-inspections"
+      "scenarios": "ppm-inspections",
+      "osobno": true
     },
     {
       "file": "app/tests/reactive-ui-check.cjs",

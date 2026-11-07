@@ -6,7 +6,7 @@
 // Flushing: formularz firmy + basic form w Wordzie. Uruchamiany w Quality Gate (G2) przed budową APK.
 // Szybkość (Grzegorz 07/11/2026, „Tak, przyspiesz”): zamiast stałego czekania test czeka na konkretny stan (formularz gotowy,
 // raport z PDF i Word w kolejce). Limit dla raportu zostaje taki jak był: 3,5 s od „Wyślij”, inaczej FAIL jak dotąd.
-// Inspekcje idą po kilka naraz (OEST_RAPORT_NARAZ, domyślnie 4), każda w osobnym kontekście przeglądarki = osobne dane, jak dotąd.
+// Inspekcje idą po kilka naraz (OEST_RAPORT_NARAZ, domyślnie 3), każda w osobnym kontekście przeglądarki = osobne dane, jak dotąd.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
 const { inspections, tasks } = require('./ppm-lista.cjs'), { docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat } = require('./raport-tresc.cjs');
@@ -18,7 +18,7 @@ const server = http.createServer((req, res) => {
 });
 const ids = inspections(root), PPM = tasks(root);
 // Pomiar o wartości w zakresie dla rodzaju wylotu (hot > 50°C, cold < 20°C, TMV 38–43°C); każda wartość inna, żeby sprawdzić kolejność w raporcie.
-const NARAZ = Math.max(1, +(process.env.OEST_RAPORT_NARAZ || 4)), RAPORT_MS = 3500; // RAPORT_MS = dawne stałe czekanie po „Wyślij”, teraz górny limit
+const NARAZ = Math.max(1, +(process.env.OEST_RAPORT_NARAZ || 3)), RAPORT_MS = 3500; // RAPORT_MS = dawne stałe czekanie po „Wyślij”, teraz górny limit
 // raport w kolejce: ostatni wpis ma i PDF, i Word (ten sam odczyt IndexedDB co niżej)
 const queued = () => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { try { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const l = g.result[g.result.length - 1]; res(!!(l && (l.files || []).some(f => /\.pdf$/.test(f.name)) && (l.files || []).some(f => /\.docx$/.test(f.name)))); }; g.onerror = () => res(false); } catch (e) { res(false); } }; rq.onerror = () => res(false); });
 const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold' ? String(2 + i * 0.5) : String(39 + i / 10);
@@ -76,10 +76,10 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
     };
     const kolejka = [...ids]; await Promise.all(Array.from({ length: NARAZ }, async () => { while (kolejka.length) await one(kolejka.shift()); }));
     const kol = id => ids.indexOf(id); done.sort((a, b) => kol(a) - kol(b)); content.sort();
+    console.log('czas od Wyślij do raportu w kolejce: max ' + Math.max(0, ...czasy) + ' ms (limit ' + RAPORT_MS + ' ms), ' + NARAZ + ' inspekcje naraz');
     assert.ok(ids.length > 0, 'pusta lista inspekcji PPM');
     assert.deepEqual(bad, [], 'inspekcje z błędem raportu (Word + PDF):\n' + bad.join('\n'));
     assert.equal(checked, ids.length, 'sprawdzono ' + checked + ' z ' + ids.length + ' inspekcji z listy PPM');
-    console.log('czas od Wyślij do raportu w kolejce: max ' + Math.max(...czasy) + ' ms (limit ' + RAPORT_MS + ' ms), ' + NARAZ + ' inspekcje naraz');
     console.log('raport-ui-check: ' + checked + ' inspekcji, każda ma Word i PDF: ' + done.join(' ') + ' | treść sprawdzona: ' + (content.join(', ') || '—'));
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
