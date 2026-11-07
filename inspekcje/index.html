@@ -1493,7 +1493,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (b.hasAttribute("data-flcam")) {
       var tap = +b.getAttribute("data-flcam");
       if (window.OESTAparat && OESTAparat.available()) {
-        OESTAparat.take().then(function (bl) { if (bl) addFiles([new File([bl], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })], tap); }, function (er) { $("flHint").textContent = er.message; });
+        OESTAparat.take(camOpts()).then(function (bl) { if (bl) addFiles([new File([bl], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })], tap); }, function (er) { $("flHint").textContent = er.message; });
       } else { flTap = tap; $("flCam").click(); }
     }
   });
@@ -1987,14 +1987,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("camIn").addEventListener("click", function (e) {
     if (!(window.OESTAparat && OESTAparat.available())) return;
     e.preventDefault();
-    OESTAparat.take().then(function (b) { if (b) addFiles([new File([b], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })]); }, function (er) { $("photoInfo").textContent = er.message; });
+    OESTAparat.take(camOpts()).then(function (b) { if (b) addFiles([new File([b], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })]); }, function (er) { $("photoInfo").textContent = er.message; });
   });
   $("camIn").addEventListener("change", function () { addFiles(this); });
   $("galIn").addEventListener("change", function () { addFiles(this); });
   $("shCamIn").addEventListener("click", function (e) {
     if (!(window.OESTAparat && OESTAparat.available())) return;
     e.preventDefault();
-    OESTAparat.take().then(function (b) { if (b) addFiles([new File([b], "formularz.jpg", { type: "image/jpeg", lastModified: Date.now() })], null, true); }, function (er) { $("sheetInfo").textContent = er.message; });
+    OESTAparat.take(camOpts()).then(function (b) { if (b) addFiles([new File([b], "formularz.jpg", { type: "image/jpeg", lastModified: Date.now() })], null, true); }, function (er) { $("sheetInfo").textContent = er.message; });
   });
   $("shCamIn").addEventListener("change", function () { addFiles(this, null, true); });
   $("shGalIn").addEventListener("change", function () { addFiles(this, null, true); });
@@ -2011,7 +2011,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", T("Edytuj zdjęcie ", "Edit photo ") + (i + 1));
         eb.addEventListener("click", function () {
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
-          OESTAparat.edit(p.blob).then(function (nb) {
+          OESTAparat.edit(p.blob, camOpts()).then(function (nb) {
             if (!nb) return;
             var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : ""; ectx.kind = photoKind(p.tap, p.sheet);
             return storePhoto(nb, p.when, ectx).then(function (np) {
@@ -2122,6 +2122,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Zdjęcie zapisuje się RAZ w module zdjęć (folder OEST, z nazwą kranu / punktu, trzymane przez inspekcję, więc sprzątanie
   // go nie skasuje). Szkic, zlecenie i raport mają tylko jego id. W pamięci jest mała miniatura, duże zdjęcie czyta się z pliku
   // dopiero do raportu i modelu (wcześniej każde zdjęcie trzymało ok. 11 MB pamięci, przy Flushing TB setki MB).
+  // aparat / edytor: zdjęcie od razu w największym rozmiarze, jaki moduł zdjęć zapisze (bez JPEG 12 MP po edycji)
+  function camOpts() { var Z = window.OESTZdjecia; return { max: Z && Z.maxPx ? Z.maxPx() : 0 }; }
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
   // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
   if ($("photoSize") && Zd && Zd.sizeSwitch) $("photoSize").innerHTML = Zd.sizeSwitch();
