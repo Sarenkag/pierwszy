@@ -20,7 +20,7 @@
     // licznik
     ":is(" + N + "){position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;" +
     "background:#ff4d5e;color:#fff;font:800 11px/18px var(--font-body,system-ui);font-style:normal;text-align:center;letter-spacing:0;" +
-    "box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 2px rgba(10,14,31,.9);display:block;animation:oest-n-in .28s cubic-bezier(.34,1.56,.64,1) both}" +
+    "box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 2px rgba(10,14,31,.9);display:block;animation:var(--ruch-znacznik-efekt,oest-n-in) var(--ruch-znacznik-czas,.28s) var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1)) both}" + // ruch z tabeli (moduly/wyglad, rola „znacznik”)
     ".kf .kf-n{top:8px;right:8px}" +
     ".cd i{top:auto;bottom:3px;right:3px;min-width:16px;height:16px;line-height:16px;font-size:10px;box-shadow:none}" +
     ":is(.oest-n.orange,.cd i){background:#ff8a3d;color:#1a0d00}" +
@@ -43,9 +43,10 @@
     ".oest-rp.brak{opacity:.55}" +
     ".oest-rp{display:inline-grid;place-items:center;flex:none;line-height:0}.oest-rp svg{width:19px;height:19px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}" +
     ".oest-rp.brak svg{stroke:#9097a6}.oest-rp.ok svg{stroke:#21c45a}.oest-rp.blad svg{stroke:#ef3b36}" +
-    ".oest-rp svg{animation:oest-n-in .28s cubic-bezier(.34,1.56,.64,1) both}" +
+    ".oest-rp svg{animation:var(--ruch-znacznik-efekt,oest-n-in) var(--ruch-znacznik-czas,.28s) var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1)) both}" +
     ".oest-ic.t2{color:#5fd6a0}.oest-ic.t3{color:#ff7b72}.oest-ic.t1{color:#f0c75e}.oest-ic.t4{color:#79b8ff}" +
-    "@media (prefers-reduced-motion:reduce){:is(" + N + "){animation:none}}:root[data-settings-motion=reduce] :is(" + N + "){animation:none}";
+    // mniej ruchu: także ikonki formularza (.oest-rp) – wcześniej pominięte (07/11/2026)
+    "@media (prefers-reduced-motion:reduce){:is(" + N + ",.oest-rp svg){animation:none}}:root[data-settings-motion=reduce] :is(" + N + ",.oest-rp svg){animation:none}";
   function css() {
     if (d.getElementById("oest-znacznik-css")) return;
     var s = d.createElement("style"); s.id = "oest-znacznik-css"; s.textContent = CSS; (d.head || d.documentElement).appendChild(s);
