@@ -63,7 +63,12 @@ jobs:
           npm run sync
 
       # ZASADA Grzegorza (04/11/2026): każdy raport w dwóch identycznych wersjach, Word i PDF. Bez tego APK się nie zbuduje.
+      # Na PR te same testy (npm test = G0, raport-ui-check i raport-rozmiar-ui-check = G2) wykonuje wymagany check
+      # „Quality Gate” (quality-gate.yml, każdy PR bez filtra ścieżek), a bez niego PR nie wejdzie do main (ruleset).
+      # Dlatego na PR ich tu nie powtarzamy (krok 1, zgoda Grzegorza 07/11/2026). Push na main i ręczne uruchomienie
+      # wykonują je jak dotąd, a wydanie i tak czeka na pełny Quality Gate na tym samym SHA (job gate).
       - name: Testy (każda inspekcja daje Word i PDF)
+        if: github.event_name != 'pull_request'
         run: |
           npm test
           npm i --no-save playwright-core@1.48.2
