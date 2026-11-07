@@ -55,6 +55,14 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
         check(now.photos === before.photos && now.fails === before.fails, C.id + ' runda ' + round + ': dane inspekcji zmienione (zdjęcia ' + before.photos + '→' + now.photos + ', NIE ' + before.fails + '→' + now.fails + ')');
         R[C.id + '#' + round] = { status: await stage(), zdjecia: now.photos, nie: now.fails };
       }
+      // 5a. zmiana samej treści odpowiedzi przy tych samych licznikach (NIE przechodzi z pytania 1 na pytanie 2) = „W trakcie”
+      if (C.answerNo) {
+        await pg.locator('.ck-row button[data-s="fail"]').nth(1).click(); await pg.waitForTimeout(300);
+        await pg.locator('.ck-row button[data-s="ok"]').first().click(); await pg.waitForTimeout(1000);
+        const f = await form(); check(f.fails === before.fails, C.id + ': test zmienił liczbę NIE (' + f.fails + ')');
+        check(await stage() === 'prog', C.id + ': zamiana odpowiedzi (te same liczniki) nie zmieniła statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#zamiana'] = await stage();
+        await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+      }
       // 5. nowa zmiana (nowe zdjęcie) = „W trakcie”, jak dotąd
       await pg.setInputFiles('#galIn', { name: 'nowe.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1200);
       check(await stage() === 'prog', C.id + ': nowe zdjęcie nie zmieniło statusu na „W trakcie” (' + await stage() + ')');
@@ -69,5 +77,5 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
   } finally { if (browser) await browser.close(); server.close(); }
   console.log('POMIARY ' + JSON.stringify(R));
   if (fails.length) { console.error('NIE ROZPOCZETA UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
-  console.log('NIE ROZPOCZETA UI PASS: ' + CASES.map(c => c.id).join(', ') + ' – „Nie rozpoczęta” zostaje po 2 restartach i otwarciach, zdjęcia i odpowiedzi bez zmian, nowe zdjęcie = W trakcie');
+  console.log('NIE ROZPOCZETA UI PASS: ' + CASES.map(c => c.id).join(', ') + ' – „Nie rozpoczęta” zostaje po 2 restartach i otwarciach, zdjęcia i odpowiedzi bez zmian, zamiana odpowiedzi i nowe zdjęcie = W trakcie');
 })().catch(e => { console.error(e); process.exitCode = 1; });
