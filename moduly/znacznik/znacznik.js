@@ -11,6 +11,10 @@
 //   OESTZnacznik.ikona("zdjecia"|"punkty"|"usterki"|"termin", "4", "off")  → ta sama ikonka liniowa (SVG) z liczbą; "off" = szara (niewymagane)
 //   OESTZnacznik.formularz("brak"|"ok"|"blad")                    → zdjęcie formularza (Grzegorz 04/11): szary dokument
 //        (inspekcja nie zaczęta) / zielone ✓ w kółku (zdjęcie formularza dodane) / czerwone ✗ w kółku (jeszcze brak)
+//   OESTZnacznik.status("zalegla"|"nierozpoczeta"|"wtrakcie"|"wstrzymana"|"gotowa")  → pigułka statusu (Grzegorz 07/11/2026 18:29):
+//        JEDEN wygląd – ten sam kształt, wielkość (98 px), zaokrąglenie, wypełnienie i cień 3D; różni się tylko kolor i napis.
+//        Napisy PL/EN wbudowane (Nie rozpoczęta = pauzy „– – – –”). Szerokość dobrana do najdłuższego napisu („Wstrzymana”).
+//        Wzór i wartości: moduly/znacznik/README.md. Pilnuje test app/tests/pigulka-statusu-ui-check.cjs.
 (function (w, d) {
   "use strict";
   if (w.OESTZnacznik) return;
@@ -45,6 +49,11 @@
     ".oest-rp.brak svg{stroke:#9097a6}.oest-rp.ok svg{stroke:#21c45a}.oest-rp.blad svg{stroke:#ef3b36}" +
     ".oest-rp svg{animation:var(--ruch-znacznik-efekt,oest-n-in) var(--ruch-znacznik-czas,.28s) var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1)) both}" +
     ".oest-ic.t2{color:#5fd6a0}.oest-ic.t3{color:#ff7b72}.oest-ic.t1{color:#f0c75e}.oest-ic.t4{color:#79b8ff}" +
+    // pigułka statusu (07/11/2026): wszystko poza kolorem jest wspólne; kolor = currentColor z klasy trybu
+    ".oest-st{display:inline-block;flex:none;box-sizing:border-box;width:var(--oest-st-w,98px);padding:5px 6px;border-radius:999px;border:1px solid currentColor;" +
+    "background:color-mix(in srgb,currentColor 16%,transparent);font:700 12px/1 var(--font-body,system-ui);letter-spacing:0;text-align:center;white-space:nowrap;overflow:hidden;" +
+    "box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,0,0,.35),0 3px 6px rgba(0,0,0,.45);text-shadow:0 1px 1px rgba(0,0,0,.4)}" +
+    ".oest-st.zalegla{color:#ff7b72}.oest-st.nierozpoczeta{color:#c3c9e8}.oest-st.wtrakcie{color:#f0c75e}.oest-st.wstrzymana{color:#79b8ff}.oest-st.gotowa{color:#5fd6a0}" +
     // mniej ruchu: także ikonki formularza (.oest-rp) – wcześniej pominięte (07/11/2026)
     "@media (prefers-reduced-motion:reduce){:is(" + N + ",.oest-rp svg){animation:none}}:root[data-settings-motion=reduce] :is(" + N + ",.oest-rp svg){animation:none}";
   function css() {
@@ -76,6 +85,15 @@
     css(); state = FORM[state] ? state : "brak"; var t = T(FORM_TXT[state][0], FORM_TXT[state][1]);
     return '<span class="oest-rp ' + state + '" role="img" aria-label="' + esc(t) + '" title="' + esc(t) + '"><svg viewBox="0 0 24 24">' + FORM[state] + "</svg></span>";
   }
+  // pigułka statusu: tryb → napis PL/EN (kolor w CSS powyżej)
+  var STATUS = { zalegla: ["Zaległa", "Overdue"], nierozpoczeta: ["– – – –", "– – – –"], wtrakcie: ["W trakcie", "In progress"], wstrzymana: ["Wstrzymana", "On hold"], gotowa: ["Gotowa", "Ready"] };
+  var STATUS_OPIS = { nierozpoczeta: ["Nie rozpoczęta", "Not started"] };
+  function status(tryb) {
+    css(); tryb = STATUS[tryb] ? tryb : "nierozpoczeta";
+    var o = STATUS_OPIS[tryb] || STATUS[tryb], opis = T(o[0], o[1]);
+    return '<span class="oest-st ' + tryb + '" role="img" aria-label="' + esc(opis) + '" title="' + esc(opis) + '">' + esc(T(STATUS[tryb][0], STATUS[tryb][1])) + "</span>";
+  }
+  status.tryby = Object.keys(STATUS);
   css();
-  w.OESTZnacznik = { licznik: licznik, lampka: lampka, ikona: ikona, formularz: formularz, css: css };
+  w.OESTZnacznik = { licznik: licznik, lampka: lampka, ikona: ikona, formularz: formularz, status: status, css: css };
 })(window, document);
