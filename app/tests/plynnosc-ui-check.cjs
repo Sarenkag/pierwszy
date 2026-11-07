@@ -221,6 +221,20 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       check(T.przyciskZTabeli && T.kafelekZTabeli, 'tabela ruchu: przycisk/kafelek nie czytają z tabeli');
       check(['przycisk', 'kafelek', 'stan', 'status', 'okno', 'ekran', 'lista', 'znacznik'].every(r => T.role.includes(r)), 'tabela ruchu: brak ról ' + T.role);
     }
+    // wyciszenie po zmianie języka dotyczy tylko animacji pojawienia się; ✓ w polu e-mail (animacja ustawia stan końcowy) zostaje (uwaga Codex w PR #78)
+    R.wyciszenie = await p.evaluate(async () => {
+      window.dispatchEvent(new CustomEvent('oest:lang'));
+      const box = document.createElement('div');
+      box.innerHTML = '<span class="oest-n">1</span><input type="email">';
+      document.body.appendChild(box); await new Promise(r => setTimeout(r, 50));
+      const inp = box.querySelector('input'); if (window.OESTPoleEmail) OESTPoleEmail.enhance(inp);
+      inp.value = 'test@example.com'; inp.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(r => setTimeout(r, 50));
+      if (!box.querySelector('.oest-em-ok path')) return { licznik: getComputedStyle(box.querySelector('.oest-n')).animationName, emailPtaszek: 'brak ✓ w DOM: ' + box.innerHTML.slice(0, 120) };
+      const out = { licznik: getComputedStyle(box.querySelector('.oest-n')).animationName, emailPtaszek: getComputedStyle(box.querySelector('.oest-em-ok path')).animationName };
+      box.remove(); return out;
+    });
+    check(R.wyciszenie.licznik === 'none', 'wyciszenie: licznik wstawiony po zmianie języka nadal „wyskakuje” (' + R.wyciszenie.licznik + ')');
+    check(R.wyciszenie.emailPtaszek === 'oest-em-draw', 'wyciszenie: ✓ w polu e-mail stracił animację rysowania (' + R.wyciszenie.emailPtaszek + ') – zostałby niewidoczny');
     await c.close();
 
     // ---------- tryb ograniczonych animacji: zero animacji (poza kółkiem ładowania) na ekranach, filtrze, Wstecz i okienku ----------

@@ -49,7 +49,8 @@
 @media (prefers-reduced-motion:reduce){:root{--ruch-przycisk-nacisk:none;--ruch-kafelek-nacisk:none;--ruch-znacznik-efekt:none}}
 :root[data-settings-motion=reduce]{--ruch-przycisk-nacisk:none;--ruch-kafelek-nacisk:none;--ruch-znacznik-efekt:none}
 /* przebudowa ekranu bez zmiany treści (zmiana języka, powrót do apki): nowo wstawione elementy nie „wyskakują” od nowa (wyglad.js) */
-:is(.wy-cisza,.wy-cisza *):not([class*=spin]):not(.ring){animation:none!important}
+/* tylko animacje „pojawienia się” (stan końcowy = zwykły wygląd); animacje, które dopiero ustawiają stan końcowy (np. ✓ w polu e-mail), zostają */
+:is(.wy-cisza,.wy-cisza *):is(.oest-n,.hm-badge,.kf-n,.fl-ic b,.cd i,.oest-rp svg,.wy-item){animation:none!important}
 
 /* ---------- tekst ---------- */
 html body{font-size:var(--fs-m)}
