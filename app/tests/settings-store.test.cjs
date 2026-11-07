@@ -106,3 +106,30 @@ test('private email: saved, validated, old settings without it still load',()=>{
   assert.equal(f.store.get().profile.companyEmail,'work@example.com');
   assert.throws(()=>f.store.update(s=>{s.profile.privateEmail='zly adres';}),/EMAIL_INVALID/);
 });
+
+test('jedna lista osób i działów: bez e-maila, ręcznie, import nie wyłącza ręcznych (07/11)',()=>{
+  const {store}=fixture();
+  store.addEntry('person','Ania P.');store.addEntry('department','Security');store.addEntry('department','security');
+  store.importContacts('contactGroups/abc',[{id:'people/1',first:'Josh',last:'W.',email:''}]);
+  let p=store.people();
+  assert.deepEqual(p.people.sort(),['Ania P.','Josh W.']);
+  assert.deepEqual(p.departments,['Security']);
+  assert.deepEqual(store.recipients('handover').length,0);
+  const manual=store.get().contacts.find(c=>c.first==='Ania P.');
+  store.removeEntry(manual.id);
+  assert.deepEqual(store.people().people,['Josh W.']);
+  assert.throws(()=>store.removeEntry('people/1'),/CONTACT_INVALID/);
+  assert.throws(()=>store.addEntry('person','  '),/CONTACT_INVALID/);
+});
+
+test('ręczny wpis nie reaktywuje kontaktu Google zdjętego z etykiety',()=>{
+  const {store}=fixture();
+  store.importContacts('contactGroups/a',[{id:'people/9',first:'Boss',last:'',email:'boss@example.com'}]);
+  store.update(s=>{s.mail.managerId='people/9';});
+  store.importContacts('contactGroups/a',[]);
+  assert.equal(store.recipients('handover').length,0);
+  store.addEntry('person','Boss');
+  assert.equal(store.recipients('handover').length,0);
+  const m=store.get().contacts.find(c=>c.id.startsWith('manual:'));
+  assert.ok(m);store.removeEntry(m.id);
+});

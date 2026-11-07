@@ -65,7 +65,8 @@
     var ids=new Set();
     s.contacts.forEach(function(c){
       if(!c.id||typeof c.id!=='string'||ids.has(c.id)||!email(c.email)) fail('CONTACT_INVALID'); ids.add(c.id);
-      if(Object.keys(c).some(function(k){return ['id','first','last','email','position','role','labelId','active'].indexOf(k)<0;})) fail('UNKNOWN_FIELD');
+      if(Object.keys(c).some(function(k){return ['id','first','last','email','position','role','labelId','active','kind'].indexOf(k)<0;})) fail('UNKNOWN_FIELD');
+      if(c.kind!==undefined && ['person','department'].indexOf(c.kind)<0) fail('CONTACT_INVALID');
       if(['engineer','manager','other'].indexOf(c.role)<0 || typeof c.active!=='boolean') fail('CONTACT_INVALID');
       ['first','last','email','position','labelId'].forEach(function(k){if(typeof c[k]!=='string') fail('CONTACT_INVALID');});
     });
@@ -109,13 +110,21 @@
     function scheduleOn(day){return get().schedules.filter(function(x){return x.effectiveFrom<=day;}).at(-1)||null;}
     function importContacts(labelId,contacts){return update(function(s){
       var previous=s.contacts;
-      previous.forEach(function(c){if(c.labelId===labelId || c.labelId===s.contactsLabel.id)c.active=false;});
+      previous.forEach(function(c){if(c.labelId && (c.labelId===labelId || c.labelId===s.contactsLabel.id))c.active=false;}); // wpisy ręczne (bez etykiety) zostają
       contacts.forEach(function(c){
         var old=previous.find(function(p){return p.id===c.id;});
         var fresh={id:c.id,first:c.first||'',last:c.last||'',email:c.email||'',position:c.position||'',role:old?old.role:'engineer',labelId:labelId,active:true};
         if(old)Object.assign(old,fresh);else previous.push(fresh);
       });s.contactsLabel.id=labelId;s.contactsLabel.lastImportedAt=new Date().toISOString();
     });}
+    // Jedna lista osób i działów dla całej apki (Grzegorz 07/11): import z Google (też bez e-maila) + wpisy ręczne.
+    function nameOf(c){return [c.first,c.last].filter(Boolean).join(' ').trim()||c.email;}
+    function people(){var s=get(),out={people:[],departments:[]};s.contacts.forEach(function(c){if(!c.active)return;var n=nameOf(c);if(!n)return;var list=c.kind==='department'?out.departments:out.people;if(list.indexOf(n)<0)list.push(n);});return out;}
+    function addEntry(kind,name){name=String(name||'').trim().slice(0,120);if(!name)fail('CONTACT_INVALID');if(['person','department'].indexOf(kind)<0)fail('CONTACT_INVALID');
+      return update(function(s){var same=s.contacts.find(function(c){return !c.labelId&&(c.kind||'person')===kind&&nameOf(c).toLowerCase()===name.toLowerCase();}); // tylko wpisy ręczne; nie budzimy kontaktów z importu Google
+        if(same){same.active=true;return;}
+        s.contacts.push({id:'manual:'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),first:name,last:'',email:'',position:'',role:'other',labelId:'',active:true,kind:kind});});}
+    function removeEntry(id){return update(function(s){var i=s.contacts.findIndex(function(c){return c.id===id&&!c.labelId;});if(i<0)fail('CONTACT_INVALID');s.contacts.splice(i,1);});}
     function recipients(kind){var s=get(),emails=[s.profile.companyEmail];
       if(kind==='handover')[s.mail.engineerId,s.mail.managerId].forEach(function(id){var c=s.contacts.find(function(x){return x.id===id&&x.active;});if(c)emails.push(c.email);});
       return Array.from(new Set(emails.filter(Boolean)));
@@ -128,7 +137,7 @@
     }
     function previewRestore(b){var s=checkBackup(b);return {profileName:[s.profile.first,s.profile.last].filter(Boolean).join(' '),contacts:s.contacts.length,schedules:s.schedules.length,exportedAt:b.exportedAt};}
     function restore(b,confirmed){if(confirmed!==true)fail('RESTORE_CONFIRM');var incoming=checkBackup(b);return update(function(s){var legacy=s.legacyProfile;Object.assign(s,incoming);s.legacyProfile=legacy;});}
-    return {get:get,update:update,addSchedule:addSchedule,scheduleOn:scheduleOn,importContacts:importContacts,recipients:recipients,exportBackup:exportBackup,previewRestore:previewRestore,restore:restore,
+    return {get:get,update:update,addSchedule:addSchedule,scheduleOn:scheduleOn,importContacts:importContacts,people:people,addEntry:addEntry,removeEntry:removeEntry,recipients:recipients,exportBackup:exportBackup,previewRestore:previewRestore,restore:restore,
       syncLegacy:function(){bridge(get());},validate:validate};
   }
   return {createStore:createStore,validate:validate};
