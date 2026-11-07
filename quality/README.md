@@ -41,6 +41,21 @@ node --test quality/tests/*.test.cjs
 `android.yml` na push do `main`: job `gate` wywołuje cały Quality Gate (`workflow_call`) na tym samym SHA, job `apk` buduje jak dotąd,
 a job `release` (jedyny z `contents: write`) publikuje APK w Releases tylko gdy `gate` = success i SHA APK = SHA bramki. W PR APK powstaje jako artefakt, bez wydania.
 
+## Wybór testów według wpływu zmian (krok 2, 07/11/2026) – tryb „tylko raport”
+
+`quality/wplyw.cjs` (krok G1) porównuje PR ze wspólnym przodkiem `main` i dla każdego zmienionego pliku ustala, które strony apki go wczytują
+(`<script>`, `<link>`, `<img>` w zbudowanej paczce `app/www`), a stąd – które testy przeglądarkowe (G2) są potrzebne. Mapa `quality/wplyw.json`
+przypisuje tylko testy do stron; zależności plików wynikają z samych stron, nie z ręcznej listy.
+
+**Dziś nic nie jest pomijane.** G2 uruchamia wszystkie testy, a podsumowanie Quality Gate pokazuje: zmienione pliki z klasą, każdy test z wynikiem
+i informacją „uruchomiony / POMINIĘTY (wpływ)” z powodem, czas, który dałoby się oszczędzić, oraz kontrolę mapy: run-gate (`--slad`) zapisuje pliki,
+które każdy test faktycznie wczytał (`quality/wplyw-slad.cjs`), i porównuje je z mapą. Rozbieżność = poprawka mapy, zanim pomijanie zostanie włączone.
+
+Pełna regresja (bez wyjątków): push na `main`, `merge_group`, wywołanie z Android APK (wydanie), ręczne uruchomienie; zmiana bramki
+(`quality/**`, workflow, `package*.json`, `app/scripts/**`, AGENTS/CLAUDE/QUALITY); plik spoza reguł; plik apki, którego żadna strona nie wczytuje;
+usunięty lub przeniesiony plik apki; test przeglądarkowy bez wpisu w mapie; błąd analizy. Testy Node (G0) i G1 zawsze w całości.
+Nie ma etykiety, argumentu ani zmiennej, która oznacza zmianę jako bezpieczną. Ratchet blokuje zawężenie mapy i zmianę trybu.
+
 ## Zmiany kryteriów
 
 `required-tests.json`, `allowedSkips` i `baselines/*.json` mogą tylko maleć/zaostrzać się. Dodanie wyjątku lub usunięcie testu daje FAIL w PR – przejść może tylko świadomą decyzją właściciela (scalenie z pominięciem reguły jako administrator). Ochronę `main` włącza właściciel skryptem `ochrona-main.sh` (domyślnie tylko podgląd).
