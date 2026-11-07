@@ -25,12 +25,14 @@
   // narzędzia w trzech grupach z podpisem pod grupą (lifting 07/11/2026: wszystko mieści się bez przewijania)
   var TOOL_GROUPS = [
     [['Rysuj', 'Draw'], [['arrow', '↗', ['Strzałka', 'Arrow']], ['line', '／', ['Linia', 'Line']], ['rect', '▢', ['Kwadrat', 'Square']]]],
-    [['Kółko', 'Circle'], [['c1', '<span style="font-size:11px">◯</span>', ['Małe kółko', 'Small circle']], ['c2', '<span style="font-size:16px">◯</span>', ['Średnie kółko', 'Medium circle']], ['c3', '<span style="font-size:22px">◯</span>', ['Duże kółko', 'Large circle']]]],
+    [['Kółko', 'Circle'], [['c1', '<span style="font-size:calc(var(--ed-w) * .25)">◯</span>', ['Małe kółko', 'Small circle']], ['c2', '<span style="font-size:calc(var(--ed-w) * .36)">◯</span>', ['Średnie kółko', 'Medium circle']], ['c3', '<span style="font-size:calc(var(--ed-w) * .5)">◯</span>', ['Duże kółko', 'Large circle']]]],
     [['Kadruj', 'Crop'], [['crop', '⛶', ['Kadruj', 'Crop']]]]];
-  /* Wygląd edytora (lifting 07/11/2026, styl „Szkło i poświata”): tylko tokeny z theme.css i moduly/wyglad (z wartościami zapasowymi).
+  /* Szerokość przycisków (--ed-w) zwęża się płynnie na wąskich ekranach / przy większym rozmiarze wyświetlania, żeby oba rzędy
+     mieściły się bez zawijania i przewijania (360 px i mniej); wysokość dotyku zostaje 44 px.
+     Wygląd edytora (lifting 07/11/2026, styl „Szkło i poświata”): tylko tokeny z theme.css i moduly/wyglad (z wartościami zapasowymi).
      Anuluj = tekst, Cofnij = szkło z ramką, Zapisz = gradient z poświatą; aktywne narzędzie = przygaszony akcent + ramka + poświata. */
   var CSS =
-    '.oest-editor{position:fixed;inset:0;z-index:2147483001;display:flex;flex-direction:column;touch-action:none;user-select:none;background:var(--bg,#0a0e1f);color:var(--ink,#eef1ff);font-family:var(--font-body,system-ui)}' +
+    '.oest-editor{--ed-w:clamp(30px, calc((100vw - 100px) / 7), 44px);position:fixed;inset:0;z-index:2147483001;display:flex;flex-direction:column;touch-action:none;user-select:none;background:var(--bg,#0a0e1f);color:var(--ink,#eef1ff);font-family:var(--font-body,system-ui)}' +
     '.oest-editor button{-webkit-tap-highlight-color:transparent;cursor:pointer}' +
     '.oest-editor .ed-top{display:flex;gap:8px;align-items:center;padding:max(44px, calc(10px + var(--oest-gora,env(safe-area-inset-top,0px)))) 12px 8px}' +
     '.oest-editor .ed-b{min-height:44px;border-radius:var(--r-btn,14px);padding:0 16px;font:600 var(--fs-m,15px) var(--font-body,system-ui);color:var(--ink,#eef1ff);box-sizing:border-box}' +
@@ -40,19 +42,19 @@
     '.oest-editor .ed-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px}' +
     '.oest-editor canvas{border-radius:10px}' +
     '.oest-editor .ed-panel{margin:6px 12px max(44px, calc(14px + env(safe-area-inset-bottom, 0px)), calc(14px + var(--safe-area-inset-bottom, 0px)));padding:10px 10px 12px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-panel,18px);background:rgba(255,255,255,.04)}' +
-    '.oest-editor .ed-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}' +
+    '.oest-editor .ed-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}' +
     '.oest-editor .ed-grp{display:flex;flex-direction:column;align-items:center;gap:4px}' +
     '.oest-editor .ed-grp>small{font-size:var(--fs-xs,12px);color:var(--muted,#9aa3cc);font-weight:600}' +
     '.oest-editor .ed-seg{display:flex;gap:2px;padding:3px;border-radius:var(--r-btn,14px);background:rgba(255,255,255,.05);border:1px solid var(--line,rgba(255,255,255,.12))}' +
-    '.oest-editor .ed-tool{width:44px;height:44px;display:grid;place-items:center;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--steel,#b9c2f0);font:600 18px var(--font-body,system-ui);padding:0;line-height:1}' +
+    '.oest-editor .ed-tool{width:var(--ed-w);height:44px;display:grid;place-items:center;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--steel,#b9c2f0);font:600 18px var(--font-body,system-ui);padding:0;line-height:1}' +
     '.oest-editor .ed-tool.on{background:rgba(124,132,255,.18);border-color:rgba(124,132,255,.55);color:#fff;box-shadow:0 0 14px rgba(124,132,255,.30)}' +
     '.oest-editor .ed-sep{height:1px;background:var(--line,rgba(255,255,255,.12));margin:10px 2px}' +
     '.oest-editor .ed-style{align-items:center}' +
     '.oest-editor .ed-colors{display:flex;gap:2px}' +
-    '.oest-editor .ed-col{width:36px;height:44px;display:grid;place-items:center;border:0;background:transparent;padding:0}' +
+    '.oest-editor .ed-col{width:calc(var(--ed-w) * .78);height:44px;display:grid;place-items:center;border:0;background:transparent;padding:0}' +
     '.oest-editor .ed-col i{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);transition:transform var(--ruch-stan-czas,.24s) var(--ruch-easing,ease),box-shadow var(--ruch-stan-czas,.24s)}' +
     '.oest-editor .ed-col.on i{transform:scale(1.08);box-shadow:0 0 0 2px var(--bg,#0a0e1f),0 0 0 4px #fff}' +
-    '.oest-editor .ed-widths .ed-tool{width:36px}' +
+    '.oest-editor .ed-widths .ed-tool{width:calc(var(--ed-w) * .78)}' +
     '.oest-editor .ed-widths i{border-radius:50%;background:var(--steel,#b9c2f0);transition:background-color var(--ruch-stan-czas,.24s)}' +
     '.oest-editor .ed-widths .on i{background:var(--dot,#fff)}';
   function css() {

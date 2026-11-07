@@ -1,6 +1,6 @@
 // Edytor zdjęć – lifting wyglądu (Grzegorz 07/11/2026: „tylko lifting UI/UX, bez zmian logiki i przepływu Cancel/Undo/Save”).
 // Sprawdza w Chrome (412×915 jak Pixel 8 Pro), PL i EN, na prawdziwym OESTAparat.edit():
-//  – wszystkie narzędzia, kolory i grubości widoczne na ekranie bez przewijania (wcześniej „Linia”/„Kadruj” ucięte – „samotne L”),
+//  – wszystkie narzędzia, kolory i grubości widoczne na ekranie bez przewijania (wcześniej „Linia”/„Kadruj” ucięte – „samotne L”), także przy 360 i 320 px,
 //  – jedna wysokość przycisków (44 px), hierarchia: Zapisz (gradient) > Cofnij (ramka) > Anuluj (bez tła i ramki),
 //  – PL↔EN: panel narzędzi w identycznym miejscu, przyciski na górze na tej samej wysokości,
 //  – dokładnie jedno aktywne narzędzie / kolor / grubość,
@@ -73,6 +73,31 @@ async function rysuj(p) {
       await c.close();
     }
 
+    // wąskie ekrany (mniejszy telefon albo większy „Rozmiar wyświetlania” na Pixelu): wszystko nadal na ekranie, bez przewijania
+    for (const sz of [360, 320]) {
+      const c = await browser.newContext({ viewport: { width: sz, height: 780 } });
+      await c.addInitScript(() => { localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
+      await c.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+      const p = await c.newPage(); p.on('pageerror', e => errors.push(sz + ': ' + e.message));
+      await p.goto(url + '/index.html'); await p.waitForTimeout(400); await otworz(p);
+      const m = await p.evaluate(() => {
+        const box = document.querySelector('.oest-editor'), out = [];
+        box.querySelectorAll('button').forEach(b => { const r = b.getBoundingClientRect(); out.push({ k: b.dataset.a || b.dataset.t || b.dataset.c || ('w' + b.dataset.w), x: r.x, r: r.right, h: Math.round(r.height), w: r.width }); });
+        const pan = box.querySelector('.ed-panel').getBoundingClientRect();
+        return { out, pan: { x: pan.x, r: pan.right }, przewijanie: [...box.querySelectorAll('.ed-panel *')].some(e => e.scrollWidth > e.clientWidth + 1) };
+      });
+      check(m.out.length === 19, `${sz} px: ${m.out.length} przycisków zamiast 19`);
+      for (const v of m.out) {
+        check(v.x >= 0 && v.r <= sz, `${sz} px/${v.k}: poza ekranem (x ${v.x.toFixed(1)}–${v.r.toFixed(1)})`);
+        check(v.x >= m.pan.x - 0.5 && v.r <= m.pan.r + 0.5, `${sz} px/${v.k}: wychodzi poza panel`);
+        check(v.h === 44, `${sz} px/${v.k}: wysokość ${v.h} px zamiast 44`);
+        check(v.w >= 23, `${sz} px/${v.k}: za wąski do dotyku (${v.w.toFixed(1)} px)`);
+      }
+      check(!m.przewijanie, `${sz} px: panel narzędzi przewija się w poziomie`);
+      R['szer' + sz] = m.out.map(v => v.k + ':' + v.w.toFixed(1)).join(' ');
+      await c.close();
+    }
+
     // PL ↔ EN: panel i górny pasek bez skoków
     const klucze = Object.keys(R.pl.przyciski);
     check(klucze.length === 19, `liczba przycisków ${klucze.length} zamiast 19 (3 górne + 7 narzędzi + 6 kolorów + 3 grubości)`);
@@ -87,7 +112,7 @@ async function rysuj(p) {
   finally { if (browser) await browser.close(); server.close(); }
   console.log(JSON.stringify(R, null, 1));
   if (fails.length) { console.error('EDYTOR ZDJEC UI FAIL\n- ' + fails.join('\n- ')); process.exit(1); }
-  console.log('EDYTOR ZDJEC UI PASS (PL/EN, 19 przycisków na ekranie, 44 px, hierarchia Zapisz>Cofnij>Anuluj, przepływ Anuluj/Cofnij/Zapisz bez zmian)');
+  console.log('EDYTOR ZDJEC UI PASS (PL/EN, 19 przycisków na ekranie także przy 360 i 320 px, 44 px, hierarchia Zapisz>Cofnij>Anuluj, przepływ Anuluj/Cofnij/Zapisz bez zmian)');
 
   async function openAndMeasure(p, lang) {
     await otworz(p);
