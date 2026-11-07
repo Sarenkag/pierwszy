@@ -8,7 +8,7 @@ Automatyczna bramka jakości według `docs/QUALITY.md` (G0–G2). Workflow: `.gi
 | G1 | zależności modułów i kolejność `<script>` w zbudowanej paczce (`app/www`), baseline zastanych naruszeń | `check-architecture.cjs`, `baselines/architecture.json` |
 | G1 | ochrona kryteriów: lista testów, wyjątki i baseline mogą tylko maleć; usunięcie pliku testu = FAIL | `check-ratchet.cjs`, `required-tests.json` |
 | G1 | testy samej bramki – dowód, że kontrole łapią błędy | `tests/gate.test.cjs` |
-| G2 | wszystkie 11 `app/tests/*-ui-check.cjs` (w tym `pasek-dni-ui-check` – jeden pasek dni z dniami pracy z grafiku, 07/11/2026; `plynnosc-ui-check` – B1–B7 z audytu 07/11/2026: pierwszy obraz inspekcji bez internetu, geometria PL/EN, animacje tylko nowych kart, Wstecz, mniej ruchu, tabela ruchu; `pasek-systemowy-ui-check` – czarne tło pod godziną i baterią na każdym ekranie) w Chrome (Playwright przypięty w `package-lock.json`); `raport-ui-check` – każda inspekcja EFA-INS z faktycznej listy `window.OEST_PPM.tasks` (`app/tests/ppm-lista.cjs`), treść Word/PDF przez `app/tests/raport-tresc.cjs` | `run-gate.cjs --part browser` |
+| G2 | wszystkie 12 `app/tests/*-ui-check.cjs` (w tym `pigulka-statusu-ui-check` – jedna pigułka statusu z moduly/znacznik: 5 trybów × PL/EN, 98 px, ten sam kształt/cień/wypełnienie, 07/11/2026; `pasek-dni-ui-check` – jeden pasek dni z dniami pracy z grafiku, 07/11/2026; `plynnosc-ui-check` – B1–B7 z audytu 07/11/2026: pierwszy obraz inspekcji bez internetu, geometria PL/EN, animacje tylko nowych kart, Wstecz, mniej ruchu, tabela ruchu; `pasek-systemowy-ui-check` – czarne tło pod godziną i baterią na każdym ekranie) w Chrome (Playwright przypięty w `package-lock.json`); `raport-ui-check` – każda inspekcja EFA-INS z faktycznej listy `window.OEST_PPM.tasks` (`app/tests/ppm-lista.cjs`), treść Word/PDF przez `app/tests/raport-tresc.cjs` | `run-gate.cjs --part browser` |
 
 ## Wyniki
 
@@ -40,6 +40,21 @@ node --test quality/tests/*.test.cjs
 
 `android.yml` na push do `main`: job `gate` wywołuje cały Quality Gate (`workflow_call`) na tym samym SHA, job `apk` buduje jak dotąd,
 a job `release` (jedyny z `contents: write`) publikuje APK w Releases tylko gdy `gate` = success i SHA APK = SHA bramki. W PR APK powstaje jako artefakt, bez wydania.
+
+## Wybór testów według wpływu zmian (krok 2, 07/11/2026) – tryb „tylko raport”
+
+`quality/wplyw.cjs` (krok G1) porównuje PR ze wspólnym przodkiem `main` i dla każdego zmienionego pliku ustala, które strony apki go wczytują
+(`<script>`, `<link>`, `<img>` w zbudowanej paczce `app/www`), a stąd – które testy przeglądarkowe (G2) są potrzebne. Mapa `quality/wplyw.json`
+przypisuje tylko testy do stron; zależności plików wynikają z samych stron, nie z ręcznej listy.
+
+**Dziś nic nie jest pomijane.** G2 uruchamia wszystkie testy, a podsumowanie Quality Gate pokazuje: zmienione pliki z klasą, każdy test z wynikiem
+i informacją „uruchomiony / POMINIĘTY (wpływ)” z powodem, czas, który dałoby się oszczędzić, oraz kontrolę mapy: run-gate (`--slad`) zapisuje pliki,
+które każdy test faktycznie wczytał (`quality/wplyw-slad.cjs`), i porównuje je z mapą. Rozbieżność = poprawka mapy, zanim pomijanie zostanie włączone.
+
+Pełna regresja (bez wyjątków): push na `main`, `merge_group`, wywołanie z Android APK (wydanie), ręczne uruchomienie; zmiana bramki
+(`quality/**`, workflow, `package*.json`, `app/scripts/**`, AGENTS/CLAUDE/QUALITY); plik spoza reguł; plik apki, którego żadna strona nie wczytuje;
+usunięty lub przeniesiony plik apki; test przeglądarkowy bez wpisu w mapie; błąd analizy. Testy Node (G0) i G1 zawsze w całości.
+Nie ma etykiety, argumentu ani zmiennej, która oznacza zmianę jako bezpieczną. Ratchet blokuje zawężenie mapy i zmianę trybu.
 
 ## Zmiany kryteriów
 

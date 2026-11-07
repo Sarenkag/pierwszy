@@ -93,8 +93,18 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/nie-rozpoczeta-ui-check.cjs",
+      "passMarker": "NIE ROZPOCZETA UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/pasek-dni-ui-check.cjs",
       "passMarker": "PASEK DNI UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/pigulka-statusu-ui-check.cjs",
+      "passMarker": "PIGULKA STATUSU UI PASS",
       "timeoutSec": 900
     },
     {

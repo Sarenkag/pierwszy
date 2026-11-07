@@ -85,6 +85,19 @@ jobs:
             git fetch --no-tags origin main && BASE=origin/main
           fi
           node quality/check-ratchet.cjs --base "$BASE" --json quality-results/ratchet.json
+      # Krok 2 (zgoda Grzegorza 07/11/2026), tryb „tylko-raport”: wylicza, które testy G2 byłyby potrzebne dla tej zmiany.
+      # NIC nie pomija i nie wpływa na wynik – G2 nadal uruchamia wszystkie testy. Wynik trafia do podsumowania Quality Gate.
+      - name: Wpływ zmian (tylko raport)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          BASE="$BASE_SHA"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            git fetch --no-tags origin main && BASE=origin/main
+          fi
+          node quality/wplyw.cjs --base "$BASE" --event "$EVENT" --json quality-results/wplyw.json
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -118,7 +131,7 @@ jobs:
           export OEST_PLAYWRIGHT_PATH="$GITHUB_WORKSPACE/quality/node_modules/playwright-core"
           export OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)"
           "$OEST_BROWSER_PATH" --version
-          node quality/run-gate.cjs --part browser --out quality-results/browser.json
+          node quality/run-gate.cjs --part browser --out quality-results/browser.json --slad "$RUNNER_TEMP/wplyw-slad"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

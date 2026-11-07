@@ -1,0 +1,40 @@
+{
+  "schema": "oest.quality.wplyw",
+  "version": 1,
+  "tryb": "tylko-raport",
+  "note": "Mapa wpływu zmian dla Quality Gate (krok 2, zgoda Grzegorza 07/11/2026). Tryb „tylko-raport”: analiza pokazuje, które testy przeglądarkowe (G2) byłyby potrzebne, ale bramka nadal uruchamia WSZYSTKIE. Zależności plików apki nie są tu wpisywane ręcznie – wynikają z <script>/<link>/<img> stron w zbudowanej paczce app/www. Plik apki, którego żadna strona nie wczytuje, i plik spoza reguł = pełna regresja. Nie ma etykiety ani przełącznika, który oznacza zmianę jako bezpieczną.",
+  "strony": ["index.html", "inspekcje/index.html"],
+  "testy": {
+    "app/tests/handover-ui-check.cjs": ["index.html"],
+    "app/tests/keys-ui-check.cjs": ["index.html"],
+    "app/tests/nie-rozpoczeta-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/pasek-dni-ui-check.cjs": ["index.html"],
+    "app/tests/pasek-systemowy-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/pigulka-statusu-ui-check.cjs": ["index.html"],
+    "app/tests/plynnosc-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/powertrace-ui-check.cjs": ["index.html"],
+    "app/tests/questions-ui-check.cjs": ["index.html"],
+    "app/tests/reactive-ui-check.cjs": ["index.html"],
+    "app/tests/settings-ui-check.cjs": ["index.html"],
+    "app/tests/raport-ui-check.cjs": ["inspekcje/index.html"],
+    "app/tests/raport-rozmiar-ui-check.cjs": ["inspekcje/index.html"]
+  },
+  "zasobyDynamiczne": {
+    "templates/OEST-basic.docx": ["index.html"],
+    "inspekcje/sw.js": ["inspekcje/index.html"],
+    "inspekcje/icon-512.png": ["inspekcje/index.html"]
+  },
+  "pelnaRegresja": [
+    "quality/**",
+    ".github/**",
+    "app/package.json",
+    "app/package-lock.json",
+    "app/scripts/**",
+    "app/capacitor.config.json",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/QUALITY.md"
+  ],
+  "dokumentacja": ["docs/**", "**/*.md"],
+  "android": ["app/android/**"]
+}

@@ -127,3 +127,105 @@ test('Ratchet: usunięcie pliku testu z app/tests → FAIL', () => {
   const { d, g } = repo(M, []); g('rm', '-q', 'app/tests/a.test.cjs'); g('commit', '-qm', 'pr');
   const r = ratchet(d); assert.equal(r.code, 1); assert.match(r.out, /Usunięto\/przeniesiono plik testu/);
 });
+
+// ---------- analiza wpływu zmian (krok 2, tryb „tylko-raport”) ----------
+const WPLYW = { tryb: 'tylko-raport', strony: ['index.html', 'inspekcje/index.html'], testy: { 'app/tests/ekran-ui-check.cjs': ['index.html'], 'app/tests/raport-ui-check.cjs': ['inspekcje/index.html'] }, zasobyDynamiczne: {}, pelnaRegresja: ['quality/**', '.github/**', 'app/package.json'], dokumentacja: ['docs/**', '**/*.md'], android: ['app/android/**'] };
+const PPM = f => `window.OEST_PPM = { tasks: [ { id: 'EFA-INS-001', form: 'a' }, { id: 'EFA-INS-002', form: 'b' } ], forms: { a: { slots: [['Kran', 'hot']] }, b: { slots: [['${f}', 'cold']] } }, due() { return 1; } };`;
+function appRepo() {
+  const d = tmp(), g = (...a) => execFileSync('git', a, { cwd: d, stdio: 'ignore' });
+  g('init', '-q', '-b', 'main'); g('config', 'user.email', 't@t'); g('config', 'user.name', 't');
+  write(d, {
+    'quality/wplyw.json': JSON.stringify(WPLYW), 'quality/required-tests.json': JSON.stringify({ node: [], browser: [{ file: 'app/tests/ekran-ui-check.cjs' }, { file: 'app/tests/raport-ui-check.cjs' }], allowedSkips: [] }),
+    'app/www/index.html': '<link rel="stylesheet" href="theme.css"><script src="moduly/m/m.js"></script><script src="ppm.js"></script><script src="ekran.js"></script><a href="inspekcje/index.html">PPM</a><!-- <script src="stary.js"></script> -->',
+    'app/www/inspekcje/index.html': '<script src="../moduly/m/m.js"></script><script src="../ppm.js"></script><script src="form.js"></script><a href="../index.html">Wstecz</a>',
+    'app/www/theme.css': '', 'app/www/ekran.js': '', 'app/www/sierota.js': '', 'app/www/ppm.js': PPM('Zimny'),
+    'moduly/m/m.js': '', 'app/www/moduly/m/m.js': '', 'inspekcje/form.js': '', 'app/www/inspekcje/form.js': '',
+    'app/tests/ekran-ui-check.cjs': '', 'app/tests/raport-ui-check.cjs': "require('./pomoc.cjs')", 'app/tests/pomoc.cjs': '', 'app/tests/a.test.cjs': '',
+    'docs/X.md': '', 'app/android/A.java': ''
+  });
+  g('add', '-A'); g('commit', '-qm', 'base'); g('checkout', '-qb', 'pr');
+  return { d, g };
+}
+// zmienia pliki, robi commit i zwraca wynik analizy
+function impact(files, event = 'pull_request', prep) {
+  const { d, g } = appRepo(); if (prep) prep(d, g); write(d, files); g('add', '-A'); g('commit', '-qm', 'pr', '--allow-empty');
+  const out = path.join(d, 'w.json'), r = run('wplyw.cjs', ['--root', d, '--base', 'main', '--event', event, '--json', out]);
+  assert.equal(r.code, 0, r.out); return JSON.parse(fs.readFileSync(out, 'utf8'));
+}
+const sel = w => w.wybrane.map(x => path.basename(x.test)).sort(), skip = w => w.pominiete.map(x => path.basename(x.test)).sort();
+
+test('Wpływ: sama dokumentacja i kod Android = żaden test G2 nie jest potrzebny, każdy z powodem', () => {
+  const w = impact({ 'docs/X.md': 'nowe', 'app/android/A.java': '//' });
+  assert.equal(w.pelna, false); assert.deepEqual(sel(w), []); assert.deepEqual(skip(w), ['ekran-ui-check.cjs', 'raport-ui-check.cjs']);
+  assert.ok(w.pominiete.every(p => /dokumentacja/.test(p.powod) && /android/.test(p.powod)), JSON.stringify(w.pominiete));
+});
+test('Wpływ: plik jednego ekranu = tylko testy tej strony; link <a href> i komentarz HTML nie są wczytaniem', () => {
+  const w = impact({ 'app/www/ekran.js': '//zmiana' });
+  assert.deepEqual(sel(w), ['ekran-ui-check.cjs']); assert.deepEqual(skip(w), ['raport-ui-check.cjs']);
+  assert.match(w.pominiete[0].powod, /ekran\.js.*nie są wczytywane przez inspekcje\/index\.html/);
+  assert.ok(!w.strony['index.html'].includes('inspekcje/index.html') && !w.strony['index.html'].includes('stary.js'));
+});
+test('Wpływ: moduł wspólny (moduly/) wczytywany przez obie strony = testy obu stron', () => {
+  const w = impact({ 'moduly/m/m.js': '//zmiana' });
+  assert.deepEqual(sel(w), ['ekran-ui-check.cjs', 'raport-ui-check.cjs']); assert.equal(w.zmiany[0].klasa, 'wspólne');
+});
+test('Wpływ: dane formularza (ppm.js) = lista dotkniętych inspekcji; zmiana funkcji w ppm.js = wszystkie', () => {
+  let w = impact({ 'app/www/ppm.js': PPM('Zimny 2') });
+  assert.equal(w.zmiany[0].klasa, 'dane formularza'); assert.deepEqual(w.inspekcje, ['EFA-INS-002']); assert.ok(sel(w).includes('raport-ui-check.cjs'));
+  w = impact({ 'app/www/ppm.js': PPM('Zimny').replace('return 1', 'return 2') });
+  assert.equal(w.inspekcje, null, 'kod (nie dane) w ppm.js = wszystkie inspekcje');
+  const priv = f => `(function(w){ function alive(r){ return ${f}; }\n w.OEST_PPM = {\n  tasks: [ { id: 'EFA-INS-001', form: 'a' } ],\n  forms: { a: { slots: [] } },\n  stage(r){ return alive(r); } }; })(window);`;
+  w = impact({ 'app/www/ppm.js': priv('false') }, 'pull_request', (d, g) => { write(d, { 'app/www/ppm.js': priv('true') }); g('commit', '-qam', 'prywatna'); g('branch', '-f', 'main'); });
+  assert.equal(w.inspekcje, null, 'zmiana prywatnej funkcji (niewidoczna w eksporcie) = wszystkie inspekcje');
+  w = impact({ 'app/www/ppm.js': PPM('Zimny').replace("forms: {", "forms: { wspolne: { rooms: ['B2'] },") });
+  assert.equal(w.inspekcje, null, 'zmiana formularza bez zadania o tej nazwie (dane wspólne, np. plantRooms) = wszystkie inspekcje');
+});
+test('Wpływ: zmieniony test lub jego pomocnik = ten test', () => {
+  assert.deepEqual(sel(impact({ 'app/tests/ekran-ui-check.cjs': '//' })), ['ekran-ui-check.cjs']);
+  assert.deepEqual(sel(impact({ 'app/tests/pomoc.cjs': '//' })), ['raport-ui-check.cjs']);
+  assert.deepEqual(sel(impact({ 'app/tests/a.test.cjs': '//' })), [], 'test Node: G0 i tak zawsze w całości');
+});
+test('Wpływ: pełna regresja – plik bramki, plik nieznany, plik apki bez wczytania, usunięty plik, nowy test bez mapy', () => {
+  const cases = [
+    [{ 'quality/x.cjs': '' }, /plik bramki/], [{ 'app/package.json': '{}' }, /plik bramki/], [{ 'Inne/plik.txt': 'x' }, /spoza mapy/],
+    [{ 'app/www/sierota.js': '//' }, /żadna strona go nie wczytuje/], [{ 'app/tests/nowy-ui-check.cjs': '' }, /nie ma strony w quality\/wplyw\.json/],
+    [{ 'app/tests/dane/zdjecie-1.jpg': 'x' }, /dane testów/], [{ 'app/tests/nikt.cjs': '' }, /nieznani użytkownicy/]
+  ];
+  for (const [files, why] of cases) { const w = impact(files); assert.equal(w.pelna, true, JSON.stringify(files)); assert.match(w.powodyPelnej.join(' '), why); assert.deepEqual(skip(w), []); }
+  const w = impact({}, 'pull_request', (d, g) => g('rm', '-q', 'app/www/ekran.js'));
+  assert.equal(w.pelna, true); assert.match(w.powodyPelnej.join(' '), /usunięty/);
+});
+test('Wpływ: push na main, merge_group i wywołanie z Android APK = zawsze pełna bramka, nawet dla samej dokumentacji', () => {
+  for (const ev of ['push', 'merge_group', 'workflow_dispatch']) { const w = impact({ 'docs/X.md': 'x' }, ev); assert.equal(w.pelna, true); assert.deepEqual(skip(w), []); }
+});
+test('Wpływ: nie ma przełącznika „bezpieczne” – argumenty i zmienne spoza analizy nie zmieniają wyboru', () => {
+  const { d, g } = appRepo(); write(d, { 'moduly/m/m.js': '//' }); g('commit', '-qam', 'pr');
+  const out = path.join(d, 'w.json');
+  const p = spawnSync(process.execPath, [path.join(Q, 'wplyw.cjs'), '--root', d, '--base', 'main', '--event', 'pull_request', '--json', out, '--bezpieczne', '--skip', 'all'], { encoding: 'utf8', env: { ...process.env, OEST_BEZPIECZNE: '1', OEST_SKIP: '1' } });
+  assert.equal(p.status, 0); assert.deepEqual(sel(JSON.parse(fs.readFileSync(out, 'utf8'))), ['ekran-ui-check.cjs', 'raport-ui-check.cjs']);
+});
+test('Ratchet: mapa wpływu może tylko poszerzać testy – zawężenie strony testu, nowy wzorzec dokumentacji, zmiana trybu → FAIL', () => {
+  const W = { tryb: 'tylko-raport', strony: ['index.html'], testy: { 'app/tests/x-ui-check.cjs': ['index.html'] }, zasobyDynamiczne: {}, pelnaRegresja: ['quality/**'], dokumentacja: ['docs/**'], android: [] };
+  const mods = [m => { m.testy['app/tests/x-ui-check.cjs'] = []; }, m => { m.dokumentacja.push('app/www/**'); }, m => { m.tryb = 'wybor'; }, m => { m.pelnaRegresja = []; }];
+  for (const mod of mods) {
+    const { d, g } = repo(M, []); write(d, { 'quality/wplyw.json': JSON.stringify(W) }); g('add', '-A'); g('commit', '-qm', 'mapa'); g('branch', '-f', 'main');
+    const m = JSON.parse(JSON.stringify(W)); mod(m); write(d, { 'quality/wplyw.json': JSON.stringify(m) }); g('commit', '-qam', 'pr');
+    const r = ratchet(d); assert.equal(r.code, 1, r.out); assert.match(r.out, /Mapa wpływu|tryb/);
+  }
+  const { d, g } = repo(M, []); write(d, { 'quality/wplyw.json': JSON.stringify(W) }); g('add', '-A'); g('commit', '-qm', 'mapa'); g('branch', '-f', 'main');
+  const m = JSON.parse(JSON.stringify(W)); m.testy['app/tests/x-ui-check.cjs'].push('inspekcje/index.html'); write(d, { 'quality/wplyw.json': JSON.stringify(m) }); g('commit', '-qam', 'pr');
+  assert.equal(ratchet(d).code, 0, 'poszerzenie zakresu jest dozwolone');
+});
+test('Podsumowanie: analiza wpływu to tylko informacja – „POMINIĘTY (wpływ)” i rozbieżność mapy nie zmieniają wyniku bramki', () => {
+  const d = tmp(), ok = { status: 'PASS' };
+  const res = (extra) => { write(d, {
+    'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [] }),
+    'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
+    'browser.json': JSON.stringify({ results: [{ id: 'app/tests/x-ui-check.cjs', status: 'PASS', seconds: 40, wczytane: ['index.html', 'nowy.js'] }, ...extra] }),
+    'wplyw.json': JSON.stringify({ tryb: 'tylko-raport', status: 'OK', base: 'abc', pelna: false, powodyPelnej: [], zmiany: [{ plik: 'docs/a.md', klasa: 'dokumentacja', powod: 'nie trafia do apki' }], wybrane: [], pominiete: [{ test: 'app/tests/x-ui-check.cjs', powod: 'zmiana nie dotyczy stron apki' }], zaleznosci: { 'app/tests/x-ui-check.cjs': ['index.html'] } })
+  }); return run('summarize.cjs', [d]); };
+  let r = res([]);
+  assert.equal(r.code, 0, r.out); assert.match(r.out, /POMINIĘTY \(wpływ\)/); assert.match(r.out, /Rozbieżność mapy.*nowy\.js/s); assert.match(r.out, /byłyby pominięte: 40 s/);
+  r = res([{ id: 'app/tests/y-ui-check.cjs', status: 'FAIL', seconds: 1 }]);
+  assert.equal(r.code, 1, 'FAIL testu nadal blokuje, niezależnie od analizy wpływu');
+});
