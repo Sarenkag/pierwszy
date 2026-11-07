@@ -147,6 +147,11 @@
       "file": "app/tests/edytor-zdjec-ui-check.cjs",
       "passMarker": "EDYTOR ZDJEC UI PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/zdjecia-szybkosc-ui-check.cjs",
+      "passMarker": "ZDJECIA SZYBKOSC UI PASS",
+      "timeoutSec": 900
     }
   ],
   "allowedSkips": []

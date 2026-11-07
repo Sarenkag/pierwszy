@@ -70,12 +70,17 @@
   // rozmiar zdjęć ogólnych: wartość ustawienia → rodzaj w KINDS (jedno miejsce dla inspekcji i Reactive)
   var GENERAL = [{ v: 'duze', kind: 'duze', pl: 'Duże', en: 'Large' }, { v: 'srednie', kind: 'ogolne', pl: 'Średnie', en: 'Medium' }, { v: 'male', kind: 'male', pl: 'Małe', en: 'Small' }];
   function generalKind(v) { for (var i = 0; i < GENERAL.length; i++) if (GENERAL[i].v === v) return GENERAL[i].kind; return 'ogolne'; }
-  function fit(w, h, preset, kind) {
+  function limits(preset, kind) {
     var p = PRESETS[preset] || PRESETS.standard;
     if (p === PRESETS.standard && KINDS[kind]) p = KINDS[kind];
+    return { max: p.max, q: p.q };
+  }
+  // te same obliczenia w głównym wątku i w Workerze (kod funkcji trafia do Workera tekstem – jedno źródło)
+  function fitTo(w, h, p) {
     var s = p.max ? Math.min(1, p.max / Math.max(w, h)) : 1;
     return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)), quality: p.q };
   }
+  function fit(w, h, preset, kind) { return fitTo(w, h, limits(preset, kind)); }
 
   /* Co skasować, żeby zmieścić się w limitach. Rekordy: {id, created, size, blob?, driveId?, driveDeleted?} */
   function plan(records, settings) {
@@ -256,11 +261,48 @@
       del: function (id) { return tx('readwrite', function (s) { s.delete(id); }); }
     };
   }
-  function compressIn(win) {
-    return async function (file, preset, kind) {
+  /* Kompresja (07/11/2026, audyt wydajności): dekodowanie, zmniejszanie i JPEG idą w Web Workerze (OffscreenCanvas),
+     więc ekran nie zacina się przy zapisie (pomiar: blokada ok. 61 ms → 0 ms na zdjęcie przy zwolnionym procesorze).
+     Ten sam algorytm co w głównym wątku: te same wymiary (fitTo), białe tło, miniatura z tego samego płótna, ta sama jakość.
+     Gdy Worker nie działa (stary WebView, błąd), zdjęcie robi się jak dawniej w głównym wątku – zapis nigdy nie przepada. */
+  function workerSource() {
+    return 'var THUMB=' + THUMB + ';var fitTo=' + fitTo.toString() + ';\n' +
+      'onmessage=async function(e){var d=e.data,img;try{' +
+      'try{img=await createImageBitmap(d.file,{imageOrientation:"from-image"});}catch(_){img=await createImageBitmap(d.file);}' +
+      'var f=fitTo(img.width,img.height,d.lim),c=new OffscreenCanvas(f.width,f.height),g=c.getContext("2d");' +
+      'g.fillStyle="#fff";g.fillRect(0,0,f.width,f.height);g.drawImage(img,0,0,f.width,f.height);if(img.close)img.close();' +
+      'var k=Math.min(1,THUMB/Math.max(f.width,f.height)),t=new OffscreenCanvas(Math.max(1,Math.round(f.width*k)),Math.max(1,Math.round(f.height*k)));' +
+      't.getContext("2d").drawImage(c,0,0,t.width,t.height);' +
+      'var both=await Promise.all([c.convertToBlob({type:"image/jpeg",quality:f.quality}),t.convertToBlob({type:"image/jpeg",quality:0.8})]);' +
+      'postMessage({id:d.id,blob:both[0],thumb:both[1],width:f.width,height:f.height});' +
+      '}catch(err){postMessage({id:d.id,error:String(err&&err.message||err)});}};';
+  }
+  function compressWorker(win) {
+    var w = null, broken = false, seq = 0, wait = {};
+    function fail(why) { broken = true; var x = wait; wait = {}; Object.keys(x).forEach(function (k) { x[k].no(new Error(why)); }); try { if (w) w.terminate(); } catch (_) {} w = null; }
+    function start() {
+      if (w || broken) return w;
+      try {
+        if (typeof win.Worker !== 'function' || typeof win.OffscreenCanvas !== 'function' || !win.Blob || !win.URL || !win.URL.createObjectURL) { broken = true; return null; }
+        var url = win.URL.createObjectURL(new win.Blob([workerSource()], { type: 'text/javascript' }));
+        w = new win.Worker(url);
+        w.onmessage = function (e) { var d = e.data || {}, j = wait[d.id]; if (!j) return; delete wait[d.id]; if (d.error || !d.blob) j.no(new Error(d.error || 'IMAGE_COMPRESSION')); else j.ok(d); };
+        w.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); fail('WORKER'); };
+        w.onmessageerror = function () { fail('WORKER'); };
+      } catch (_) { broken = true; w = null; }
+      return w;
+    }
+    return function (file, lim) {
+      var wk = start(); if (!wk) return Promise.reject(new Error('NO_WORKER'));
+      var id = ++seq;
+      return new Promise(function (ok, no) { wait[id] = { ok: ok, no: no }; wk.postMessage({ id: id, file: file, lim: lim }); });
+    };
+  }
+  function compressMain(win) {
+    return async function (file, lim) {
       var img;
       try { img = await win.createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (_) { img = await win.createImageBitmap(file); }
-      var f = fit(img.width, img.height, preset, kind), c = win.document.createElement('canvas');
+      var f = fitTo(img.width, img.height, lim), c = win.document.createElement('canvas');
       c.width = f.width; c.height = f.height;
       var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
       if (img.close) img.close();
@@ -272,9 +314,19 @@
       return { blob: both[0], thumb: both[1], width: f.width, height: f.height };
     };
   }
+  function compressIn(win) {
+    var inWorker = compressWorker(win), onMain = compressMain(win);
+    var api = function (file, preset, kind) {
+      var lim = limits(preset, kind);
+      return inWorker(file, lim).then(function (r) { api.last = 'worker'; return r; }, function () { api.last = 'main'; return onMain(file, lim); });
+    };
+    api.last = '';
+    return api;
+  }
   function createBrowser(win) {
     function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
     function KEY() { return 'oest.zdjecia.v1.' + who(); }
+    var compress = compressIn(win);
     var store = createStore({
       owner: who,
       db: idb(win),
@@ -283,7 +335,7 @@
         load: function () { var o; try { o = JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { o = {}; } if (!o.limitV2) { if (o.phoneLimitMB === 1024) o.phoneLimitMB = 200; o.limitV2 = 1; try { win.localStorage.setItem(KEY(), JSON.stringify(o)); } catch (_) {} } return o; },
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
-      compress: compressIn(win),
+      compress: compress,
       wifi: function () { var c = win.navigator.connection; if (!c || !c.type) return null; return c.type === 'wifi' || c.type === 'ethernet'; },
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
@@ -308,10 +360,11 @@
         [].forEach.call(win.document.querySelectorAll('.oest-sw[data-sw="photoSize"] i[data-v]'), function (i) { var g = GENERAL.filter(function (x) { return x.v === i.dataset.v; })[0]; if (g) i.textContent = tt(g); });
       });
     }
+    store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
     store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stats = stats; store.search = search;
     return store;
   }
 
-  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, cleanSettings: cleanSettings, place: place, fit: fit, plan: plan, stats: stats,
+  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, cleanSettings: cleanSettings, place: place, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
     search: search, createStore: createStore, createBrowser: createBrowser };
 });
