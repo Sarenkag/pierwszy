@@ -1143,7 +1143,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // odcisk całej treści inspekcji (to samo, co idzie do szkicu: pola raportu, odpowiedzi, powody, notatki, krany, pomiary, zdjęcia),
   // bez znaczników czasu; służy tylko do sprawdzenia, czy dotknięcie Grzegorza coś w inspekcji zmieniło
   function ppmSig() {
-    try { var d = draftSnap(); delete d.t; delete d.fin; delete d.finPeriod; var j = JSON.stringify(d), h = 0; for (var i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return j.length + ":" + h; } catch (e) { return ""; }
+    try { var d = draftSnap(); delete d.t; delete d.fin; delete d.finPeriod; if (d.fl) delete d.fl.open; /* rozwinięcie notatki to nie zmiana */ var j = JSON.stringify(d), h = 0; for (var i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return j.length + ":" + h; } catch (e) { return ""; }
   }
   // user = zmiana zrobiona przez Grzegorza (dotknięcie/wpis w formularzu, poprawione zdjęcie), a nie wczytanie zapisanej inspekcji
   function ppmTrack(open, user) {
@@ -1910,7 +1910,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? T("Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)", "Translating… (first time downloading the dictionary, about 30 MB)") : T("Tłumaczę…", "Translating…");
     (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
-      if (out) { trOriginal = txt; $("komentarz").value = out; $("undoTr").hidden = false; $("trHint").textContent = T("Gotowe. Możesz poprawić tekst ręcznie.", "Done. You can edit the text by hand."); if (mdReady) runModel(true); }
+      if (out) { trOriginal = txt; $("komentarz").value = out; ppmTrack(false, true); /* przetłumaczony komentarz = zmiana */ $("undoTr").hidden = false; $("trHint").textContent = T("Gotowe. Możesz poprawić tekst ręcznie.", "Done. You can edit the text by hand."); if (mdReady) runModel(true); }
       else $("trHint").textContent = T("Brak odpowiedzi — spróbuj jeszcze raz.", "No answer — try again.");
     }).catch(function (e) { $("trHint").textContent = T("Nie udało się przetłumaczyć: ", "Translation failed: ") + gErr(e); })
       .then(function () { b.disabled = false; });
@@ -1950,7 +1950,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var out = $("mdOut").value.trim(); if (!out) return;
     if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = T("Komentarz się zmienił — ułóż jeszcze raz.", "The comment changed — write it again."); return; }
     if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
-    $("komentarz").value = out; $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = T("Wstawione. Możesz poprawić ręcznie albo cofnąć.", "Inserted. You can edit by hand or undo.");
+    $("komentarz").value = out; ppmTrack(false, true); /* wstawiony tekst = zmiana */ $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = T("Wstawione. Możesz poprawić ręcznie albo cofnąć.", "Inserted. You can edit by hand or undo.");
   });
   $("mdDrop").addEventListener("click", function () { mdSeq++; $("mdBox").hidden = true; $("trHint").textContent = ""; });
   renderModel();
