@@ -55,6 +55,10 @@ function ppmTouched() {
   const rest = P => JSON.stringify(Object.keys(P).sort().filter(k => k !== 'tasks' && k !== 'forms').map(k => [k, typeof P[k] === 'function' ? String(P[k]) : JSON.stringify(P[k], (_, v) => typeof v === 'function' ? String(v) : v)]));
   if (rest(before.P) !== rest(after.P)) return null;
   const form = (P, t) => JSON.stringify(t && t.form ? (P.forms || {})[t.form] : null);
+  // forms bez zadania o tej nazwie (np. plantRooms, flush) czyta strona inspekcji przy budowie formularzy – nie wiadomo których: wszystkie
+  const used = new Set([...before.tasks, ...after.tasks].map(t => t.form).filter(Boolean));
+  for (const k of new Set([...Object.keys(before.P.forms || {}), ...Object.keys(after.P.forms || {})]))
+    if (!used.has(k) && JSON.stringify((before.P.forms || {})[k]) !== JSON.stringify((after.P.forms || {})[k])) return null;
   const ids = new Set([...before.tasks, ...after.tasks].map(t => t.id)), touched = [];
   for (const id of ids) {
     const a = before.tasks.find(t => t.id === id), b = after.tasks.find(t => t.id === id);
@@ -91,9 +95,12 @@ function analyse() {
       if (f.startsWith('app/tests/')) {
         if (f.endsWith('-ui-check.cjs')) { z.klasa = 'test'; z.powod = 'zmieniony test przeglądarkowy'; z.testy = [f]; pick(f, 'zmieniony plik testu'); }
         else if (f.endsWith('.test.cjs')) { z.klasa = 'test'; z.powod = 'test Node – G0 zawsze w całości'; }
+        else if (!f.endsWith('.cjs')) { z.klasa = 'dane testów'; z.powod = 'dane testów – nazwy plików mogą być składane w kodzie, nie da się ustalić użytkowników'; full(`${f}: ${z.powod}`); }
         else {
           const base = path.basename(f), users = browserTests.filter(t => { try { return fs.readFileSync(path.join(ROOT, t), 'utf8').includes(base); } catch { return false; } });
-          z.klasa = 'pomocnik testu'; z.powod = users.length ? 'używają go testy przeglądarkowe' : 'nie używa go żaden test przeglądarkowy (G0 zawsze w całości)'; z.testy = users; users.forEach(t => pick(t, `pomocnik ${f}`));
+          z.klasa = 'pomocnik testu';
+          if (!users.length) { z.powod = 'żaden test przeglądarkowy nie wymienia go z nazwy – nieznani użytkownicy'; full(`${f}: ${z.powod}`); }
+          else { z.powod = 'używają go testy przeglądarkowe'; z.testy = users; users.forEach(t => pick(t, `pomocnik ${f}`)); }
         }
         continue;
       }
