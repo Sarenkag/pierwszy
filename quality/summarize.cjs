@@ -34,6 +34,33 @@ const order = { FAIL: 0, 'NOT RUN': 1, SKIPPED: 2, PASS: 3 };
 for (const r of [...rows].sort((a, b) => order[a.status] - order[b.status] || a.gate.localeCompare(b.gate)))
   md.push(`| ${r.gate} | ${esc(r.id)} | ${r.status === 'PASS' ? '✅' : r.status === 'FAIL' ? '❌' : '⚠️'} ${r.status} | ${esc((r.counts ? `${r.counts.pass}/${r.counts.tests} przypadków. ` : '') + r.detail).slice(0, 900)} |`);
 md.push('', 'Tylko PASS jest sukcesem. SKIPPED i NOT RUN blokują (QUALITY.md QG-011).');
+
+// Analiza wpływu zmian (quality/wplyw.cjs). Tryb „tylko-raport”: informacja, NIE wpływa na wynik bramki – wszystkie testy i tak się wykonują.
+const wplyw = read('wplyw.json');
+md.push('', `### Wybór testów według wpływu zmian – tryb „${wplyw ? wplyw.tryb : 'tylko-raport'}” (nic nie pominięto, nie zmienia wyniku)`);
+if (!wplyw) md.push('Brak wyniku analizy wpływu (job G1 nie doszedł do tego kroku).');
+else if (wplyw.status !== 'OK') md.push('Analiza wpływu nie powiodła się: ' + esc(wplyw.blad) + ' – przy włączonym wyborze byłaby pełna regresja.');
+else {
+  md.push(wplyw.pelna ? '**Pełna regresja** – ' + wplyw.powodyPelnej.map(esc).join('; ') : `Baza \`${esc(String(wplyw.base).slice(0, 12))}\`, zmienionych plików: ${wplyw.zmiany.length}.`);
+  if (wplyw.zmiany.length) {
+    md.push('', '| Zmieniony plik | Klasa | Powód |', '|---|---|---|');
+    for (const z of wplyw.zmiany.slice(0, 40)) md.push(`| \`${esc(z.plik)}\` | ${esc(z.klasa)} | ${esc(z.powod)} |`);
+    if (wplyw.zmiany.length > 40) md.push(`| … | | jeszcze ${wplyw.zmiany.length - 40} plików |`);
+  }
+  const br = browser ? browser.results : [], sec = id => (br.find(r => r.id === id) || {}).seconds;
+  md.push('', '| Test G2 | Wynik (wykonany) | Przy włączonym wyborze | Powód |', '|---|---|---|---|');
+  for (const w of wplyw.wybrane) md.push(`| ${esc(w.test)} | ${(br.find(r => r.id === w.test) || {}).status || 'NOT RUN'} | uruchomiony | ${esc(w.powod).slice(0, 400)} |`);
+  for (const w of wplyw.pominiete) md.push(`| ${esc(w.test)} | ${(br.find(r => r.id === w.test) || {}).status || 'NOT RUN'} | POMINIĘTY (wpływ) | ${esc(w.powod).slice(0, 400)} |`);
+  const saved = wplyw.pominiete.reduce((a, w) => a + (sec(w.test) || 0), 0);
+  md.push('', `Czas testów, które byłyby pominięte: ${Math.round(saved)} s (z ${Math.round(br.reduce((a, r) => a + (r.seconds || 0), 0))} s testów przeglądarkowych).`);
+  if (wplyw.inspekcje !== undefined) md.push(`raport-ui-check – inspekcje, których dotyczy zmiana danych: ${wplyw.inspekcje ? wplyw.inspekcje.join(', ') || '(żadna)' : 'wszystkie'} (dziś test i tak sprawdza wszystkie).`);
+  // kontrola mapy: pliki faktycznie wczytane przez test (ślad quality/wplyw-slad.cjs) muszą być znane mapie
+  const bad = [];
+  for (const r of br) if (r.wczytane && wplyw.zaleznosci) { const known = new Set(wplyw.zaleznosci[r.id] || []); const extra = r.wczytane.filter(f => !known.has(f)); if (extra.length) bad.push(`${r.id}: ${extra.join(', ')}`); }
+  const traced = br.filter(r => r.wczytane).length;
+  md.push(!traced ? 'Kontrola mapy: brak śladu wczytanych plików.' : bad.length ? '⚠️ **Rozbieżność mapy** – test wczytał pliki, których mapa wpływu mu nie przypisuje (przy włączonym wyborze zmiana tych plików mogłaby go pominąć; mapa do poprawki):<br>' + bad.map(esc).join('<br>') : `✅ Kontrola mapy: ${traced} testów – każdy wczytany plik jest w zależnościach testu.`);
+  md.push('', 'Kontrola zachowania: każdy test powyżej został faktycznie uruchomiony. Kontrola kodu 1:1 (skrót plików) nie jest włączona – decyzja 4 planu.');
+}
 const text = md.join('\n');
 console.log(text);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');

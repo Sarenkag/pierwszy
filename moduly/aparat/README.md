@@ -4,6 +4,13 @@
 
 Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz** → gotowe zdjęcie. „Edytuj” otwiera edytor w apce (strzałka, gotowe kółka S/M/L — stuknij, żeby postawić, przeciągnij, żeby przesunąć — kwadrat, linia, 6 kolorów, grubość S/M/L, kadrowanie, cofnij) i wraca do podglądu. Wynik: JPEG w pełnej rozdzielczości, offline, nic nie trafia do Galerii.
 
+## Wygląd edytora (lifting 07/11/2026, zatwierdzony przez Grzegorza)
+- Góra: **Anuluj** (sam tekst) · **↶ Cofnij** (szkło z ramką) · **✓ Zapisz** (gradient z poświatą) – wszystkie 44 px, jedno zaokrąglenie.
+- Dół: jedna szklana karta, dwa rzędy. Rząd 1: grupy z podpisem **Rysuj** (↗ ／ ▢), **Kółko** (3 rozmiary), **Kadruj**. Rząd 2: 6 kolorów i grubość S/M/L jako kropki w wybranym kolorze.
+- Aktywne: przygaszony akcent + cienka ramka + poświata; wybrany kolor – biały pierścień.
+- Style w `aparat.js` (`CSS`, `<style id="oest-aparat-css">`), tylko tokeny z `theme.css` i `moduly/wyglad` (z wartościami zapasowymi). Logika rysowania, Cofnij i Zapisz bez zmian.
+- Test: `app/tests/edytor-zdjec-ui-check.cjs` (PL/EN, geometria, hierarchia, przepływ Anuluj/Cofnij/Zapisz).
+
 ## Użycie
 ```js
 OESTAparat.take().then(blob => { if (blob) dodajZdjecie(blob); });   // zrobienie zdjęcia
