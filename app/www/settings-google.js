@@ -134,16 +134,23 @@
       if(r.files&&r.files[0])return r.files[0];
       return request('drive','https://www.googleapis.com/drive/v3/files?fields=id,name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,mimeType:'application/vnd.google-apps.folder',parents:[parentId||'root']})});
     }
-    async function uploadFile(parentId,name,blob){
+    /* props (opcjonalnie): appProperties pliku, np. { oestPhoto: id zdjęcia } – po przerwanej wysyłce findFile znajduje ten sam plik */
+    function cleanProps(props){var out=null;Object.keys(props||{}).forEach(function(k){var v=String(props[k]);if(!/^[\w-]{1,60}$/.test(k)||!/^[\w-]{1,100}$/.test(v))throw Error('FILE_PROPS');(out=out||{})[k]=v;});return out;}
+    async function uploadFile(parentId,name,blob,props){
       if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');
-      var boundary='oest_'+Date.now(),meta=JSON.stringify({name:name,parents:[parentId]});
+      var ap=cleanProps(props),m={name:name,parents:[parentId]};if(ap)m.appProperties=ap;
+      var boundary='oest_'+Date.now(),meta=JSON.stringify(m);
       var body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'image/jpeg')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
       return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
     }
     /* Moduł raportów: ten sam raport = ten sam plik (Grzegorz 08/11/2026: na Dysku tylko ostatnia wersja). */
-    async function findFile(parentId,name){
-      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');if(!name||name.length>200)throw Error('FILE_NAME');
-      var q="mimeType!='application/vnd.google-apps.folder' and trashed=false and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"' and '"+parentId+"' in parents";
+    /* props (opcjonalnie): szukanie po appProperties; wtedy nazwa może być pusta (zdjęcia: tylko po id zdjęcia, nazwa bywa > 200 znaków) */
+    async function findFile(parentId,name,props){
+      var ap=cleanProps(props);
+      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');if(ap?name&&name.length>255:!name||name.length>200)throw Error('FILE_NAME');
+      var q="mimeType!='application/vnd.google-apps.folder' and trashed=false and '"+parentId+"' in parents";
+      if(name)q+=" and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'";
+      if(ap)Object.keys(ap).forEach(function(k){q+=" and appProperties has { key='"+k+"' and value='"+ap[k]+"' }";});
       var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:q,fields:'files(id,name)',pageSize:'1'}));
       return r.files&&r.files[0]||null;
     }

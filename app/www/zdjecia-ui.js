@@ -15,7 +15,8 @@
   function drive() {
     return {
       ensureFolder: function (name, parent) { return G.ensureFolder(name, parent); },
-      upload: function (parent, name, blob) { return G.uploadFile(parent, name, blob); },
+      upload: function (parent, name, blob, props) { return G.uploadFile(parent, name, blob, props); },
+      find: function (parent, name, props) { return G.findFile(parent, name, props); }, // ponowna próba po przerwanej wysyłce: ten sam plik, bez duplikatu
       remove: function (id) { return G.removeFile(id); }
     };
   }
