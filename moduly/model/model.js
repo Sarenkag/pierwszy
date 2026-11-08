@@ -36,16 +36,18 @@
   }
   function clean(t) { t = String(t || '').trim().replace(/^["“”']+|["“”']+$/g, '').replace(/^(here is|here's)[^:]*:\s*/i, '').trim(); if (!t) throw Error(T('Model nie zwrócił tekstu.', 'The model returned no text.')); return t; }
   function ref(note, reference) { reference = String(reference || '').trim(); return reference && reference !== String(note || '').trim() ? '\n\nOriginal Polish wording (for reference only; the note above is what counts):\n' + reference : ''; }
+  // miejsce notatki (np. nazwa inspekcji) – tylko po to, żeby model dobrał właściwe słownictwo; nie dopisuje go do tekstu (08/11/2026)
+  function where(context) { context = String(context || '').trim(); return context ? '\n\nContext (for terminology only; do not add it to the text): ' + context : ''; }
   // Notatka (aktualny tekst, np. tłumaczenie ML Kit z poprawkami) → 1–2 dobrze zbudowane zdania po angielsku
-  function polish(note, reference) {
-    return run('Rewrite this note as one or two well-built sentences for the report.\n\nNote:\n' + String(note || '').trim() + ref(note, reference));
+  function polish(note, reference, context) {
+    return run('Rewrite this note as one or two well-built sentences for the report.\n\nNote:\n' + String(note || '').trim() + ref(note, reference) + where(context));
   }
   // Kilka notatek → jeden spójny akapit (nie zlepek zdań), w tej samej kolejności
-  function combine(notes, reference) {
+  function combine(notes, reference, context) {
     var list = (notes || []).map(function (n) { return String(n || '').trim(); }).filter(Boolean);
     if (!list.length) return Promise.reject(Error(T('Brak notatek do połączenia.', 'No notes to combine.')));
     return run('Combine the notes below into ONE coherent paragraph for the report. Keep their order, join related points naturally, ' +
-      'avoid repeating the same information, and keep every fact.\n\n' + list.map(function (n, i) { return (i + 1) + '. ' + n; }).join('\n') + ref(list.join('\n'), reference));
+      'avoid repeating the same information, and keep every fact.\n\n' + list.map(function (n, i) { return (i + 1) + '. ' + n; }).join('\n') + ref(list.join('\n'), reference) + where(context));
   }
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
   function missingNumbers(input, output) {

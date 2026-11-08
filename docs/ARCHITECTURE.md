@@ -22,6 +22,7 @@
 | Wysyłka | `moduly/wysylka`, `settings-google.js` | Gmail, kolejka, stan |
 | UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `pasek-dni`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
 | Wstecz telefonu | `moduly/wstecz` | systemowy Wstecz: okienko → poziom wyżej → pytanie o wyjście (08/11/2026) |
+| Notatki głosowe | `moduly/notatki` (`glos.js` = OESTVoice, `notatki.js` = OESTNotatki) | nagrywanie, tekst PL→EN, okienko notatek; inspekcje (08/11/2026), Hand over i Reactive – nagrywanie |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 
 ### Status integracji i przenośności (stan audytowy, nie certyfikat)

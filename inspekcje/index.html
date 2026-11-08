@@ -229,6 +229,11 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 9px 12px; font: inherit; font-weight: 600; font-size: 0.92rem; cursor: pointer; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn.wide { width: 100%; padding: 12px; }
+/* notatki głosowe (moduly/notatki, 08/11/2026): dwa równe przyciski + licznik notatek */
+.nt-btns { margin-top: 8px; } .nt-btns .btn { flex: 1 1 0; min-width: 0; }
+.btn.nt-rec { border-color: rgba(255,77,94,.7) !important; background: rgba(255,77,94,.12) !important; touch-action: none; -webkit-user-select: none; user-select: none; }
+.nt-n { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 11px; background: rgba(124,132,255,.25); border: 1px solid rgba(124,132,255,.6); font-size: .8rem; line-height: 20px; text-align: center; }
+#ntJoin { margin-top: 8px; }
 .hint { color: var(--muted); font-size: 0.88rem; margin: 0; }
 
 /* Postęp */
@@ -451,6 +456,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <div class="panel" data-m="one sum">
       <div class="f"><label for="komentarz" data-en="Comment (goes to the report in English)">Komentarz (trafi do raportu po angielsku)</label>
         <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu" data-en-placeholder="Type or dictate — microphone on the phone keyboard"></textarea></div>
+      <div class="row nt-btns"><button class="btn nt-rec" type="button" id="ntRec" data-en="🎤 Record note">🎤 Nagraj notatkę</button><button class="btn" type="button" id="ntOpen"><span data-en="📝 Notes">📝 Notatki</span> <span class="nt-n" id="ntN">0</span></button></div>
+      <button class="btn wide" type="button" id="ntJoin" hidden data-en="✨ Combine notes into comment">✨ Połącz notatki w komentarz</button>
       <div class="row"><button class="btn" type="button" id="translate" hidden data-en="Translate to English">Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden data-en="Undo translation">Cofnij tłumaczenie</button><button class="btn" type="button" id="mdRun" hidden data-en="✨ Write in English">✨ Ułóż po angielsku</button></div>
       <p class="hint" id="trHint"></p>
       <div id="mdBox" hidden><div class="f"><label for="mdOut" data-en="Model suggestion — check and correct">Propozycja modelu — sprawdź i popraw</label><textarea id="mdOut"></textarea></div><p class="hint" id="mdWarn"></p>
@@ -514,6 +521,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/przelacznik/przelacznik.js"></script>
 <script src="../moduly/pole-email/pole-email.js"></script>
 <script src="../moduly/model/model.js"></script>
+<script src="../moduly/notatki/glos.js"></script>
+<script src="../moduly/notatki/notatki.js"></script>
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-flush.js"></script>
 <script src="flush.js"></script>
@@ -1278,6 +1287,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
+    if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
     fl = { on: false, week: 0, open: {}, taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
@@ -1328,12 +1338,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
       if (REC && d === undefined) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; }
       if (REC) recLost = d && d.lost > 0 ? d.lost : 0; // zdjęcia raportu, których nie było w module zdjęć (zapis awaryjny) // pierwsze otwarcie odzyskanej: dane z raportu (po „Wyczyść” szkic = null i zostaje pusty)
-      if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
+      if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); if (window.OESTNotatki) OESTNotatki.move(k, k + "@" + d.finPeriod).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
       if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
-      draftOn = true;
+      draftOn = true; if (typeof ntRefresh === "function") ntRefresh();
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
   function restoreDraft(d, tok) {
@@ -1458,7 +1468,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!(await ask(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos).")))) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
-    dropDraft(k).then(function () {
+    (window.OESTNotatki ? OESTNotatki.clear(k).catch(function () {}) : Promise.resolve()).then(function () { return dropDraft(k); }).then(function () {
       if (cur.ppm && PPM && PPM.setStage) { var r = PPM.stage(cur.ppm); if (!r || r.s === "prog" || r.s === "hold") PPM.setStage(cur.ppm, null); }
       openForm(code); if (cur.ppm && PPM && PPM.setStage) { var r2 = PPM.stage(cur.ppm); if (r2 && r2.s === "prog" && !r2.manual) PPM.setStage(cur.ppm, null); }
       renderPpmBar(); $("formHint").textContent = T("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
@@ -1941,7 +1951,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     // wejście = to, co jest teraz w polu (z Twoimi poprawkami); polski oryginał tylko pomocniczo
     var reference = trOriginal != null ? trOriginal : "", original = txt;
     var notes = txt.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
-    var tok = ++mdSeq, form = formSeq; mdInput = txt; $("mdRun").disabled = true;
+    var tok = ++mdSeq, form = formSeq; mdInput = txt; mdMode = ""; $("mdRun").disabled = true;
     $("mdWarn").textContent = ""; $("mdBox").hidden = true;
     $("trHint").textContent = (auto ? T("Przetłumaczone. ", "Translated. ") : "") + T("Model układa tekst na telefonie… (pierwszy raz do ~20 s)", "The model is writing the text on the phone… (first time up to ~20 s)");
     (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
@@ -1962,11 +1972,40 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("mdUse").addEventListener("click", function () {
     var out = $("mdOut").value.trim(); if (!out) return;
     if ($("komentarz").value.trim() !== mdInput) { $("mdBox").hidden = true; $("trHint").textContent = T("Komentarz się zmienił — ułóż jeszcze raz.", "The comment changed — write it again."); return; }
-    if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
+    if (mdMode === "notes") { trOriginal = $("komentarz").value; out = mdInput ? mdInput + "\n\n" + out : out; mdMode = ""; } // notatki: dopisane pod tym, co już jest; „Cofnij” wraca do komentarza sprzed wstawienia
+    else if (trOriginal == null) trOriginal = $("komentarz").value.trim(); // „Cofnij” wraca do polskiego oryginału
     $("komentarz").value = out; ppmTrack(false, true); /* wstawiony tekst = zmiana */ $("undoTr").hidden = false; $("mdBox").hidden = true; mdInput = null; $("trHint").textContent = T("Wstawione. Możesz poprawić ręcznie albo cofnąć.", "Inserted. You can edit by hand or undo.");
   });
   $("mdDrop").addEventListener("click", function () { mdSeq++; $("mdBox").hidden = true; $("trHint").textContent = ""; });
   renderModel();
+
+  // ---------- notatki głosowe (moduly/notatki, 08/11/2026): przytrzymaj 🎤 → tekst PL → EN; okienko „Notatki”; „Połącz” = propozycja do komentarza ----------
+  var mdMode = "";
+  function ntScope() { return cur.mode === "one" && cur.type && window.OESTNotatki ? draftKey() : ""; }
+  function ntCtx() { return cur.type ? cur.type.title : ""; }
+  function ntRefresh() {
+    var k = ntScope(), row = $("ntRec") && $("ntRec").parentNode; if (!row) return;
+    row.hidden = !k; if (!k) { $("ntJoin").hidden = true; return; }
+    OESTNotatki.summary(k).then(function (r) { if (k !== ntScope()) return; $("ntN").textContent = r.all; $("ntJoin").hidden = r.ready < 1; var kp = $("komentarz").closest(".panel"); if (r.all && kp.classList.contains("fold")) kp.classList.add("open"); /* są notatki: pole notatki rozwinięte jak przy wpisanym komentarzu */ });
+  }
+  if (window.OESTNotatki) {
+    OESTNotatki.bind($("ntRec"), {
+      scope: ntScope, ctx: ntCtx,
+      onSaved: function () { ppmTrack(false, true); $("trHint").textContent = T("Notatka zapisana. Zamieniam ją na tekst — zobaczysz w „📝 Notatki”.", "Note saved. Turning it into text — see “📝 Notes”."); },
+      onError: function (e) { $("trHint").textContent = gErr(e); }
+    });
+    OESTNotatki.on(function (k) { if (k === ntScope()) ntRefresh(); });
+    $("ntOpen").addEventListener("click", function () { var k = ntScope(); if (k) OESTNotatki.open(k, { title: ntCtx() }); });
+    $("ntJoin").addEventListener("click", function () {
+      var k = ntScope(), b = this, tok = formSeq; if (!k) return; b.disabled = true;
+      $("trHint").textContent = T("Łączę notatki… (model na telefonie, pierwszy raz do ~20 s)", "Combining notes… (on-phone model, first time up to ~20 s)");
+      OESTNotatki.combine(k, ntCtx()).then(function (out) {
+        if (tok !== formSeq) return;
+        mdSeq++; mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = "";
+        $("trHint").textContent = T("Propozycja z notatek gotowa — sprawdź i stuknij „Wstaw do komentarza”. Nic nie wstawiam samo.", "Suggestion from the notes is ready — check it and tap “Insert into comment”. Nothing is inserted automatically.");
+      }).catch(function (e) { $("trHint").textContent = gErr(e); }).then(function () { b.disabled = false; });
+    });
+  } else { $("ntRec").parentNode.hidden = true; }
 
   // ---------- zdjęcia ----------
   function addFiles(input, tap, sheet) {
