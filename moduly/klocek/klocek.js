@@ -126,6 +126,7 @@
     "@media (max-width:399px){.ki .kr3{gap:3px}.ki .kr3 .kdt,.ki .kr3 .kn{font-size:12px}.ki .kr3 .kdt{width:108px}.ki .kr3 .kn2{width:18px}.ki .kr3 .kn5{width:40px}.ki .kr3 .kus{width:40px}}" +
     ".ki .kn{flex:none;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}.ki .kn2{width:20px}.ki .kn5{width:44px}" +
     ".ki .kus{flex:none;display:flex;align-items:center;gap:4px;width:44px;height:21px;color:" + ORANGE + "}.ki .kus:empty{visibility:hidden}" +
+    ".oest-ask.ki-info,.oest-ask.ki-info *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}" +
     ".oest-ask.ki-info>div{text-align:left}.oest-ask.ki-info{--ruch-okno-easing:var(--ruch-znacznik-easing,cubic-bezier(.34,1.56,.64,1))}" +
     ".ki-info .kir{display:flex;gap:10px;align-items:center;margin:10px 0;font-size:14px;line-height:1.35}" +
     ".ki-info .kic{width:21px;height:21px;flex:none;fill:none;stroke:var(--steel,#b9c2e6);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ki-info .kic .kz{stroke-width:2.2}" +
@@ -180,6 +181,7 @@
       t = setTimeout(function () {
         t = 0; fired = true;
         try { if (w.navigator && w.navigator.vibrate) w.navigator.vibrate(20); } catch (er) {}
+        try { var sel = w.getSelection && w.getSelection(); if (sel && sel.rangeCount) sel.removeAllRanges(); } catch (er) {}
         onHold(el);
       }, HOLD_MS);
     }, { passive: true });
@@ -187,6 +189,12 @@
     ["pointerup", "pointercancel", "pointerleave"].forEach(function (k) { root.addEventListener(k, stop, { passive: true }); });
     w.addEventListener("scroll", stop, { passive: true });
     root.addEventListener("contextmenu", function (e) { if (e.target.closest && e.target.closest(".ki")) e.preventDefault(); });
+    // okno informacji wyskakuje pod palcem, który dalej trzyma – bez zaznaczania i paska Kopiuj/Udostępnij (Pixel, Grzegorz 08/11/2026);
+    // tylko klocki i okno informacji list inspekcji, reszta apki bez zmian
+    if (!w.document.__kiInfoMenu) {
+      w.document.__kiInfoMenu = true;
+      w.document.addEventListener("contextmenu", function (e) { if (e.target.closest && e.target.closest(".ki-info")) e.preventDefault(); });
+    }
     // stuknięcie, które kończy przytrzymanie, nie otwiera inspekcji – niezależnie od tego, jak długo palec trzymał (uwaga Codex w PR #87);
     // stan zeruje dopiero następne dotknięcie
     root.addEventListener("click", function (e) { if (fired) { fired = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
