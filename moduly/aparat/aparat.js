@@ -8,6 +8,7 @@
  *
  *   OESTAparat.take(opts?)  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
  *     opts.max = dłuższy bok (px), w jakim zdjęcie i tak zostanie zapisane; edycja zapisze je od razu w tym rozmiarze (bez = pełny)
+ *     opts.prepare(blob) = wołane, gdy podgląd pokazuje zdjęcie (także po edycji): apka może je już zmniejszać w tle
  *   OESTAparat.available()           → true w apce Android
  *   OESTAparat.edit(blob, opts?) → Promise<Blob|null>   (null = bez zmian / anulowane; opts.max jak wyżej)
  *   OESTAparat.review(blob) → Promise<{blob}|{retake:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz
@@ -245,7 +246,7 @@
           '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + T('✏️ Edytuj', '✏️ Edit') + '</button>' +
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';
         var img = box.querySelector('img'), msg = box.querySelector('.oest-review-msg'), busy = false;
-        function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; }
+        function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; if (opts && typeof opts.prepare === 'function') try { opts.prepare(cur); } catch (_) {} }
         function close(r) { if (url) URL.revokeObjectURL(url); box.remove(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('[data-r]'); if (!b || busy) return;

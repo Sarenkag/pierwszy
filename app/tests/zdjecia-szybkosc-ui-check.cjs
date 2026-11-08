@@ -3,13 +3,14 @@
 // Sprawdza:
 //  1. kompresja idzie w Web Workerze (OESTZdjecia.compressedIn() === 'worker'), a bez OffscreenCanvas – jak dawniej w głównym wątku;
 //  2. oba sposoby dają te same wymiary zdjęć (KINDS: kran 800 px, ogólne 1600 px, kartka 1600 px) i prawie ten sam rozmiar pliku;
-//  3. z Workerem główny wątek (ekran) jest blokowany wyraźnie krócej niż bez niego (procesor zwolniony 4× jak w telefonie);
+//  3. z Workerem żadne pełne zdjęcie nie jest dekodowane, skalowane ani kodowane w głównym wątku (czas blokady tylko w raporcie);
+//  6. zdjęcie z aparatu zmniejsza się w tle już w czasie podglądu (OESTZdjecia.prepare), zapis po „OK” bierze gotowy wynik;
 //  5. edytor: z opts.max zapis od razu w 2560 px (bez JPEG 12 MP), kształty i kadr na tym samym miejscu; bez max – jak dawniej;
 //  4. raport: zdjęcia zmniejszane raz – drugie Wyślij tej samej inspekcji nie dekoduje ich ponownie; Word i PDF w kolejce poniżej 1 MB.
 // Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
-const LIMIT = 1024 * 1024, GENERAL = 3;
+const LIMIT = 1024 * 1024, GENERAL = 3, PODGLAD_MS = 600; // podgląd po zdjęciu w teście trwa 600 ms (człowiek zwykle patrzy dłużej)
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {
   const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
@@ -50,17 +51,21 @@ async function run(browser, url, worker) {
   const list = []; for (let i = 0; i < taps; i++) list.push(i); for (let i = 0; i < GENERAL; i++) list.push(30 + i); list.push(51);
   assert.equal(await makePhotos(pg, list), list.length);
   // aparat jak w apce na telefonie (OESTAparat.take → podgląd OK): zdjęcie podajemy z pamięci strony, bez wyboru pliku
-  await pg.evaluate(() => { window.__n = 0; window.OESTAparat = Object.assign({}, window.OESTAparat || {}, { available: () => true, take: () => Promise.resolve(window.__ph[window.__n++]), edit: () => Promise.resolve(null) }); });
+  // podgląd po zdjęciu trwa (człowiek patrzy i stuka „OK”): w tym czasie aparat woła opts.prepare – zdjęcie zmniejsza się w tle (punkt 1 audytu)
+  await pg.evaluate(([ms, noPrep]) => { window.__n = 0; window.OESTAparat = Object.assign({}, window.OESTAparat || {}, { available: () => true,
+    take: o => { const b = window.__ph[window.__n++]; if (!noPrep && o && typeof o.prepare === 'function') o.prepare(b); return new Promise(ok => setTimeout(() => { window.__okAt = performance.now(); ok(b); }, ms)); },
+    edit: () => Promise.resolve(null) }); }, [PODGLAD_MS, !!process.env.OEST_BEZ_PODGLADU_W_TLE]);
   const cdp = await ctx.newCDPSession(pg); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await pg.evaluate(() => { window.__lt = 0; window.__on = true; });
   const t0 = Date.now();
-  for (let i = 0; i < taps; i++) { await pg.click('[data-flcam="' + i + '"]'); await pg.waitForFunction(n => document.querySelectorAll('.fl-pics img').length >= n, i + 1, { timeout: 120000 }); }
-  for (let i = 0; i < GENERAL; i++) { await pg.click('#camIn'); await pg.waitForFunction(n => document.querySelectorAll('#photos .thumb').length >= n, i + 1, { timeout: 120000 }); }
-  await pg.click('#shCamIn'); await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos .thumb').length >= 1, null, { timeout: 120000 });
+  const okMs = [], poOk = () => pg.evaluate(() => performance.now() - window.__okAt).then(v => okMs.push(v));
+  for (let i = 0; i < taps; i++) { await pg.click('[data-flcam="' + i + '"]'); await pg.waitForFunction(n => document.querySelectorAll('.fl-pics img').length >= n, i + 1, { timeout: 120000, polling: 10 }); await poOk(); }
+  for (let i = 0; i < GENERAL; i++) { await pg.click('#camIn'); await pg.waitForFunction(n => document.querySelectorAll('#photos .thumb').length >= n, i + 1, { timeout: 120000, polling: 10 }); await poOk(); }
+  await pg.click('#shCamIn'); await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos .thumb').length >= 1, null, { timeout: 120000, polling: 10 }); await poOk();
   const addMs = Date.now() - t0;
   const r = await pg.evaluate(() => { window.__on = false; return { lt: window.__lt, enc: window.__enc, mdec: window.__mdec, mdraw: window.__mdraw, dec: window.__dec, via: window.OESTZdjecia.compressedIn() }; });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-  r.addMs = addMs;
+  r.addMs = addMs; r.poOk = Math.round(okMs.reduce((a, b) => a + b, 0) / okMs.length); r.hits = await pg.evaluate(() => window.OESTZdjecia.preparedHits());
   r.saved = (await pg.evaluate(() => window.OESTZdjecia.list())).sort((a, b) => a.saved < b.saved ? -1 : 1).map(x => ({ kind: x.kind, w: x.width, h: x.height, size: x.size }));
   if (await pg.locator('#flWeek [data-w="1"]:not(.on)').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
   await pg.waitForTimeout(800);
@@ -76,6 +81,13 @@ async function run(browser, url, worker) {
   }
   r.decFirst = await send();
   r.decSecond = await send();
+  // inne zdjęcie o tej samej wielkości (różni się tylko w środku pliku) NIE może dostać wyniku przygotowanego dla poprzedniego
+  r.obce = await pg.evaluate(async () => {
+    const Z = window.OESTZdjecia, a = window.__ph[0], x = new Uint8Array(await a.arrayBuffer()), y = x.slice(); y[y.length >> 1] ^= 0xff;
+    const h0 = Z.preparedHits(); Z.prepare(a, 'dowod'); await Z.save(new File([y], 'inne.jpg', { type: 'image/jpeg' }), { source: 'test', kind: 'dowod' }).catch(() => null);
+    const h1 = Z.preparedHits(); await Z.save(new File([a], 'to-samo.jpg', { type: 'image/jpeg' }), { source: 'test', kind: 'dowod' });
+    return { inne: h1 - h0, toSamo: Z.preparedHits() - h1 };
+  });
   r.files = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const it = g.result.sort((a, b) => a.created - b.created).pop(); res(it ? (it.files || []).map(f => ({ name: f.name, size: (f.bytes || f.data || []).byteLength || (f.bytes || f.data || '').length || 0 })) : []); }; }; }));
   r.errs = errs; r.taps = taps;
   await ctx.close();
@@ -143,6 +155,8 @@ async function editorCheck(browser, url) {
       assert.ok(r.decFirst >= r.saved.length, n + ': pierwsze Wyślij zmniejsza każde zdjęcie (' + r.decFirst + ')');
       assert.equal(r.decSecond, 0, n + ': drugie Wyślij nie powinno zmniejszać zdjęć od nowa');
     }
+    for (const [n, r] of [['Worker', W], ['główny wątek', M]]) assert.deepEqual(r.obce, { inne: 0, toSamo: 1 }, n + ': wynik z podglądu tylko dla tego samego pliku (bajt po bajcie)');
+    if (!process.env.OEST_BEZ_PODGLADU_W_TLE) for (const [n, r] of [['Worker', W], ['główny wątek', M]]) assert.equal(r.hits, r.saved.length, n + ': każde zdjęcie z aparatu ma być zmniejszone już w czasie podglądu (' + r.hits + '/' + r.saved.length + ')');
     assert.equal(W.via, 'worker', 'kompresja ma iść w Workerze');
     assert.equal(M.via, 'main', 'bez OffscreenCanvas – zapas w głównym wątku');
     W.saved.forEach((s, i) => {
@@ -161,7 +175,7 @@ async function editorCheck(browser, url) {
     assert.ok(M.enc >= M.saved.length, 'bez Workera każde zdjęcie kodowane w głównym wątku (' + M.enc + '/' + M.saved.length + ')');
     const kb = W.files.map(f => f.name + ' ' + Math.round(f.size / 1024) + ' KB').join(', ');
     console.log('ZDJECIA SZYBKOSC UI PASS: Flushing TB ' + W.taps + ' kranów + ' + GENERAL + ' ogólne + kartka (' + W.saved.length + ' zdjęć 12 MP, ' + dims + '). ' +
-      'Praca na pełnych zdjęciach w głównym wątku (dekodowanie/skalowanie/kodowanie): Worker ' + [W.mdec, W.mdraw, W.enc].join('/') + ', bez Workera ' + [M.mdec, M.mdraw, M.enc].join('/') + '. Blokada ekranu przy dodawaniu (CPU 4×, tylko informacja): Worker ' + Math.round(W.lt) + ' ms, główny wątek ' + Math.round(M.lt) + ' ms; czas dodawania ' + W.addMs + ' / ' + M.addMs + ' ms. ' +
+      'Praca na pełnych zdjęciach w głównym wątku (dekodowanie/skalowanie/kodowanie): Worker ' + [W.mdec, W.mdraw, W.enc].join('/') + ', bez Workera ' + [M.mdec, M.mdraw, M.enc].join('/') + '. Blokada ekranu przy dodawaniu (CPU 4×, tylko informacja): Worker ' + Math.round(W.lt) + ' ms, główny wątek ' + Math.round(M.lt) + ' ms; czas dodawania ' + W.addMs + ' / ' + M.addMs + ' ms. Po „OK” do miniatury średnio ' + W.poOk + ' ms (Worker) / ' + M.poOk + ' ms (główny wątek), gotowe z podglądu ' + W.hits + '/' + W.saved.length + '. ' +
       'Edytor 12 MP → ' + E.max.w + '×' + E.max.h + ' (' + Math.round(E.max.size / 1024) + ' KB, ' + E.max.ms + ' ms) zamiast ' + E.pelne.w + '×' + E.pelne.h + ' (' + Math.round(E.pelne.size / 1024) + ' KB, ' + E.pelne.ms + ' ms), różnica obrazu ' + E.diff.max + '/' + E.diff.maxKadr + '. ' +
       'Wyślij: 1. raz ' + W.decFirst + ' zmniejszeń, 2. raz ' + W.decSecond + '. Kolejka: ' + kb);
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }

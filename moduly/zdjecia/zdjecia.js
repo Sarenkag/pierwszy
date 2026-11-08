@@ -327,6 +327,29 @@
     function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
     function KEY() { return 'oest.zdjecia.v1.' + who(); }
     var compress = compressIn(win);
+    // Zmniejszanie w tle podczas podglądu (audyt wydajności zdjęć, punkt 1; zgoda Grzegorza 08/11/2026): aparat woła prepare(blob, kind),
+    // gdy pokazuje podgląd, a save() bierze gotowy wynik, jeśli to ten sam plik i te same ustawienia rozmiaru. Inaczej zmniejsza jak dawniej.
+    var prepped = [], hits = 0;
+    function prepKey(preset, kind) { return JSON.stringify(limits(preset, kind)); }
+    async function sameBytes(a, b) {
+      if (a === b) return true;
+      if (!a || !b || !a.slice || !b.slice || a.size !== b.size) return false;
+      // cały plik, po 1 MB (inne zdjęcie tej samej wielkości nie może dostać cudzego wyniku – uwaga z przeglądu PR #95)
+      for (var at = 0, CH = 1 << 20; at < a.size; at += CH) {
+        var x = new Uint8Array(await a.slice(at, at + CH).arrayBuffer()), y = new Uint8Array(await b.slice(at, at + CH).arrayBuffer()), q = x.length >> 2, j = 0;
+        if (x.byteOffset % 4 === 0 && y.byteOffset % 4 === 0) { var x4 = new Uint32Array(x.buffer, x.byteOffset, q), y4 = new Uint32Array(y.buffer, y.byteOffset, q); for (; j < q; j++) if (x4[j] !== y4[j]) return false; j = q << 2; }
+        for (; j < x.length; j++) if (x[j] !== y[j]) return false;
+      }
+      return true;
+    }
+    async function compressPrepared(file, preset, kind) {
+      var key = prepKey(preset, kind);
+      for (var i = 0; i < prepped.length; i++) {
+        var e = prepped[i];
+        if (e.key === key && await sameBytes(e.blob, file)) { prepped.splice(i, 1); hits++; return e.p.catch(function () { return compress(file, preset, kind); }); }
+      }
+      return compress(file, preset, kind);
+    }
     var store = createStore({
       owner: who,
       db: idb(win),
@@ -335,7 +358,7 @@
         load: function () { var o; try { o = JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { o = {}; } if (!o.limitV2) { if (o.phoneLimitMB === 1024) o.phoneLimitMB = 200; o.limitV2 = 1; try { win.localStorage.setItem(KEY(), JSON.stringify(o)); } catch (_) {} } return o; },
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
-      compress: compress,
+      compress: compressPrepared,
       wifi: function () { var c = win.navigator.connection; if (!c || !c.type) return null; return c.type === 'wifi' || c.type === 'ethernet'; },
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
@@ -362,6 +385,15 @@
     }
     // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
     store.maxPx = function () { var pr = store.settings().preset, p = PRESETS[pr] || PRESETS.standard; if (p !== PRESETS.standard) return p.max || 0; return Object.keys(KINDS).reduce(function (m, k) { return Math.max(m, KINDS[k].max); }, 0); };
+    // kind jak w save(): 'formularz' | 'ogolne' | 'punkt' | 'dowod'; trzymamy najwyżej 3 przygotowane zdjęcia (Powtórz zostawia stare)
+    store.prepare = function (blob, kind) {
+      if (!blob) return;
+      var st = store.settings(), k = kind === 'ogolne' ? generalKind(st.general) : KINDS[kind] ? kind : '', key = prepKey(st.preset, k);
+      for (var i = 0; i < prepped.length; i++) if (prepped[i].blob === blob && prepped[i].key === key) return;
+      var p = compress(blob, st.preset, k); p.catch(function () {});
+      prepped.push({ blob: blob, key: key, p: p }); while (prepped.length > 3) prepped.shift();
+    };
+    store.preparedHits = function () { return hits; }; // ile zapisów wzięło gotowy wynik z podglądu – do testów
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
     store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stats = stats; store.search = search;
     return store;
