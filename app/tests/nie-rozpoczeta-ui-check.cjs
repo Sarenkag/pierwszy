@@ -32,7 +32,8 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
       const stage = () => pg.evaluate(i => { const a = JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}'); return a[i] ? a[i].s : 'none'; }, C.id);
       const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length, temps: [...document.querySelectorAll('#tempList input[data-t]')].map(x => x.value).join('|') }));
       const openInsp = async () => { await pg.goto(B + '/inspekcje/index.html#ppm=' + C.id); await pg.waitForTimeout(3000); };
-      const card = async () => { await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(1500); return (await pg.locator('[data-id="' + C.id + '"]').first().textContent().catch(() => '')) || ''; };
+      // klocek inspekcji (07/11/2026): „Nie rozpoczęta” na pigułce to pauzy „– – – –”, pełna nazwa stanu w opisie pigułki (aria-label)
+      const card = async () => { await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(1500); const k = pg.locator('[data-id="' + C.id + '"]').first(); return ((await k.textContent().catch(() => '')) || '') + ' ' + ((await k.locator('.oest-st').getAttribute('aria-label').catch(() => '')) || ''); };
       // 1. inspekcja z danymi (jak u Grzegorza: zdjęcia, odpowiedź NIE)
       await openInsp();
       for (let i = 0; i < C.photos; i++) { await pg.setInputFiles('#galIn', { name: 'z' + i + '.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(700); }
