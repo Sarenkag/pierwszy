@@ -22,7 +22,7 @@ Kolory statusu (tone): 0 szary · 1 żółty (w trakcie) · 2 zielony (gotowe) �
 
 ## Klocek inspekcji (Grzegorz 07/11/2026)
 
-Lista Inspekcji, grupy (np. 18 DB) i dzień w Kalendarzu używają `OESTKlocek.inspekcja`. Reactive zostaje na `OESTKlocek.html` (nie było zlecenia).
+Lista Inspekcji, grupy (np. 18 DB) i dzień w Kalendarzu używają `OESTKlocek.inspekcja`. Reactive też używa `OESTKlocek.inspekcja` (08/11/2026): pigułka = odpowiednik statusu Reactive (Otwarte/Obserwacja → W trakcie, Czeka na części/podwykonawcę/dostęp → Wstrzymana, Zakończone → Gotowa, szkic → „– – – –”), linia 2 lokalizacja (TB/L5) bez częstotliwości, linia 3 data zlecenia i zdjęcia przed+po; pełny status i kto zlecił w oknie po przytrzymaniu. `OESTKlocek.html` zostaje dla listy raportów.
 Każdy element ma stałe miejsce i stałą (maksymalną) wielkość, także gdy jest pusty; PL i EN bez skoków. Ikonki 21×21, styl „słupków” (kreska 1.8, kolor `--steel`), kolor ma tylko znak w środku.
 
 ```
