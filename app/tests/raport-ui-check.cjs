@@ -65,13 +65,11 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
       for (const f of pdf) { const b = Buffer.from(f.data, 'base64'); try { if (pdfPages(b) < 1) throw Error('0 stron'); if (folder && !pdfImages(b)) throw Error('brak zdjęcia kartki'); txt.pdf.push(pdfText(b)); } catch (e) { bad.push(id + ': PDF ' + f.name + ' nie jest poprawnym raportem (' + e.message + ')'); } }
       for (const f of word) { const b = Buffer.from(f.data, 'base64'); try { const t = docxText(b), im = docxImages(b); if (!t.trim() && !im) throw Error('ani tekstu, ani zdjęcia'); if (folder && !im) throw Error('brak zdjęcia kartki'); txt.word.push(t); } catch (e) { bad.push(id + ': Word ' + f.name + ' nie jest poprawnym raportem (' + e.message + ')'); } }
       if (expectTemps) {
-        // treść: wszystkie pomiary w Wordzie (w kolejności tabeli firmy) i w PDF (wiersz: miejsce, wylot, °C), podpis i stan ogólny
-        const W = '\n' + txt.word.join('\n') + '\n', P = txt.pdf.join('\n'); let at = 0;
-        for (const t of expectTemps) { const k = W.indexOf('\n' + t.value + '\n', at); /* wartość jako osobna komórka tabeli */ if (k < 0) { bad.push(id + ': Word nie zawiera pomiaru ' + t.name + ' (' + t.kind + ') = ' + t.value + ' w kolejności tabeli'); break; } at = k + t.value.length + 1; }
-        for (const t of expectTemps) if (!new RegExp(t.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\n[^\\n]*\\n' + t.value.replace('.', '\\.') + '\\n').test(P)) bad.push(id + ': PDF nie zawiera wiersza ' + t.name + ' (' + t.kind + ') = ' + t.value + '°C');
+        // treść: wszystkie pomiary w kolejności tabeli formularza firmy – w Wordzie i w PDF (PDF rysowany z tego samego formularza, 08/11/2026), podpis
+        const W = '\n' + txt.word.join('\n') + '\n', P = '\n' + txt.pdf.join('\n') + '\n';
+        for (const [nazwa, T] of [['Word', W], ['PDF', P]]) { let at = 0; for (const t of expectTemps) { const k = T.indexOf('\n' + t.value + '\n', at); /* wartość jako osobna komórka tabeli */ if (k < 0) { bad.push(id + ': ' + nazwa + ' nie zawiera pomiaru ' + t.name + ' (' + t.kind + ') = ' + t.value + ' w kolejności tabeli'); break; } at = k + t.value.length + 1; } }
         if (!includesFlat(W, 'G. Sarna')) bad.push(id + ': Word bez podpisu inżyniera');
-        if (!includesFlat(P, 'Print name: G. Sarna')) bad.push(id + ': PDF bez podpisu inżyniera');
-        if (!includesFlat(P, 'All readings within range.')) bad.push(id + ': PDF bez stanu ogólnego „All readings within range”');
+        if (!includesFlat(P, 'G. Sarna')) bad.push(id + ': PDF bez podpisu inżyniera');
         content.push(id + ' (' + expectTemps.length + ' pomiarów w Word i PDF)');
       }
       if (errs.length) bad.push(id + ' błędy strony: ' + errs.join(' | '));
