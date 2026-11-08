@@ -74,6 +74,15 @@
     },
     {
       "file": "app/tests/zdjecia.test.cjs"
+    },
+    {
+      "file": "app/tests/raporty.test.cjs"
+    },
+    {
+      "file": "app/tests/raporty-wysylka.test.cjs"
+    },
+    {
+      "file": "app/tests/raporty-folder.test.cjs"
     }
   ],
   "browser": [

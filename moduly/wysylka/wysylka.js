@@ -91,6 +91,56 @@
     return f;
   }
   function changed(it) { if (opts.onChange) try { opts.onChange(it); } catch (e) {} }
+  // ---------- raporty na Dysk (moduly/raporty, Grzegorz 08/11/2026) ----------
+  // Mail = Word + PDF bez zmian. Po wysłaniu raport trafia do archiwum na telefonie, a Word na Dysk (OEST Raporty / budynek / rodzaj);
+  // ponowna wysyłka tego samego raportu nadpisuje ten sam plik. Błąd Dysku nie psuje wysyłki maila: raport czeka na następną próbę.
+  var archived = Promise.resolve();
+  var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  // Word/PDF raportu: z it.docx/it.pdf albo z listy plików złożonej wg ⚙ (formularz ze zdjęć, Flushing basic) – główny plik „nazwa.docx” ma pierwszeństwo
+  function pickFile(it, ext, mime) {
+    var own = ext === "docx" ? it.docx : it.pdf;
+    if (own && own.length) return own;
+    var list = Array.isArray(it.files) ? it.files.filter(function (f) { return f && f.bytes && (f.bytes.length || f.bytes.byteLength) && (f.mime === mime || String(f.name || "").toLowerCase().slice(-ext.length - 1) === "." + ext); }) : [];
+    var main = list.filter(function (f) { return f.name === it.name + "." + ext; })[0] || list[0];
+    return main ? main.bytes : null;
+  }
+  // Zwraca obietnicę: true = raport bezpiecznie w archiwum telefonu (dopiero wtedy wolno wyczyścić Worda z kolejki).
+  function archive(it) {
+    var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
+    if (!R || !docx) return Promise.resolve(true); // bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
+    var rep = { key: it.key || it.name, at: it.sentAt || it.created || Date.now(), name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
+      meta: { ppm: it.ppm || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now() } };
+    var p = archived.then(function () { return R.save(rep); }).then(function () { return true; }, function () { return false; });
+    archived = p;
+    return p;
+  }
+  // Wysłane raporty, których archiwum się nie zapisało (np. brak miejsca, zamknięta apka): Word czeka w kolejce, ponawiamy bez ponownego maila
+  function rearchive() {
+    var me = ((account() || {}).email || "").toLowerCase();
+    var todo = items.filter(function (q) { return q.status === "sent" && q.arch === "todo" && (!q.acct || q.acct.toLowerCase() === me); });
+    return todo.reduce(function (p, it) {
+      return p.then(function () { return archive(it).then(function (ok) { if (!ok) return; it.arch = ""; it.docx = new Uint8Array(0); it.files = []; return put(it); }); });
+    }, Promise.resolve()).catch(function () {});
+  }
+  function driveAdapter(g) {
+    return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile }; // update(id, blob, nowaNazwa?)
+  }
+  function later(o) { setTimeout(function () { syncReports(o); }, 0); }
+  // o.anyNet: raporty wolno wysłać bez Wi‑Fi (tak jak mail po kliknięciu)
+  function syncReports(o) {
+    o = o || {};
+    var R = root.OESTRaporty, g = G();
+    if (!R || !g || !g.findFile || !g.updateFile || !active()) return Promise.resolve(null);
+    function allowed() { return online() && (!wifiOnly() || onWifi() || !!o.anyNet || skipWifi); }
+    return rearchive().then(function () { return archived; }).then(function () {
+      if (!allowed() || R.busy()) return null;
+      return (g.ready ? g.ready("drive") : Promise.resolve(g.connected("drive"))).then(function (ok) {
+        if (!ok) return null; // bez zgody na Dysk nic nie robimy w tle (bez okien logowania)
+        var job = function () { return R.sync(driveAdapter(g), { allowed: allowed }); };
+        return (g.background && !o.wrap ? g.background(job) : job());
+      });
+    }).catch(function () { return null; }); // GOOGLE_BUSY, brak sieci itp.: raporty czekają w telefonie na następną próbę
+  }
   // o.login: wolno pokazać okno logowania Google (tylko po kliknięciu); o.anyNet: wyślij też bez Wi‑Fi
   function run(o) {
     o = o || {};
@@ -107,7 +157,7 @@
       var todo = pending().filter(function (q) {
         return q.status !== "err" && q.status !== "sending" && (q.acct ? q.acct.toLowerCase() === me : !!o.login);
       }).sort(function (a, b) { return a.created - b.created; });
-      if (!todo.length || !online()) return;
+      if (!todo.length || !online()) { if (online()) later(); return; } // nic do wysłania: dokończ zaległe raporty na Dysk
       if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return;
       var g = G(), done = 0;
       // połączenie z Gmailem sprawdza tylko OESTGoogle.ready (cichy token, bez okna); okno logowania tylko po kliknięciu
@@ -121,9 +171,15 @@
             if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return true; // zgoda na dane dotyczy tylko kliknięcia, nie zmiany sieci w trakcie
             var t0 = Date.now(); pos = { i: i + 1, n: todo.length, code: it.code }; it.status = "sending"; it.err = ""; render(); changed(it);
             return put(it).then(function () { return g.sendMail({ to: Array.isArray(it.toList) ? it.toList : it.to || myEmail(), subject: it.subject, body: it.body, files: files(it) }).then(function () {
-              it.status = "sent"; it.sentAt = Date.now(); it.docx = new Uint8Array(0); it.photos = []; it.files = []; done++; // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
+              it.status = "sent"; it.sentAt = Date.now(); it.arch = "todo"; done++;
+              // kopia raportu na telefonie (Word + PDF), potem Word na Dysk; Word z kolejki znika dopiero po potwierdzonym zapisie archiwum
+              // (najpierw zapis „wysłany, archiwum do zrobienia”: zamknięcie apki w tym miejscu nie gubi Worda ani nie wysyła drugiego maila)
+              return put(it).then(function () { return archive(it); }).then(function (ok) {
+              it.arch = ok ? "" : "todo"; it.photos = [];
+              if (ok) { it.docx = new Uint8Array(0); it.files = []; } // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
               if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
+              });
             }, function (e) {
               var m = e && e.message || "";
               if (/GOOGLE_BUSY|GOOGLE_OFFLINE/.test(m)) { it.status = "wait"; it.err = ""; return put(it).then(function () { changed(it); return true; }); } // Drive zajęty / brak sieci: spróbuję przy następnym razie
@@ -140,6 +196,7 @@
         }, Promise.resolve(false));
       }, function (e) { loginErr = errText(e); }).then(function () {
         if (done) say(T("Wysłano ✓ ", "Sent ✓ ") + (done === 1 ? T("raport ", "report ") + todo[0].code : done + T(" raporty", " reports")));
+        if (done) later({ anyNet: !!o.anyNet }); // Word wysłanych raportów na Dysk (po zakończeniu tej rundy, poza blokadą wysyłki)
       });
       });
     }).catch(function (e) { loginErr = T("błąd kolejki w telefonie: ", "phone queue error: ") + errText(e); }).then(function () {
@@ -252,5 +309,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, syncReports: syncReports };
 })(window);

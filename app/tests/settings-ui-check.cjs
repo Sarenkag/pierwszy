@@ -29,6 +29,7 @@ await context.setOffline(false);await page.reload();assert.equal(await page.loca
 const backup=await page.evaluate(()=>window.OESTSettings.exportBackup());assert.equal(backup.data.reports.language,'en');assert.equal(JSON.stringify(backup).includes('oest.account'),false);
 // Connection attempt in browser must fail visibly, not claim connected.
 await page.locator('[data-route=""]').click();await page.locator('[data-route=contacts]').click();/* Połączenie kontaktów jest w zwijanej sekcji narzędzi (obecny układ). */await page.locator('details.settings-tools summary').click();await page.locator('[data-action=connect-contacts]').click();assert.match(await page.locator('#settingsMessage').textContent(),/Requires the Android app/);
+/* Raporty na telefonie (moduly/raporty, 08/11/2026): licznik MB z limitu 200 MB, bez udawania. */await page.goto(url+'/#settings/reports');await page.waitForFunction(()=>/MB/.test(document.getElementById('rptStats')?.textContent||''));assert.match(await page.locator('#rptStats').textContent(),/^0\.0 MB (z|of) 200 MB · 0 (raportów|reports)/);
 // App shell and PPM survive integration.
 await page.goto(url+'/#home');await page.locator('[data-go=ppm]').click();assert.ok(await page.locator('.prow').count()>=28);
 assert.deepEqual(errors,[]);console.log('UI PASS: 11 tiles (bez Wygląd, Temperatury; Dysk+kopia; Edytor inspekcji), all subpages, profile + bridge + reload, schedule history (profile), PL/EN, offline save, honest OAuth state, existing PPM.');
