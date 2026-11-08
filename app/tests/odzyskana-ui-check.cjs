@@ -161,6 +161,21 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
     const f5 = await form();
     check(f5.fails === 0 && f5.photos === 0, 'Wyczyść: po ponownym otwarciu nadal pusta (' + JSON.stringify(f5) + ')');
+    // 10. odzyskana, której zdjęcia nie ma już w telefonie: Update i Wyślij nie nadpisują pełnego raportu niepełnym (uwaga Codex #101)
+    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(600);
+    const lostId = await pg.evaluate(async ({ q }) => {
+      const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>X</w:t></w:r></w:p></w:body></w:document>');
+      const snap = JSON.parse(JSON.stringify(q.snap)); snap.photos = [{ zid: 'nie-ma-takiego-zdjecia', width: 10, height: 10, when: Date.now() }];
+      const r = await window.OESTRaporty.save({ key: 'brak-zdjec', at: 1, name: 'Brak zdjec 05112026', docx: z.generate({ type: 'uint8array' }), folder: q.rpt, meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: 1 }, snap });
+      await window.OESTRaporty.setRec(r.id, true); return r.id;
+    }, { q });
+    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(lostId)); await pg.waitForTimeout(2500);
+    await pg.locator('#recUpdate').click(); await pg.waitForTimeout(800);
+    check(/Brakuje 1 zdjęć/.test(await pg.locator('#formHint').textContent()), 'brak zdjęcia: Update mówi wprost, czego brakuje');
+    await pg.locator('#toQueue').click(); await pg.waitForTimeout(800);
+    const lost = await pg.evaluate(id => window.OESTRaporty.get(id), lostId);
+    check(lost.versions === 1, 'brak zdjęcia: raport w archiwum (i na Dysku) bez zmian');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   errors.forEach(e => fails.push('błąd strony: ' + e));

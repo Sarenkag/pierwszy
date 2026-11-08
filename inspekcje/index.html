@@ -2186,8 +2186,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!Zd || !Zd.release) return;
     dbP.then(function (db) {
       if (!db) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
-      return idb("kv", "readonly", function (st) { return st.getAll(); }).then(function (vals) {
-        var ids = new Set();
+      // odzyskane inspekcje (klocek Raporty) trzymają swoje zdjęcia także przed pierwszym otwarciem (uwaga Codex #101)
+      var R = window.OESTRaporty, rec = R && R.recovered ? R.recovered().then(function (rs) { return rs.map(function (r) { return r.snap; }); }, function () { return null; }) : Promise.resolve([]);
+      return Promise.all([idb("kv", "readonly", function (st) { return st.getAll(); }), rec]).then(function (all) {
+        if (all[1] === null) return; // nie odczytano archiwum: nic nie zwalniamy
+        var vals = [all[0], all[1]], ids = new Set();
         (function walk(v, depth) {
           if (!v || typeof v !== "object" || depth > 8 || v instanceof Blob || ArrayBuffer.isView(v) || v instanceof ArrayBuffer) return;
           if (typeof v.zid === "string") ids.add(v.zid);
@@ -3069,8 +3072,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   var lastMailHint = "";
   var sendBtn = null; // wspólny przycisk akcji (moduly/przycisk): kręciołek → ✓ Gotowe, zanim formularz zniknie
   function sendOk() { return sendBtn ? sendBtn.ok() : null; }
+  // odzyskana bez części zdjęć (nie ma ich już w telefonie): Wyślij / Update nadpisałyby pełny raport niepełnym – nie pozwalamy
+  function recMissing() {
+    if (!REC || !keptSaved.length) return false;
+    $("formHint").textContent = T("Brakuje ", "Missing ") + keptSaved.length + T(" zdjęć z raportu (nie ma ich już w telefonie). Wyślij i Update nadpisałyby raport bez nich – raport w telefonie i na Dysku zostaje bez zmian.", " photos from the report (no longer on the phone). Send and Update would overwrite the report without them – the report on the phone and on Drive stays unchanged.");
+    return true;
+  }
   async function queueBtn(b, fromPreview, finish) {
-    if (queueing) return;
+    if (queueing || recMissing()) return;
     lastMailHint = "";
     // ⚙ bez adresata: nic nie wychodzi (nigdy po cichu „do mnie”, Codex #64)
     var nS = cur.mode === "one" ? needsNow() : null;
@@ -3394,6 +3403,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   $("recUpdate").addEventListener("click", function () {
     var b = this; if (queueing || !REC || !window.OESTSender || !OESTSender.update) return;
     if (restoring || pendingPh > 0) { $("formHint").textContent = T("Poczekaj, aż zdjęcia się wczytają i zapiszą.", "Wait until the photos are loaded and saved."); return; } // raport bez zdjęć nie nadpisze Dysku
+    if (recMissing()) return;
     saveDraftNow();
     queueing = true;
     var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";
