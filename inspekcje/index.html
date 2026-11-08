@@ -1299,7 +1299,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       states: states.slice(), override: Object.assign({}, override), faultsOn: Object.assign({}, faultsOn), rsel: JSON.parse(JSON.stringify(rsel)),
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
-      photos: photos.map(savedPhoto).concat(keptSaved)
+      photos: photos.map(savedPhoto).concat(keptSaved),
+      needs: REC && cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : undefined // odzyskana: jej własne ustawienia pytań (karta PPM bez zmian)
     };
   }
   function saveDraftNow() {
@@ -2980,7 +2981,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // szkic bez plików: zdjęcia tylko jako odnośniki do modułu zdjęć (bez kopii w archiwum), bez znacznika Gotowa
   function archiveSnap() {
-    try { var d = draftSnap(); delete d.fin; delete d.finPeriod; d.photos = (d.photos || []).filter(function (p) { return p && p.zid; }).map(function (p) { var q = Object.assign({}, p); delete q.blob; return q; }); return d; } catch (e) { return null; }
+    try { var d = draftSnap(); if (cur.ppm && PPM && PPM.needs) d.needs = PPM.needs(cur.ppm); delete d.fin; delete d.finPeriod; d.photos = (d.photos || []).filter(function (p) { return p && p.zid; }).map(function (p) { var q = Object.assign({}, p); delete q.blob; return q; }); return d; } catch (e) { return null; }
   }
   function enqueue(r, from) {
     var d = r.data;
@@ -3390,7 +3391,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (!r.snap || !r.rec) throw new Error("REPORT_NO_DATA");
       var m = r.meta || {}, t = m.ppm && PPM ? PPM.byId(m.ppm) : null;
       REC = r; document.documentElement.classList.add("recmode"); $("recUpdate").hidden = false; if ($("updBox")) $("updBox").hidden = false;
-      if (t && PPM.sandbox) PPM.sandbox(t.id);
+      if (t && PPM.sandbox) {
+        // ustawienia pytań odzyskanej: z jej szkicu, inaczej z zapisu w raporcie (nie z bieżącej karty PPM)
+        return kvGet("rec_" + r.id).catch(function () { return null; }).then(function (d) {
+          PPM.sandbox(t.id, (d && d.needs) || r.snap.needs); openPpm(t, m.code);
+        });
+      }
       if (t) { openPpm(t, m.code); return; }
       cur.type = TYPES.filter(function (x) { return x.id === m.type; })[0];
       if (!cur.type) throw new Error("REPORT_NO_DATA");

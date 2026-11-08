@@ -181,11 +181,13 @@ window.OEST_PPM = {
       localStorage.setItem(k, JSON.stringify(a));
     }
   };
-  P.sandbox = function (id) {
+  P.sandbox = function (id, needs) {
     box = {}; boxId = id;
     // odzyskana zaczyna bez etapu i bez ręcznego „Nie rozpoczęta”; termin, zakończone okresy i ⚙ – kopia z telefonu
     box["oest.ppm.stage"] = undefined; box["oest.ppm.unstarted"] = undefined;
     ["oest.ppm.due", "oest.ppm.done", "oest.ppm.needs"].forEach(function (k) { var a = obj(localStorage.getItem(k)); if (a && Object.prototype.hasOwnProperty.call(a, id)) box[k] = a[id]; });
+    // ustawienia pytań/zdjęć zapisane z odzyskaną inspekcją wygrywają z bieżącymi ustawieniami karty (uwaga Codex #101)
+    if (needs && typeof needs === "object" && !Array.isArray(needs)) box["oest.ppm.needs"] = Object.assign({}, needs);
   };
   P.sandboxed = function () { return !!box; };
   function pad(n) { return String(n).padStart(2, "0"); }

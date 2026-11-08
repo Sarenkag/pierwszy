@@ -53,6 +53,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(q.snap && JSON.stringify(q.snap.states) === JSON.stringify(draft.states), 'Wyślij: zapis inspekcji = szkic (odpowiedź NIE)');
     check(q.snap && q.snap.photos.length === 1 && q.snap.photos[0].zid && !q.snap.photos[0].blob, 'zdjęcie w zapisie jako odnośnik do modułu zdjęć (bez kopii pliku)');
     check(q.snap && !q.snap.fin, 'zapis bez znacznika Gotowa');
+    check(q.snap && q.snap.needs && q.snap.needs.q === true, 'zapis z ustawieniami pytań inspekcji (' + JSON.stringify(q.snap && q.snap.needs) + ')');
     check(q.card && q.card.name && q.card.loc === 'TB/L13' && q.card.freq, 'opis klocka: nazwa, lokalizacja, częstotliwość (' + JSON.stringify(q.card) + ')');
     check(q.ppm === ID && !q.key, 'zwykła inspekcja: klocek PPM i raport po nazwie jak dotąd');
     check(q.at === q.created, 'Wyślij zapisuje czas przygotowania wersji (spóźniony mail nie nadpisze nowszego Update)');
@@ -176,6 +177,23 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     await pg.locator('#toQueue').click(); await pg.waitForTimeout(800);
     const lost = await pg.evaluate(id => window.OESTRaporty.get(id), lostId);
     check(lost.versions === 1, 'brak zdjęcia: raport w archiwum (i na Dysku) bez zmian');
+    // 11. pytania wyłączone później w zwykłej karcie PPM: odzyskana ma swoje ustawienia (odpowiedzi nie zamieniają się w N/A), karta bez zmian (uwaga Codex #101)
+    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(600);
+    const qOffId = await pg.evaluate(async ({ q, ID }) => {
+      const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[ID] = Object.assign({}, n[ID] || {}, { q: false }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
+      const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>X</w:t></w:r></w:p></w:body></w:document>');
+      const snap = JSON.parse(JSON.stringify(q.snap)); snap.photos = [];
+      const r = await window.OESTRaporty.save({ key: 'pytania-wylaczone', at: 1, name: 'Pytania 05112026', docx: z.generate({ type: 'uint8array' }), folder: q.rpt, meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: 1 }, snap });
+      await window.OESTRaporty.setRec(r.id, true); return r.id;
+    }, { q, ID });
+    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(qOffId)); await pg.waitForTimeout(2500);
+    check((await form()).fails === 1, 'pytania wyłączone w karcie: odzyskana nadal z odpowiedzią NIE');
+    await pg.waitForTimeout(1500); // szkic odzyskanej zapisuje się sam
+    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(qOffId)); await pg.waitForTimeout(2500);
+    check((await form()).fails === 1, 'pytania wyłączone w karcie: po ponownym otwarciu nadal NIE');
+    check(await pg.evaluate(ID => JSON.parse(localStorage.getItem('oest.ppm.needs'))[ID].q === false, ID), 'zwykła karta PPM: pytania nadal wyłączone');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   errors.forEach(e => fails.push('błąd strony: ' + e));
