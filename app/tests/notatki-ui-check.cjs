@@ -63,7 +63,7 @@ function fakePhone() {
     log('2. nagranie → not');
     await record(1);
     check(await stage() === 'prog', 'notatka nie zmieniła statusu na „W trakcie” (' + await stage() + ')');
-    if (SHOTS) { await pg.locator('#ntRec').scrollIntoViewIfNeeded(); await pg.screenshot({ path: path.join(SHOTS, 'notatki-inspekcja-PL.png') }); }
+    if (SHOTS) { await pg.waitForSelector('.oest-rec', { state: 'detached' }).catch(() => {}); await pg.locator('#ntRec').scrollIntoViewIfNeeded(); await pg.waitForTimeout(600); await pg.screenshot({ path: path.join(SHOTS, 'notatki-inspekcja-PL.png') }); }
     await popup(); let a = await notes(); R.po1 = a;
     check(a.length === 1, 'w okienku ' + a.length + ' notatek zamiast 1');
     check(/isolator/.test(a[0].en) && !/insulator/i.test(a[0].en), 'EN bez poprawy „insulator” → „isolator”: ' + a[0].en);
