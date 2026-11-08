@@ -151,6 +151,11 @@
       "timeoutSec": 300
     },
     {
+      "file": "app/tests/ekran-glowny-ui-check.cjs",
+      "passMarker": "EKRAN GLOWNY UI PASS",
+      "timeoutSec": 300
+    },
+    {
       "file": "app/tests/edytor-zdjec-ui-check.cjs",
       "passMarker": "EDYTOR ZDJEC UI PASS",
       "timeoutSec": 900

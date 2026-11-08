@@ -5,6 +5,7 @@
   "note": "Mapa wpływu zmian dla Quality Gate (krok 2, zgoda Grzegorza 07/11/2026). Tryb „tylko-raport”: analiza pokazuje, które testy przeglądarkowe (G2) byłyby potrzebne, ale bramka nadal uruchamia WSZYSTKIE. Zależności plików apki nie są tu wpisywane ręcznie – wynikają z <script>/<link>/<img> stron w zbudowanej paczce app/www. Plik apki, którego żadna strona nie wczytuje, i plik spoza reguł = pełna regresja. Nie ma etykiety ani przełącznika, który oznacza zmianę jako bezpieczną.",
   "strony": ["index.html", "inspekcje/index.html"],
   "testy": {
+    "app/tests/ekran-glowny-ui-check.cjs": ["index.html"],
     "app/tests/handover-ui-check.cjs": ["index.html"],
     "app/tests/keys-ui-check.cjs": ["index.html"],
     "app/tests/nie-rozpoczeta-ui-check.cjs": ["index.html", "inspekcje/index.html"],
