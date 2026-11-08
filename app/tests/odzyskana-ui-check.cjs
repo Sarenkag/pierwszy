@@ -103,7 +103,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(r1 && r1.versions === 2 && r1.rec > 0, 'raport: wersja 2, nadal odzyskana');
     check(r1 && !r1.snap.states.includes('fail'), 'zapis inspekcji w raporcie = poprawiona wersja');
     check(r1 && r1.meta.sentAt === Date.parse('2026-11-06T10:00:00'), 'data wysłania bez zmian');
-    const docTxt = await pg.evaluate(r => new PizZip(r.docx).file('word/document.xml').asText(), r1);
+    const docTxt = await pg.evaluate(async id => new PizZip((await window.OESTRaporty.get(id)).docx).file('word/document.xml').asText(), r1.id); // Word czytany w stronie (bez przenoszenia bajtów do testu)
     check(docTxt.includes('(Updated ' + TODAY + ')'), 'Word: data z dopiskiem „(Updated ' + TODAY + ')”');
     check(!/Updated/.test(JSON.stringify(draft)), 'kontrola: zwykły szkic nie miał dopisku');
     const all1 = await kv();
