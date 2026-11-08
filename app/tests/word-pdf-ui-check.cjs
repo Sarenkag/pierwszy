@@ -140,8 +140,9 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
   if (process.env.OEST_WORD_PDF_JSON) fs.writeFileSync(process.env.OEST_WORD_PDF_JSON, JSON.stringify({ wyniki, bledy: bad }, null, 1));
   const zgodne = Object.keys(wyniki).filter(id => pusta(wyniki[id].roznica) && !(wyniki[id].komentarz && !(wyniki[id].komentarz.word && wyniki[id].komentarz.pdf)));
   console.log('Word = PDF: ' + Object.keys(wyniki).length + ' raportów sprawdzonych, identycznych ' + zgodne.length + ', ze znaną różnicą (quality/baselines/word-pdf.json) ' + znane.length + ': ' + (znane.join(', ') || '—'));
-  if (bad.length) { console.error('WORD PDF UI FAIL (' + bad.length + '):\n- ' + bad.join('\n- ')); process.exitCode = 1; }
-  for (const k of znane) { const e = known.get(k); console.log('  ZNANA RÓŻNICA ' + k + ': ' + (e.roznica ? krotko(e.roznica) : e.detail)); }
+  // bramka pokazuje tylko koniec wyjścia: przy błędzie znane różnice w jednej linii, a błędy na samym końcu
+  if (bad.length) { console.log('Znane różnice (' + znane.length + '): ' + znane.join(', ')); console.log('WORD PDF UI FAIL (' + bad.length + '):\n- ' + bad.join('\n- ')); process.exitCode = 1; }
+  else for (const k of znane) { const e = known.get(k); console.log('  ZNANA RÓŻNICA ' + k + ': ' + (e.roznica ? krotko(e.roznica) : e.detail)); }
   if (bad.length) return;
   console.log('WORD PDF UI PASS: ' + ids.length + ' inspekcji z listy PPM + Reactive, każda para Word/PDF porównana słowo po słowie, kratki ☑/☒, nagłówek/stopka, zdjęcia i komentarz.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

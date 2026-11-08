@@ -145,8 +145,8 @@ function quiet(n) {
   if (process.env.OEST_PL_EN_OUT) fs.writeFileSync(process.env.OEST_PL_EN_OUT, JSON.stringify({ wyniki: R, znalezione: [...znalezione].map(([e, m]) => [e, [...m]]), bledy: fails }, null, 1));
   const el = Object.values(R).reduce((a, r) => a + r.elementy, 0), czyste = ekrany.filter(e => !znalezione.has(e));
   console.log('PL/EN: ' + ekrany.length + ' ekranów, ' + el + ' elementów (dzień ' + DZIEN.slice(0, 10) + '); z przełącznikiem: ' + ekrany.filter(k => R[k].zmiana.startsWith('przełącznik')).join(' ') + '; bez zastrzeżeń ' + czyste.length + ': ' + czyste.join(' '));
-  if (fails.length) { console.error('PL EN UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; }
+  // bramka pokazuje tylko koniec wyjścia: przy błędzie znane odstępstwa w jednej linii, a błędy na samym końcu
+  if (fails.length) { console.log('Znane odstępstwa (' + znane.length + '): ' + znane.map(z => z.split(' – ')[0]).join(', ')); console.log('PL EN UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
   for (const z of znane) console.log('  ZNANE ODSTĘPSTWO ' + z);
-  if (fails.length) return;
   console.log('PL EN UI PASS: ' + ekrany.length + ' ekranów (apka ' + APP.length + ', inspekcje ' + INSP.length + '), ' + el + ' elementów – bez nowych przerysowań, przesunięć i animacji przy zmianie PL/EN; znane odstępstwa: ' + znane.length + '.');
 })().catch(e => { console.error(e); process.exitCode = 1; });
