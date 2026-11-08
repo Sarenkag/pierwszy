@@ -48,16 +48,18 @@
   //   ask({ title, text, ok: "Usuń", cancel: "Anuluj", danger: true }) → Promise<true|false>
   //   ask({ title, text, alert: true }) → tylko „OK” (komunikat)
   //   ask({ title, node: element, ok: "Zapisz" }) → okienko z własną treścią (element zostaje do odczytu po zamknięciu)
+  //   ask({ title, node, bare: true, cls: "ki-info" }) → samo okienko bez przycisków (np. informacje o inspekcji, 07/11/2026):
+  //        stuknięcie gdziekolwiek (także w okienko) albo Wstecz zamyka; cls = dodatkowa klasa do własnego wyglądu treści
   function ask(o) {
     o = o || {}; css();
     return new Promise(function (done) {
-      var box = document.createElement("div"); box.className = "oest-ask"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
+      var box = document.createElement("div"); box.className = "oest-ask" + (o.cls ? " " + o.cls : ""); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
       var okTxt = o.ok || (o.alert ? "OK" : T("Połącz ponownie", "Reconnect"));
-      box.innerHTML = "<div>" + (o.title ? "<b>" + esc(o.title) + "</b>" : "") + (o.text ? "<p>" + esc(o.text).replace(/\n/g, "<br>") + "</p>" : "") + (o.node ? '<div class="oest-ask-body"></div>' : "") + '<div class="row' + (o.alert ? " one" : "") + '">' +
+      box.innerHTML = "<div>" + (o.title ? "<b>" + esc(o.title) + "</b>" : "") + (o.text ? "<p>" + esc(o.text).replace(/\n/g, "<br>") + "</p>" : "") + (o.node ? '<div class="oest-ask-body"' + (o.bare ? ' style="margin:0"' : "") + "></div>" : "") + (o.bare ? "</div>" : '<div class="row' + (o.alert ? " one" : "") + '">' +
         (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + "</button>") +
-        '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>";
+        '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>");
       if (o.node) box.querySelector(".oest-ask-body").appendChild(o.node); // własna treść okienka (np. tick boxy ustawień wysyłki)
-      var res = !!o.alert, over = false, O = w.OESTOverlay, own = false;
+      var res = !!(o.alert || o.bare), over = false, O = w.OESTOverlay, own = false;
       function finish() { if (over) return; over = true; document.removeEventListener("keydown", key, true); w.removeEventListener("popstate", pop); box.remove(); done(res); }
       function closeVia(v) { res = v; if (O && O.stack && O.stack.indexOf(finish) >= 0) O.close(); else if (own) history.back(); else finish(); }
       function pop() { if (own) finish(); }
@@ -65,7 +67,7 @@
       box.addEventListener("click", function (e) {
         var b = e.target.closest("[data-a]");
         if (b) { closeVia(b.getAttribute("data-a") === "ok"); return; }
-        if (!e.target.closest(".oest-ask>div")) closeVia(!!o.alert); // stuknięcie obok okienka
+        if (o.bare || !e.target.closest(".oest-ask>div")) closeVia(!!(o.alert || o.bare)); // stuknięcie obok okienka (bez przycisków: gdziekolwiek)
       });
       document.addEventListener("keydown", key, true);
       // Wstecz telefonu zamyka okienko (jak każde okno na wierzchu)

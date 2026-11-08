@@ -353,4 +353,16 @@ window.OEST_PPM = {
     if (n === "ATS" && m && m[2]) { n = "ATS " + m[2]; m[2] = ""; }
     return { name: n, bld: m ? m[1] : "", where: [m ? BLD[m[1]] : "", m && m[2] || "", t.where || ""].filter(Boolean).join(" · ") };
   };
+  // lokalizacja na klocek (Grzegorz 07/11/2026): skrót „TB/L13”, „TA/R1”, „TB” – z nawiasu w nazwie albo z „where”, gdy to jeden budynek.
+  // Kilka budynków albo brak = "" (pusty kwadrat na klocku). full = do okna informacji: „TB – Tower B, L13”.
+  P.loc = function (t) {
+    var m = /\((TA|TB|P)(?:,\s*([^)]+))?\)\s*$/.exec(t.name), b = m ? m[1] : "", lv = m && m[2] ? m[2].trim() : "";
+    if (!b && t.where) { var k = Object.keys(BLD).filter(function (x) { return BLD[x] === String(t.where).trim(); })[0]; if (k) b = k; }
+    if (lv === "Roof 1") lv = "R1"; if (lv === "Roof 2") lv = "R2";
+    return { code: b ? b + (lv ? "/" + lv : "") : "", full: b ? b + " – " + BLD[b] + (lv ? ", " + lv : "") : (t.where || "") };
+  };
+  // częstotliwość bieżącego zlecenia: z zlecenia Vantify na ten termin, inaczej pierwsza z karty
+  P.freqNow = function (t, due) { var j = due ? P.jobFor(t, iso(due)) : null; return j && j.f ? j.f : (t.freq[0] || ""); };
+  // zadanie Vantify dla częstotliwości: { no: numer zadania (Task Frequency ID), name: pełna nazwa jak w eksporcie } albo null
+  P.vantifyTask = function (t, f) { var V = window.OEST_VANTIFY, l = (V && V.tasks && V.tasks[t.id]) || []; return l.filter(function (x) { return x.f === f; })[0] || l[0] || null; };
 })(window.OEST_PPM);
