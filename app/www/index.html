@@ -495,6 +495,10 @@ input[type=text], input[type=email], input[type=date], select {
   function seedProfile() {
     window.OESTSettings.get();
     window.OESTSettings.syncLegacy();
+    // język z Mój profil przy starcie apki (Grzegorz 08/11). Raz na uruchomienie: przejście do inspekcji i z powrotem
+    // przeładowuje tę stronę, ale sessionStorage zostaje do zamknięcia apki, więc przełączony PL/EN nie wraca w trakcie pracy.
+    var started = false; try { started = sessionStorage.getItem("oest.start") === "1"; sessionStorage.setItem("oest.start", "1"); } catch (e) {}
+    if (!started) window.OESTSettings.startLanguage();
     window.OESTSettingsUI.applyTheme();
   }
 
