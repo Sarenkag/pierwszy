@@ -58,13 +58,17 @@
   /* deps: { db: { get(id), put(rec), del(id), all() }, owner(), now(), limits?, onChange? } */
   function createStore(deps) {
     var syncing = null, lim = Object.assign({}, LIMITS, deps.limits || {}), rootId = '';
+    // zapisy do bazy po kolei (zapis nowej wersji, zwalnianie miejsca, wynik wysyłki na Dysk): równoległy zapis nie zostanie skasowany
+    var chain = Promise.resolve();
+    function serial(fn) { var p = chain.then(fn); chain = p.catch(function () {}); return p; }
     function now() { return new Date(deps.now ? deps.now() : Date.now()).toISOString(); }
     function emit() { if (deps.onChange) try { deps.onChange(); } catch (e) {} }
     // „gone” = raport zwolniony z telefonu (jest na Dysku): zostaje mały ślad z nazwą pliku i id na Dysku, żeby inny raport nie dostał tej nazwy
     async function mine(all) { var me = deps.owner(); return (await deps.db.all()).filter(function (r) { return r.owner === me && (all || !r.gone); }); }
 
     /* Zapis po wysłaniu / Update. Ten sam raport (to samo konto + nazwa) = ten sam wpis i ten sam plik na Dysku. */
-    async function save(rep) {
+    function save(rep) { return serial(function () { return saveNow(rep); }); }
+    async function saveNow(rep) {
       var me = deps.owner();
       if (!me) throw Error('ACCOUNT_REQUIRED');
       var name = safe(rep && rep.name);
@@ -86,7 +90,7 @@
       };
       rec.bytes = size(rec);
       await deps.db.put(rec); emit();
-      await enforce(); // limit telefonu pilnowany także bez Dysku (znikają tylko raporty z aktualną kopią na Dysku)
+      await enforceNow(); // limit telefonu pilnowany także bez Dysku (znikają tylko raporty z aktualną kopią na Dysku)
       return rec;
     }
 
@@ -99,11 +103,12 @@
       return f;
     }
 
-    async function enforce() {
+    function enforce() { return serial(enforceNow); }
+    async function enforceNow() {
       var p = plan(await mine(), lim);
       for (var i = 0; i < p.remove.length; i++) {
         var r = await deps.db.get(p.remove[i]);
-        if (r) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, gone: true, bytes: 0 });
+        if (r && !r.gone && r.driveId && !r.dirty) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, gone: true, bytes: 0 });
       }
       if (p.remove.length) emit();
       return p;
@@ -142,12 +147,16 @@
             var found = await drive.find(parent, file); // przerwany wcześniej upload: ten sam plik, bez duplikatu (nazwa pliku jest unikalna dla raportu)
             up = found ? await drive.update(found.id, blob) : await drive.upload(parent, file, blob);
           }
-          var fresh = await deps.db.get(r.id);
-          if (!fresh) continue;
-          fresh.driveId = up.id; fresh.driveName = file;
-          if (fresh.updated === r.updated) fresh.dirty = false; // zmiana w trakcie wysyłki: zostaje do następnej rundy
-          fresh.synced = now();
-          await deps.db.put(fresh); sent++; emit();
+          var stored = await serial(async function () {
+            var fresh = await deps.db.get(r.id);
+            if (!fresh) return false;
+            fresh.driveId = up.id; fresh.driveName = file;
+            if (fresh.updated === r.updated) fresh.dirty = false; // zmiana w trakcie wysyłki: zostaje do następnej rundy
+            fresh.synced = now();
+            await deps.db.put(fresh); return true;
+          });
+          if (!stored) continue;
+          sent++; emit();
         }
         return { sent: sent };
       })().finally(function () {

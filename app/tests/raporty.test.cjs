@@ -174,3 +174,16 @@ test('ten sam raport wysłany ponownie z nową nazwą (Reactive następnego dnia
   await t.store.sync(t.drive);
   assert.deepStrictEqual([...t.files.values()].map(f => f.name), ['REACTIVE Leak 09112026.docx']);
 });
+
+test('zwalnianie miejsca równolegle z zapisem nowej wersji: nowy Word (jeszcze nie na Dysku) nie znika', async () => {
+  const t = setup({ limits: { phoneLimitMB: 1 } });
+  await t.store.save(rep('DB-TB-EXT-1 08112026', { docx: bytes(0.6, 1), pdf: bytes(0.6) }));
+  t.drive.upload = async (parent, name, blob) => { const id = 'd1'; t.files.set(id, { parent, name, blob }); return { id }; };
+  await t.store.sync(t.drive);
+  // ręcznie przywracam rekord ponad limitem (stan „na Dysku, czysty”), potem enforce i nowa wersja naraz
+  const [id] = [...t.db.keys()]; const r = t.db.get(id); Object.assign(r, { gone: false, docx: bytes(0.6, 1), pdf: bytes(0.6), bytes: 1.2 * MB, dirty: false });
+  const a = t.store.enforce(), b = t.store.save(rep('DB-TB-EXT-1 08112026', { docx: bytes(0.6, 9), pdf: bytes(0.6) }));
+  await Promise.all([a, b]);
+  const rec = t.db.get(id);
+  assert.ok(!rec.gone && rec.docx[0] === 9 && rec.dirty, 'nowa wersja zostaje w telefonie do wysłania na Dysk');
+});

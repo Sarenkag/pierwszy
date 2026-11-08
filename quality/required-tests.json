@@ -80,6 +80,9 @@
     },
     {
       "file": "app/tests/raporty-wysylka.test.cjs"
+    },
+    {
+      "file": "app/tests/raporty-folder.test.cjs"
     }
   ],
   "browser": [

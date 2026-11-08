@@ -2938,9 +2938,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
   var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
   // OEST Raporty / budynek / rodzaj – nazwy po angielsku jak raporty
-  function reportFolder(from) {
-    var t = from.ppm, sh = t && PPM && PPM.short ? PPM.short(t) : null, B = { TA: "Tower A", TB: "Tower B", P: "Pavilion" };
-    return [sh && B[sh.bld] || "General", sh && sh.name || (from.type && (from.type.title || from.type.id)) || "Other"];
+  // budynek z danych raportu (urządzenie / lokalizacja), rodzaj = rodzaj inspekcji bez znaczka budynku, np. „Distribution Boards”, „Weekly Flushing”
+  function reportFolder(from, d) {
+    var B = { "Tower A": 1, "Tower B": 1, "Pavilion": 1 }, t = from.ppm, b = d && (d.building || BUILDING[d.wieza] || d.wieza) || "";
+    if (!B[b] && t && PPM && PPM.loc) { var l = PPM.loc(t).code.split("/")[0]; b = BUILDING[l] || ""; }
+    var kind = String(from.type && (from.type.name || from.type.title) || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+    return [B[b] ? b : "General", kind || "Other"];
   }
   function enqueue(r, from) {
     var d = r.data;
@@ -2953,7 +2956,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
         "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
         d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n",
-      rpt: reportFolder(from), // folder raportu na Dysku: budynek / rodzaj (Grzegorz 08/11/2026)
+      rpt: reportFolder(from, d), // folder raportu na Dysku: budynek / rodzaj (Grzegorz 08/11/2026)
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
