@@ -39,10 +39,10 @@ const fail = (ekran, rodzaj, msg) => { if (!znalezione.has(ekran)) znalezione.se
 
 // --- w przeglądarce ---
 // stan ekranu: każdy widoczny element (w całym dokumencie – też paski na dole) z pozycją; referencje zostają w window.__el
-function snap() {
+function snap(zapamietaj) {
   const inRow = el => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const ox = getComputedStyle(a).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   const els = [...document.body.querySelectorAll('*')].filter(e => !/^(SCRIPT|STYLE|TEMPLATE|svg|path|circle|rect|g|line|polyline|polygon|ellipse|use|defs)$/.test(e.tagName) && !e.closest('svg') && e.getClientRects().length && e.offsetWidth + e.offsetHeight > 0);
-  window.__el = els;
+  if (zapamietaj !== false) window.__el = els; // pomiar stabilności (settle) nie nadpisuje elementów zapamiętanych w PL
   return els.map(e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), w: Math.round(r.width), h: Math.round(r.height), row: inRow(e), blok: !/^inline/.test(getComputedStyle(e).display) || /^(BUTTON|LABEL)$/.test(e.tagName) || e.matches('.chip,.tile,.k2,.day,[role=button],.prow'), sw: !!e.closest('.oest-sw'), t: e.tagName + (e.id ? '#' + e.id : ''), d: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '')) + ' „' + (e.textContent || e.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 28) + '”' }; });
 }
 function again() { return (window.__el || []).map(e => { if (!e.isConnected) return null; const r = e.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), w: Math.round(r.width), h: Math.round(r.height), hidden: !e.getClientRects().length }; }); }
@@ -79,7 +79,7 @@ function quiet(n) {
     pg.on('pageerror', e => errors.push(e.message));
     // ekran gotowy: sieć spokojna, czcionki wczytane, kilka klatek bez zmian i ten sam układ w dwóch kolejnych odczytach (dane z bazy dochodzą asynchronicznie)
     const settle = async () => { await pg.waitForLoadState('networkidle'); await pg.evaluate(() => document.fonts && document.fonts.ready);
-      let prev = null; for (let k = 0; k < 12; k++) { await pg.evaluate(quiet, 6); await pg.evaluate(koniecAnimacji); const g = JSON.stringify(await pg.evaluate(snap)); if (g === prev) return; prev = g; } };
+      let prev = null; for (let k = 0; k < 12; k++) { await pg.evaluate(quiet, 6); await pg.evaluate(koniecAnimacji); const g = JSON.stringify(await pg.evaluate(snap, false)); if (g === prev) return; prev = g; } };
     const lang = () => pg.evaluate(() => { try { return localStorage.getItem('oest.lang') === 'en' ? 'en' : 'pl'; } catch (e) { return 'pl'; } });
     // język ustawiony tak, jak robi to apka (Mój profil / ustawienia), bez klikania na badanym ekranie
     const ustawJezyk = l => pg.evaluate(l => { if (window.OESTSettings && window.OESTSettingsUI) { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); } localStorage.setItem('oest.lang', l); }, l);
@@ -145,7 +145,8 @@ function quiet(n) {
   if (process.env.OEST_PL_EN_OUT) fs.writeFileSync(process.env.OEST_PL_EN_OUT, JSON.stringify({ wyniki: R, znalezione: [...znalezione].map(([e, m]) => [e, [...m]]), bledy: fails }, null, 1));
   const el = Object.values(R).reduce((a, r) => a + r.elementy, 0), czyste = ekrany.filter(e => !znalezione.has(e));
   console.log('PL/EN: ' + ekrany.length + ' ekranów, ' + el + ' elementów (dzień ' + DZIEN.slice(0, 10) + '); z przełącznikiem: ' + ekrany.filter(k => R[k].zmiana.startsWith('przełącznik')).join(' ') + '; bez zastrzeżeń ' + czyste.length + ': ' + czyste.join(' '));
+  if (fails.length) { console.error('PL EN UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; }
   for (const z of znane) console.log('  ZNANE ODSTĘPSTWO ' + z);
-  if (fails.length) { console.error('PL EN UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
+  if (fails.length) return;
   console.log('PL EN UI PASS: ' + ekrany.length + ' ekranów (apka ' + APP.length + ', inspekcje ' + INSP.length + '), ' + el + ' elementów – bez nowych przerysowań, przesunięć i animacji przy zmianie PL/EN; znane odstępstwa: ' + znane.length + '.');
 })().catch(e => { console.error(e); process.exitCode = 1; });

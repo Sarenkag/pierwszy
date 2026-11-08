@@ -127,7 +127,8 @@ function pdfParts(buf) {
 }
 // Porównanie treści Word i PDF. Słowa (bez znaczenia, gdzie się łamie linia), z ☑/☒; nagłówki/stopki Worda osobno
 // (w PDF powtarzają się na każdej stronie, więc liczy się, że są, a nie ile razy). Wynik: słowa tylko w Wordzie / tylko w PDF.
-const words = s => String(s).replace(/[   ]/g, ' ').split(/\s+/).filter(Boolean);
+// kratka ☑/☒ sklejona z pierwszym słowem hasła („☑Access”), żeby zamiana stanów dwóch punktów nie dała tej samej listy słów
+const words = s => String(s).replace(/[   ]/g, ' ').replace(/([☐☑☒])\s+/g, '$1').split(/\s+/).filter(Boolean);
 function wordPdfDiff(wordBufs, pdfBufs) {
   const W = wordBufs.map(docxParts), P = pdfBufs.map(pdfParts);
   const hf = new Set(W.flatMap(w => w.hf.flatMap(h => h.split('\n').map(l => words(l).join(' ')).filter(Boolean))));
@@ -143,7 +144,7 @@ function wordPdfDiff(wordBufs, pdfBufs) {
   return {
     tylkoWord: only(wb, pb), tylkoPdf,
     naglowekBrakWPdf: [...hf].filter(l => !pSet.has(l)),
-    zdjeciaTylkoWord: only(wph, pph), zdjeciaTylkoPdf: only(pph, wph),
+    zdjeciaTylkoWord: only(wph, pph), zdjeciaTylkoPdf: only(pph, wph), zdjeciaWord: [...wph.keys()], zdjeciaPdf: [...pph.keys()],
     slowa: { word: [...wb.values()].reduce((a, b) => a + b, 0), pdf: [...pb.values()].reduce((a, b) => a + b, 0) },
     zdjecia: { word: [...wph.values()].reduce((a, b) => a + b, 0), pdf: [...pph.values()].reduce((a, b) => a + b, 0) },
     tekstWord: W.map(w => w.body).join('\n'), tekstPdf: pLines.join('\n')

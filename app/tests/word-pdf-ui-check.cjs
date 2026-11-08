@@ -70,7 +70,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         if (await vis('#galIn')) { await pg.setInputFiles('#galIn', await jpeg(pg, FOTO.galeria, '#36c')); zdj.push('galeria'); }
         if (await vis('#shGalIn')) { await pg.setInputFiles('#shGalIn', await jpeg(pg, FOTO.kartka, '#c63')); zdj.push('kartka'); }
         // zdjęcia gotowe: tyle miniatur, ile dodano (stan, nie czas)
-        await pg.waitForFunction(n => document.querySelectorAll('#photos img, #sheetPhotos img, #flList img, [data-flcam] img').length >= n, zdj.length, { timeout: 10000 }).catch(() => {});
+        if (zdj.length && !(await pg.waitForFunction(n => document.querySelectorAll('#photos img, #sheetPhotos img, #flList img, [data-flcam] img').length >= n, zdj.length, { timeout: 15000 }).then(() => true, () => false))) return zle('dodane zdjęcia (' + zdj.join(', ') + ') nie wczytały się w formularzu');
         await idle();
         const zKomentarzem = await vis('#komentarz');
         if (zKomentarzem) await pg.fill('#komentarz', KOMENTARZ);
@@ -84,6 +84,8 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         if (!word.length || !pdf.length) return zle('brak pary Word + PDF: ' + files.map(f => f.name).join(', '));
         const buf = f => Buffer.from(f.data, 'base64'), d = wordPdfDiff(word.map(buf), pdf.map(buf));
         if (process.env.OEST_WORD_PDF_OUT) { fs.mkdirSync(process.env.OEST_WORD_PDF_OUT, { recursive: true }); for (const f of files) fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, id + ' ' + f.name), buf(f)); }
+        // każde dodane zdjęcie (po wymiarach) musi być i w Wordzie, i w PDF – brak w obu nie jest „zgodnością”
+        for (const z of zdj) { const wym = FOTO[z].join('x'); if (!d.zdjeciaWord.includes(wym) || !d.zdjeciaPdf.includes(wym)) zle('zdjęcie „' + z + '” (' + wym + ') nie trafiło do ' + [!d.zdjeciaWord.includes(wym) && 'Worda', !d.zdjeciaPdf.includes(wym) && 'PDF'].filter(Boolean).join(' ani do ')); }
         const w = { pliki: files.map(f => f.name), slowa: d.slowa, zdjecia: d.zdjecia, dodaneZdjecia: zdj, roznica: podpis(d) };
         if (zKomentarzem) { const k = s => s.replace(/\s+/g, ' ').includes(KOMENTARZ); w.komentarz = { word: k(d.tekstWord), pdf: k(d.tekstPdf) }; }
         if (!d.slowa.word && !d.slowa.pdf && !d.zdjecia.word) zle('raport bez treści i bez zdjęć – nie ma czego porównać');
@@ -112,6 +114,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         const d = wordPdfDiff([Buffer.from(out.docx, 'base64')], [Buffer.from(out.pdf, 'base64')]);
         if (process.env.OEST_WORD_PDF_OUT) { fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, 'REACTIVE ' + out.name + '.docx'), Buffer.from(out.docx, 'base64')); fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, 'REACTIVE ' + out.name + '.pdf'), Buffer.from(out.pdf, 'base64')); }
         const k = s => s.replace(/\s+/g, ' ').includes(KOMENTARZ);
+        for (const z of ['przed', 'po']) { const wym = FOTO[z].join('x'); if (!d.zdjeciaWord.includes(wym) || !d.zdjeciaPdf.includes(wym)) bad.push('REACTIVE: zdjęcie „' + z + '” (' + wym + ') nie trafiło do obu plików'); }
         wyniki.REACTIVE = { pliki: [out.name + '.docx', out.name + '.pdf'], slowa: d.slowa, zdjecia: d.zdjecia, dodaneZdjecia: ['przed', 'po'], roznica: podpis(d), komentarz: { word: k(d.tekstWord), pdf: k(d.tekstPdf) } };
         if (errs.length) bad.push('REACTIVE: błędy strony: ' + errs.join(' | '));
       } catch (e) { bad.push('REACTIVE: ' + e.message); } finally { await ctx.close(); }
@@ -137,7 +140,8 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
   if (process.env.OEST_WORD_PDF_JSON) fs.writeFileSync(process.env.OEST_WORD_PDF_JSON, JSON.stringify({ wyniki, bledy: bad }, null, 1));
   const zgodne = Object.keys(wyniki).filter(id => pusta(wyniki[id].roznica) && !(wyniki[id].komentarz && !(wyniki[id].komentarz.word && wyniki[id].komentarz.pdf)));
   console.log('Word = PDF: ' + Object.keys(wyniki).length + ' raportów sprawdzonych, identycznych ' + zgodne.length + ', ze znaną różnicą (quality/baselines/word-pdf.json) ' + znane.length + ': ' + (znane.join(', ') || '—'));
+  if (bad.length) { console.error('WORD PDF UI FAIL (' + bad.length + '):\n- ' + bad.join('\n- ')); process.exitCode = 1; }
   for (const k of znane) { const e = known.get(k); console.log('  ZNANA RÓŻNICA ' + k + ': ' + (e.roznica ? krotko(e.roznica) : e.detail)); }
-  if (bad.length) { console.error('WORD PDF UI FAIL (' + bad.length + '):\n- ' + bad.join('\n- ')); process.exitCode = 1; return; }
+  if (bad.length) return;
   console.log('WORD PDF UI PASS: ' + ids.length + ' inspekcji z listy PPM + Reactive, każda para Word/PDF porównana słowo po słowie, kratki ☑/☒, nagłówek/stopka, zdjęcia i komentarz.');
 })().catch(e => { console.error(e); process.exitCode = 1; });
