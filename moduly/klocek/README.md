@@ -38,6 +38,7 @@ Każdy element ma stałe miejsce i stałą (maksymalną) wielkość, także gdy 
 | OK/pytania | ptaszek zielony, gdy równe; pomarańczowy, gdy nierówne; „–”, gdy nie zaczęta albo pytania nieaktywne |
 | Przytrzymanie | ~0,4 s w dowolnym miejscu klocka → krótka wibracja + okno informacji (treść `OESTKlocek.infoNode`, okienko `OESTPrzycisk.ask({ bare: true })` bez przycisków); zostaje po puszczeniu palca, stuknięcie gdziekolwiek / Wstecz zamyka; ruch palca = przewijanie |
 | Okno informacji | tytuł = pełna nazwa zadania z Vantify (`OEST_VANTIFY.tasks`, z eksportu Task Frequencies); lokalizacja „TB – Tower B”; częstotliwość + numer zadania Vantify; termin dd/mm/rrrr + nr zlecenia; formularz; zdjęcia; pytania; usterki |
+| Bez zaznaczania | klocek i okno informacji: bez zaznaczania tekstu i bez paska Kopiuj/Udostępnij przy przytrzymaniu (Pixel, 08/11/2026); tylko listy inspekcji, reszta apki bez zmian |
 
 Pilnuje test `app/tests/klocek-inspekcji-ui-check.cjs`.
 

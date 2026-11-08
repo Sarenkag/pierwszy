@@ -117,7 +117,16 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     const bb = await el.boundingBox();
     await p.mouse.move(bb.x + 150, bb.y + 40); await p.mouse.down(); await p.waitForTimeout(650);
     R.info = { poPrzytrzymaniu: await p.evaluate(() => { const b = document.querySelector('.oest-ask.ki-info'); return b ? { tytul: b.querySelector('b').textContent, wiersze: b.querySelectorAll('.kir').length, przyciski: b.querySelectorAll('button').length, tekst: b.textContent } : null; }) };
+    // palec dalej trzyma po otwarciu okna: Android nie może zaznaczyć tekstu ani pokazać paska Kopiuj/Udostępnij (Pixel, Grzegorz 08/11/2026)
+    R.info.zaznaczanie = await p.evaluate(() => {
+      const b = document.querySelector('.oest-ask.ki-info'); if (!b) return null;
+      const s = b.querySelector('.kir span'), cs = getComputedStyle(s), cb = getComputedStyle(b);
+      const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true }); s.dispatchEvent(ev);
+      const r = document.createRange(); r.selectNodeContents(s); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      return { userSelect: cs.userSelect || cs.webkitUserSelect, callout: cb.webkitTouchCallout || '', menuZablokowane: ev.defaultPrevented };
+    });
     await p.mouse.up(); await p.waitForTimeout(400);
+    R.info.zaznaczenie = await p.evaluate(() => getSelection().toString());
     R.info.poPuszczeniu = await p.evaluate(() => !!document.querySelector('.oest-ask.ki-info'));
     R.info.url = p.url();
     await p.mouse.click(30, 120); await p.waitForTimeout(600);
@@ -127,6 +136,9 @@ const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
     check(inf.tytul === 'Water Temperature Checks (Tower B)', 'okno informacji: tytuł (pełna nazwa z Vantify) = ' + inf.tytul);
     check(inf.przyciski === 0 && inf.wiersze === 7, `okno informacji: ${inf.wiersze} wierszy, ${inf.przyciski} przycisków (ma być 7 wierszy z usterkami, bez przycisków)`);
     check(/TB – Tower B/.test(inf.tekst || '') && /Vantify 959234/.test(inf.tekst || '') && /30\/11\/2026/.test(inf.tekst || '') && /OK 8 \/ 20/.test(inf.tekst || ''), 'okno informacji: treść ' + inf.tekst);
+    const zz = R.info.zaznaczanie || {};
+    check(zz.userSelect === 'none' && zz.menuZablokowane, 'okno informacji pozwala zaznaczyć tekst / otworzyć pasek Kopiuj: ' + JSON.stringify(zz));
+    check(R.info.zaznaczenie === '', 'po przytrzymaniu zostało zaznaczenie tekstu: „' + R.info.zaznaczenie + '”');
     check(R.info.poPuszczeniu, 'okno informacji znika po puszczeniu palca (ma zostać)');
     check(!R.info.poStuknieciu, 'okno informacji nie zamyka się po stuknięciu');
     check(/#ppm$/.test(R.info.url) && /#ppm$/.test(R.info.urlPo), 'przytrzymanie otworzyło inspekcję: ' + R.info.urlPo);
