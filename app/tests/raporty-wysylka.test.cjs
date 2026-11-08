@@ -51,7 +51,7 @@ function app(o = {}) {
     ensureFolder: async (name, parent) => { if (driveDown) throw Error('GOOGLE_OFFLINE'); const k = (parent || 'root') + '/' + name; if (!folders.has(k)) folders.set(k, 'f' + (++n)); return { id: folders.get(k) }; },
     findFile: async (parent, name) => { for (const [id, f] of files) if (f.parent === parent && f.name === name) return { id }; return null; },
     uploadFile: async (parent, name, blob) => { const id = 'd' + (++n); files.set(id, { parent, name, blob }); events.push('upload ' + name); return { id }; },
-    updateFile: async (id, blob) => { files.get(id).blob = blob; events.push('update ' + files.get(id).name); return { id }; }
+    updateFile: async (id, blob, name) => { files.get(id).blob = blob; if (name) files.get(id).name = name; events.push('update ' + files.get(id).name); return { id }; }
   };
   const root = {
     localStorage: { getItem: k => data.get(k) ?? null, setItem(k, v) { data.set(k, v); }, removeItem(k) { data.delete(k); } },

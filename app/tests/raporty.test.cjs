@@ -19,7 +19,7 @@ function setup(o = {}) {
     ensureFolder: async (name, parent) => { const k = (parent || 'root') + '/' + name; if (!folders.has(k)) folders.set(k, 'f' + (++n)); return { id: folders.get(k) }; },
     find: async (parent, name) => { for (const [id, f] of files) if (f.parent === parent && f.name === name) return { id }; return null; },
     upload: async (parent, name, blob) => { const id = 'd' + (++n); files.set(id, { parent, name, blob, v: 1 }); log.push('upload ' + name); return { id }; },
-    update: async (id, blob) => { const f = files.get(id); if (!f) throw Error('GOOGLE_HTTP_404'); f.blob = blob; f.v++; log.push('update ' + f.name); return { id }; }
+    update: async (id, blob, name) => { const f = files.get(id); if (!f) throw Error('GOOGLE_HTTP_404'); f.blob = blob; f.v++; if (name) f.name = name; log.push('update ' + f.name); return { id }; }
   };
   return { store, db, drive, files, folders, log, setOwner: v => { owner = v; } };
 }
@@ -140,4 +140,37 @@ test('limit 200 MB pilnowany także, gdy Dysk nie działa (zwalnia tylko raporty
   assert.deepStrictEqual((await t.store.list()).map(r => r.name), ['NEW'], 'stary (na Dysku) usunięty od razu przy zapisie, nowy (bez kopii) zostaje');
   await assert.rejects(t.store.sync(t.drive), /500/);
   assert.deepStrictEqual((await t.store.list()).map(r => r.name), ['NEW']);
+});
+
+test('raport zwolniony z telefonu (limit) dalej „trzyma” swoją nazwę na Dysku: inny raport o tej nazwie nie nadpisze jego pliku', async () => {
+  const t = setup({ limits: { phoneLimitMB: 1 } });
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-1', folder: ['Reactive'], docx: bytes(0.6, 1), pdf: bytes(0.6) }));
+  await t.store.sync(t.drive); // na Dysku → nad limitem 1 MB → zwolniony z telefonu
+  assert.strictEqual((await t.store.list()).length, 0);
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.1, 2), pdf: null }));
+  await t.store.sync(t.drive);
+  assert.deepStrictEqual([...t.files.values()].map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
+  const first = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026.docx');
+  assert.strictEqual(new Uint8Array(await first.blob.arrayBuffer())[0], 1, 'plik pierwszego zadania nietknięty');
+});
+
+test('spóźniony zapis starszej wysyłki nie zastępuje nowszej wersji (telefon i Dysk)', async () => {
+  const t = setup();
+  await t.store.save(rep('ATS TB 08112026', { at: 2000, docx: bytes(0.1, 2) }));
+  await t.store.sync(t.drive);
+  await t.store.save(rep('ATS TB 08112026', { at: 1000, docx: bytes(0.1, 1) })); // ponowienie archiwum pierwszej wysyłki
+  await t.store.sync(t.drive);
+  const [rec] = await t.store.list();
+  assert.strictEqual(rec.docx[0], 2); assert.strictEqual(rec.dirty, false);
+  assert.strictEqual(new Uint8Array(await [...t.files.values()][0].blob.arrayBuffer())[0], 2);
+  assert.deepStrictEqual(t.log, ['upload ATS TB 08112026.docx']);
+});
+
+test('ten sam raport wysłany ponownie z nową nazwą (Reactive następnego dnia): plik na Dysku dostaje nową nazwę', async () => {
+  const t = setup();
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-1', folder: ['Reactive'] }));
+  await t.store.sync(t.drive);
+  await t.store.save(rep('REACTIVE Leak 09112026', { key: 'reactive-1', folder: ['Reactive'], docx: bytes(0.6, 2) }));
+  await t.store.sync(t.drive);
+  assert.deepStrictEqual([...t.files.values()].map(f => f.name), ['REACTIVE Leak 09112026.docx']);
 });

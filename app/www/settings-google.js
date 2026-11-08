@@ -147,7 +147,13 @@
       var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:q,fields:'files(id,name)',pageSize:'1'}));
       return r.files&&r.files[0]||null;
     }
-    async function updateFile(id,blob){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media&fields=id,name',{method:'PATCH',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});}
+    /* name (opcjonalnie): nowa nazwa pliku razem z treścią (np. Reactive wysłany ponownie z nową datą) */
+    async function updateFile(id,blob,name){
+      if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');
+      if(!name)return request('drive','https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media&fields=id,name',{method:'PATCH',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});
+      var boundary='oest_'+Date.now(),body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name})+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'application/octet-stream')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
+      return request('drive','https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=multipart&fields=id,name',{method:'PATCH',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
+    }
     async function removeFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE'});}
     async function testMail(address){
       if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(address)||/[\r\n]/.test(address))throw Error('EMAIL_INVALID');

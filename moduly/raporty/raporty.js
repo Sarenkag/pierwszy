@@ -60,7 +60,8 @@
     var syncing = null, lim = Object.assign({}, LIMITS, deps.limits || {}), rootId = '';
     function now() { return new Date(deps.now ? deps.now() : Date.now()).toISOString(); }
     function emit() { if (deps.onChange) try { deps.onChange(); } catch (e) {} }
-    async function mine() { var me = deps.owner(); return (await deps.db.all()).filter(function (r) { return r.owner === me; }); }
+    // „gone” = raport zwolniony z telefonu (jest na Dysku): zostaje mały ślad z nazwą pliku i id na Dysku, żeby inny raport nie dostał tej nazwy
+    async function mine(all) { var me = deps.owner(); return (await deps.db.all()).filter(function (r) { return r.owner === me && (all || !r.gone); }); }
 
     /* Zapis po wysłaniu / Update. Ten sam raport (to samo konto + nazwa) = ten sam wpis i ten sam plik na Dysku. */
     async function save(rep) {
@@ -71,15 +72,17 @@
       if (!rep.docx || !(rep.docx.byteLength || rep.docx.length)) throw Error('REPORT_DOCX');
       // tożsamość raportu = klucz od apki (np. id zadania Reactive); bez klucza – nazwa „KOD DDMMRRRR” (jedna inspekcja na dzień)
       var key = safe(rep.key) || name, id = me + '|' + key, old = await deps.db.get(id), t = now();
+      // spóźniony zapis starszej wysyłki (np. ponowienie po błędzie) nie zastępuje nowszej wersji ani w telefonie, ani na Dysku
+      if (old && rep.at && old.at && rep.at < old.at) return old;
       var folder = (rep.folder || []).map(safe).filter(Boolean);
       var rec = {
-        id: id, owner: me, name: name, key: key,
+        id: id, owner: me, name: name, key: key, at: rep.at || (old && old.at) || 0,
         file: old && old.file && old.name === name && (old.folder || []).join('/') === folder.join('/') ? old.file : await freeFile(me, id, name, folder),
         folder: folder,
         docx: rep.docx, pdf: rep.pdf || null,
         meta: rep.meta || (old && old.meta) || {},
         created: old ? old.created : t, updated: t, versions: old ? (old.versions || 1) + 1 : 1,
-        driveId: old ? old.driveId || '' : '', dirty: true, synced: old ? old.synced || '' : ''
+        driveId: old ? old.driveId || '' : '', driveName: old ? old.driveName || '' : '', dirty: true, synced: old ? old.synced || '' : ''
       };
       rec.bytes = size(rec);
       await deps.db.put(rec); emit();
@@ -98,7 +101,10 @@
 
     async function enforce() {
       var p = plan(await mine(), lim);
-      for (var i = 0; i < p.remove.length; i++) await deps.db.del(p.remove[i]);
+      for (var i = 0; i < p.remove.length; i++) {
+        var r = await deps.db.get(p.remove[i]);
+        if (r) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, gone: true, bytes: 0 });
+      }
       if (p.remove.length) emit();
       return p;
     }
@@ -129,7 +135,7 @@
           try { parent = await folderId(r.folder); }
           catch (e) { if (rootId && /404/.test(String(e && e.message))) { rootId = ''; folders = {}; parent = await folderId(r.folder); } else throw e; }
           if (r.driveId) {
-            try { up = await drive.update(r.driveId, blob); }
+            try { up = await drive.update(r.driveId, blob, r.driveName && r.driveName !== file ? file : undefined); } // nowa nazwa (np. Reactive z nową datą)
             catch (e) { if (!/404/.test(String(e && e.message))) throw e; up = null; } // plik usunięty z Dysku: tworzymy od nowa
           }
           if (!up) {
@@ -138,7 +144,7 @@
           }
           var fresh = await deps.db.get(r.id);
           if (!fresh) continue;
-          fresh.driveId = up.id;
+          fresh.driveId = up.id; fresh.driveName = file;
           if (fresh.updated === r.updated) fresh.dirty = false; // zmiana w trakcie wysyłki: zostaje do następnej rundy
           fresh.synced = now();
           await deps.db.put(fresh); sent++; emit();

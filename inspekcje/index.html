@@ -3222,7 +3222,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
     qAll().then(function (all) {
       var old = Date.now() - 3 * 864e5; // wysłane starsze niż 3 dni sprzątam
-      queue = (all || []).filter(function (q) { if (q.status === "sent" && q.sentAt < old) { qDel(q.id); return false; } return true; });
+      queue = (all || []).filter(function (q) { if (q.status === "sent" && q.sentAt < old && q.arch !== "todo") { qDel(q.id); return false; } /* Word jeszcze nie w archiwum raportów: zostaje do ponowienia */ return true; });
       queue.forEach(function (q) { if (q.status === "sending") q.status = "wait"; });
     }).catch(function () {})
   ]).then(function () {

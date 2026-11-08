@@ -108,7 +108,7 @@
   function archive(it) {
     var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
     if (!R || !docx) return Promise.resolve(true); // bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
-    var rep = { key: it.key || it.name, name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
+    var rep = { key: it.key || it.name, at: it.sentAt || it.created || Date.now(), name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
       meta: { ppm: it.ppm || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now() } };
     var p = archived.then(function () { return R.save(rep); }).then(function () { return true; }, function () { return false; });
     archived = p;
@@ -123,7 +123,7 @@
     }, Promise.resolve()).catch(function () {});
   }
   function driveAdapter(g) {
-    return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile };
+    return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile }; // update(id, blob, nowaNazwa?)
   }
   function later(o) { setTimeout(function () { syncReports(o); }, 0); }
   // o.anyNet: raporty wolno wysłać bez Wi‑Fi (tak jak mail po kliknięciu)
