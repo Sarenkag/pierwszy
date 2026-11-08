@@ -48,18 +48,22 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
       st.put(rec('demo@example.com', 'ATS TB 07112026', ['Tower B', 'ATS'], Date.parse('2026-11-07T10:00:00'), { driveId: '', dirty: true }));
       st.put(rec('demo@example.com', 'DB-TA-L5 08112026', ['Tower A', 'Distribution Boards'], Date.parse('2026-11-08T09:00:00'), { versions: 2 }));
       st.put(rec('other@example.com', 'Secret 08112026', ['Pavilion', 'X'], Date.parse('2026-11-08T11:00:00')));
+      st.put(rec('demo@example.com', 'REACTIVE Leak 01112026', ['Reactive'], Date.parse('2026-11-01T09:00:00'), { meta: { type: 'reactive', sentAt: Date.parse('2026-11-01T09:00:00') } }));
       await new Promise(r => { t.oncomplete = r; });
     }, PNG);
 
     await p.goto(url + '/#settings/reports'); await p.locator('#rptList .k2').first().waitFor();
     const names = () => p.$$eval('#rptList .knm', a => a.map(e => [...e.childNodes].filter(n => !(n.classList && n.classList.contains('kbl'))).map(n => n.textContent).join('').trim())); // bez znacznika budynku
-    ok(JSON.stringify(await names()) === JSON.stringify(['DB-TA-L5 08112026', 'ATS TB 07112026', 'Weekly Flushing TB 06112026']), 'lista: najnowsze na górze, bez cudzego raportu');
+    ok(JSON.stringify(await names()) === JSON.stringify(['DB-TA-L5 08112026', 'ATS TB 07112026', 'Weekly Flushing TB 06112026', 'REACTIVE Leak 01112026']), 'lista: najnowsze na górze, bez cudzego raportu');
     const pills = await p.locator('#rptList .kst').allTextContents();
     ok(pills[0] === 'Na Dysku' && pills[1] === 'Czeka na Dysk', 'status: Na Dysku / Czeka na Dysk');
     ok(/wersja 2/.test(await p.locator('#rptList .k2').first().innerText()), 'raport wysłany ponownie: „wersja 2”');
 
     await p.fill('#rptQ', 'tb'); await p.waitForTimeout(80);
     ok((await names()).length === 2, 'szukanie „tb”: 2 raporty Tower B');
+    await p.selectOption('#rptB', 'Reactive'); await p.waitForTimeout(80);
+    ok(JSON.stringify(await names()) === JSON.stringify([]), 'szukanie + filtr Reactive: nic');
+    await p.selectOption('#rptB', '');
     await p.fill('#rptQ', '06/11/2026'); await p.waitForTimeout(80);
     ok(JSON.stringify(await names()) === JSON.stringify(['Weekly Flushing TB 06112026']), 'szukanie po dacie dd/mm/rrrr');
     await p.fill('#rptQ', ''); await p.selectOption('#rptB', 'Tower A'); await p.waitForTimeout(80);
@@ -92,11 +96,24 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     ok(q.length === 1 && q[0].noArchive === true && q[0].docx > 0 && q[0].pdf === 50 && q[0].name === 'Weekly Flushing TB 06112026', 'Wyślij: ten sam Word + PDF do kolejki, bez ponownego archiwum');
     ok(JSON.stringify(q[0].toList.slice().sort()) === JSON.stringify(['me@home.com', 'work@firma.com']), 'Wyślij: zaznaczeni adresaci');
 
+    // Reactive: tylko firmowy e-mail (PROD-025)
+    await p.locator('#rptList .k2', { hasText: 'REACTIVE Leak' }).click(); await p.locator('.oest-ask').waitFor();
+    ok(await p.locator('.oest-ask [data-to=sp]').isDisabled() && await p.locator('.oest-ask [data-to=sm]').isChecked() && /tylko firmowy/.test(await p.locator('.oest-ask').innerText()), 'Reactive: tylko firmowy e-mail');
+    await p.locator('.oest-ask [data-a=ok]').click();
+    { const d = p.locator('.oest-ask', { hasText: 'W kolejce' }); await d.waitFor(); await d.locator('[data-a=ok]').click(); await p.waitForFunction(() => !document.querySelector('.oest-ask')); }
+    ok(JSON.stringify((await p.evaluate(() => window.__q))[1].toList) === JSON.stringify(['work@firma.com']), 'Reactive: wysłany tylko na firmowy');
+    // kolejka odmówiła (np. brak miejsca): komunikat, nic nie udajemy
+    await p.evaluate(() => { OESTSender.enqueue = () => Promise.reject(new Error('QuotaExceededError')); });
+    await p.locator('#rptList .k2', { hasText: 'DB-TA-L5' }).click(); await p.locator('.oest-ask').waitFor(); await p.locator('.oest-ask [data-a=ok]').click();
+    { const d = p.locator('.oest-ask', { hasText: 'Nie wysłano' }); await d.waitFor(); ok(/Nie udało się dodać raportu do kolejki/.test(await d.innerText()), 'błąd kolejki: komunikat'); await d.locator('[data-a=ok]').click(); await p.waitForFunction(() => !document.querySelector('.oest-ask')); }
     // raport bez kopii na Dysku: bez linku „Otwórz na Dysku”
     await p.locator('#rptList .k2', { hasText: 'ATS TB' }).click(); await p.locator('.oest-ask').waitFor();
     ok(await p.locator('.oest-ask .rpt-drive').count() === 0, 'bez kopii na Dysku: brak linku');
     await p.locator('.oest-ask [data-a=no]').click();
-    ok((await p.evaluate(() => window.__q.length)) === 1, 'Zamknij nic nie wysyła');
+    ok((await p.evaluate(() => window.__q.length)) === 2, 'Zamknij nic nie wysyła');
+    // szukanie to nie zmiana ustawień: Wstecz bez pytania o niezapisane zmiany
+    await p.fill('#rptQ', 'flush'); await p.locator('#v-settings .top .back').click(); await p.waitForTimeout(250);
+    ok(await p.locator('.oest-ask').count() === 0 && /#settings$/.test(p.url()), 'po szukaniu Wstecz bez „niezapisanych zmian”');
 
     assert.deepEqual(errors, [], 'błędy strony');
     console.log('RAPORTY PRZEGLĄDARKA PASS: ' + passed + ' sprawdzeń (lista, szukanie, filtr, PL/EN bez przesunięć, podgląd tekst + zdjęcie, Wyślij do kolejki, inne konto)');

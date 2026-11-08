@@ -39,6 +39,8 @@
       el.querySelector("#rptB").addEventListener("change", function (e) { state.b = e.target.value; list(el); });
       el.querySelector("#rptList").addEventListener("click", function (e) { var b = e.target.closest("[data-rid]"); if (b) show(b.getAttribute("data-rid")); });
       if (R.onChange) R.onChange(function () { if (document.body.contains(el)) list(el); });
+      // szukanie to nie zmiana ustawień: zdarzenia pól przeglądarki nie wychodzą do formularza ekranu (bez „niezapisanych zmian”)
+      ["input", "change"].forEach(function (t) { el.addEventListener(t, function (e) { e.stopPropagation(); }); });
     }
     // język: tylko teksty, wpisane szukanie i wybór zostają (bez przerysowania pola)
     var q = el.querySelector("#rptQ"), b = el.querySelector("#rptB");
@@ -71,7 +73,9 @@
       var urls = [], node = document.createElement("div"), pv = null;
       try { pv = w.PizZip ? R.docxPreview(r.docx, w.PizZip) : null; } catch (e) { pv = null; }
       var to = S && S.recipients ? S.recipients({ sp: 1, sm: 1, se: 1, sg: 1 }) : { priv: "", me: "", eng: "", man: "" };
-      function cb(k, label, addr, missing) { return "<label><input type=\"checkbox\" data-to=\"" + k + "\"" + (k === "sm" && addr ? " checked" : "") + (addr ? "" : " disabled") + "><span>" + esc(label) + " <small>" + esc(addr || missing) + "</small></span></label>"; }
+      // Reactive wysyłamy tylko na firmowy e-mail (PROD-025) – tak jak przy pierwszej wysyłce
+      var reactive = (r.meta && r.meta.type) === "reactive" || (r.folder || [])[0] === "Reactive", only = T("Reactive: tylko firmowy e-mail", "Reactive: work email only");
+      function cb(k, label, addr, missing) { var off = !addr || (reactive && k !== "sm"); return "<label><input type=\"checkbox\" data-to=\"" + k + "\"" + (k === "sm" && addr ? " checked" : "") + (off ? " disabled" : "") + "><span>" + esc(label) + " <small>" + esc(reactive && k !== "sm" ? only : addr || missing) + "</small></span></label>"; }
       var pics = pv ? pv.images.map(function (i) { var u = URL.createObjectURL(new Blob([i.bytes], { type: i.type })); urls.push(u); return '<img src="' + u + '" alt="">'; }).join("") : "";
       node.innerHTML = '<div class="rpt-meta">' + esc((r.folder || []).join(" · ") + " · " + T("wysłany ", "sent ") + R.day(r) + " · Word + PDF") + "</div>" +
         '<div class="rpt-view">' + (pv ? pv.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("") + (pics ? '<div class="rpt-pics">' + pics + "</div>" : "") : "<p>" + esc(T("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")) + "</p>") + "</div>" +
@@ -85,12 +89,16 @@
         urls.forEach(function (u) { URL.revokeObjectURL(u); });
         if (!ok) return;
         var sel = {}; node.querySelectorAll("[data-to]:checked").forEach(function (c) { sel[c.getAttribute("data-to")] = true; });
+        if (reactive) sel = { sm: !!sel.sm };
         var list = S && S.recipients ? S.recipients(sel).list : [];
         if (!S || !S.active || !S.active() || !S.enqueue) return P.ask({ title: T("Wysyłka niedostępna", "Sending unavailable"), text: T("Zaloguj się do Google w apce.", "Sign in to Google in the app."), alert: true });
         if (!list.length) return P.ask({ title: T("Brak adresata", "No recipient"), text: T("Zaznacz, do kogo wysłać.", "Tick who to send it to."), alert: true });
         return S.enqueue({ type: "archive", code: r.name, name: r.name, subject: r.name, body: r.name + "\n" + T("Raport z archiwum OEST", "Report from the OEST archive") + " (" + R.day(r) + ")\n",
           docx: r.docx, pdf: r.pdf || new Uint8Array(0), toList: list, noArchive: true, rpt: r.folder }).then(function () {
           return P.ask({ title: T("W kolejce", "Queued"), text: T("Raport czeka w kolejce – pasek na dole pokaże wysyłkę.", "The report is queued – the bar at the bottom shows sending."), alert: true });
+        }, function (e) {
+          // nie trafił do kolejki (np. brak miejsca w telefonie): mówimy wprost, nic nie udajemy; ponowienie = otworzyć raport i Wyślij jeszcze raz
+          return P.ask({ title: T("Nie wysłano", "Not sent"), text: T("Nie udało się dodać raportu do kolejki: ", "Could not add the report to the queue: ") + (w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + T("\nOtwórz raport i spróbuj ponownie.", "\nOpen the report and try again."), alert: true });
         });
       });
     });
