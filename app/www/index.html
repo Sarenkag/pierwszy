@@ -294,6 +294,7 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="reactive-report.js"></script>
 <script src="reactive.js"></script>
 <script src="moduly/zdjecia/zdjecia.js"></script>
+<script src="moduly/wstecz/wstecz.js"></script>
 <script src="moduly/aparat/aparat.js"></script>
 <script src="moduly/checkbox/checkbox.js"></script>
 <script src="moduly/przycisk/przycisk.js"></script>
@@ -384,6 +385,12 @@ input[type=text], input[type=email], input[type=date], select {
     open: function (close) { this.stack.push(close); try { history.pushState({ n: depth() + 1, overlay: 1 }, "", location.hash); } catch (e) {} },
     close: function () { if (this.stack.length) history.back(); } // przycisk „Zamknij” = to samo co Wstecz
   };
+  // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): zamyka okienko albo cofa o jeden poziom (jak strzałka ‹); na ekranie głównym pyta o wyjście
+  window.OESTWstecz.ustaw({
+    pytaj: window.OESTPrzycisk.confirm,
+    glowny: function () { return renderedRoute === "home" || renderedRoute === "start"; },
+    gora: function () { history.replaceState({ n: 0 }, "", "#home"); render("home"); return true; } // ekran bez strzałki ‹ → ekran główny
+  });
   window.addEventListener("popstate", function () {
     if (window.OESTOverlay.stack.length) { var c = window.OESTOverlay.stack.pop(); try { c(); } catch (e) {} return; }
     if (renderedRoute.indexOf("reactive") === 0 && !window.OESTReactiveUI.canLeave()) {
@@ -720,6 +727,15 @@ input[type=text], input[type=email], input[type=date], select {
   var start = (location.hash || "").slice(1);
   if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
   if (!account()) history.replaceState({ n: 0 }, "", "#start");
+  // wejście prosto na ekran w głębi (powrót z inspekcji, odzyskanej z Raportów…): historia = droga od ekranu głównego,
+  // więc strzałka ‹ i Wstecz telefonu idą o jeden poziom wyżej, np. Raporty → Ustawienia → ekran główny (Grzegorz 08/11)
+  (function () {
+    var r = (location.hash || "").slice(1);
+    if (!account() || !r || r === "home" || r === "start" || (history.state && history.state.n)) return;
+    var top = r.split("/")[0], chain = ["home", top]; if (r !== top) chain.push(r);
+    history.replaceState({ n: 0 }, "", "#home");
+    for (var i = 1; i < chain.length; i++) history.pushState({ n: i }, "", "#" + chain[i]);
+  })();
   render(location.hash.slice(1));
   restoreBack();
 })();

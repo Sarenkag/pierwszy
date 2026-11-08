@@ -22,6 +22,7 @@
     "app/tests/odzyskana-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/raport-ui-check.cjs": ["inspekcje/index.html"],
     "app/tests/raport-rozmiar-ui-check.cjs": ["inspekcje/index.html"],
+    "app/tests/wstecz-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/zdjecia-szybkosc-ui-check.cjs": ["inspekcje/index.html"]
   },
   "zasobyDynamiczne": {

@@ -11,7 +11,7 @@
  *     opts.prepare(blob) = wołane, gdy podgląd pokazuje zdjęcie (także po edycji): apka może je już zmniejszać w tle
  *   OESTAparat.available()           → true w apce Android
  *   OESTAparat.edit(blob, opts?) → Promise<Blob|null>   (null = bez zmian / anulowane; opts.max jak wyżej)
- *   OESTAparat.review(blob) → Promise<{blob}|{retake:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz
+ *   OESTAparat.review(blob) → Promise<{blob}|{retake:true}|{cancel:true}>  podgląd po zdjęciu: OK / Edytuj / Powtórz (cancel = Wstecz telefonu)
  *   OESTAparat.button(label?)        → gotowy <button> „✏️ Edytuj” do wstawienia pod zdjęciem
  */
 (function (root) {
@@ -185,7 +185,9 @@
         }
         cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', function () { if (drag) return end(); cur = null; draw(); });
         function realShapes() { return shapes.filter(function (s) { return s.t !== 'crop-mark' && s.t !== 'move'; }); }
-        function close(r) { window.removeEventListener('resize', fit); box.remove(); if (bmp.close) bmp.close(); done(r); }
+        // Wstecz telefonu (moduly/wstecz) = zamknij edytor bez zmian, wraca do podglądu zdjęcia
+        var zwolnij = root.OESTWstecz ? root.OESTWstecz.okno(function () { close(null); }) : function () {};
+        function close(r) { zwolnij(); window.removeEventListener('resize', fit); box.remove(); if (bmp.close) bmp.close(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('button'); if (!b) return;
           if (b.hasAttribute('data-t')) st.tool = b.getAttribute('data-t');
@@ -229,7 +231,7 @@
               function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
         }, function (e) { if (/CANCELLED/.test(String(e && e.message || e))) return null; throw e; });
       }
-      function loop() { return shot().then(function (b) { if (!b) return null; return api.review(b, opts).then(function (r) { return r.retake ? loop() : r.blob; }); }); }
+      function loop() { return shot().then(function (b) { if (!b) return null; return api.review(b, opts).then(function (r) { return r.retake ? loop() : r.cancel ? null : r.blob; }); }); }
       return loop();
     },
     /* Podgląd po zdjęciu: duże zdjęcie + „✓ OK”, „✏️ Edytuj”, „↺ Powtórz”.
@@ -247,7 +249,9 @@
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';
         var img = box.querySelector('img'), msg = box.querySelector('.oest-review-msg'), busy = false;
         function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; if (opts && typeof opts.prepare === 'function') try { opts.prepare(cur); } catch (_) {} }
-        function close(r) { if (url) URL.revokeObjectURL(url); box.remove(); done(r); }
+        // Wstecz telefonu (moduly/wstecz) = zamknij podgląd bez dodania zdjęcia, zostajesz w tej samej inspekcji
+        var zwolnij = root.OESTWstecz ? root.OESTWstecz.okno(function () { if (!busy) close({ cancel: true }); }) : function () {};
+        function close(r) { zwolnij(); if (url) URL.revokeObjectURL(url); box.remove(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('[data-r]'); if (!b || busy) return;
           var r = b.getAttribute('data-r');

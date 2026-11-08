@@ -507,6 +507,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
+<script src="../moduly/wstecz/wstecz.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
 <script src="../moduly/checkbox/checkbox.js"></script>
 <script src="../moduly/przycisk/przycisk.js"></script>
@@ -1036,6 +1037,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
+  // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): okienko → strzałka ‹ ekranu; ekran bez strzałki → lista, z której przyszedłem
+  if (window.OESTWstecz) OESTWstecz.ustaw({ pytaj: OESTPrzycisk.confirm, glowny: function () { return false; }, gora: function () { if (!queueing) leave(backUrl()); return true; } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
 
   // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
