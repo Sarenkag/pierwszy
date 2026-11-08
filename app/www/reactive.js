@@ -42,7 +42,7 @@
   // okno informacji po przytrzymaniu klocka – ten sam mechanizm i wygląd co w PPM (OESTKlocek.przytrzymaj/infoNode, okienko OESTPrzycisk)
   function rxInfo(el){if(!w.OESTPrzycisk?.ask||!w.OESTKlocek?.infoNode)return;const isDraft=el.dataset.rx==='draft',job=isDraft?null:data.jobs.find(j=>j.id===el.dataset.id),r=isDraft?data.reactiveDrafts?.[el.dataset.id]:job&&{...(job.reactive||{}),title:job.text};if(!r)return;
     const d=rxDate(r,isDraft?r.createdAt:job.createdAt),day=d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'',st=isDraft?L('Szkic','Draft'):C.uiLabel(C.status(job))+(r.temporary?L(' · tymczasowa naprawa',' · temporary repair'):''),
-      where=[r.building,r.level,r.room].filter(Boolean).join(', '),nv=(r.audioMediaIds||[]).length;
+      where=[r.building,r.level,r.room].filter(Boolean).join(', ')||(!isDraft&&job.location)||''/* zadanie z Handover: lokalizacja tylko w job.location (uwaga Codex w PR #103) */,nv=(r.audioMediaIds||[]).length;
     const rows=[{ic:'lok',html:where?esc(where):esc(L('Lokalizacja nieprzypisana','No location assigned'))},
       {ic:'termin',html:day?L('Zlecono ','Ordered ')+'<b>'+day+'</b>':esc(L('Brak daty','No date'))},
       {ic:'zdjecia',html:esc(L('Zdjęcia przed ','Photos before '))+'<b>'+(r.beforeMediaIds||[]).length+'</b> · '+esc(L('po ','after '))+'<b>'+(r.afterMediaIds||[]).length+'</b>'},
