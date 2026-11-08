@@ -52,12 +52,12 @@ test('niezrobione zlecenie po terminie zostaje (zaległe), jak w Vantify', () =>
   const r2 = loadAt('2026-11-08', done);
   assert.strictEqual(r2.due(r2.P.byId('EFA-INS-007')), '2026-11-13');
 });
-test('occurrences: tylko zlecenia z pliku, dalej planowane; sync telefonu używa tego samego', () => at('2026-11-02', () => {
+test('occurrences: tylko zlecenia z pliku, za ostatnim nic nie planuje (PROD-010); sync telefonu używa tego samego', () => at('2026-11-02', () => {
   const w = load({}, '2026-11-02'), P = w.OEST_PPM, t = P.byId('EFA-INS-003'), jobs = P.jobs(t);
   const o = P.occurrences(t, '2026-11-01', '2026-12-31');
   assert.deepStrictEqual(o.filter(x => x.job).map(x => x.d), jobs.map(j => j.due));
   assert.ok(!o.some(x => x.d === '2026-11-13'));   // w pliku Vantify nie ma zlecenia na 13/11
-  assert.ok(o.some(x => x.d === '2026-12-18' && x.plan));
+  assert.ok(!o.some(x => x.plan || x.d > jobs[jobs.length - 1].due)); // brak dat za ostatnim zleceniem z importu
   ctxCore(w);
   const ev = w.OESTCalendarCore.generate({ tasks: [t], dues: {}, today: '2026-11-02', config: { weeks: 4, workdayMode: 'all', groups: ['fire', 'water', 'elec', 'mech', 'sub'], exportInspections: true, shiftMarkers: false }, scheduleOn: () => null, occurrences: (x, f, to) => P.occurrences(x, f, to) });
   assert.deepStrictEqual(ev.map(e => e.date), ['2026-11-06', '2026-11-20', '2026-11-27']);
@@ -82,33 +82,53 @@ test('cofnięcie Gotowa/Zakończona otwiera to samo zlecenie, termin z pliku bez
   r.P.setStage(t, { s: 'sent' }); r.P.setStage(t, null);
   assert.strictEqual(r.due(t), '2026-11-06');
 });
-test('za ostatnim zleceniem z pliku: następny termin liczony od ostatniego zlecenia, nie ze starej daty w telefonie', () => {
-  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+// PROD-010 / audyt 06/11/2026: po ostatnim zleceniu z importu apka NIE tworzy kolejnego terminu (bez dat „ostatnie + okres”).
+function lastJob(id) { const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId(id)); return { jobs, last: jobs[jobs.length - 1].due }; }
+test('za ostatnim zleceniem z pliku: brak terminu, stara data z telefonu też nie wraca', () => {
+  const { last } = lastJob('EFA-INS-007');
   const store = { 'oest.ppm.due': JSON.stringify({ 'EFA-INS-007': '2026-11-13' }), 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [last] }) };
   const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
-  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
-  assert.strictEqual(r.due(t), r.P.iso(d));
+  assert.strictEqual(r.P.due(t), null);
+  assert.strictEqual(r.P.endsText(r.P.daysLeft(r.P.due(t)), t), 'No next Vantify job');
+  assert.strictEqual(r.P.occurrences(t, '2026-11-01', '2027-12-31').length, 0);
 });
-
-test('zakończenie ostatniego zlecenia z pliku przesuwa termin tylko o jeden okres', () => {
-  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+test('zakończenie ostatniego zlecenia z pliku nie tworzy nowego terminu i nic nie zapisuje', () => {
+  const { jobs, last } = lastJob('EFA-INS-007');
   const store = { 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [jobs[jobs.length - 2].due] }) };
   const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
   assert.strictEqual(r.due(t), last);
   r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
-  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
-  assert.strictEqual(r.due(t), r.P.iso(d));
+  assert.strictEqual(r.P.due(t), null);
+  assert.strictEqual(store['oest.ppm.due'], undefined); // P.close nic nie zapisał w telefonie
 });
-
-test('ostatnie zlecenie: zakończ → zdejmij Gotowa → zakończ znów = ten sam następny termin', () => {
-  const w0 = load({}), jobs = w0.OEST_PPM.jobs(w0.OEST_PPM.byId('EFA-INS-007')), last = jobs[jobs.length - 1].due;
+test('ostatnie zlecenie: zakończ → zdejmij Gotowa → to samo zlecenie; zakończ znów = znów brak terminu', () => {
+  const { jobs, last } = lastJob('EFA-INS-007');
   const store = { 'oest.ppm.done': JSON.stringify({ 'EFA-INS-007': [jobs[jobs.length - 2].due] }) };
   const r = loadAt(last, store), t = r.P.byId('EFA-INS-007');
-  const d = new Date(last + 'T00:00:00'); d.setDate(d.getDate() + 7);
   r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
-  assert.strictEqual(r.due(t), r.P.iso(d));
+  assert.strictEqual(r.P.due(t), null);
   const was = r.P.stage(t); r.P.setDue(t, was.period); r.P.setStage(t, { s: 'prog', manual: true }); // jak unready() w inspekcje/index.html
   assert.strictEqual(r.due(t), last);
   r.P.setStage(t, { s: 'done' }); r.P.close(t, last);
-  assert.strictEqual(r.due(t), r.P.iso(d));
+  assert.strictEqual(r.P.due(t), null);
+});
+test('każda karta z Vantify: po zakończeniu wszystkich zleceń brak terminu i brak dat w kalendarzu', () => {
+  const w0 = load({});
+  for (const [id, jobs] of Object.entries(w0.OEST_VANTIFY.jobs)) {
+    const last = jobs[jobs.length - 1].due, store = { 'oest.ppm.done': JSON.stringify({ [id]: [last] }), 'oest.ppm.due': JSON.stringify({ [id]: '2027-01-15' }) };
+    const r = loadAt(last, store), t = r.P.byId(id);
+    r.P.close(t, last);
+    assert.strictEqual(r.P.due(t), null, id);
+    assert.strictEqual(r.P.occurrences(t, '2026-01-01', '2027-12-31').length, 0, id);
+  }
+});
+test('karta bez zleceń Vantify: Update i częstotliwość działają jak dotąd', () => {
+  const store = {}, r = loadAt('2026-11-05', store), t = r.P.byId('s-fa');
+  assert.strictEqual(r.P.jobs(t).length, 0);
+  assert.strictEqual(r.P.due(t), null);
+  assert.strictEqual(r.P.endsText(null, t), 'No date – set Update');
+  r.P.setDue(t, '2026-11-20');
+  assert.strictEqual(r.due(t), '2026-11-20');
+  r.P.close(t, '2026-11-20');
+  assert.strictEqual(r.due(t), '2027-02-20');
 });

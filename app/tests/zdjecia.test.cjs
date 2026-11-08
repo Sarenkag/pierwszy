@@ -168,3 +168,70 @@ test('folder 200 MB, ostrzeżenia osobno od 100 MB (Grzegorz 05/11)', () => {
   assert.strictEqual(Z.cleanSettings({ warnMB: 'x' }).warnMB, 100);
   assert.strictEqual(Z.cleanSettings({ phoneLimitMB: 300, warnMB: 150 }).warnMB, 150);
 });
+
+// Audyt 06/11/2026: przerwana wysyłka nie może zrobić duplikatu na Dysku ani zostawić osieroconego pliku.
+function propDrive() {
+  const d = fakeDrive(); d.finds = 0;
+  d.upload = async (parent, name, blob, props) => { const id = 'u' + (d.files.size + 1); d.files.set(id, { parent, name, props }); return { id }; };
+  d.find = async (parent, name, props) => { d.finds++; for (const [id, f] of d.files) if (f.parent === parent && f.name === name && f.props && f.props.oestPhoto === props.oestPhoto) return { id }; return null; };
+  return d;
+}
+const photosOn = d => [...d.files.values()].filter(f => f.name); // pliki (foldery w fakeDrive mają tylko id)
+test('przerwana wysyłka (plik doszedł, apka nie zapisała driveId): ponowna próba bez duplikatu', async () => {
+  const { store, rows } = fakeStore();
+  await store.save({ size: MB }, { category: 'Flushing', code: 'TB', point: 'Kran 1', when: new Date(2026, 10, 8, 9, 0) });
+  const d = propDrive(), up = d.upload;
+  d.upload = async (...a) => { await up(...a); throw Error('NETWORK_LOST'); }; // plik jest na Dysku, odpowiedź nie wróciła
+  await assert.rejects(store.sync(d));
+  const r1 = [...rows.values()][0];
+  assert.strictEqual(r1.driveId, '');
+  assert.strictEqual(r1.upTry, true);
+  d.upload = up;
+  const res = await store.sync(d);
+  assert.strictEqual(res.sent, 1);
+  assert.strictEqual(photosOn(d).length, 1, 'na Dysku jeden plik, nie dwa');
+  const r2 = [...rows.values()][0];
+  assert.strictEqual(r2.driveId, [...d.files.entries()].find(([, f]) => f.name)[0]);
+  assert.strictEqual(r2.upTry, false);
+});
+test('przerwana wysyłka, plik NIE doszedł: ponowna próba wysyła go normalnie', async () => {
+  const { store, rows } = fakeStore();
+  await store.save({ size: MB }, { category: 'ATS', code: 'ATS-1', when: new Date(2026, 10, 8, 9, 0) });
+  const d = propDrive(), up = d.upload;
+  d.upload = async () => { throw Error('NETWORK_LOST'); };
+  await assert.rejects(store.sync(d));
+  d.upload = up;
+  assert.strictEqual((await store.sync(d)).sent, 1);
+  assert.strictEqual(photosOn(d).length, 1);
+  assert.ok([...rows.values()][0].driveId);
+});
+test('dwa zdjęcia o tej samej nazwie (ta sama sekunda): każde osobno na Dysku, wyszukiwanie po id zdjęcia', async () => {
+  const { store } = fakeStore();
+  const when = new Date(2026, 10, 8, 9, 0, 0);
+  await store.save({ size: MB }, { category: 'Flushing', code: 'TB', point: 'Kran 1', when });
+  await store.save({ size: MB }, { category: 'Flushing', code: 'TB', point: 'Kran 1', when });
+  const d = propDrive(), up = d.upload; let n = 0;
+  d.upload = async (...a) => { const r = await up(...a); if (++n === 1) throw Error('NETWORK_LOST'); return r; };
+  await assert.rejects(store.sync(d));
+  assert.strictEqual((await store.sync(d)).sent, 2);
+  const f = photosOn(d);
+  assert.strictEqual(f.length, 2);
+  assert.strictEqual(f[0].name, f[1].name);
+  assert.notStrictEqual(f[0].props.oestPhoto, f[1].props.oestPhoto);
+});
+test('zwykła wysyłka nie robi dodatkowego zapytania na Dysku', async () => {
+  const { store } = fakeStore();
+  for (let i = 0; i < 3; i++) await store.save({ size: MB }, { category: 'ATS', code: 'ATS-' + i, when: new Date(2026, 10, 8, 9, i) });
+  const d = propDrive();
+  assert.strictEqual((await store.sync(d)).sent, 3);
+  assert.strictEqual(d.finds, 0);
+});
+test('zdjęcie usunięte w trakcie wysyłki: plik zdjęty z Dysku (bez osieroconego pliku)', async () => {
+  const { store, rows } = fakeStore();
+  const s = await store.save({ size: MB }, { category: 'ATS', code: 'ATS-1', when: new Date(2026, 10, 8, 9, 0) });
+  const d = propDrive(), up = d.upload;
+  d.upload = async (...a) => { const r = await up(...a); await store.remove(s.id); return r; };
+  assert.strictEqual((await store.sync(d)).sent, 0);
+  assert.strictEqual(photosOn(d).length, 0);
+  assert.strictEqual(rows.size, 0);
+});
