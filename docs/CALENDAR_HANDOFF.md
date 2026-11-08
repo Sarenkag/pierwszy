@@ -2,6 +2,8 @@
 
 ## Agreed scope
 
+**Change 08/11/2026 (owner decision):** the exact-name `OEST PPM` restriction is removed. The user selects any Google calendar they own on the phone (his is `Smart Managed Solutions`). Selection, ownership (CAL_ACCESS_OWNER), `com.google` account type, binding and per-event markers still apply; the app only touches its own marked events. Shift markers stay OFF by default. Text below that mentions `OEST PPM` describes the original scope.
+
 Android CalendarContract, no OAuth or Calendar API and no new dependencies. The user creates a **private, unshared Google calendar named exactly `OEST PPM`**; the app selects it. Android owns Google synchronization. No inspection-engine, PPM strip, CI or signing changes.
 
 `codex/kalendarz` starts at `codex/handover`; the PR to main therefore includes its unmerged ancestor. Calendar-only review: compare against `codex/handover`. Do not merge automatically.
