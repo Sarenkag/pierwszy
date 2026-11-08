@@ -26,6 +26,8 @@
 - **PROD-024:** Weekly Flushing: pełny formularz Word z budynkiem, pięcioma kolumnami tygodni, datą i Yes wyłącznie w wybranym tygodniu, zdjęciami przy kranach; tydzień `W1–W5` wybiera **użytkownik**, a aplikacja nie wylicza go automatycznie z daty; referencyjne liczności TA12, TB20, Pavilion2. Test musi oddać faktyczny kontekst, nie tylko istnienie dokumentu.
 - **PROD-025:** „Wyślij” **wyłącznie wysyła**; nie kasuje raportu, zdjęć ani historii. Odbiorcy: sp (prywatny), sm (firmowy, domyślny), se (inżynier), sg (manager), także wiele jednocześnie; prywatny z `profile.privateEmail`; Reactive wyłącznie firmowy zgodnie z ustaleniami.
 - **PROD-026:** zanim UI ogłosi sukces wysyłki lub połączenia Google, zweryfikuj rzeczywisty rezultat; przy niejednoznacznym wyniku Gmaila nie ponawiaj automatycznie w sposób narażający na duplikaty. Istniejąca kolejka/statusy i `moduly/wysylka` są punktem integracji.
+- **PROD-027 (Grzegorz 08/11/2026):** raporty na Dysk i archiwum w telefonie. Mail = Word + PDF (bez zmian). Dysk = **tylko Word**, folder `OEST Raporty / budynek / rodzaj`, jeden plik na raport („KOD DDMMRRRR”); ponowne Wyślij albo Update **nadpisuje** ten sam plik (na Dysku zawsze ostatnia wersja). Telefon: raporty bez limitu dni; po 200 MB znikają najstarsze i tylko te z aktualną kopią na Dysku, ostrzeżenie od 100 MB. Przeglądarka w klocku „Raporty”: lista, szukanie, podgląd ze zdjęciami, Wyślij do wybranych, Otwórz na Dysku.
+- **PROD-028 (Grzegorz 08/11/2026):** „Odzyskaj do edycji” – raport wraca jako **zwykły klocek inspekcji w klocku „Raporty”** (nie na głównej liście) z fioletową pigułką **„Odzyskana”** (szósty tryb pigułki, ten sam kształt). Edycja nie zmienia listy PPM, terminu ani daty raportu. Obok „Wyślij” przycisk **„Update”**: zapis w telefonie i nadpisanie Worda na Dysku, **bez maila**; „Wyślij” wysyła mail. Dopisek „Updated dd/mm/rrrr” w raporcie jest opcjonalny (przełącznik przy Imię/Data), **domyślnie wyłączony**. Odzyskać można raporty wysłane od wersji z odzyskiwaniem (zapis inspekcji przy raporcie).
 
 ## Pozostałe funkcje i przyszłość
 
@@ -50,6 +52,8 @@
 - PROD-020/021/022 → `app/tests/zdjecia.test.cjs` + testy rzeczywistych fotografii na urządzeniu.
 - PROD-023/024 → `app/tests/raport-ui-check.cjs`, `raport-rozmiar-ui-check.cjs`, `flush.test.cjs`, wizualna/tekstowa zgodność PDF/DOCX.
 - PROD-025/026 → `app/tests/wysylka-adresaci.test.cjs` + test integracyjny kolejki i potwierdzona wysyłka.
+- PROD-027 → `app/tests/raporty.test.cjs`, `raporty-wysylka.test.cjs`, `raporty-folder.test.cjs`, `raporty-przegladarka-ui-check.cjs` + sprawdzenie na prawdziwym Dysku (jeszcze niewykonane).
+- PROD-028 → `app/tests/odzyskana-ui-check.cjs`, `odzyskana-ppm.test.cjs`, `raporty.test.cjs` (2c), `raporty-wysylka.test.cjs` (2c), `pigulka-statusu-ui-check.cjs` + Pixel 8 Pro (jeszcze niewykonane).
 - PROD-015 → test end-to-end Back i PL/EN (docelowy; nie twierdzić, że już istnieje).
 - ARCH/REUSE/UX/DATA/QG → `docs/ARCHITECTURE.md`, `docs/DESIGN-SYSTEM.md`, `docs/QUALITY.md`.
 

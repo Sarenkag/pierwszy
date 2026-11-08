@@ -158,6 +158,38 @@ window.OEST_PPM = {
 // localStorage "oest.ppm.due" = { id: "RRRR-MM-DD" } — najbliższy termin. Update ustawia go ręcznie,
 // wysłanie raportu zamyka bieżący okres: termin przesuwa się o najkrótszą częstotliwość.
 (function (P) {
+  // Odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026): edycja kopii wysłanego raportu nie zmienia listy PPM –
+  // terminu, etapu klocka ani ⚙ wysyłki tej karty. P.sandbox(id): od tej chwili zapisy PPM na tej stronie idą tylko
+  // do pamięci (telefon bez zmian), a karta id zaczyna bez etapu (pigułkę pokazuje strona: „Odzyskana”).
+  // Tylko wpis karty id idzie do pamięci; zapisy innych kart (np. potwierdzenie wysłania zaległego raportu przez kolejkę) trafiają do telefonu jak zwykle (uwaga Codex #101).
+  var box = null, boxId = "";
+  function obj(raw) { var a = null; try { a = JSON.parse(raw || "null"); } catch (e) {} return a && typeof a === "object" && !Array.isArray(a) ? a : null; }
+  var LS = {
+    getItem: function (k) {
+      var raw = localStorage.getItem(k);
+      if (!box || !Object.prototype.hasOwnProperty.call(box, k)) return raw;
+      var a = obj(raw) || {};
+      if (box[k] === undefined) delete a[boxId]; else a[boxId] = box[k];
+      return JSON.stringify(a);
+    },
+    setItem: function (k, v) {
+      if (!box) { localStorage.setItem(k, v); return; }
+      var a = obj(v); if (!a) return; // mapy PPM to zawsze obiekty { id: … }
+      box[k] = a[boxId];
+      var real = obj(localStorage.getItem(k)) || {};
+      if (Object.prototype.hasOwnProperty.call(real, boxId)) a[boxId] = real[boxId]; else delete a[boxId];
+      localStorage.setItem(k, JSON.stringify(a));
+    }
+  };
+  P.sandbox = function (id, needs) {
+    box = {}; boxId = id;
+    // odzyskana zaczyna bez etapu i bez ręcznego „Nie rozpoczęta”; termin, zakończone okresy i ⚙ – kopia z telefonu
+    box["oest.ppm.stage"] = undefined; box["oest.ppm.unstarted"] = undefined;
+    ["oest.ppm.due", "oest.ppm.done", "oest.ppm.needs"].forEach(function (k) { var a = obj(localStorage.getItem(k)); if (a && Object.prototype.hasOwnProperty.call(a, id)) box[k] = a[id]; });
+    // ustawienia pytań/zdjęć zapisane z odzyskaną inspekcją wygrywają z bieżącymi ustawieniami karty (uwaga Codex #101)
+    if (needs && typeof needs === "object" && !Array.isArray(needs)) box["oest.ppm.needs"] = Object.assign({}, needs);
+  };
+  P.sandboxed = function () { return !!box; };
   function pad(n) { return String(n).padStart(2, "0"); }
   function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function parse(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -173,14 +205,14 @@ window.OEST_PPM = {
     "ats": ["014", "015", "016", "017", "018"], "flush": ["004", "012", "026"], "wtemp": ["002", "010", "024"], "spa-daily": ["009"], "spa-weekly": ["008"],
     "wfeature": ["007"], "lighting": ["022"], "plant-weekly": ["021"], "plant-room": ["020"], "meters": ["023"] };
   function all() {
-    var a; try { a = JSON.parse(localStorage.getItem("oest.ppm.due") || "{}") || {}; } catch (e) { return {}; }
+    var a; try { a = JSON.parse(LS.getItem("oest.ppm.due") || "{}") || {}; } catch (e) { return {}; }
     var moved = false;
     Object.keys(OLD).forEach(function (k) {
       if (!a[k]) return;
       OLD[k].forEach(function (n) { var id = "EFA-INS-" + n; if (!a[id]) a[id] = a[k]; });
       delete a[k]; moved = true;
     });
-    if (moved) try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {}
+    if (moved) try { LS.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {}
     return a;
   }
   // Zlecenia z Vantify (vantify-plan.js) – Grzegorz 05/11/2026: terminy DOKŁADNIE jak w pliku Vantify.
@@ -195,18 +227,18 @@ window.OEST_PPM = {
   // żeby rozpoczęcie następnej inspekcji nie otwierało z powrotem poprzedniego zlecenia. Zapis/cofnięcie: P.setStage.
   var DK = "oest.ppm.done";
   function doneAll() {
-    var a = null; try { a = JSON.parse(localStorage.getItem(DK) || "null"); } catch (e) {}
+    var a = null; try { a = JSON.parse(LS.getItem(DK) || "null"); } catch (e) {}
     if (a && typeof a === "object") return a;
     a = {}; // pierwsze uruchomienie: zakończone etapy zapisane wcześniej w telefonie
-    var st = {}; try { st = JSON.parse(localStorage.getItem("oest.ppm.stage") || "{}") || {}; } catch (e) {}
+    var st = {}; try { st = JSON.parse(LS.getItem("oest.ppm.stage") || "{}") || {}; } catch (e) {}
     Object.keys(st).forEach(function (id) { var r = st[id]; if (r && r.period && (r.s === "queued" || r.s === "sent" || r.s === "done")) a[id] = [r.period]; });
-    try { localStorage.setItem(DK, JSON.stringify(a)); } catch (e) {}
+    try { LS.setItem(DK, JSON.stringify(a)); } catch (e) {}
     return a;
   }
   P._done = function (id, period, on) {
     if (!period) return; var a = doneAll(), l = (a[id] || []).filter(function (x) { return x !== period; });
     if (on) l.push(period); l.sort(); if (l.length > 60) l = l.slice(-60); if (l.length) a[id] = l; else delete a[id];
-    try { localStorage.setItem(DK, JSON.stringify(a)); } catch (e) {}
+    try { LS.setItem(DK, JSON.stringify(a)); } catch (e) {}
   };
   function doneFor(id, due) { return (doneAll()[id] || []).some(function (p) { return p >= due; }); }
   function vantifyDue(id) {
@@ -217,7 +249,7 @@ window.OEST_PPM = {
     for (; i < j.length; i++) if (!doneFor(id, j[i].due)) return j[i].due;
     return ""; // wszystkie zlecenia z pliku zrobione – dalej termin z apki (częstotliwość)
   }
-  function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { localStorage.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
+  function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { LS.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
   P.byId = function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0] || null; };
   P.due = function (t) {
@@ -281,7 +313,7 @@ window.OEST_PPM = {
   // „Wyślij” nie zamyka inspekcji; queued/sent w s ustawia dopiero „Zakończ inspekcję”.
   // period = termin (RRRR-MM-DD), którego dotyczy wpis. Wpis „zamyka” okres, dopóki nie minie ten termin (albo dzień wysłania, jeśli po terminie).
   var SK = "oest.ppm.stage";
-  function stages() { try { return JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
+  function stages() { try { return JSON.parse(LS.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
   function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
   function alive(r) { if (!r || !r.s) return false; if (r.s === "prog" || r.s === "hold" || r.s === "queued") return true; /* w kolejce: aż raport faktycznie wyjdzie */ var end = r.period && r.period > r.day ? r.period : r.day; return !!end && today0() <= end; }
   P.stage = function (t) { var r = stages()[t.id]; return alive(r) ? r : null; };
@@ -291,7 +323,7 @@ window.OEST_PPM = {
     if (patch === null) { if (CL(r)) P._done(t.id, r.period, false); delete a[t.id]; } // cofnięcie zakończenia: zlecenie znów otwarte
     else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r;
       if (CL(r)) P._done(t.id, r.period, true); else if (CL(was)) P._done(t.id, was.period, false); }
-    try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {}
+    try { LS.setItem(SK, JSON.stringify(a)); } catch (e) {}
     if (patch !== null) P.setUnstarted(t, null); // każdy ustawiony etap kończy ręczne „Nie rozpoczęta”
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
@@ -300,19 +332,20 @@ window.OEST_PPM = {
   // albo nowe zdjęcie ponad liczbę z chwili ustawienia. Szkic i zdjęcia zostają bez zmian.
   // localStorage "oest.ppm.unstarted" = { id: { photos, sheet, used, ok } }
   var UK = "oest.ppm.unstarted";
-  function unstartedAll() { try { return JSON.parse(localStorage.getItem(UK) || "{}") || {}; } catch (e) { return {}; } }
+  function unstartedAll() { try { return JSON.parse(LS.getItem(UK) || "{}") || {}; } catch (e) { return {}; } }
   P.unstarted = function (t) { return unstartedAll()[t.id] || null; };
   P.setUnstarted = function (t, counts) {
     var a = unstartedAll(); if (!counts && !a[t.id]) return;
     if (counts) a[t.id] = { photos: counts.photos || 0, sheet: counts.sheet || 0, used: counts.used || 0, ok: counts.ok || 0 }; else delete a[t.id];
-    try { localStorage.setItem(UK, JSON.stringify(a)); } catch (e) {}
+    try { LS.setItem(UK, JSON.stringify(a)); } catch (e) {}
   };
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
   // qid = id raportu w kolejce: inspekcja otwarta po „Wyślij” (s = prog/hold, mail = queued) dostaje ✉ wysłany tylko za swój ostatni raport
+  // Potwierdzenie z kolejki dotyczy zwykłego raportu: zapis prosto do telefonu, z pominięciem kopii odzyskanej inspekcji (uwaga Codex #101)
   P.markSent = function (id, qid) {
-    var t = P.byId(id); if (!t) return; var a = stages(), r = a[id]; if (!r) return;
+    var t = P.byId(id); if (!t) return; var a; try { a = JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { a = {}; } var r = a[id]; if (!r) return;
     if ((r.s === "queued" || r.s === "sent") && (!qid || !r.mailId || r.mailId === qid)) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ }
     else if (!(r.mail && (!qid || !r.mailId || r.mailId === qid))) return;
     if (r.mail && (!qid || !r.mailId || r.mailId === qid)) { r.mail = "sent"; r.mailSentAt = Date.now(); }
@@ -331,7 +364,7 @@ window.OEST_PPM = {
   // localStorage "oest.ppm.needs" = { id: { q: pytania aktywne, p: zdjęcia wymagane, f: zdjęcie formularza wymagane } }
   // Każda inspekcja ma pytania, ale nie w każdej są aktywne; włącza się je w inspekcji. Nieaktywne → szara ikonka na klocku.
   var NK = "oest.ppm.needs";
-  function needsAll() { try { return JSON.parse(localStorage.getItem(NK) || "{}") || {}; } catch (e) { return {}; } }
+  function needsAll() { try { return JSON.parse(LS.getItem(NK) || "{}") || {}; } catch (e) { return {}; } }
   // Ustawienia wysyłki (⚙ obok Wyślij, Grzegorz 04/11 11:33–11:37): f zdjęcie formularza, q pytania (w Flushing/AOV = formularz elektroniczny),
   // p zdjęcia ogólne, t zdjęcia do pytań (przy kranie / punkcie). Wysyłka (11:34): do sp mój prywatny (05/11) / sm mój firmowy / se inżyniera / sg managera,
   // format xp PDF / xw Word, one = jeden dokument (false = osobne pliki). Jedno miejsce dla wszystkich inspekcji, pamiętane dla każdej.
@@ -342,7 +375,7 @@ window.OEST_PPM = {
   P.needs = function (t) { return Object.assign(P.needsDefault(t), needsAll()[t.id] || {}); };
   P.setNeeds = function (t, patch) {
     var a = needsAll(); a[t.id] = Object.assign(P.needs(t), patch);
-    try { localStorage.setItem(NK, JSON.stringify(a)); } catch (e) {}
+    try { LS.setItem(NK, JSON.stringify(a)); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
   // krótka nazwa na klocek (pełna zostaje w raporcie) + budynek ze znaczka w nawiasie

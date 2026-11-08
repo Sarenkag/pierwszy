@@ -11,7 +11,7 @@ hm-st .l, pasek wysyłki .n i) są podpięte pod ten sam wzór, więc nic nie wy
   OESTZnacznik.licznik(3, "red"|"orange"|"accent"|"dashed")  → '<span class="oest-n">3</span>' (0 = nic)
   OESTZnacznik.lampka("on"|"mid"|"off"|"na")                  → '<i class="oest-l on"></i>'
   OESTZnacznik.ikona("📷", 3, tone)                            → '<span class="oest-ic">📷 3</span>'
-  OESTZnacznik.status("zalegla"|"nierozpoczeta"|"wtrakcie"|"wstrzymana"|"gotowa") → '<span class="oest-st zalegla">Zaległa</span>'
+  OESTZnacznik.status("zalegla"|"nierozpoczeta"|"wtrakcie"|"wstrzymana"|"gotowa"|"odzyskana") → '<span class="oest-st zalegla">Zaległa</span>'
 ```
 
 ## Pigułka statusu – `OESTZnacznik.status(tryb)` (zatwierdzona przez Grzegorza 07/11/2026 18:29)
@@ -34,6 +34,7 @@ Zmienia się tylko kolor i napis. Nie nadpisywać tych wartości na ekranach –
 | `wtrakcie` | W trakcie | In progress | żółty #f0c75e |
 | `wstrzymana` | Wstrzymana | On hold | niebieski #79b8ff |
 | `gotowa` | Gotowa | Ready | zielony #00d84a |
+| `odzyskana` | Odzyskana | Recovered | fioletowy #a35bff (Grzegorz 08/11/2026; ten sam fiolet co w gradiencie apki) – inspekcja odzyskana z raportu, tylko w klocku Raporty |
 
 Kolory to te same, które już są w klocku (moduly/klocek, TONE). PL/EN: ta sama szerokość, nic nie skacze.
 Test: `app/tests/pigulka-statusu-ui-check.cjs` (wymagany w Quality Gate).

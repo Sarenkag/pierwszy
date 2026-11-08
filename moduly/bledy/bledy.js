@@ -36,6 +36,9 @@
     INDEXEDDB_BLOCKED: ['Pamięć apki jest zablokowana przez inne okno. Zamknij je i spróbuj ponownie.', 'App storage is blocked by another window. Close it and try again.'],
     SETTINGS_LIMIT: ['Ustawienia są za duże do zapisania.', 'Settings are too large to save.'],
     DRAFT_INVALID: ['Szkic jest uszkodzony.', 'The draft is damaged.'],
+    REPORT_DOCX: ['Nie powstał Word raportu. Nic nie zapisano.', 'The Word report was not created. Nothing was saved.'],
+    REPORT_MISSING: ['Tego raportu nie ma już w telefonie.', 'This report is no longer on the phone.'],
+    REPORT_NO_DATA: ['Ten raport nie ma zapisanej inspekcji (wysłany przed wersją z odzyskiwaniem). Można go obejrzeć i wysłać.', 'This report has no saved inspection (sent before recovery existed). You can view and send it.'],
     // konto / kopie
     ACCOUNT_REQUIRED: ['Najpierw zaloguj się w apce.', 'Sign in to the app first.'],
     ACCOUNT_CHANGED: ['Zmieniło się konto w trakcie. Nic nie zapisano.', 'The account changed meanwhile. Nothing was saved.'],

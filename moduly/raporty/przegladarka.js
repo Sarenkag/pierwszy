@@ -6,7 +6,9 @@
  *    (prywatny / firmowy / inżynier / manager) i „Wyślij” – mail Word + PDF przez kolejkę (moduly/wysylka),
  *    bez ponownego zapisu do archiwum i bez zmiany pliku na Dysku,
  *  - „Otwórz na Dysku”, gdy raport już tam jest.
- * Odzyskiwanie do edycji (pigułka „Odzyskana”, Update) to etap 2c.
+ *  - „Odzyskaj do edycji” (etap 2c): raport z zapisaną inspekcją wraca jako zwykły klocek inspekcji (moduly/klocek)
+ *    z fioletową pigułką „Odzyskana” na górze tego klocka (nie na głównej liście); stuknięcie otwiera inspekcję
+ *    (inspekcje/index.html#rec=id) z edycją, Wyślij i Update.
  *
  * OESTRaportyUI.mount(element)  – rysuje (albo odświeża po zmianie języka) przeglądarkę w podanym elemencie;
  *   to samo robi zdarzenie window „oest:raporty-ui” z elementem w detail (tak woła ekran Ustawień).
@@ -23,7 +25,9 @@
     ".rpt-view p{margin:0 0 6px}.rpt-meta{color:var(--muted);font-size:12.5px;margin:0 0 8px}" +
     ".rpt-pics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 0}.rpt-pics img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}" +
     ".rpt-to{display:flex;flex-direction:column;gap:8px;margin:6px 0 0}.rpt-to label{display:flex;align-items:center;gap:10px;font-size:14px}.rpt-to small{color:var(--muted)}" +
-    ".rpt-drive{display:inline-block;margin:6px 0 0;font-size:14px;color:var(--accent,#7c84ff)}";
+    ".rpt-drive{display:inline-block;margin:6px 0 0;font-size:14px;color:var(--accent,#7c84ff)}" +
+    ".rpt-rec{display:flex;flex-direction:column;gap:10px;margin:0 0 14px}.rpt-rec[hidden]{display:none}.rpt-sub{font-size:13px;font-weight:700;color:var(--muted);margin:0 0 -2px}" +
+    ".rpt-recb{display:block;width:100%;margin:10px 0 0}";
   function css() { if (document.getElementById("oest-rpt-css")) return; var s = document.createElement("style"); s.id = "oest-rpt-css"; s.textContent = CSS; document.head.appendChild(s); }
 
   var state = { q: "", b: "" };
@@ -34,10 +38,11 @@
     var opts = [["", T("Wszystkie", "All")], ["Tower A", "Tower A"], ["Tower B", "Tower B"], ["Pavilion", "Pavilion"], ["General", T("Ogólne", "General")], ["Reactive", "Reactive"]];
     if (!el.__rpt) {
       el.__rpt = true;
-      el.innerHTML = '<div class="rpt-find"><input type="search" id="rptQ" autocomplete="off"><select id="rptB"></select></div><div class="rpt-list" id="rptList"></div>';
+      el.innerHTML = '<div class="rpt-rec" id="rptRec" hidden><div class="rpt-sub" id="rptRecT"></div><div class="rpt-list" id="rptRecL"></div></div><div class="rpt-find"><input type="search" id="rptQ" autocomplete="off"><select id="rptB"></select></div><div class="rpt-list" id="rptList"></div>';
       el.querySelector("#rptQ").addEventListener("input", function (e) { state.q = e.target.value; list(el); });
       el.querySelector("#rptB").addEventListener("change", function (e) { state.b = e.target.value; list(el); });
       el.querySelector("#rptList").addEventListener("click", function (e) { var b = e.target.closest("[data-rid]"); if (b) show(b.getAttribute("data-rid")); });
+      el.querySelector("#rptRecL").addEventListener("click", function (e) { var b = e.target.closest("[data-rec]"); if (b) openRec(b.getAttribute("data-rec")); });
       if (R.onChange) R.onChange(function () { if (document.body.contains(el)) list(el); });
       // szukanie to nie zmiana ustawień: zdarzenia pól przeglądarki nie wychodzą do formularza ekranu (bez „niezapisanych zmian”)
       ["input", "change"].forEach(function (t) { el.addEventListener(t, function (e) { e.stopPropagation(); }); });
@@ -47,11 +52,32 @@
     q.placeholder = T("Kod, budynek, data…", "Code, building, date…"); q.setAttribute("aria-label", q.placeholder); q.value = state.q;
     b.innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === state.b ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("");
     b.setAttribute("aria-label", T("Budynek", "Building"));
+    el.querySelector("#rptRecT").textContent = T("Odzyskane inspekcje", "Recovered inspections");
     list(el);
+  }
+  // odzyskana inspekcja jako zwykły klocek inspekcji: dane z zapisu inspekcji w raporcie (bez nowego układu)
+  function recCard(r) {
+    var m = r.meta || {}, c = m.card || {}, s = r.snap || {}, f = s.fields || {}; // c: opis klocka zapisany przez apkę przy wysyłce
+    var st = s.states || [], used = st.filter(function (x) { return x !== "na"; }).length, ok = st.filter(function (x) { return x === "ok"; }).length;
+    var ph = s.photos || [], dz = /^(\d{4})-(\d{2})-(\d{2})$/.exec(f.dzien || "");
+    return w.OESTKlocek.inspekcja({ data: { rec: r.id }, color: "#a35bff", name: c.name || m.code || r.name, status: "odzyskana",
+      loc: c.loc || "", freq: c.freq || "", form: ph.some(function (p) { return p.sheet; }) ? "ok" : "brak",
+      due: dz ? new Date(+dz[1], +dz[2] - 1, +dz[3]) : null, dueDone: true, photos: ph.filter(function (p) { return !p.sheet; }).length,
+      qa: used ? { ok: ok, all: used } : null, issues: st.filter(function (x) { return x === "fail"; }).length, go: T("Otwórz", "Open") });
+  }
+  function openRec(id) {
+    // Wstecz z odzyskanej inspekcji wraca tutaj (inspekcje/index.html → #settings/reports)
+    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#settings/reports" })); } catch (e) {}
+    location.href = "inspekcje/index.html#rec=" + encodeURIComponent(id);
   }
   var seq = 0;
   function list(el) {
     var R = w.OESTRaporty, box = el.querySelector("#rptList"), my = ++seq;
+    if (R.recovered) R.recovered().then(function (rs) {
+      if (my !== seq) return;
+      el.querySelector("#rptRec").hidden = !rs.length;
+      el.querySelector("#rptRecL").innerHTML = rs.map(recCard).join("");
+    }).catch(function () {});
     R.list().then(function (all) {
       if (my !== seq) return;
       var hit = R.find(all, state.q, { building: state.b });
@@ -79,14 +105,20 @@
       var pics = pv ? pv.images.map(function (i) { var u = URL.createObjectURL(new Blob([i.bytes], { type: i.type })); urls.push(u); return '<img src="' + u + '" alt="">'; }).join("") : "";
       node.innerHTML = '<div class="rpt-meta">' + esc((r.folder || []).join(" · ") + " · " + T("wysłany ", "sent ") + R.day(r) + " · Word + PDF") + "</div>" +
         '<div class="rpt-view">' + (pv ? pv.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("") + (pics ? '<div class="rpt-pics">' + pics + "</div>" : "") : "<p>" + esc(T("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")) + "</p>") + "</div>" +
+        (r.snap && !reactive ? '<button type="button" class="btn rpt-recb" data-a="rec">' + esc(r.rec ? T("Otwórz odzyskaną inspekcję", "Open recovered inspection") : T("Odzyskaj do edycji", "Recover for editing")) + "</button>" : "") +
         (r.driveId ? '<a class="rpt-drive" target="_blank" rel="noopener" href="https://drive.google.com/file/d/' + encodeURIComponent(r.driveId) + '/view">' + esc(T("Otwórz na Dysku ›", "Open on Drive ›")) + "</a>" : "") +
         '<div class="rpt-to">' +
         cb("sp", T("Mój prywatny e-mail", "My private email"), to.priv, T("brak adresu w Mój profil", "no address in My Profile")) +
         cb("sm", T("Mój firmowy e-mail", "My work email"), to.me, T("brak adresu w Mój profil", "no address in My Profile")) +
         cb("se", T("Inżynier", "Engineer"), to.eng, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
         cb("sg", T("Manager", "Manager"), to.man, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) + "</div>";
+      var wantRec = false, rb = node.querySelector("[data-a=rec]");
+      if (rb) rb.addEventListener("click", function () { wantRec = true; }); // okienko samo się zamyka (data-a), potem otwieramy inspekcję
       return P.ask({ title: r.name, node: node, ok: T("Wyślij", "Send"), cancel: T("Zamknij", "Close") }).then(function (ok) {
         urls.forEach(function (u) { URL.revokeObjectURL(u); });
+        if (wantRec) return R.setRec(r.id, true).then(function () { openRec(r.id); }, function (e) {
+          return P.ask({ title: T("Nie odzyskano", "Not recovered"), text: w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e), alert: true });
+        });
         if (!ok) return;
         var sel = {}; node.querySelectorAll("[data-to]:checked").forEach(function (c) { sel[c.getAttribute("data-to")] = true; });
         if (reactive) sel = { sm: !!sel.sm };

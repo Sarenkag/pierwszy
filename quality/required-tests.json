@@ -83,6 +83,9 @@
     },
     {
       "file": "app/tests/raporty-folder.test.cjs"
+    },
+    {
+      "file": "app/tests/odzyskana-ppm.test.cjs"
     }
   ],
   "browser": [
@@ -183,6 +186,11 @@
     {
       "file": "app/tests/raporty-przegladarka-ui-check.cjs",
       "passMarker": "RAPORTY PRZEGLĄDARKA PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/odzyskana-ui-check.cjs",
+      "passMarker": "ODZYSKANA PASS",
       "timeoutSec": 900
     }
   ],
