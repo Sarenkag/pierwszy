@@ -13,9 +13,11 @@ const server = http.createServer((req, res) => {
   const file = p === root ? path.join(root, 'index.html') : p;
   fs.readFile(file, (e, b) => { if (e) { res.writeHead(404).end(); return; } res.setHeader('Content-Type', TYPES[path.extname(file)] || 'application/octet-stream'); res.end(b); });
 });
-const PASEK = 48, MAX_ODSTEP = 12;
-// 412×915 = Pixel 8 Pro w przeglądarce; 384×780 = Pixel 8 Pro w trybie „wysoka rozdzielczość” minus paski Androida – nadal bez przewijania
-const EKRANY = [{ width: 412, height: 915 }, { width: 384, height: 780 }];
+const PASEK_PRZEGLADARKA = 48, MAX_ODSTEP = 12;
+// 412×915 = Pixel 8 Pro w przeglądarce; 384×780 = Pixel 8 Pro w trybie „wysoka rozdzielczość” minus paski Androida – nadal bez przewijania;
+// 384×855 „apka” = ekran z zrzutu Grzegorza 08/11 01:25 (1344×2992, gęstość 3,5): pasek u góry 44 px, przyciski nawigacji na dole 44 px
+// i pasek wysyłki na dole (moduly/wysylka) – ten pasek pokazuje się tylko w apce, więc udajemy apkę (Capacitor.isNativePlatform)
+const EKRANY = [{ width: 412, height: 915 }, { width: 384, height: 780 }, { width: 384, height: 855, apka: true }];
 const fails = [], R = {};
 function check(ok, msg) { if (!ok) fails.push(msg); }
 
@@ -26,10 +28,12 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
   try {
     browser = await chromium.launch(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {});
     for (const vp of EKRANY) {
-      const c = await browser.newContext({ viewport: vp, hasTouch: true });
+      const PASEK = vp.apka ? 44 : PASEK_PRZEGLADARKA, DOL = vp.apka ? 44 : 0;
+      const c = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: true });
+      if (vp.apka) await c.addInitScript(() => { window.Capacitor = { isNativePlatform: () => true, Plugins: { App: { addListener() { return { remove() {} }; } } } }; });
       await c.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await c.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
-      await c.addInitScript(h => { const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', h + 'px'), true); if (!set()) new MutationObserver((m, o) => { if (set()) o.disconnect(); }).observe(document, { childList: true }); }, PASEK);
+      await c.addInitScript(([h, d]) => { const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', h + 'px'), document.documentElement.style.setProperty('--safe-area-inset-bottom', d + 'px'), true); if (!set()) new MutationObserver((m, o) => { if (set()) o.disconnect(); }).observe(document, { childList: true }); }, [PASEK, DOL]);
       const p = await c.newPage(); const errors = []; p.on('pageerror', e => errors.push(e.message));
       const setLang = l => p.evaluate(l => { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); }, l);
       const zmierz = () => p.evaluate(() => {
@@ -41,7 +45,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
           drvTxt: document.querySelector('#hmDrive span').textContent, phTxt: document.querySelector('#hmPhotos span').textContent,
           tiles: tiles.length, tilesDol: Math.round(Math.max(...tiles.map(b => b.bottom))), tileMinH: Math.round(Math.min(...tiles.map(b => b.height))),
           tileUciete: [...document.querySelectorAll('#hmTiles .tile')].some(e => e.scrollHeight > e.clientHeight + 1),
-          sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight, ih: innerHeight
+          pasekWysylki: (b => b && !b.hidden ? Math.round(b.getBoundingClientRect().top) : null)(document.querySelector('.oest-sbar')), sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight, ih: innerHeight
         };
       });
       await p.goto(url + 'index.html#home'); await p.waitForTimeout(700);
@@ -54,6 +58,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
         check(m.net.t === m.drv.t && m.drv.t === m.ph.t && !m.stPrzelewa, `${k}: Wi‑Fi / HDD / zdjęcia nie są w jednej linii (${m.net.t}/${m.drv.t}/${m.ph.t})`);
         check(/^HDD · /.test(m.drvTxt), `${k}: zamiast „HDD” jest „${m.drvTxt}”`);
         check(/^\d+(\.\d)?\/\d+MB$/.test(m.phTxt), `${k}: licznik zdjęć „${m.phTxt}” zamiast np. 13/200MB`);
+        if (vp.apka) check(m.pasekWysylki !== null && m.tilesDol <= m.pasekWysylki, `${k}: kafelki chowają się pod paskiem wysyłki (dół ${m.tilesDol}, pasek od ${m.pasekWysylki})`);
         check(m.tiles === 8 && m.tilesDol <= m.ih, `${k}: kafelki wychodzą poza ekran (dół ${m.tilesDol} / ${m.ih}, kafelków ${m.tiles})`);
         check(!m.tileUciete, `${k}: napis w kafelku ucięty (najniższy kafelek ${m.tileMinH} px)`);
         check(m.sh <= m.ih && m.bsh <= m.ih && m.wsh <= 0, `${k}: ekran da się przewinąć (${m.sh} px treści na ${m.ih} px)`);
@@ -72,7 +77,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
           const o = await p.evaluate(t => { const d = document.querySelector('#hmDrive span'), f = document.querySelector('#hmPhotos span'), n = document.querySelector('#hmNet span'); const a = [d.textContent, f.textContent, n.textContent]; d.textContent = t; f.textContent = '199/200MB'; n.textContent = 'Wi‑Fi'; const ok = d.scrollWidth <= d.clientWidth + 1; d.textContent = a[0]; f.textContent = a[1]; n.textContent = a[2]; return ok; }, t);
           check(o, `${k}: na Wi‑Fi napis „${t}” jest ucięty`);
         }
-        R[k] = { odstep: m.logo.t - PASEK, linia: m.st.h, hdd: m.drvTxt, zdjecia: m.phTxt, kafelekH: m.tileMinH, dolKafelkow: m.tilesDol, ekran: m.ih, tresc: m.sh };
+        R[k] = { odstep: m.logo.t - PASEK, pasekWysylki: m.pasekWysylki, linia: m.st.h, hdd: m.drvTxt, zdjecia: m.phTxt, kafelekH: m.tileMinH, dolKafelkow: m.tilesDol, ekran: m.ih, tresc: m.sh };
       }
       // zmiana PL ↔ EN nic nie przesuwa
       for (const x of ['logo', 'st', 'days']) check(w.pl[x].t === w.en[x].t && w.pl[x].h === w.en[x].h, `${vp.width}×${vp.height}: ${x} skacze przy zmianie języka`);
@@ -82,12 +87,12 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       // inne ekrany przewijają się dalej normalnie (blokada tylko na ekranie głównym)
       await p.goto(url + 'index.html#settings'); await p.waitForTimeout(500);
       const ust = await p.evaluate(() => { const s = getComputedStyle(document.querySelector('.wrap')); return s.overflowY + ' ' + s.paddingBottom; });
-      check(ust === 'visible 48px', `${vp.width}×${vp.height}: układ ekranu głównego został na Ustawieniach (${ust})`);
+      if (!vp.apka) check(ust === 'visible 48px', `${vp.width}×${vp.height}: układ ekranu głównego został na Ustawieniach (${ust})`);
       check(errors.length === 0, 'błędy JS: ' + errors.slice(0, 3).join(' | '));
       await c.close();
     }
   } finally { if (browser) await browser.close(); server.close(); }
   console.log('POMIARY ' + JSON.stringify(R));
   if (fails.length) { console.error('EKRAN GLOWNY UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
-  console.log(`EKRAN GLOWNY UI PASS: bez pustego miejsca pod paskiem, Wi‑Fi/HDD/zdjęcia w jednej linii, całość bez przewijania na ${EKRANY.map(v => v.width + '×' + v.height).join(' i ')}, PL/EN bez skoków.`);
+  console.log(`EKRAN GLOWNY UI PASS: bez pustego miejsca pod paskiem, Wi‑Fi/HDD/zdjęcia w jednej linii, całość bez przewijania na ${EKRANY.map(v => v.width + '×' + v.height + (v.apka ? ' (apka z paskiem wysyłki)' : '')).join(', ')}, PL/EN bez skoków.`);
 })().catch(e => { console.error(e); process.exitCode = 1; });
