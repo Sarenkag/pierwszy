@@ -212,8 +212,39 @@
       onChange: function () { listeners.forEach(function (f) { try { f(); } catch (e) {} }); try { win.dispatchEvent(new win.CustomEvent('oest:raporty')); } catch (e) {} }
     });
     store.onChange = function (f) { listeners.push(f); };
+    store.find = find; store.day = day; store.docxPreview = docxPreview;
     return store;
   }
 
-  return { createStore: createStore, createBrowser: createBrowser, plan: plan, stats: stats, safe: safe, LIMITS: LIMITS };
+  /* Przeglądarka raportów (etap 2b): szukanie po słowach w nazwie, kodzie, PPM, folderze (budynek / rodzaj) i dacie dd/mm/rrrr; filtr budynku. */
+  function day(r) {
+    var t = r.meta && r.meta.sentAt || Date.parse(r.updated) || 0, d = new Date(t);
+    if (!t) return '';
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  }
+  function find(recs, q, f) {
+    f = f || {};
+    var words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
+    return recs.filter(function (r) {
+      if (f.building && (r.folder || [])[0] !== f.building) return false;
+      var m = r.meta || {}, hay = [r.name, (r.folder || []).join(' '), m.code, m.ppm, day(r)].join(' ').toLowerCase();
+      return words.every(function (w) { return hay.indexOf(w) >= 0; });
+    });
+  }
+  /* Podgląd Worda bez nowych bibliotek: tekst akapitów (komórki tabeli w wierszu razem) i zdjęcia z word/media. Zip = PizZip (jest w apce). */
+  function docxPreview(bytes, Zip) {
+    var z = new Zip(bytes), f = z.file('word/document.xml'), xml = f ? f.asText() : '', ent = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+    function txt(x) { return (x.match(/<w:t[^>]*>[^<]*<\/w:t>/g) || []).map(function (t) { return t.replace(/<[^>]+>/g, ''); }).join('').replace(/&(amp|lt|gt|quot|apos);/g, function (_, k) { return ent[k]; }); }
+    var lines = [];
+    xml.replace(/<w:tr[ >][\s\S]*?<\/w:tr>|<w:p[ >][\s\S]*?<\/w:p>/g, function (blk) {
+      var t = /^<w:tr/.test(blk) ? (blk.match(/<w:tc[ >][\s\S]*?<\/w:tc>/g) || []).map(txt).filter(Boolean).join(' | ') : txt(blk);
+      t = t.replace(/\s+/g, ' ').trim(); if (t) lines.push(t); return '';
+    });
+    var types = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif' };
+    var images = z.file(/^word\/media\//).map(function (m) { var ext = (/\.([a-z]+)$/i.exec(m.name) || [])[1] || ''; return { name: m.name.replace(/^word\/media\//, ''), type: types[ext.toLowerCase()] || '', bytes: m.asUint8Array() }; })
+      .filter(function (i) { return i.type; }).sort(function (a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true }); });
+    return { lines: lines, images: images };
+  }
+
+  return { createStore: createStore, createBrowser: createBrowser, plan: plan, stats: stats, safe: safe, LIMITS: LIMITS, find: find, day: day, docxPreview: docxPreview };
 });

@@ -179,6 +179,11 @@
       "file": "app/tests/jezyk-profil-ui-check.cjs",
       "passMarker": "JĘZYK PROFIL PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/raporty-przegladarka-ui-check.cjs",
+      "passMarker": "RAPORTY PRZEGLĄDARKA PASS",
+      "timeoutSec": 900
     }
   ],
   "allowedSkips": []
