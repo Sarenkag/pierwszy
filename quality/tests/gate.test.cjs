@@ -223,9 +223,36 @@ test('Podsumowanie: analiza wpływu to tylko informacja – „POMINIĘTY (wpły
     'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
     'browser.json': JSON.stringify({ results: [{ id: 'app/tests/x-ui-check.cjs', status: 'PASS', seconds: 40, wczytane: ['index.html', 'nowy.js'] }, ...extra] }),
     'wplyw.json': JSON.stringify({ tryb: 'tylko-raport', status: 'OK', base: 'abc', pelna: false, powodyPelnej: [], zmiany: [{ plik: 'docs/a.md', klasa: 'dokumentacja', powod: 'nie trafia do apki' }], wybrane: [], pominiete: [{ test: 'app/tests/x-ui-check.cjs', powod: 'zmiana nie dotyczy stron apki' }], zaleznosci: { 'app/tests/x-ui-check.cjs': ['index.html'] } })
-  }); return run('summarize.cjs', [d]); };
+  }); write(d, { 'm.json': JSON.stringify({ node: [], browser: [{ file: 'app/tests/x-ui-check.cjs' }] }) }); return run('summarize.cjs', [d, path.join(d, 'm.json')]); };
   let r = res([]);
   assert.equal(r.code, 0, r.out); assert.match(r.out, /POMINIĘTY \(wpływ\)/); assert.match(r.out, /Rozbieżność mapy.*nowy\.js/s); assert.match(r.out, /byłyby pominięte: 40 s/);
   r = res([{ id: 'app/tests/y-ui-check.cjs', status: 'FAIL', seconds: 1 }]);
   assert.equal(r.code, 1, 'FAIL testu nadal blokuje, niezależnie od analizy wpływu');
+});
+
+// ---------- G2 naraz (szybkość, 07/11/2026): te same testy, ten sam wynik, testy mierzące czas zawsze same ----------
+const slow = (tag, ms) => `const fs=require('fs'),f=process.env.LOG;fs.appendFileSync(f,'start ${tag} '+Date.now()+'\\n');setTimeout(()=>{fs.appendFileSync(f,'end ${tag} '+Date.now()+'\\n');console.log('${tag} PASS')},${ms});`;
+function g2project() {
+  const m = { node: [], allowedSkips: [], browser: ['a', 'b', 'c'].map(x => ({ file: `app/tests/${x}-ui-check.cjs`, passMarker: `${x} PASS` })).concat([{ file: 'app/tests/czas-ui-check.cjs', passMarker: 'czas PASS', osobno: true }]) };
+  return project(m, { 'app/www/inspekcje/index.html': '', 'app/www/ppm.js': '', 'app/tests/a-ui-check.cjs': slow('a', 700), 'app/tests/b-ui-check.cjs': slow('b', 700), 'app/tests/c-ui-check.cjs': "process.exit(3)", 'app/tests/czas-ui-check.cjs': slow('czas', 300) });
+}
+const g2run = (d, args) => { const out = path.join(d, 'r-' + Date.now() + '.json'), LOG = path.join(d, 'log.txt'); fs.writeFileSync(LOG, ''); const p = spawnSync(process.execPath, [path.join(Q, 'run-gate.cjs'), '--root', d, '--part', 'browser', '--out', out, ...args], { encoding: 'utf8', env: { ...process.env, LOG } }); return { code: p.status, json: JSON.parse(fs.readFileSync(out, 'utf8')), log: fs.readFileSync(LOG, 'utf8').trim().split('\n').map(l => l.split(' ')).map(([e, t, ms]) => ({ e, t, ms: +ms })) }; };
+test('G2 naraz: wspólne testy idą jednocześnie, test „osobno” startuje dopiero po ich końcu; FAIL nadal = FAIL, kolejność wyników jak na liście', () => {
+  const d = g2project(), r = g2run(d, []);
+  const at = (e, t) => r.log.find(x => x.e === e && x.t === t).ms;
+  assert.ok(at('start', 'b') < at('end', 'a'), 'a i b powinny iść naraz');
+  assert.ok(at('start', 'czas') >= Math.max(at('end', 'a'), at('end', 'b')), 'test mierzący czas musi iść sam');
+  assert.deepEqual(r.json.results.map(x => [path.basename(x.id), x.status]), [['a-ui-check.cjs', 'PASS'], ['b-ui-check.cjs', 'PASS'], ['c-ui-check.cjs', 'FAIL'], ['czas-ui-check.cjs', 'PASS']]);
+  assert.equal(r.code, 1);
+});
+test('G2 w częściach: --grupa dzieli testy bez zgubienia żadnego; brak części = NOT RUN w podsumowaniu', () => {
+  const d = g2project(), w = g2run(d, ['--grupa', 'wspolne']), c = g2run(d, ['--grupa', 'czas-ui-check.cjs']);
+  assert.deepEqual(w.json.results.map(x => path.basename(x.id)), ['a-ui-check.cjs', 'b-ui-check.cjs', 'c-ui-check.cjs']);
+  assert.deepEqual(c.json.results.map(x => path.basename(x.id)), ['czas-ui-check.cjs']);
+  const s = tmp(), ok = { status: 'PASS' }, m = path.join(d, 'quality/required-tests.json');
+  write(s, { 'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [] }), 'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
+    'browser-wspolne.json': JSON.stringify({ results: w.json.results.filter(x => x.status === 'PASS') }) });
+  let r = run('summarize.cjs', [s, m]); assert.equal(r.code, 1); assert.match(r.out, /czas-ui-check\.cjs \| ⚠️ NOT RUN/); assert.match(r.out, /c-ui-check\.cjs \| ⚠️ NOT RUN/);
+  write(s, { 'browser-wspolne.json': JSON.stringify({ results: w.json.results.map(x => ({ ...x, status: 'PASS' })) }), 'browser-czas-ui-check.cjs.json': JSON.stringify(c.json) });
+  r = run('summarize.cjs', [s, m]); assert.equal(r.code, 0, r.out); assert.match(r.out, /PASS 7 · FAIL 0 · SKIPPED 0 · NOT RUN 0/);
 });
