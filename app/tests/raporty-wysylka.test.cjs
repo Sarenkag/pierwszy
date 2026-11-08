@@ -141,3 +141,29 @@ test('archiwum w telefonie nie zapisało się (np. brak miejsca): Word zostaje w
   assert.ok(rec && rec.docx.length === 1000, 'Word w archiwum po ponowieniu');
   assert.equal(a.files.size, 1, 'i na Dysku');
 });
+
+test('Dysk nadrabia zaległe raporty także, gdy Gmail jest niedostępny', async () => {
+  const a = app({ driveDown: true });
+  await a.S.init({});
+  await a.S.enqueue(item()); await settle(a);
+  assert.equal((await a.R.stats()).pending, 1);
+  a.setDrive(true);
+  const G = a.root.OESTGoogle; G.ready = async s => s !== 'gmail'; // Gmail nie gotowy, Dysk tak
+  const it2 = item(3); it2.name = it2.subject = 'ATS TB 08112026';
+  await a.S.enqueue(it2); await a.S.run({}); await settle(a);
+  assert.equal(a.mails.length, 1, 'drugi mail czeka');
+  assert.equal((await a.R.stats()).pending, 0, 'zaległy Word na Dysku mimo braku Gmaila');
+});
+
+test('kolejka maili pusta, tylko Wi‑Fi, kliknięte Wyślij na danych: zaległy Word idzie na Dysk', async () => {
+  const a = app({ driveDown: true });
+  await a.S.init({});
+  await a.S.enqueue(item()); await settle(a);
+  a.setDrive(true);
+  a.root.localStorage.setItem('insp.cfg', JSON.stringify({ email: 'work@firma.com', wifiOnly: true }));
+  a.root.navigator.connection = { type: 'cellular' };
+  await a.S.run({}); await settle(a);
+  assert.equal((await a.R.stats()).pending, 1, 'bez kliknięcia: czeka na Wi‑Fi');
+  await a.S.run({ login: true, anyNet: true }); await settle(a);
+  assert.equal((await a.R.stats()).pending, 0);
+});
