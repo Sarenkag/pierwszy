@@ -249,6 +249,7 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="moduly/bledy/bledy.js"></script>
+<script src="moduly/podmien/podmien.js"></script>
 <!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
@@ -602,12 +603,12 @@ input[type=text], input[type=email], input[type=date], select {
     var rows = ppmRows(), html = dayStrip(ppmDay, ppmDayCounts(rows));
     // przebudowa paska nie przewija go z powrotem na początek (stuknięcie dnia/filtra za krawędzią ekranu)
     var keepX = { d: $("ppmDays").scrollLeft, c: $("ppmChips").scrollLeft };
-    $("ppmDays").innerHTML = html;
+    OESTPodmien.html($("ppmDays"), html); // bez przerysowania (moduly/podmien)
     var chips = [{ id: "all", name: T("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: T(g.pl || g.name, g.name) }; }), [{ id: "started", name: T("◐ Rozpoczęte", "◐ Started") }]);
-    $("ppmChips").innerHTML = chips.map(function (g) {
+    OESTPodmien.html($("ppmChips"), chips.map(function (g) {
       var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
       return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
-    }).join("");
+    }).join(""));
     $("ppmDays").scrollLeft = keepX.d; $("ppmChips").scrollLeft = keepX.c;
     var gs = ppmSel.filter(function (x) { return x !== "started"; }), started = ppmSel.indexOf("started") >= 0;
     var list = rows.filter(function (r) {
@@ -627,7 +628,7 @@ input[type=text], input[type=email], input[type=date], select {
     });
     list = [];
     out.forEach(function (r) { if (!r.fam) { list.push(r); return; } list.push(r); if (ppmOpen[r.fam]) list = list.concat(r.rows); });
-    $("ppmList").innerHTML = list.length ? list.map(function (r) {
+    OESTPodmien.html($("ppmList"), list.length ? list.map(function (r) {
       if (r.fam) {
         var gg = grp(r.t.group);
         // grupa (np. 18 DB) – ten sam klocek, w miejscu akcji „rozwiń / zwiń”
@@ -640,7 +641,7 @@ input[type=text], input[type=email], input[type=date], select {
           go: ppmOpen[r.fam] ? T("Zwiń", "Collapse") : T("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
       }
       return ppmCard(r);
-    }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>';
+    }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>');
     var noDate = rows.filter(function (r) { return !r.due; }).length;
 
   }

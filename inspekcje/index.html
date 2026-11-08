@@ -495,6 +495,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../moduly/bledy/bledy.js"></script>
+<script src="../moduly/podmien/podmien.js"></script>
 <script src="../moduly/ladowanie/ladowanie.js"></script>
 <script src="../moduly/znacznik/znacznik.js"></script>
 <script src="../moduly/kafelek/kafelek.js"></script>
@@ -525,6 +526,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script>
 // Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
 function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
+// miejsce pod PL i EN (moduly/podmien + moduly/bledy): ten sam fragment w drugim języku wyznacza min. wymiary tekstów – zmiana języka nic nie przesuwa
+function both(el, html) { if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.rezerwuj(el, OESTBledy.wJezyku(OESTBledy.drugi(), html)); }
 // Statyczne teksty strony (data-en / data-en-aria-label / data-en-placeholder) – podmiana w miejscu, bez przerysowania.
 (function () {
   function lang() { if (window.OESTBledy) OESTBledy.applyDom(document); }
@@ -1051,7 +1054,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
 
   function renderHome() {
     $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
-    $("types").innerHTML = TYPES.map(function (t) {
+    function html() { return TYPES.map(function (t) {
       var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
       var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + T(" · od ", " · since ") + esc(fmtDate(new Date(pr.started))) + " "+T("· dotknij, by wznowić", "· tap to resume")+"</span>" :
         '<span class="sub">' + all.length + T(" urządzeń · dziś zrobione: ", " devices · done today: ") + done + "</span>";
@@ -1062,7 +1065,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
         '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
         "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
         '<span class="arrow" aria-hidden="true">›</span></button>';
-    }).join("");
+    }).join(""); }
+    $("types").innerHTML = html(); both($("types"), html);
     $("types").querySelectorAll("[data-type]").forEach(function (b) {
       b.addEventListener("click", function () {
         cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
@@ -1228,6 +1232,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function syncSendHint() {
     var n = needsNow(), h = $("sendHint"); if (!h) return;
     if (!n || cur.mode !== "one") { h.textContent = ""; return; }
+    function txt() {
     var to = recipientsFor(n), what = [], off = [];
     if (n.q && sendParts().q) what.push(T("raport", "report"));
     if (n.f) what.push(T("zdjęcia formularza", "form photos"));
@@ -1235,9 +1240,12 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (!n.f && sheetPhotos().length) off.push(T("zdjęcia formularza", "form photos") + " (" + sheetPhotos().length + ")");
     if (!n.p && genPhotos().length) off.push(T("zdjęcia ogólne", "general photos") + " (" + genPhotos().length + ")");
     if (!n.t && photos.some(function (p) { return p.tap != null; })) off.push(T("zdjęcia do pytań", "question photos") + " (" + photos.filter(function (p) { return p.tap != null; }).length + ")");
-    h.textContent = "⚙ " + (what.join(" + ") || T("nic", "nothing")) + " · " + (n.one ? T("jeden dokument", "one document") : T("osobne pliki", "separate files")) + " · " +
+    return "⚙ " + (what.join(" + ") || T("nic", "nothing")) + " · " + (n.one ? T("jeden dokument", "one document") : T("osobne pliki", "separate files")) + " · " +
       [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || T("brak adresata", "no recipient")) +
       (off.length ? T(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") : "") + ".";
+    }
+    h.textContent = txt();
+    if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce(h, OESTBledy.wJezyku(OESTBledy.drugi(), txt)); // PL i EN zajmują tyle samo miejsca
   }
   $("sendCfg").addEventListener("click", function () {
     var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
@@ -2290,8 +2298,10 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
-      $("formHint").textContent = "Wpisano " + filled + "/" + temps.length + "." + (bad ? T(" Popraw ", " Fix ") + bad + " pole (tylko liczba)." : "") +
-        (outN ? " Poza zakresem: " + outN + " — wpis do Fault and Remedial Actions Log." : "") + (filled < temps.length ? T(" Puste pola zostaną puste w raporcie.", " Empty fields will stay empty in the report.") : "");
+      var tx = function () { return T("Wpisano ", "Filled in ") + filled + "/" + temps.length + "." + (bad ? T(" Popraw ", " Fix ") + bad + T(" pole (tylko liczba).", " field(s) (number only).") : "") +
+        (outN ? T(" Poza zakresem: ", " Out of range: ") + outN + T(" — wpis do Fault and Remedial Actions Log.", " — record in the Fault and Remedial Actions Log.") : "") + (filled < temps.length ? T(" Puste pola zostaną puste w raporcie.", " Empty fields will stay empty in the report.") : ""); };
+      $("formHint").textContent = tx();
+      if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce($("formHint"), OESTBledy.wJezyku(OESTBledy.drugi(), tx)); // PL i EN w tym samym miejscu
       var blk = !filled || bad > 0;
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
       $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
@@ -3293,7 +3303,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       // po ostatnim zleceniu z importu też bez ręcznej daty – apka nie tworzy terminu (PROD-010)
       var vj = (due && PPM.jobFor ? PPM.jobFor(t, isoDay(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
       el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
-        '<b class="' + (left !== null && left <= 0 ? "late" : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
+        '<b class="' + (left !== null && left <= 0 ? "late" : "") + '" data-alt="' + esc(window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 
     });

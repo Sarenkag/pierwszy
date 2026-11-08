@@ -99,8 +99,8 @@
   function days() {
     var t = today(), s = new Date(t); s.setDate(s.getDate() - 1);
     var box = $("hmDays"), sl = box.scrollLeft, cnt = deps.dayCounts();
-    box.innerHTML = w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: deps.dayName,
-      isWork: deps.isWorkday, counter: function (k) { return cnt[k] || null; }, icon: wxDay });
+    w.OESTPodmien.html(box, w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: deps.dayName,
+      isWork: deps.isWorkday, counter: function (k) { return cnt[k] || null; }, icon: wxDay }));
     box.scrollLeft = sl;
   }
   function render() {

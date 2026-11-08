@@ -27,7 +27,7 @@
 .pbtn.req{border-color:rgba(239,59,54,.65)!important}
 html body .iphotos .pbtn{min-height:58px!important;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px!important;font-size:12.5px!important;line-height:1.15;text-align:center}
 .iphotos .pbtn svg{width:22px;height:22px;flex:none}
-.iphotos .pbtn span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.iphotos .pbtn span{overflow:hidden;text-overflow:ellipsis;max-width:100%;align-self:stretch}
 .fold:not(.open){display:none!important}
 .isec #ckTitle{cursor:pointer;display:flex;justify-content:space-between;text-transform:none;font-size:.9rem;letter-spacing:0;color:var(--ink);font-family:inherit}
 .isec #ckTitle::after{content:"⌃"}.isec.shut #ckTitle::after{content:"⌄"}.isec.shut #ck{display:none}
