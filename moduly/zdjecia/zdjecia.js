@@ -327,6 +327,28 @@
     function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
     function KEY() { return 'oest.zdjecia.v1.' + who(); }
     var compress = compressIn(win);
+    // Zmniejszanie w tle podczas podglądu (audyt wydajności zdjęć, punkt 1; zgoda Grzegorza 08/11/2026): aparat woła prepare(blob, kind),
+    // gdy pokazuje podgląd, a save() bierze gotowy wynik, jeśli to ten sam plik i te same ustawienia rozmiaru. Inaczej zmniejsza jak dawniej.
+    var prepped = [], hits = 0;
+    function prepKey(preset, kind) { return JSON.stringify(limits(preset, kind)); }
+    async function sameBytes(a, b) {
+      if (a === b) return true;
+      if (!a || !b || !a.slice || !b.slice || a.size !== b.size) return false;
+      var n = Math.min(65536, a.size), parts = [[0, n], [a.size - n, a.size]];
+      for (var i = 0; i < parts.length; i++) {
+        var x = new Uint8Array(await a.slice(parts[i][0], parts[i][1]).arrayBuffer()), y = new Uint8Array(await b.slice(parts[i][0], parts[i][1]).arrayBuffer());
+        for (var j = 0; j < x.length; j++) if (x[j] !== y[j]) return false;
+      }
+      return true;
+    }
+    async function compressPrepared(file, preset, kind) {
+      var key = prepKey(preset, kind);
+      for (var i = 0; i < prepped.length; i++) {
+        var e = prepped[i];
+        if (e.key === key && await sameBytes(e.blob, file)) { prepped.splice(i, 1); hits++; return e.p.catch(function () { return compress(file, preset, kind); }); }
+      }
+      return compress(file, preset, kind);
+    }
     var store = createStore({
       owner: who,
       db: idb(win),
@@ -335,7 +357,7 @@
         load: function () { var o; try { o = JSON.parse(win.localStorage.getItem(KEY()) || '{}'); } catch (_) { o = {}; } if (!o.limitV2) { if (o.phoneLimitMB === 1024) o.phoneLimitMB = 200; o.limitV2 = 1; try { win.localStorage.setItem(KEY(), JSON.stringify(o)); } catch (_) {} } return o; },
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
-      compress: compress,
+      compress: compressPrepared,
       wifi: function () { var c = win.navigator.connection; if (!c || !c.type) return null; return c.type === 'wifi' || c.type === 'ethernet'; },
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
@@ -362,6 +384,15 @@
     }
     // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
     store.maxPx = function () { var pr = store.settings().preset, p = PRESETS[pr] || PRESETS.standard; if (p !== PRESETS.standard) return p.max || 0; return Object.keys(KINDS).reduce(function (m, k) { return Math.max(m, KINDS[k].max); }, 0); };
+    // kind jak w save(): 'formularz' | 'ogolne' | 'punkt' | 'dowod'; trzymamy najwyżej 3 przygotowane zdjęcia (Powtórz zostawia stare)
+    store.prepare = function (blob, kind) {
+      if (!blob) return;
+      var st = store.settings(), k = kind === 'ogolne' ? generalKind(st.general) : KINDS[kind] ? kind : '', key = prepKey(st.preset, k);
+      for (var i = 0; i < prepped.length; i++) if (prepped[i].blob === blob && prepped[i].key === key) return;
+      var p = compress(blob, st.preset, k); p.catch(function () {});
+      prepped.push({ blob: blob, key: key, p: p }); while (prepped.length > 3) prepped.shift();
+    };
+    store.preparedHits = function () { return hits; }; // ile zapisów wzięło gotowy wynik z podglądu – do testów
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
     store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stats = stats; store.search = search;
     return store;
