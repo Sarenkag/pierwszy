@@ -1,7 +1,7 @@
 // Moduł notatek głosowych (moduly/notatki, 08/11/2026): słowa branżowe, liczby, stan notatki, magazyn wg miejsca, łączenie, kontekst dla modelu.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const J=x=>JSON.parse(JSON.stringify(x));
-function load(extra){const w=Object.assign({localStorage:{getItem:()=>null,setItem:()=>{}}},extra||{});w.window=w;const ctx={window:w,console};
+function load(extra){const w=Object.assign({notatkiPamiecTestowa:true,localStorage:{getItem:()=>null,setItem:()=>{}}},extra||{});w.window=w;const ctx={window:w,console};
   for(const f of ['model/model.js','notatki/notatki.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly',f),'utf8'),ctx);return w;}
 test('notatki: słowa branżowe – PL po rozpoznaniu mowy, EN po tłumaczeniu',()=>{const N=load().OESTNotatki;
   assert.equal(N.fix('kran ma 54 stopnie celsjusza, zimna 17,8 stopni','pl'),'kran ma 54 °C, zimna 17,8 °C');
@@ -38,3 +38,16 @@ test('notatki: model dostaje miejsce notatki tylko jako kontekst słownictwa',as
   const out=await w.OESTModel.polish('Fault on zone 4 and 12','Błąd na strefie 4 i 12','Fire Alarm Weekly Test, Tower B');
   assert.equal(out,'Fault on zone 4 and 12.');assert.match(seen.prompt,/Context \(for terminology only; do not add it to the text\): Fire Alarm Weekly Test, Tower B/);
   await w.OESTModel.polish('x','x');assert.doesNotMatch(seen.prompt,/Context/);});
+// Przegląd Codex PR #108 (08/11/2026) – testy odtwarzające znalezione błędy
+test('notatki: bez bazy w telefonie zapis to błąd, nie udawany zapis w pamięci',async()=>{const w=load({notatkiPamiecTestowa:false}),N=w.OESTNotatki;
+  await assert.rejects(N.addAudio('s','',{blob:{}}),/Nie udało się zapisać notatki/);});
+test('notatki: przerwana zamiana na tekst (apka zamknięta) wznawia się przy odczycie, nie wisi jako „zamieniam”',async()=>{const N=load().OESTNotatki;
+  const n=await N.addAudio('s','',{blob:{size:1}});await new Promise(r=>setTimeout(r,20));
+  const stale=Object.assign({},(await N.list('s'))[0],{id:'stary',seq:9,st:'busy',err:'',audio:[n.audio[0]]});await N.put(stale);
+  assert.equal((await N.summary('s')).busy,1);await new Promise(r=>setTimeout(r,30));
+  const s=(await N.list('s')).find(x=>x.id==='stary');assert.equal(N.state(s),'error');assert.equal((await N.summary('s')).busy,0);});
+test('notatki: usunięta w trakcie zamiany na tekst (Wyczyść inspekcję) nie wraca',async()=>{
+  const slow={create:()=>({busy:false,transcribe:()=>new Promise(r=>setTimeout(()=>r({text:'klapa zastawiona'}),40))}),holdButton(){}};
+  const N=load({OESTVoice:slow,Capacitor:{isNativePlatform:()=>true,Plugins:{}}}).OESTNotatki;
+  await N.addAudio('s','',{blob:{}});await N.clear('s');assert.equal((await N.list('s')).length,0);await new Promise(r=>setTimeout(r,80));
+  assert.equal((await N.list('s')).length,0);});

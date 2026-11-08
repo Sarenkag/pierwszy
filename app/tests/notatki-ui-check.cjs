@@ -25,7 +25,11 @@ function fakePhone() {
   const wav = btoa('RIFF' + '\0'.repeat(40) + 'abcd');
   const plugins = {
     HandoverTools: { startAudio: async () => ({}), stopAudio: async () => ({ data: wav }), transcribe: async () => { const t = SAID[said % SAID.length]; said++; sessionStorage.setItem('nt.said', said); return { text: t }; } },
-    Translate: { plToEn: async ({ text }) => ({ text: /strefie/.test(text) ? EN[1] : EN[0] }) }
+    Translate: { plToEn: async ({ text }) => ({ text: /strefie/.test(text) ? EN[1] : EN[0] }) },
+    // model pobrany: zdanie zostaje jak z tłumacza; przy łączeniu notatek gubi „54” (ostrzeżenie musi się pojawić – przegląd Codex #108)
+    OESTModel: { status: async () => ({ supported: true, ready: true, bytes: 1 }), generate: async ({ prompt }) => /^Combine/.test(prompt)
+      ? { text: 'The isolator next to the AOV on level 13 has a cracked gland. The panel shows an error in zone 4.' }
+      : { text: (prompt.split('Note:\n')[1] || '').split('\n\n')[0] } }
   };
   window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || {}, convertFileSrc: x => x };
 }
@@ -76,6 +80,9 @@ function fakePhone() {
     check(!(await pg.locator('.oest-ask [data-a=ok]').isVisible()), 'w trakcie poprawiania widać „Zamknij” (zgubiłby poprawkę)');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-popraw-PL.png') });
     await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('The isolator next to the AOV on level 13 has a cracked gland; temperature 54 °C.');
+    // odsłuch w trakcie poprawiania nie gubi wpisanego tekstu (przegląd Codex #108)
+    await pg.locator('.nt-pop [data-nt=play]').click(); await pg.waitForTimeout(400);
+    check(/level 13 has a cracked gland/.test(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue()), 'odsłuch w edycji skasował wpisaną poprawkę');
     await pg.locator('.nt-pop [data-nt=save]').click(); await pg.waitForSelector('.nt-pop .nt-note');
     a = await notes(); check(/level 13 has a cracked gland/.test(a[0].en), 'poprawka EN nie zapisana: ' + a[0].en);
     await close();
@@ -94,6 +101,8 @@ function fakePhone() {
     await pg.locator('#komentarz').fill('Checked all floors.');
     check(await pg.locator('#ntJoin').isVisible(), '„Połącz notatki w komentarz” niewidoczny');
     await pg.locator('#ntJoin').click(); await pg.waitForSelector('#mdBox:not([hidden])');
+    R.ostrzezeniePolacz = await pg.locator('#mdWarn').textContent();
+    check(/54/.test(R.ostrzezeniePolacz), 'połączenie modelem zgubiło „54”, a nie ma ostrzeżenia: „' + R.ostrzezeniePolacz + '”');
     check(await pg.locator('#komentarz').inputValue() === 'Checked all floors.', 'komentarz zmienił się bez „Wstaw”');
     await pg.locator('#mdUse').click(); await pg.waitForTimeout(300);
     const kom = await pg.locator('#komentarz').inputValue(); R.komentarz = kom;

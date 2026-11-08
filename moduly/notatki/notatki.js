@@ -43,7 +43,7 @@
   }
   // stan notatki z jej treści: ready = EN gotowy; check = EN bez którejś liczby; pl = tylko polski; audio = samo nagranie
   function state(n) {
-    if (n.st === 'busy') return 'busy';
+    if (n.st === 'busy') return 'busy'; // przerwane (apka zamknięta w trakcie) wznawia resume()
     if (String(n.en || '').trim()) return missing(n.pl, n.en).length ? 'check' : 'ready';
     if (String(n.pl || '').trim()) return 'pl';
     return n.err ? 'error' : 'audio';
@@ -59,12 +59,16 @@
         rq.onupgradeneeded = function () { var d = rq.result; d.createObjectStore('notes', { keyPath: 'id' }).createIndex('scope', 'scope'); d.createObjectStore('audio'); };
         rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { res(null); };
       } catch (e) { res(null); }
+    }).then(function (d) {
+      if (!d) dbP = null; // następna próba otworzy bazę od nowa
+      return d;
     });
     return dbP;
   }
   function tx(store, mode, fn) {
     return db().then(function (d) {
-      if (!d) return fn(null, mem[store]);
+      // bez bazy w telefonie nic nie udajemy: zapis = błąd (pamięć RAM tylko w testach, notatkiPamiecTestowa)
+      if (!d) { if (w.notatkiPamiecTestowa) return fn(null, mem[store]); throw Error(T('Nie udało się zapisać notatki w telefonie (pamięć apki niedostępna). Spróbuj jeszcze raz.', 'Could not save the note on the phone (app storage unavailable). Try again.')); }
       return new Promise(function (res, rej) {
         var t = d.transaction(store, mode), out = fn(t.objectStore(store));
         t.oncomplete = function () { res(w.IDBRequest && out instanceof w.IDBRequest ? out.result : out); };
@@ -88,8 +92,20 @@
   function clear(scope) { return list(scope).then(function (a) { return a.reduce(function (p, n) { return p.then(function () { return remove(n); }); }, Promise.resolve()); }); }
   // szkic inspekcji przechodzi do archiwum (nowy termin): jego notatki idą razem z nim
   function move(from, to) { return list(from).then(function (a) { return Promise.all(a.map(function (n) { n.scope = to; return put(n); })).then(function () { emit(from); }); }); }
+  // notatka „zamieniam na tekst” z poprzedniego uruchomienia (apka zamknięta w trakcie): zamiana rusza od nowa z zapisanego nagrania
+  var running = {};
+  function resume(a) {
+    a.forEach(function (n) {
+      if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
+      queue = queue.then(function () { return audioGet(n.audio && n.audio[0]).then(function (blob) {
+        if (blob) return transcribe(n, blob);
+        n.st = ''; n.err = T('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
+      }); }).catch(function () {}).then(function () { delete running[n.id]; });
+    });
+    return a;
+  }
   function summary(scope) {
-    return list(scope).then(function (a) { var r = { all: a.length, ready: 0, busy: 0 }; a.forEach(function (n) { var s = state(n); if (s === 'busy') r.busy++; else if (s === 'ready' || s === 'check') r.ready++; }); return r; });
+    return list(scope).then(resume).then(function (a) { var r = { all: a.length, ready: 0, busy: 0 }; a.forEach(function (n) { var s = state(n); if (s === 'busy') r.busy++; else if (s === 'ready' || s === 'check') r.ready++; }); return r; });
   }
   var subs = [];
   function on(fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; }
@@ -123,7 +139,8 @@
     var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), aid = id + '-a1';
     var n = { id: id, scope: scope, at: Date.now(), seq: ++seq, ctx: ctx || '', ms: media.ms || 0, audio: [aid], pl: '', en: '', st: 'busy', err: '' };
     return audioPut(aid, media.blob).then(function () { return put(n); }).then(function () {
-      queue = queue.then(function () { return transcribe(n, media.blob); });
+      running[id] = 1;
+      queue = queue.then(function () { return transcribe(n, media.blob); }).catch(function () {}).then(function () { delete running[id]; });
       return n;
     });
   }
@@ -136,7 +153,11 @@
       n.pl = pl; n.err = pl ? '' : T('Nie rozpoznano słów. Odsłuchaj nagranie i wpisz tekst w „Popraw”.', 'No words recognised. Listen to the recording and type the text in “Edit”.');
       return english(pl, n.ctx);
     }).then(function (en) { n.en = en || ''; }, function (e) { n.err = e && e.message || String(e); })
-      .then(function () { n.st = ''; return put(n); });
+      .then(function () { n.st = ''; return keep(n); });
+  }
+  // wynik zamiany zapisujemy tylko, gdy notatka nadal istnieje (usunięta albo „Wyczyść inspekcję” w trakcie – nie wraca)
+  function keep(n) {
+    return tx('notes', 'readonly', function (s, m) { return m ? m[n.id] : s.get(n.id); }).then(function (cur) { return cur ? put(n) : n; });
   }
   // przycisk „🎤 Nagraj notatkę”: przytrzymaj = nagrywa do puszczenia; stuknij = do „Zakończ”. Jeden przycisk na stronę.
   // o: { scope(): string, ctx(): string, onSaved(note), onError(err) }
@@ -197,7 +218,7 @@
     function draw() {
       if (editing) return drawEdit();
       foot(true);
-      list(scope).then(function (a) {
+      list(scope).then(resume).then(function (a) {
         if (editing) return;
         var h = '<div class="nt-h">' + esc(o.title || '') + (a.length ? ' · ' + T('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
         if (!a.length) h += '<div class="nt-empty">' + T('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
@@ -219,6 +240,8 @@
     function foot(show) { var box = node.closest('.oest-ask'), r = box && box.querySelector(':scope>div>.row'); if (r) r.style.display = show ? '' : 'none'; }
     function drawEdit() {
       var n = editing; foot(false);
+      // przerysowanie (odsłuch, stop) nie gubi tego, co już wpisane
+      var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]'); if (fp && fe) { n.pl = fp.value; n.en = fe.value; }
       node.innerHTML = '<div class="nt-h">' + T('✎ Popraw notatkę', '✎ Edit note') + ' · ' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + '</div>' +
         '<div class="nt-tabs"><button type="button" data-nt="tab-pl"' + (tab === 'pl' ? ' class="on"' : '') + '>' + T('Po polsku (oryginał)', 'Polish (original)') + '</button><button type="button" data-nt="tab-en"' + (tab === 'en' ? ' class="on"' : '') + '>' + T('Po angielsku (do raportu)', 'English (for the report)') + '</button></div>' +
         '<textarea data-nt-f="pl" maxlength="4000"' + (tab === 'pl' ? '' : ' hidden') + '></textarea><textarea data-nt-f="en" maxlength="4000"' + (tab === 'en' ? '' : ' hidden') + '></textarea>' +

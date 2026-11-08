@@ -2000,8 +2000,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var k = ntScope(), b = this, tok = formSeq; if (!k) return; b.disabled = true;
       $("trHint").textContent = T("Łączę notatki… (model na telefonie, pierwszy raz do ~20 s)", "Combining notes… (on-phone model, first time up to ~20 s)");
       OESTNotatki.combine(k, ntCtx()).then(function (out) {
+        // liczby z notatek, których brakuje w propozycji (model łączy je od nowa) – to samo ostrzeżenie co przy „✨ Ułóż”
+        return OESTNotatki.list(k).then(function (a) { return { out: out, miss: OESTNotatki.missing(a.map(function (n) { return n.en; }).filter(Boolean).join("\n"), out) }; });
+      }).then(function (r) {
+        var out = r.out;
         if (tok !== formSeq) return;
-        mdSeq++; mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = "";
+        mdSeq++; mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = r.miss.length ? T("⚠ W propozycji brakuje: ", "⚠ Missing in the suggestion: ") + r.miss.join(", ") + T(" — sprawdź.", " — check.") : "";
         $("trHint").textContent = T("Propozycja z notatek gotowa — sprawdź i stuknij „Wstaw do komentarza”. Nic nie wstawiam samo.", "Suggestion from the notes is ready — check it and tap “Insert into comment”. Nothing is inserted automatically.");
       }).catch(function (e) { $("trHint").textContent = gErr(e); }).then(function () { b.disabled = false; });
     });
