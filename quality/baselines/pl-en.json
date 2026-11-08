@@ -89,13 +89,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "PL_EN|#reactive/new/blank|inny-uklad",
-      "rule": "PL_EN",
-      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 8 elementów w innym miejscu niż po polsku: section.panel „Zakończenie i raportgdy skoń” 380×74 @16,947 → 380×71 @16,947",
-      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "PL_EN|inspekcje #home|inny-uklad",
       "rule": "PL_EN",
       "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 71 elementów w innym miejscu niż po polsku: div.wrap „Inspekcje.One Eastside Tower” 396×655 @8,8 → 396×623 @8,8",
@@ -148,6 +141,34 @@
       "id": "PL_EN|inspekcje #ppm=EFA-INS-024|inny-uklad",
       "rule": "PL_EN",
       "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 3 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @133,72 → 143×48 @151,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/contacts|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 7 elementów: div.panel „Import według etykietyPobier” 380×320 @16,788 → 380×338 @16,788 | p.hint „Pobieramy tylko osoby z wybr” 346×36 @33,843 → 346×55 @33,843 | button.btn „Pobierz etykiety” 346×48 @33,894 → 346×48 @33,912 | label.field „Wybrana etykietaNajpierw poł” 346×73 @33,956 → 346×73 @33,974",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/drive|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 30 elementów: div.wrap „OEST OEST One East Side Towe” 412×1434 @0,0 → 412×1416 @0,0 | #v-settings „OEST / UstawieniaGoogle Driv” 380×1372 @16,14 → 380×1354 @16,14 | #settingsForm „GoogleNiepołączonoDostęp tyl” 380×1314 @16,72 → 380×1296 @16,72 | div.panel „Folder backupuIdentyfikator ” 380×595 @16,240 → 380×577 @16,240",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#reactive/config|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: section.panel „Jedna pozycja w linii. Pojaw” 380×276 @16,80 → 380×257 @16,80 | p.rx-sub „Osoby i działy do „Kto zleci” 350×55 @31,149 → 350×36 @31,149 | label.field „Typy zleceń (pierwszy = domy” 350×121 @31,220 → 350×121 @31,202 | span „Typy zleceń (pierwszy = domy” 350×19 @31,220 → 350×19 @31,202",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#powertrace/new|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 27 elementów w innym miejscu niż po polsku: div.wrap „OEST OEST One East Side Towe” 412×1995 @0,0 → 412×1973 @0,0 | #v-powertrace „OEST / Power trace · offline” 380×1933 @16,14 → 380×1911 @16,14 | #ptForm „Kod z naklejki — zachowany d” 380×1875 @16,72 → 380×1853 @16,72 | section.panel „ObwodyObwody — każdy numer i” 380×238 @16,1345 → 380×216 @16,1345",
       "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
       "owner": "Grzegorz"
     }

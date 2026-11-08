@@ -72,6 +72,10 @@ function quiet(n) {
     await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort()); // bez internetu: wynik nie zależy od sieci
     await ctx.clock.setFixedTime(new Date(DZIEN)); // stała data: napisy typu „Zostało 2 dni” i listy dnia takie same przy każdym uruchomieniu
     await ctx.addInitScript(() => {
+      // jedna czcionka na każdej maszynie: łamanie wierszy zależy od czcionki (lokalnie Inter, w CI zastępcza, na Pixelu Roboto),
+      // a test porównuje PL z EN – przy tej samej czcionce wynik jest powtarzalny lokalnie i w CI
+      const f = document.createElement('style'), wstaw = () => (document.head || document.documentElement).appendChild(f); f.textContent = '*,*::before,*::after{font-family:"DejaVu Sans",sans-serif!important}';
+      if (document.documentElement) wstaw(); else new MutationObserver((m, o) => { if (document.documentElement) { o.disconnect(); wstaw(); } }).observe(document, { childList: true });
       if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: 'test@example.com', first: 'Greg', last: 'Sarna', name: 'Greg Sarna', t: 1 }));
       document.addEventListener('animationstart', e => { if (window.__anim && !/spin/i.test(e.animationName)) window.__anim.push(e.animationName + ' na ' + (e.target.id || (typeof e.target.className === 'string' && e.target.className) || e.target.tagName)); }, true);
     });
