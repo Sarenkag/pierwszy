@@ -55,6 +55,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(q.snap && !q.snap.fin, 'zapis bez znacznika Gotowa');
     check(q.card && q.card.name && q.card.loc === 'TB/L13' && q.card.freq, 'opis klocka: nazwa, lokalizacja, częstotliwość (' + JSON.stringify(q.card) + ')');
     check(q.ppm === ID && !q.key, 'zwykła inspekcja: klocek PPM i raport po nazwie jak dotąd');
+    check(q.at === q.created, 'Wyślij zapisuje czas przygotowania wersji (spóźniony mail nie nadpisze nowszego Update)');
     const name = q.name;
     // archiwum jak po wysłaniu maila (moduł wysyłki: archive) – ten sam zapis i opis
     await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(800);
@@ -150,6 +151,16 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const f3 = await form();
     check(f3.fails === 1 && f3.photos === 1, 'zwykła inspekcja: nadal NIE + zdjęcie (' + JSON.stringify(f3) + ')');
     check(await pg.locator('#recUpdate').isHidden() && await pg.locator('#updBox').isHidden() && !(await pg.locator('#recPill').count()), 'zwykła inspekcja: bez Update, Updated i pigułki Odzyskana');
+    // 9. „Wyczyść inspekcję” w odzyskanej: formularz zostaje pusty także po ponownym otwarciu (nie wraca zapis z raportu)
+    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
+    await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
+    pg.evaluate(() => window.OEST_clearInspection()); await pg.locator('.oest-ask [data-a=ok]').first().click(); await pg.waitForTimeout(1500);
+    const f4 = await form();
+    check(f4.fails === 0 && f4.photos === 0, 'Wyczyść: odzyskana pusta (' + JSON.stringify(f4) + ')');
+    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
+    await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
+    const f5 = await form();
+    check(f5.fails === 0 && f5.photos === 0, 'Wyczyść: po ponownym otwarciu nadal pusta (' + JSON.stringify(f5) + ')');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   errors.forEach(e => fails.push('błąd strony: ' + e));

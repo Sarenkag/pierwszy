@@ -175,7 +175,7 @@
     return {
       save: save, sync: sync, enforce: enforce,
       list: async function () { return (await mine()).sort(function (a, b) { return a.updated < b.updated ? 1 : -1; }); },
-      get: function (id) { return deps.db.get(id); },
+      get: async function (id) { var r = await deps.db.get(id); return r && r.owner === deps.owner() ? r : null; }, // tylko raporty zalogowanego konta (uwaga Codex #101)
       /* Odzyskane do edycji (etap 2c): klocek Raporty pokazuje je jak zwykłe inspekcje z pigułką „Odzyskana” – także te, których Word jest już tylko na Dysku. */
       recovered: async function () { return (await mine(true)).filter(function (r) { return r.rec && r.snap; }).sort(function (a, b) { return a.rec < b.rec ? 1 : -1; }); },
       setRec: function (id, on) {

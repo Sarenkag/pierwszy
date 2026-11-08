@@ -26,8 +26,8 @@ test('sandbox: Wyślij/Update odzyskanej nie zmienia etapu, terminu ani ⚙ kart
   assert.equal(a.P.stage(other).s, 'prog', 'inne karty czytane normalnie');
   a.P.setStage(t, { s: 'queued', mail: 'queued', mailId: 'q1' });
   a.P.close(t, '2026-11-08'); a.P.setDue(t, '2026-12-01'); a.P.setNeeds(t, { sp: true }); a.P.setUnstarted(t, { photos: 1 });
-  assert.equal(a.writes.length, 0, 'nic nie zapisane w telefonie');
-  assert.deepEqual(a.data, before);
+  const mine = k => { const v = JSON.parse(a.data.get(k) || '{}'); return JSON.stringify(v[t.id]); };
+  for (const k of ['oest.ppm.stage', 'oest.ppm.due', 'oest.ppm.needs', 'oest.ppm.unstarted', 'oest.ppm.done']) assert.equal(mine(k), (() => { const v = JSON.parse(before.get(k) || '{}'); return JSON.stringify(v[t.id]); })(), k + ': wpis karty w telefonie bez zmian');
   assert.equal(a.P.stage(t).s, 'queued', 'w pamięci strony działa jak zwykle'); assert.equal(a.P.needs(t).sp, true);
 });
 
@@ -37,4 +37,17 @@ test('bez sandbox zapisy idą do telefonu jak dotąd', () => {
   a.P.setStage(t, { s: 'prog' });
   assert.ok(a.writes.includes('oest.ppm.stage'));
   assert.equal(a.P.sandboxed(), false);
+});
+
+test('sandbox: potwierdzenie wysłania INNEJ inspekcji (kolejka na tej stronie) zostaje w telefonie (uwaga Codex #101)', () => {
+  const a = load();
+  const t = a.P.tasks.find(x => x.freq && x.freq.length), other = a.P.tasks.find(x => x !== t && x.freq && x.freq.length);
+  a.P.setStage(other, { s: 'queued', mail: 'queued', mailId: 'q9' });
+  a.P.sandbox(t.id);
+  a.P.setStage(t, { s: 'prog' });
+  a.P.markSent(other.id, 'q9');
+  const real = JSON.parse(a.data.get('oest.ppm.stage'));
+  assert.equal(real[other.id].s, 'sent', 'inna karta: Wysłana zapisana w telefonie');
+  assert.equal(real[t.id], undefined, 'odzyskana karta: nic w telefonie');
+  assert.equal(a.P.stage(t).s, 'prog', 'odzyskana: etap tylko w pamięci strony');
 });

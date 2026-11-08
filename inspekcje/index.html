@@ -1321,7 +1321,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
-      if (REC && !(d && d.v === 1)) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; } // pierwsze otwarcie odzyskanej: dane z raportu
+      if (REC && d === undefined) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; } // pierwsze otwarcie odzyskanej: dane z raportu (po „Wyczyść” szkic = null i zostaje pusty)
       if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
@@ -2281,7 +2281,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
   }
-  function updateFormHint() { updateFormHint0(); syncFinish(); }
+  function updateFormHint() { updateFormHint0(); syncFinish(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
   // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport
   function syncFinish() {
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
@@ -2969,6 +2969,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
     };
+    it.at = it.created; // czas przygotowania tej wersji: spóźniony mail z kolejki nie nadpisze nowszego Update (uwaga Codex #101)
     if (from.mode === "one") it.snap = archiveSnap(); // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
     var tp = from.ppm; if (tp && PPM) it.card = { name: PPM.short ? PPM.short(tp).name : tp.name, loc: PPM.loc ? PPM.loc(tp).code : "", freq: (tp.freq || [])[0] || "" }; // opis klocka odzyskanej (moduł raportów nie czyta listy PPM)
     if (REC) { it.key = REC.key; it.ppmRef = it.ppm; it.ppm = ""; } // odzyskana: ten sam wpis w archiwum i ten sam plik na Dysku; klocek PPM bez zmian
@@ -3376,7 +3377,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var fail = function (e) { $("formHint").textContent = window.OESTBledy ? OESTBledy.text(e) : String(e && e.message || e); show("form"); };
     if (!R) { fail(new Error("REPORT_MISSING")); return; }
     R.get(id).then(function (r) {
-      if (!r) throw new Error("REPORT_MISSING");
+      if (!r) throw new Error("REPORT_MISSING"); // get() zwraca tylko raporty zalogowanego konta
       if (!r.snap || !r.rec) throw new Error("REPORT_NO_DATA");
       var m = r.meta || {}, t = m.ppm && PPM ? PPM.byId(m.ppm) : null;
       REC = r; document.documentElement.classList.add("recmode"); $("recUpdate").hidden = false; if ($("updBox")) $("updBox").hidden = false;
@@ -3392,6 +3393,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Data i termin bez zmian. Stan Dysku mówimy wprost (nic nie udajemy).
   $("recUpdate").addEventListener("click", function () {
     var b = this; if (queueing || !REC || !window.OESTSender || !OESTSender.update) return;
+    if (restoring || pendingPh > 0) { $("formHint").textContent = T("Poczekaj, aż zdjęcia się wczytają i zapiszą.", "Wait until the photos are loaded and saved."); return; } // raport bez zdjęć nie nadpisze Dysku
     saveDraftNow();
     queueing = true;
     var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";

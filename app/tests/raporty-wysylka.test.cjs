@@ -230,3 +230,20 @@ test('2c: Update bez Worda (np. raport się nie zbudował) – błąd, nic nie z
   await assert.rejects(a.S.update(it), /REPORT_DOCX/);
   assert.equal((await a.R.list()).length, 0);
 });
+
+test('2c: Wyślij w kolejce (bez sieci), potem Update, potem mail wychodzi – zostaje nowsza wersja z Update (uwaga Codex #101)', async () => {
+  const a = app();
+  await a.S.init({});
+  await a.S.enqueue(item(1)); await settle(a);
+  const [sent] = await a.R.list();
+  a.root.navigator.onLine = false;
+  const t0 = Date.now();
+  await a.S.enqueue(Object.assign(item(4), { key: sent.key, at: t0 })); await settle(a); // Wyślij z odzyskanej: czeka w kolejce
+  assert.equal(a.mails.length, 1, 'bez sieci mail czeka');
+  await a.S.update(Object.assign(item(5), { key: sent.key, at: t0 + 1000 })); await settle(a); // późniejszy Update
+  a.root.navigator.onLine = true;
+  await a.S.run({}); await settle(a);
+  assert.equal(a.mails.length, 2, 'mail z kolejki wyszedł');
+  const [rec] = await a.R.list();
+  assert.equal(rec.docx[0], 5, 'w archiwum wersja z Update (nowsza)');
+});

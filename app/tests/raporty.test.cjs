@@ -241,3 +241,11 @@ test('2c: odzyskać można tylko raport z tego konta', async () => {
   t.setOwner('inny@example.com');
   await assert.rejects(t.store.setRec(a.id, true), /REPORT_MISSING/);
 });
+
+test('2c: get() nie zwraca raportu innego konta (np. stary adres #rec= po zmianie konta, uwaga Codex #101)', async () => {
+  const t = setup();
+  const a = await t.store.save(rep('A 01112026', { snap: snap() }));
+  assert.ok(await t.store.get(a.id));
+  t.setOwner('inny@example.com');
+  assert.equal(await t.store.get(a.id), null);
+});

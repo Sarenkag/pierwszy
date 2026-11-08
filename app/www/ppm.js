@@ -161,14 +161,31 @@ window.OEST_PPM = {
   // Odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026): edycja kopii wysłanego raportu nie zmienia listy PPM –
   // terminu, etapu klocka ani ⚙ wysyłki tej karty. P.sandbox(id): od tej chwili zapisy PPM na tej stronie idą tylko
   // do pamięci (telefon bez zmian), a karta id zaczyna bez etapu (pigułkę pokazuje strona: „Odzyskana”).
-  var box = null;
+  // Tylko wpis karty id idzie do pamięci; zapisy innych kart (np. potwierdzenie wysłania zaległego raportu przez kolejkę) trafiają do telefonu jak zwykle (uwaga Codex #101).
+  var box = null, boxId = "";
+  function obj(raw) { var a = null; try { a = JSON.parse(raw || "null"); } catch (e) {} return a && typeof a === "object" && !Array.isArray(a) ? a : null; }
   var LS = {
-    getItem: function (k) { return box && Object.prototype.hasOwnProperty.call(box, k) ? box[k] : localStorage.getItem(k); },
-    setItem: function (k, v) { if (box) box[k] = v; else localStorage.setItem(k, v); }
+    getItem: function (k) {
+      var raw = localStorage.getItem(k);
+      if (!box || !Object.prototype.hasOwnProperty.call(box, k)) return raw;
+      var a = obj(raw) || {};
+      if (box[k] === undefined) delete a[boxId]; else a[boxId] = box[k];
+      return JSON.stringify(a);
+    },
+    setItem: function (k, v) {
+      if (!box) { localStorage.setItem(k, v); return; }
+      var a = obj(v); if (!a) return; // mapy PPM to zawsze obiekty { id: … }
+      box[k] = a[boxId];
+      var real = obj(localStorage.getItem(k)) || {};
+      if (Object.prototype.hasOwnProperty.call(real, boxId)) a[boxId] = real[boxId]; else delete a[boxId];
+      localStorage.setItem(k, JSON.stringify(a));
+    }
   };
   P.sandbox = function (id) {
-    box = {};
-    ["oest.ppm.stage", "oest.ppm.unstarted"].forEach(function (k) { var a = {}; try { a = JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) {} delete a[id]; box[k] = JSON.stringify(a); });
+    box = {}; boxId = id;
+    // odzyskana zaczyna bez etapu i bez ręcznego „Nie rozpoczęta”; termin, zakończone okresy i ⚙ – kopia z telefonu
+    box["oest.ppm.stage"] = undefined; box["oest.ppm.unstarted"] = undefined;
+    ["oest.ppm.due", "oest.ppm.done", "oest.ppm.needs"].forEach(function (k) { var a = obj(localStorage.getItem(k)); if (a && Object.prototype.hasOwnProperty.call(a, id)) box[k] = a[id]; });
   };
   P.sandboxed = function () { return !!box; };
   function pad(n) { return String(n).padStart(2, "0"); }
