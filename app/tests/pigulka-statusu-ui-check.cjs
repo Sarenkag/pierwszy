@@ -18,7 +18,8 @@ const TRYBY = {
   nierozpoczeta: { pl: '– – – –', en: '– – – –', kolor: 'rgb(195, 201, 232)' },
   wtrakcie: { pl: 'W trakcie', en: 'In progress', kolor: 'rgb(240, 199, 94)' },
   wstrzymana: { pl: 'Wstrzymana', en: 'On hold', kolor: 'rgb(121, 184, 255)' },
-  gotowa: { pl: 'Gotowa', en: 'Ready', kolor: 'rgb(0, 216, 74)' }
+  gotowa: { pl: 'Gotowa', en: 'Ready', kolor: 'rgb(0, 216, 74)' },
+  odzyskana: { pl: 'Odzyskana', en: 'Recovered', kolor: 'rgb(163, 91, 255)' } // fioletowa, Grzegorz 08/11/2026 12:55
 };
 const SZEROKOSC = 98;
 const fails = [], R = {};

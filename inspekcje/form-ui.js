@@ -49,7 +49,9 @@
   var head = document.createElement("div");
   head.className = "ihead";
   head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">' + T("Imię", "Name") + '</span></label>' +
-    '<label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span></label></div>' +
+    '<label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span></label>' +
+    // odzyskana inspekcja (Grzegorz 08/11/2026 12:53): dopisek „Updated dd/mm/rrrr” przy dacie raportu – opcjonalny, domyślnie wyłączony
+    '<label class="icb" id="updBox" hidden><input type="checkbox" id="updOn"><span>Updated</span></label></div>' + // i18n-ok: dopisek w raporcie (raporty po angielsku)
     '<div class="iright"><div id="iEnds"></div><div id="iCntBox" title="OK / pytania"><b id="iCnt"></b> OK</div></div>';
   top.after(head);
   if (window.OESTBledy) OESTBledy.applyDom(head);
@@ -120,7 +122,7 @@
   // przy każdym otwarciu formularza: znaczniki od nowa, notatka zwinięta (chyba że coś w niej jest)
   new MutationObserver(function () {
     if (form.hidden) return;
-    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false;
+    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false; $("updOn").checked = false;
     kp.classList.toggle("open", !!$("komentarz").value.trim()); ovp.classList.remove("open"); menu.hidden = true;
     setTimeout(syncHead, 0);
   }).observe(form, { attributes: true, attributeFilter: ["hidden"] });

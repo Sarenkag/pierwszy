@@ -187,3 +187,57 @@ test('zwalnianie miejsca równolegle z zapisem nowej wersji: nowy Word (jeszcze 
   const rec = t.db.get(id);
   assert.ok(!rec.gone && rec.docx[0] === 9 && rec.dirty, 'nowa wersja zostaje w telefonie do wysłania na Dysk');
 });
+
+// ---------- etap 2c: odzyskiwanie do edycji (Grzegorz 08/11/2026) ----------
+const snap = (x = {}) => Object.assign({ v: 1, qk: ['a', 'b'], states: ['ok', 'fail'], fields: { dzien: '2026-11-06' }, photos: [{ zid: 'z1' }] }, x);
+
+test('2c: raport zapamiętuje dane inspekcji; ponowny zapis bez danych ich nie kasuje', async () => {
+  const t = setup();
+  await t.store.save(rep('DB-TB-1 06112026', { snap: snap() }));
+  await t.store.save(rep('DB-TB-1 06112026')); // np. ponowienie archiwum bez danych
+  const [r] = await t.store.list();
+  assert.deepStrictEqual(r.snap.states, ['ok', 'fail']);
+});
+
+test('2c: Odzyskaj → na liście odzyskanych; raport bez danych inspekcji nie da się odzyskać (mówimy wprost)', async () => {
+  const t = setup();
+  const a = await t.store.save(rep('DB-TB-1 06112026', { snap: snap() }));
+  const b = await t.store.save(rep('DB-TB-2 06112026'));
+  assert.deepStrictEqual(await t.store.recovered(), []);
+  await t.store.setRec(a.id, true);
+  await assert.rejects(t.store.setRec(b.id, true), /REPORT_NO_DATA/);
+  const rs = await t.store.recovered();
+  assert.deepStrictEqual(rs.map(r => r.name), ['DB-TB-1 06112026']);
+  assert.ok(rs[0].rec > 0);
+});
+
+test('2c: Update tej samej inspekcji = ten sam wpis i ten sam plik na Dysku (nadpisany), znacznik Odzyskana zostaje', async () => {
+  const t = setup();
+  const a = await t.store.save(rep('DB-TB-1 06112026', { key: 'DB-TB-1 06112026', at: 100, snap: snap() }));
+  await t.store.sync(t.drive);
+  await t.store.setRec(a.id, true);
+  await t.store.save(rep('DB-TB-1 06112026', { key: 'DB-TB-1 06112026', at: 200, docx: bytes(0.6, 9), snap: snap({ states: ['ok', 'ok'] }) }));
+  await t.store.sync(t.drive);
+  assert.strictEqual(t.files.size, 1, 'jeden plik na Dysku');
+  assert.deepStrictEqual(t.log, ['upload DB-TB-1 06112026.docx', 'update DB-TB-1 06112026.docx']);
+  const [r] = await t.store.recovered();
+  assert.ok(r.rec > 0, 'nadal Odzyskana'); assert.deepStrictEqual(r.snap.states, ['ok', 'ok']); assert.strictEqual(r.versions, 2);
+});
+
+test('2c: raport zwolniony z telefonu (jest na Dysku) – odzyskana inspekcja zostaje (dane bez Worda)', async () => {
+  const t = setup({ limits: { phoneLimitMB: 2 } });
+  const a = await t.store.save(rep('A 01112026', { snap: snap() }));
+  await t.store.setRec(a.id, true);
+  await t.store.sync(t.drive);
+  await t.store.save(rep('B 02112026')); await t.store.sync(t.drive); // limit 2 MB: A znika z telefonu
+  assert.deepStrictEqual((await t.store.list()).map(r => r.name), ['B 02112026']);
+  const [r] = await t.store.recovered();
+  assert.strictEqual(r.name, 'A 01112026'); assert.ok(r.gone); assert.deepStrictEqual(r.snap.states, ['ok', 'fail']);
+});
+
+test('2c: odzyskać można tylko raport z tego konta', async () => {
+  const t = setup();
+  const a = await t.store.save(rep('A 01112026', { snap: snap() }));
+  t.setOwner('inny@example.com');
+  await assert.rejects(t.store.setRec(a.id, true), /REPORT_MISSING/);
+});

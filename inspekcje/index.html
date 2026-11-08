@@ -457,7 +457,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
         <div class="row"><button class="btn" type="button" id="mdUse" data-en="✓ Insert into comment">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop" data-en="Discard">Odrzuć</button></div></div>
     </div>
 
-    <div class="sendrow" data-m="one sum"><button class="go" type="button" id="toQueue" data-en="Send">Wyślij</button><button class="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+    <div class="sendrow" data-m="one sum"><button class="go" type="button" id="toQueue" data-en="Send">Wyślij</button><button class="go" type="button" id="recUpdate" hidden>Update</button><button class="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
     <p class="hint" id="sendHint" data-m="one"></p>
     <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
     <button class="go" type="button" id="restoreIns" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</button>
@@ -1014,7 +1014,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // ---------- ekrany ----------
   var PPM = window.OEST_PPM || null;
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
+  // Odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026): inspekcja odtworzona z raportu w archiwum (moduly/raporty), otwierana
+  // z klocka Raporty (#rec=id). Osobny szkic, bez zmian na liście PPM (termin, etap, ⚙), pigułka „Odzyskana”, obok Wyślij przycisk Update.
+  var REC = null, REC_ID = (function () { try { return new URLSearchParams(location.hash.slice(1)).get("rec") || ""; } catch (e) { return ""; } })();
   function show(v) {
+    if (REC && (v === "home" || v === "list")) { leave(backUrl()); return; } // odzyskana: wyjście wraca do klocka Raporty
     if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { leave(backUrl()); return; }
     if (APP && v === "home" && location.hash === "#queue") { leave(backUrl()); return; } // z kolejki wracamy do listy inspekcji
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
@@ -1026,7 +1030,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
   // powrót tam, skąd przyszedłem (lista PPM, kalendarz, kolejka…) – zapisane przez app/www/index.html goInsp()
-  function backUrl() { var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); } catch (e) {} return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
+  function backUrl() { if (REC_ID) return "../index.html#settings/reports"; var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); } catch (e) {} return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
   function leave(url) { saveDraftNow().then(function () { return gm() ? OESTSender.whenIdle() : null; }).then(function () { location.href = url; }); } // szkic zapisany, zanim strona zniknie
   // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
@@ -1279,7 +1283,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
   // Szkic znika dopiero po wysłaniu raportu albo po „Wyczyść inspekcję” w menu ⋮.
   var draftOn = false, draftT = 0, draftSeq = 0;
-  function draftKey(t, code) { t = t || cur.type; code = code == null ? cur.code : code; return t && code ? "draft_" + t.id + "|" + code : ""; }
+  function draftKey(t, code) { if (REC && !t && code == null) return "rec_" + REC.id; /* odzyskana: własny szkic, inspekcja z listy PPM bez zmian */ t = t || cur.type; code = code == null ? cur.code : code; return t && code ? "draft_" + t.id + "|" + code : ""; }
   function draftFields() {
     // wszystkie pola formularza z id (data, podpis, Name/Date, Overall/Quote, komentarz…), bez plików i etapu klocka
     return Array.prototype.filter.call($("v-form").querySelectorAll("input[id],textarea[id],select[id]"), function (el) {
@@ -1317,11 +1321,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
-      if (d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
+      if (REC && !(d && d.v === 1)) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; } // pierwsze otwarcie odzyskanej: dane z raportu
+      if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
-      if (!d || !(d.photos && d.photos.length) || cur.type.flush) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
+      if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
       draftOn = true;
     }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
@@ -1535,7 +1540,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       var bad = tempBad(s[1], temps[i]); if (bad) outN++;
       pts.push(s[0] + " – " + KIND[s[1]] + ": " + n + "°C" + (bad ? " – out of range (" + LIMIT[s[1]] + ")" : ""));
     });
-    var d = { data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+    var d = { data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: pts, quote: "", site: cfg.site, komentarz: "", zakres: "", temps: slots.map(function (s, i) { var n = tempNum(temps[i]); return n === null ? "" : String(n); }),
       stan_ogolny: outN ? outN + " reading(s) out of range – record in the Fault and Remedial Actions Log" : "All readings within range" };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date()); d.opis = pts.join("\n");
@@ -1856,7 +1861,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var miss = all.filter(function (d) { return !cur.restOk && !items[d.code]; }).map(function (d) { return d.code; });
     if (miss.length) pts.push("Not inspected: " + miss.join(", ") + ".");
     var d = {
-      data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: t.batch, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+      data: dateTxt(w), inspektor: val("podpis"), urzadzenie: t.batch, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: t.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? t.scope : ""
     };
@@ -2333,6 +2338,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
 
   // ---------- dane raportu ----------
   function dateOn() { var c = document.getElementById("dateOn"); return !c || c.checked; }
+  // data w raporcie; odzyskana inspekcja z zaznaczonym „Updated” (Grzegorz 08/11/2026 12:53, domyślnie wyłączone): „06/11/2026 (Updated 08/11/2026)”
+  function updTxt() { var c = document.getElementById("updOn"); return REC && c && c.checked ? "Updated " + fmtDate(new Date()) : ""; }
+  function dateTxt(w) { var a = dateOn() ? fmtDate(w) : "", u = updTxt(); return a && u ? a + " (" + u + ")" : a || u; }
   function reportDate() {
     var v = $("dzien").value, n = new Date();
     if (!v) return n;
@@ -2343,14 +2351,14 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (cur.mode === "sum") return batchData(w);
     if (cur.type.temp) return tempData(w);
     if (cur.type.rooms) return roomsData(w);
-    if (cur.type.folder) return english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+    if (cur.type.folder) return english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: "", quote: "", site: cfg.site, komentarz: "", zakres: "", folder: true,
       obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "", flush: cur.type.flush && fl.on ? flushReport(w) : null });
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
     var d = {
-      data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
+      data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
@@ -2363,7 +2371,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // plant roomy: dane do wzoru firmy (siatka 4 w wierszu: {a}{b}{c}{d}) i tekst do PDF (siatka 3 w wierszu, tabulatory)
   function roomsData(w) {
-    var d = english({ data: dateOn() ? fmtDate(w) : "", inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
+    var d = english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site, komentarz: $("komentarz").value.trim(), zakres: "" });
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
     // 01/11 Grzegorz: w pomieszczeniach same kratki (układ się nie rozjeżdża), usterki pełnymi zdaniami + uwagi dopiero na końcu
@@ -2945,9 +2953,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     var kind = String(from.type && (from.type.name || from.type.title) || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
     return [B[b] ? b : "General", kind || "Other"];
   }
-  function enqueue(r, from) {
+  // pozycja kolejki wysyłki z gotowego raportu (Wyślij) – ta sama służy do „Update” odzyskanej inspekcji (bez maila)
+  function queueItem(r, from) {
     var d = r.data;
-    if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
@@ -2961,6 +2969,19 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
     };
+    if (from.mode === "one") it.snap = archiveSnap(); // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
+    var tp = from.ppm; if (tp && PPM) it.card = { name: PPM.short ? PPM.short(tp).name : tp.name, loc: PPM.loc ? PPM.loc(tp).code : "", freq: (tp.freq || [])[0] || "" }; // opis klocka odzyskanej (moduł raportów nie czyta listy PPM)
+    if (REC) { it.key = REC.key; it.ppmRef = it.ppm; it.ppm = ""; } // odzyskana: ten sam wpis w archiwum i ten sam plik na Dysku; klocek PPM bez zmian
+    return it;
+  }
+  // szkic bez plików: zdjęcia tylko jako odnośniki do modułu zdjęć (bez kopii w archiwum), bez znacznika Gotowa
+  function archiveSnap() {
+    try { var d = draftSnap(); delete d.fin; delete d.finPeriod; d.photos = (d.photos || []).filter(function (p) { return p && p.zid; }).map(function (p) { var q = Object.assign({}, p); delete q.blob; return q; }); return d; } catch (e) { return null; }
+  }
+  function enqueue(r, from) {
+    var d = r.data;
+    if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
+    var it = queueItem(r, from);
     // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
     if (sendBtn && sendBtn.step) sendBtn.step(T("Dodaję do kolejki…", "Adding to the queue…"));
     return dbP.then(function (db) {
@@ -3229,7 +3250,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       queue.forEach(function (q) { if (q.status === "sending") q.status = "wait"; });
     }).catch(function () {})
   ]).then(function () {
-    refresh(); renderHome(); openPpm();
+    refresh(); renderHome(); if (REC_ID) openRec(REC_ID); else openPpm();
     if (location.hash === "#queue") show("queue");
     if (window.OESTSender) OESTSender.init({
       onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
@@ -3247,6 +3268,13 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
 
   // ---------- wejście z listy PPM w apce (#ppm=id) ----------
   function renderPpmBar() {
+    if (REC) {
+      // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (moduly/znacznik), termin bez zmian
+      document.querySelectorAll(".ppmbar").forEach(function (el) { el.hidden = true; });
+      var hd = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), pill = $("recPill");
+      if (hd && window.OESTZnacznik) { if (!pill) { pill = document.createElement("span"); pill.id = "recPill"; hd.appendChild(pill); } pill.innerHTML = OESTZnacznik.status("odzyskana"); }
+      return;
+    }
     var t = cur.ppm;
     document.querySelectorAll(".ppmbar").forEach(function (el) {
       el.hidden = !t; if (!t) return;
@@ -3295,10 +3323,12 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     ["clean", "Clean and tidy", "Area clean, tidy and free of stored materials.", "Area untidy or used for storage – requires clearing."],
     ["labels", "Labels in place", "Labels and safety signage in place and legible.", "Labels or safety signage missing or illegible."],
     ["hazards", "No hazards", "No hazards, leaks or signs of overheating observed.", "Hazard observed – reported for action."]];
-  function openPpm() {
-    var t = PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
+  // t0, code0: odzyskana inspekcja (openRec) – ta sama karta i to samo urządzenie co w raporcie
+  function openPpm(t0, code0) {
+    var t = t0 || PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
-    cur.ppm = t; $("appMenu").href = "../index.html#ppm";
+    cur.ppm = t; $("appMenu").href = t0 ? backUrl() : "../index.html#ppm";
+    if (t.open && code0 && !t.dev) { cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; if (cur.type) openForm(code0); return; } // urządzenie z listy (np. izolator)
     if (t.open && t.dev) {
       // jedna rozdzielnica = osobna inspekcja: prosto do jej formularza
       cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0];
@@ -3337,6 +3367,53 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       checks: GENERIC_CPS.map(function (g) { return { key: g[0], cp: g[1], ok: g[2], fail: g[3], def: "ok" }; }) };
     openForm(t.name);
   }
+
+  // ---------- odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026) ----------
+  // Otwierana z klocka Raporty (Ustawienia → Raporty i zdjęcia). Dane: zapis inspekcji z archiwum raportów (moduly/raporty),
+  // potem własny szkic „rec_<id>”. Lista PPM, termin i etap karty zostają bez zmian (OEST_PPM.sandbox).
+  function openRec(id) {
+    var R = window.OESTRaporty;
+    var fail = function (e) { $("formHint").textContent = window.OESTBledy ? OESTBledy.text(e) : String(e && e.message || e); show("form"); };
+    if (!R) { fail(new Error("REPORT_MISSING")); return; }
+    R.get(id).then(function (r) {
+      if (!r) throw new Error("REPORT_MISSING");
+      if (!r.snap || !r.rec) throw new Error("REPORT_NO_DATA");
+      var m = r.meta || {}, t = m.ppm && PPM ? PPM.byId(m.ppm) : null;
+      REC = r; document.documentElement.classList.add("recmode"); $("recUpdate").hidden = false; if ($("updBox")) $("updBox").hidden = false;
+      if (t && PPM.sandbox) PPM.sandbox(t.id);
+      if (t) { openPpm(t, m.code); return; }
+      cur.type = TYPES.filter(function (x) { return x.id === m.type; })[0];
+      if (!cur.type) throw new Error("REPORT_NO_DATA");
+      $("appMenu").href = backUrl(); openForm(m.code);
+    }).catch(fail);
+  }
+  window.addEventListener("oest:lang", function () { if (REC) renderPpmBar(); });
+  // „Update” (Grzegorz 08/11/2026 12:54): uzupełniona odzyskana inspekcja – nowa wersja w telefonie i nadpisany Word na Dysku, BEZ maila.
+  // Data i termin bez zmian. Stan Dysku mówimy wprost (nic nie udajemy).
+  $("recUpdate").addEventListener("click", function () {
+    var b = this; if (queueing || !REC || !window.OESTSender || !OESTSender.update) return;
+    saveDraftNow();
+    queueing = true;
+    var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";
+    if (!btn) b.disabled = true;
+    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
+    freeBuilt();
+    buildAll().then(function (r) { return fitReport(r, buildAll); }).then(function (r) {
+      var it = queueItem(r, from); it.at = Date.now(); it.sentAt = (REC.meta || {}).sentAt || 0; // kiedy wysłany – bez zmian
+      return OESTSender.update(it).then(function () { return window.OESTRaporty.get(REC.id); }).then(function (now) {
+        if (now) REC = now;
+        var onDrive = now && now.driveId && !now.dirty;
+        msg = onDrive ? T("✓ Zapisano w telefonie i na Dysku (Word nadpisany). Mail nie poszedł.", "✓ Saved on the phone and on Drive (Word overwritten). No email sent.")
+          : T("✓ Zapisano w telefonie. Na Dysk pójdzie, gdy będzie połączenie z Dyskiem. Mail nie poszedł.", "✓ Saved on the phone. It goes to Drive once Drive is connected. No email sent.");
+        return btn ? btn.ok(T("Zapisano", "Saved")) : null;
+      });
+    }).catch(function (e) {
+      msg = T("Nie zapisano: ", "Not saved: ") + (window.OESTBledy ? OESTBledy.text(e) : buildErr(e));
+    }).then(function () {
+      queueing = false; if (btn) btn.restore(); b.disabled = false; updateFormHint();
+      $("formHint").textContent = msg;
+    });
+  });
 
   // W apce na Androida: powrót do menu głównego
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }

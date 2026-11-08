@@ -108,8 +108,9 @@
   function archive(it) {
     var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
     if (!R || !docx || it.noArchive) return Promise.resolve(true); // noArchive: ponowne wysłanie z przeglądarki raportów (raport już jest w archiwum). Bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
-    var rep = { key: it.key || it.name, at: it.sentAt || it.created || Date.now(), name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
-      meta: { ppm: it.ppm || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now() } };
+    var rep = { key: it.key || it.name, at: it.at || it.sentAt || it.created || Date.now(), /* it.at: chwila „Update” (nowsza wersja niż wysłana) */ name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
+      meta: { ppm: it.ppm || it.ppmRef || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now(), card: it.card || null }, // card: opis klocka odzyskanej (nazwa, lokalizacja, częstotliwość) od apki; ppmRef: odzyskana inspekcja (bez zmiany klocka PPM)
+      snap: it.snap || null }; // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
     var p = archived.then(function () { return R.save(rep); }).then(function () { return true; }, function () { return false; });
     archived = p;
     return p;
@@ -121,6 +122,15 @@
     return todo.reduce(function (p, it) {
       return p.then(function () { return archive(it).then(function (ok) { if (!ok) return; it.arch = ""; it.docx = new Uint8Array(0); it.files = []; return put(it); }); });
     }, Promise.resolve()).catch(function () {});
+  }
+  // „Update” odzyskanej inspekcji (Grzegorz 08/11/2026 12:54): nowa wersja raportu w telefonie i nadpisanie Worda na Dysku, BEZ maila.
+  // Zwraca { saved, drive }: saved = zapis w telefonie się udał; drive = wynik próby wysyłki na Dysk (null = nie było jak: brak sieci / Dysku / logowania).
+  function update(it) {
+    if (!root.OESTRaporty || !pickFile(it, "docx", DOCX_MIME)) return Promise.reject(new Error("REPORT_DOCX")); // bez Worda nie ma czego zapisać – nie udajemy
+    return archive(it).then(function (ok) {
+      if (!ok) throw new Error("STORAGE_WRITE");
+      return syncReports({ anyNet: true }).then(function (r) { return { saved: true, drive: r }; });
+    });
   }
   function driveAdapter(g) {
     return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile }; // update(id, blob, nowaNazwa?)
@@ -310,5 +320,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, syncReports: syncReports };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, syncReports: syncReports, update: update };
 })(window);

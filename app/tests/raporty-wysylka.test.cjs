@@ -180,3 +180,53 @@ test('ponowne wysłanie z przeglądarki raportów (noArchive): mail wychodzi, ar
   assert.equal(after.versions, before.versions); assert.equal(after.docx[0], 1);
   assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx'], 'Dysk nietknięty');
 });
+
+// ---------- etap 2c: odzyskana inspekcja – Update i Wyślij (Grzegorz 08/11/2026 12:54) ----------
+test('2c: Wyślij zapisuje w archiwum dane inspekcji (do „Odzyskaj do edycji”)', async () => {
+  const a = app();
+  await a.S.init({});
+  await a.S.enqueue(Object.assign(item(), { snap: { v: 1, states: ['ok'] } })); await settle(a);
+  const [rec] = await a.R.list();
+  assert.deepEqual(rec.snap, { v: 1, states: ['ok'] });
+  assert.equal(rec.meta.ppm, 'EFA-INS-010');
+});
+
+test('2c: Update = nowa wersja w telefonie i nadpisany Word na Dysku, BEZ maila; „wysłany” bez zmian', async () => {
+  const a = app();
+  await a.S.init({});
+  await a.S.enqueue(item(1)); await settle(a);
+  const [sent] = await a.R.list();
+  const up = Object.assign(item(2), { key: sent.key, ppm: '', ppmRef: 'EFA-INS-010', at: Date.now() + 1000, sentAt: sent.meta.sentAt, snap: { v: 1, states: ['ok', 'ok'] } });
+  const r = await a.S.update(up); await settle(a);
+  assert.equal(r.saved, true);
+  assert.equal(a.mails.length, 1, 'Update nie wysyła maila');
+  assert.equal(a.files.size, 1, 'ten sam plik na Dysku');
+  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx', 'update Weekly Flushing TB 08112026.docx']);
+  assert.equal(new Uint8Array(await [...a.files.values()][0].blob.arrayBuffer())[0], 2, 'na Dysku nowa wersja');
+  const [rec] = await a.R.list();
+  assert.equal(rec.versions, 2); assert.equal(rec.dirty, false);
+  assert.equal(rec.meta.sentAt, sent.meta.sentAt, 'data wysłania bez zmian');
+  assert.equal(rec.meta.ppm, 'EFA-INS-010', 'karta PPM zapamiętana (ponowne odzyskanie)');
+  assert.deepEqual(rec.snap.states, ['ok', 'ok']);
+});
+
+test('2c: Update bez Dysku: zapis w telefonie, Word czeka na Dysk (nic nie udajemy)', async () => {
+  const a = app();
+  await a.S.init({});
+  await a.S.enqueue(item(1)); await settle(a);
+  a.setDrive(false);
+  const [sent] = await a.R.list();
+  await a.S.update(Object.assign(item(3), { key: sent.key, at: Date.now() + 1000 })); await settle(a);
+  const [rec] = await a.R.list();
+  assert.equal(rec.dirty, true, 'Dysk ma jeszcze starą wersję');
+  assert.equal(rec.docx[0], 3);
+  assert.equal(a.mails.length, 1);
+});
+
+test('2c: Update bez Worda (np. raport się nie zbudował) – błąd, nic nie zapisane', async () => {
+  const a = app();
+  await a.S.init({});
+  const it = item(); it.docx = new Uint8Array(0);
+  await assert.rejects(a.S.update(it), /REPORT_DOCX/);
+  assert.equal((await a.R.list()).length, 0);
+});

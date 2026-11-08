@@ -73,7 +73,9 @@ html body .iphotos .pbtn{min-height:58px!important;min-width:0;display:flex;flex
 .need:has(input:disabled){opacity:.5}
 /* Wyślij + ⚙ ustawienia wysyłki (Grzegorz 04/11 11:37): zębatka obok, bez tick boxów na ekranie */
 .sendrow{display:flex;gap:8px;align-items:stretch}
-.sendrow #toQueue{flex:1;min-width:0}
+.sendrow #toQueue,.sendrow #recUpdate{flex:1 1 0;min-width:0}
+/* odzyskana inspekcja (etap 2c): Wyślij i Update tej samej wielkości obok siebie; bez Zakończ i bez terminu (data/termin bez zmian) */
+.recmode #finishIns,.recmode .ppmbar,.recmode #ppmStage{display:none!important}
 .sendrow .sendcfg{flex:0 0 52px;width:52px;padding:0;display:grid;place-items:center}
 .sendrow .sendcfg svg{width:24px;height:24px}
 #sendHint{margin-top:6px}

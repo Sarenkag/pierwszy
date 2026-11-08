@@ -7,7 +7,8 @@
  *  - na telefonie raporty (Word + PDF) bez limitu dni; po przekroczeniu 200 MB znikają najstarsze, i tylko te, które są już na Dysku;
  *    od 100 MB ostrzeżenie (jak w module zdjęć).
  *
- * Apka woła:  OESTRaporty.save({ name, docx, pdf, folder: [budynek, rodzaj], meta })  – po wysłaniu maila (albo „Update”)
+ * Apka woła:  OESTRaporty.save({ key, at, name, docx, pdf, folder: [budynek, rodzaj], meta, snap })  – po wysłaniu maila (albo „Update”)
+ *             OESTRaporty.setRec(id, true) / recovered()  – „Odzyskaj do edycji” i lista odzyskanych (etap 2c)
  *             OESTRaporty.sync(drive, { allowed })  – wysyła na Dysk raporty, których tam jeszcze nie ma albo które się zmieniły
  *             OESTRaporty.list() / get(id) / stats()
  * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), find(parentId, name), upload(parentId, name, blob), update(id, blob) },
@@ -85,6 +86,8 @@
         folder: folder,
         docx: rep.docx, pdf: rep.pdf || null,
         meta: rep.meta || (old && old.meta) || {},
+        // dane inspekcji do „Odzyskaj do edycji” (etap 2c): odpowiedzi, pola i odnośniki do zdjęć – bez plików, kilka KB
+        snap: rep.snap || (old && old.snap) || null, rec: old ? old.rec || 0 : 0,
         created: old ? old.created : t, updated: t, versions: old ? (old.versions || 1) + 1 : 1,
         driveId: old ? old.driveId || '' : '', driveName: old ? old.driveName || '' : '', dirty: true, synced: old ? old.synced || '' : ''
       };
@@ -108,7 +111,7 @@
       var p = plan(await mine(), lim);
       for (var i = 0; i < p.remove.length; i++) {
         var r = await deps.db.get(p.remove[i]);
-        if (r && !r.gone && r.driveId && !r.dirty) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, gone: true, bytes: 0 });
+        if (r && !r.gone && r.driveId && !r.dirty) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, meta: r.meta, snap: r.snap || null, rec: r.rec || 0, gone: true, bytes: 0 }); // dane inspekcji zostają: odzyskana inspekcja nie potrzebuje Worda
       }
       if (p.remove.length) emit();
       return p;
@@ -173,6 +176,17 @@
       save: save, sync: sync, enforce: enforce,
       list: async function () { return (await mine()).sort(function (a, b) { return a.updated < b.updated ? 1 : -1; }); },
       get: function (id) { return deps.db.get(id); },
+      /* Odzyskane do edycji (etap 2c): klocek Raporty pokazuje je jak zwykłe inspekcje z pigułką „Odzyskana” – także te, których Word jest już tylko na Dysku. */
+      recovered: async function () { return (await mine(true)).filter(function (r) { return r.rec && r.snap; }).sort(function (a, b) { return a.rec < b.rec ? 1 : -1; }); },
+      setRec: function (id, on) {
+        return serial(async function () {
+          var r = await deps.db.get(id);
+          if (!r || r.owner !== deps.owner()) throw Error('REPORT_MISSING');
+          if (on && !r.snap) throw Error('REPORT_NO_DATA');
+          r.rec = on ? r.rec || (deps.now ? deps.now() : Date.now()) : 0;
+          await deps.db.put(r); emit(); return r;
+        });
+      },
       stats: async function () { return stats(await mine(), lim); },
       busy: function () { return !!syncing; },
       limits: function () { return Object.assign({}, lim); }
