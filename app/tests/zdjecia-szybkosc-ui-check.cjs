@@ -81,6 +81,13 @@ async function run(browser, url, worker) {
   }
   r.decFirst = await send();
   r.decSecond = await send();
+  // inne zdjęcie o tej samej wielkości (różni się tylko w środku pliku) NIE może dostać wyniku przygotowanego dla poprzedniego
+  r.obce = await pg.evaluate(async () => {
+    const Z = window.OESTZdjecia, a = window.__ph[0], x = new Uint8Array(await a.arrayBuffer()), y = x.slice(); y[y.length >> 1] ^= 0xff;
+    const h0 = Z.preparedHits(); Z.prepare(a, 'dowod'); await Z.save(new File([y], 'inne.jpg', { type: 'image/jpeg' }), { source: 'test', kind: 'dowod' }).catch(() => null);
+    const h1 = Z.preparedHits(); await Z.save(new File([a], 'to-samo.jpg', { type: 'image/jpeg' }), { source: 'test', kind: 'dowod' });
+    return { inne: h1 - h0, toSamo: Z.preparedHits() - h1 };
+  });
   r.files = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const it = g.result.sort((a, b) => a.created - b.created).pop(); res(it ? (it.files || []).map(f => ({ name: f.name, size: (f.bytes || f.data || []).byteLength || (f.bytes || f.data || '').length || 0 })) : []); }; }; }));
   r.errs = errs; r.taps = taps;
   await ctx.close();
@@ -148,6 +155,7 @@ async function editorCheck(browser, url) {
       assert.ok(r.decFirst >= r.saved.length, n + ': pierwsze Wyślij zmniejsza każde zdjęcie (' + r.decFirst + ')');
       assert.equal(r.decSecond, 0, n + ': drugie Wyślij nie powinno zmniejszać zdjęć od nowa');
     }
+    for (const [n, r] of [['Worker', W], ['główny wątek', M]]) assert.deepEqual(r.obce, { inne: 0, toSamo: 1 }, n + ': wynik z podglądu tylko dla tego samego pliku (bajt po bajcie)');
     if (!process.env.OEST_BEZ_PODGLADU_W_TLE) for (const [n, r] of [['Worker', W], ['główny wątek', M]]) assert.equal(r.hits, r.saved.length, n + ': każde zdjęcie z aparatu ma być zmniejszone już w czasie podglądu (' + r.hits + '/' + r.saved.length + ')');
     assert.equal(W.via, 'worker', 'kompresja ma iść w Workerze');
     assert.equal(M.via, 'main', 'bez OffscreenCanvas – zapas w głównym wątku');

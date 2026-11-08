@@ -334,10 +334,11 @@
     async function sameBytes(a, b) {
       if (a === b) return true;
       if (!a || !b || !a.slice || !b.slice || a.size !== b.size) return false;
-      var n = Math.min(65536, a.size), parts = [[0, n], [a.size - n, a.size]];
-      for (var i = 0; i < parts.length; i++) {
-        var x = new Uint8Array(await a.slice(parts[i][0], parts[i][1]).arrayBuffer()), y = new Uint8Array(await b.slice(parts[i][0], parts[i][1]).arrayBuffer());
-        for (var j = 0; j < x.length; j++) if (x[j] !== y[j]) return false;
+      // cały plik, po 1 MB (inne zdjęcie tej samej wielkości nie może dostać cudzego wyniku – uwaga z przeglądu PR #95)
+      for (var at = 0, CH = 1 << 20; at < a.size; at += CH) {
+        var x = new Uint8Array(await a.slice(at, at + CH).arrayBuffer()), y = new Uint8Array(await b.slice(at, at + CH).arrayBuffer()), q = x.length >> 2, j = 0;
+        if (x.byteOffset % 4 === 0 && y.byteOffset % 4 === 0) { var x4 = new Uint32Array(x.buffer, x.byteOffset, q), y4 = new Uint32Array(y.buffer, y.byteOffset, q); for (; j < q; j++) if (x4[j] !== y4[j]) return false; j = q << 2; }
+        for (; j < x.length; j++) if (x[j] !== y[j]) return false;
       }
       return true;
     }
