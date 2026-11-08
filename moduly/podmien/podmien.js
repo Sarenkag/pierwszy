@@ -93,8 +93,16 @@
     if (rb.height > ra.height + 0.5) { el.style.minHeight = (rb.height - Math.max(0, ra.height - h)) + "px"; el.__oestMin = true; }
     if (row && cs.display !== "inline" && rb.width > ra.width + 0.5) { el.style.minWidth = (rb.width - Math.max(0, ra.width - w)) + "px"; el.__oestMin = true; }
   }
-  // fn() buduje HTML ekranu; ten sam fn w drugim języku (moduly/bledy wJezyku) wyznacza miejsce pod oba
-  function oba(el, fn) { var B = (el && el.ownerDocument.defaultView || {}).OESTBledy; if (B && B.wJezyku) rezerwuj(el, B.wJezyku(B.drugi(), fn)); }
-  var api = { html: html, rezerwuj: rezerwuj, miejsce: miejsce, oba: oba };
+  // fn() buduje HTML ekranu; adapter drugi(fn) wywołuje ten sam fn w drugim języku i wyznacza miejsce pod oba.
+  // Adapter ustawia aplikacja (ustaw); bez niego domyślnie moduly/bledy (wJezyku/drugi), jeśli jest na stronie.
+  var adapter = null;
+  function ustaw(a) { adapter = a && typeof a.drugi === "function" ? a : null; }
+  function oba(el, fn) {
+    if (!el) return;
+    var d = adapter && adapter.drugi;
+    if (!d) { var B = (el.ownerDocument.defaultView || {}).OESTBledy; if (B && B.wJezyku) d = function (f) { return B.wJezyku(B.drugi(), f); }; }
+    if (d) rezerwuj(el, d(fn));
+  }
+  var api = { html: html, rezerwuj: rezerwuj, miejsce: miejsce, oba: oba, ustaw: ustaw };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTPodmien = api;
 })(typeof window !== "undefined" ? window : globalThis);

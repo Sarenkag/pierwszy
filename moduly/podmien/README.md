@@ -5,6 +5,7 @@ Zasada Grzegorza: zmiana języka albo stanu niczego nie przerysowuje ani nie prz
 **Kontrakt**
 - `OESTPodmien.html(el, html)` – zamiast `el.innerHTML = html`. Nakłada nowy HTML na istniejące elementy: zmieniają się tylko teksty i atrybuty, elementy powstają/znikają tylko przy zmianie liczby pozycji. Uwaga: słuchacze zdarzeń przypięte do starych elementów zostają (używaj delegacji na kontenerze).
 - `OESTPodmien.oba(el, fn)` – `fn()` buduje HTML ekranu; ten sam `fn` wywołany w drugim języku (`OESTBledy.wJezyku`) wyznacza miejsce: teksty dostają min. wysokość (a w rzędzie min. szerokość) dłuższej wersji PL/EN.
+- `OESTPodmien.ustaw({ drugi: fn => html })` – adapter języka: `drugi(fn)` zwraca HTML z `fn()` zbudowany w drugim języku. Bez adaptera moduł używa `OESTBledy.wJezyku/drugi`, jeśli są na stronie; bez żadnego `oba` nic nie rezerwuje (pozostałe funkcje działają bez OEST).
 - `OESTPodmien.rezerwuj(el, html2)` – to samo z gotowym HTML drugiego języka.
 - `OESTPodmien.miejsce(el, tekst2)` – jeden tekst ustawiany przez JS (np. termin „Zostało 24 dni” / „Ends in 24d”).
 Ukryty element jest liczony, gdy się pokaże (ResizeObserver). Pomiar idzie przez chwilową zamianę samych węzłów tekstu w jednym kroku – bez nowych elementów i bez klatki na ekranie.
