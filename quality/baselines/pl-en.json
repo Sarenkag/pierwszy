@@ -1,0 +1,176 @@
+{
+  "schema": "oest.quality.baseline",
+  "version": 1,
+  "rule": "pl-en",
+  "note": "Znane odstępstwa od zasady „zmiana PL/EN nic nie przerysowuje ani nie drga” (app/tests/pl-en-ui-check.cjs). Wpis = ekran + rodzaj błędu. Lista może tylko maleć. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).",
+  "entries": [
+    {
+      "id": "PL_EN|#home|przerysowuje",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przerysowuje ekran — PL → EN przerysowuje ekran: usunięto 14, dodano 14 elementów (button.day z #hmDays); EN → PL: usunięto 14, dodano 14",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#ppm|przerysowuje",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przerysowuje ekran — PL → EN przerysowuje ekran: usunięto 69, dodano 69 elementów (button.day z #ppmDays; button.chip z #ppmChips; button.prow z #ppmList); EN → PL: usunięto 69, dodano 69",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#cal|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 2 elementów w innym miejscu niż po polsku: span.dn „Zlecenie Vantify” 112×19 @89,430 → 79×19 @72,430",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#zdjecia|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 31 elementów w innym miejscu niż po polsku: div.wrap „OEST OEST One East Side Towe” 412×1292 @0,0 → 412×1256 @0,0",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 24 elementów: div.wrap „OEST OEST One East Side Towe” 412×1585 @0,0 → 412×1567 @0,0",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/profile|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 6 elementów: label.field „Podpis tekstowy w formularza” 346×115 @33,535 → 346×97 @33,535",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/calendar|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 38 elementów: div.wrap „OEST OEST One East Side Towe” 412×1410 @0,0 → 412×1432 @0,0",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/reports|przerysowuje",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przerysowuje ekran — PL → EN przerysowuje ekran: usunięto 7, dodano 7 elementów (option z #rptB; div.rpt-empty z #rptList); EN → PL: usunięto 7, dodano 7",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/reports|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 7 elementów: #v-settings „OEST / UstawieniaRaporty i z” 380×738 @16,14 → 380×720 @16,14",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/ai|przerysowuje",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przerysowuje ekran — PL → EN przerysowuje ekran: usunięto 5, dodano 5 elementów (h2 z #modelBox; p.hint z #modelBox; label.field z #modelBox; p z #modelBox); EN → PL: usunięto 5, dodano 5",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/ai|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 28 elementów: div.wrap „OEST OEST One East Side Towe” 412×1136 @0,0 → 412×1099 @0,0",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#questions|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 1 elementów w innym miejscu niż po polsku: button.btn „Inspekcje” 90×34 @124,82 → 103×34 @154,82",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #home|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 71 elementów w innym miejscu niż po polsku: div.wrap „Inspekcje.One Eastside Tower” 396×655 @8,8 → 396×623 @8,8",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-001|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @133,72 → 143×48 @151,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-003|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @204,72 → 143×48 @191,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-014|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @73,72 → 143×48 @91,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-020|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @54,72 → 143×48 @72,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-021|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @123,72 → 143×48 @111,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-022|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @73,72 → 143×48 @91,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|inspekcje #ppm=EFA-INS-024|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 3 elementów w innym miejscu niż po polsku: #ppmStage „○ Nie rozpoczęta◐ W trakcie⏸” 143×48 @133,72 → 143×48 @151,72",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/contacts|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 7 elementów: div.panel „Import według etykietyPobier” 380×320 @16,788 → 380×338 @16,788 | p.hint „Pobieramy tylko osoby z wybr” 346×36 @33,843 → 346×55 @33,843 | button.btn „Pobierz etykiety” 346×48 @33,894 → 346×48 @33,912 | label.field „Wybrana etykietaNajpierw poł” 346×73 @33,956 → 346×73 @33,974",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#settings/drive|przesuwa",
+      "rule": "PL_EN",
+      "detail": "przełącznik PL/EN przesuwa elementy — PL → EN przesuwa 30 elementów: div.wrap „OEST OEST One East Side Towe” 412×1434 @0,0 → 412×1416 @0,0 | #v-settings „OEST / UstawieniaGoogle Driv” 380×1372 @16,14 → 380×1354 @16,14 | #settingsForm „GoogleNiepołączonoDostęp tyl” 380×1314 @16,72 → 380×1296 @16,72 | div.panel „Folder backupuIdentyfikator ” 380×595 @16,240 → 380×577 @16,240",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#reactive/config|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 7 elementów w innym miejscu niż po polsku: section.panel „Jedna pozycja w linii. Pojaw” 380×276 @16,80 → 380×257 @16,80 | p.rx-sub „Osoby i działy do „Kto zleci” 350×55 @31,149 → 350×36 @31,149 | label.field „Typy zleceń (pierwszy = domy” 350×121 @31,220 → 350×121 @31,202 | span „Typy zleceń (pierwszy = domy” 350×19 @31,220 → 350×19 @31,202",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    },
+    {
+      "id": "PL_EN|#powertrace/new|inny-uklad",
+      "rule": "PL_EN",
+      "detail": "po angielsku elementy są w innym miejscu niż po polsku — po angielsku 27 elementów w innym miejscu niż po polsku: div.wrap „OEST OEST One East Side Towe” 412×1995 @0,0 → 412×1973 @0,0 | #v-powertrace „OEST / Power trace · offline” 380×1933 @16,14 → 380×1911 @16,14 | #ptForm „Kod z naklejki — zachowany d” 380×1875 @16,72 → 380×1853 @16,72 | section.panel „ObwodyObwody — każdy numer i” 380×238 @16,1345 → 380×216 @16,1345",
+      "reason": "Zastany stan main przy wprowadzeniu testu PL/EN (08/11/2026, dzień w teście 06/11/2026, ekran 412×915). Do naprawy w osobnym zadaniu po decyzji Grzegorza.",
+      "owner": "Grzegorz"
+    }
+  ]
+}
