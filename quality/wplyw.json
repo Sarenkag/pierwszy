@@ -7,6 +7,7 @@
   "testy": {
     "app/tests/ekran-glowny-ui-check.cjs": ["index.html"],
     "app/tests/handover-ui-check.cjs": ["index.html"],
+    "app/tests/jezyk-profil-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/keys-ui-check.cjs": ["index.html"],
     "app/tests/nie-rozpoczeta-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/pasek-dni-ui-check.cjs": ["index.html"],
