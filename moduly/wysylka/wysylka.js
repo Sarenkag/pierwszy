@@ -107,7 +107,7 @@
   // Zwraca obietnicę: true = raport bezpiecznie w archiwum telefonu (dopiero wtedy wolno wyczyścić Worda z kolejki).
   function archive(it) {
     var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
-    if (!R || !docx) return Promise.resolve(true); // bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
+    if (!R || !docx || it.noArchive) return Promise.resolve(true); // noArchive: ponowne wysłanie z przeglądarki raportów (raport już jest w archiwum). Bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
     var rep = { key: it.key || it.name, at: it.sentAt || it.created || Date.now(), name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
       meta: { ppm: it.ppm || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now() } };
     var p = archived.then(function () { return R.save(rep); }).then(function () { return true; }, function () { return false; });

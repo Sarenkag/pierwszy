@@ -167,3 +167,16 @@ test('kolejka maili pusta, tylko Wi‑Fi, kliknięte Wyślij na danych: zaległy
   await a.S.run({ login: true, anyNet: true }); await settle(a);
   assert.equal((await a.R.stats()).pending, 0);
 });
+
+test('ponowne wysłanie z przeglądarki raportów (noArchive): mail wychodzi, archiwum i Dysk bez zmian', async () => {
+  const a = app();
+  await a.S.init({});
+  await a.S.enqueue(item()); await settle(a);
+  const before = (await a.R.list())[0];
+  const it = item(5); it.noArchive = true; it.type = 'archive';
+  await a.S.enqueue(it); await settle(a);
+  assert.equal(a.mails.length, 2);
+  const after = (await a.R.list())[0];
+  assert.equal(after.versions, before.versions); assert.equal(after.docx[0], 1);
+  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx'], 'Dysk nietknięty');
+});
