@@ -23,6 +23,7 @@
 | UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `pasek-dni`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
 | Wstecz telefonu | `moduly/wstecz` | systemowy Wstecz: okienko → poziom wyżej → pytanie o wyjście (08/11/2026) |
 | Zmiana treści bez drgań | `moduly/podmien`, `moduly/bledy` (`applyDom`, `wJezyku`) | podmiana HTML bez przerysowania, miejsce pod PL i EN (08/11/2026) |
+| Raporty PDF | `moduly/czcionka-pdf`, `moduly/word-pdf` | czcionka DejaVu dla jsPDF; PDF rysowany z wypełnionego formularza Word (Word = PDF, 08/11/2026) |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 
 ### Status integracji i przenośności (stan audytowy, nie certyfikat)
