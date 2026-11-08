@@ -140,6 +140,14 @@
       var body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'image/jpeg')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
       return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
     }
+    /* Moduł raportów: ten sam raport = ten sam plik (Grzegorz 08/11/2026: na Dysku tylko ostatnia wersja). */
+    async function findFile(parentId,name){
+      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');if(!name||name.length>200)throw Error('FILE_NAME');
+      var q="mimeType!='application/vnd.google-apps.folder' and trashed=false and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"' and '"+parentId+"' in parents";
+      var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:q,fields:'files(id,name)',pageSize:'1'}));
+      return r.files&&r.files[0]||null;
+    }
+    async function updateFile(id,blob){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media&fields=id,name',{method:'PATCH',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});}
     async function removeFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE'});}
     async function testMail(address){
       if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(address)||/[\r\n]/.test(address))throw Error('EMAIL_INVALID');
@@ -176,7 +184,7 @@
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
+    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,findFile:findFile,updateFile:updateFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
   }
   return {createGoogle:createGoogle};
 });

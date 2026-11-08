@@ -504,6 +504,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../ppm.js"></script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
+<script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
@@ -2936,6 +2937,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
 
   // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
   var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
+  // OEST Raporty / budynek / rodzaj – nazwy po angielsku jak raporty
+  function reportFolder(from) {
+    var t = from.ppm, sh = t && PPM && PPM.short ? PPM.short(t) : null, B = { TA: "Tower A", TB: "Tower B", P: "Pavilion" };
+    return [sh && B[sh.bld] || "General", sh && sh.name || (from.type && (from.type.title || from.type.id)) || "Other"];
+  }
   function enqueue(r, from) {
     var d = r.data;
     if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
@@ -2947,6 +2953,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
         d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
         "\nOverall Condition: " + d.stan_ogolny + (d.quote ? "\nQuote Required: " + d.quote : "") + "\n\n" +
         d.punkty.map(function (p) { return "- " + p; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "") + "\n",
+      rpt: reportFolder(from), // folder raportu na Dysku: budynek / rodzaj (Grzegorz 08/11/2026)
       docx: r.docx, pdf: r.pdf, photos: cfg.drivePhotos ? r.pics.map(function (p) { return p.bytes; }) : [],
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
