@@ -173,7 +173,7 @@ test('folder 200 MB, ostrzeżenia osobno od 100 MB (Grzegorz 05/11)', () => {
 function propDrive() {
   const d = fakeDrive(); d.finds = 0;
   d.upload = async (parent, name, blob, props) => { const id = 'u' + (d.files.size + 1); d.files.set(id, { parent, name, props }); return { id }; };
-  d.find = async (parent, name, props) => { d.finds++; for (const [id, f] of d.files) if (f.parent === parent && f.name === name && f.props && f.props.oestPhoto === props.oestPhoto) return { id }; return null; };
+  d.find = async (parent, name, props) => { d.finds++; for (const [id, f] of d.files) if (f.parent === parent && (!name || f.name === name) && f.props && f.props.oestPhoto === props.oestPhoto) return { id }; return null; };
   return d;
 }
 const photosOn = d => [...d.files.values()].filter(f => f.name); // pliki (foldery w fakeDrive mają tylko id)
@@ -234,4 +234,17 @@ test('zdjęcie usunięte w trakcie wysyłki: plik zdjęty z Dysku (bez osierocon
   assert.strictEqual((await store.sync(d)).sent, 0);
   assert.strictEqual(photosOn(d).length, 0);
   assert.strictEqual(rows.size, 0);
+});
+test('Codex #104: długa nazwa zdjęcia (> 200 znaków) – ponowna próba szuka tylko po id zdjęcia', async () => {
+  const { store } = fakeStore();
+  await store.save({ size: MB }, { category: 'Flushing', location: 'L'.repeat(80), code: 'C'.repeat(80), point: 'P'.repeat(80), when: new Date(2026, 10, 8, 9, 0) });
+  const d = propDrive(), up = d.upload, names = [];
+  d.find = (f => async (parent, name, props) => { names.push(name); return f(parent, name, props); })(d.find);
+  d.upload = async (...a) => { await up(...a); throw Error('NETWORK_LOST'); };
+  await assert.rejects(store.sync(d));
+  d.upload = up;
+  assert.strictEqual((await store.sync(d)).sent, 1);
+  assert.deepStrictEqual(names, ['']);
+  assert.strictEqual(photosOn(d).length, 1);
+  assert.ok(photosOn(d)[0].name.length > 200);
 });

@@ -217,7 +217,7 @@
           // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
           // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
           var props = { oestPhoto: r.id }, up = null;
-          if (r.upTry && drive.find) up = await drive.find(parent, r.name, props);
+          if (r.upTry && drive.find) up = await drive.find(parent, '', props); // tylko po id zdjęcia (nazwa nie musi być unikalna i bywa długa)
           if (!up) {
             if (!r.upTry) { var mark = await deps.db.get(r.id); if (!mark) continue; mark.upTry = true; await deps.db.put(mark); }
             up = await drive.upload(parent, r.name, r.blob, props);

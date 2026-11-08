@@ -82,3 +82,16 @@ test('native send: network failure or no answer = uncertain, Gmail error stays a
   await assert.rejects(g.sendMail({to:'me@example.com',subject:'s',files:[{name:'a.pdf',mime:'application/pdf',bytes:big}]}),/EMAIL_RESULT_UNCERTAIN/);
   mode='http';await assert.rejects(g.sendMail({to:'me@example.com',subject:'s',files:[{name:'a.pdf',mime:'application/pdf',bytes:big}]}),/GOOGLE_HTTP_400: bad/);
 });
+// Codex #104: ponowna próba wysyłki zdjęcia szuka pliku tylko po id zdjęcia – długa nazwa (> 200 znaków) nie blokuje wysyłki
+test('Drive: upload with appProperties, find by photo id only (no name, long names allowed)',async()=>{
+  const calls=[];const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'T'}),fetch:async(url,opts)=>{calls.push({url,opts});return {ok:true,status:200,json:async()=>({id:'f1',files:[{id:'f1'}]})};}});
+  await g.connect('drive');
+  const long='A'.repeat(80)+' '+'B'.repeat(80)+' '+'C'.repeat(40)+' 090000.jpg';assert.ok(long.length>200);
+  const up=calls.length;await g.uploadFile('fold1',long,new Blob(['x'],{type:'image/jpeg'}),{oestPhoto:'1b2c-3d'});
+  assert.match(await calls[up].opts.body.text(),/"appProperties":\{"oestPhoto":"1b2c-3d"\}/);
+  const r=await g.findFile('fold1','',{oestPhoto:'1b2c-3d'});assert.equal(r.id,'f1');
+  const q=new URL(calls[calls.length-1].url).searchParams.get('q');
+  assert.match(q,/appProperties has \{ key='oestPhoto' and value='1b2c-3d' \}/);assert.doesNotMatch(q,/name=/);assert.match(q,/'fold1' in parents/);
+  await assert.rejects(g.findFile('fold1','',{oestPhoto:"x' or name!='"}),/FILE_PROPS/);
+  await assert.rejects(g.findFile('fold1',''),/FILE_NAME/); // bez props nazwa nadal wymagana (raporty)
+});

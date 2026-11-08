@@ -144,10 +144,12 @@
       return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
     }
     /* Moduł raportów: ten sam raport = ten sam plik (Grzegorz 08/11/2026: na Dysku tylko ostatnia wersja). */
+    /* props (opcjonalnie): szukanie po appProperties; wtedy nazwa może być pusta (zdjęcia: tylko po id zdjęcia, nazwa bywa > 200 znaków) */
     async function findFile(parentId,name,props){
-      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');if(!name||name.length>200)throw Error('FILE_NAME');
       var ap=cleanProps(props);
-      var q="mimeType!='application/vnd.google-apps.folder' and trashed=false and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"' and '"+parentId+"' in parents";
+      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');if(ap?name&&name.length>255:!name||name.length>200)throw Error('FILE_NAME');
+      var q="mimeType!='application/vnd.google-apps.folder' and trashed=false and '"+parentId+"' in parents";
+      if(name)q+=" and name='"+name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'";
       if(ap)Object.keys(ap).forEach(function(k){q+=" and appProperties has { key='"+k+"' and value='"+ap[k]+"' }";});
       var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:q,fields:'files(id,name)',pageSize:'1'}));
       return r.files&&r.files[0]||null;
