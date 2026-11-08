@@ -157,7 +157,7 @@
       var todo = pending().filter(function (q) {
         return q.status !== "err" && q.status !== "sending" && (q.acct ? q.acct.toLowerCase() === me : !!o.login);
       }).sort(function (a, b) { return a.created - b.created; });
-      if (!todo.length || !online()) { if (online()) later(); return; } // nic do wysłania: dokończ zaległe raporty na Dysk
+      if (!todo.length || !online()) return;
       if (wifiOnly() && !onWifi() && !o.anyNet && !skipWifi) return;
       var g = G(), done = 0;
       // połączenie z Gmailem sprawdza tylko OESTGoogle.ready (cichy token, bez okna); okno logowania tylko po kliknięciu
@@ -196,11 +196,12 @@
         }, Promise.resolve(false));
       }, function (e) { loginErr = errText(e); }).then(function () {
         if (done) say(T("Wysłano ✓ ", "Sent ✓ ") + (done === 1 ? T("raport ", "report ") + todo[0].code : done + T(" raporty", " reports")));
-        if (done) later({ anyNet: !!o.anyNet }); // Word wysłanych raportów na Dysk (po zakończeniu tej rundy, poza blokadą wysyłki)
       });
       });
     }).catch(function (e) { loginErr = T("błąd kolejki w telefonie: ", "phone queue error: ") + errText(e); }).then(function () {
       sending = false; pos = null; skipWifi = false; lock = null; render();
+      // po każdej rundzie (też pustej albo bez Gmaila): zaległe raporty na Dysk, poza blokadą wysyłki maili; zgoda na dane z kliknięcia przechodzi dalej
+      later({ anyNet: !!o.anyNet });
       if (opts.onIdle) try { opts.onIdle(); } catch (e) {}
       var w = idle; idle = []; w.forEach(function (f) { f(); });
     }));
