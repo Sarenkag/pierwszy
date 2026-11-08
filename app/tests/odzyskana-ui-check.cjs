@@ -31,6 +31,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message));
     const kv = () => pg.evaluate(() => new Promise((res, rej) => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const t = rq.result.transaction('kv', 'readonly'), s = t.objectStore('kv'), out = {}; const c = s.openCursor(); c.onsuccess = () => { const k = c.result; if (!k) { rq.result.close(); res(out); return; } out[k.key] = k.value; k.continue(); }; }; rq.onerror = () => rej(rq.error); }));
     const qLen = () => pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.length); }; }; }));
+    const waitQ = async n => { for (let i = 0; i < 150; i++) { if (await qLen() > n) return; await pg.waitForTimeout(200); } throw new Error('raport nie trafił do kolejki w 30 s'); };
     const ppmLs = () => pg.evaluate(() => JSON.stringify(Object.keys(localStorage).filter(k => /^oest\.ppm\./.test(k)).sort().map(k => [k, localStorage.getItem(k)])));
     const recs = () => pg.evaluate(() => window.OESTRaporty.list());
     const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length }));
@@ -46,7 +47,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(!!dk, 'zwykły szkic inspekcji zapisany');
     const draft = all0[dk];
     await pg.locator('#toQueue').click();
-    await pg.waitForFunction(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.length > 0); }; }; }), null, { timeout: 30000 });
+    await waitQ(0); // raport w kolejce (odczyt IndexedDB po kolei, nie waitForFunction – obietnica byłaby od razu „prawdą”)
     const q = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result[0]); }; }; }));
     // 2. co Wyślij zapisuje dla archiwum: dane inspekcji (odpowiedzi, zdjęcie jako odnośnik, bez pliku) i opis klocka
     check(q.snap && JSON.stringify(q.snap.states) === JSON.stringify(draft.states), 'Wyślij: zapis inspekcji = szkic (odpowiedź NIE)');
@@ -112,7 +113,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
 
     // 5b. Wyślij z odzyskanej: mail z tym samym raportem (ten sam wpis w archiwum i plik na Dysku), klocek PPM bez zmian
     await pg.locator('#toQueue').click();
-    await pg.waitForFunction(n => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.length > n); }; }; }), qBefore, { timeout: 30000 });
+    await waitQ(qBefore);
     const q2 = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.sort((a, b) => a.created - b.created).pop()); }; }; }));
     check(q2.key === r1.key && q2.ppm === '' && q2.ppmRef === ID, 'Wyślij z odzyskanej: ten sam raport (klucz), bez ruszania klocka PPM (' + JSON.stringify({ key: q2.key, ppm: q2.ppm, ref: q2.ppmRef }) + ')');
     check(q2.snap && !q2.snap.states.includes('fail'), 'Wyślij z odzyskanej: zapis poprawionej inspekcji');
