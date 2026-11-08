@@ -192,6 +192,11 @@
       "file": "app/tests/odzyskana-ui-check.cjs",
       "passMarker": "ODZYSKANA PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/wstecz-ui-check.cjs",
+      "passMarker": "WSTECZ UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []

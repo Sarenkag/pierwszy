@@ -21,6 +21,7 @@
 | Magazyn zdjęć | `moduly/zdjecia` | pojedynczy magazyn, referencje, synchronizacja |
 | Wysyłka | `moduly/wysylka`, `settings-google.js` | Gmail, kolejka, stan |
 | UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `naglowek`, `znacznik`, `pasek-dni`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
+| Wstecz telefonu | `moduly/wstecz` | systemowy Wstecz: okienko → poziom wyżej → pytanie o wyjście (08/11/2026) |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 
 ### Status integracji i przenośności (stan audytowy, nie certyfikat)
@@ -68,4 +69,4 @@ Ten rejestr nie oznacza, że wszystkie moduły są już używane, poprawnie izol
 
 Mapa zależności ma pochodzić z kodu (w tym DOM, globalnych API i importów), a nie tylko z deklaracji AI. Wizualne narzędzia mogą wyświetlać mapę, ale nie stanowią źródła prawdy. **ARCH-027:** każdy moduł ma mieć własny `README.md` zawierający: kontrakt publiczny, zależności, stan użycia, testy, kompatybilność, ograniczenia.
 
-**Rzeczy do zweryfikowania, nie potwierdzone jako naprawione:** przejścia `location.href` w inspekcjach i niespójny Android Back (weryfikacja historii nawigacji), brak README w `moduly/bledy` i `moduly/zdjecia`, zależności łańcuchów skryptów, wykorzystanie modułów `wiedza`/`odczyt`/`naglowek`, przerwanie uploadu `zdjecia.js` po utworzeniu pliku zdalnego i przed utrwaleniem `driveId`, rozdzielenie UI od formularzy w monolicie. Zmiany tych obszarów wymagają osobnego zlecenia.
+**Rzeczy do zweryfikowania, nie potwierdzone jako naprawione:** (Android Back i przejścia do inspekcji: `moduly/wstecz`, test `wstecz-ui-check`, 08/11/2026 – do sprawdzenia na Pixelu) brak README w `moduly/bledy` i `moduly/zdjecia`, zależności łańcuchów skryptów, wykorzystanie modułów `wiedza`/`odczyt`/`naglowek`, przerwanie uploadu `zdjecia.js` po utworzeniu pliku zdalnego i przed utrwaleniem `driveId`, rozdzielenie UI od formularzy w monolicie. Zmiany tych obszarów wymagają osobnego zlecenia.
