@@ -103,6 +103,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/klocek-inspekcji-ui-check.cjs",
+      "passMarker": "KLOCEK INSPEKCJI UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/pigulka-statusu-ui-check.cjs",
       "passMarker": "PIGULKA STATUSU UI PASS",
       "timeoutSec": 900
