@@ -17,8 +17,8 @@
 
 **Znane ryzyka wymagające odrębnego zadania naprawczego:**
 1. `app/tests/raport-ui-check.cjs` pomija formularze przy niedostępnym przycisku; minimalny próg pięciu nie dowodzi kontroli całego katalogu.
-2. `app/tests/vantify-plan.test.cjs` (audyt: okolice L85–93) i `app/www/ppm.js` (okolice L226) akceptują/wyliczają daty po ostatnim zleceniu. **To sprzeczne z zatwierdzoną regułą: aplikacja nigdy nie wylicza kolejnych terminów Vantify.** Po ostatnim zleceniu nie powstaje nowe zadanie ani data; ewentualne wymaganie innego zachowania wymaga nowej decyzji właściciela. Samo naprawienie kodu i testu jest odrębnym zleceniem.
-3. `moduly/zdjecia/zdjecia.js` zapisuje lokalny `driveId` po uploadzie; awaria pomiędzy działaniami może skutkować duplikatem lub osieroconym zdalnym plikiem.
+2. ~~`app/tests/vantify-plan.test.cjs` i `app/www/ppm.js` wyliczały daty po ostatnim zleceniu.~~ **Naprawione 08/11/2026:** karta ze zleceniami Vantify po ostatnim zleceniu z importu nie ma terminu („Brak kolejnego zlecenia w Vantify”), `P.close` nic nie zapisuje, kalendarz nie planuje dat; testy w `vantify-plan.test.cjs`. Karty bez zleceń w Vantify (Update + częstotliwość) bez zmian.
+3. ~~`moduly/zdjecia/zdjecia.js`: awaria między uploadem a zapisem `driveId` → duplikat lub osierocony plik.~~ **Naprawione 08/11/2026:** plik na Dysku nosi id zdjęcia (`appProperties.oestPhoto`), przed wysyłką znacznik `upTry`; ponowna próba najpierw szuka pliku po id zdjęcia; zdjęcie usunięte w trakcie wysyłki – plik zdejmowany z Dysku. Testy w `zdjecia.test.cjs`.
 4. Zmiany PL/EN, Android Back i wszystkie drogi wejścia do ekranu wymagają testów end-to-end.
 5. Obecny workflow ma uprawnienie `contents: write` dla całego joba; przyszły podział build/release i ochrona bramek wymagają osobnej decyzji i konfiguracji.
 6. Testy webowe nie dowodzą zachowania natywnych pluginów na Pixelu 8 Pro.

@@ -10,8 +10,9 @@
  *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
  * Moduł sam:  kompresuje (jakość z ustawień), zapisuje w osobnym magazynie na telefonie (IndexedDB „oest-zdjecia”),
  *             pilnuje limitu miejsca, nadaje nazwę i folder (dzień / kategoria), a przez sync() wysyła na dysk.
- * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), upload(parentId, name, blob), remove(id) },
- * więc ten sam moduł zadziała w innej apce z innym dyskiem.
+ * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), upload(parentId, name, blob, props), remove(id),
+ * find(parentId, name, props) }, więc ten sam moduł zadziała w innej apce z innym dyskiem. props = { oestPhoto: id zdjęcia }
+ * – plik na dysku nosi id zdjęcia, więc po przerwanej wysyłce ponowna próba znajduje ten sam plik zamiast robić duplikat.
  *
  * Zasady bezpieczeństwa danych:
  *  - z telefonu znikają tylko zdjęcia, które są już na dysku (niewysłanych nie kasujemy nigdy),
@@ -212,10 +213,18 @@
           var r = all[i], parent;
           try { parent = await folderId(r.folder); }
           catch (e) { if (s.rootId && /404/.test(String(e && e.message))) { s = setSettings({ rootId: '' }); folders = {}; parent = await folderId(r.folder); } else throw e; }
-          var up = await drive.upload(parent, r.name, r.blob);
+          // Przerwana wysyłka (audyt 06/11/2026): plik mógł już trafić na dysk, zanim apka zapisała driveId (zamknięcie apki,
+          // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
+          // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
+          var props = { oestPhoto: r.id }, up = null;
+          if (r.upTry && drive.find) up = await drive.find(parent, '', props); // tylko po id zdjęcia (nazwa nie musi być unikalna i bywa długa)
+          if (!up) {
+            if (!r.upTry) { var mark = await deps.db.get(r.id); if (!mark) continue; mark.upTry = true; await deps.db.put(mark); }
+            up = await drive.upload(parent, r.name, r.blob, props);
+          }
           var fresh = await deps.db.get(r.id);
-          if (!fresh) continue;
-          fresh.driveId = up.id; fresh.synced = new Date(deps.now()).toISOString();
+          if (!fresh) { try { await drive.remove(up.id); } catch (e) {} continue; } // zdjęcie usunięte w trakcie: bez osieroconego pliku na dysku
+          fresh.driveId = up.id; fresh.upTry = false; fresh.synced = new Date(deps.now()).toISOString();
           await deps.db.put(fresh); sent++; emit();
           await enforce(drive);
         }
