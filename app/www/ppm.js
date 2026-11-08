@@ -343,12 +343,13 @@ window.OEST_PPM = {
   P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
   // qid = id raportu w kolejce: inspekcja otwarta po „Wyślij” (s = prog/hold, mail = queued) dostaje ✉ wysłany tylko za swój ostatni raport
+  // Potwierdzenie z kolejki dotyczy zwykłego raportu: zapis prosto do telefonu, z pominięciem kopii odzyskanej inspekcji (uwaga Codex #101)
   P.markSent = function (id, qid) {
-    var t = P.byId(id); if (!t) return; var a = stages(), r = a[id]; if (!r) return;
+    var t = P.byId(id); if (!t) return; var a; try { a = JSON.parse(localStorage.getItem(SK) || "{}") || {}; } catch (e) { a = {}; } var r = a[id]; if (!r) return;
     if ((r.s === "queued" || r.s === "sent") && (!qid || !r.mailId || r.mailId === qid)) { r.s = "sent"; r.sentAt = Date.now(); r.day = today0(); /* klocek „Wysłana” żyje co najmniej do końca dnia wysyłki */ }
     else if (!(r.mail && (!qid || !r.mailId || r.mailId === qid))) return;
     if (r.mail && (!qid || !r.mailId || r.mailId === qid)) { r.mail = "sent"; r.mailSentAt = Date.now(); }
-    try { LS.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
+    try { localStorage.setItem(SK, JSON.stringify(a)); } catch (e) {} try { window.dispatchEvent(new CustomEvent("oest:ppm-stage")); } catch (e) {}
   };
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty
   // raport usunięty z kolejki przed wysłaniem: okres znów otwarty, termin wraca na ten sprzed wysłania.

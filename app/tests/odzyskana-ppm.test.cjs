@@ -51,3 +51,16 @@ test('sandbox: potwierdzenie wysłania INNEJ inspekcji (kolejka na tej stronie) 
   assert.equal(real[t.id], undefined, 'odzyskana karta: nic w telefonie');
   assert.equal(a.P.stage(t).s, 'prog', 'odzyskana: etap tylko w pamięci strony');
 });
+
+test('sandbox: potwierdzenie wysłania zwykłego raportu TEJ SAMEJ karty zostaje w telefonie (uwaga Codex #101, runda 3)', () => {
+  const a = load();
+  const t = a.P.tasks.find(x => x.freq && x.freq.length);
+  a.P.setStage(t, { s: 'queued', mail: 'queued', mailId: 'q7' }); // zwykły raport czeka w kolejce
+  a.P.sandbox(t.id);
+  a.P.setStage(t, { s: 'prog' }); // edycja odzyskanej
+  a.P.markSent(t.id, 'q7'); // kolejka wysłała zwykły raport
+  assert.equal(JSON.parse(a.data.get('oest.ppm.stage'))[t.id].s, 'sent', 'zwykła karta: Wysłana zapisana w telefonie');
+  a.P.setStage(t, { s: 'hold' }); // kolejna edycja odzyskanej nie cofa potwierdzenia
+  assert.equal(JSON.parse(a.data.get('oest.ppm.stage'))[t.id].s, 'sent', 'po dalszej edycji odzyskanej nadal Wysłana');
+  assert.equal(a.P.stage(t).s, 'hold', 'odzyskana: etap tylko w pamięci strony');
+});

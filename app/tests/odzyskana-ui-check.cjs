@@ -194,6 +194,42 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(qOffId)); await pg.waitForTimeout(2500);
     check((await form()).fails === 1, 'pytania wyłączone w karcie: po ponownym otwarciu nadal NIE');
     check(await pg.evaluate(ID => JSON.parse(localStorage.getItem('oest.ppm.needs'))[ID].q === false, ID), 'zwykła karta PPM: pytania nadal wyłączone');
+    // 12. odzyskana inspekcja ze zdjęć formularza (AOV) z wyłączonym Wordem w ⚙ maila: Update i tak robi Word do archiwum/na Dysk (uwaga Codex #101)
+    //     + zdjęcie, którego moduł zdjęć nie przyjął (zapis awaryjny w szkicu): zapis w raporcie je liczy, a odzyskana nie nadpisze raportu
+    const AOV = 'EFA-INS-003';
+    const sendAov = async failSave => {
+      await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+      await pg.goto(B + '/inspekcje/index.html#ppm=' + AOV); await pg.waitForTimeout(2500);
+      await pg.evaluate(({ AOV, failSave }) => { const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[AOV] = Object.assign({}, n[AOV] || {}, { xw: false, xp: true }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
+        if (failSave) window.OESTZdjecia.save = () => Promise.reject(new Error('brak miejsca')); }, { AOV, failSave });
+      const n0 = await qLen();
+      await pg.setInputFiles('#galIn', { name: 'f.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500);
+      await pg.locator('#toQueue').click(); await waitQ(n0);
+      return pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.sort((a, b) => b.created - a.created)[0]); }; }; }));
+    };
+    const toArchive = (qa, key) => pg.evaluate(async ({ qa, key }) => {
+      const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>X</w:t></w:r></w:p></w:body></w:document>');
+      const r = await window.OESTRaporty.save({ key, at: 1, name: key, docx: z.generate({ type: 'uint8array' }), folder: qa.rpt, meta: { ppm: qa.ppm, type: qa.type, code: qa.code, sentAt: 1, card: qa.card }, snap: qa.snap });
+      await window.OESTRaporty.setRec(r.id, true); return r.id;
+    }, { qa, key });
+    const qa = await sendAov(false);
+    check(qa.snap && qa.snap.photos.length === 1 && !qa.snap.lost, 'AOV: zdjęcie formularza w zapisie (' + JSON.stringify(qa.snap && { n: qa.snap.photos.length, lost: qa.snap.lost }) + ')');
+    const aovId = await toArchive(qa, 'aov-bez-worda');
+    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(aovId)); await pg.waitForTimeout(2500);
+    await pg.locator('#recUpdate').click();
+    for (let i = 0; i < 100 && !/Zapisano|Brakuje|nie|not/i.test(await pg.locator('#formHint').textContent()); i++) await pg.waitForTimeout(200);
+    const aovHint = await pg.locator('#formHint').textContent();
+    const aovRec = await pg.evaluate(id => window.OESTRaporty.get(id).then(r => ({ v: r.versions, w: r.docx && r.docx.length })), aovId);
+    check(/Zapisano w telefonie/.test(aovHint) && aovRec.v === 2 && aovRec.w > 0, 'AOV bez Worda w ⚙: Update zapisuje nową wersję z Wordem (' + aovHint + ', ' + JSON.stringify(aovRec) + ')');
+    const ql = await sendAov(true);
+    check(ql.snap && ql.snap.lost === 1, 'zdjęcie tylko w zapisie awaryjnym: policzone w zapisie raportu (' + JSON.stringify(ql.snap && { n: ql.snap.photos.length, lost: ql.snap.lost }) + ')');
+    const lostAov = await toArchive(ql, 'aov-awaryjne');
+    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(lostAov)); await pg.waitForTimeout(2500);
+    await pg.locator('#recUpdate').click(); await pg.waitForTimeout(800);
+    check(/Brakuje 1 zdjęć/.test(await pg.locator('#formHint').textContent()), 'zapis awaryjny: odzyskana mówi, czego brakuje');
+    check((await pg.evaluate(id => window.OESTRaporty.get(id), lostAov)).versions === 1, 'zapis awaryjny: raport bez zmian');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   errors.forEach(e => fails.push('błąd strony: ' + e));

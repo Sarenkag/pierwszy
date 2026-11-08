@@ -1270,7 +1270,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
     draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
     roomNotes = {};
-    restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -1300,6 +1300,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       roomNotes: Object.assign({}, roomNotes), temps: temps.slice(), dateTouched: dateTouched, fields: f,
       fl: JSON.parse(JSON.stringify(fl)),
       photos: photos.map(savedPhoto).concat(keptSaved),
+      lost: REC && recLost ? recLost : undefined,
       needs: REC && cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : undefined // odzyskana: jej własne ustawienia pytań (karta PPM bez zmian)
     };
   }
@@ -1322,7 +1323,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
       if (my !== draftSeq || tok !== formSeq || cur.code !== code) return;
       // zakończona w poprzednim terminie (etap klocka już wygasł): nowy termin = pusty formularz
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
-      if (REC && d === undefined) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; } // pierwsze otwarcie odzyskanej: dane z raportu (po „Wyczyść” szkic = null i zostaje pusty)
+      if (REC && d === undefined) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; }
+      if (REC) recLost = d && d.lost > 0 ? d.lost : 0; // zdjęcia raportu, których nie było w module zdjęć (zapis awaryjny) // pierwsze otwarcie odzyskanej: dane z raportu (po „Wyczyść” szkic = null i zostaje pusty)
       if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
@@ -1797,6 +1799,7 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie
   var restoring = 0, restSeq = 0, formSeq = 0, pendingPh = 0;
+  var recLost = 0; // odzyskana: zdjęcia z raportu, których nie da się odtworzyć (nie były w module zdjęć)
   var keptSaved = []; // zapisane zdjęcia, których nie udało się odczytać: nie giną przy ponownym zapisie // restoring = numer trwającego wczytywania (rośnie, żeby stary wynik nie trafił do nowego formularza)
   function restoreItem(it) {
     override = Object.assign({}, it.override); faultsOn = Object.assign({}, it.faultsOn);
@@ -2823,8 +2826,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
   // scalone w jeden dokument albo osobne pliki, PDF / Word. r.pdf = pełny PDF (podgląd, kopia w telefonie do odtworzenia inspekcji),
   // r.files = to, co faktycznie idzie mailem.
-  function buildAll() {
+  function buildAll(opt) {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
+    if (opt && opt.word) n = Object.assign({}, n, { xw: true }); // Update: Word do archiwum i na Dysk zawsze, niezależnie od ⚙ maila (uwaga Codex #101)
     var PDF = "application/pdf";
     function file(suffix, mime, bytes) { return { name: name + suffix + (mime === PDF ? ".pdf" : ".docx"), mime: mime, bytes: bytes }; }
     function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
@@ -2981,7 +2985,11 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   }
   // szkic bez plików: zdjęcia tylko jako odnośniki do modułu zdjęć (bez kopii w archiwum), bez znacznika Gotowa
   function archiveSnap() {
-    try { var d = draftSnap(); if (cur.ppm && PPM && PPM.needs) d.needs = PPM.needs(cur.ppm); delete d.fin; delete d.finPeriod; d.photos = (d.photos || []).filter(function (p) { return p && p.zid; }).map(function (p) { var q = Object.assign({}, p); delete q.blob; return q; }); return d; } catch (e) { return null; }
+    try { var d = draftSnap(); if (cur.ppm && PPM && PPM.needs) d.needs = PPM.needs(cur.ppm); delete d.fin; delete d.finPeriod;
+      var all = (d.photos || []).filter(Boolean);
+      d.photos = all.filter(function (p) { return p.zid; }).map(function (p) { var q = Object.assign({}, p); delete q.blob; return q; });
+      d.lost = (d.lost || 0) + all.length - d.photos.length; // zdjęcia tylko w zapisie awaryjnym (bez modułu zdjęć): po odzyskaniu ich brakuje – Update/Wyślij nie nadpiszą raportu (uwaga Codex #101)
+      return d; } catch (e) { return null; }
   }
   function enqueue(r, from) {
     var d = r.data;
@@ -3075,8 +3083,9 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
   function sendOk() { return sendBtn ? sendBtn.ok() : null; }
   // odzyskana bez części zdjęć (nie ma ich już w telefonie): Wyślij / Update nadpisałyby pełny raport niepełnym – nie pozwalamy
   function recMissing() {
-    if (!REC || !keptSaved.length) return false;
-    $("formHint").textContent = T("Brakuje ", "Missing ") + keptSaved.length + T(" zdjęć z raportu (nie ma ich już w telefonie). Wyślij i Update nadpisałyby raport bez nich – raport w telefonie i na Dysku zostaje bez zmian.", " photos from the report (no longer on the phone). Send and Update would overwrite the report without them – the report on the phone and on Drive stays unchanged.");
+    var miss = keptSaved.length + recLost;
+    if (!REC || !miss) return false;
+    $("formHint").textContent = T("Brakuje ", "Missing ") + miss + T(" zdjęć z raportu (nie ma ich już w telefonie). Wyślij i Update nadpisałyby raport bez nich – raport w telefonie i na Dysku zostaje bez zmian.", " photos from the report (no longer on the phone). Send and Update would overwrite the report without them – the report on the phone and on Drive stays unchanged.");
     return true;
   }
   async function queueBtn(b, fromPreview, finish) {
@@ -3416,7 +3425,8 @@ var FONT_BOLD = "AAEAAAAOAIAAAwBgR0RFRgWNBrMAAFTIAAAALkdQT1N9ioeDAABU+AAAFCRHU1V
     if (!btn) b.disabled = true;
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
     freeBuilt();
-    buildAll().then(function (r) { return fitReport(r, buildAll); }).then(function (r) {
+    var buildWord = function () { return buildAll({ word: true }); };
+    buildWord().then(function (r) { return fitReport(r, buildWord); }).then(function (r) {
       var it = queueItem(r, from); it.at = Date.now(); it.sentAt = (REC.meta || {}).sentAt || 0; // kiedy wysłany – bez zmian
       return OESTSender.update(it).then(function () { return window.OESTRaporty.get(REC.id); }).then(function (now) {
         if (now) REC = now;
