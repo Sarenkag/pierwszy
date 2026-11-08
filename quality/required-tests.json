@@ -197,6 +197,16 @@
       "file": "app/tests/wstecz-ui-check.cjs",
       "passMarker": "WSTECZ UI PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/word-pdf-ui-check.cjs",
+      "passMarker": "WORD PDF UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/pl-en-ui-check.cjs",
+      "passMarker": "PL EN UI PASS",
+      "timeoutSec": 900
     }
   ],
   "allowedSkips": []
