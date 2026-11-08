@@ -106,6 +106,7 @@
     $("iCntBox").hidden = !rows.length || $("ck").closest(".panel").hidden; // pytania wyłączone w tej inspekcji: bez licznika
     var b = bar && bar.querySelector("b");
     $("iEnds").textContent = b ? b.textContent : "";
+    if (b && b.dataset.alt && window.OESTPodmien) OESTPodmien.miejsce($("iEnds"), b.dataset.alt); // termin PL/EN w tym samym miejscu: etap obok nie skacze
     $("nameTx").textContent = $("nameOn").checked ? (pd.value || T("Imię", "Name")) : T("Imię", "Name");
   }
   new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });

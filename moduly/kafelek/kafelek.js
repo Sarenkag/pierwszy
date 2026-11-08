@@ -19,6 +19,8 @@
     "html body .kf b{display:block;font-family:var(--font-body)!important;font-size:15px!important;font-weight:650!important;line-height:1.2;text-transform:none!important;letter-spacing:0!important;overflow-wrap:anywhere}" +
     "html body .kf small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px!important;line-height:1.3;color:var(--muted)}" +
     "html body .kf small:empty{display:none}" +
+    // nazwa i opis na całą szerokość kafelka (tekst wyśrodkowany w środku) – inna długość PL/EN nie przesuwa ich pudełek
+    "html body .kf b,html body .kf small{align-self:stretch}" +
     // licznik w rogu: moduly/znacznik (.kf-n)
     "html body .kf:disabled{opacity:.45}" +
     // ruch kafelka z tabeli ruchu (moduly/wyglad/wyglad.css, rola „kafelek”): naciśnięcie i płynna zmiana stanu; w nawiasie wartości zapasowe
