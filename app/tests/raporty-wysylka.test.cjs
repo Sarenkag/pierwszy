@@ -113,3 +113,31 @@ test('Reactive bez budynku: folder OEST Raporty / Reactive', async () => {
   await a.S.enqueue(it); await settle(a);
   assert.deepEqual([...a.folders.keys()], ['root/OEST Raporty', 'f1/Reactive']);
 });
+
+test('Word tylko w liście plików wg ⚙ (formularz ze zdjęć / Flushing basic): też trafia do archiwum i na Dysk', async () => {
+  const a = app();
+  await a.S.init({});
+  const it = item(); const docx = it.docx, pdf = it.pdf; it.docx = new Uint8Array(0); it.pdf = new Uint8Array(0);
+  it.files = [{ name: it.name + '.pdf', mime: 'application/pdf', bytes: pdf }, { name: it.name + ' - basic.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', bytes: new Uint8Array(10).fill(7) }, { name: it.name + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', bytes: docx }];
+  await a.S.enqueue(it); await settle(a);
+  assert.equal(a.mails.length, 1);
+  const [rec] = await a.R.list();
+  assert.equal(rec.docx.length, 1000, 'główny Word „nazwa.docx”'); assert.equal(rec.pdf.length, 1200);
+  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx']);
+});
+
+test('archiwum w telefonie nie zapisało się (np. brak miejsca): Word zostaje w kolejce, potem trafia do archiwum bez drugiego maila', async () => {
+  const a = app();
+  await a.S.init({});
+  const save = a.R.save; let fail = true;
+  a.R.save = r => fail ? Promise.reject(Error('QuotaExceededError')) : save(r);
+  await a.S.enqueue(item()); await settle(a);
+  assert.equal(a.mails.length, 1);
+  assert.equal((await a.R.list()).length, 0);
+  fail = false;
+  await a.S.run({}); await settle(a);
+  assert.equal(a.mails.length, 1, 'bez ponownego maila');
+  const [rec] = await a.R.list();
+  assert.ok(rec && rec.docx.length === 1000, 'Word w archiwum po ponowieniu');
+  assert.equal(a.files.size, 1, 'i na Dysku');
+});

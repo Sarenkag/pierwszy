@@ -69,10 +69,13 @@
       var name = safe(rep && rep.name);
       if (!name) throw Error('REPORT_NAME');
       if (!rep.docx || !(rep.docx.byteLength || rep.docx.length)) throw Error('REPORT_DOCX');
-      var id = me + '|' + name, old = await deps.db.get(id), t = now();
+      // tożsamość raportu = klucz od apki (np. id zadania Reactive); bez klucza – nazwa „KOD DDMMRRRR” (jedna inspekcja na dzień)
+      var key = safe(rep.key) || name, id = me + '|' + key, old = await deps.db.get(id), t = now();
+      var folder = (rep.folder || []).map(safe).filter(Boolean);
       var rec = {
-        id: id, owner: me, name: name,
-        folder: (rep.folder || []).map(safe).filter(Boolean),
+        id: id, owner: me, name: name, key: key,
+        file: old && old.file && old.name === name && (old.folder || []).join('/') === folder.join('/') ? old.file : await freeFile(me, id, name, folder),
+        folder: folder,
         docx: rep.docx, pdf: rep.pdf || null,
         meta: rep.meta || (old && old.meta) || {},
         created: old ? old.created : t, updated: t, versions: old ? (old.versions || 1) + 1 : 1,
@@ -80,7 +83,17 @@
       };
       rec.bytes = size(rec);
       await deps.db.put(rec); emit();
+      await enforce(); // limit telefonu pilnowany także bez Dysku (znikają tylko raporty z aktualną kopią na Dysku)
       return rec;
+    }
+
+    /* Dwa różne raporty o tej samej nazwie w tym samym folderze (np. dwa „REACTIVE Leak 08112026”) dostają osobne pliki: „nazwa (2).docx”. */
+    async function freeFile(me, id, name, folder) {
+      var taken = {}, where = folder.join('/');
+      (await deps.db.all()).forEach(function (r) { if (r.owner === me && r.id !== id && (r.folder || []).join('/') === where) taken[r.file || r.name] = 1; });
+      var f = name, n = 1;
+      while (taken[f]) f = name + ' (' + (++n) + ')';
+      return f;
     }
 
     async function enforce() {
@@ -112,7 +125,7 @@
         for (var i = 0; i < todo.length; i++) {
           if (deps.owner() !== me) return { skipped: 'account', sent: sent };
           if (!allowed()) return { skipped: 'network', sent: sent };
-          var r = todo[i], file = r.name + '.docx', blob = toBlob(r.docx), up = null, parent;
+          var r = todo[i], file = (r.file || r.name) + '.docx', blob = toBlob(r.docx), up = null, parent;
           try { parent = await folderId(r.folder); }
           catch (e) { if (rootId && /404/.test(String(e && e.message))) { rootId = ''; folders = {}; parent = await folderId(r.folder); } else throw e; }
           if (r.driveId) {
@@ -120,7 +133,7 @@
             catch (e) { if (!/404/.test(String(e && e.message))) throw e; up = null; } // plik usunięty z Dysku: tworzymy od nowa
           }
           if (!up) {
-            var found = await drive.find(parent, file); // przerwany wcześniej upload: ten sam plik, bez duplikatu
+            var found = await drive.find(parent, file); // przerwany wcześniej upload: ten sam plik, bez duplikatu (nazwa pliku jest unikalna dla raportu)
             up = found ? await drive.update(found.id, blob) : await drive.upload(parent, file, blob);
           }
           var fresh = await deps.db.get(r.id);
@@ -130,9 +143,12 @@
           fresh.synced = now();
           await deps.db.put(fresh); sent++; emit();
         }
-        await enforce();
         return { sent: sent };
-      })().finally(function () { syncing = null; emit(); });
+      })().finally(function () {
+        syncing = null;
+        // limit telefonu także po błędzie / przerwie Dysku (chronione: raporty bez aktualnej kopii)
+        return enforce().catch(function () {}).then(emit);
+      });
       return syncing;
     }
 

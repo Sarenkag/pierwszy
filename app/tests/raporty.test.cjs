@@ -114,3 +114,30 @@ test('bez Worda nie zapisuje (nigdy nie udaje kopii)', async () => {
   await assert.rejects(t.store.save({ name: 'A', docx: new Uint8Array(0) }), /REPORT_DOCX/);
   await assert.rejects(t.store.save({ name: '', docx: bytes(0.1) }), /REPORT_NAME/);
 });
+
+test('dwa różne raporty o tej samej nazwie (dwa zadania Reactive „Leak” jednego dnia): dwa wpisy i dwa pliki na Dysku', async () => {
+  const t = setup();
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-1', folder: ['Reactive'] }));
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.6, 2) }));
+  assert.strictEqual((await t.store.list()).length, 2);
+  await t.store.sync(t.drive);
+  assert.deepStrictEqual([...t.files.values()].map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.6, 3) })); // dopisane do drugiego zadania
+  await t.store.sync(t.drive);
+  assert.strictEqual(t.files.size, 2, 'nadpisany tylko plik drugiego zadania');
+  const second = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026 (2).docx');
+  assert.strictEqual(new Uint8Array(await second.blob.arrayBuffer())[0], 3);
+  const first = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026.docx');
+  assert.strictEqual(new Uint8Array(await first.blob.arrayBuffer())[0], 1, 'pierwsze zadanie nietknięte');
+});
+
+test('limit 200 MB pilnowany także, gdy Dysk nie działa (zwalnia tylko raporty już na Dysku)', async () => {
+  const t = setup();
+  await t.store.save(rep('OLD', { docx: bytes(75), pdf: bytes(75) })); // 150 MB
+  await t.store.sync(t.drive);
+  t.drive.upload = async () => { throw Error('GOOGLE_HTTP_500'); };
+  await t.store.save(rep('NEW', { docx: bytes(50), pdf: bytes(50) })); // razem 250 MB, Dysk padł
+  assert.deepStrictEqual((await t.store.list()).map(r => r.name), ['NEW'], 'stary (na Dysku) usunięty od razu przy zapisie, nowy (bez kopii) zostaje');
+  await assert.rejects(t.store.sync(t.drive), /500/);
+  assert.deepStrictEqual((await t.store.list()).map(r => r.name), ['NEW']);
+});
