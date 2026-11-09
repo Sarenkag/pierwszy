@@ -165,20 +165,26 @@
     async function keep(ids, holder) {
       holder = safe(holder); if (!holder) return 0;
       var n = 0;
-      for (var i = 0; i < (ids || []).length; i++) { var r = await deps.db.get(ids[i]); if (r && r.hold !== holder) { r.hold = holder; await deps.db.put(r); n++; } }
+      for (var i = 0; i < (ids || []).length; i++) { var r = await deps.db.get(ids[i]); if (r && (r.hold !== holder || r.unused)) { r.hold = holder; delete r.unused; await deps.db.put(r); n++; } }
       if (n) emit();
       return n;
     }
 
-    /* Zwalnia zdjęcia trzymane przez `holder`, których id nie ma w `keep` (lista id albo Set) i które są starsze niż
-       minAgeMs (świeże mogą jeszcze czekać na zapis szkicu). Zwolnione zdjęcie zostaje w folderze OEST – tylko podlega limitowi. */
+    /* Zwalnia zdjęcia trzymane przez `holder`, których id nie ma w `keep` (lista id albo Set) od co najmniej minAgeMs.
+       Czas liczy się od chwili, gdy zdjęcie przestało być w inspekcji (pierwsze wywołanie, które go nie ma w `keep`,
+       zapisuje `unused`), a nie od zrobienia zdjęcia: zdjęcie sprzed 3 tygodni z wyczyszczonej dziś inspekcji jest
+       trzymane jeszcze pełne minAgeMs (Grzegorz 08/11/2026: po wyczyszczeniu „niech trzyma przez miesiąc”).
+       Zdjęcie, które wróciło do `keep`, traci `unused`. Zwolnione zostaje w folderze OEST – tylko podlega limitowi. */
     async function release(holder, keep, minAgeMs) {
       holder = safe(holder); if (!holder) return 0;
-      var ks = keep instanceof Set ? keep : new Set(keep || []), edge = deps.now() - (minAgeMs || 0), n = 0, all = await mine();
+      var ks = keep instanceof Set ? keep : new Set(keep || []), now = deps.now(), edge = now - (minAgeMs || 0), n = 0, all = await mine();
       for (var i = 0; i < all.length; i++) {
         var r = all[i];
-        if (r.hold !== holder || ks.has(r.id) || Date.parse(r.saved || r.created) > edge) continue; // wiek od zapisu (zdjęcie z galerii może mieć starą datę)
-        r.hold = ''; await deps.db.put(r); n++;
+        if (r.hold !== holder) continue;
+        if (ks.has(r.id)) { if (r.unused) { delete r.unused; await deps.db.put(r); } continue; } // znów w inspekcji: licznik od nowa
+        if (!r.unused) { r.unused = new Date(now).toISOString(); await deps.db.put(r); }
+        if (Date.parse(r.unused) > edge) continue; // świeże też czeka: znacznik powstaje najwcześniej przy zapisie zdjęcia
+        r.hold = ''; delete r.unused; await deps.db.put(r); n++;
       }
       if (n) { await enforce(null); emit(); }
       return n;

@@ -33,14 +33,14 @@ test('wyszukiwanie po kodzie i dniu', () => {
 });
 
 function fakeStore(over) {
-  const rows = new Map(); let saved = {}, n = 0, t = Date.UTC(2026, 10, 1, 10);
+  const rows = new Map(); let saved = {}, n = 0; const clock = { t: Date.UTC(2026, 10, 1, 10) };
   const deps = Object.assign({
     db: { all: async () => [...rows.values()].map(x => ({ ...x })), get: async id => rows.has(id) ? { ...rows.get(id) } : undefined, put: async r => { rows.set(r.id, { ...r }); }, del: async id => { rows.delete(id); } },
     settings: { load: () => saved, save: s => { saved = s; } },
     compress: async (file) => ({ blob: { size: file.size, type: 'image/jpeg' }, width: 10, height: 10 }),
-    wifi: () => true, now: () => (t += 1000), id: () => 'p' + (++n)
+    wifi: () => true, now: () => (clock.t += 1000), id: () => 'p' + (++n)
   }, over);
-  return { store: Z.createStore(deps), rows, getSettings: () => saved };
+  return { store: Z.createStore(deps), rows, clock, getSettings: () => saved };
 }
 function fakeDrive() {
   const files = new Map(); let n = 0;
@@ -133,6 +133,39 @@ test('release zwalnia tylko nieużywane i nie świeże, keep znów trzyma', asyn
   assert.strictEqual(rows.get(c.id).hold, 'reactive', 'cudze trzymanie nietknięte');
   await store.keep([b.id], 'inspekcja');
   assert.strictEqual(rows.get(b.id).hold, 'inspekcja');
+});
+
+test('release: 30 dni liczone od wyczyszczenia, nie od zrobienia zdjęcia (Grzegorz 08/11: „niech trzyma przez miesiąc”)', async () => {
+  const { store, rows, clock } = fakeStore();
+  const D = 864e5, M = 30 * D;
+  const a = await store.save({ size: 1 }, { hold: 'inspekcja' });
+  clock.t += 20 * D; // inspekcja trwa 20 dni, zdjęcie jest w szkicu
+  assert.strictEqual(await store.release('inspekcja', [a.id], M), 0);
+  assert.ok(!rows.get(a.id).unused, 'w inspekcji: bez znacznika');
+  // Wyczyść inspekcję: zdjęcia nie ma już w żadnym szkicu – zdjęcie ma 20 dni, ale trzymamy jeszcze pełne 30
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'zaraz po wyczyszczeniu nic nie zwolnione');
+  assert.strictEqual(rows.get(a.id).hold, 'inspekcja');
+  clock.t += 29 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'po 29 dniach wciąż trzymane');
+  clock.t += 2 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 1, 'po 31 dniach zwolnione');
+  assert.strictEqual(rows.get(a.id).hold, '');
+  assert.ok(rows.get(a.id).blob, 'zwolnione zostaje w folderze OEST (tylko podlega limitowi)');
+});
+
+test('release: zdjęcie, które wróciło do inspekcji (Przywróć / Odzyskaj), liczy 30 dni od nowa', async () => {
+  const { store, rows, clock } = fakeStore();
+  const D = 864e5, M = 30 * D;
+  const a = await store.save({ size: 1 }, { hold: 'inspekcja' });
+  clock.t += 40 * D;
+  await store.release('inspekcja', [], M); // wyczyszczona
+  clock.t += 25 * D;
+  await store.keep([a.id], 'inspekcja'); // ↺ Przywróć
+  assert.ok(!rows.get(a.id).unused, 'keep zdejmuje znacznik');
+  await store.release('inspekcja', [], M); // znów wyczyszczona
+  clock.t += 10 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'po 10 dniach od drugiego wyczyszczenia trzymane');
+  assert.strictEqual(rows.get(a.id).hold, 'inspekcja');
 });
 
 test('rozmiar wg rodzaju w Standardzie: formularz 1600, ogólne 1600, przy pytaniu 800', () => {
