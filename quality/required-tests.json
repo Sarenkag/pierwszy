@@ -70,6 +70,9 @@
       "file": "app/tests/bramka-artefakty.test.cjs"
     },
     {
+      "file": "app/tests/ppm-78.test.cjs"
+    },
+    {
       "file": "app/tests/wiedza.test.cjs"
     },
     {
