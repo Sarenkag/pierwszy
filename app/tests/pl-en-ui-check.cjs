@@ -25,7 +25,7 @@ const server = http.createServer((req, res) => {
 });
 // Ekrany apki (index.html#…). Ustawienia: wszystkie strony z listy titles w settings-ui.js (test sprawdza, że lista jest pełna).
 const APP = ['home', 'ppm', 'cal', 'zdjecia', 'soon', 'settings',
-  'settings/profile', 'settings/contacts', 'settings/drive', 'settings/mail', 'settings/calendar', 'settings/reports', 'settings/sync', 'settings/account', 'settings/ai',
+  'settings/profile', 'settings/contacts', 'settings/drive', 'settings/mail', 'settings/calendar', 'settings/reports', 'settings/sync', 'settings/account', 'settings/ai', 'settings/about',
   'questions', 'reactive', 'reactive/new/blank', 'reactive/history', 'reactive/config', 'keys', 'keys/new', 'keys/find', 'handover', 'powertrace', 'powertrace/new'];
 // Strona inspekcji (inspekcje/index.html): ustawienia inspekcji, kolejka i formularz – po jednej inspekcji każdego rodzaju formularza z listy PPM.
 const PPM = tasks(root).filter(t => /^EFA-INS-\d{3}$/.test(t.id)), KINDS = [...new Set(PPM.map(t => t.form || 'basic'))];
