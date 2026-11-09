@@ -1594,6 +1594,666 @@
       "suggestedFor": [
         "Heat Recovery Units 12M"
       ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Obudowa i drzwi nieuszkodzone, zamknięte",
+      "type": "pass",
+      "ok": "Board enclosure and door undamaged and closed/locked.",
+      "fail": "Board enclosure or door damaged or not secured.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Brak oznak przegrzania i zapachu",
+      "type": "pass",
+      "ok": "No signs of overheating, burning or odour.",
+      "fail": "Signs of overheating, burning or odour – investigation required.",
+      "reasons": [
+        {
+          "label": "Hot spot",
+          "text": "Discolouration around a device – thermal survey required."
+        }
+      ],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Opis obwodów na miejscu i czytelny",
+      "type": "pass",
+      "ok": "Circuit chart present, legible and up to date.",
+      "fail": "Circuit chart missing, illegible or out of date.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Zaślepki na wolnych miejscach",
+      "type": "pass",
+      "ok": "Blanking plates fitted to all spare ways.",
+      "fail": "Blanking plate(s) missing – live parts accessible.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Dostęp swobodny, nic nie składowane",
+      "type": "pass",
+      "ok": "Access to the board clear, no storage in front of it.",
+      "fail": "Access to the board obstructed – area requires clearing.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Brak wilgoci i kurzu",
+      "type": "pass",
+      "ok": "No moisture or dust build-up inside the board.",
+      "fail": "Moisture or dust build-up found inside the board.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Brak uszkodzeń mechanicznych",
+      "type": "pass",
+      "ok": "No physical damage to the board or its components.",
+      "fail": "Physical damage found on the board or its components.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Oznaczenia poprawne",
+      "type": "pass",
+      "ok": "Labelling and warning notices correct and legible.",
+      "fail": "Labelling or warning notices missing or incorrect.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Zabezpieczenia w dobrym stanie",
+      "type": "pass",
+      "ok": "Protective devices in good condition and correctly rated.",
+      "fail": "Protective device(s) damaged or incorrectly rated.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Brak oznak przegrzania",
+      "type": "pass",
+      "ok": "No signs of overheating on devices, busbars or cables.",
+      "fail": "Signs of overheating on devices, busbars or cables.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Test RCD przyciskiem",
+      "type": "pass",
+      "ok": "All RCDs/RCBOs tripped on the integral test button and were reset.",
+      "fail": "RCD/RCBO failed to trip on the integral test button – replacement required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Rozdzielnica działa prawidłowo",
+      "type": "pass",
+      "ok": "Board operating as intended, all circuits restored after the test.",
+      "fail": "Board not operating as intended – reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Badanie termowizyjne",
+      "type": "pass",
+      "ok": "Thermal imaging survey carried out, no hot spots found.",
+      "fail": "Hot spot(s) identified on thermal imaging – remedial action required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Zaciski dokręcone",
+      "type": "pass",
+      "ok": "Terminations checked and tight.",
+      "fail": "Loose termination(s) found and re-torqued / reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Czas zadziałania RCD (1×IΔn)",
+      "type": "measure",
+      "unit": "ms",
+      "template": "RCD trip time at 1×IΔn: {value} {unit}.",
+      "reportLabel": "RCD trip time",
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ],
+      "reasons": [],
+      "max": 300,
+      "threshold": "Above 300 ms at 1×IΔn – RCD replacement required (BS 7671)."
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Wnętrze oczyszczone",
+      "type": "pass",
+      "ok": "Board internals cleaned.",
+      "fail": "Board internals not cleaned – heavy dust build-up.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Przepusty kablowe i dławiki",
+      "type": "pass",
+      "ok": "Cable entries and glands sealed and secure.",
+      "fail": "Cable entry or gland not sealed / loose.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "EICR aktualny",
+      "type": "pass",
+      "ok": "EICR in date for this board.",
+      "fail": "EICR out of date – periodic inspection required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Obudowa i pokrywa nieuszkodzone",
+      "type": "pass",
+      "ok": "Isolator enclosure and cover undamaged.",
+      "fail": "Isolator enclosure or cover damaged.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Oznaczenie urządzenia czytelne",
+      "type": "pass",
+      "ok": "Isolator labelled with the equipment it serves.",
+      "fail": "Isolator label missing or illegible.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Możliwość zablokowania (lockout)",
+      "type": "pass",
+      "ok": "Isolator can be locked off.",
+      "fail": "Isolator cannot be locked off.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Brak oznak przegrzania",
+      "type": "pass",
+      "ok": "No signs of overheating or discolouration.",
+      "fail": "Signs of overheating or discolouration.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Dostęp swobodny",
+      "type": "pass",
+      "ok": "Access to the isolator clear.",
+      "fail": "Access to the isolator obstructed.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Dławiki i szczelność (IP)",
+      "type": "pass",
+      "ok": "Glands secure and enclosure sealed to its IP rating.",
+      "fail": "Gland loose or enclosure seal compromised.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Przełącznik działa ON/OFF",
+      "type": "pass",
+      "ok": "Isolator switched OFF and ON correctly, positive action.",
+      "fail": "Isolator mechanism stiff or not operating correctly.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Zaciski dokręcone",
+      "type": "pass",
+      "ok": "Terminations checked and tight.",
+      "fail": "Loose termination(s) found.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Wnętrze suche i czyste",
+      "type": "pass",
+      "ok": "Isolator internals dry and clean.",
+      "fail": "Moisture or dirt found inside the isolator.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Uszczelka pokrywy",
+      "type": "pass",
+      "ok": "Cover gasket in good condition.",
+      "fail": "Cover gasket perished or missing.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Przewód ochronny podłączony",
+      "type": "pass",
+      "ok": "Protective conductor connected and secure.",
+      "fail": "Protective conductor loose or missing.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wizyta odbyła się w terminie",
+      "type": "pass",
+      "ok": "Contractor attended as scheduled.",
+      "fail": "Contractor did not attend as scheduled.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wykonawca zgłosił się i miał pozwolenie",
+      "type": "pass",
+      "ok": "Contractor signed in and works were covered by a permit where required.",
+      "fail": "Contractor did not sign in or no permit issued.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Certyfikat / job sheet otrzymany",
+      "type": "pass",
+      "ok": "Certificate / job sheet received.",
+      "fail": "Certificate / job sheet not yet received – chased.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Brak usterek",
+      "type": "pass",
+      "ok": "No defects reported by the contractor.",
+      "fail": "Defects reported by the contractor – see attached report.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wycena nie jest potrzebna",
+      "type": "pass",
+      "ok": "No remedial quotation required.",
+      "fail": "Remedial quotation required.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "System pozostawiony sprawny",
+      "type": "pass",
+      "ok": "System left operational and in normal mode.",
+      "fail": "System left isolated or in fault – reported.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Teren posprzątany",
+      "type": "pass",
+      "ok": "Work area left clean and tidy.",
+      "fail": "Work area left untidy.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
     }
   ]
 }
