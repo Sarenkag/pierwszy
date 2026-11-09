@@ -210,13 +210,14 @@
   function offer(scope, o) {
     o = o || {};
     return propose(scope, o.ctx).then(function (r) {
+      if (o.alive && !o.alive()) return null; // ekran zmienił się w trakcie (np. zapisany wpis, nowy formularz) – propozycja nieaktualna
       css(); var node = document.createElement('div'); node.className = 'nt-pop';
       node.innerHTML = '<div class="nt-h">' + T('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
       var ta = node.querySelector('textarea'), wb = node.querySelector('.nt-warn'); ta.value = r.text;
       var warnNow = function () { var m = missing(r.src, ta.value); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ wb.textContent = m.length ? T('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + T(' — sprawdź.', ' — check.') : ''; };
       ta.addEventListener('input', warnNow); warnNow();
       return w.OESTPrzycisk.ask({ title: o.title || T('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || T('Wstaw', 'Insert'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
-        .then(function (yes) { return yes ? ta.value.trim() : null; });
+        .then(function (yes) { return yes && (!o.alive || o.alive()) ? ta.value.trim() : null; });
     });
   }
 
@@ -243,7 +244,8 @@
     opn.addEventListener('click', function () { var k = m.scope(); if (k) open(k, { title: o.title ? o.title() : ctx() }); });
     join.addEventListener('click', function () {
       var k = m.scope(); if (!k || join.disabled) return; join.disabled = true;
-      offer(k, { ctx: ctx(), ok: o.ok }).then(function (t) { if (t && k === m.scope() && o.onJoin) return o.onJoin(t); })
+      var alive = function () { return box.isConnected && k === m.scope(); }; // ten sam formularz co przy stuknięciu
+      offer(k, { ctx: ctx(), ok: o.ok, alive: alive }).then(function (t) { if (t && alive() && o.onJoin) return o.onJoin(t); })
         .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { join.disabled = false; });
     });
     m.refresh();

@@ -64,6 +64,13 @@ function fakePhone() {
     check(await until(k => OESTReactiveUI.repository.get().then(d => !!(d.reactiveDrafts || {})[k]), scope.slice(3)), 'Reactive: szkic z samą notatką skasowany po ‹');
     await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     check(await until(() => document.querySelector('#rxNotes .nt-n').textContent === '1'), 'Reactive: po ‹ i ponownym otwarciu brak notatki');
+    // „Połącz”, a ekran w tym czasie się zmienia (zapis wpisu → nowy formularz): propozycja nie otwiera się nad nowym ekranem (przegląd Codex #113)
+    await pg.waitForFunction(() => !document.querySelector('#rxNotes .nt-join').hidden, null, { timeout: 10000 });
+    await pg.evaluate(() => { document.querySelector('#rxNotes .nt-join').click(); document.querySelector('#rxNotes').remove(); });
+    await pg.waitForTimeout(800);
+    check(await pg.locator('.oest-ask').count() === 0, 'Reactive: propozycja z notatek otwarta nad zmienionym ekranem');
+    if (await pg.locator('.oest-ask').count()) { await pg.locator('.oest-ask [data-a=no]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); }
+    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     // okienko 📝 Notatki
     await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note');
     check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Reactive: okienko bez tekstu EN');
