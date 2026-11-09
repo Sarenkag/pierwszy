@@ -266,8 +266,14 @@
       if (a === 'tab-pl' || a === 'tab-en') { var pl = node.querySelector('[data-nt-f=pl]').value, en = node.querySelector('[data-nt-f=en]').value; editing.pl = pl; editing.en = en; tab = a.slice(4); drawEdit(); return; }
       if (a === 'cancel') { editing = null; delete szkice[scope]; stop(); draw(); return; }
       if (a === 'save') {
-        var n = editing; n.pl = node.querySelector('[data-nt-f=pl]').value.trim(); n.en = node.querySelector('[data-nt-f=en]').value.trim(); n.err = ''; n.st = '';
-        editing = null; delete szkice[scope]; stop(); put(n).then(draw); return;
+        // edycja kończy się dopiero po udanym zapisie; błąd zapisu = komunikat i formularz zostaje do ponowienia
+        var n = editing, c = Object.assign({}, n, { pl: node.querySelector('[data-nt-f=pl]').value.trim(), en: node.querySelector('[data-nt-f=en]').value.trim(), err: '', st: '' });
+        b.disabled = true;
+        put(c).then(function () { if (editing !== n) return; editing = null; delete szkice[scope]; stop(); draw(); }, function (e) {
+          b.disabled = false; var box = node.querySelector('.nt-warn');
+          if (box) box.textContent = T('⚠ Nie zapisano: ', '⚠ Not saved: ') + (e && e.message || String(e)) + T(' Stuknij „Zapisz” jeszcze raz.', ' Tap “Save” again.');
+        });
+        return;
       }
       if (a === 'redo') {
         var plv = fix(node.querySelector('[data-nt-f=pl]').value, 'pl'), box = node.querySelector('.nt-warn');

@@ -83,6 +83,11 @@ function fakePhone() {
     // odsłuch w trakcie poprawiania nie gubi wpisanego tekstu (przegląd Codex #108)
     await pg.locator('.nt-pop [data-nt=play]').click(); await pg.waitForTimeout(400);
     check(/level 13 has a cracked gland/.test(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue()), 'odsłuch w edycji skasował wpisaną poprawkę');
+    // zapis w telefonie się nie udał (np. brak miejsca): poprawka zostaje w formularzu, komunikat, drugie „Zapisz” działa (przegląd Codex #108)
+    await pg.evaluate(() => { const o = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function () { IDBObjectStore.prototype.put = o; throw new DOMException('Brak miejsca w pamięci telefonu.', 'QuotaExceededError'); }; });
+    await pg.locator('.nt-pop [data-nt=save]').click(); await pg.waitForTimeout(400);
+    R.bladZapisu = await pg.locator('.nt-pop .nt-warn').textContent().catch(() => '');
+    check(/Nie zapisano/.test(R.bladZapisu) && /level 13 has a cracked gland/.test(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue()), 'nieudany zapis zgubił poprawkę albo nie pokazał komunikatu: ' + R.bladZapisu);
     await pg.locator('.nt-pop [data-nt=save]').click(); await pg.waitForSelector('.nt-pop .nt-note');
     a = await notes(); check(/level 13 has a cracked gland/.test(a[0].en), 'poprawka EN nie zapisana: ' + a[0].en);
     await close();
