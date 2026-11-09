@@ -50,7 +50,7 @@
     // język: tylko teksty, wpisane szukanie i wybór zostają (bez przerysowania pola)
     var q = el.querySelector("#rptQ"), b = el.querySelector("#rptB");
     q.placeholder = T("Kod, budynek, data…", "Code, building, date…"); q.setAttribute("aria-label", q.placeholder); q.value = state.q;
-    b.innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === state.b ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("");
+    put(b, opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === state.b ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join(""));
     b.setAttribute("aria-label", T("Budynek", "Building"));
     el.querySelector("#rptRecT").textContent = T("Odzyskane inspekcje", "Recovered inspections");
     list(el);
@@ -70,26 +70,28 @@
     try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#settings/reports" })); } catch (e) {}
     location.href = "inspekcje/index.html#rec=" + encodeURIComponent(id);
   }
+  // treść bez przerysowania (moduly/podmien): zmiana języka zmienia tylko teksty
+  function put(el, h) { if (w.OESTPodmien) w.OESTPodmien.html(el, h); else el.innerHTML = h; }
   var seq = 0;
   function list(el) {
     var R = w.OESTRaporty, box = el.querySelector("#rptList"), my = ++seq;
     if (R.recovered) R.recovered().then(function (rs) {
       if (my !== seq) return;
       el.querySelector("#rptRec").hidden = !rs.length;
-      el.querySelector("#rptRecL").innerHTML = rs.map(recCard).join("");
+      put(el.querySelector("#rptRecL"), rs.map(recCard).join(""));
     }).catch(function () {});
     R.list().then(function (all) {
       if (my !== seq) return;
       var hit = R.find(all, state.q, { building: state.b });
-      if (!all.length) { box.innerHTML = '<div class="rpt-empty">' + esc(T("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.")) + "</div>"; return; }
-      if (!hit.length) { box.innerHTML = '<div class="rpt-empty">' + esc(T("Nic nie pasuje do szukania.", "Nothing matches your search.")) + "</div>"; return; }
-      box.innerHTML = hit.map(function (r) {
+      if (!all.length) { put(box, '<div class="rpt-empty">' + esc(T("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.")) + "</div>"); return; }
+      if (!hit.length) { put(box, '<div class="rpt-empty">' + esc(T("Nic nie pasuje do szukania.", "Nothing matches your search.")) + "</div>"); return; }
+      put(box, hit.map(function (r) {
         var f = r.folder || [], drive = r.driveId && !r.dirty;
         return w.OESTKlocek.html({ id: r.id, data: { rid: r.id }, color: drive ? "#5fd6a0" : "#f0c75e", icon: ICON, tag: BLD[f[0]] || "", name: r.name,
           status: { text: drive ? T("Na Dysku", "On Drive") : T("Czeka na Dysk", "Waiting for Drive"), tone: drive ? 2 : 1 },
           desc: f.join(" · ") || "—", due: esc(T("Wysłany ", "Sent ") + R.day(r)) + (r.versions > 1 ? esc(" · " + T("wersja ", "version ") + r.versions) : ""), go: T("Otwórz ›", "Open ›") });
-      }).join("");
-    }).catch(function (e) { if (my === seq) box.innerHTML = '<div class="rpt-empty">' + esc(w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + "</div>"; });
+      }).join(""));
+    }).catch(function (e) { if (my === seq) put(box, '<div class="rpt-empty">' + esc(w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + "</div>"); });
   }
 
   function show(id) {

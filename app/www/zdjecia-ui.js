@@ -51,9 +51,10 @@
     var s = Z.settings(), all = await Z.list(), st = Z.stats(all), found = Z.search(all, query).slice(0, 120);
     urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = [];
     var days = {}; found.forEach(function (r) { (days[r.day] = days[r.day] || []).push(r); });
+    function html() { // cały ekran w bieżącym języku; drugi raz w drugim języku – miejsce pod PL i EN (moduly/podmien)
     var presets = Object.keys(Z.PRESETS).map(function (k) { return '<option value="' + k + '"' + (k === s.preset ? ' selected' : '') + '>' + esc(T(Z.PRESETS[k].pl, Z.PRESETS[k].en)) + '</option>'; }).join('');
     var last = s.lastSync ? new Date(s.lastSync).toLocaleString(loc()) : T('jeszcze nie', 'not yet');
-    root.innerHTML =
+    return (
       '<div class="top"><button class="back" type="button" aria-label="' + T('Wstecz', 'Back') + '">‹</button><div class="t"><h1>' + T('Zdjęcia', 'Photos') + '</h1></div></div>' +
       '<div class="panel"><b>' + T('Telefon (folder OEST w apce)', 'Phone (OEST folder in the app)') + '</b>' + bar(st.phoneBytes, s.phoneLimitMB * MB) +
         '<p class="hint">' + mb(st.phoneBytes) + T(' z ', ' of ') + mb(s.phoneLimitMB * MB) + ' · ' + st.phoneCount + T(' zdjęć · czeka na wysłanie: ', ' photos · waiting to upload: ') + st.pending + ' (' + mb(st.pendingBytes) + ')</p>' +
@@ -77,7 +78,10 @@
               '<small>' + esc([r.category, r.code || r.location].filter(Boolean).join(' · ')) + '</small></button>';
           }).join('') + '</div></div>';
         }).join('') : '<p class="hint">' + (all.length ? T('Nic nie pasuje do wyszukiwania.', 'Nothing matches the search.') : T('Brak zdjęć. Zdjęcia z inspekcji i Reactive pojawią się tutaj.', 'No photos. Photos from inspections and Reactive will appear here.')) + '</p>') +
-      '</div>';
+      '</div>');
+    }
+    root.innerHTML = html();
+    if (w.OESTPodmien && w.OESTPodmien.oba) w.OESTPodmien.oba(root, html);
     bind(root, found);
   }
 

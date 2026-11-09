@@ -64,7 +64,9 @@
     if(a.childNodes.length!==b.childNodes.length)return; // inna budowa (panel dorysowany przez moduł): zostawiamy jak jest
     for(var i=0;i<a.childNodes.length;i++)swapText(a.childNodes[i],b.childNodes[i]);
   }
-  function relang(){var page=route.split('/')[1];if(page&&!titles[page])page=null;applyTheme();document.documentElement.lang=lang;var t=document.createElement('div');t.innerHTML=html(page);var r=root();if(r.childNodes.length!==t.childNodes.length){open(route);return;}for(var i=0;i<r.childNodes.length;i++)swapText(r.childNodes[i],t.childNodes[i]);if(page==='reports')reportPage();}
+  function relang(){var page=route.split('/')[1];if(page&&!titles[page])page=null;applyTheme();document.documentElement.lang=lang;var t=document.createElement('div');t.innerHTML=html(page);var r=root();if(r.childNodes.length!==t.childNodes.length){open(route);return;}for(var i=0;i<r.childNodes.length;i++)swapText(r.childNodes[i],t.childNodes[i]);if(page==='reports')reportPage();both(page);}
+  // miejsce pod PL i EN (moduly/podmien): teksty strony zajmują miejsce dłuższej wersji – zmiana języka nic nie przesuwa
+  function both(page){if(!w.OESTPodmien||!w.OESTPodmien.rezerwuj)return;var k=lang;lang=k==='en'?'pl':'en';var h;try{h=html(page);}finally{lang=k;}w.OESTPodmien.rezerwuj(root(),h);}
   function open(next){route=next==='profile'?'settings/profile':next==='appset'?'settings/account':next==='settings/backup'?'settings/drive':next;applyTheme();var page=route.split('/')[1],r=root();
     if(page&&!titles[page])page=null;dirty=false;
     r.className='view settings-page';r.hidden=false;document.documentElement.lang=lang;
@@ -74,6 +76,7 @@
     var form=document.getElementById('settingsForm');if(form){form.addEventListener('input',function(e){if(!/^(shift|newEntry)/.test(e.target.id||''))dirty=true;});/* pola grafiku zapisuje „Dodaj wersję grafiku”, nie „Zapisz” */form.addEventListener('submit',function(e){e.preventDefault();saveForm();});}
     r.querySelectorAll('[data-image]').forEach(function(i){i.onchange=function(){importImage(i).catch(function(e){message(err(e),true);});};});
     var restore=document.getElementById('restoreFile');if(restore)restore.onchange=previewBackup;
+    both(page);
     if(page==='calendar')w.OESTCalendarUI.mount(lang);
     if(page==='reports')reportPage();
     if(page==='ai'&&w.OESTModel)w.OESTModel.mount(document.getElementById('modelBox'));

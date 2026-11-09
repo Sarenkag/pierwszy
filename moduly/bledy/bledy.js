@@ -112,7 +112,11 @@
     [/^SHARE_/, ['Nie udało się udostępnić.', 'Sharing failed.']],
     [/^SPEECH_|^ON_DEVICE_POLISH_SPEECH|^RECORDED_SPEECH/, ['Nie udało się zamienić nagrania na tekst.', 'Could not transcribe the recording.']]
   ];
+  var force = null; // wJezyku: na chwilę drugi język (np. pomiar miejsca pod PL i EN), bez zapisu ustawień
+  function wJezyku(l, fn) { var k = force; force = l; try { return fn(); } finally { force = k; } }
+  function drugi() { return lang() === 'en' ? 'pl' : 'en'; }
   function lang() {
+    if (force) return force;
     try { var S = root.OESTSettings && root.OESTSettings.get && root.OESTSettings.get(); if (S && S.appearance && S.appearance.language) return S.appearance.language; } catch (e) {}
     try { var raw = root.localStorage && root.localStorage.getItem('oest.lang'); if (raw) return raw; } catch (e) {}
     return 'pl';
@@ -151,14 +155,41 @@
   // Stały HTML strony: <b data-en="Keys">Klucze</b>, <button aria-label="Wstecz" data-en-aria-label="Back">.
   // Podmienia tylko tekst / atrybuty w miejscu (bez przerysowania ekranu). Polski oryginał zapamiętany w data-pl*.
   var ATTRS = ['aria-label', 'placeholder', 'title', 'alt'];
+  // Miejsce pod oba języki (Grzegorz: zmiana języka nic nie przesuwa; miejsce na zmienne treści zarezerwowane z góry).
+  // Element z data-en dostaje min-wysokość (blok) albo min-szerokość i wysokość (przycisk, element w rzędzie) dłuższego
+  // z dwóch tekstów – PL i EN zajmują to samo miejsce. Liczone, gdy element jest widoczny, i od nowa przy zmianie szerokości.
+  // Pomiar w paczce (3 przeliczenia układu na całą stronę): wszystkie w bieżącym języku, wszystkie w drugim, powrót.
+  var RO = root.ResizeObserver ? new root.ResizeObserver(function (es) { reserve(es.map(function (e) { return e.target; })); }) : null;
+  function reserve(els) {
+    var todo = els.filter(function (el) {
+      if (!el.isConnected || !el.getClientRects().length) return false;
+      var pw = el.parentNode && el.parentNode.clientWidth, cur = el.textContent, pl = el.dataset.pl, en = el.dataset.en;
+      if (el.__oestW === pw && el.__oestT === cur) return false;
+      if (pl == null || en == null || pl === en || (cur !== pl && cur !== en)) return false; // tekst ustawiany przez JS
+      var cs = root.getComputedStyle(el); if (cs.display === 'inline' || cs.display === 'contents') return false;
+      el.__oestW = pw; el.__oestT = cur; el.style.minHeight = ''; el.style.minWidth = ''; return true;
+    }).map(function (el) { return { el: el, cur: el.textContent, alt: el.textContent === el.dataset.pl ? el.dataset.en : el.dataset.pl }; });
+    if (!todo.length) return;
+    todo.forEach(function (x) { var cs = root.getComputedStyle(x.el), pr = x.el.parentNode.getBoundingClientRect(); x.cs = cs; x.a = x.el.getBoundingClientRect(); x.h = parseFloat(cs.height); x.w = parseFloat(cs.width); x.full = x.a.width >= pr.width - parseFloat(root.getComputedStyle(x.el.parentNode).paddingLeft) - parseFloat(root.getComputedStyle(x.el.parentNode).paddingRight) - 1; });
+    todo.forEach(function (x) { x.el.textContent = x.alt; });
+    todo.forEach(function (x) { x.b = x.el.getBoundingClientRect(); });
+    todo.forEach(function (x) { x.el.textContent = x.cur; });
+    todo.forEach(function (x) {
+      if (x.b.height > x.a.height + 0.5) x.el.style.minHeight = (x.b.height - Math.max(0, x.a.height - x.h)) + 'px';
+      if (!x.full && x.b.width > x.a.width + 0.5) x.el.style.minWidth = (x.b.width - Math.max(0, x.a.width - x.w)) + 'px';
+    });
+  }
   function applyDom(scope) {
-    var en = lang() === 'en', doc = root.document; if (!doc) return;
+    var en = lang() === 'en', doc = root.document, mine = []; if (!doc) return;
     (scope || doc).querySelectorAll('[data-en]').forEach(function (el) {
       if (el.dataset.pl == null) el.dataset.pl = el.textContent;
       // tekst podmieniony przez JS (np. licznik, nazwa szablonu) – zostawiamy, JS sam tłumaczy przez OESTT
       if (el.textContent !== el.dataset.pl && el.textContent !== el.dataset.en) return;
       el.textContent = en ? el.dataset.en : el.dataset.pl;
+      if (RO && el.dataset.en !== el.dataset.pl) RO.observe(el);
+      mine.push(el);
     });
+    reserve(mine); // od razu, bez czekania na pierwszą klatkę (także treść poza ekranem)
     ATTRS.forEach(function (a) {
       (scope || doc).querySelectorAll('[data-en-' + a + ']').forEach(function (el) {
         if (!el.hasAttribute('data-pl-' + a)) el.setAttribute('data-pl-' + a, el.getAttribute(a) || '');
@@ -167,6 +198,6 @@
     });
     if (doc.documentElement) doc.documentElement.lang = en ? 'en' : 'pl';
   }
-  var api = { text: text, lang: lang, t: t, applyDom: applyDom, D: D };
+  var api = { text: text, lang: lang, t: t, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D };
   if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; }
 })(this);
