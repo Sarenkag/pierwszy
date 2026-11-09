@@ -152,6 +152,14 @@
   }
   // JEDNA funkcja dla tekstów na ekranie w całej apce: OESTT('po polsku', 'in English') – wg języka ustawień
   function t(pl, en) { return lang() === 'en' ? en : pl; }
+  // Teksty z plików danych (Grzegorz 09/11/2026): apka wczytuje słownik { 'ekran.id': { pl, en } } przez zaladujTeksty,
+  // ekran pyta tx('ekran.id', { n: 3 }). {nazwa} w tekście = wartość wstawiana przez apkę. Brak wpisu = id (test pilnuje, żeby nie było).
+  var TEKSTY = {};
+  function zaladujTeksty(d) { Object.keys(d || {}).forEach(function (k) { TEKSTY[k] = d[k]; }); }
+  function tx(id, v) {
+    var e = TEKSTY[id]; if (!e) return id;
+    return t(e.pl, e.en).replace(/\{(\w+)\}/g, function (m, k) { return v && v[k] != null ? String(v[k]) : m; });
+  }
   // Stały HTML strony: <b data-en="Keys">Klucze</b>, <button aria-label="Wstecz" data-en-aria-label="Back">.
   // Podmienia tylko tekst / atrybuty w miejscu (bez przerysowania ekranu). Polski oryginał zapamiętany w data-pl*.
   var ATTRS = ['aria-label', 'placeholder', 'title', 'alt'];
@@ -198,6 +206,6 @@
     });
     if (doc.documentElement) doc.documentElement.lang = en ? 'en' : 'pl';
   }
-  var api = { text: text, lang: lang, t: t, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D };
-  if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; }
+  var api = { text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D };
+  if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; root.OESTTx = tx; }
 })(this);

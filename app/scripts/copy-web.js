@@ -34,4 +34,6 @@ for (const f of ["index.html", "sw.js"]) {
 const modSrc = path.join(__dirname, "..", "..", "moduly"), modDst = path.join(__dirname, "..", "www", "moduly");
 fs.rmSync(modDst, { recursive: true, force: true });
 fs.cpSync(modSrc, modDst, { recursive: true, filter: (f) => !/\.md$/i.test(f) });
-console.log("inspekcje → www/inspekcje (biblioteki raportu lokalnie), moduly → www/moduly");
+// teksty ekranów z app/teksty/*.json → www/teksty.js (Grzegorz 09/11/2026)
+const tekstow = require("./teksty").zbuduj();
+console.log("inspekcje → www/inspekcje (biblioteki raportu lokalnie), moduly → www/moduly, teksty → www/teksty.js (" + tekstow + ")");

@@ -95,6 +95,9 @@
     },
     {
       "file": "app/tests/notatki.test.cjs"
+    },
+    {
+      "file": "app/tests/teksty.test.cjs"
     }
   ],
   "browser": [
