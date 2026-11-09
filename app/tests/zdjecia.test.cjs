@@ -424,3 +424,44 @@ test('pkt 1: zdjęcie bez kopii na Dysku (driveDeleted) nigdy nie znika z telefo
   assert.ok(rows.has(a.id) && rows.get(a.id).blob, 'jedyna kopia zostaje na telefonie');
   assert.ok(!rows.get(b.id).blob, 'telefon zwalnia miejsce zdjęciem, które jest na Dysku');
 });
+
+// Data i godzina na zdjęciach (Grzegorz 09/11/2026): opcja, domyślnie WYŁĄCZONA, format dd/mm/rrrr GG:MM, czas zrobienia zdjęcia
+test('data i godzina na zdjęciu: domyślnie wyłączona, format dd/mm/rrrr GG:MM, czas zrobienia', async () => {
+  assert.strictEqual(Z.DEFAULTS.stamp, false);
+  assert.strictEqual(Z.cleanSettings({}).stamp, false);
+  assert.strictEqual(Z.cleanSettings({ stamp: 'tak' }).stamp, false); // tylko świadome włączenie (true)
+  assert.strictEqual(Z.cleanSettings({ stamp: true }).stamp, true);
+  assert.strictEqual(Z.stampText(new Date(2026, 10, 9, 7, 5, 59)), '09/11/2026 07:05');
+  assert.strictEqual(Z.stampText(new Date(2026, 0, 31, 23, 59)), '31/01/2026 23:59');
+  const got = [];
+  const { store } = fakeStore({ compress: async (file, preset, kind, stamp) => { got.push(stamp); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
+  const when = new Date(2026, 10, 9, 22, 14, 30);
+  const off = await store.save({ size: 1 }, { kind: 'ogolne', when });
+  assert.strictEqual(got[0], '', 'wyłączona: zdjęcie bez napisu');
+  assert.strictEqual(off.stamp, '');
+  store.setSettings({ stamp: true });
+  const on = await store.save({ size: 1 }, { kind: 'punkt', when });
+  assert.strictEqual(got[1], '09/11/2026 22:14', 'włączona: data i godzina zrobienia (when), nie zapisu');
+  assert.strictEqual(on.stamp, '09/11/2026 22:14');
+  await store.save({ size: 1 }, { kind: 'ogolne', when, stamp: false }); // np. poprawione zdjęcie, które już ma datę
+  assert.strictEqual(got[2], '', 'stamp:false = bez drugiego napisu');
+  store.setSettings({ stamp: false });
+  await store.save({ size: 1 }, { kind: 'ogolne', when });
+  assert.strictEqual(got[3], '', 'po wyłączeniu znowu bez napisu');
+});
+
+test('data i godzina: napis w prawym dolnym rogu, w granicach zdjęcia (800 px i 2560 px)', () => {
+  for (const [w, h] of [[800, 600], [600, 800], [1600, 1200], [2560, 1920]]) {
+    const ops = [];
+    const g = { measureText: t => ({ width: t.length * parseInt(g.font.split(' ')[1], 10) * 0.55 }),
+      fillRect: (x, y, bw, bh) => ops.push({ x, y, bw, bh }), fillText: (t, x, y) => ops.push({ t, x, y }) };
+    Z.drawStamp(g, w, h, '09/11/2026 22:14');
+    const box = ops[0], txt = ops[1];
+    assert.ok(box.x > w / 2 && box.y > h / 2, 'róg prawy dolny ' + w + '×' + h);
+    assert.ok(box.x >= 0 && box.x + box.bw <= w && box.y + box.bh <= h, 'mieści się w zdjęciu ' + w + '×' + h);
+    assert.strictEqual(txt.t, '09/11/2026 22:14');
+    assert.ok(txt.x > box.x && txt.y > box.y && txt.y < box.y + box.bh, 'tekst na pasku');
+  }
+  const none = []; Z.drawStamp({ fillRect: () => none.push(1), fillText: () => none.push(1), measureText: () => ({ width: 0 }) }, 800, 600, '');
+  assert.strictEqual(none.length, 0, 'bez napisu nic nie rysuje');
+});

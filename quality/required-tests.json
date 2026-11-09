@@ -207,6 +207,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/zdjecia-data-ui-check.cjs",
+      "passMarker": "ZDJECIA DATA UI PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/zdjecia-szybkosc-ui-check.cjs",
       "passMarker": "ZDJECIA SZYBKOSC UI PASS",
       "timeoutSec": 900,

@@ -2096,6 +2096,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
           OESTAparat.edit(p.blob, camOpts()).then(function (nb) {
             if (!nb) return;
             var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : ""; ectx.kind = photoKind(p.tap, p.sheet);
+            ectx.stamp = false; // data i godzina (opcja w module zdjęć) wpisywana tylko przy zrobieniu zdjęcia – poprawione zdjęcie nie dostaje drugiej
             return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia

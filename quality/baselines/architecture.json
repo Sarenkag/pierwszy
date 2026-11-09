@@ -19,13 +19,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|handover.js|OESTZdjecia",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: handover.js (poz. 26) używa OESTZdjecia z moduly/zdjecia/zdjecia.js (poz. 43, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|keys.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: keys.js (poz. 29) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",
@@ -68,23 +61,9 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|reactive-store.js|OESTZdjecia",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: reactive-store.js (poz. 23) używa OESTZdjecia z moduly/zdjecia/zdjecia.js (poz. 43, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|reactive.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: reactive.js (poz. 42) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|reactive.js|OESTZdjecia",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: reactive.js (poz. 42) używa OESTZdjecia z moduly/zdjecia/zdjecia.js (poz. 43, ładowany później)",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     },
