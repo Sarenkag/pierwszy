@@ -109,6 +109,11 @@ function fakePhone() {
     await pg.evaluate(() => { window.__ntSlow = 0; });
     R.poSpoznionymTlumaczeniu = await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue();
     check(/level 13 has a cracked gland/.test(R.poSpoznionymTlumaczeniu), 'wynik „Ułóż” notatki 2 nadpisał edycję notatki 1: ' + R.poSpoznionymTlumaczeniu);
+    // poprawka dopisana w trakcie „Ułóż z polskiego” nie znika po wyniku (przegląd Codex #108)
+    await pg.evaluate(() => { window.__ntSlow = 600; }); await pg.locator('.nt-pop [data-nt=redo]').click();
+    await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('Typed while translating.'); await pg.waitForTimeout(900); await pg.evaluate(() => { window.__ntSlow = 0; });
+    R.poprawkaWTrakcie = await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue();
+    check(R.poprawkaWTrakcie === 'Typed while translating.', 'wynik „Ułóż” nadpisał poprawkę wpisaną w trakcie: ' + R.poprawkaWTrakcie);
     // zamknięcie okienka w trakcie poprawiania (Wstecz / Escape / obok): poprawka wraca przy następnym otwarciu (przegląd Codex #108)
     await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('Draft kept after closing.');
     await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });

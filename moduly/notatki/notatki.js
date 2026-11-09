@@ -285,9 +285,11 @@
         if (!plv) { box.textContent = T('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); return; }
         if (!translator()) { box.textContent = T('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); return; }
         b.disabled = true; box.textContent = T('Układam po angielsku…', 'Writing in English…');
-        var ed = editing; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
+        var ed = editing, plIn = node.querySelector('[data-nt-f=pl]').value, enIn = node.querySelector('[data-nt-f=en]').value; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
         english(plv, ed.ctx).then(function (out) {
           if (editing !== ed || !node.isConnected) return;
+          // w trakcie dopisano poprawki: nie nadpisujemy ich wynikiem
+          if (node.querySelector('[data-nt-f=pl]').value !== plIn || node.querySelector('[data-nt-f=en]').value !== enIn) { var bx = node.querySelector('.nt-warn'), rb = node.querySelector('[data-nt=redo]'); if (rb) rb.disabled = false; if (bx) bx.textContent = T('Tekst zmieniony w trakcie – nie podmieniam. Stuknij „Ułóż” jeszcze raz.', 'Text changed meanwhile – not replaced. Tap “Rewrite” again.'); return; }
           node.querySelector('[data-nt-f=pl]').value = plv; node.querySelector('[data-nt-f=en]').value = out || node.querySelector('[data-nt-f=en]').value;
           tab = 'en'; editing.pl = plv; editing.en = node.querySelector('[data-nt-f=en]').value; drawEdit();
           if (!out) node.querySelector('.nt-warn').textContent = T('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.');
