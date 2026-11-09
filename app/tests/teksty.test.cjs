@@ -84,4 +84,7 @@ test('moduł wybiera język i wstawia wartości', () => {
   assert.strictEqual(bledy.wJezyku('pl', () => bledy.tx('ekran-glowny.zdjecia-rozmiar', { n: 2, mb: '1,5 MB' })), 'zdjęcia: 2 · 1,5 MB');
   assert.strictEqual(bledy.wJezyku('en', () => bledy.tx('ekran-glowny.stan-z', { czas: '9 Nov, 03:00' })), 'Updated 9 Nov, 03:00');
   assert.strictEqual(bledy.tx('nie.ma'), 'nie.ma');
+  // ekran z własnym językiem (ustawienia kalendarza) podaje go trzecim argumentem
+  assert.strictEqual(bledy.wJezyku('pl', () => bledy.tx('ekran-glowny.do-zrobienia', { n: 2 }, 'en')), '2 to do');
+  assert.strictEqual(bledy.wJezyku('en', () => bledy.tx('ekran-glowny.do-zrobienia', { n: 2 }, 'pl')), '2 do zrobienia');
 });
