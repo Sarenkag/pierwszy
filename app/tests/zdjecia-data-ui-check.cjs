@@ -69,12 +69,13 @@ async function photos(browser, url, worker) {
   assert.equal(again.stamp, ''); assert.ok(diff(again.corner, off.corner) < 1, 'stamp:false = zdjęcie bez napisu');
   // podgląd: zmniejszone w tle z bieżącą datą – zapis z tą samą minutą bierze gotowe, z inną datą (np. EXIF wczoraj) liczy od nowa
   const nowHit = await saveAndRead(pg, { on: true, prepare: true });
-  const oldHit = await saveAndRead(pg, { on: true, prepare: true, when });
+  // stała, wyraźnie inna data niż „teraz” (CI 09/11/2026 22:14 trafiło dokładnie w datę z `when` – gotowe zdjęcie było wtedy poprawne)
+  const earlier = new Date(2025, 0, 15, 8, 30).getTime(), oldHit = await saveAndRead(pg, { on: true, prepare: true, when: earlier });
   if (worker) {
     assert.equal(nowHit.hit + oldHit.hit <= 2, true);
     assert.equal(oldHit.hit, 0, 'inna data zrobienia: nie bierze gotowego zdjęcia z inną datą');
-    assert.equal(oldHit.stamp, '09/11/2026 22:14');
-    assert.ok(diff(oldHit.corner, on.corner) < 1, 'zdjęcie po podglądzie ma datę zrobienia, nie podglądu');
+    assert.equal(oldHit.stamp, '15/01/2025 08:30', 'zdjęcie po podglądzie ma datę zrobienia, nie podglądu');
+    assert.ok(diff(oldHit.corner, off.corner) > 15, 'napis jest na zdjęciu');
   }
   if (worker && out) {
     fs.mkdirSync(out, { recursive: true });
