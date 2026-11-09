@@ -165,6 +165,12 @@ function fakePhone() {
     await pg.evaluate(() => localStorage.setItem('oest.lang', 'pl')); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
     // 9. Wyczyść inspekcję usuwa też notatki
     log('9. Wyczyść inspek');
+    // błąd usuwania notatek: nic nie czyścimy i nie piszemy „Wyczyszczono” (przegląd Codex #108)
+    await pg.evaluate(() => { const c = OESTNotatki.clear; OESTNotatki.clear = function () { OESTNotatki.clear = c; return Promise.reject(Error('transakcja przerwana')); }; window.OEST_clearInspection(); });
+    await pg.waitForSelector('.oest-ask [data-a=ok]'); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForTimeout(1500);
+    R.bladCzyszczenia = await pg.locator('.oest-ask').textContent().catch(() => '');
+    check(/nie wyczyściłem/.test(R.bladCzyszczenia) && !/Wyczyszczono/.test(await pg.locator('#formHint').textContent()) && await count() === '1', 'błąd usuwania notatek potwierdzony jako wyczyszczenie: ' + R.bladCzyszczenia + ' / ' + await pg.locator('#formHint').textContent() + ' / notatek ' + await count());
+    if (await pg.locator('.oest-ask [data-a=ok]').count()) { await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); }
     await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector('.oest-ask [data-a=ok]'); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForTimeout(2500);
     check(await count() === '0', 'po „Wyczyść inspekcję” zostały notatki: ' + await count());
     R.poWyczysc = await count();

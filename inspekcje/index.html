@@ -1487,10 +1487,13 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (!(await ask(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos).")))) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
-    (window.OESTNotatki ? OESTNotatki.clear(k).catch(function () {}) : Promise.resolve()).then(function () { return dropDraft(k); }).then(function () {
+    // najpierw notatki; gdy ich usunięcie się nie uda, szkic zostaje, formularz wraca i nie piszemy „Wyczyszczono”
+    (window.OESTNotatki ? OESTNotatki.clear(k) : Promise.resolve()).then(function () { return dropDraft(k).then(function () {
       if (cur.ppm && PPM && PPM.setStage) { var r = PPM.stage(cur.ppm); if (!r || r.s === "prog" || r.s === "hold") PPM.setStage(cur.ppm, null); }
       openForm(code); if (cur.ppm && PPM && PPM.setStage) { var r2 = PPM.stage(cur.ppm); if (r2 && r2.s === "prog" && !r2.manual) PPM.setStage(cur.ppm, null); }
       renderPpmBar(); $("formHint").textContent = T("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
+    }); }, function () {
+      openForm(code); OESTPrzycisk.alert(T("Nie udało się usunąć notatek tej inspekcji, więc jej nie wyczyściłem. Spróbuj jeszcze raz.", "Could not delete this inspection’s notes, so it was not cleared. Try again.")); // okienko: podpowiedź pod formularzem nadpisuje wczytany szkic
     });
   };
 
