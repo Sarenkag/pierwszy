@@ -129,6 +129,7 @@ function fakePhone() {
       check((await pg.locator('.ho-entry .ho-notes .nt-n').textContent()) === '1', 'Hand over: licznik notatek wpisu');
       await pg.locator('.ho-entry .ho-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
       check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Hand over: okienko notatek wpisu bez tekstu');
+      check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0, 'Hand over: notatki zapisanego wpisu da się poprawić/usunąć (archiwum dzieli je z aktywną zmianą)');
       await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }
     // notatki wpisu po id wpisu (nie zmiany – scalanie kont zmienia zmianę wpisu, przegląd Codex #113)
@@ -144,6 +145,15 @@ function fakePhone() {
     check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Hand over: w archiwum brak odsłuchu');
     await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
 
+    // notatka w szybkim wpisie nie zależy od id zmiany (scalanie kont zmienia id zmiany – przegląd Codex #113): nowa zmiana nadal ją widzi
+    await pg.goto(B + '/#home'); await pg.goto(B + '/#handover'); await pg.locator('#hoStart').waitFor();
+    await pg.locator('#hoStart').fill('2026-11-13'); await pg.locator('#hoEnd').fill('2026-11-16'); await pg.locator('[data-ho=start]').click(); await pg.locator('#hoText').waitFor();
+    await record('#hoNotes', 1);
+    await pg.evaluate(() => { window.__askMode = 'ok'; });
+    await pg.locator('[data-ho-route^="draft/"]').click(); await pg.locator('[data-ho=archive]').click(); await pg.waitForFunction(() => /#handover$/.test(location.hash));
+    await pg.evaluate(() => { window.__askMode = ''; });
+    await pg.locator('#hoStart').fill('2026-11-17'); await pg.locator('#hoEnd').fill('2026-11-20'); await pg.locator('[data-ho=start]').click(); await pg.locator('#hoNotes .nt-n').waitFor();
+    check(await until(() => document.querySelector('#hoNotes .nt-n').textContent === '1'), 'Hand over: notatka szybkiego wpisu zgubiona po zmianie id zmiany');
     // zakończone zadanie (historia): notatki nadal do odsłuchu i odczytu, tylko do odczytu (przegląd Codex #113)
     await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     await record('#rxNotes', 1);
