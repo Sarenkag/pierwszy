@@ -13,6 +13,13 @@ function docxText(buf) {
   return parts.map(f => zip.file(f).asText().split('</w:p>').map(p => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map(m => unxml(m[1])).join('')).join('\n')).join('\n');
 }
 
+// Akapity Word (document.xml) z zaznaczeniem tła (w:highlight) – tekst akapitu, np. rok i miesiąc w tabeli QHS-031.
+function docxHighlighted(buf) {
+  const x = new PizZip(buf).file('word/document.xml').asText();
+  return (x.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []).filter(p => /<w:r[ >](?:(?!<\/w:r>)[\s\S])*<w:highlight /.test(p))
+    .map(p => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map(m => unxml(m[1])).join('').trim()).filter(Boolean);
+}
+
 // Liczba obrazów w Word (word/media/*).
 function docxImages(buf) { return Object.keys(new PizZip(buf).files).filter(f => /^word\/media\/[^/]+$/.test(f)).length; }
 
@@ -151,4 +158,4 @@ function wordPdfDiff(wordBufs, pdfBufs) {
   };
 }
 
-module.exports = { docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat, flat, docxParts, pdfParts, wordPdfDiff, imgSize };
+module.exports = { docxHighlighted, docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat, flat, docxParts, pdfParts, wordPdfDiff, imgSize };
