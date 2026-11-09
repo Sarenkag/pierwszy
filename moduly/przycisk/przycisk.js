@@ -7,6 +7,8 @@
   // kółko ze smugą (ten sam wzór co „Zapisuję…” na środku ekranu, Grzegorz 03/11) + tekst etapu obok
   var CSS = ".oest-busy{opacity:1!important;transform:scale(.97);transition:transform .2s}" +
     ".oest-busy .oest-step{display:inline-flex;align-items:center;justify-content:center;gap:.55em;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    // napis etapu dłuższy niż przycisk: wielokropek zamiast rozpychania przycisku (rozmiar trzyma start(), 09/11/2026)
+    ".oest-busy .oest-step>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}" +
     // kółko: jedno dla całej apki – moduly/ladowanie (tu tylko zapas, gdy strona go nie ładuje)
     ".oest-spin{display:inline-block;flex:none;width:1.15em;height:1.15em;border-radius:50%;vertical-align:middle;" +
     "background:conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg);" +
@@ -108,10 +110,21 @@
   function start(btn, opts) {
     opts = opts || {}; css();
     var html = btn.innerHTML, dis = btn.disabled, over = false;
+    // Przycisk w trakcie pracy zachowuje swój rozmiar i miejsce (zasada „nic nie drga”, Grzegorz 09/11/2026):
+    // kręciołek i dłuższy napis etapu nie mogą go powiększyć ani ścisnąć sąsiada w grupie.
+    // offsetWidth/Height = rozmiar w układzie (bez zmniejszenia .97 przy naciśnięciu); po zakończeniu wracają style ekranu.
+    var LOCK = ["boxSizing", "width", "minWidth", "maxWidth", "height", "minHeight", "maxHeight", "flex"], kept = {};
+    LOCK.forEach(function (k) { kept[k] = btn.style[k]; });
+    var bw = btn.offsetWidth, bh = btn.offsetHeight;
+    if (bw && bh) {
+      btn.style.boxSizing = "border-box"; btn.style.flex = "none";
+      btn.style.width = btn.style.minWidth = btn.style.maxWidth = bw + "px";
+      btn.style.height = btn.style.minHeight = btn.style.maxHeight = bh + "px";
+    }
     btn.disabled = true; btn.classList.add("oest-busy"); btn.setAttribute("aria-busy", "true");
     function show(t) { if (over) return; btn.innerHTML = '<span class="oest-step" role="status"><span class="oest-spin" aria-hidden="true"></span><span>' + esc(t) + "</span></span>"; }
     show(opts.busy ? opts.busy + "…" : T("Pracuję…", "Working…"));
-    function restore() { if (over) return; over = true; btn.innerHTML = html; btn.disabled = dis; btn.classList.remove("oest-busy"); btn.removeAttribute("aria-busy"); }
+    function restore() { if (over) return; over = true; btn.innerHTML = html; btn.disabled = dis; btn.classList.remove("oest-busy"); btn.removeAttribute("aria-busy"); LOCK.forEach(function (k) { btn.style[k] = kept[k]; }); }
     return {
       // etap pracy na przycisku: „Sprawdzam połączenie…” → „Wysyłam 1/2…” (Grzegorz 03/11)
       step: function (text) { show(text); },

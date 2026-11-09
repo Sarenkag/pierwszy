@@ -2,9 +2,9 @@
 
 **Zasada (Grzegorz 02/11/2026):** jeden przycisk akcji z jednym zachowaniem we wszystkich apkach OEST. W każdym miejscu podmieniamy tylko akcję (wyślij, zapisz…).
 
-Zachowanie: naciśnięcie → kręciołek (przycisk lekko wciśnięty, zablokowany) → „✓ Gotowe” przez ~0,9 s → dalej. Przy błędzie przycisk wraca do zwykłego napisu, a błąd idzie dalej do ekranu. Wygląd przycisku (kolor, kształt) zostaje z ekranu.
+Zachowanie: naciśnięcie → kręciołek (przycisk lekko wciśnięty, zablokowany) → „✓ Gotowe” przez ~0,9 s → dalej. Przez cały czas przycisk ma swój rozmiar i miejsce sprzed naciśnięcia (09/11/2026): kręciołek ani dłuższy napis etapu go nie powiększają i nie ściskają sąsiada (za długi napis kończy się „…”). Przy błędzie przycisk wraca do zwykłego napisu, a błąd idzie dalej do ekranu. Wygląd przycisku (kolor, kształt) zostaje z ekranu.
 
-Test zasad: `app/tests/moduly-zasady-ui-check.cjs` (blokada w trakcie, „✓ Gotowe” tylko po sukcesie, powrót po błędzie, równe przyciski okienka; znany skok rozmiaru w trakcie pracy – `quality/baselines/moduly-zasady.json`).
+Test zasad: `app/tests/moduly-zasady-ui-check.cjs` (blokada w trakcie, „✓ Gotowe” tylko po sukcesie, powrót po błędzie, równe przyciski okienka; stały rozmiar i miejsce w trakcie pracy, PL i EN; lista znanych skoków `quality/baselines/moduly-zasady.json` jest pusta).
 
 ## Użycie
 ```js
