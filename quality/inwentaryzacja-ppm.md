@@ -11,9 +11,10 @@ przez otwarcie `inspekcje/index.html#ppm=<id>` – tak jak dotknięcie klocka na
 | EFA-INS (katalog inspekcji) | 27 | formularz inspekcji | wg `ppm.js forms` / skan kartki / pomiary | Word + PDF | w bramce: `raport-ui-check.cjs`, każda z 27 |
 | Distribution Boards (`db-*`, `open: "db"`) | 18 | od razu formularz danej rozdzielnicy | istniejący typ `db` – 16 punktów | Word + PDF (18/18) | jedna rozdzielnica = osobna inspekcja i termin |
 | Isolators (`iso`, `open: "iso"`) | 1 | lista urządzeń „Local Isolators” | typ `iso` (pytania ogólne + powody, „ask”) | brak – lista jest pusta (`devices: []`) | brakuje rejestru 27 izolatorów i pytań SFG20 (czeka na materiały) |
+| In-house bez zleceń Vantify (`shower`, `ahu`, `efans`, `odh`, `hru`) | 5 | formularz ogólny „<nazwa> - Inspection” | 6 ogólnych punktów (GENERIC_CPS) + zdjęcie | Word + PDF | przywrócone 09/11/2026 (zgoda Grzegorza); bez terminu, dopóki nie ma zlecenia w Vantify albo Update |
 | Podwykonawcy (`s-*`, grupa `sub`) | 19 | formularz ogólny „<nazwa> - Inspection” | 6 ogólnych punktów (GENERIC_CPS) + zdjęcie | Word + PDF (19/19) | wykonuje firma zewnętrzna (`by`); czy inżynier ma tu tworzyć raport – decyzja właściciela |
 
-Razem w apce: **65** zadań (27 + 18 + 1 + 19). Błędów JavaScript przy otwieraniu: 0.
+Razem w apce: **70** kart (27 + 18 + 1 + 5 + 19) = 78 zadań Vantify, bo 8 zadań Sub jest zebranych w karty z innym zadaniem (test: `app/tests/ppm-78.test.cjs`). Błędów JavaScript przy otwieraniu: 0.
 
 ## Podwykonawcy – lista
 
@@ -26,7 +27,7 @@ s-cwst Cold Water Storage Tank (Hydrocert, 6M+12M) · s-pat Portable Appliance T
 
 ## Niespójności do decyzji właściciela (nie poprawiane)
 
-1. Pamięć projektu: lista PPM One Eastside z 30/10/2026 ma **78** zadań; w apce jest **65**. PROD-011 zabrania okrajania listy – trzeba porównać z listą źródłową.
+1. ~~78 vs 65~~ – wyjaśnione 09/11/2026: 8 zadań Sub zebranych w karty, 5 in-house wypadło 31/10/2026 i wróciło (`ppm-78.test.cjs` pilnuje pełnej listy 78).
 2. Nagłówek `app/www/ppm.js` mówi „28 inspekcji startowych”, a lista ma 27 (EFA-INS-028 usunięte 02/11/2026 – zlecenie reactive w Vantify). Komentarz nieaktualny.
 3. Isolators: klocek otwiera pustą listę, więc z PPM nie da się wykonać tej inspekcji (znane: brak rejestru 27 izolatorów).
 4. Podwykonawcy dostają ogólny formularz inżyniera z 6 punktami. Nie wiadomo, czy to zamierzone (np. odnotowanie wizyty firmy), czy powinni mieć inny tryb – nie dodaję wymagań.
