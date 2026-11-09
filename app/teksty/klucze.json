@@ -1,0 +1,461 @@
+{
+  "ekran": "Klucze",
+  "opis": "Teksty ekranu Klucze (app/www/keys.js). Wartości w {klamrach} wstawia apka – zostaw je w tekście.",
+  "teksty": [
+    {
+      "id": "klucz-plasko-na-jasnym-jednolitym",
+      "pl": "Klucz płasko na jasnym, jednolitym tle, główka w lewo, ząbki do góry. Jeden klucz w kadrze. Unikaj cieni i odblasków; na Pixelu zbliż aparat i sprawdź Macro Focus.",
+      "en": "Key flat on a light, plain background, head to the left, cuts facing up. One key in the frame. Avoid shadows and glare; on the Pixel move the camera closer and check Macro Focus."
+    },
+    {
+      "id": "obrys-glowka-po-lewej-pioro",
+      "pl": "Obrys: główka po lewej, pióro poziomo, ząbki u góry",
+      "en": "Outline: head on the left, blade horizontal, cuts on top"
+    },
+    {
+      "id": "po-zdjeciu-dopasuj-zakres-piora",
+      "pl": "Po zdjęciu dopasuj zakres pióra: od nasady za główką do końca nacięć, bez czubka. Oryginał zdjęcia klucza zachowujemy bez ponownej kompresji.",
+      "en": "After the photo, set the blade range: from the shoulder behind the head to the end of the cuts, without the tip. The original key photo is kept without recompression."
+    },
+    {
+      "id": "aparat-systemowy",
+      "pl": "Aparat systemowy",
+      "en": "System camera"
+    },
+    {
+      "id": "galeria",
+      "pl": "Galeria",
+      "en": "Gallery"
+    },
+    {
+      "id": "otworz-pelne-zdjecie",
+      "pl": "Otwórz pełne zdjęcie",
+      "en": "Open full photo"
+    },
+    {
+      "id": "znormalizowany-profil-zabkow",
+      "pl": "Znormalizowany profil ząbków",
+      "en": "Normalised cut profile"
+    },
+    {
+      "id": "wstecz",
+      "pl": "Wstecz",
+      "en": "Back"
+    },
+    {
+      "id": "klucze",
+      "pl": "Klucze",
+      "en": "Keys"
+    },
+    {
+      "id": "znajdz-klucz",
+      "pl": "Znajdź klucz",
+      "en": "Find key"
+    },
+    {
+      "id": "dodaj-klucz",
+      "pl": "Dodaj klucz",
+      "en": "Add key"
+    },
+    {
+      "id": "szukaj-nazwa-numer-drzwi-pietro",
+      "pl": "🔍  Szukaj: nazwa, numer, drzwi, piętro",
+      "en": "🔍  Search: name, number, door, floor"
+    },
+    {
+      "id": "szukaj-klucza",
+      "pl": "Szukaj klucza",
+      "en": "Search keys"
+    },
+    {
+      "id": "kopia-zapasowa",
+      "pl": "⚙ Kopia zapasowa",
+      "en": "⚙ Backup"
+    },
+    {
+      "id": "zapisz-kopie",
+      "pl": "Zapisz kopię",
+      "en": "Save backup"
+    },
+    {
+      "id": "przywroc-z-pliku",
+      "pl": "Przywróć z pliku",
+      "en": "Restore from file"
+    },
+    {
+      "id": "bez-numeru",
+      "pl": "Bez numeru",
+      "en": "No number"
+    },
+    {
+      "id": "drzwi",
+      "pl": "drzwi",
+      "en": "doors"
+    },
+    {
+      "id": "otworz",
+      "pl": "Otwórz",
+      "en": "Open"
+    },
+    {
+      "id": "brak-kluczy-dodaj-pierwszy-klucz",
+      "pl": "Brak kluczy. Dodaj pierwszy klucz i zdjęcia drzwi.",
+      "en": "No keys. Add the first key and door photos."
+    },
+    {
+      "id": "edytuj-klucz",
+      "pl": "Edytuj klucz",
+      "en": "Edit key"
+    },
+    {
+      "id": "nazwa-klucza",
+      "pl": "Nazwa klucza",
+      "en": "Key name"
+    },
+    {
+      "id": "numer-wybity-na-glowce-opcjonalnie",
+      "pl": "Numer wybity na główce (opcjonalnie)",
+      "en": "Number stamped on the head (optional)"
+    },
+    {
+      "id": "rodzaj",
+      "pl": "Rodzaj",
+      "en": "Type"
+    },
+    {
+      "id": "zabkowany-euro-skrzynka-szafa",
+      "pl": "Ząbkowany euro / skrzynka / szafa",
+      "en": "Cut euro / box / cabinet"
+    },
+    {
+      "id": "nietypowy-tylko-katalog",
+      "pl": "Nietypowy — tylko katalog",
+      "en": "Unusual — catalogue only"
+    },
+    {
+      "id": "usun-zdjecie",
+      "pl": "Usuń zdjęcie",
+      "en": "Delete photo"
+    },
+    {
+      "id": "drugie-zdjecie-drugiej-strony-jest",
+      "pl": "Drugie zdjęcie drugiej strony jest opcjonalne.",
+      "en": "A second photo of the other side is optional."
+    },
+    {
+      "id": "drzwi-2",
+      "pl": "Drzwi",
+      "en": "Door"
+    },
+    {
+      "id": "nazwa-drzwi-pomieszczenia",
+      "pl": "Nazwa drzwi / pomieszczenia",
+      "en": "Door / room name"
+    },
+    {
+      "id": "budynek",
+      "pl": "Budynek",
+      "en": "Building"
+    },
+    {
+      "id": "wybierz",
+      "pl": "Wybierz",
+      "en": "Choose"
+    },
+    {
+      "id": "pietro",
+      "pl": "Piętro",
+      "en": "Floor"
+    },
+    {
+      "id": "usun",
+      "pl": "Usuń",
+      "en": "Delete"
+    },
+    {
+      "id": "usun-drzwi",
+      "pl": "Usuń drzwi",
+      "en": "Delete door"
+    },
+    {
+      "id": "dodaj-kolejne-drzwi",
+      "pl": "Dodaj kolejne drzwi",
+      "en": "Add another door"
+    },
+    {
+      "id": "zapisz-klucz-na-telefonie",
+      "pl": "Zapisz klucz na telefonie",
+      "en": "Save key on the phone"
+    },
+    {
+      "id": "nie-znaleziono-klucza",
+      "pl": "Nie znaleziono klucza",
+      "en": "Key not found"
+    },
+    {
+      "id": "numer",
+      "pl": "Numer:",
+      "en": "Number:"
+    },
+    {
+      "id": "brak",
+      "pl": "brak",
+      "en": "none"
+    },
+    {
+      "id": "edytuj",
+      "pl": "Edytuj",
+      "en": "Edit"
+    },
+    {
+      "id": "usun-klucz",
+      "pl": "Usuń klucz",
+      "en": "Delete key"
+    },
+    {
+      "id": "numer-z-ocr-sprawdz-popraw",
+      "pl": "Numer z OCR — sprawdź / popraw ręcznie",
+      "en": "Number from OCR — check / correct by hand"
+    },
+    {
+      "id": "porownaj-z-baza",
+      "pl": "Porównaj z bazą",
+      "en": "Compare with database"
+    },
+    {
+      "id": "tryb-testowy-profil-i-pomiar",
+      "pl": "Tryb testowy: profil i pomiar trafności",
+      "en": "Test mode: profile and accuracy measurement"
+    },
+    {
+      "id": "procent-to-podobienstwo-profilu-nie",
+      "pl": "Procent to podobieństwo profilu, nie prawdopodobieństwo. Numer OCR może być błędny. Zawsze potwierdź klucz osobiście.",
+      "en": "The percentage is profile similarity, not probability. The OCR number may be wrong. Always confirm the key in person."
+    },
+    {
+      "id": "zamknij",
+      "pl": "Zamknij",
+      "en": "Close"
+    },
+    {
+      "id": "pelne-zdjecie",
+      "pl": "Pełne zdjęcie",
+      "en": "Full photo"
+    },
+    {
+      "id": "zaczekaj-na-zakonczenie-biezacej-operacji",
+      "pl": "Zaczekaj na zakończenie bieżącej operacji.",
+      "en": "Wait for the current operation to finish."
+    },
+    {
+      "id": "masz-niezapisane-dane-keys-opuscic",
+      "pl": "Masz niezapisane dane Keys. Opuścić ekran?",
+      "en": "You have unsaved Keys data. Leave the screen?"
+    },
+    {
+      "id": "wczytywanie-bazy-keys",
+      "pl": "Wczytywanie bazy Keys…",
+      "en": "Loading Keys database…"
+    },
+    {
+      "id": "nie-udalo-sie-odczytac-bazy",
+      "pl": "Nie udało się odczytać bazy Keys:",
+      "en": "Could not read the Keys database:"
+    },
+    {
+      "id": "scalic-klucze-i-zdjecia-z",
+      "pl": "Scalić klucze i zdjęcia z pliku JSON z bazą bieżącego konta?",
+      "en": "Merge keys and photos from the JSON file into the current account's database?"
+    },
+    {
+      "id": "przygotowanie-zdjecia",
+      "pl": "Przygotowanie zdjęcia…",
+      "en": "Preparing photo…"
+    },
+    {
+      "id": "maksymalnie-10-zdjec-na-drzwi",
+      "pl": "Maksymalnie 10 zdjęć na drzwi.",
+      "en": "Maximum 10 photos per door."
+    },
+    {
+      "id": "ocr-niedostepny-w-przegladarce-wpisz",
+      "pl": "OCR niedostępny w przeglądarce — wpisz numer ręcznie.",
+      "en": "OCR not available in the browser — enter the number by hand."
+    },
+    {
+      "id": "ocr-numeru-lokalnie",
+      "pl": "OCR numeru — lokalnie…",
+      "en": "Reading number (OCR) on the phone…"
+    },
+    {
+      "id": "sprawdz-odczyt-ocr",
+      "pl": "Sprawdź odczyt OCR:",
+      "en": "Check the OCR reading:"
+    },
+    {
+      "id": "ocr-nie-odczytal-numeru-mozesz",
+      "pl": "OCR nie odczytał numeru — możesz go wpisać.",
+      "en": "OCR could not read the number — you can type it in."
+    },
+    {
+      "id": "ocr-nie-zadzialal",
+      "pl": "OCR nie zadziałał:",
+      "en": "OCR failed:"
+    },
+    {
+      "id": "sprawdz-zdjecie-i-profil",
+      "pl": "Sprawdź zdjęcie i profil",
+      "en": "Check the photo and profile"
+    },
+    {
+      "id": "zdjecie-z-wykrytym-profilem-zabkow",
+      "pl": "Zdjęcie z wykrytym profilem ząbków",
+      "en": "Photo with the detected cut profile"
+    },
+    {
+      "id": "obroc-90",
+      "pl": "Obróć 90°",
+      "en": "Rotate 90°"
+    },
+    {
+      "id": "odbij-lewo-prawo",
+      "pl": "Odbij lewo/prawo",
+      "en": "Flip left/right"
+    },
+    {
+      "id": "odbij-gora-dol",
+      "pl": "Odbij góra/dół",
+      "en": "Flip up/down"
+    },
+    {
+      "id": "poczatek-piora",
+      "pl": "Początek pióra",
+      "en": "Blade start"
+    },
+    {
+      "id": "koniec-naciec-bez-czubka",
+      "pl": "Koniec nacięć (bez czubka)",
+      "en": "End of cuts (without tip)"
+    },
+    {
+      "id": "korekta-wyprostowania",
+      "pl": "Korekta wyprostowania (°)",
+      "en": "Straightening correction (°)"
+    },
+    {
+      "id": "uzyj-zdjecia",
+      "pl": "Użyj zdjęcia",
+      "en": "Use photo"
+    },
+    {
+      "id": "odrzuc-powtorz",
+      "pl": "Odrzuć / powtórz",
+      "en": "Discard / retake"
+    },
+    {
+      "id": "profil-wykryty-sprawdz-turkusowa-linie",
+      "pl": "Profil wykryty. Sprawdź turkusową linię: musi śledzić nacięcia pióra, bez główki i czubka.",
+      "en": "Profile detected. Check the turquoise line: it must follow the blade cuts, without the head and tip."
+    },
+    {
+      "id": "zdjecie-szukanego-klucza",
+      "pl": "Zdjęcie szukanego klucza",
+      "en": "Photo of the key you are looking for"
+    },
+    {
+      "id": "kandydaci-do-recznego-sprawdzenia",
+      "pl": "kandydaci do ręcznego sprawdzenia.",
+      "en": "candidates to check by hand."
+    },
+    {
+      "id": "brak-profilu-lub-zgodnego-numeru",
+      "pl": "Brak profilu lub zgodnego numeru — dodaj zdjęcie albo popraw numer.",
+      "en": "No profile or matching number — add a photo or correct the number."
+    },
+    {
+      "id": "zgodny-numer-ocr-wpis-reczny",
+      "pl": "Zgodny numer (OCR / wpis ręczny).",
+      "en": "Matching number (OCR / typed)."
+    },
+    {
+      "id": "podobienstwo-profilu",
+      "pl": "Podobieństwo profilu:",
+      "en": "Profile similarity:"
+    },
+    {
+      "id": "brak-profilu",
+      "pl": "brak profilu",
+      "en": "no profile"
+    },
+    {
+      "id": "nieznany",
+      "pl": "Nieznany",
+      "en": "Unknown"
+    },
+    {
+      "id": "kandydat",
+      "pl": "Kandydat",
+      "en": "Candidate"
+    },
+    {
+      "id": "druga-opinia-modelu",
+      "pl": "Druga opinia modelu:",
+      "en": "Model second opinion:"
+    },
+    {
+      "id": "gotowy-do-uruchomienia",
+      "pl": "gotowy do uruchomienia",
+      "en": "ready to run"
+    },
+    {
+      "id": "niepodlaczony",
+      "pl": "niepodłączony",
+      "en": "not connected"
+    },
+    {
+      "id": "lokalny-model-druga-opinia",
+      "pl": "Lokalny model — druga opinia",
+      "en": "Local model — second opinion"
+    },
+    {
+      "id": "test-ktory-klucz-naprawde-sfotografowano",
+      "pl": "Test: który klucz naprawdę sfotografowano?",
+      "en": "Test: which key was actually photographed?"
+    },
+    {
+      "id": "wybierz-prawdziwy-klucz",
+      "pl": "Wybierz prawdziwy klucz",
+      "en": "Choose the real key"
+    },
+    {
+      "id": "zapisz-wynik-testu-takze-nietrafiony",
+      "pl": "Zapisz wynik testu (także nietrafiony)",
+      "en": "Save test result (also a miss)"
+    },
+    {
+      "id": "zapisano-wynik-testu-licznik-jest",
+      "pl": "Zapisano wynik testu. Licznik jest na ekranie katalogu.",
+      "en": "Test result saved. The counter is on the catalogue screen."
+    },
+    {
+      "id": "usunac-ten-klucz-wraz-z",
+      "pl": "Usunąć ten klucz wraz z jego zdjęciami i listą drzwi z bieżącego konta?",
+      "en": "Delete this key with its photos and door list from the current account?"
+    },
+    {
+      "id": "zapisano-plik-json-ze-zdjeciami",
+      "pl": "Zapisano plik JSON ze zdjęciami.",
+      "en": "JSON file with photos saved."
+    },
+    {
+      "id": "przygotowano-eksport-json-ze-zdjeciami",
+      "pl": "Przygotowano eksport JSON ze zdjęciami. Sprawdź zapisany plik.",
+      "en": "JSON export with photos prepared. Check the saved file."
+    },
+    {
+      "id": "druga-opinia-lokalnego-modelu",
+      "pl": "Druga opinia lokalnego modelu:",
+      "en": "Local model second opinion:"
+    }
+  ]
+}
