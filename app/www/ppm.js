@@ -1,4 +1,4 @@
-// Lista PPM One Eastside: 28 inspekcji startowych + rozdzielnice i izolatory + podwykonawcy (Sub).
+// Lista PPM One Eastside (78 zadań Vantify, 70 kart): 27 inspekcji EFA-INS + rozdzielnice i izolatory + 5 in-house + podwykonawcy (Sub).
 // freq: "1W", "3M" itd.; kilka częstotliwości (np. 1M + 12M) — termin liczy się z najkrótszej.
 // open: karta otwiera istniejący rodzaj inspekcji z listą urządzeń (db, iso).
 window.OEST_PPM = {
@@ -131,6 +131,15 @@ window.OEST_PPM = {
     { id: "db-MSDB-TB-11", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-11", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-11" },
     { id: "db-MSDB-TB-13", group: "elec", fam: "Distribution Boards", name: "MSDB-TB-13", freq: ["3M", "6M", "12M"], open: "db", dev: "MSDB-TB-13" },
     { id: "iso", group: "elec", name: "Isolator Inspections", freq: ["3M", "12M"], open: "iso" },
+
+    // 5 zadań in-house z listy 78 PPM (Vantify ppm.csv), które wypadły 31/10/2026 przy przejściu na katalog EFA-INS
+    // (nie mają otwartych zleceń w eksporcie Job). Przywrócone za zgodą Grzegorza 09/11/2026 – te same id co przed 31/10.
+    // Bez zleceń w vantify-plan.js: bez terminu, dopóki nie przyjdzie zlecenie z Vantify albo Grzegorz nie ustawi go w Update.
+    { id: "shower", group: "water", name: "Showerhead Clean & De-scale", freq: ["3M"] },
+    { id: "ahu", group: "mech", name: "Air Handling Units", freq: ["6M", "12M"] },
+    { id: "efans", group: "mech", name: "Extract Fans", where: "Tower B", freq: ["6M"] },
+    { id: "odh", group: "mech", name: "Overdoor Heaters", where: "Tower B", freq: ["6M"] },
+    { id: "hru", group: "mech", name: "Heat Recovery Units", freq: ["12M"] },
 
     { id: "s-fa", group: "sub", name: "Fire Alarm System", where: "Tower A, Tower B", freq: ["3M"], by: "Thompson Group" },
     { id: "s-refuge", group: "sub", name: "Disabled Refuge System", where: "Tower B", freq: ["6M"], by: "Thompson Group" },

@@ -24,6 +24,7 @@
 | Wstecz telefonu | `moduly/wstecz` | systemowy Wstecz: okienko → poziom wyżej → pytanie o wyjście (08/11/2026); stos okien na wierzchu `OESTWstecz.nakladki` (dawniej `OESTOverlay` w index.html, 09/11/2026) |
 | Notatki głosowe | `moduly/notatki` (`glos.js` = OESTVoice, `notatki.js` = OESTNotatki) | nagrywanie, tekst PL→EN, okienko notatek; inspekcje (08/11/2026), Reactive i Hand over – gotowy pasek `OESTNotatki.mount` (09/11/2026) |
 | Zmiana treści bez drgań | `moduly/podmien`, `moduly/bledy` (`applyDom`, `wJezyku`) | podmiana HTML bez przerysowania, miejsce pod PL i EN (08/11/2026) |
+| Teksty ekranów | `app/teksty/<ekran>.json` → `app/scripts/teksty.js` (budowa, walidacja) → `app/www/teksty.js`; odczyt `moduly/bledy` (`tx`, `zaladujTeksty`, globalnie `OESTTx`) | teksty PL/EN w plikach danych zamiast w kodzie; pilot: ekran główny (09/11/2026), test `app/tests/teksty.test.cjs` |
 | Raporty PDF | `moduly/czcionka-pdf`, `moduly/word-pdf` | czcionka DejaVu dla jsPDF; PDF rysowany z wypełnionego formularza Word (Word = PDF, 08/11/2026) |
 | Pozostałe | `moduly/wiedza`, `model`, `odczyt`, `bledy` | wiedza, AI/OCR, błędy i tłumaczenia |
 

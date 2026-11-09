@@ -11,12 +11,23 @@
       "transition:background-color .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s cubic-bezier(.34,1.56,.64,1)}" +
     ":where(input[type=checkbox])::before{content:'';width:.85em;height:.85em;background:#fff;-webkit-mask:" + tick + " center/contain no-repeat;mask:" + tick + " center/contain no-repeat;" +
       "clip-path:inset(0 100% 0 0);transition:clip-path .3s cubic-bezier(.25,.1,.25,1) .1s}" +
-    ":where(input[type=checkbox]:checked){background-color:var(--accent,#7c84ff);box-shadow:inset 0 0 0 2px var(--accent,#7c84ff);animation:oest-cb-pop .4s cubic-bezier(.34,1.56,.64,1)}" +
+    ":where(input[type=checkbox]:checked){background-color:var(--accent,#7c84ff);box-shadow:inset 0 0 0 2px var(--accent,#7c84ff)}" +
+    // wyskok TYLKO po dotknięciu (klasa z „change”), nie przy otwarciu ekranu ani przy zaznaczeniu z kodu (09/11/2026: ekran ustawień inspekcji drgał po wczytaniu)
+    ":where(input[type=checkbox].oest-cb-pop:checked){animation:oest-cb-pop .4s cubic-bezier(.34,1.56,.64,1)}" +
     ":where(input[type=checkbox]:checked)::before{clip-path:inset(0 0 0 0)}" +
     ":where(input[type=checkbox]:disabled){opacity:.5;cursor:default}" +
     ":where(input[type=checkbox]:focus-visible){outline:2px solid var(--accent,#7c84ff);outline-offset:2px}" +
     "@keyframes oest-cb-pop{50%{transform:scale(1.2)}}" +
-    "@media (prefers-reduced-motion:reduce){:where(input[type=checkbox]),:where(input[type=checkbox])::before{transition:none}:where(input[type=checkbox]:checked){animation:none}}";
+    "@media (prefers-reduced-motion:reduce){:where(input[type=checkbox]),:where(input[type=checkbox])::before{transition:none}:where(input[type=checkbox].oest-cb-pop:checked){animation:none}}";
   var s = document.createElement("style"); s.id = "oest-checkbox-css"; s.textContent = css;
   (document.head || document.documentElement).insertBefore(s, (document.head || document.documentElement).firstChild); // na początku: style ekranów mogą nadpisać
+  // „change” przychodzi tylko od użytkownika (zaznaczenie z kodu go nie wysyła)
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (!el || el.type !== "checkbox" || !el.checked || !el.classList) return;
+    el.classList.remove("oest-cb-pop"); void el.offsetWidth; el.classList.add("oest-cb-pop");
+    // klasa znika po animacji (0,4 s) także wtedy, gdy przeglądarka nie wyśle animationend (ekran schowany) –
+    // inaczej wyskok wróciłby przy następnym pokazaniu ekranu
+    clearTimeout(el.__oestCbPop); el.__oestCbPop = setTimeout(function () { el.classList.remove("oest-cb-pop"); }, 450);
+  }, true);
 })();

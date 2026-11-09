@@ -4,6 +4,8 @@
 
 Zachowanie: naciśnięcie → kręciołek (przycisk lekko wciśnięty, zablokowany) → „✓ Gotowe” przez ~0,9 s → dalej. Przy błędzie przycisk wraca do zwykłego napisu, a błąd idzie dalej do ekranu. Wygląd przycisku (kolor, kształt) zostaje z ekranu.
 
+Test zasad: `app/tests/moduly-zasady-ui-check.cjs` (blokada w trakcie, „✓ Gotowe” tylko po sukcesie, powrót po błędzie, równe przyciski okienka; znany skok rozmiaru w trakcie pracy – `quality/baselines/moduly-zasady.json`).
+
 ## Użycie
 ```js
 OESTPrzycisk.run(btn, () => wyslij());                 // najprościej

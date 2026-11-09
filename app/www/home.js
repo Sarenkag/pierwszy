@@ -9,7 +9,8 @@
   var $ = function (id) { return d.getElementById(id); };
   var LAT = 52.4797, LON = -1.8834; // One Eastside, Birmingham
   var WX_KEY = "oest.weather", WX_AGE = 3600000;
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
+  // teksty ekranu: app/teksty/ekran-glowny.json (Grzegorz 09/11/2026 – teksty w plikach danych, nie w kodzie)
+  function X(id, v) { return w.OESTTx ? w.OESTTx("ekran-glowny." + id, v) : id; }
   function en() { return w.OESTBledy ? w.OESTBledy.lang() === "en" : false; }
   function loc() { return en() ? "en-GB" : "pl-PL"; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -51,21 +52,21 @@
     return (s || "?").toUpperCase();
   }
   function net() {
-    if (w.navigator.onLine === false) return { k: "off", t: T("Brak sieci", "No network") };
+    if (w.navigator.onLine === false) return { k: "off", t: X("brak-sieci") };
     var c = w.navigator.connection;
     if (c && (c.type === "wifi" || c.type === "ethernet")) return { k: "on", t: "Wi‑Fi" };
-    if (c && c.type && c.type !== "unknown") return { k: "mid", t: T("Dane komórkowe", "Mobile data") };
-    return { k: "on", t: T("Online", "Online") };
+    if (c && c.type && c.type !== "unknown") return { k: "mid", t: X("dane-komorkowe") };
+    return { k: "on", t: X("online") };
   }
   var photo = { pending: 0, bytes: 0, phone: 0, limit: 0, warn: 0 };
   function drivePaused() { return !!(w.OESTZdjeciaUI && w.OESTZdjeciaUI.paused && w.OESTZdjeciaUI.paused()); }
   var gOk = null; // stan połączenia z Dyskiem: tylko z OESTGoogle.ready (to samo źródło co Ustawienia i wysyłka)
   function driveOn() { var G = w.OESTGoogle; return !!(G && G.connected && G.connected("drive")) || gOk === true; }
   function driveState() {
-    if (gOk === false && !driveOn()) return { k: "off", t: T("HDD · brak połączenia", "HDD · not connected") };
-    if (drivePaused()) return { k: "off", t: T("HDD · wstrzymany", "HDD · paused") };
-    if (photo.pending) return { k: "mid", t: T("HDD · " + photo.pending + " w kolejce", "HDD · " + photo.pending + " queued") };
-    return { k: "on", t: T("HDD · zsynchronizowany", "HDD · synced") };
+    if (gOk === false && !driveOn()) return { k: "off", t: X("hdd-brak-polaczenia") };
+    if (drivePaused()) return { k: "off", t: X("hdd-wstrzymany") };
+    if (photo.pending) return { k: "mid", t: X("hdd-w-kolejce", { n: photo.pending }) };
+    return { k: "on", t: X("hdd-zsynchronizowany") };
   }
   function photoStats() {
     var G = w.OESTGoogle, g = G && G.ready ? G.ready("drive").then(function (ok) { gOk = ok; }, function () { gOk = false; }) : Promise.resolve();
@@ -99,7 +100,7 @@
   function days() {
     var t = today(), s = new Date(t); s.setDate(s.getDate() - 1);
     var box = $("hmDays"), sl = box.scrollLeft, cnt = deps.dayCounts();
-    w.OESTPodmien.html(box, w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: deps.dayName,
+    w.OESTPodmien.html(box, w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: X("dzis"), dayName: deps.dayName,
       isWork: deps.isWorkday, counter: function (k) { return cnt[k] || null; }, icon: wxDay }));
     box.scrollLeft = sl;
   }
@@ -122,12 +123,12 @@
   }
   function notes() {
     var k = iso(today()), insp = deps.inspToday(k), out = [];
-    if (insp.today || insp.late) out.push({ ic: "insp", go: "insp", b: T("Inspekcje na dziś", "Inspections today"),
-      s: T(insp.today + " do zrobienia", insp.today + " to do") + (insp.late ? T(", w tym " + insp.late + " po terminie", ", " + insp.late + " overdue") : "") });
-    if (rxOpen) out.push({ ic: "rx", go: "reactive", b: "Reactive", s: T("Otwarte zadania: " + rxOpen, "Open jobs: " + rxOpen) });
+    if (insp.today || insp.late) out.push({ ic: "insp", go: "insp", b: X("inspekcje-na-dzis"),
+      s: X("do-zrobienia", { n: insp.today }) + (insp.late ? ", " + X("po-terminie", { n: insp.late }) : "") });
+    if (rxOpen) out.push({ ic: "rx", go: "reactive", b: "Reactive", s: X("otwarte-zadania", { n: rxOpen }) });
     var q = w.OESTSender && w.OESTSender.count ? w.OESTSender.count() : 0;
-    if (q) out.push({ ic: "mail", go: "queue", b: T("Wysyłka raportów", "Report sending"), s: T("Raporty w kolejce: " + q, "Reports queued: " + q) });
-    if (photo.pending) out.push({ ic: "drive", go: "drive", b: T("Zdjęcia na Dysk", "Photos to Drive"), s: T("Czeka na wysłanie: " + photo.pending, "Waiting to upload: " + photo.pending) });
+    if (q) out.push({ ic: "mail", go: "queue", b: X("wysylka-raportow"), s: X("raporty-w-kolejce-n", { n: q }) });
+    if (photo.pending) out.push({ ic: "drive", go: "drive", b: X("zdjecia-na-dysk"), s: X("czeka-na-wyslanie", { n: photo.pending }) });
     return out;
   }
   function badge() {
@@ -149,49 +150,49 @@
   function fill(kind) { if (kind === "wx") fillWx(); else if (kind === "bell") fillBell(); else if (kind === "drive") fillDrive(); else if (kind === "net") fillNet(); }
   function head(title, extra) {
     return '<div class="hm-ph"><b>' + title + "</b>" + (extra ? "<span>" + extra + "</span>" : "") +
-      '<button class="hm-x" type="button" data-hx aria-label="' + T("Zamknij", "Close") + '">✕</button></div>';
+      '<button class="hm-x" type="button" data-hx aria-label="' + X("zamknij") + '">✕</button></div>';
   }
   function body(h) { if (pop) pop.querySelector(".hm-pc").innerHTML = h; }
   function fillWx() {
-    var c = wxCache(), t = today(), h = head("⛅ " + T("Prognoza 7 dni", "7-day forecast"), "Birmingham");
-    if (!c || !c.days) h += '<p class="hm-note">' + T("Brak prognozy. Połącz się z internetem, a pobiorę ją sama.", "No forecast yet. Connect to the internet and it will download automatically.") + "</p>";
+    var c = wxCache(), t = today(), h = head("⛅ " + X("prognoza-7-dni"), "Birmingham");
+    if (!c || !c.days) h += '<p class="hm-note">' + X("brak-prognozy") + "</p>";
     else {
       h += '<div class="hm-fc">';
       for (var i = 0; i < 7; i++) {
         var x = new Date(t); x.setDate(x.getDate() + i); var f = c.days[iso(x)];
-        h += "<div><small>" + (i === 0 ? T("Dziś", "Today") : esc(deps.dayName(x.getDay()))) + "</small><span>" + (f ? wxIcon(f.c) : "–") + "</span><b>" + (f ? f.hi + "°" : "") + "</b><s>" + (f ? f.lo + "°" : "") + "</s></div>";
+        h += "<div><small>" + (i === 0 ? X("dzis") : esc(deps.dayName(x.getDay()))) + "</small><span>" + (f ? wxIcon(f.c) : "–") + "</span><b>" + (f ? f.hi + "°" : "") + "</b><s>" + (f ? f.lo + "°" : "") + "</s></div>";
       }
-      h += '</div><p class="hm-note">' + T("Stan z ", "Updated ") + new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) +
-        (w.navigator.onLine === false ? T(" · bez sieci: ostatnia zapisana", " · offline: last saved") : "") + "</p>";
+      h += '</div><p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) +
+        (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") + "</p>";
     }
     body(h);
   }
   function fillBell() {
-    var list = notes(), h = head("🔔 " + T("Powiadomienia", "Notifications"));
+    var list = notes(), h = head("🔔 " + X("powiadomienia"));
     h += list.length ? list.map(function (n) {
       return '<button class="hm-nt" type="button" data-hgo="' + n.go + '"><span class="hm-ni">' + svg(n.ic) + "</span><span><b>" + esc(n.b) + "</b><small>" + esc(n.s) + '</small></span><span class="hm-ar">›</span></button>';
-    }).join("") : '<p class="hm-note">' + T("Nic nowego. Wszystko na bieżąco.", "Nothing new. All up to date.") + "</p>";
+    }).join("") : '<p class="hm-note">' + X("nic-nowego") + "</p>";
     body(h);
   }
   function mb(b) { return (b / 1048576).toLocaleString(loc(), { maximumFractionDigits: 1 }) + " MB"; }
   function fillDrive() {
     var on = driveOn(), p = drivePaused();
-    var h = head("Google Drive", on ? T("połączony", "connected") : T("niepołączony", "not connected"));
-    h += '<button class="hm-op" type="button" data-hop="sync"><span>' + T("Synchronizuj teraz", "Sync now") + "</span><small>" +
-      (photo.pending ? T("zdjęcia: ", "photos: ") + photo.pending + " · " + mb(photo.bytes) : T("nic do wysłania", "nothing to upload")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hop="pause"><span>' + (p ? T("Wznów automatyczną wysyłkę", "Resume automatic upload") : T("Wstrzymaj automatyczną wysyłkę", "Pause automatic upload")) + "</span><small>" + (p ? T("wstrzymana", "paused") : T("włączona", "on")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hop="reconnect"><span>' + T("Połącz ponownie", "Reconnect") + "</span><small>" + (on ? T("połączony", "connected") : T("stuknij, aby połączyć", "tap to connect")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hgo="zdjecia"><span>' + T("Zdjęcia i limity", "Photos & limits") + '</span><small>›</small></button><p class="hm-note" id="hmDrMsg"></p>';
+    var h = head("Google Drive", on ? X("polaczony") : X("niepolaczony"));
+    h += '<button class="hm-op" type="button" data-hop="sync"><span>' + X("synchronizuj-teraz") + "</span><small>" +
+      (photo.pending ? X("zdjecia-rozmiar", { n: photo.pending, mb: mb(photo.bytes) }) : X("nic-do-wyslania")) + "</small></button>";
+    h += '<button class="hm-op" type="button" data-hop="pause"><span>' + (p ? X("wznow-wysylke") : X("wstrzymaj-wysylke")) + "</span><small>" + (p ? X("wstrzymana") : X("wlaczona")) + "</small></button>";
+    h += '<button class="hm-op" type="button" data-hop="reconnect"><span>' + X("polacz-ponownie") + "</span><small>" + (on ? X("polaczony") : X("stuknij-aby-polaczyc")) + "</small></button>";
+    h += '<button class="hm-op" type="button" data-hgo="zdjecia"><span>' + X("zdjecia-i-limity") + '</span><small>›</small></button><p class="hm-note" id="hmDrMsg"></p>';
     body(h);
   }
   function fillNet() {
     var n = net(), q = w.OESTSender && w.OESTSender.count ? w.OESTSender.count() : 0;
-    var h = head(T("Połączenie", "Connection"), n.t);
-    h += '<p class="hm-note">' + (n.k === "off" ? T("Brak sieci. Praca trwa dalej, a kolejka wyśle się sama po powrocie zasięgu.", "No network. You can keep working; the queue sends itself when the signal returns.")
-      : n.k === "mid" ? T("Dane komórkowe. Raporty czekają na Wi‑Fi, chyba że wyślesz je ręcznie.", "Mobile data. Reports wait for Wi‑Fi unless you send them manually.")
-      : T("Połączono. Kolejka wysyła się w tle.", "Connected. The queue sends in the background.")) + "</p>";
-    h += '<button class="hm-op" type="button" data-hgo="queue"><span>' + T("Raporty w kolejce", "Reports queued") + "</span><small>" + q + " ›</small></button>";
-    h += '<button class="hm-op" type="button" data-hgo="settings/sync"><span>' + T("Ustawienia wysyłki", "Sending settings") + "</span><small>›</small></button>";
+    var h = head(X("polaczenie"), n.t);
+    h += '<p class="hm-note">' + (n.k === "off" ? X("opis-brak-sieci")
+      : n.k === "mid" ? X("opis-dane-komorkowe")
+      : X("opis-polaczono")) + "</p>";
+    h += '<button class="hm-op" type="button" data-hgo="queue"><span>' + X("raporty-w-kolejce") + "</span><small>" + q + " ›</small></button>";
+    h += '<button class="hm-op" type="button" data-hgo="settings/sync"><span>' + X("ustawienia-wysylki") + "</span><small>›</small></button>";
     body(h);
   }
   function reduce() { return d.documentElement.dataset.settingsMotion === "reduce"; }
@@ -243,8 +244,8 @@
     Promise.resolve(run).then(function (r) {
       if (popKind !== "drive") return; // okienko zamknięte albo inne – nie nadpisuj
       fillDrive();
-      if (op === "sync") msg(r && r.skipped ? T("Czekam na Wi‑Fi.", "Waiting for Wi‑Fi.") : T("Wysłano: ", "Uploaded: ") + ((r && r.sent) || 0) + ".");
-      else msg(T("Połączono z Dyskiem.", "Connected to Drive."));
+      if (op === "sync") msg(r && r.skipped ? X("czekam-na-wifi") : X("wyslano", { n: (r && r.sent) || 0 }));
+      else msg(X("polaczono-z-dyskiem"));
     }, function (e) { if (popKind !== "drive") return; fillDrive(); msg(U && U.errText ? U.errText(e) : (w.OESTBledy ? w.OESTBledy.text(e) : String(e))); });
   }
 

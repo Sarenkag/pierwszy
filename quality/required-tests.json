@@ -7,6 +7,9 @@
       "file": "app/tests/aktywa.test.cjs"
     },
     {
+      "file": "app/tests/aparat-java.test.cjs"
+    },
+    {
       "file": "app/tests/calendar-sync.test.cjs"
     },
     {
@@ -67,6 +70,12 @@
       "file": "app/tests/vantify-plan.test.cjs"
     },
     {
+      "file": "app/tests/bramka-artefakty.test.cjs"
+    },
+    {
+      "file": "app/tests/ppm-78.test.cjs"
+    },
+    {
       "file": "app/tests/wiedza.test.cjs"
     },
     {
@@ -89,6 +98,12 @@
     },
     {
       "file": "app/tests/notatki.test.cjs"
+    },
+    {
+      "file": "app/tests/teksty.test.cjs"
+    },
+    {
+      "file": "app/tests/moduly-zasady.test.cjs"
     }
   ],
   "browser": [
@@ -120,6 +135,11 @@
     {
       "file": "app/tests/klocek-inspekcji-ui-check.cjs",
       "passMarker": "KLOCEK INSPEKCJI UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/checkbox-ui-check.cjs",
+      "passMarker": "CHECKBOX UI PASS",
       "timeoutSec": 900
     },
     {
@@ -219,6 +239,16 @@
     {
       "file": "app/tests/notatki-app-ui-check.cjs",
       "passMarker": "NOTATKI APP UI PASS",
+      "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/czyszczenie-ui-check.cjs",
+      "passMarker": "CZYSZCZENIE PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/moduly-zasady-ui-check.cjs",
+      "passMarker": "MODULY ZASADY UI PASS",
       "timeoutSec": 600
     }
   ],
