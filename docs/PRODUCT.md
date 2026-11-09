@@ -51,7 +51,7 @@
 - PROD-010/012 → `app/tests/vantify-plan.test.cjs` **obecnie zawiera sprzeczny test prognozy** — nie jest dowodem zgodności, dopóki nie zostanie poprawiony w osobnym zadaniu; docelowo testy kalendarza + porównanie jeden-do-jednego z zaimportowanymi zleceniami.
 - PROD-020/021/022 → `app/tests/zdjecia.test.cjs` + testy rzeczywistych fotografii na urządzeniu.
 - PROD-023/024 → `app/tests/raport-ui-check.cjs`, `raport-rozmiar-ui-check.cjs`, `flush.test.cjs`, wizualna/tekstowa zgodność PDF/DOCX.
-- PROD-025/026 → `app/tests/wysylka-adresaci.test.cjs` + test integracyjny kolejki i potwierdzona wysyłka.
+- PROD-025/026 → `app/tests/wysylka-adresaci.test.cjs`, `moduly-zasady.test.cjs` (wysyłka najpierw sprawdza połączenie, nic nie udaje, niepewny wynik bez dubli, Wyślij nic nie kasuje), `moduly-zasady-ui-check.cjs` (Wyślij w inspekcji: odpowiedzi i zdjęcia zostają) + potwierdzona wysyłka na telefonie.
 - PROD-027 → `app/tests/raporty.test.cjs`, `raporty-wysylka.test.cjs`, `raporty-folder.test.cjs`, `raporty-przegladarka-ui-check.cjs` + sprawdzenie na prawdziwym Dysku (jeszcze niewykonane).
 - PROD-028 → `app/tests/odzyskana-ui-check.cjs`, `odzyskana-ppm.test.cjs`, `raporty.test.cjs` (2c), `raporty-wysylka.test.cjs` (2c), `pigulka-statusu-ui-check.cjs` + Pixel 8 Pro (jeszcze niewykonane).
 - PROD-015 → test end-to-end Back i PL/EN (docelowy; nie twierdzić, że już istnieje).
