@@ -203,7 +203,7 @@
   // propozycja z notatek + liczby z notatek (polski oryginał i EN), których w niej brakuje – także zgubione wcześniej przez tłumacza
   function propose(scope, ctx) {
     return combine(scope, ctx).then(function (text) {
-      return list(scope).then(function (a) { return { text: text, miss: missing(a.map(function (n) { return (n.pl || '') + '\n' + (n.en || ''); }).join('\n'), text) }; });
+      return list(scope).then(function (a) { var src = a.map(function (n) { return (n.pl || '') + '\n' + (n.en || ''); }).join('\n'); return { text: text, miss: missing(src, text), src: src }; });
     });
   }
   // okienko z propozycją: można poprawić; „Wstaw” oddaje tekst (nic nie wstawia samo), „Anuluj” = null
@@ -213,7 +213,7 @@
       css(); var node = document.createElement('div'); node.className = 'nt-pop';
       node.innerHTML = '<div class="nt-h">' + T('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
       var ta = node.querySelector('textarea'), wb = node.querySelector('.nt-warn'); ta.value = r.text;
-      var warnNow = function () { var m = missing(r.miss.join(' '), ta.value); wb.textContent = m.length ? T('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + T(' — sprawdź.', ' — check.') : ''; };
+      var warnNow = function () { var m = missing(r.src, ta.value); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ wb.textContent = m.length ? T('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + T(' — sprawdź.', ' — check.') : ''; };
       ta.addEventListener('input', warnNow); warnNow();
       return w.OESTPrzycisk.ask({ title: o.title || T('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || T('Wstaw', 'Insert'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
         .then(function (yes) { return yes ? ta.value.trim() : null; });
@@ -248,6 +248,13 @@
     });
     m.refresh();
     return m;
+  }
+  // nagrania notatek jako dowody (Hand over: wpis zachowuje oryginalne audio, jak dawniej) → [{ id, kind:'audio', blob, name, mime, size, ms }]
+  function media(scope) {
+    return list(scope).then(function (a) {
+      return Promise.all(a.map(function (n) { return Promise.all((n.audio || []).map(function (aid) { return audioGet(aid).then(function (b) { return b ? { id: 'nt-' + aid, kind: 'audio', blob: b, name: 'Voice note', mime: b.type || 'audio/wav', size: b.size, ms: n.ms || 0 } : null; }); })); }))
+        .then(function (x) { return [].concat.apply([], x).filter(Boolean); });
+    });
   }
   // trwa nagrywanie albo jego zamykanie (ekran nie powinien się wtedy zamykać)
   function busy() { return !!(voice && voice.busy); }
@@ -388,5 +395,5 @@
       });
   }
 
-  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, english: english };
+  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, english: english };
 })(window);

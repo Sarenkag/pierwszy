@@ -21,6 +21,7 @@ Nic nie trafia do raportu samo: „✨ Połącz notatki w komentarz” daje prop
 - `OESTNotatki.mount(pudełko, { scope(), ctx(), title(), join, ok, onJoin(tekst), onSaved, onError })` – gotowy pasek „🎤 Nagraj notatkę · 📝 Notatki N · ✨ Połącz…” (Reactive, Hand over); licznik odświeża się sam, pasek ukryty bez `scope()`.
 - `OESTNotatki.offer(scope, { ctx, ok })` → tekst albo `null` – okienko z propozycją do poprawienia i ostrzeżeniem o liczbach; `propose(scope, ctx)` → `{ text, miss }` (to samo bez okienka, inspekcja).
 - `OESTNotatki.busy()` – trwa nagrywanie (ekran nie powinien się wtedy zamykać).
+- `OESTNotatki.media(scope)` → nagrania notatek jako dowody `{ id, kind:'audio', blob, … }` (Hand over zapisuje je przy wpisie).
 - `OESTNotatki.open(scope, { title })` – okienko: lista (godzina, miejsce, długość, EN + PL oryginał, stan), ▶ odsłuchanie, ✎ Popraw (zakładki PL/EN, „✨ Ułóż z polskiego”, ostrzeżenie o liczbach), 🗑 (drugie stuknięcie usuwa).
 - `OESTNotatki.summary(scope)` → `{ all, ready, busy }`; `combine(scope, ctx)` → tekst; `list/put/remove/clear(scope)/move(z, do)`; `on(fn)` – zmiana notatek.
 - `OESTNotatki.fix(tekst, 'pl'|'en')`, `missing(pl, en)`, `state(note)` – czyste funkcje (testy: `app/tests/notatki.test.cjs`).
@@ -29,6 +30,6 @@ Nic nie trafia do raportu samo: „✨ Połącz notatki w komentarz” daje prop
 
 - Inspekcje (`inspekcje/index.html`): pole „Notatka” – „🎤 Nagraj notatkę”, „📝 Notatki N”, „✨ Połącz notatki w komentarz”. Notatki należą do szkicu inspekcji: „Wyczyść inspekcję” je usuwa, nowy termin przenosi je do archiwum razem ze szkicem. Test: `app/tests/notatki-ui-check.cjs`.
 - Reactive (09/11/2026): pasek pod „Opis / adnotacje”, „✨ Połącz notatki w opis” dopisuje pod opisem; notatki należą do zadania (`rx|<id szkicu>`), „Usuń szkic” je usuwa. Stare nagrania (sprzed zmiany) zostają niżej z „📝 Na tekst”.
-- Hand over (09/11/2026): pasek w „Szybki wpis”, „✨ Połącz notatki we wpis” (do pustego pola – zaznacza „po angielsku”); po „Zapisz wpis” notatki przechodzą do zapisanego wpisu (`ho|<zmiana>|<wpis>`). Test: `app/tests/notatki-app-ui-check.cjs`.
+- Hand over (09/11/2026): pasek w „Szybki wpis”, „✨ Połącz notatki we wpis” (do pustego pola – zaznacza „po angielsku”); po „Zapisz wpis” nagrania trafiają do wpisu jako dowód (wpis z samym nagraniem też się zapisze), a notatki przechodzą do zapisanego wpisu (`ho|<zmiana>|<wpis>`) – przy wpisie „📝 Notatki wpisu”. Test: `app/tests/notatki-app-ui-check.cjs`.
 
 Strona: `<script src="moduly/notatki/glos.js"></script>` i `<script src="moduly/notatki/notatki.js"></script>` (inspekcje: `../moduly/notatki/…`), po `moduly/model` i `moduly/przycisk`.

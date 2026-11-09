@@ -73,6 +73,9 @@ function fakePhone() {
     await pg.locator('#rxNotes .nt-join').click(); await pg.waitForSelector('.oest-ask textarea');
     check((await pg.locator('.oest-ask [data-a=ok]').textContent()).trim() === 'Wstaw do opisu', 'Reactive: przycisk „Wstaw do opisu”');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_REACTIVE_JOIN.png') });
+    // poprawka w okienku, która gubi liczbę (12) → ostrzeżenie od razu, także gdy propozycja na starcie miała wszystkie liczby (przegląd Codex #113)
+    { const ta = pg.locator('.oest-ask textarea'), v = await ta.inputValue(); await ta.fill(v.replace(/12/g, '')); await pg.waitForTimeout(100);
+      const warn = await pg.locator('.oest-ask .nt-warn').textContent(); check(/12/.test(warn), 'Reactive: brak ostrzeżenia po usunięciu liczby 12: „' + warn + '”'); await ta.fill(v); }
     await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     await pg.waitForFunction(() => /Pump number 12/.test(document.querySelector('[data-rx-field=note]').value));
     check(await until(() => OESTReactiveUI.repository.get().then(d => /Pump number 12/.test(Object.values(d.reactiveDrafts || {}).at(-1).note || ''))), 'Reactive: opis z notatek nie zapisany w szkicu');
@@ -109,6 +112,18 @@ function fakePhone() {
     check(/Pump number 12/.test(await pg.locator('#hoText').inputValue()), 'Hand over: tekst nie wstawiony do wpisu');
     check(await pg.locator('#hoEnglish').isChecked(), 'Hand over: „po angielsku” nie zaznaczone po wstawieniu do pustego pola');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_HANDOVER.png'), fullPage: true });
+    // wpis z samym nagraniem (bez tekstu) da się zapisać, nagranie zostaje przy wpisie, a jego notatki są w „📝 Notatki wpisu” (przegląd Codex #113)
+    await pg.locator('#hoText').fill(''); await pg.locator('#hoKind').selectOption('note'); await pg.locator('[data-ho=save-entry]').click();
+    check(await until(() => OESTHandover.repository.get().then(d => d.entries.length === 1)), 'Hand over: wpis z samym nagraniem nie zapisany: ' + await pg.locator('#hoMessage').textContent());
+    const ent = await pg.evaluate(async () => { const d = await OESTHandover.repository.get(), e = d.entries[0]; const m = e ? await OESTHandover.repository.media(e.mediaIds[0]) : null; return e ? { n: e.mediaIds.length, kind: m && m.kind } : null; });
+    check(ent && ent.n === 1 && ent.kind === 'audio', 'Hand over: nagranie nie trafiło do wpisu: ' + JSON.stringify(ent));
+    await pg.locator('.ho-entry .ho-notes').waitFor({ timeout: 5000 }).catch(() => check(false, 'Hand over: brak „📝 Notatki wpisu” przy zapisanym wpisie'));
+    if (await pg.locator('.ho-entry .ho-notes').isVisible()) {
+      check((await pg.locator('.ho-entry .ho-notes .nt-n').textContent()) === '1', 'Hand over: licznik notatek wpisu');
+      await pg.locator('.ho-entry .ho-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
+      check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Hand over: okienko notatek wpisu bez tekstu');
+      await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    }
 
     // ---------- EN ----------
     const p2 = await ctx.newPage(); p2.on('pageerror', e => errors.push(e.message)); // Hand over ma niezapisany wpis – osobna karta zamiast wychodzenia
@@ -119,5 +134,5 @@ function fakePhone() {
   finally { if (browser) await browser.close(); server.close(); }
   if (errors.length) fails.push('błędy strony: ' + errors.join(' | '));
   if (fails.length) { console.error('NOTATKI APP UI FAIL\n- ' + fails.join('\n- ')); process.exitCode = 1; }
-  else console.log('NOTATKI APP UI PASS: Reactive (🎤 → notatka → okienko → Połącz w opis → zapis szkicu → ‹ nie kasuje → stare nagranie zostaje → Usuń szkic czyści notatki), Hand over (pasek, Wstaw do wpisu + „po angielsku”), EN.');
+  else console.log('NOTATKI APP UI PASS: Reactive (🎤 → notatka → okienko → Połącz w opis → zapis szkicu → ‹ nie kasuje → stare nagranie zostaje → Usuń szkic czyści notatki), Hand over (pasek, Wstaw do wpisu + „po angielsku”, wpis z samym nagraniem, Notatki wpisu), EN.');
 })();

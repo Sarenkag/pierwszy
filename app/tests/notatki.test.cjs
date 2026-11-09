@@ -77,4 +77,5 @@ test('notatki: kilka ekranów (inspekcja, Reactive, Hand over) – nagranie traf
   assert.deepEqual(J(saved),[['a','rx|1'],['b','ho|7']]);});
 test('notatki: propozycja z notatek ostrzega o liczbie zgubionej już przez tłumacza',async()=>{const N=load().OESTNotatki;
   const x=await N.addAudio('s','',{blob:{}});await new Promise(r=>setTimeout(r,20));Object.assign(x,{st:'',err:'',pl:'błąd na strefie 4 i 12',en:'Fault on zone 4.'});await N.put(x);
-  assert.deepEqual(J(await N.propose('s')),{text:'Fault on zone 4.',miss:['12']});});
+  const r=J(await N.propose('s'));assert.deepEqual({text:r.text,miss:r.miss},{text:'Fault on zone 4.',miss:['12']});
+  /* ostrzeżenie w okienku sprawdza po każdej zmianie wszystkie liczby z notatek (PL i EN) */assert.deepEqual(J(N.missing(r.src,'Fault on zone.')),['4','12']);});
