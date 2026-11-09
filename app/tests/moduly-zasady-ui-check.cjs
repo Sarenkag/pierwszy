@@ -11,7 +11,7 @@
 //     (--accent) i ✓; ekran, który ustawia własny rozmiar, wygrywa (reguły modułu mają zerową wagę).
 //  W  „Wyślij” w prawdziwej inspekcji (EFA-INS-014, PROD-025): raport trafia do kolejki, a odpowiedzi, zdjęcie i etap inspekcji
 //     zostają – także po ponownym otwarciu (pole komentarza w PPM jest schowane); przycisk Wyślij i sąsiedni ⚙ nie skaczą w trakcie (pomiar w każdej klatce).
-// Znane skoki (moduł przycisku rośnie w trakcie pracy) są w quality/baselines/moduly-zasady.json razem z największą zmierzoną zmianą
+// Znane skoki (lista pusta od naprawy 09/11/2026) są w quality/baselines/moduly-zasady.json razem z największą zmierzoną zmianą
 // [środek x, środek y, szer., wys.]: test daje FAIL przy nowym skoku, przy skoku większym niż zapisany
 // i przy skoku, który zniknął, a dalej jest na liście. Pozostałe zasady bez wyjątków.
 // Nie mierzy czasu (zasada 08/11/2026): czeka na stan (kolejka, napis przycisku), klatki tylko zlicza.
