@@ -66,8 +66,9 @@ function fakePhone() {
     check(await until(() => document.querySelector('#rxNotes .nt-n').textContent === '1'), 'Reactive: po ‹ i ponownym otwarciu brak notatki');
     // „Połącz”, a ekran w tym czasie się zmienia (zapis wpisu → nowy formularz): propozycja nie otwiera się nad nowym ekranem (przegląd Codex #113)
     await pg.waitForFunction(() => !document.querySelector('#rxNotes .nt-join').hidden, null, { timeout: 10000 });
-    await pg.evaluate(() => { document.querySelector('#rxNotes .nt-join').click(); document.querySelector('#rxNotes').remove(); });
+    await pg.evaluate(() => { document.querySelector('#rxNotes .nt-join').click(); location.hash = '#home'; }); // jak systemowy Wstecz: ekran Reactive tylko ukryty (hidden), pasek nadal w DOM
     await pg.waitForTimeout(800);
+    check(await pg.locator('#v-reactive').isHidden() && await pg.locator('#rxNotes').count() === 1, 'test: Reactive nie ukryty albo pasek odłączony – scenariusz nie jak w apce');
     check(await pg.locator('.oest-ask').count() === 0, 'Reactive: propozycja z notatek otwarta nad zmienionym ekranem');
     if (await pg.locator('.oest-ask').count()) { await pg.locator('.oest-ask [data-a=no]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); }
     await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
@@ -171,6 +172,9 @@ function fakePhone() {
     // zakończone zadanie (historia): notatki nadal do odsłuchu i odczytu, tylko do odczytu (przegląd Codex #113)
     await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     await record('#rxNotes', 1);
+    // przerwana poprawka (Popraw → Wstecz) przed zakończeniem: w historii nie wraca edytor (przegląd Codex #113)
+    await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note'); await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
+    await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
     const jobId = await pg.evaluate(async () => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).find(x => !x.jobId);
       return (await r.saveReactive({ ...d, title: 'Leak', status: 'completed', actionId: 'repaired' })).id; });
     await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
@@ -178,9 +182,9 @@ function fakePhone() {
     await pg.locator('#v-reactive .rx-notes').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak „📝 Notatki” w zakończonym zadaniu'));
     if (await pg.locator('#v-reactive .rx-notes').isVisible()) {
       check((await pg.locator('#v-reactive .rx-notes .nt-n').textContent()) === '1', 'Reactive historia: licznik notatek');
-      await pg.locator('#v-reactive .rx-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
-      check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()) && /54 °C/.test(await pg.locator('.nt-pop').textContent()), 'Reactive historia: okienko bez EN/PL');
-      check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0, 'Reactive historia: notatki da się poprawić/usunąć');
+      await pg.locator('#v-reactive .rx-notes').click(); await pg.waitForSelector('.nt-pop'); await pg.waitForTimeout(500);
+      check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del], .nt-pop textarea, .nt-pop [data-nt=save]').count() === 0, 'Reactive historia: notatki da się poprawić/usunąć (także przez przerwaną poprawkę)');
+      check(await pg.locator('.nt-pop .nt-en').count() === 1 && /Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()) && /54 °C/.test(await pg.locator('.nt-pop').textContent()), 'Reactive historia: okienko bez EN/PL');
       check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Reactive historia: brak odsłuchu');
       await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }

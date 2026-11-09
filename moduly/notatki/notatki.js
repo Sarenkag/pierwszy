@@ -244,7 +244,7 @@
     opn.addEventListener('click', function () { var k = m.scope(); if (k) open(k, { title: o.title ? o.title() : ctx() }); });
     join.addEventListener('click', function () {
       var k = m.scope(); if (!k || join.disabled) return; join.disabled = true;
-      var alive = function () { return box.isConnected && k === m.scope(); }; // ten sam formularz co przy stuknięciu
+      var alive = function () { return box.isConnected && !box.closest('[hidden]') && k === m.scope(); }; // ten sam, nadal widoczny formularz co przy stuknięciu (apka ukrywa nieaktywne ekrany atrybutem hidden)
       offer(k, { ctx: ctx(), ok: o.ok, alive: alive }).then(function (t) { if (t && alive() && o.onJoin) return o.onJoin(t); })
         .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { join.disabled = false; });
     });
@@ -339,6 +339,7 @@
     node.addEventListener('click', function (e) {
       var b = e.target.closest('[data-nt]'); if (!b) { if (sure) { sure = ''; draw(); } return; }
       var a = b.getAttribute('data-nt'), card = b.closest('[data-id]'), id = editing ? editing.id : card && card.getAttribute('data-id');
+      if (o.readonly && a !== 'play') return; // tylko odczyt (historia, archiwum): żadnej akcji zapisującej
       if (a !== 'del' && sure) sure = '';
       if (a === 'tab-pl' || a === 'tab-en') { var pl = node.querySelector('[data-nt-f=pl]').value, en = node.querySelector('[data-nt-f=en]').value; editing.pl = pl; editing.en = en; tab = a.slice(4); drawEdit(); return; }
       if (a === 'cancel') { editing = null; delete szkice[scope]; stop(); draw(); return; }
@@ -387,7 +388,7 @@
       });
     });
     var off = on(function (s) { if (s === scope && !editing && node.isConnected) draw(); });
-    var sz = szkice[scope];
+    var sz = o.readonly ? null : szkice[scope]; // tylko odczyt: nie wracamy do przerwanej poprawki
     if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
     else draw();
     return w.OESTPrzycisk.ask({ title: T('📝 Notatki', '📝 Notes'), node: node, ok: T('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
