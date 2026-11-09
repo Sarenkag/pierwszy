@@ -215,6 +215,11 @@
       "file": "app/tests/notatki-ui-check.cjs",
       "passMarker": "notatki-ui-check PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/notatki-app-ui-check.cjs",
+      "passMarker": "NOTATKI APP UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []

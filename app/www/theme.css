@@ -106,8 +106,6 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .rx-photos .ph .del{right:4px}
 #v-reactive .rx-photos .ph .ed{right:4px;top:auto;bottom:4px}
 
-#v-reactive .rx-rec{display:inline-flex;width:auto;align-items:center;gap:8px;margin-top:8px;padding:8px 14px;border-radius:12px;border:1.5px solid #e53935;background:rgba(229,57,53,.12);color:inherit;font:600 15px system-ui;user-select:none;-webkit-user-select:none;touch-action:pan-y}
-#v-reactive .rx-rec small{font-weight:400;font-size:12px;opacity:.7}
 #v-reactive .rx-voice{display:flex;align-items:center;gap:8px;margin:8px 0}
 #v-reactive .rx-voice audio{flex:1;min-width:0}
 #v-reactive .rx-voice .tx{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;font:600 15px system-ui;white-space:nowrap}

@@ -2,7 +2,7 @@
  * nagłówek (logo, ONE EASTSIDE, data, pogoda, EN/PL, dzwonek, profil), lampki Wi‑Fi i Dysk,
  * pasek dni (moduly/pasek-dni: pogoda, zrobione/wszystkie, dni pracy z grafiku) i okienka:
  * prognoza 7 dni, powiadomienia, Dysk, sieć. Okienka rosną z miejsca stuknięcia i chowają się przez pomniejszenie,
- * także po stuknięciu obok i po systemowym Wstecz (OESTOverlay). Zmiana języka podmienia tylko teksty w miejscu. */
+ * także po stuknięciu obok i po systemowym Wstecz (stos okien moduly/wstecz). Zmiana języka podmienia tylko teksty w miejscu. */
 (function (w) {
   "use strict";
   var d = w.document, deps = null, pop = null, popKind = "", popClose = null;
@@ -207,7 +207,7 @@
     pop.classList.remove("in"); void card.offsetWidth; pop.classList.add("in");
     from.classList.add("hm-act");
     popClose = function () { from.classList.remove("hm-act"); hide(); };
-    if (w.OESTOverlay) w.OESTOverlay.open(function () { if (popClose) popClose(); });
+    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O) O.open(function () { if (popClose) popClose(); });
   }
   function hide() {
     var p = pop; popKind = ""; popClose = null; if (!p) return;
@@ -218,7 +218,7 @@
   // zamknięcie przyciskiem / stuknięciem obok = to samo co Wstecz (zdejmuje wpis historii)
   function closePop() {
     if (!popKind) return;
-    if (w.OESTOverlay && w.OESTOverlay.stack.length) w.OESTOverlay.close(); else if (popClose) popClose();
+    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O && O.stack.length) O.close(); else if (popClose) popClose();
   }
   // przejście ze źródła powiadomienia: najpierw zamknij okienko (wpis historii), potem otwórz ekran
   function goFromPop(target) {
@@ -228,9 +228,9 @@
       if (target === "insp") { deps.openDay(iso(today())); return; }
       deps.show(target);
     };
-    if (w.OESTOverlay && w.OESTOverlay.stack.length) {
+    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O && O.stack.length) {
       w.addEventListener("popstate", function once() { w.removeEventListener("popstate", once); setTimeout(after, 0); });
-      w.OESTOverlay.close();
+      O.close();
     } else { if (popClose) popClose(); after(); }
   }
   function driveOp(op, btn) {

@@ -166,19 +166,23 @@
   function keep(n) {
     return tx('notes', 'readonly', function (s, m) { return m ? m[n.id] : s.get(n.id); }).then(function (cur) { if (!cur) return n; n.scope = cur.scope; return put(n); });
   }
-  // przycisk „🎤 Nagraj notatkę”: przytrzymaj = nagrywa do puszczenia; stuknij = do „Zakończ”. Jeden przycisk na stronę.
+  // przycisk „🎤 Nagraj notatkę”: przytrzymaj = nagrywa do puszczenia; stuknij = do „Zakończ”.
+  // Kilka ekranów (inspekcja, Reactive, Hand over) – każdy swój przycisk; nagranie trafia do tego, którym zaczęto.
   // o: { scope(): string, ctx(): string, onSaved(note), onError(err) }
+  var active = null;
   function bind(btn, o) {
     var v = vc(); if (!btn || !v) return null;
-    capture = function () { return { scope: o.scope && o.scope(), ctx: o.ctx ? o.ctx() : '' }; };
-    // notatka trafia do inspekcji, w której zaczęto nagrywać (nie do tej, na którą przejdzie się w trakcie zatrzymywania)
+    var me = o || {}, pick = function () { if (!v.busy) active = me; };
+    btn.addEventListener('pointerdown', pick, true); btn.addEventListener('click', pick, true); // przed obsługą przytrzymania (holdButton)
+    capture = function () { var b = active || me; return { b: b, scope: b.scope && b.scope(), ctx: b.ctx ? b.ctx() : '' }; };
+    // notatka trafia tam, gdzie zaczęto nagrywać (nie tam, dokąd przejdzie się w trakcie zatrzymywania)
     pending = function (media) {
-      var at = started || capture(); started = null;
-      var scope = at.scope; if (!scope) { if (o.onError) o.onError(Error(T('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
-      return addAudio(scope, at.ctx, media).then(function (n) { if (o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); });
+      var at = started || capture(), b = at.b; started = null;
+      var scope = at.scope; if (!scope) { if (b.onError) b.onError(Error(T('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
+      return addAudio(scope, at.ctx, media).then(function (n) { if (b.onSaved) b.onSaved(n); }, function (e) { if (b.onError) b.onError(e); });
     };
-    pendingErr = function (e) { if (o.onError) o.onError(e); };
-    return w.OESTVoice.holdButton(btn, v, function (e) { if (o.onError) o.onError(e); });
+    pendingErr = function (e) { var b = active || me; if (b.onError) b.onError(e); };
+    return w.OESTVoice.holdButton(btn, v, function (e) { if (me.onError) me.onError(e); });
   }
 
   // ---------- połączenie notatek w jeden tekst (propozycja do komentarza) ----------
@@ -196,6 +200,58 @@
     });
   }
 
+  // propozycja z notatek + liczby z notatek (polski oryginał i EN), których w niej brakuje – także zgubione wcześniej przez tłumacza
+  function propose(scope, ctx) {
+    return combine(scope, ctx).then(function (text) {
+      return list(scope).then(function (a) { return { text: text, miss: missing(a.map(function (n) { return (n.pl || '') + '\n' + (n.en || ''); }).join('\n'), text) }; });
+    });
+  }
+  // okienko z propozycją: można poprawić; „Wstaw” oddaje tekst (nic nie wstawia samo), „Anuluj” = null
+  function offer(scope, o) {
+    o = o || {};
+    return propose(scope, o.ctx).then(function (r) {
+      css(); var node = document.createElement('div'); node.className = 'nt-pop';
+      node.innerHTML = '<div class="nt-h">' + T('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
+      var ta = node.querySelector('textarea'), wb = node.querySelector('.nt-warn'); ta.value = r.text;
+      var warnNow = function () { var m = missing(r.miss.join(' '), ta.value); wb.textContent = m.length ? T('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + T(' — sprawdź.', ' — check.') : ''; };
+      ta.addEventListener('input', warnNow); warnNow();
+      return w.OESTPrzycisk.ask({ title: o.title || T('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || T('Wstaw', 'Insert'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
+        .then(function (yes) { return yes ? ta.value.trim() : null; });
+    });
+  }
+
+  // ---------- gotowy pasek notatek dla ekranu (Reactive, Hand over): 🎤 Nagraj · 📝 Notatki N · ✨ Połącz ----------
+  // mount(box, { scope(), ctx(), title(), join: napis, ok: napis „Wstaw…”, onJoin(tekst), onSaved(note), onError(err) })
+  // box jest wypełniany przyciskami; pasek ukryty, gdy scope() puste; licznik odświeża się sam po każdej zmianie notatek
+  var mounts = [], watching = false;
+  function mount(box, o) {
+    if (!box) return null; o = o || {}; css();
+    box.classList.add('nt-bar');
+    box.innerHTML = '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + T('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
+      '<button type="button" class="btn nt-open">' + T('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>' +
+      '<button type="button" class="btn nt-join" hidden>' + esc(o.join || T('✨ Połącz notatki', '✨ Combine notes')) + '</button>';
+    var rec = box.querySelector('.nt-rec'), opn = box.querySelector('.nt-open'), join = box.querySelector('.nt-join'), num = box.querySelector('.nt-n');
+    var ctx = function () { return o.ctx ? o.ctx() || '' : ''; };
+    var m = { box: box, scope: function () { return o.scope ? o.scope() || '' : ''; } };
+    m.refresh = function () {
+      var k = m.scope(); box.hidden = !k; if (!k) return Promise.resolve();
+      return summary(k).then(function (r) { if (k !== m.scope()) return; num.textContent = r.all; join.hidden = r.ready < 1; }, function () {});
+    };
+    mounts = mounts.filter(function (x) { return x.box !== box && x.box.isConnected; }); mounts.push(m);
+    if (!watching) { watching = true; on(function (k) { mounts = mounts.filter(function (x) { return x.box.isConnected; }); mounts.forEach(function (x) { if (x.scope() === k) x.refresh(); }); }); }
+    if (!bind(rec, { scope: m.scope, ctx: ctx, onSaved: function (n) { m.refresh(); if (o.onSaved) o.onSaved(n); }, onError: o.onError })) rec.disabled = true;
+    opn.addEventListener('click', function () { var k = m.scope(); if (k) open(k, { title: o.title ? o.title() : ctx() }); });
+    join.addEventListener('click', function () {
+      var k = m.scope(); if (!k || join.disabled) return; join.disabled = true;
+      offer(k, { ctx: ctx(), ok: o.ok }).then(function (t) { if (t && k === m.scope() && o.onJoin) return o.onJoin(t); })
+        .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { join.disabled = false; });
+    });
+    m.refresh();
+    return m;
+  }
+  // trwa nagrywanie albo jego zamykanie (ekran nie powinien się wtedy zamykać)
+  function busy() { return !!(voice && voice.busy); }
+
   // ---------- okienko „Notatki” ----------
   var CSS = '.nt-pop{display:flex;flex-direction:column;gap:8px;font:15px/1.4 var(--font-body,system-ui),sans-serif;color:var(--ink,#eef1ff)}' +
     '.nt-pop .nt-h{color:var(--muted,#9aa3cc);font-size:13px;margin:-2px 0 2px}' +
@@ -208,7 +264,10 @@
     '.nt-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nt-tabs button.on{background:rgba(124,132,255,.25);border-color:rgba(124,132,255,.7)}' +
     '.nt-pop textarea{width:100%;box-sizing:border-box;min-height:110px;border-radius:12px;padding:10px;background:rgba(255,255,255,.07);border:1px solid rgba(124,132,255,.7);color:var(--ink,#fff);font:15px/1.4 var(--font-body,system-ui),sans-serif;resize:vertical}' +
     '.nt-warn{color:var(--warn,#ffd23f);font-size:13px;min-height:1.4em}.nt-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nt-row button.go{border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff}' +
-    '.nt-empty{color:var(--muted,#9aa3cc);text-align:center;padding:14px 0}';
+    '.nt-empty{color:var(--muted,#9aa3cc);text-align:center;padding:14px 0}' +
+    '.nt-bar .nt-btns2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.nt-bar .btn{min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px;margin:0}.nt-bar .nt-join{width:100%;margin-top:8px}' +
+    '.nt-bar .nt-rec{border-color:rgba(255,77,94,.7)!important;background:rgba(255,77,94,.12)!important;touch-action:none;-webkit-user-select:none;user-select:none}' +
+    '.nt-bar .nt-n{display:inline-block;min-width:22px;padding:0 7px;border-radius:11px;background:rgba(124,132,255,.25);border:1px solid rgba(124,132,255,.6);font-size:.8rem;line-height:20px;text-align:center}';
   function css() { if (document.getElementById('oest-notatki-css')) return; var s = document.createElement('style'); s.id = 'oest-notatki-css'; s.textContent = CSS; document.head.appendChild(s); }
   function clock(ms) { var s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function hhmm(t) { var d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -329,5 +388,5 @@
       });
   }
 
-  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, combine: combine, open: open, addAudio: addAudio, english: english };
+  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, english: english };
 })(window);

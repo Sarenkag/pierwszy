@@ -2025,11 +2025,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     $("ntJoin").addEventListener("click", function () {
       var k = ntScope(), b = this, tok = formSeq; if (!k) return; b.disabled = true;
       $("trHint").textContent = T("Łączę notatki… (model na telefonie, pierwszy raz do ~20 s)", "Combining notes… (on-phone model, first time up to ~20 s)");
-      OESTNotatki.combine(k, ntCtx()).then(function (out) {
-        // liczby z notatek (polski oryginał i EN), których brakuje w propozycji – także zgubione wcześniej przez tłumacza – to samo ostrzeżenie co przy „✨ Ułóż”
-        return OESTNotatki.list(k).then(function (a) { return { out: out, miss: OESTNotatki.missing(a.map(function (n) { return (n.pl || "") + "\n" + (n.en || ""); }).join("\n"), out) }; });
-      }).then(function (r) {
-        var out = r.out;
+      OESTNotatki.propose(k, ntCtx()).then(function (r) { // tekst + liczby z notatek (PL i EN), których w nim brakuje – jedna reguła w module
+        var out = r.text;
         if (tok !== formSeq) return;
         mdSeq++; $("mdRun").disabled = false; /* trwające „✨ Ułóż” unieważnione – przycisk wraca */ mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = r.miss.length ? T("⚠ W propozycji brakuje: ", "⚠ Missing in the suggestion: ") + r.miss.join(", ") + T(" — sprawdź.", " — check.") : "";
         $("trHint").textContent = T("Propozycja z notatek gotowa — sprawdź i stuknij „Wstaw do komentarza”. Nic nie wstawiam samo.", "Suggestion from the notes is ready — check it and tap “Insert into comment”. Nothing is inserted automatically.");
