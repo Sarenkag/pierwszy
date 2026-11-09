@@ -15,6 +15,7 @@ Samodzielny moduł do każdej apki OEST. Wysyła raporty z kolejki prosto z Gmai
 - Odbiorca: `to` z rekordu, a gdy puste — firmowy e-mail z profilu bieżącego konta.
 
 ## Zasady (nie zmieniać bez powodu)
+Testy zasad: `app/tests/moduly-zasady.test.cjs` (W1–W5: najpierw `OESTGoogle.ready`, nic nie udaje, bez dubli, Wyślij nic nie kasuje).
 - Wysyła tylko przez `gmail/v1/users/me/messages/send` (JSON). Adres `/upload` nie zwraca nagłówków CORS i w WebView wygląda jak „brak odpowiedzi”.
 - Raport z błędem albo przerwany w trakcie wysyła się ponownie tylko po „Ponów” (bez dubli).
 - Okno logowania Google tylko po kliknięciu; w tle wysyła, gdy sesja już jest.

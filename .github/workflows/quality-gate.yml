@@ -50,6 +50,8 @@ jobs:
           name: quality-g0
           path: quality-results/
           if-no-files-found: ignore
+          # ponowne uruchomienie joba: stary wynik o tej samej nazwie jest usuwany, w podsumowaniu liczy się tylko ostatni (Grzegorz 09/11/2026)
+          overwrite: true
 
   g1:
     name: G1 – architektura i ochrona kryteriów
@@ -104,6 +106,8 @@ jobs:
           name: quality-g1
           path: quality-results/
           if-no-files-found: ignore
+          # ponowne uruchomienie joba: stary wynik o tej samej nazwie jest usuwany, w podsumowaniu liczy się tylko ostatni (Grzegorz 09/11/2026)
+          overwrite: true
 
   g2:
     # Szybkość (Grzegorz 07/11/2026, „Tak, przyspiesz”): te same testy, ale 3 maszyny naraz.
@@ -147,6 +151,8 @@ jobs:
           name: quality-g2-${{ strategy.job-index }}
           path: quality-results/
           if-no-files-found: ignore
+          # ponowne uruchomienie joba: stary wynik o tej samej nazwie jest usuwany, w podsumowaniu liczy się tylko ostatni (Grzegorz 09/11/2026)
+          overwrite: true
 
   quality-gate:
     name: Quality Gate

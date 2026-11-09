@@ -1,0 +1,226 @@
+{
+  "ekran": "Ekran główny",
+  "opis": "Teksty ekranu głównego (app/www/home.js). {n}, {czas}, {mb} = liczby i daty wstawiane przez apkę – zostaw je w tekście.",
+  "teksty": [
+    {
+      "id": "brak-sieci",
+      "pl": "Brak sieci",
+      "en": "No network"
+    },
+    {
+      "id": "dane-komorkowe",
+      "pl": "Dane komórkowe",
+      "en": "Mobile data"
+    },
+    {
+      "id": "online",
+      "pl": "Online",
+      "en": "Online"
+    },
+    {
+      "id": "hdd-brak-polaczenia",
+      "pl": "HDD · brak połączenia",
+      "en": "HDD · not connected"
+    },
+    {
+      "id": "hdd-wstrzymany",
+      "pl": "HDD · wstrzymany",
+      "en": "HDD · paused"
+    },
+    {
+      "id": "hdd-w-kolejce",
+      "pl": "HDD · {n} w kolejce",
+      "en": "HDD · {n} queued"
+    },
+    {
+      "id": "hdd-zsynchronizowany",
+      "pl": "HDD · zsynchronizowany",
+      "en": "HDD · synced"
+    },
+    {
+      "id": "dzis",
+      "pl": "Dziś",
+      "en": "Today"
+    },
+    {
+      "id": "inspekcje-na-dzis",
+      "pl": "Inspekcje na dziś",
+      "en": "Inspections today"
+    },
+    {
+      "id": "do-zrobienia",
+      "pl": "{n} do zrobienia",
+      "en": "{n} to do"
+    },
+    {
+      "id": "po-terminie",
+      "pl": "w tym {n} po terminie",
+      "en": "{n} overdue"
+    },
+    {
+      "id": "otwarte-zadania",
+      "pl": "Otwarte zadania: {n}",
+      "en": "Open jobs: {n}"
+    },
+    {
+      "id": "wysylka-raportow",
+      "pl": "Wysyłka raportów",
+      "en": "Report sending"
+    },
+    {
+      "id": "raporty-w-kolejce-n",
+      "pl": "Raporty w kolejce: {n}",
+      "en": "Reports queued: {n}"
+    },
+    {
+      "id": "zdjecia-na-dysk",
+      "pl": "Zdjęcia na Dysk",
+      "en": "Photos to Drive"
+    },
+    {
+      "id": "czeka-na-wyslanie",
+      "pl": "Czeka na wysłanie: {n}",
+      "en": "Waiting to upload: {n}"
+    },
+    {
+      "id": "zamknij",
+      "pl": "Zamknij",
+      "en": "Close"
+    },
+    {
+      "id": "prognoza-7-dni",
+      "pl": "Prognoza 7 dni",
+      "en": "7-day forecast"
+    },
+    {
+      "id": "brak-prognozy",
+      "pl": "Brak prognozy. Połącz się z internetem, a pobiorę ją sama.",
+      "en": "No forecast yet. Connect to the internet and it will download automatically."
+    },
+    {
+      "id": "stan-z",
+      "pl": "Stan z {czas}",
+      "en": "Updated {czas}"
+    },
+    {
+      "id": "bez-sieci-ostatnia",
+      "pl": "bez sieci: ostatnia zapisana",
+      "en": "offline: last saved"
+    },
+    {
+      "id": "powiadomienia",
+      "pl": "Powiadomienia",
+      "en": "Notifications"
+    },
+    {
+      "id": "nic-nowego",
+      "pl": "Nic nowego. Wszystko na bieżąco.",
+      "en": "Nothing new. All up to date."
+    },
+    {
+      "id": "polaczony",
+      "pl": "połączony",
+      "en": "connected"
+    },
+    {
+      "id": "niepolaczony",
+      "pl": "niepołączony",
+      "en": "not connected"
+    },
+    {
+      "id": "synchronizuj-teraz",
+      "pl": "Synchronizuj teraz",
+      "en": "Sync now"
+    },
+    {
+      "id": "zdjecia-rozmiar",
+      "pl": "zdjęcia: {n} · {mb}",
+      "en": "photos: {n} · {mb}"
+    },
+    {
+      "id": "nic-do-wyslania",
+      "pl": "nic do wysłania",
+      "en": "nothing to upload"
+    },
+    {
+      "id": "wznow-wysylke",
+      "pl": "Wznów automatyczną wysyłkę",
+      "en": "Resume automatic upload"
+    },
+    {
+      "id": "wstrzymaj-wysylke",
+      "pl": "Wstrzymaj automatyczną wysyłkę",
+      "en": "Pause automatic upload"
+    },
+    {
+      "id": "wstrzymana",
+      "pl": "wstrzymana",
+      "en": "paused"
+    },
+    {
+      "id": "wlaczona",
+      "pl": "włączona",
+      "en": "on"
+    },
+    {
+      "id": "polacz-ponownie",
+      "pl": "Połącz ponownie",
+      "en": "Reconnect"
+    },
+    {
+      "id": "stuknij-aby-polaczyc",
+      "pl": "stuknij, aby połączyć",
+      "en": "tap to connect"
+    },
+    {
+      "id": "zdjecia-i-limity",
+      "pl": "Zdjęcia i limity",
+      "en": "Photos & limits"
+    },
+    {
+      "id": "polaczenie",
+      "pl": "Połączenie",
+      "en": "Connection"
+    },
+    {
+      "id": "opis-brak-sieci",
+      "pl": "Brak sieci. Praca trwa dalej, a kolejka wyśle się sama po powrocie zasięgu.",
+      "en": "No network. You can keep working; the queue sends itself when the signal returns."
+    },
+    {
+      "id": "opis-dane-komorkowe",
+      "pl": "Dane komórkowe. Raporty czekają na Wi‑Fi, chyba że wyślesz je ręcznie.",
+      "en": "Mobile data. Reports wait for Wi‑Fi unless you send them manually."
+    },
+    {
+      "id": "opis-polaczono",
+      "pl": "Połączono. Kolejka wysyła się w tle.",
+      "en": "Connected. The queue sends in the background."
+    },
+    {
+      "id": "raporty-w-kolejce",
+      "pl": "Raporty w kolejce",
+      "en": "Reports queued"
+    },
+    {
+      "id": "ustawienia-wysylki",
+      "pl": "Ustawienia wysyłki",
+      "en": "Sending settings"
+    },
+    {
+      "id": "czekam-na-wifi",
+      "pl": "Czekam na Wi‑Fi.",
+      "en": "Waiting for Wi‑Fi."
+    },
+    {
+      "id": "wyslano",
+      "pl": "Wysłano: {n}.",
+      "en": "Uploaded: {n}."
+    },
+    {
+      "id": "polaczono-z-dyskiem",
+      "pl": "Połączono z Dyskiem.",
+      "en": "Connected to Drive."
+    }
+  ]
+}

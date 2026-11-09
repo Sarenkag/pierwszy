@@ -1,0 +1,201 @@
+{
+  "ekran": "Kalendarz (Ustawienia → Kalendarz)",
+  "opis": "Teksty ustawień kalendarza (app/www/calendar-ui.js). Wartości w {klamrach} wstawia apka – zostaw je w tekście.",
+  "teksty": [
+    {
+      "id": "wybierz-swoj-kalendarz-google-z",
+      "pl": "Wybierz swój kalendarz Google z telefonu, np. „Smart Managed Solutions”. Apka dodaje tam tylko swoje wpisy i nigdy nie zmienia Twoich.",
+      "en": "Choose your own Google calendar from the phone, e.g. “Smart Managed Solutions”. The app adds only its own entries and never changes yours."
+    },
+    {
+      "id": "synchronizacja",
+      "pl": "Synchronizacja:",
+      "en": "Sync:"
+    },
+    {
+      "id": "wlaczona",
+      "pl": "włączona",
+      "en": "enabled"
+    },
+    {
+      "id": "wylaczona",
+      "pl": "wyłączona",
+      "en": "disabled"
+    },
+    {
+      "id": "wlacz-wybierz-kalendarz",
+      "pl": "Włącz / wybierz kalendarz",
+      "en": "Enable / select calendar"
+    },
+    {
+      "id": "inspekcje-ppm",
+      "pl": "Inspekcje PPM",
+      "en": "PPM inspections"
+    },
+    {
+      "id": "znaczniki-zmian-z-profilu-w",
+      "pl": "Znaczniki zmian z profilu (w wybranym kalendarzu)",
+      "en": "Profile shift markers (in the selected calendar)"
+    },
+    {
+      "id": "zakres-tygodni",
+      "pl": "Zakres tygodni",
+      "en": "Weeks ahead"
+    },
+    {
+      "id": "dni-wolne-wedlug-profilu",
+      "pl": "Dni wolne według profilu",
+      "en": "Profile days off"
+    },
+    {
+      "id": "wszystkie-dni",
+      "pl": "Wszystkie dni",
+      "en": "All days"
+    },
+    {
+      "id": "pomin-dni-wolne",
+      "pl": "Pomiń dni wolne",
+      "en": "Skip days off"
+    },
+    {
+      "id": "przenies-na-nastepny-dzien-pracy",
+      "pl": "Przenieś na następny dzień pracy",
+      "en": "Move to next workday"
+    },
+    {
+      "id": "grupy-inspekcji",
+      "pl": "Grupy inspekcji",
+      "en": "Inspection groups"
+    },
+    {
+      "id": "pozarowe",
+      "pl": "Pożarowe",
+      "en": "Fire"
+    },
+    {
+      "id": "woda",
+      "pl": "Woda",
+      "en": "Water"
+    },
+    {
+      "id": "elektryka",
+      "pl": "Elektryka",
+      "en": "Electrical"
+    },
+    {
+      "id": "mechanika",
+      "pl": "Mechanika",
+      "en": "Mechanical"
+    },
+    {
+      "id": "podwykonawcy",
+      "pl": "Podwykonawcy",
+      "en": "Subcontractors"
+    },
+    {
+      "id": "zapisz-ustawienia-przed-synchronizacja-grafik",
+      "pl": "Zapisz ustawienia przed synchronizacją. Grafik powyżej służy tylko jako źródło dni pracy. Rodzinny kalendarz zmian pozostaje osobny.",
+      "en": "Save settings before syncing. The profile above supplies workdays only. Your family shift calendar is separate."
+    },
+    {
+      "id": "synchronizuj-teraz",
+      "pl": "Synchronizuj teraz",
+      "en": "Sync now"
+    },
+    {
+      "id": "otworz-kalendarz-telefonu",
+      "pl": "Otwórz kalendarz telefonu",
+      "en": "Open phone calendar"
+    },
+    {
+      "id": "wylacz-synchronizacje",
+      "pl": "Wyłącz synchronizację",
+      "en": "Disable sync"
+    },
+    {
+      "id": "blad",
+      "pl": "Błąd:",
+      "en": "Error:"
+    },
+    {
+      "id": "zapisano-w-kalendarzu-telefonu",
+      "pl": "Zapisano w kalendarzu telefonu:",
+      "en": "Saved to phone calendar:"
+    },
+    {
+      "id": "synchronizacje-z-google-wykonuje-android",
+      "pl": "Synchronizację z Google wykonuje Android.",
+      "en": "Android handles Google sync."
+    },
+    {
+      "id": "jeszcze-nie-synchronizowano",
+      "pl": "Jeszcze nie synchronizowano.",
+      "en": "Not synced yet."
+    },
+    {
+      "id": "konto-kalendarz",
+      "pl": "Konto / kalendarz",
+      "en": "Account / calendar"
+    },
+    {
+      "id": "potwierdzam-wybor-jesli-udostepniam-ten",
+      "pl": "Potwierdzam wybór. Jeśli udostępniam ten kalendarz, inni zobaczą też terminy PPM.",
+      "en": "I confirm. If I share this calendar, others will also see PPM dates."
+    },
+    {
+      "id": "wlacz-i-synchronizuj",
+      "pl": "Włącz i synchronizuj",
+      "en": "Enable and sync"
+    },
+    {
+      "id": "brak-wlasnego-kalendarza-google-w",
+      "pl": "Brak własnego kalendarza Google w telefonie. Włącz synchronizację kalendarza konta Google w telefonie i spróbuj ponownie.",
+      "en": "No owned Google calendar on this phone. Turn on calendar sync for your Google account and try again."
+    },
+    {
+      "id": "potwierdz-wybor-kalendarza",
+      "pl": "Potwierdź wybór kalendarza.",
+      "en": "Confirm the calendar choice."
+    },
+    {
+      "id": "wlaczono-zapisano-wydarzenia-w-telefonie",
+      "pl": "Włączono. Zapisano wydarzenia w telefonie; Android synchronizuje je z Google.",
+      "en": "Enabled. Events saved to phone; Android syncs them to Google."
+    },
+    {
+      "id": "najpierw-wlacz-kalendarz",
+      "pl": "Najpierw włącz kalendarz.",
+      "en": "Enable the calendar first."
+    },
+    {
+      "id": "wylaczyc-synchronizacje",
+      "pl": "Wyłączyć synchronizację?",
+      "en": "Disable sync?"
+    },
+    {
+      "id": "usunac-wydarzenia-utworzone-przez-te",
+      "pl": "Usunąć wydarzenia utworzone przez tę aplikację? Sam kalendarz i inne wydarzenia pozostaną.",
+      "en": "Remove events created by this app? The calendar and other events remain."
+    },
+    {
+      "id": "usun-wydarzenia",
+      "pl": "Usuń wydarzenia",
+      "en": "Remove events"
+    },
+    {
+      "id": "zachowaj",
+      "pl": "Zachowaj",
+      "en": "Keep"
+    },
+    {
+      "id": "wylaczamy-synchronizacje-usunac-wydarzenia-utworzone",
+      "pl": "Wyłączamy synchronizację. Usunąć wydarzenia utworzone przez tę aplikację? OK = usuń, Anuluj = zachowaj. Sam kalendarz i inne wydarzenia pozostaną.",
+      "en": "Sync will be disabled. Remove events created by this app? OK = remove, Cancel = keep. The calendar and other events remain."
+    },
+    {
+      "id": "synchronizacja-wylaczona",
+      "pl": "Synchronizacja wyłączona.",
+      "en": "Sync disabled."
+    }
+  ]
+}

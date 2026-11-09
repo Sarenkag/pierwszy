@@ -33,14 +33,14 @@ test('wyszukiwanie po kodzie i dniu', () => {
 });
 
 function fakeStore(over) {
-  const rows = new Map(); let saved = {}, n = 0, t = Date.UTC(2026, 10, 1, 10);
+  const rows = new Map(); let saved = {}, n = 0; const clock = { t: Date.UTC(2026, 10, 1, 10) };
   const deps = Object.assign({
     db: { all: async () => [...rows.values()].map(x => ({ ...x })), get: async id => rows.has(id) ? { ...rows.get(id) } : undefined, put: async r => { rows.set(r.id, { ...r }); }, del: async id => { rows.delete(id); } },
     settings: { load: () => saved, save: s => { saved = s; } },
     compress: async (file) => ({ blob: { size: file.size, type: 'image/jpeg' }, width: 10, height: 10 }),
-    wifi: () => true, now: () => (t += 1000), id: () => 'p' + (++n)
+    wifi: () => true, now: () => (clock.t += 1000), id: () => 'p' + (++n)
   }, over);
-  return { store: Z.createStore(deps), rows, getSettings: () => saved };
+  return { store: Z.createStore(deps), rows, clock, getSettings: () => saved };
 }
 function fakeDrive() {
   const files = new Map(); let n = 0;
@@ -76,10 +76,11 @@ test('limit Dysku kasuje najstarsze z Dysku; bez Wi-Fi brak automatu', async () 
 });
 
 test('utrata Wi-Fi w trakcie: reszta czeka; ręcznie wysyła wszystko', async () => {
+  // od 09/11/2026 po 2 pliki naraz (audyt zdjęć, punkt 8): para w drodze kończy się, następne czekają
   let wifi = true; const { store } = fakeStore({ wifi: () => wifi });
-  await store.save({ size: MB }, { code: 'A' }); await store.save({ size: MB }, { code: 'B' });
+  await store.save({ size: MB }, { code: 'A' }); await store.save({ size: MB }, { code: 'B' }); await store.save({ size: MB }, { code: 'C' });
   const d = fakeDrive(), up = d.upload; d.upload = async (...a) => { const r = await up(...a); wifi = false; return r; };
-  assert.deepStrictEqual(await store.sync(d), { skipped: 'wifi', sent: 1 });
+  assert.deepStrictEqual(await store.sync(d), { skipped: 'wifi', sent: 2 });
   assert.strictEqual((await store.sync(d, true)).sent, 1);
 });
 
@@ -132,6 +133,39 @@ test('release zwalnia tylko nieużywane i nie świeże, keep znów trzyma', asyn
   assert.strictEqual(rows.get(c.id).hold, 'reactive', 'cudze trzymanie nietknięte');
   await store.keep([b.id], 'inspekcja');
   assert.strictEqual(rows.get(b.id).hold, 'inspekcja');
+});
+
+test('release: 30 dni liczone od wyczyszczenia, nie od zrobienia zdjęcia (Grzegorz 08/11: „niech trzyma przez miesiąc”)', async () => {
+  const { store, rows, clock } = fakeStore();
+  const D = 864e5, M = 30 * D;
+  const a = await store.save({ size: 1 }, { hold: 'inspekcja' });
+  clock.t += 20 * D; // inspekcja trwa 20 dni, zdjęcie jest w szkicu
+  assert.strictEqual(await store.release('inspekcja', [a.id], M), 0);
+  assert.ok(!rows.get(a.id).unused, 'w inspekcji: bez znacznika');
+  // Wyczyść inspekcję: zdjęcia nie ma już w żadnym szkicu – zdjęcie ma 20 dni, ale trzymamy jeszcze pełne 30
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'zaraz po wyczyszczeniu nic nie zwolnione');
+  assert.strictEqual(rows.get(a.id).hold, 'inspekcja');
+  clock.t += 29 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'po 29 dniach wciąż trzymane');
+  clock.t += 2 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 1, 'po 31 dniach zwolnione');
+  assert.strictEqual(rows.get(a.id).hold, '');
+  assert.ok(rows.get(a.id).blob, 'zwolnione zostaje w folderze OEST (tylko podlega limitowi)');
+});
+
+test('release: zdjęcie, które wróciło do inspekcji (Przywróć / Odzyskaj), liczy 30 dni od nowa', async () => {
+  const { store, rows, clock } = fakeStore();
+  const D = 864e5, M = 30 * D;
+  const a = await store.save({ size: 1 }, { hold: 'inspekcja' });
+  clock.t += 40 * D;
+  await store.release('inspekcja', [], M); // wyczyszczona
+  clock.t += 25 * D;
+  await store.keep([a.id], 'inspekcja'); // ↺ Przywróć
+  assert.ok(!rows.get(a.id).unused, 'keep zdejmuje znacznik');
+  await store.release('inspekcja', [], M); // znów wyczyszczona
+  clock.t += 10 * D;
+  assert.strictEqual(await store.release('inspekcja', [], M), 0, 'po 10 dniach od drugiego wyczyszczenia trzymane');
+  assert.strictEqual(rows.get(a.id).hold, 'inspekcja');
 });
 
 test('rozmiar wg rodzaju w Standardzie: formularz 1600, ogólne 1600, przy pytaniu 800', () => {
@@ -213,7 +247,9 @@ test('dwa zdjęcia o tej samej nazwie (ta sama sekunda): każde osobno na Dysku,
   const d = propDrive(), up = d.upload; let n = 0;
   d.upload = async (...a) => { const r = await up(...a); if (++n === 1) throw Error('NETWORK_LOST'); return r; };
   await assert.rejects(store.sync(d));
-  assert.strictEqual((await store.sync(d)).sent, 2);
+  // po 2 naraz (09/11/2026): drugie zdjęcie z pary doszło już w pierwszej próbie, ponowna próba kończy pierwsze (bez duplikatu)
+  assert.strictEqual([...(await store.list())].filter(r => r.driveId).length, 1);
+  assert.strictEqual((await store.sync(d)).sent, 1);
   const f = photosOn(d);
   assert.strictEqual(f.length, 2);
   assert.strictEqual(f[0].name, f[1].name);
@@ -247,4 +283,125 @@ test('Codex #104: długa nazwa zdjęcia (> 200 znaków) – ponowna próba szuka
   assert.deepStrictEqual(names, ['']);
   assert.strictEqual(photosOn(d).length, 1);
   assert.ok(photosOn(d)[0].name.length > 200);
+});
+
+// ---- Audyt wydajności zdjęć, punkty 7 i 8 (zgoda Grzegorza 09/11/2026) ----
+function manualLater() { const q = []; const later = (fn, ms) => { const t = { fn, ms, off: false }; q.push(t); return () => { t.off = true; }; };
+  later.run = async () => { const due = q.splice(0).filter(t => !t.off); due.forEach(t => t.fn()); for (let i = 0; i < 20; i++) await Promise.resolve(); return due.length; }; later.q = q; return later; }
+
+test('punkt 7: przegląd limitu folderu RAZ po serii zdjęć, nie po każdym; limit dalej działa', async () => {
+  const later = manualLater(); let scans = 0;
+  // magazyn z licznikiem przeglądów folderu (db.all)
+  const z = (() => { const rowsX = new Map(); let n = 0, t = Date.UTC(2026, 10, 9, 3); let saved = {};
+    const deps = { later, db: { all: async () => { scans++; return [...rowsX.values()].map(x => ({ ...x })); }, get: async id => rowsX.has(id) ? { ...rowsX.get(id) } : undefined, put: async r => { rowsX.set(r.id, { ...r }); }, del: async id => { rowsX.delete(id); } },
+      settings: { load: () => saved, save: x => { saved = x; } }, compress: async file => ({ blob: { size: file.size, type: 'image/jpeg' }, width: 10, height: 10 }), wifi: () => true, now: () => (t += 1000), id: () => 'z' + (++n) };
+    return { store: Z.createStore(deps), rows: rowsX }; })();
+  z.store.setSettings({ phoneLimitMB: 100, driveLimitMB: 100000 });
+  let changes = 0; z.store.onChange(() => changes++);
+  for (let i = 0; i < 20; i++) await z.store.save({ size: 10 * MB }, { code: 'K' + i, when: new Date(2026, 10, 9, 3, i) });
+  assert.strictEqual(scans, 0, 'zapis zdjęcia nie przegląda folderu');
+  assert.ok(changes >= 20, 'licznik na ekranie odświeża się od razu po każdym zdjęciu');
+  assert.strictEqual(later.q.filter(t => !t.off).length, 1, 'jeden zaplanowany przegląd na całą serię');
+  assert.ok(later.q.every(t => t.ms === 1500));
+  assert.strictEqual(await later.run(), 1);
+  assert.strictEqual(scans, 1, 'po serii dokładnie jeden przegląd');
+  // limit: niewysłane zostają (jak dotąd); po wysyłce sprzątanie do 100 MB
+  assert.strictEqual([...z.rows.values()].filter(r => r.blob).length, 20);
+  await z.store.sync(fakeDrive());
+  assert.ok([...z.rows.values()].filter(r => r.blob).reduce((a, r) => a + r.size, 0) <= 100 * MB, 'limit folderu dalej pilnowany');
+});
+
+test('punkt 8: na Dysk po 2 pliki naraz, od najstarszych, bez podwójnych folderów, każdy raz', async () => {
+  const { store, rows } = fakeStore();
+  for (let i = 0; i < 5; i++) await store.save({ size: MB }, { category: 'Flushing', code: 'TB', point: 'Kran ' + i, when: new Date(2026, 10, 9, 3, i) });
+  const d = fakeDrive(), up = d.upload, ens = d.ensureFolder; let now = 0, peak = 0; const order = [], folderCalls = [];
+  d.ensureFolder = async (name, parent) => { folderCalls.push(parent + '/' + name); return ens(name, parent); };
+  d.upload = async (parent, name, blob, props) => { now++; peak = Math.max(peak, now); order.push(name); await new Promise(r => setTimeout(r, 5)); now--; return up(parent, name, blob, props); };
+  assert.strictEqual((await store.sync(d)).sent, 5);
+  assert.strictEqual(peak, 2, 'dwa pliki w drodze naraz, nie więcej');
+  assert.deepStrictEqual(order.map(n => n.split(' ')[2]), ['0', '1', '2', '3', '4'], 'od najstarszych');
+  assert.strictEqual(new Set(folderCalls).size, folderCalls.length, 'każdy folder tworzony raz');
+  assert.ok([...rows.values()].every(r => r.driveId && !r.upTry));
+  assert.strictEqual(new Set([...rows.values()].map(r => r.driveId)).size, 5);
+});
+
+test('punkt 8: błąd jednego pliku z pary – drugi zapisany, błąd zgłoszony, ponowna próba bez duplikatu', async () => {
+  const { store, rows } = fakeStore();
+  for (const c of ['A', 'B', 'C']) await store.save({ size: MB }, { category: 'ATS', code: c, when: new Date(2026, 10, 9, 3, c.charCodeAt(0)) });
+  const d = propDrive(), up = d.upload; let n = 0;
+  d.upload = async (...a) => { if (++n === 1) { await up(...a); throw Error('NETWORK_LOST'); } return up(...a); }; // A doszedł, odpowiedź nie wróciła
+  await assert.rejects(store.sync(d), /NETWORK_LOST/);
+  const byCode = c => [...rows.values()].find(r => r.code === c);
+  assert.ok(byCode('B').driveId, 'drugi z pary zapisany mimo błędu pierwszego');
+  assert.strictEqual(byCode('A').upTry, true);
+  assert.ok(!byCode('C').driveId, 'następna para czeka');
+  d.upload = up;
+  assert.strictEqual((await store.sync(d)).sent, 2);
+  assert.strictEqual(photosOn(d).length, 3, 'na Dysku trzy pliki, A bez duplikatu');
+});
+
+// Uwaga z przeglądu PR #114: prawdziwy adapter Google (settings-google.js) przepuszczał jedno żądanie naraz (GOOGLE_BUSY).
+// Ten test idzie przez prawdziwe createGoogle i ten sam podział na Dysk co app/www/zdjecia-ui.js drive().
+test('punkt 8 z prawdziwym adapterem Google: 5 zdjęć, 2 naraz, wszystkie wysłane, inne żądanie w trakcie = GOOGLE_BUSY', async () => {
+  const { createGoogle } = require('../www/settings-google.js');
+  let inFlight = 0, peak = 0, n = 0, release = [];
+  const G = createGoogle({ account: () => ({ email: 'me@example.com' }), login: async () => ({ email: 'me@example.com', token: 'T' }),
+    fetch: async (url, opts) => {
+      const upload = /upload\/drive/.test(url); inFlight++; peak = Math.max(peak, inFlight);
+      try {
+        if (upload) await new Promise(r => release.push(r)); // trzymamy wysyłkę, żeby było widać dwie naraz
+        const body = upload ? { id: 'file' + (++n), name: 'x' } : /\?q=/.test(url) ? { files: [] } : { id: 'fold' + (++n), name: 'f' };
+        return { ok: true, status: 200, json: async () => body };
+      } finally { inFlight--; }
+    } });
+  await G.connect('drive');
+  const drive = { ensureFolder: (name, parent) => G.ensureFolder(name, parent), upload: (p, name, blob, props) => G.uploadFile(p, name, blob, props),
+    find: (p, name, props) => G.findFile(p, name, props), remove: id => G.removeFile(id) };
+  const { store, rows } = fakeStore();
+  for (let i = 0; i < 5; i++) await store.save({ size: MB, type: 'image/jpeg' }, { category: 'Flushing', code: 'TB', point: 'Kran ' + i, when: new Date(2026, 10, 9, 3, i) });
+  let settled = false; const job = store.sync(drive); job.then(() => { settled = true; }, () => { settled = true; });
+  let checkedBusy = false, waits = 0;
+  while (!settled) {
+    await new Promise(r => setTimeout(r, 2));
+    if (release.length === 2 && !checkedBusy) { await assert.rejects(G.folders(), /GOOGLE_BUSY/, 'inne żądanie nie wchodzi między wysyłki'); checkedBusy = true; }
+    if (release.length === 2 || (release.length && (checkedBusy || ++waits > 50))) release.splice(0).forEach(r => r());
+  }
+  assert.strictEqual((await job).sent, 5);
+  assert.ok([...rows.values()].every(r => r.driveId), 'wszystkie na Dysku');
+  assert.strictEqual(peak, 2, 'dokładnie 2 wysyłki naraz');
+  assert.ok(checkedBusy);
+});
+
+// Druga uwaga z przeglądu PR #114: po przerwanej wysyłce (upTry) szukanie pliku na Dysku też szło parami, a adapter puszcza naraz tylko wysyłki.
+test('punkt 8 z prawdziwym adapterem Google: ponowna próba po przerwaniu (3 zdjęcia z upTry) bez GOOGLE_BUSY i bez duplikatów', async () => {
+  const { createGoogle } = require('../www/settings-google.js');
+  const onDrive = new Map(); let n = 0, inFlight = 0, peak = 0;
+  const G = createGoogle({ account: () => ({ email: 'me@example.com' }), login: async () => ({ email: 'me@example.com', token: 'T' }),
+    fetch: async (url, opts) => {
+      inFlight++; peak = Math.max(peak, inFlight);
+      try {
+        await new Promise(r => setTimeout(r, 3));
+        let body;
+        if (/upload\/drive/.test(url)) { const m = /"oestPhoto":"([\w-]+)"/.exec(await new Response(opts.body).text()); body = { id: 'file' + (++n), name: 'x' }; onDrive.set(m[1], body.id); }
+        else if (/appProperties/.test(decodeURIComponent(url))) { const id = /value='([\w-]+)'/.exec(decodeURIComponent(url))[1]; body = { files: onDrive.has(id) ? [{ id: onDrive.get(id), name: 'x' }] : [] }; }
+        else if (/\?q=/.test(url)) body = { files: [] };
+        else body = { id: 'fold' + (++n), name: 'f' };
+        return { ok: true, status: 200, json: async () => body };
+      } finally { inFlight--; }
+    } });
+  await G.connect('drive');
+  const drive = { ensureFolder: (name, parent) => G.ensureFolder(name, parent), upload: (p, name, blob, props) => G.uploadFile(p, name, blob, props),
+    find: (p, name, props) => G.findFile(p, name, props), remove: id => G.removeFile(id) };
+  const { store, rows } = fakeStore();
+  for (let i = 0; i < 3; i++) await store.save({ size: MB, type: 'image/jpeg' }, { category: 'ATS', code: 'ATS-' + i, when: new Date(2026, 10, 9, 3, i) });
+  // stan po przerwanej wysyłce: wszystkie mają upTry, pierwsze dwa doszły na Dysk, apka nie zapisała driveId
+  const ids = [...rows.keys()];
+  for (const id of ids) rows.set(id, { ...rows.get(id), upTry: true });
+  onDrive.set(ids[0], 'old0'); onDrive.set(ids[1], 'old1');
+  const res = await store.sync(drive);
+  assert.strictEqual(res.sent, 3);
+  assert.deepStrictEqual(ids.map(id => rows.get(id).driveId), ['old0', 'old1', onDrive.get(ids[2])], 'dwa znalezione, trzecie wysłane');
+  assert.strictEqual(onDrive.size, 3, 'bez duplikatów');
+  assert.ok(ids.every(id => rows.get(id).upTry === false));
+  assert.ok(peak <= 2);
 });

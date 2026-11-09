@@ -12,6 +12,7 @@
     "app/tests/nie-rozpoczeta-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/pasek-dni-ui-check.cjs": ["index.html"],
     "app/tests/pasek-systemowy-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/checkbox-ui-check.cjs": ["inspekcje/index.html"],
     "app/tests/pigulka-statusu-ui-check.cjs": ["index.html"],
     "app/tests/plynnosc-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/powertrace-ui-check.cjs": ["index.html"],
@@ -26,7 +27,9 @@
     "app/tests/zdjecia-szybkosc-ui-check.cjs": ["inspekcje/index.html"],
     "app/tests/word-pdf-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/pl-en-ui-check.cjs": ["index.html", "inspekcje/index.html"],
-    "app/tests/notatki-ui-check.cjs": ["inspekcje/index.html"]
+    "app/tests/notatki-ui-check.cjs": ["inspekcje/index.html"],
+    "app/tests/czyszczenie-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/moduly-zasady-ui-check.cjs": ["inspekcje/index.html"]
   },
   "zasobyDynamiczne": {
     "templates/OEST-basic.docx": ["index.html"],

@@ -1,0 +1,396 @@
+{
+  "ekran": "Power trace",
+  "opis": "Teksty ekranu Power trace (app/www/powertrace.js). Wartości w {klamrach} wstawia apka – zostaw je w tekście.",
+  "teksty": [
+    {
+      "id": "wstecz",
+      "pl": "Wstecz",
+      "en": "Back"
+    },
+    {
+      "id": "uzupelnij-wymagane-pola-rozdzielni-i",
+      "pl": "Uzupełnij wymagane pola rozdzielni i numer/opis każdego obwodu.",
+      "en": "Fill in the required board fields and the number/description of every circuit."
+    },
+    {
+      "id": "dodaj-przynajmniej-jedno-zdjecie-skrzynki",
+      "pl": "Dodaj przynajmniej jedno zdjęcie skrzynki i jedną kartę obwodów.",
+      "en": "Add at least one board photo and one circuit chart."
+    },
+    {
+      "id": "wybierz-budynek",
+      "pl": "Wybierz budynek.",
+      "en": "Choose a building."
+    },
+    {
+      "id": "nieprawidlowe-wspolrzedne-albo-zdjecie-znacznika",
+      "pl": "Nieprawidłowe współrzędne albo zdjęcie znacznika.",
+      "en": "Invalid coordinates or marker photo."
+    },
+    {
+      "id": "plik-pochodzi-z-innego-konta",
+      "pl": "Plik pochodzi z innego konta.",
+      "en": "The file comes from another account."
+    },
+    {
+      "id": "plik-zawiera-dane-planow-z",
+      "pl": "Plik zawiera dane planów z późniejszego etapu. Nie zostanie zaimportowany ani zmieniony.",
+      "en": "The file contains plan data from a later stage. It will not be imported or changed."
+    },
+    {
+      "id": "ocr-jest-dostepny-na-androidzie",
+      "pl": "OCR jest dostępny na Androidzie. Wpisz tabelę ręcznie lub wklej tekst poniżej.",
+      "en": "OCR is available on Android. Type the table by hand or paste the text below."
+    },
+    {
+      "id": "zaczekaj-na-zakonczenie-operacji",
+      "pl": "Zaczekaj na zakończenie operacji.",
+      "en": "Wait for the operation to finish."
+    },
+    {
+      "id": "masz-niezapisane-zmiany-power-trace",
+      "pl": "Masz niezapisane zmiany Power trace. Opuścić ekran?",
+      "en": "You have unsaved Power trace changes. Leave the screen?"
+    },
+    {
+      "id": "wczytywanie-rozdzielni",
+      "pl": "Wczytywanie rozdzielni…",
+      "en": "Loading boards…"
+    },
+    {
+      "id": "nie-udalo-sie-odczytac-bazy",
+      "pl": "Nie udało się odczytać bazy:",
+      "en": "Could not read the database:"
+    },
+    {
+      "id": "otworz-zdjecie-w-pelnym-rozmiarze",
+      "pl": "Otwórz zdjęcie w pełnym rozmiarze",
+      "en": "Open the photo at full size"
+    },
+    {
+      "id": "dodaj-rozdzielnie",
+      "pl": "Dodaj rozdzielnię",
+      "en": "Add board"
+    },
+    {
+      "id": "kopia-zapasowa",
+      "pl": "⚙ Kopia zapasowa",
+      "en": "⚙ Backup"
+    },
+    {
+      "id": "zapisz-kopie",
+      "pl": "Zapisz kopię",
+      "en": "Save backup"
+    },
+    {
+      "id": "przywroc-z-pliku",
+      "pl": "Przywróć z pliku",
+      "en": "Restore from file"
+    },
+    {
+      "id": "szukaj-opis-numer-mcb-kod",
+      "pl": "Szukaj: opis, numer MCB, kod lub lokalizacja (512 znajduje 5.12)",
+      "en": "Search: description, MCB number, code or location (512 finds 5.12)"
+    },
+    {
+      "id": "budynek",
+      "pl": "Budynek",
+      "en": "Building"
+    },
+    {
+      "id": "pietro",
+      "pl": "Piętro",
+      "en": "Floor"
+    },
+    {
+      "id": "obwodow",
+      "pl": "obwodów",
+      "en": "circuits"
+    },
+    {
+      "id": "otworz",
+      "pl": "Otwórz",
+      "en": "Open"
+    },
+    {
+      "id": "edytuj",
+      "pl": "Edytuj",
+      "en": "Edit"
+    },
+    {
+      "id": "brak-rozdzielni-dodaj-pierwsza-wyszukiwanie",
+      "pl": "Brak rozdzielni. Dodaj pierwszą — wyszukiwanie zadziała od razu.",
+      "en": "No boards. Add the first one — search works straight away."
+    },
+    {
+      "id": "rozdzielnia-bez-wpisanych-obwodow",
+      "pl": "Rozdzielnia bez wpisanych obwodów.",
+      "en": "Board with no circuits entered."
+    },
+    {
+      "id": "podswietlony-znacznik-obwodu",
+      "pl": "Podświetlony znacznik obwodu",
+      "en": "Highlighted circuit marker"
+    },
+    {
+      "id": "brak-przypisanego-znacznika",
+      "pl": "Brak przypisanego znacznika",
+      "en": "No marker assigned"
+    },
+    {
+      "id": "karty-rozdzielni-nie-przypisano-konkretnej",
+      "pl": "Karty rozdzielni — nie przypisano konkretnej karty obwodu",
+      "en": "Board charts — no specific circuit chart assigned"
+    },
+    {
+      "id": "otworz-rozdzielnie",
+      "pl": "Otwórz rozdzielnię",
+      "en": "Open board"
+    },
+    {
+      "id": "pokaz-na-planie",
+      "pl": "Pokaż na planie",
+      "en": "Show on plan"
+    },
+    {
+      "id": "kazdy-numer-i-opis-zatwierdzasz",
+      "pl": "każdy numer i opis zatwierdzasz przy zapisie",
+      "en": "you confirm every number and description when saving"
+    },
+    {
+      "id": "opis-dokladnie-z-karty",
+      "pl": "Opis dokładnie z karty",
+      "en": "Description exactly as on the chart"
+    },
+    {
+      "id": "typ",
+      "pl": "Typ",
+      "en": "Type"
+    },
+    {
+      "id": "prad-oznaczenie",
+      "pl": "Prąd / oznaczenie",
+      "en": "Rating / marking"
+    },
+    {
+      "id": "kolejnosc-usun",
+      "pl": "Kolejność / usuń",
+      "en": "Order / delete"
+    },
+    {
+      "id": "nie-przypisano",
+      "pl": "Nie przypisano",
+      "en": "Not assigned"
+    },
+    {
+      "id": "przesun-obwod-w-gore",
+      "pl": "Przesuń obwód w górę",
+      "en": "Move circuit up"
+    },
+    {
+      "id": "przesun-obwod-w-dol",
+      "pl": "Przesuń obwód w dół",
+      "en": "Move circuit down"
+    },
+    {
+      "id": "usun",
+      "pl": "Usuń",
+      "en": "Delete"
+    },
+    {
+      "id": "zdjecia-skrzynki-otwarte-drzwiczki",
+      "pl": "Zdjęcia skrzynki — otwarte drzwiczki",
+      "en": "Board photos — door open"
+    },
+    {
+      "id": "zdjecia-listy-karty-obwodow",
+      "pl": "Zdjęcia listy / karty obwodów",
+      "en": "Circuit list / chart photos"
+    },
+    {
+      "id": "usun-zdjecie",
+      "pl": "Usuń zdjęcie",
+      "en": "Delete photo"
+    },
+    {
+      "id": "pinch-powieksz-przeciagnij-przesun",
+      "pl": "Pinch: powiększ · przeciągnij: przesuń",
+      "en": "Pinch: zoom · drag: move"
+    },
+    {
+      "id": "zdjecie-z-oznaczeniami-mcb-dostepne",
+      "pl": "Zdjęcie z oznaczeniami MCB; dostępne przyciski powiększenia",
+      "en": "Photo with MCB markers; zoom buttons available"
+    },
+    {
+      "id": "skrzynka-lub-karta-obwodow",
+      "pl": "Skrzynka lub karta obwodów",
+      "en": "Board or circuit chart"
+    },
+    {
+      "id": "wybierz-obwod-i-dotknij-zdjecia",
+      "pl": "Wybierz obwód i dotknij zdjęcia, aby dodać kolejny znacznik. Etykieta otwiera pełny opis oraz edycję/usunięcie współrzędnych. Zmiany zapiszesz przyciskiem Zapisz.",
+      "en": "Choose a circuit and tap the photo to add another marker. The label opens the full description and lets you edit/delete coordinates. Save changes with the Save button."
+    },
+    {
+      "id": "dotknij-etykiety-aby-przeczytac-pelny",
+      "pl": "Dotknij etykiety, aby przeczytać pełny opis.",
+      "en": "Tap a label to read the full description."
+    },
+    {
+      "id": "kod-z-naklejki-zachowany-dokladnie",
+      "pl": "Kod z naklejki — zachowany dokładnie",
+      "en": "Code from the sticker — kept exactly"
+    },
+    {
+      "id": "wybierz",
+      "pl": "Wybierz",
+      "en": "Choose"
+    },
+    {
+      "id": "zasilana-z-opcjonalny-kod-nie",
+      "pl": "Zasilana z — opcjonalny kod, nie musi istnieć w bazie",
+      "en": "Fed from — optional code, does not need to exist in the database"
+    },
+    {
+      "id": "nie-wpisano",
+      "pl": "Nie wpisano",
+      "en": "Not entered"
+    },
+    {
+      "id": "usun-rozdzielnie",
+      "pl": "Usuń rozdzielnię",
+      "en": "Delete board"
+    },
+    {
+      "id": "wynik-ocr-jest-niepewny-popraw",
+      "pl": "Wynik OCR jest niepewny. Popraw każdy wiersz; opis i numer zapisujemy dopiero po Twoim Zapisz. Bez OCR użyj Dodaj obwód albo wklej tekst.",
+      "en": "The OCR result is uncertain. Correct every row; the description and number are saved only after you tap Save. Without OCR use Add circuit or paste text."
+    },
+    {
+      "id": "karta-zrodlowa-szkicu",
+      "pl": "Karta źródłowa szkicu",
+      "en": "Source chart for the draft"
+    },
+    {
+      "id": "nie-przypisuj",
+      "pl": "Nie przypisuj",
+      "en": "Do not assign"
+    },
+    {
+      "id": "dodaj-szkic-ocr-do-tabeli",
+      "pl": "Dodaj szkic OCR do tabeli",
+      "en": "Add OCR draft to the table"
+    },
+    {
+      "id": "dodaj-obwod-recznie",
+      "pl": "Dodaj obwód ręcznie",
+      "en": "Add circuit by hand"
+    },
+    {
+      "id": "oznaczenia-pstryczkow",
+      "pl": "Oznaczenia pstryczków",
+      "en": "Breaker markers"
+    },
+    {
+      "id": "zdjecie-skrzynki",
+      "pl": "Zdjęcie skrzynki",
+      "en": "Board photo"
+    },
+    {
+      "id": "obwod-do-oznaczenia-podswietlenia",
+      "pl": "Obwód do oznaczenia / podświetlenia",
+      "en": "Circuit to mark / highlight"
+    },
+    {
+      "id": "wybierz-obwod",
+      "pl": "Wybierz obwód",
+      "en": "Choose circuit"
+    },
+    {
+      "id": "dodaj-zdjecie-skrzynki",
+      "pl": "Dodaj zdjęcie skrzynki.",
+      "en": "Add a board photo."
+    },
+    {
+      "id": "zapisz-rozdzielnie-i-obwody",
+      "pl": "Zapisz rozdzielnię i obwody",
+      "en": "Save board and circuits"
+    },
+    {
+      "id": "zamknij",
+      "pl": "Zamknij",
+      "en": "Close"
+    },
+    {
+      "id": "scalic-plik-z-baza-biezacego",
+      "pl": "Scalić plik z bazą bieżącego konta? Istniejące kody i opisy pozostaną.",
+      "en": "Merge the file into the current account's database? Existing codes and descriptions stay."
+    },
+    {
+      "id": "lacznie",
+      "pl": ", łącznie",
+      "en": ", total"
+    },
+    {
+      "id": "przygotowanie-zdjecia",
+      "pl": "Przygotowanie zdjęcia…",
+      "en": "Preparing photo…"
+    },
+    {
+      "id": "maksymalnie-50-zdjec-danego-rodzaju",
+      "pl": "Maksymalnie 50 zdjęć danego rodzaju na rozdzielnię.",
+      "en": "Maximum 50 photos of each kind per board."
+    },
+    {
+      "id": "najpierw-wybierz-obwod-z-tabeli",
+      "pl": "Najpierw wybierz obwód z tabeli.",
+      "en": "First choose a circuit from the table."
+    },
+    {
+      "id": "zmien-wspolrzedne",
+      "pl": "Zmień współrzędne",
+      "en": "Change coordinates"
+    },
+    {
+      "id": "usun-znacznik",
+      "pl": "Usuń znacznik",
+      "en": "Delete marker"
+    },
+    {
+      "id": "wierszy-szkicu-popraw-je-przed",
+      "pl": "wierszy szkicu. Popraw je przed Zapisz.",
+      "en": "draft rows. Correct them before Save."
+    },
+    {
+      "id": "ocr-gotowy-sprawdz-tekst-i",
+      "pl": "OCR gotowy — sprawdź tekst i dodaj szkic do tabeli. Nic nie zapisano.",
+      "en": "OCR done — check the text and add the draft to the table. Nothing saved."
+    },
+    {
+      "id": "aparat-systemowy-dziala-w-aplikacji",
+      "pl": "Aparat systemowy działa w aplikacji Android. Tutaj wybierz galerię.",
+      "en": "The system camera works in the Android app. Choose the gallery here."
+    },
+    {
+      "id": "usunac-zdjecie-i-jego-przypisania",
+      "pl": "Usunąć zdjęcie i jego przypisania / znaczniki ze szkicu?",
+      "en": "Delete the photo and its assignments / markers from the draft?"
+    },
+    {
+      "id": "usunac-rozdzielnie-jej-obwody-znaczniki",
+      "pl": "Usunąć rozdzielnię, jej obwody, znaczniki i zdjęcia z bieżącego konta?",
+      "en": "Delete the board, its circuits, markers and photos from the current account?"
+    },
+    {
+      "id": "zapisano-plik-json-ze-zdjeciami",
+      "pl": "Zapisano plik JSON ze zdjęciami.",
+      "en": "JSON file with photos saved."
+    },
+    {
+      "id": "przygotowano-plik-json-sprawdz-zapisany",
+      "pl": "Przygotowano plik JSON — sprawdź zapisany plik.",
+      "en": "JSON file prepared — check the saved file."
+    }
+  ]
+}

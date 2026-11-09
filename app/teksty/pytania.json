@@ -1,0 +1,411 @@
+{
+  "ekran": "Edytor pytań",
+  "opis": "Teksty edytora pytań i inspekcji (app/www/questions-ui.js). Wartości w {klamrach} wstawia apka – zostaw je w tekście.",
+  "teksty": [
+    {
+      "id": "opuscic-niezapisane-zmiany-pytan",
+      "pl": "Opuścić niezapisane zmiany pytań?",
+      "en": "Leave unsaved question changes?"
+    },
+    {
+      "id": "nie-zapisano-nie-wykonano",
+      "pl": "Nie zapisano / nie wykonano:",
+      "en": "Not saved / not done:"
+    },
+    {
+      "id": "wczytywanie-pytan",
+      "pl": "Wczytywanie pytań…",
+      "en": "Loading questions…"
+    },
+    {
+      "id": "nie-udalo-sie-odczytac-pytan",
+      "pl": "Nie udało się odczytać pytań:",
+      "en": "Could not read the questions:"
+    },
+    {
+      "id": "dodaj-pytanie",
+      "pl": "Dodaj pytanie",
+      "en": "Add question"
+    },
+    {
+      "id": "kopia-zapasowa-import",
+      "pl": "⚙ Kopia zapasowa / import",
+      "en": "⚙ Backup / import"
+    },
+    {
+      "id": "zapisz-kopie",
+      "pl": "Zapisz kopię",
+      "en": "Save backup"
+    },
+    {
+      "id": "szukaj-tekst-tag-zrodlo",
+      "pl": "Szukaj: tekst, tag, źródło",
+      "en": "Search: text, tag, source"
+    },
+    {
+      "id": "dzial",
+      "pl": "Dział",
+      "en": "Section"
+    },
+    {
+      "id": "nazwy-poziomow-skali",
+      "pl": "Nazwy poziomów skali",
+      "en": "Scale level names"
+    },
+    {
+      "id": "zapisz-nazwy-skali",
+      "pl": "Zapisz nazwy skali",
+      "en": "Save scale names"
+    },
+    {
+      "id": "wklej-propozycje-lub-kopie-json",
+      "pl": "Wklej propozycje lub kopię JSON",
+      "en": "Paste proposals or a JSON backup"
+    },
+    {
+      "id": "podglad-importu",
+      "pl": "Podgląd importu",
+      "en": "Import preview"
+    },
+    {
+      "id": "pytan-propozycje-wymagaja-zatwierdzenia",
+      "pl": "pytań · propozycje wymagają zatwierdzenia",
+      "en": "questions · proposals need approval"
+    },
+    {
+      "id": "edytuj",
+      "pl": "Edytuj",
+      "en": "Edit"
+    },
+    {
+      "id": "zatwierdz",
+      "pl": "Zatwierdź",
+      "en": "Approve"
+    },
+    {
+      "id": "usun",
+      "pl": "Usuń",
+      "en": "Delete"
+    },
+    {
+      "id": "doprecyzuj-filtr-pokazano-200-pytan",
+      "pl": "Doprecyzuj filtr — pokazano 200 pytań.",
+      "en": "Narrow the filter — 200 questions shown."
+    },
+    {
+      "id": "dzialy-i-poddzialy",
+      "pl": "Działy i poddziały",
+      "en": "Sections and subsections"
+    },
+    {
+      "id": "usun-pusty",
+      "pl": "Usuń pusty",
+      "en": "Delete empty"
+    },
+    {
+      "id": "nazwa-dzialu",
+      "pl": "Nazwa działu",
+      "en": "Section name"
+    },
+    {
+      "id": "poddzial-nalezy-do",
+      "pl": "Poddział należy do",
+      "en": "Subsection belongs to"
+    },
+    {
+      "id": "brak-dzial-glowny",
+      "pl": "Brak — dział główny",
+      "en": "None — main section"
+    },
+    {
+      "id": "zapisz-dzial",
+      "pl": "Zapisz dział",
+      "en": "Save section"
+    },
+    {
+      "id": "zdanie-en-nie-ok",
+      "pl": "Zdanie EN — Nie OK",
+      "en": "EN sentence — Not OK"
+    },
+    {
+      "id": "wroc-do-bazy",
+      "pl": "Wróć do bazy",
+      "en": "Back to library"
+    },
+    {
+      "id": "pytanie-w-aplikacji",
+      "pl": "Pytanie w aplikacji",
+      "en": "Question in the app"
+    },
+    {
+      "id": "typ-odpowiedzi",
+      "pl": "Typ odpowiedzi",
+      "en": "Answer type"
+    },
+    {
+      "id": "ok-nie-ok-n-a",
+      "pl": "OK / Nie OK / N/A",
+      "en": "OK / Not OK / N/A"
+    },
+    {
+      "id": "pomiar-zawsze-nowa-wartosc",
+      "pl": "Pomiar — zawsze nowa wartość",
+      "en": "Measurement — always a new value"
+    },
+    {
+      "id": "zrodlo",
+      "pl": "Źródło",
+      "en": "Source"
+    },
+    {
+      "id": "wartosci-pomiaru-nigdy-nie-zapisujemy",
+      "pl": "Wartości pomiaru nigdy nie zapisujemy jako domyślnej.",
+      "en": "A measured value is never saved as a default."
+    },
+    {
+      "id": "powody-nie-ok",
+      "pl": "Powody Nie OK",
+      "en": "Not OK reasons"
+    },
+    {
+      "id": "gotowe-zdanie-en",
+      "pl": "Gotowe zdanie EN",
+      "en": "Ready EN sentence"
+    },
+    {
+      "id": "usun-powod",
+      "pl": "Usuń powód",
+      "en": "Delete reason"
+    },
+    {
+      "id": "dodaj-powod",
+      "pl": "Dodaj powód",
+      "en": "Add reason"
+    },
+    {
+      "id": "zapisz-pytanie",
+      "pl": "Zapisz pytanie",
+      "en": "Save question"
+    },
+    {
+      "id": "formularz-wg-wzoru-firmy-tylko",
+      "pl": "Formularz wg wzoru firmy — tylko do odczytu. Konfiguracja 024 pozostaje w osobnym module.",
+      "en": "Company template form — read only. The 024 configuration stays in a separate module."
+    },
+    {
+      "id": "formularz-wbudowany",
+      "pl": "Formularz wbudowany",
+      "en": "Built-in form"
+    },
+    {
+      "id": "do-konfiguracji",
+      "pl": "Do konfiguracji",
+      "en": "To configure"
+    },
+    {
+      "id": "pytan",
+      "pl": "pytań",
+      "en": "questions"
+    },
+    {
+      "id": "tytul-raportu-en",
+      "pl": "Tytuł raportu EN",
+      "en": "EN report title"
+    },
+    {
+      "id": "skopiuj-wybor-i-ustawienia-z",
+      "pl": "Skopiuj wybór i ustawienia z inspekcji",
+      "en": "Copy selection and settings from an inspection"
+    },
+    {
+      "id": "skopiuj-wybor",
+      "pl": "Skopiuj wybór",
+      "en": "Copy selection"
+    },
+    {
+      "id": "przywroc-wybor-wbudowany",
+      "pl": "Przywróć wybór wbudowany",
+      "en": "Restore built-in selection"
+    },
+    {
+      "id": "podglad-tekstu-raportu",
+      "pl": "Podgląd tekstu raportu",
+      "en": "Report text preview"
+    },
+    {
+      "id": "zapisz-wybor-inspekcji",
+      "pl": "Zapisz wybór inspekcji",
+      "en": "Save inspection selection"
+    },
+    {
+      "id": "domyslna-odpowiedz",
+      "pl": "Domyślna odpowiedź",
+      "en": "Default answer"
+    },
+    {
+      "id": "bez-domyslnej",
+      "pl": "Bez domyślnej",
+      "en": "No default"
+    },
+    {
+      "id": "nie-ok",
+      "pl": "Nie OK",
+      "en": "Not OK"
+    },
+    {
+      "id": "zdania-raportu-tylko-dla-tej",
+      "pl": "Zdania raportu tylko dla tej inspekcji",
+      "en": "Report sentences only for this inspection"
+    },
+    {
+      "id": "wlacz-nadpisanie-en",
+      "pl": "Włącz nadpisanie EN",
+      "en": "Enable EN override"
+    },
+    {
+      "id": "wstecz",
+      "pl": "Wstecz",
+      "en": "Back"
+    },
+    {
+      "id": "edytor-inspekcji",
+      "pl": "Edytor inspekcji",
+      "en": "Inspection editor"
+    },
+    {
+      "id": "baza-pytan",
+      "pl": "Baza pytań",
+      "en": "Question library"
+    },
+    {
+      "id": "inspekcje",
+      "pl": "Inspekcje",
+      "en": "Inspections"
+    },
+    {
+      "id": "dzis",
+      "pl": "Dziś:",
+      "en": "Today:"
+    },
+    {
+      "id": "zapisano-pytanie",
+      "pl": "Zapisano pytanie.",
+      "en": "Question saved."
+    },
+    {
+      "id": "zapisano-wybor-formularze-nie-zostaly",
+      "pl": "Zapisano wybór. Formularze nie zostały zmienione.",
+      "en": "Selection saved. Forms were not changed."
+    },
+    {
+      "id": "odrzucic-niezapisany-wybor",
+      "pl": "Odrzucić niezapisany wybór?",
+      "en": "Discard the unsaved selection?"
+    },
+    {
+      "id": "podglad-propozycji-bez-zapisu-i",
+      "pl": "Podgląd propozycji — bez zapisu i przypisań",
+      "en": "Proposal preview — no saving or assignment"
+    },
+    {
+      "id": "podobne-duplikat-zaznacz-tylko-swiadomie",
+      "pl": "PODOBNE / DUPLIKAT — zaznacz tylko świadomie",
+      "en": "SIMILAR / DUPLICATE — select only on purpose"
+    },
+    {
+      "id": "kopia",
+      "pl": "Kopia:",
+      "en": "Backup:"
+    },
+    {
+      "id": "pytan-2",
+      "pl": "pytań,",
+      "en": "questions,"
+    },
+    {
+      "id": "dzialow",
+      "pl": "działów",
+      "en": "sections"
+    },
+    {
+      "id": "zastap-cala-baze-tego-konta",
+      "pl": "Zastąp całą bazę tego konta (inaczej scalaj ID, obecne dane wygrywają)",
+      "en": "Replace this account's whole library (otherwise merge by ID, current data wins)"
+    },
+    {
+      "id": "zatwierdz-import-kopii",
+      "pl": "Zatwierdź import kopii",
+      "en": "Approve backup import"
+    },
+    {
+      "id": "najpierw-dodaj-dzial",
+      "pl": "Najpierw dodaj dział.",
+      "en": "Add a section first."
+    },
+    {
+      "id": "zatwierdzono-wybierz-pytanie-w-zakladce",
+      "pl": "Zatwierdzono. Wybierz pytanie w zakładce Inspekcje — nie przypisano go automatycznie.",
+      "en": "Approved. Choose the question in the Inspections tab — it was not assigned automatically."
+    },
+    {
+      "id": "usunac-pytanie-uzyte-w",
+      "pl": "Usunąć pytanie? Użyte w {uses} inspekcjach. Usuniemy je z tych wyborów.",
+      "en": "Delete question? Used in {uses} inspections. It will be removed from those selections."
+    },
+    {
+      "id": "najpierw-przenies-pytania-i-poddzialy",
+      "pl": "Najpierw przenieś pytania i poddziały.",
+      "en": "Move the questions and subsections first."
+    },
+    {
+      "id": "usunac-pusty-dzial",
+      "pl": "Usunąć pusty dział?",
+      "en": "Delete the empty section?"
+    },
+    {
+      "id": "zastapic-niezapisany-wybor",
+      "pl": "Zastąpić niezapisany wybór?",
+      "en": "Replace the unsaved selection?"
+    },
+    {
+      "id": "wybrana-inspekcja-nie-ma-wlasnego",
+      "pl": "Wybrana inspekcja nie ma własnego zestawu.",
+      "en": "The chosen inspection has no own set."
+    },
+    {
+      "id": "skopiowano-pytania-i-ich-ustawienia",
+      "pl": "Skopiowano pytania i ich ustawienia. Tytuł/nazwa pliku pozostają dla bieżącej inspekcji. Zapisz wybór.",
+      "en": "Questions and their settings copied. Title/file name stay for the current inspection. Save the selection."
+    },
+    {
+      "id": "przywrocic-wybor-i-metadane-wbudowane",
+      "pl": "Przywrócić wybór i metadane wbudowane? Wspólne edycje treści pytań pozostaną.",
+      "en": "Restore the built-in selection and metadata? Shared edits of question text stay."
+    },
+    {
+      "id": "propozycji-nie-przypisano-do-inspekcji",
+      "pl": "propozycji. Nie przypisano do inspekcji.",
+      "en": "proposals. Not assigned to inspections."
+    },
+    {
+      "id": "zastapic-cala-baze-biezacego-konta",
+      "pl": "Zastąpić całą bazę bieżącego konta?",
+      "en": "Replace the current account's whole library?"
+    },
+    {
+      "id": "zaimportowano-baze",
+      "pl": "Zaimportowano bazę.",
+      "en": "Library imported."
+    },
+    {
+      "id": "zapisano-kopie-pytan",
+      "pl": "Zapisano kopię pytań.",
+      "en": "Question backup saved."
+    },
+    {
+      "id": "przygotowano-kopie-json-sprawdz-plik",
+      "pl": "Przygotowano kopię JSON. Sprawdź plik.",
+      "en": "JSON backup prepared. Check the file."
+    }
+  ]
+}
