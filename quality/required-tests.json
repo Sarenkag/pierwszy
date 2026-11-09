@@ -67,6 +67,9 @@
       "file": "app/tests/vantify-plan.test.cjs"
     },
     {
+      "file": "app/tests/bramka-artefakty.test.cjs"
+    },
+    {
       "file": "app/tests/ppm-78.test.cjs"
     },
     {
@@ -123,6 +126,11 @@
     {
       "file": "app/tests/klocek-inspekcji-ui-check.cjs",
       "passMarker": "KLOCEK INSPEKCJI UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/checkbox-ui-check.cjs",
+      "passMarker": "CHECKBOX UI PASS",
       "timeoutSec": 900
     },
     {
