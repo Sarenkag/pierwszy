@@ -1490,7 +1490,10 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     // najpierw notatki; gdy ich usunięcie się nie uda, szkic zostaje, formularz wraca i nie piszemy „Wyczyszczono”
     (window.OESTNotatki ? OESTNotatki.clear(k) : Promise.resolve()).then(function () { return dropDraft(k).then(function () {
       if (cur.ppm && PPM && PPM.setStage) { var r = PPM.stage(cur.ppm); if (!r || r.s === "prog" || r.s === "hold") PPM.setStage(cur.ppm, null); }
-      openForm(code); if (cur.ppm && PPM && PPM.setStage) { var r2 = PPM.stage(cur.ppm); if (r2 && r2.s === "prog" && !r2.manual) PPM.setStage(cur.ppm, null); }
+      // pusty formularz po otwarciu ustawia „W trakcie” (openForm i odroczone liczniki odpowiedzi z renderChecks): po wyczyszczeniu klocek ma być
+      // „Nie rozpoczęta”, więc cofamy to od razu i jeszcze raz po odroczonym liczeniu (test: app/tests/czyszczenie-ui-check.cjs)
+      var t0 = cur.ppm, unstart = function () { if (t0 && cur.ppm === t0 && PPM && PPM.setStage) { var r2 = PPM.stage(t0); if (r2 && r2.s === "prog" && !r2.manual) { PPM.setStage(t0, null); renderPpmBar(); } } };
+      openForm(code); unstart(); setTimeout(unstart, 0);
       renderPpmBar(); $("formHint").textContent = T("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
     }); }, function () {
       openForm(code); OESTPrzycisk.alert(T("Nie udało się usunąć notatek tej inspekcji, więc jej nie wyczyściłem. Spróbuj jeszcze raz.", "Could not delete this inspection’s notes, so it was not cleared. Try again.")); // okienko: podpowiedź pod formularzem nadpisuje wczytany szkic
@@ -2256,8 +2259,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       });
     });
   }
-  // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 7 dniach
-  // przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
+  // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 30 dniach
+  // od wyczyszczenia (Grzegorz 08/11/2026: „niech trzyma przez miesiąc”; liczone od chwili, gdy zniknęły z inspekcji) przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
   function releaseUnused() {
     if (!Zd || !Zd.release) return;
     dbP.then(function (db) {
@@ -2272,7 +2275,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
           if (typeof v.zid === "string") ids.add(v.zid);
           Object.keys(v).forEach(function (k) { walk(v[k], depth + 1); });
         })(vals, 0);
-        return Zd.release(HOLD, ids, 7 * 864e5);
+        return Zd.release(HOLD, ids, 30 * 864e5);
       });
     }).catch(function () {});
   }
