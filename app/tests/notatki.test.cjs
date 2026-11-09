@@ -5,6 +5,10 @@ function load(extra){const w=Object.assign({notatkiPamiecTestowa:true,localStora
   for(const f of ['model/model.js','notatki/notatki.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly',f),'utf8'),ctx);return w;}
 test('notatki: słowa branżowe – PL po rozpoznaniu mowy, EN po tłumaczeniu',()=>{const N=load().OESTNotatki;
   assert.equal(N.fix('kran ma 54 stopnie celsjusza, zimna 17,8 stopni','pl'),'kran ma 54 °C, zimna 17,8 °C');
+  // kąt to nie temperatura (przegląd Codex #108)
+  assert.equal(N.fix('Klapa AOV otwiera się pod kątem 90 stopni.','pl'),'Klapa AOV otwiera się pod kątem 90 stopni.');
+  assert.equal(N.fix('Zawór obrócony o 45 stopni. Woda w kranie 54 stopnie.','pl'),'Zawór obrócony o 45 stopni. Woda w kranie 54 °C.');
+  assert.equal(N.fix('Klapa 90 stopni celsjusza','pl'),'Klapa 90 °C');
   assert.equal(N.fix('a o w na trzynastce nie działa, de be w piwnicy','pl'),'AOV na trzynastce nie działa, DB w piwnicy');
   assert.equal(N.fix('Słowa jak kaowiec zostają','pl'),'Słowa jak kaowiec zostają');
   assert.equal(N.fix('The insulator in the elevator room is broken. Insulators checked.','en'),'The isolator in the lift room is broken. Isolators checked.');

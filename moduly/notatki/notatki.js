@@ -13,7 +13,12 @@
   // PL: po rozpoznaniu mowy, przed tłumaczeniem. EN: po tłumaczeniu i po modelu. Dopisuj tu kolejne pary.
   var WORDS = {
     pl: [
-      [/(\d+(?:[.,]\d+)?)\s*(?:stopni(?:e|a)?|st\.)\s*(?:celsjusza)?(?![\p{L}])/giu, '$1 °C'],
+      // „stopnie” → °C tylko przy temperaturze: „celsjusza” albo słowo o temperaturze w tym samym zdaniu; kąt („pod kątem 90 stopni”) zostaje
+      [/(\d+(?:[.,]\d+)?)\s*(?:stopni(?:e|a)?|st\.)(\s*celsjusza)?(?![\p{L}])/giu, function (m, n, c, at, all) {
+        if (c) return n + ' °C';
+        var a = all.lastIndexOf('.', at - 1), b2 = all.slice(at).search(/[.!?;\n]/), zd = all.slice(a + 1, b2 < 0 ? all.length : at + b2 + 1).toLowerCase();
+        return /temperatur|ciepł|zimn|gorąc|wod|kran|termometr|cwu|zwu|°c/.test(zd) && !/kąt|obr[oó]t|obróc|nachyl/.test(zd) ? n + ' °C' : m;
+      }],
       [/(^|[^\p{L}])a\s?o\s?w(?![\p{L}])/giu, '$1AOV'],
       [/(^|[^\p{L}])de\s?be(?![\p{L}])/giu, '$1DB'],
       [/(^|[^\p{L}])a\s?h\s?u(?![\p{L}])/giu, '$1AHU'],

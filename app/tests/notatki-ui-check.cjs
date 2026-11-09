@@ -27,7 +27,7 @@ function fakePhone() {
     HandoverTools: { startAudio: async () => ({}), stopAudio: async () => ({ data: wav }), transcribe: async () => { const t = SAID[said % SAID.length]; said++; sessionStorage.setItem('nt.said', said); return { text: t }; } },
     Translate: { plToEn: async ({ text }) => { if (window.__ntSlow) await new Promise(r => setTimeout(r, window.__ntSlow)); return { text: /strefie/.test(text) ? EN[1] : EN[0] }; } },
     // model pobrany: zdanie zostaje jak z tłumacza; przy łączeniu notatek gubi „54” (ostrzeżenie musi się pojawić – przegląd Codex #108)
-    OESTModel: { status: async () => ({ supported: true, ready: true, bytes: 1 }), generate: async ({ prompt }) => /^Combine/.test(prompt)
+    OESTModel: { status: async () => ({ supported: true, ready: true, bytes: 1 }), generate: async ({ prompt }) => (window.__mdSlow && !/^Combine/.test(prompt) ? await new Promise(r => setTimeout(r, window.__mdSlow)) : 0, /^Combine/.test(prompt))
       ? { text: 'The isolator next to the AOV on level 13 has a cracked gland. The panel shows an error in zone 4.' }
       : { text: (prompt.split('Note:\n')[1] || '').split('\n\n')[0] } }
   };
@@ -47,9 +47,12 @@ function fakePhone() {
     const count = () => pg.locator('#ntN').textContent();
     const stage = () => pg.evaluate(i => { const a = JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}'); return a[i] ? a[i].s : 'none'; }, ID);
     const open = async () => { await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => window.OESTNotatki && document.querySelector('#ntRec')); await pg.waitForTimeout(1500); };
-    const record = async n => {
+    const record = async (n, wstecz) => {
       await pg.locator('#ntRec').click(); await pg.waitForSelector('.oest-rec'); await pg.waitForTimeout(1200);
-      await pg.locator('.oest-rec button').click();
+      if (wstecz) { // Wstecz telefonu w trakcie nagrywania = Zakończ i zapis, strona zostaje (przegląd Codex #108)
+        const u = pg.url(); R.wsteczPrzyNagrywaniu = await pg.evaluate(() => OESTWstecz.wstecz()); await pg.waitForTimeout(300);
+        check(pg.url() === u && R.wsteczPrzyNagrywaniu === 'okno', 'Wstecz przy nagrywaniu opuścił inspekcję: ' + R.wsteczPrzyNagrywaniu + ' ' + pg.url());
+      } else await pg.locator('.oest-rec button').click();
       await pg.waitForFunction(n => document.querySelector('#ntN').textContent === String(n), n, { timeout: 10000 });
       await pg.waitForFunction(() => !document.querySelector('.nt-tag.g'), null, { timeout: 10000 }).catch(() => {});
     };
@@ -93,7 +96,7 @@ function fakePhone() {
     await close();
     // 4. druga notatka: tłumacz zgubił „12” → „sprawdź liczby” + ostrzeżenie w edycji
     log('4. druga notatka:');
-    await record(2);
+    await record(2, true);
     await popup(); a = await notes(); R.po2 = a;
     check(a.length === 2 && /sprawdź liczby/.test(a[1].tag), 'druga notatka bez ostrzeżenia o liczbie: ' + JSON.stringify(a[1]));
     await pg.locator('.nt-pop [data-nt=edit]').nth(1).click(); await pg.waitForSelector('.nt-pop .nt-warn');
@@ -138,6 +141,13 @@ function fakePhone() {
     await pg.locator('.nt-pop [data-nt=del]').nth(1).click(); await pg.waitForTimeout(400);
     check((await notes()).length === 1, 'drugie stuknięcie nie usunęło notatki');
     await close(); check(await count() === '1', 'licznik po usunięciu ' + await count());
+    // trwające „✨ Ułóż” przejęte przez „Połącz notatki” (jedna notatka = bez modelu, od razu): „Ułóż” nie zostaje wyłączony (przegląd Codex #108)
+    await pg.locator('#komentarz').fill('Second check.');
+    await pg.evaluate(() => { window.__mdSlow = 1500; }); await pg.locator('#mdRun').click(); await pg.waitForTimeout(100);
+    check(await pg.locator('#mdRun').isDisabled(), 'warunek testu: „✨ Ułóż” nie ruszył');
+    await pg.locator('#ntJoin').click(); await pg.waitForSelector('#mdBox:not([hidden])'); await pg.waitForTimeout(1800); await pg.evaluate(() => { window.__mdSlow = 0; });
+    check(!(await pg.locator('#mdRun').isDisabled()), '„✨ Ułóż” wyłączony na stałe po przejęciu propozycji przez notatki');
+    check(!/Rewrite|Second check\.$/.test(await pg.locator('#mdOut').inputValue()) && /cracked gland|zone/.test(await pg.locator('#mdOut').inputValue()), 'spóźniony wynik „Ułóż” podmienił propozycję z notatek: ' + await pg.locator('#mdOut').inputValue());
     // 8. EN: te same elementy okienka
     log('8. EN: te same el');
     await pg.evaluate(() => localStorage.setItem('oest.lang', 'en')); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);

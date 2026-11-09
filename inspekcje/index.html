@@ -1994,7 +1994,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       }).then(function (r) {
         var out = r.out;
         if (tok !== formSeq) return;
-        mdSeq++; mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = r.miss.length ? T("⚠ W propozycji brakuje: ", "⚠ Missing in the suggestion: ") + r.miss.join(", ") + T(" — sprawdź.", " — check.") : "";
+        mdSeq++; $("mdRun").disabled = false; /* trwające „✨ Ułóż” unieważnione – przycisk wraca */ mdMode = "notes"; mdInput = $("komentarz").value.trim(); $("mdOut").value = out; $("mdBox").hidden = false; $("mdWarn").textContent = r.miss.length ? T("⚠ W propozycji brakuje: ", "⚠ Missing in the suggestion: ") + r.miss.join(", ") + T(" — sprawdź.", " — check.") : "";
         $("trHint").textContent = T("Propozycja z notatek gotowa — sprawdź i stuknij „Wstaw do komentarza”. Nic nie wstawiam samo.", "Suggestion from the notes is ready — check it and tap “Insert into comment”. Nothing is inserted automatically.");
       }).catch(function (e) { $("trHint").textContent = gErr(e); }).then(function () { b.disabled = false; });
     });
