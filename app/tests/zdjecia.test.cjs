@@ -338,3 +338,37 @@ test('punkt 8 z prawdziwym adapterem Google: 5 zdjęć, 2 naraz, wszystkie wysł
   assert.strictEqual(peak, 2, 'dokładnie 2 wysyłki naraz');
   assert.ok(checkedBusy);
 });
+
+// Druga uwaga z przeglądu PR #114: po przerwanej wysyłce (upTry) szukanie pliku na Dysku też szło parami, a adapter puszcza naraz tylko wysyłki.
+test('punkt 8 z prawdziwym adapterem Google: ponowna próba po przerwaniu (3 zdjęcia z upTry) bez GOOGLE_BUSY i bez duplikatów', async () => {
+  const { createGoogle } = require('../www/settings-google.js');
+  const onDrive = new Map(); let n = 0, inFlight = 0, peak = 0;
+  const G = createGoogle({ account: () => ({ email: 'me@example.com' }), login: async () => ({ email: 'me@example.com', token: 'T' }),
+    fetch: async (url, opts) => {
+      inFlight++; peak = Math.max(peak, inFlight);
+      try {
+        await new Promise(r => setTimeout(r, 3));
+        let body;
+        if (/upload\/drive/.test(url)) { const m = /"oestPhoto":"([\w-]+)"/.exec(await new Response(opts.body).text()); body = { id: 'file' + (++n), name: 'x' }; onDrive.set(m[1], body.id); }
+        else if (/appProperties/.test(decodeURIComponent(url))) { const id = /value='([\w-]+)'/.exec(decodeURIComponent(url))[1]; body = { files: onDrive.has(id) ? [{ id: onDrive.get(id), name: 'x' }] : [] }; }
+        else if (/\?q=/.test(url)) body = { files: [] };
+        else body = { id: 'fold' + (++n), name: 'f' };
+        return { ok: true, status: 200, json: async () => body };
+      } finally { inFlight--; }
+    } });
+  await G.connect('drive');
+  const drive = { ensureFolder: (name, parent) => G.ensureFolder(name, parent), upload: (p, name, blob, props) => G.uploadFile(p, name, blob, props),
+    find: (p, name, props) => G.findFile(p, name, props), remove: id => G.removeFile(id) };
+  const { store, rows } = fakeStore();
+  for (let i = 0; i < 3; i++) await store.save({ size: MB, type: 'image/jpeg' }, { category: 'ATS', code: 'ATS-' + i, when: new Date(2026, 10, 9, 3, i) });
+  // stan po przerwanej wysyłce: wszystkie mają upTry, pierwsze dwa doszły na Dysk, apka nie zapisała driveId
+  const ids = [...rows.keys()];
+  for (const id of ids) rows.set(id, { ...rows.get(id), upTry: true });
+  onDrive.set(ids[0], 'old0'); onDrive.set(ids[1], 'old1');
+  const res = await store.sync(drive);
+  assert.strictEqual(res.sent, 3);
+  assert.deepStrictEqual(ids.map(id => rows.get(id).driveId), ['old0', 'old1', onDrive.get(ids[2])], 'dwa znalezione, trzecie wysłane');
+  assert.strictEqual(onDrive.size, 3, 'bez duplikatów');
+  assert.ok(ids.every(id => rows.get(id).upTry === false));
+  assert.ok(peak <= 2);
+});

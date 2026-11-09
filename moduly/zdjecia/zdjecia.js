@@ -228,15 +228,15 @@
         // Przerwana wysyłka (audyt 06/11/2026): plik mógł już trafić na dysk, zanim apka zapisała driveId (zamknięcie apki,
         // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
         // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
-        async function one(r, parent) {
-          var props = { oestPhoto: r.id }, up = null;
-          if (r.upTry && drive.find) up = await drive.find(parent, '', props); // tylko po id zdjęcia (nazwa nie musi być unikalna i bywa długa)
+        var orphans = [];
+        async function one(r, parent, up) {
+          var props = { oestPhoto: r.id };
           if (!up) {
             if (!r.upTry) { var mark = await deps.db.get(r.id); if (!mark) return; mark.upTry = true; await deps.db.put(mark); }
             up = await drive.upload(parent, r.name, r.blob, props);
           }
           var fresh = await deps.db.get(r.id);
-          if (!fresh) { try { await drive.remove(up.id); } catch (e) {} return; } // zdjęcie usunięte w trakcie: bez osieroconego pliku na dysku
+          if (!fresh) { orphans.push(up.id); return; } // zdjęcie usunięte w trakcie: plik zdejmowany z Dysku po parze (bez osieroconego pliku)
           fresh.driveId = up.id; fresh.upTry = false; fresh.synced = new Date(deps.now()).toISOString();
           await deps.db.put(fresh); sent++; emit();
         }
@@ -246,9 +246,14 @@
         for (var i = 0; i < all.length; i += UPLOAD_AT_ONCE) {
           if (owner() !== who) return { skipped: 'account', sent: sent }; // zmiana konta w trakcie: reszta czeka
           if (!allowed()) return { skipped: 'wifi', sent: sent }; // utrata Wi-Fi w trakcie: reszta czeka
-          var batch = all.slice(i, i + UPLOAD_AT_ONCE), parents = [];
-          for (var j = 0; j < batch.length; j++) parents.push(await parentOf(batch[j]));
-          var res = await Promise.allSettled(batch.map(function (r, k) { return one(r, parents[k]); }));
+          // foldery i szukanie po przerwanej wysyłce (upTry) po kolei – adapter Google puszcza naraz tylko same wysyłki plików
+          var batch = all.slice(i, i + UPLOAD_AT_ONCE), parents = [], found = [];
+          for (var j = 0; j < batch.length; j++) {
+            parents.push(await parentOf(batch[j]));
+            found.push(batch[j].upTry && drive.find ? await drive.find(parents[j], '', { oestPhoto: batch[j].id }) : null); // tylko po id zdjęcia (nazwa nie musi być unikalna i bywa długa)
+          }
+          orphans = []; var res = await Promise.allSettled(batch.map(function (r, k) { return one(r, parents[k], found[k]); }));
+          for (var o = 0; o < orphans.length; o++) { try { await drive.remove(orphans[o]); } catch (e) {} }
           await enforce(drive);
           for (var e = 0; e < res.length; e++) if (res[e].status === 'rejected') throw res[e].reason;
         }
