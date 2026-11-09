@@ -100,6 +100,9 @@
       "file": "app/tests/notatki.test.cjs"
     },
     {
+      "file": "app/tests/teksty.test.cjs"
+    },
+    {
       "file": "app/tests/moduly-zasady.test.cjs"
     }
   ],
