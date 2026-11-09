@@ -226,6 +226,11 @@
       "file": "app/tests/notatki-ui-check.cjs",
       "passMarker": "notatki-ui-check PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/czyszczenie-ui-check.cjs",
+      "passMarker": "CZYSZCZENIE PASS",
+      "timeoutSec": 900
     }
   ],
   "allowedSkips": []
