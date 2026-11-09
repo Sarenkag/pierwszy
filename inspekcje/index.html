@@ -2206,7 +2206,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // dopiero do raportu i modelu (wcześniej każde zdjęcie trzymało ok. 11 MB pamięci, przy Flushing TB setki MB).
   // aparat / edytor: zdjęcie od razu w największym rozmiarze, jaki moduł zdjęć zapisze (bez JPEG 12 MP po edycji)
   // kind podany = zdjęcie z aparatu zmniejsza się w tle już w czasie podglądu (OESTZdjecia.prepare), zapis po „OK” bierze gotowy wynik
-  function camOpts(kind) { var Z = window.OESTZdjecia; return { max: Z && Z.maxPx ? Z.maxPx() : 0, prepare: kind && Z && Z.prepare ? function (b) { Z.prepare(b, kind); } : null }; }
+  function camOpts(kind) { var Z = window.OESTZdjecia; return { max: Z && Z.maxPx ? Z.maxPx(kind) : 0, prepare: kind && Z && Z.prepare ? function (b) { Z.prepare(b, kind); } : null }; }
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
   // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
   if ($("photoSize") && Zd && Zd.sizeSwitch) $("photoSize").innerHTML = Zd.sizeSwitch();

@@ -76,6 +76,13 @@
     if (p === PRESETS.standard && KINDS[kind]) p = KINDS[kind];
     return { max: p.max, q: p.q };
   }
+  // największy dłuższy bok, jaki moduł zapisze (0 = bez limitu). Z rodzajem ('formularz' | 'ogolne' | 'punkt' | 'dowod'): dla tego rodzaju,
+  // ogólne wg przełącznika Duże/Średnie/Małe; bez rodzaju: największy ze wszystkich (np. edytor bez kontekstu).
+  function maxFor(preset, general, kind) {
+    var p = PRESETS[preset] || PRESETS.standard; if (p !== PRESETS.standard) return p.max || 0;
+    if (kind) return limits(preset, kind === 'ogolne' ? generalKind(general) : KINDS[kind] ? kind : '').max || 0;
+    return Object.keys(KINDS).reduce(function (m, k) { return Math.max(m, KINDS[k].max); }, 0);
+  }
   // te same obliczenia w głównym wątku i w Workerze (kod funkcji trafia do Workera tekstem – jedno źródło)
   function fitTo(w, h, p) {
     var s = p.max ? Math.min(1, p.max / Math.max(w, h)) : 1;
@@ -119,8 +126,14 @@
   }
 
   /* Magazyn + synchronizacja. deps: { db: {all, get, put, del}, settings: {load, save}, compress(file, preset, kind), wifi(), now() } */
+  var ENFORCE_MS = 1500, UPLOAD_AT_ONCE = 2;
   function createStore(deps) {
-    var syncing = null, enforcing = Promise.resolve(), listeners = [], savedListeners = [];
+    var syncing = null, enforcing = Promise.resolve(), listeners = [], savedListeners = [], timer = null;
+    var later = deps.later || function (fn, ms) { var t = setTimeout(fn, ms); if (t && t.unref) t.unref(); return function () { clearTimeout(t); }; };
+    function laterEnforce() {
+      if (timer) timer(); // kolejne zdjęcie w serii przesuwa przegląd
+      timer = later(function () { timer = null; enforcing = enforcing.then(function () { return enforce(null); }).catch(function () {}).then(function () { emit(); }); }, ENFORCE_MS);
+    }
     function emit(list) { (list || listeners).forEach(function (f) { try { f(); } catch (_) {} }); }
     // każde konto ma osobne zdjęcia i osobny stan Dysku (inne konto na tym samym telefonie ich nie widzi)
     function owner() { return String((deps.owner && deps.owner()) || ''); }
@@ -140,8 +153,9 @@
         point: safe(info.point), kind: kind, hold: safe(info.hold),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
-      // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11)
-      enforcing = enforcing.then(function () { return enforce(null); }).catch(function () {}).then(function () { emit(); });
+      // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11).
+      // Audyt zdjęć, punkt 7 (zgoda 09/11/2026): przegląd folderu RAZ po serii zdjęć (ENFORCE_MS ciszy), nie po każdym zdjęciu.
+      emit(); laterEnforce();
       emit(savedListeners);
       var m = meta(rec); m.blob = out.blob; m.thumb = out.thumb || null; // ten sam plik (i miniatura) dla wołającego: bez drugiej kopii
       return m;
@@ -207,26 +221,36 @@
         }
         var all = (await mine()).filter(function (r) { return r.blob && !r.driveId; })
           .sort(function (a, b) { return a.created < b.created ? -1 : 1; });
-        for (var i = 0; i < all.length; i++) {
-          if (owner() !== who) return { skipped: 'account', sent: sent }; // zmiana konta w trakcie: reszta czeka
-          if (!allowed()) return { skipped: 'wifi', sent: sent }; // utrata Wi-Fi w trakcie: reszta czeka
-          var r = all[i], parent;
-          try { parent = await folderId(r.folder); }
-          catch (e) { if (s.rootId && /404/.test(String(e && e.message))) { s = setSettings({ rootId: '' }); folders = {}; parent = await folderId(r.folder); } else throw e; }
-          // Przerwana wysyłka (audyt 06/11/2026): plik mógł już trafić na dysk, zanim apka zapisała driveId (zamknięcie apki,
-          // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
-          // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
+        async function parentOf(r) {
+          try { return await folderId(r.folder); }
+          catch (e) { if (s.rootId && /404/.test(String(e && e.message))) { s = setSettings({ rootId: '' }); folders = {}; return folderId(r.folder); } throw e; }
+        }
+        // Przerwana wysyłka (audyt 06/11/2026): plik mógł już trafić na dysk, zanim apka zapisała driveId (zamknięcie apki,
+        // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
+        // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
+        async function one(r, parent) {
           var props = { oestPhoto: r.id }, up = null;
           if (r.upTry && drive.find) up = await drive.find(parent, '', props); // tylko po id zdjęcia (nazwa nie musi być unikalna i bywa długa)
           if (!up) {
-            if (!r.upTry) { var mark = await deps.db.get(r.id); if (!mark) continue; mark.upTry = true; await deps.db.put(mark); }
+            if (!r.upTry) { var mark = await deps.db.get(r.id); if (!mark) return; mark.upTry = true; await deps.db.put(mark); }
             up = await drive.upload(parent, r.name, r.blob, props);
           }
           var fresh = await deps.db.get(r.id);
-          if (!fresh) { try { await drive.remove(up.id); } catch (e) {} continue; } // zdjęcie usunięte w trakcie: bez osieroconego pliku na dysku
+          if (!fresh) { try { await drive.remove(up.id); } catch (e) {} return; } // zdjęcie usunięte w trakcie: bez osieroconego pliku na dysku
           fresh.driveId = up.id; fresh.upTry = false; fresh.synced = new Date(deps.now()).toISOString();
           await deps.db.put(fresh); sent++; emit();
+        }
+        // Audyt zdjęć, punkt 8 (zgoda 09/11/2026): po UPLOAD_AT_ONCE pliki naraz, od najstarszych. Foldery ustalane po kolei
+        // (bez podwójnych folderów), potem pliki pary równolegle. Błąd jednego: drugi kończy się i zapisuje driveId, potem błąd idzie dalej.
+        // Sprzątanie Dysku po każdej parze (pełny Dysk nie blokuje następnej próby) – nie po każdym pliku (punkt 7).
+        for (var i = 0; i < all.length; i += UPLOAD_AT_ONCE) {
+          if (owner() !== who) return { skipped: 'account', sent: sent }; // zmiana konta w trakcie: reszta czeka
+          if (!allowed()) return { skipped: 'wifi', sent: sent }; // utrata Wi-Fi w trakcie: reszta czeka
+          var batch = all.slice(i, i + UPLOAD_AT_ONCE), parents = [];
+          for (var j = 0; j < batch.length; j++) parents.push(await parentOf(batch[j]));
+          var res = await Promise.allSettled(batch.map(function (r, k) { return one(r, parents[k]); }));
           await enforce(drive);
+          for (var e = 0; e < res.length; e++) if (res[e].status === 'rejected') throw res[e].reason;
         }
         setSettings({ lastSync: new Date(deps.now()).toISOString() });
         return { sent: sent };
@@ -393,7 +417,8 @@
       });
     }
     // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
-    store.maxPx = function () { var pr = store.settings().preset, p = PRESETS[pr] || PRESETS.standard; if (p !== PRESETS.standard) return p.max || 0; return Object.keys(KINDS).reduce(function (m, k) { return Math.max(m, KINDS[k].max); }, 0); };
+    // maxPx(kind): dla danego rodzaju (jak w save()) – aparat zmniejsza zdjęcie w Javie najwyżej do tego rozmiaru (audyt zdjęć, punkt 2)
+    store.maxPx = function (kind) { var st = store.settings(); return maxFor(st.preset, st.general, kind); };
     // kind jak w save(): 'formularz' | 'ogolne' | 'punkt' | 'dowod'; trzymamy najwyżej 3 przygotowane zdjęcia (Powtórz zostawia stare)
     store.prepare = function (blob, kind) {
       if (!blob) return;
@@ -408,6 +433,6 @@
     return store;
   }
 
-  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, cleanSettings: cleanSettings, place: place, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
+  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, maxFor: maxFor, cleanSettings: cleanSettings, place: place, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
     search: search, createStore: createStore, createBrowser: createBrowser };
 });

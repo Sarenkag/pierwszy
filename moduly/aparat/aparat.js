@@ -7,7 +7,7 @@
  * („Editing is not supported for this image”), więc nie używamy OESTPhotoEdit. Działa offline, nic nie trafia do Galerii.
  *
  *   OESTAparat.take(opts?)  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
- *     opts.max = dłuższy bok (px), w jakim zdjęcie i tak zostanie zapisane; edycja zapisze je od razu w tym rozmiarze (bez = pełny)
+ *     opts.max = dłuższy bok (px), w jakim zdjęcie i tak zostanie zapisane; aparat (Java) i edycja nie schodzą poniżej (bez = pełny)
  *     opts.prepare(blob) = wołane, gdy podgląd pokazuje zdjęcie (także po edycji): apka może je już zmniejszać w tle
  *   OESTAparat.available()           → true w apce Android
  *   OESTAparat.edit(blob, opts?) → Promise<Blob|null>   (null = bez zmian / anulowane; opts.max jak wyżej)
@@ -225,7 +225,10 @@
       var C = root.Capacitor, cam = C && C.Plugins && C.Plugins.OESTKeys;
       if (!api.available() || !cam) return Promise.reject(new Error(T('Aparat działa w aplikacji na telefonie.', 'The camera works in the phone app.')));
       function shot() {
-        return cam.capture().then(function (r) {
+        // Audyt zdjęć, punkt 2 (zgoda Grzegorza 09/11/2026): Java zmniejsza 12 MP już przy odczycie z aparatu (dekodowanie 1/2, 1/4…),
+        // ale nigdy poniżej opts.max – do WebView idzie ok. 0,5 MB zamiast 1,3–6 MB. Data i obrót z EXIF zostają. Bez opts.max: pełne zdjęcie.
+        var max = opts && opts.max > 0 ? Math.round(opts.max) : 0;
+        return cam.capture(max ? { max: max } : {}).then(function (r) {
           return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error(T('Nie udało się odczytać zdjęcia.', 'Could not read the photo.')); return res.blob(); })
             .then(function (b) { return cam.release({ path: r.path }).catch(function () {}).then(function () { return b; }); },
               function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
