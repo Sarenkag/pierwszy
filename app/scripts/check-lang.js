@@ -17,7 +17,8 @@ const PLW = /(^|[\s>(„"])(nie|Nie|brak|Brak|jest|oraz|lub|przez|dla|czy|Czy|Da
 const PL = { test: v => PLD.test(v) || (/[a-z]/.test(v) && (!/^[\w.-]+$/.test(v) || /^[A-Z]/.test(v)) && PLW.test(v)) };
 const FN = new Set(['L', 'T', 'OESTT', 'hint', 'notice', 'setStatus', 'setBanner']);
 const DIRS = ['app/www', 'moduly', 'inspekcje'];
-const SKIP = /^app\/www\/inspekcje\/|(^|\/)(lib|templates|node_modules)\/|\.min\.js$|questions-proposals\.json$|Code\.gs|sw\.js$/;
+// app/www/wersja.js: generowana lista zmian (tytuły PR w oryginale, dane – nie napisy ekranu; klocek „O aplikacji”, 09/11/2026)
+const SKIP = /^app\/www\/inspekcje\/|(^|\/)(lib|templates|node_modules)\/|\.min\.js$|questions-proposals\.json$|^app\/www\/wersja\.js$|Code\.gs|sw\.js$/;
 
 function files() {
   const out = [];
