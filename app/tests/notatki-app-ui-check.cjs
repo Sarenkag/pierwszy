@@ -156,6 +156,18 @@ function fakePhone() {
     await pg.locator('#hoNotes .nt-n').waitFor(); // kolejny blok z grafiku, nowa zmiana (inne id)
     check(await until(s => OESTHandover.repository.get().then(d => d.shifts.some(x => !x.archived && x.id !== s)), sid1), 'Hand over: po zamknięciu zmiany nie otwarto kolejnej z grafiku');
     check(await until(() => document.querySelector('#hoNotes .nt-n').textContent === '1'), 'Hand over: notatka szybkiego wpisu zgubiona po zmianie id zmiany');
+    // notatki szybkiego wpisu należą do konta: inne konto na tym telefonie ich nie widzi; z trybu bez logowania przechodzą na konto (przegląd Codex #113)
+    const asAccount = async acc => { await pg.evaluate(a => localStorage.setItem('oest.account', JSON.stringify(a)), acc); await pg.goto(B + '/#home'); await pg.reload();
+      await pg.evaluate(() => { const d = new Date(), t = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); if (!OESTSettings.scheduleOn(t)) return OESTSettings.addSchedule({ effectiveFrom: '2026-01-01', anchor: t, kind: '4on4', start: '08:00', end: '20:00', endNextDay: false }); });
+      await pg.goto(B + '/#handover'); await pg.locator('#hoNotes .nt-n').waitFor(); await pg.waitForTimeout(400); return pg.locator('#hoNotes .nt-n').textContent(); };
+    const accA = await pg.evaluate(() => localStorage.getItem('oest.account'));
+    check(await asAccount({ provider: 'local', id: 'nt-other', email: 'other@example.com', first: 'Ann', last: 'B' }) === '0', 'Hand over: inne konto widzi notatki szybkiego wpisu');
+    check(await asAccount(JSON.parse(accA)) === '1', 'Hand over: po powrocie na konto brak jego notatki');
+    await asAccount({ provider: 'local', first: 'Greg', last: 'Sarna' }); // bez logowania (local-preview)
+    check(await pg.evaluate(() => OESTSettings.get().owner) === 'local-preview', 'test: konto bez logowania nie jest local-preview');
+    await record('#hoNotes', 1);
+    check(await asAccount({ provider: 'local', id: 'nt-new', email: 'new@example.com', first: 'Greg', last: 'Sarna' }) === '1', 'Hand over: notatka z trybu bez logowania nie przeszła na konto');
+    await pg.evaluate(a => localStorage.setItem('oest.account', a), accA); await pg.goto(B + '/#home'); await pg.reload();
     // zakończone zadanie (historia): notatki nadal do odsłuchu i odczytu, tylko do odczytu (przegląd Codex #113)
     await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     await record('#rxNotes', 1);
