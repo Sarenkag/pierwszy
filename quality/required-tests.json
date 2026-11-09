@@ -7,6 +7,9 @@
       "file": "app/tests/aktywa.test.cjs"
     },
     {
+      "file": "app/tests/aparat-java.test.cjs"
+    },
+    {
       "file": "app/tests/calendar-sync.test.cjs"
     },
     {
