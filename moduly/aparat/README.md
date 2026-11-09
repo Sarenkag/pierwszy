@@ -11,6 +11,8 @@ Przebieg: aparat systemowy → podgląd **✓ OK / ✏️ Edytuj / ↺ Powtórz*
 - Style w `aparat.js` (`CSS`, `<style id="oest-aparat-css">`), tylko tokeny z `theme.css` i `moduly/wyglad` (z wartościami zapasowymi). Logika rysowania, Cofnij i Zapisz bez zmian.
 - Test: `app/tests/edytor-zdjec-ui-check.cjs` (PL/EN, geometria, hierarchia, przepływ Anuluj/Cofnij/Zapisz).
 
+Test zasady: `app/tests/moduly-zasady.test.cjs` (M1 – każde pole „Zrób zdjęcie” w apce idzie przez `OESTAparat.take`, wtyczkę aparatu woła tylko `aparat.js`).
+
 ## Użycie
 ```js
 OESTAparat.take().then(blob => { if (blob) dodajZdjecie(blob); });   // zrobienie zdjęcia
