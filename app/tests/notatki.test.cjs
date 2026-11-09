@@ -60,3 +60,9 @@ test('notatki: przeniesiona do archiwum w trakcie zamiany na tekst zostaje w arc
   const N=load({OESTVoice:slow,Capacitor:{isNativePlatform:()=>true,Plugins:{}}}).OESTNotatki;
   await N.addAudio('draft_A|1','',{blob:{}});await N.move('draft_A|1','draft_A|1@2026-11-01');await new Promise(r=>setTimeout(r,80));
   assert.equal((await N.list('draft_A|1')).length,0);const a=await N.list('draft_A|1@2026-11-01');assert.equal(a.length,1);assert.equal(a[0].pl,'klapa zastawiona');});
+test('notatki: nagranie trafia do inspekcji, w której zaczęto nagrywać',async()=>{let opt=null;
+  const V={create:o=>(opt=o,{busy:false,transcribe:async()=>({text:'x'})}),holdButton(){}};
+  const N=load({OESTVoice:V,Capacitor:{isNativePlatform:()=>true,Plugins:{}}}).OESTNotatki;let scope='draft_A|1',saved=null;
+  N.bind({},{scope:()=>scope,ctx:()=>scope==='draft_A|1'?'AOV':'DB',onSaved:n=>{saved=n;}});
+  opt.onState(true);scope='draft_B|1';/* przejście do innej inspekcji w trakcie zatrzymywania */await opt.onAudio({blob:{},ms:1500});opt.onState(false);
+  assert.equal(saved.scope,'draft_A|1');assert.equal(saved.ctx,'AOV');assert.equal((await N.list('draft_B|1')).length,0);});

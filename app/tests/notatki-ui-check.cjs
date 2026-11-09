@@ -128,6 +128,7 @@ function fakePhone() {
     check(await pg.locator('#ntJoin').isVisible(), '„Połącz notatki w komentarz” niewidoczny');
     await pg.locator('#ntJoin').click(); await pg.waitForSelector('#mdBox:not([hidden])');
     R.ostrzezeniePolacz = await pg.locator('#mdWarn').textContent();
+    check(/12/.test(R.ostrzezeniePolacz), 'połączenie gubi ostrzeżenie o „12” zgubionym wcześniej przez tłumacza: „' + R.ostrzezeniePolacz + '”');
     check(/54/.test(R.ostrzezeniePolacz), 'połączenie modelem zgubiło „54”, a nie ma ostrzeżenia: „' + R.ostrzezeniePolacz + '”');
     check(await pg.locator('#komentarz').inputValue() === 'Checked all floors.', 'komentarz zmienił się bez „Wstaw”');
     await pg.locator('#mdUse').click(); await pg.waitForTimeout(300);

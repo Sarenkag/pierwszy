@@ -2012,8 +2012,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       var k = ntScope(), b = this, tok = formSeq; if (!k) return; b.disabled = true;
       $("trHint").textContent = T("Łączę notatki… (model na telefonie, pierwszy raz do ~20 s)", "Combining notes… (on-phone model, first time up to ~20 s)");
       OESTNotatki.combine(k, ntCtx()).then(function (out) {
-        // liczby z notatek, których brakuje w propozycji (model łączy je od nowa) – to samo ostrzeżenie co przy „✨ Ułóż”
-        return OESTNotatki.list(k).then(function (a) { return { out: out, miss: OESTNotatki.missing(a.map(function (n) { return n.en; }).filter(Boolean).join("\n"), out) }; });
+        // liczby z notatek (polski oryginał i EN), których brakuje w propozycji – także zgubione wcześniej przez tłumacza – to samo ostrzeżenie co przy „✨ Ułóż”
+        return OESTNotatki.list(k).then(function (a) { return { out: out, miss: OESTNotatki.missing(a.map(function (n) { return (n.pl || "") + "\n" + (n.en || ""); }).join("\n"), out) }; });
       }).then(function (r) {
         var out = r.out;
         if (tok !== formSeq) return;

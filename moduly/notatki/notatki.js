@@ -136,10 +136,10 @@
   var voice = null, queue = Promise.resolve(), seq = 0;
   function vc() {
     if (voice || !w.OESTVoice) return voice;
-    voice = w.OESTVoice.create({ maxMs: 120000, onAudio: function (media) { return pending && pending(media); }, onError: function (e) { if (pendingErr) pendingErr(e); } });
+    voice = w.OESTVoice.create({ maxMs: 120000, onState: function (on) { if (on && capture) started = capture(); }, onAudio: function (media) { return pending && pending(media); }, onError: function (e) { if (pendingErr) pendingErr(e); } });
     return voice;
   }
-  var pending = null, pendingErr = null;
+  var pending = null, pendingErr = null, capture = null, started = null; // started: miejsce i kontekst z chwili rozpoczęcia nagrania
   // nagranie → nowa notatka; tekst powstaje w tle (kolejka: jedno rozpoznawanie naraz)
   function addAudio(scope, ctx, media) {
     var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), aid = id + '-a1';
@@ -170,9 +170,12 @@
   // o: { scope(): string, ctx(): string, onSaved(note), onError(err) }
   function bind(btn, o) {
     var v = vc(); if (!btn || !v) return null;
+    capture = function () { return { scope: o.scope && o.scope(), ctx: o.ctx ? o.ctx() : '' }; };
+    // notatka trafia do inspekcji, w której zaczęto nagrywać (nie do tej, na którą przejdzie się w trakcie zatrzymywania)
     pending = function (media) {
-      var scope = o.scope && o.scope(); if (!scope) { if (o.onError) o.onError(Error(T('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
-      return addAudio(scope, o.ctx ? o.ctx() : '', media).then(function (n) { if (o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); });
+      var at = started || capture(); started = null;
+      var scope = at.scope; if (!scope) { if (o.onError) o.onError(Error(T('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
+      return addAudio(scope, at.ctx, media).then(function (n) { if (o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); });
     };
     pendingErr = function (e) { if (o.onError) o.onError(e); };
     return w.OESTVoice.holdButton(btn, v, function (e) { if (o.onError) o.onError(e); });
