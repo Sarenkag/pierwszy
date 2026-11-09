@@ -306,3 +306,35 @@ test('punkt 8: błąd jednego pliku z pary – drugi zapisany, błąd zgłoszony
   assert.strictEqual((await store.sync(d)).sent, 2);
   assert.strictEqual(photosOn(d).length, 3, 'na Dysku trzy pliki, A bez duplikatu');
 });
+
+// Uwaga z przeglądu PR #114: prawdziwy adapter Google (settings-google.js) przepuszczał jedno żądanie naraz (GOOGLE_BUSY).
+// Ten test idzie przez prawdziwe createGoogle i ten sam podział na Dysk co app/www/zdjecia-ui.js drive().
+test('punkt 8 z prawdziwym adapterem Google: 5 zdjęć, 2 naraz, wszystkie wysłane, inne żądanie w trakcie = GOOGLE_BUSY', async () => {
+  const { createGoogle } = require('../www/settings-google.js');
+  let inFlight = 0, peak = 0, n = 0, release = [];
+  const G = createGoogle({ account: () => ({ email: 'me@example.com' }), login: async () => ({ email: 'me@example.com', token: 'T' }),
+    fetch: async (url, opts) => {
+      const upload = /upload\/drive/.test(url); inFlight++; peak = Math.max(peak, inFlight);
+      try {
+        if (upload) await new Promise(r => release.push(r)); // trzymamy wysyłkę, żeby było widać dwie naraz
+        const body = upload ? { id: 'file' + (++n), name: 'x' } : /\?q=/.test(url) ? { files: [] } : { id: 'fold' + (++n), name: 'f' };
+        return { ok: true, status: 200, json: async () => body };
+      } finally { inFlight--; }
+    } });
+  await G.connect('drive');
+  const drive = { ensureFolder: (name, parent) => G.ensureFolder(name, parent), upload: (p, name, blob, props) => G.uploadFile(p, name, blob, props),
+    find: (p, name, props) => G.findFile(p, name, props), remove: id => G.removeFile(id) };
+  const { store, rows } = fakeStore();
+  for (let i = 0; i < 5; i++) await store.save({ size: MB, type: 'image/jpeg' }, { category: 'Flushing', code: 'TB', point: 'Kran ' + i, when: new Date(2026, 10, 9, 3, i) });
+  let settled = false; const job = store.sync(drive); job.then(() => { settled = true; }, () => { settled = true; });
+  let checkedBusy = false, waits = 0;
+  while (!settled) {
+    await new Promise(r => setTimeout(r, 2));
+    if (release.length === 2 && !checkedBusy) { await assert.rejects(G.folders(), /GOOGLE_BUSY/, 'inne żądanie nie wchodzi między wysyłki'); checkedBusy = true; }
+    if (release.length === 2 || (release.length && (checkedBusy || ++waits > 50))) release.splice(0).forEach(r => r());
+  }
+  assert.strictEqual((await job).sent, 5);
+  assert.ok([...rows.values()].every(r => r.driveId), 'wszystkie na Dysku');
+  assert.strictEqual(peak, 2, 'dokładnie 2 wysyłki naraz');
+  assert.ok(checkedBusy);
+});

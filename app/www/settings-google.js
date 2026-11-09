@@ -38,7 +38,7 @@
   var BIG_MAIL=6500000,MAX_MAIL=35000000; // znaki: do BIG_MAIL sprawdzona droga JSON (raport 4 MB przeszedł 04/11), powyżej /upload natywnie; MAX_MAIL = limit Gmaila
   var SCOPES={contacts:['https://www.googleapis.com/auth/contacts.readonly'],drive:['https://www.googleapis.com/auth/drive.file'],gmail:['https://www.googleapis.com/auth/gmail.send'],calendar:['https://www.googleapis.com/auth/calendar.calendarlist.readonly']};
   function createGoogle(opts){
-    var store=opts.store||{get:function(){return {};},set:function(){}},sessions=store.get()||{},busy=false;
+    var store=opts.store||{get:function(){return {};},set:function(){}},sessions=store.get()||{},busy=false,par=0,PAR_MAX=2;
     function accountEmail(){var a=opts.account();return a&&a.email?a.email.toLowerCase():'';}
     function connected(kind){var s=sessions[kind];return !!(s&&s.email===accountEmail()&&s.until>Date.now());}
     async function connect(kind){
@@ -79,8 +79,11 @@
       if(sessions[kind]&&!(await opts.ask(kind,'expired')))throw Error('GOOGLE_CANCELLED'); // pierwsze połączenie w sesji: od razu okno Google
       await connect(kind);
     }
+    // Jedno żądanie naraz (GOOGLE_BUSY). Wyjątek (audyt zdjęć, punkt 8, 09/11/2026): wysyłka plików na Dysk (options.parallel)
+    // do PAR_MAX naraz – ale nigdy razem z innym żądaniem.
     async function once(kind,url,options){
-      if(busy)throw Error('GOOGLE_BUSY');busy=true;
+      var shared=!!(options&&options.parallel);
+      if(busy||(shared?par>=PAR_MAX:par>0))throw Error('GOOGLE_BUSY');if(shared)par++;else busy=true;
       var session=sessions[kind],controller=new AbortController(),timer=setTimeout(function(){controller.abort();},(options&&options.timeout)||30000);
       try{
         var hdrs=Object.assign({Authorization:'Bearer '+session.token},options&&options.headers),response;
@@ -91,7 +94,7 @@
           throw Error('GOOGLE_HTTP_'+response.status+(why?': '+why:''));}
         if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
         return response.status===204?{}:await response.json();
-      }finally{clearTimeout(timer);busy=false;}
+      }finally{clearTimeout(timer);if(shared)par--;else busy=false;}
     }
     async function request(kind,url,options){
       await ensure(kind);
@@ -141,7 +144,7 @@
       var ap=cleanProps(props),m={name:name,parents:[parentId]};if(ap)m.appProperties=ap;
       var boundary='oest_'+Date.now(),meta=JSON.stringify(m);
       var body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'image/jpeg')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
-      return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
+      return request('drive','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body,parallel:true});
     }
     /* Moduł raportów: ten sam raport = ten sam plik (Grzegorz 08/11/2026: na Dysku tylko ostatnia wersja). */
     /* props (opcjonalnie): szukanie po appProperties; wtedy nazwa może być pusta (zdjęcia: tylko po id zdjęcia, nazwa bywa > 200 znaków) */
