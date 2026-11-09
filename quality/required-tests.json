@@ -89,6 +89,9 @@
     },
     {
       "file": "app/tests/odzyskana-ppm.test.cjs"
+    },
+    {
+      "file": "app/tests/notatki.test.cjs"
     }
   ],
   "browser": [
@@ -210,6 +213,11 @@
       "file": "app/tests/pl-en-ui-check.cjs",
       "passMarker": "PL EN UI PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/notatki-ui-check.cjs",
+      "passMarker": "notatki-ui-check PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []

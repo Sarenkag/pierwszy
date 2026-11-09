@@ -9,7 +9,7 @@
 // Inspekcje idą po kilka naraz (OEST_RAPORT_NARAZ, domyślnie 3), każda w osobnym kontekście przeglądarki = osobne dane, jak dotąd.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
-const { inspections, tasks } = require('./ppm-lista.cjs'), { docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat } = require('./raport-tresc.cjs');
+const { inspections, tasks } = require('./ppm-lista.cjs'), { docxText, docxHighlighted, docxImages, pdfText, pdfPages, pdfImages, includesFlat } = require('./raport-tresc.cjs');
 const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 const server = http.createServer((req, res) => {
   const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
@@ -42,6 +42,8 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
         if (slots.length !== temps) bad.push(id + ': formularz ma ' + temps + ' pól, a wzór ' + slots.length + ' wylotów');
         expectTemps = slots.map((s, i) => ({ name: s[0], kind: s[1], value: reading(s[1], i) }));
         for (let i = 0; i < temps; i++) await pg.locator('#tempList input[data-t="' + i + '"]').fill(expectTemps[i] ? expectTemps[i].value : '20');
+        // data inspekcji w innym miesiącu niż dziś: w formularzu firmy zaznaczony ma być rok i miesiąc tej daty, nic na stałe (Grzegorz 09/11/2026)
+        await pg.evaluate(() => { const d = document.getElementById('dzien'); d.value = '2026-03-15'; d.dispatchEvent(new Event('input', { bubbles: true })); d.dispatchEvent(new Event('change', { bubbles: true })); });
         const hint = await pg.locator('#formHint').textContent();
         if (!new RegExp('Wpisano ' + temps + '/' + temps + '\\.').test(hint) || /Poza zakresem/.test(hint)) bad.push(id + ': po wpisaniu ' + temps + ' pomiarów w zakresie formularz pokazuje: ' + hint);
       }
@@ -68,6 +70,7 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
         // treść: wszystkie pomiary w kolejności tabeli formularza firmy – w Wordzie i w PDF (PDF rysowany z tego samego formularza, 08/11/2026), podpis
         const W = '\n' + txt.word.join('\n') + '\n', P = '\n' + txt.pdf.join('\n') + '\n';
         for (const [nazwa, T] of [['Word', W], ['PDF', P]]) { let at = 0; for (const t of expectTemps) { const k = T.indexOf('\n' + t.value + '\n', at); /* wartość jako osobna komórka tabeli */ if (k < 0) { bad.push(id + ': ' + nazwa + ' nie zawiera pomiaru ' + t.name + ' (' + t.kind + ') = ' + t.value + ' w kolejności tabeli'); break; } at = k + t.value.length + 1; } }
+        for (const f of word) { const h = docxHighlighted(Buffer.from(f.data, 'base64')).filter(t => /^(20\d\d|January|February|March|April|May|June|July|August|September|October|November|December)$/.test(t)); const ok = h.length > 0 && h.every(t => t === '2026' || t === 'March') && h.includes('2026') && h.includes('March'); if (!ok) bad.push(id + ': Word – zaznaczone w tabeli lat/miesięcy: ' + (h.join(', ') || 'nic') + ', a data inspekcji to 15/03/2026 (ma być tylko 2026 i March)'); }
         if (!includesFlat(W, 'G. Sarna')) bad.push(id + ': Word bez podpisu inżyniera');
         if (!includesFlat(P, 'G. Sarna')) bad.push(id + ': PDF bez podpisu inżyniera');
         content.push(id + ' (' + expectTemps.length + ' pomiarów w Word i PDF)');
