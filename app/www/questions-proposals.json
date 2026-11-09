@@ -467,6 +467,1793 @@
         "db",
         "iso"
       ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Wszystkie oprawy zapaliły się w teście",
+      "type": "pass",
+      "ok": "All emergency luminaires illuminated on simulated mains failure.",
+      "fail": "One or more emergency luminaires failed to illuminate on simulated mains failure – remedial action required.",
+      "reasons": [
+        {
+          "label": "Lamp/LED failure",
+          "text": "Lamp or LED module failed – replacement required."
+        },
+        {
+          "label": "Battery failure",
+          "text": "Battery not holding charge – replacement required."
+        }
+      ],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Znaki wyjścia świecą, strzałki poprawne",
+      "type": "pass",
+      "ok": "All exit signs illuminated and directional arrows correct.",
+      "fail": "Exit sign(s) not illuminated or showing incorrect direction.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Wskaźniki ładowania świecą po teście",
+      "type": "pass",
+      "ok": "Charge indicators showing normal after the test.",
+      "fail": "Charge indicator(s) not lit or showing fault after the test.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Oprawy czyste i nieuszkodzone",
+      "type": "pass",
+      "ok": "Luminaires clean, undamaged, diffusers in place.",
+      "fail": "Luminaire(s) dirty, damaged or with missing diffusers.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Zasilanie przywrócone po teście",
+      "type": "pass",
+      "ok": "Normal supply restored and all luminaires returned to charge after the test.",
+      "fail": "Normal supply not fully restored after the test – circuit(s) left isolated.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Przełączniki testowe zabezpieczone i oznaczone",
+      "type": "pass",
+      "ok": "Test key switches secure and labelled.",
+      "fail": "Test key switch(es) damaged, unlabelled or missing.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – monthly",
+      "question": "Wpis w log booku",
+      "type": "pass",
+      "ok": "Results recorded in the emergency lighting log book.",
+      "fail": "Log book not available – results recorded in this report only.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001",
+        "EFA-INS-011",
+        "EFA-INS-027"
+      ]
+    },
+    {
+      "section": "Emergency lighting – annual (full duration)",
+      "question": "Czas pełnego testu",
+      "type": "measure",
+      "unit": "h",
+      "template": "Full rated-duration discharge test carried out for {value} {unit}.",
+      "reportLabel": "Test duration",
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001 12M",
+        "EFA-INS-011 12M"
+      ],
+      "reasons": [],
+      "min": 3,
+      "threshold": "Test shorter than the rated 3 h duration."
+    },
+    {
+      "section": "Emergency lighting – annual (full duration)",
+      "question": "Wszystkie oprawy świeciły przez cały czas testu",
+      "type": "pass",
+      "ok": "All emergency luminaires remained illuminated for the full rated duration.",
+      "fail": "One or more luminaires failed before the end of the rated duration – battery replacement required.",
+      "reasons": [
+        {
+          "label": "Battery end of life",
+          "text": "Battery capacity insufficient for rated duration – replacement required."
+        }
+      ],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001 12M",
+        "EFA-INS-011 12M"
+      ]
+    },
+    {
+      "section": "Emergency lighting – annual (full duration)",
+      "question": "Znaki wyjścia świeciły przez cały czas",
+      "type": "pass",
+      "ok": "All exit signs remained illuminated for the full rated duration.",
+      "fail": "Exit sign(s) failed before the end of the rated duration.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001 12M",
+        "EFA-INS-011 12M"
+      ]
+    },
+    {
+      "section": "Emergency lighting – annual (full duration)",
+      "question": "Ładowanie po teście, ryzyko 24 h zgłoszone",
+      "type": "pass",
+      "ok": "Supply restored after the test; occupants/management advised of the 24 h recharge period.",
+      "fail": "Supply not restored after the test, or recharge period not communicated.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001 12M",
+        "EFA-INS-011 12M"
+      ]
+    },
+    {
+      "section": "Emergency lighting – annual (full duration)",
+      "question": "Wpis w log booku / certyfikat",
+      "type": "pass",
+      "ok": "Annual test recorded in the log book and certificate issued.",
+      "fail": "Annual test not recorded – log book or certificate outstanding.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: BS 5266-1 (safelincs.co.uk, gov.je)",
+      "tags": [
+        "fire"
+      ],
+      "suggestedFor": [
+        "EFA-INS-001 12M",
+        "EFA-INS-011 12M"
+      ]
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Ciepła woda po 1 min (sentinel)",
+      "type": "measure",
+      "unit": "°C",
+      "template": "Hot water sentinel outlet: {value} {unit} after 1 minute.",
+      "reportLabel": "Hot sentinel",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ],
+      "reasons": [],
+      "min": 50,
+      "threshold": "Below 50 °C after 1 minute – record in the Fault and Remedial Actions Log."
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Zimna woda po 2 min (sentinel)",
+      "type": "measure",
+      "unit": "°C",
+      "template": "Cold water sentinel outlet: {value} {unit} after 2 minutes.",
+      "reportLabel": "Cold sentinel",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ],
+      "reasons": [],
+      "max": 20,
+      "threshold": "Above 20 °C after 2 minutes – record in the Fault and Remedial Actions Log."
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Woda zmieszana z TMV",
+      "type": "measure",
+      "unit": "°C",
+      "template": "TMV mixed outlet: {value} {unit}.",
+      "reportLabel": "TMV mixed",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ],
+      "reasons": [],
+      "min": 38,
+      "max": 43,
+      "threshold": "Outside 38–43 °C – TMV service required."
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Kalorfier – zasilanie",
+      "type": "measure",
+      "unit": "°C",
+      "template": "Calorifier flow: {value} {unit}.",
+      "reportLabel": "Calorifier flow",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ],
+      "reasons": [],
+      "min": 60,
+      "threshold": "Calorifier flow below 60 °C."
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Kalorfier – powrót",
+      "type": "measure",
+      "unit": "°C",
+      "template": "Calorifier return: {value} {unit}.",
+      "reportLabel": "Calorifier return",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ],
+      "reasons": [],
+      "min": 50,
+      "threshold": "Calorifier return below 50 °C."
+    },
+    {
+      "section": "Water temperatures – monthly",
+      "question": "Wszystkie punkty pomiarowe dostępne",
+      "type": "pass",
+      "ok": "All sentinel outlets accessible and tested.",
+      "fail": "One or more sentinel outlets not accessible – not tested.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-002",
+        "EFA-INS-010"
+      ]
+    },
+    {
+      "section": "Showerheads – clean & descale (3M)",
+      "question": "Liczba wyczyszczonych pryszniców",
+      "type": "measure",
+      "unit": "pcs",
+      "template": "{value} showerheads and hoses dismantled, cleaned and descaled.",
+      "reportLabel": "Showerheads cleaned",
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "Showerhead Clean and De-scale 3M"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Showerheads – clean & descale (3M)",
+      "question": "Słuchawki i węże odkamienione",
+      "type": "pass",
+      "ok": "Showerheads and hoses dismantled, cleaned and descaled.",
+      "fail": "Showerheads/hoses not fully descaled – heavy scale remaining.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "Showerhead Clean and De-scale 3M"
+      ]
+    },
+    {
+      "section": "Showerheads – clean & descale (3M)",
+      "question": "Dezynfekcja wykonana",
+      "type": "pass",
+      "ok": "Showerheads and hoses disinfected before refitting.",
+      "fail": "Disinfection not carried out.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "Showerhead Clean and De-scale 3M"
+      ]
+    },
+    {
+      "section": "Showerheads – clean & descale (3M)",
+      "question": "Węże i uszczelki w dobrym stanie",
+      "type": "pass",
+      "ok": "Hoses and seals in good condition.",
+      "fail": "Hose(s) or seal(s) damaged or perished – replacement required.",
+      "reasons": [
+        {
+          "label": "Perished hose",
+          "text": "Hose lining perished – replace."
+        }
+      ],
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "Showerhead Clean and De-scale 3M"
+      ]
+    },
+    {
+      "section": "Showerheads – clean & descale (3M)",
+      "question": "Prysznice przepłukane po montażu",
+      "type": "pass",
+      "ok": "Showers flushed after refitting.",
+      "fail": "Showers not flushed after refitting.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8 / HSG274 cz. 2 (hse.gov.uk)",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "Showerhead Clean and De-scale 3M"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Woda czysta, bez mętności i zapachu",
+      "type": "pass",
+      "ok": "Water clear with no turbidity or odour.",
+      "fail": "Water cloudy or malodorous – cleaning and disinfection required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Brak glonów, biofilmu i śmieci",
+      "type": "pass",
+      "ok": "No algae, biofilm or debris present.",
+      "fail": "Algae, biofilm or debris present – cleaning required.",
+      "reasons": [
+        {
+          "label": "Algae growth",
+          "text": "Algae growth on surfaces – clean and treat."
+        }
+      ],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Temperatura wody",
+      "type": "measure",
+      "unit": "°C",
+      "template": "Water temperature: {value} {unit}.",
+      "reportLabel": "Water temperature",
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ],
+      "reasons": [],
+      "max": 20,
+      "threshold": "Above 20 °C – within Legionella growth range (HSE L8)."
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Dozowanie / dezynfekcja działa",
+      "type": "pass",
+      "ok": "Biocide/disinfection dosing operating correctly.",
+      "fail": "Biocide/disinfection dosing not operating – reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Pompa i dysze działają",
+      "type": "pass",
+      "ok": "Pump and nozzles operating correctly with an even spray.",
+      "fail": "Pump or nozzle fault – uneven or no flow.",
+      "reasons": [
+        {
+          "label": "Blocked nozzle",
+          "text": "Nozzle blocked – clean."
+        }
+      ],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Filtr i kosz ssawny czyste",
+      "type": "pass",
+      "ok": "Filter and suction strainer clean.",
+      "fail": "Filter or suction strainer blocked – cleaned/replacement required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Water feature – weekly",
+      "question": "Poziom wody prawidłowy",
+      "type": "pass",
+      "ok": "Water level correct, auto top-up operating.",
+      "fail": "Water level low or top-up not operating.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: HSE L8, CDC Legionella toolkit – fontanny",
+      "tags": [
+        "water"
+      ],
+      "suggestedFor": [
+        "EFA-INS-007"
+      ]
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Licznik energii elektrycznej",
+      "type": "measure",
+      "unit": "kWh",
+      "template": "Electricity meter reading: {value} {unit}.",
+      "reportLabel": "Electricity meter",
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Licznik wody",
+      "type": "measure",
+      "unit": "m³",
+      "template": "Water meter reading: {value} {unit}.",
+      "reportLabel": "Water meter",
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Licznik gazu",
+      "type": "measure",
+      "unit": "m³",
+      "template": "Gas meter reading: {value} {unit}.",
+      "reportLabel": "Gas meter",
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Licznik ciepła",
+      "type": "measure",
+      "unit": "kWh",
+      "template": "Heat meter reading: {value} {unit}.",
+      "reportLabel": "Heat meter",
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Liczniki czytelne, plomby nienaruszone",
+      "type": "pass",
+      "ok": "All meters legible with seals intact.",
+      "fail": "Meter display illegible or seal broken – reported.",
+      "reasons": [],
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ]
+    },
+    {
+      "section": "Meter readings – monthly",
+      "question": "Zdjęcie każdego licznika",
+      "type": "pass",
+      "ok": "Photograph taken of each meter reading.",
+      "fail": "Photograph not taken for one or more meters.",
+      "reasons": [],
+      "source": "Propozycja Claude (brak wzoru firmy) – do uzupełnienia listą liczników",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "EFA-INS-023"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Filtry w dobrym stanie / wymienione",
+      "type": "pass",
+      "ok": "Filters inspected and cleaned/replaced as required.",
+      "fail": "Filters heavily loaded – replacement required.",
+      "reasons": [
+        {
+          "label": "Filters blocked",
+          "text": "Filters blocked – replace."
+        }
+      ],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Spadek ciśnienia na filtrze",
+      "type": "measure",
+      "unit": "Pa",
+      "template": "Filter differential pressure: {value} {unit}.",
+      "reportLabel": "Filter ΔP",
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ],
+      "reasons": []
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Paski klinowe – napięcie i stan",
+      "type": "pass",
+      "ok": "Drive belts correctly tensioned and in good condition.",
+      "fail": "Drive belt(s) worn or slack – adjust/replace.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Wentylatory bez hałasu i drgań",
+      "type": "pass",
+      "ok": "Fans running without abnormal noise or vibration.",
+      "fail": "Abnormal fan noise or vibration – investigation required.",
+      "reasons": [
+        {
+          "label": "Bearing noise",
+          "text": "Bearing noise – lubrication or replacement required."
+        }
+      ],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Taca skroplin i syfon drożne",
+      "type": "pass",
+      "ok": "Condensate tray and trap clean and draining.",
+      "fail": "Condensate tray or trap blocked/standing water present.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Wymienniki (wężownice) czyste",
+      "type": "pass",
+      "ok": "Coils clean and undamaged.",
+      "fail": "Coils dirty or fins damaged – cleaning required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Przepustnice działają",
+      "type": "pass",
+      "ok": "Dampers operate freely.",
+      "fail": "Damper(s) seized or not operating.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Panel sterowania bez alarmów",
+      "type": "pass",
+      "ok": "Control panel healthy, indicator lamps working, no active alarms.",
+      "fail": "Active alarm or defective indicator on the control panel.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 6M",
+      "question": "Obudowa i uszczelki drzwi",
+      "type": "pass",
+      "ok": "Casing and access door seals in good condition.",
+      "fail": "Casing damaged or door seals defective – air leakage.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 6M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Czyszczenie wnętrza centrali",
+      "type": "pass",
+      "ok": "Unit internals cleaned.",
+      "fail": "Unit internals dirty – cleaning required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Silniki – test ciągłości/izolacji",
+      "type": "pass",
+      "ok": "Motor continuity/insulation tests satisfactory.",
+      "fail": "Motor test results unsatisfactory – reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Falowniki i zabezpieczenia termiczne",
+      "type": "pass",
+      "ok": "Inverters and overload trips operating correctly.",
+      "fail": "Inverter or overload trip fault.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Frost stat, presostaty, czujniki przepływu",
+      "type": "pass",
+      "ok": "Frost stats, airflow and pressure switches operate correctly.",
+      "fail": "Safety device(s) failed to operate – remedial action required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Zaciski elektryczne dokręcone",
+      "type": "pass",
+      "ok": "Electrical terminations tight, no signs of overheating.",
+      "fail": "Loose or overheated electrical termination(s).",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Air handling units – 12M",
+      "question": "Podkładki antywibracyjne",
+      "type": "pass",
+      "ok": "Anti-vibration mounts in good condition.",
+      "fail": "Anti-vibration mount(s) worn or damaged.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Air Handling Units 12M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Wirnik i obudowa czyste",
+      "type": "pass",
+      "ok": "Impeller and casing clean.",
+      "fail": "Dirt build-up on impeller/casing – cleaning required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Praca bez hałasu i drgań",
+      "type": "pass",
+      "ok": "Fan running without abnormal noise or vibration.",
+      "fail": "Abnormal noise or vibration – investigation required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Wyczuwalny wyciąg na kratkach",
+      "type": "pass",
+      "ok": "Extract airflow present at grilles.",
+      "fail": "No or weak extract airflow at grille(s).",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Przepustnice zwrotne działają",
+      "type": "pass",
+      "ok": "Backdraught shutters/dampers move freely.",
+      "fail": "Shutter/damper seized.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Sterowanie i timery działają",
+      "type": "pass",
+      "ok": "Controls, timers and overload trips operating correctly.",
+      "fail": "Control, timer or overload fault.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Extract fans – 6M",
+      "question": "Mocowania i osłony",
+      "type": "pass",
+      "ok": "Fixings and guards secure.",
+      "fail": "Fixing or guard loose/missing.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Extract Fans (Tower B) 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Kratka wlotowa i filtr czyste",
+      "type": "pass",
+      "ok": "Intake grille and filter clean.",
+      "fail": "Intake grille/filter dirty – cleaned/replaced.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Wentylator pracuje cicho",
+      "type": "pass",
+      "ok": "Fan running smoothly without abnormal noise.",
+      "fail": "Fan noisy or not running.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Grzałki grzeją",
+      "type": "pass",
+      "ok": "Heating elements operating, warm air delivered.",
+      "fail": "No heat output – element or control fault.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Wyłącznik drzwiowy i termostat",
+      "type": "pass",
+      "ok": "Door switch and thermostat control the unit correctly.",
+      "fail": "Door switch or thermostat not controlling the unit.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Przewody i zaciski bez przebarwień",
+      "type": "pass",
+      "ok": "Wiring and terminals free from discolouration, terminals tight.",
+      "fail": "Discoloured or loose terminal(s) found.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Overdoor heaters – 6M",
+      "question": "Mocowanie urządzenia",
+      "type": "pass",
+      "ok": "Unit securely fixed.",
+      "fail": "Unit fixings loose.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: instrukcje producentów kurtyn powietrznych (Berner, Frico)",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Overdoor Heaters - Tower B 6M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Filtry wymienione / umyte",
+      "type": "pass",
+      "ok": "Filters changed or washed.",
+      "fail": "Filters not changed – replacement outstanding.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Wymiennik ciepła czysty",
+      "type": "pass",
+      "ok": "Heat exchanger matrix clean.",
+      "fail": "Heat exchanger matrix dirty – cleaning required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Wentylatory czyste i pracują",
+      "type": "pass",
+      "ok": "Fans clean and running correctly.",
+      "fail": "Fan dirty or not running correctly.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Odpływ skroplin drożny",
+      "type": "pass",
+      "ok": "Condensate drain clear.",
+      "fail": "Condensate drain blocked.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Bypass i sterowanie",
+      "type": "pass",
+      "ok": "Bypass damper and controls operating correctly.",
+      "fail": "Bypass damper or control fault.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Heat recovery units – 12M",
+      "question": "Silniki – test ciągłości",
+      "type": "pass",
+      "ok": "Motor continuity tests satisfactory.",
+      "fail": "Motor test results unsatisfactory – reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20: specyfikacje serwisowe wentylacji (contractsfinder.gov.uk), instrukcje producentów",
+      "tags": [
+        "mech"
+      ],
+      "suggestedFor": [
+        "Heat Recovery Units 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Obudowa i drzwi nieuszkodzone, zamknięte",
+      "type": "pass",
+      "ok": "Board enclosure and door undamaged and closed/locked.",
+      "fail": "Board enclosure or door damaged or not secured.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Brak oznak przegrzania i zapachu",
+      "type": "pass",
+      "ok": "No signs of overheating, burning or odour.",
+      "fail": "Signs of overheating, burning or odour – investigation required.",
+      "reasons": [
+        {
+          "label": "Hot spot",
+          "text": "Discolouration around a device – thermal survey required."
+        }
+      ],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Opis obwodów na miejscu i czytelny",
+      "type": "pass",
+      "ok": "Circuit chart present, legible and up to date.",
+      "fail": "Circuit chart missing, illegible or out of date.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Zaślepki na wolnych miejscach",
+      "type": "pass",
+      "ok": "Blanking plates fitted to all spare ways.",
+      "fail": "Blanking plate(s) missing – live parts accessible.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Dostęp swobodny, nic nie składowane",
+      "type": "pass",
+      "ok": "Access to the board clear, no storage in front of it.",
+      "fail": "Access to the board obstructed – area requires clearing.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 3M",
+      "question": "Brak wilgoci i kurzu",
+      "type": "pass",
+      "ok": "No moisture or dust build-up inside the board.",
+      "fail": "Moisture or dust build-up found inside the board.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 3M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Brak uszkodzeń mechanicznych",
+      "type": "pass",
+      "ok": "No physical damage to the board or its components.",
+      "fail": "Physical damage found on the board or its components.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Oznaczenia poprawne",
+      "type": "pass",
+      "ok": "Labelling and warning notices correct and legible.",
+      "fail": "Labelling or warning notices missing or incorrect.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Zabezpieczenia w dobrym stanie",
+      "type": "pass",
+      "ok": "Protective devices in good condition and correctly rated.",
+      "fail": "Protective device(s) damaged or incorrectly rated.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Brak oznak przegrzania",
+      "type": "pass",
+      "ok": "No signs of overheating on devices, busbars or cables.",
+      "fail": "Signs of overheating on devices, busbars or cables.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Test RCD przyciskiem",
+      "type": "pass",
+      "ok": "All RCDs/RCBOs tripped on the integral test button and were reset.",
+      "fail": "RCD/RCBO failed to trip on the integral test button – replacement required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 6M",
+      "question": "Rozdzielnica działa prawidłowo",
+      "type": "pass",
+      "ok": "Board operating as intended, all circuits restored after the test.",
+      "fail": "Board not operating as intended – reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 6M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Badanie termowizyjne",
+      "type": "pass",
+      "ok": "Thermal imaging survey carried out, no hot spots found.",
+      "fail": "Hot spot(s) identified on thermal imaging – remedial action required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Zaciski dokręcone",
+      "type": "pass",
+      "ok": "Terminations checked and tight.",
+      "fail": "Loose termination(s) found and re-torqued / reported.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Czas zadziałania RCD (1×IΔn)",
+      "type": "measure",
+      "unit": "ms",
+      "template": "RCD trip time at 1×IΔn: {value} {unit}.",
+      "reportLabel": "RCD trip time",
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ],
+      "reasons": [],
+      "max": 300,
+      "threshold": "Above 300 ms at 1×IΔn – RCD replacement required (BS 7671)."
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Wnętrze oczyszczone",
+      "type": "pass",
+      "ok": "Board internals cleaned.",
+      "fail": "Board internals not cleaned – heavy dust build-up.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "Przepusty kablowe i dławiki",
+      "type": "pass",
+      "ok": "Cable entries and glands sealed and secure.",
+      "fail": "Cable entry or gland not sealed / loose.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Distribution boards – 12M",
+      "question": "EICR aktualny",
+      "type": "pass",
+      "ok": "EICR in date for this board.",
+      "fail": "EICR out of date – periodic inspection required.",
+      "reasons": [],
+      "source": "Web, kierunek SFG20 44-07 (DB 6M) i BS 7671 – fmbusinessdaily.com; 3M/12M propozycja Claude",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "db 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Obudowa i pokrywa nieuszkodzone",
+      "type": "pass",
+      "ok": "Isolator enclosure and cover undamaged.",
+      "fail": "Isolator enclosure or cover damaged.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Oznaczenie urządzenia czytelne",
+      "type": "pass",
+      "ok": "Isolator labelled with the equipment it serves.",
+      "fail": "Isolator label missing or illegible.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Możliwość zablokowania (lockout)",
+      "type": "pass",
+      "ok": "Isolator can be locked off.",
+      "fail": "Isolator cannot be locked off.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Brak oznak przegrzania",
+      "type": "pass",
+      "ok": "No signs of overheating or discolouration.",
+      "fail": "Signs of overheating or discolouration.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Dostęp swobodny",
+      "type": "pass",
+      "ok": "Access to the isolator clear.",
+      "fail": "Access to the isolator obstructed.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 3M",
+      "question": "Dławiki i szczelność (IP)",
+      "type": "pass",
+      "ok": "Glands secure and enclosure sealed to its IP rating.",
+      "fail": "Gland loose or enclosure seal compromised.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 3M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Przełącznik działa ON/OFF",
+      "type": "pass",
+      "ok": "Isolator switched OFF and ON correctly, positive action.",
+      "fail": "Isolator mechanism stiff or not operating correctly.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Zaciski dokręcone",
+      "type": "pass",
+      "ok": "Terminations checked and tight.",
+      "fail": "Loose termination(s) found.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Wnętrze suche i czyste",
+      "type": "pass",
+      "ok": "Isolator internals dry and clean.",
+      "fail": "Moisture or dirt found inside the isolator.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Uszczelka pokrywy",
+      "type": "pass",
+      "ok": "Cover gasket in good condition.",
+      "fail": "Cover gasket perished or missing.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Isolators – 12M",
+      "question": "Przewód ochronny podłączony",
+      "type": "pass",
+      "ok": "Protective conductor connected and secure.",
+      "fail": "Protective conductor loose or missing.",
+      "reasons": [],
+      "source": "Propozycja Claude, kierunek SFG20 / BS 7671 (ogólne) – czeka na listę SFG20",
+      "tags": [
+        "elec"
+      ],
+      "suggestedFor": [
+        "iso 12M"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wizyta odbyła się w terminie",
+      "type": "pass",
+      "ok": "Contractor attended as scheduled.",
+      "fail": "Contractor did not attend as scheduled.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wykonawca zgłosił się i miał pozwolenie",
+      "type": "pass",
+      "ok": "Contractor signed in and works were covered by a permit where required.",
+      "fail": "Contractor did not sign in or no permit issued.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Certyfikat / job sheet otrzymany",
+      "type": "pass",
+      "ok": "Certificate / job sheet received.",
+      "fail": "Certificate / job sheet not yet received – chased.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Brak usterek",
+      "type": "pass",
+      "ok": "No defects reported by the contractor.",
+      "fail": "Defects reported by the contractor – see attached report.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Wycena nie jest potrzebna",
+      "type": "pass",
+      "ok": "No remedial quotation required.",
+      "fail": "Remedial quotation required.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "System pozostawiony sprawny",
+      "type": "pass",
+      "ok": "System left operational and in normal mode.",
+      "fail": "System left isolated or in fault – reported.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
+    },
+    {
+      "section": "Subcontractor visit",
+      "question": "Teren posprzątany",
+      "type": "pass",
+      "ok": "Work area left clean and tidy.",
+      "fail": "Work area left untidy.",
+      "reasons": [],
+      "source": "Propozycja Claude – prosty wpis wizyty podwykonawcy",
+      "tags": [],
+      "suggestedFor": [
+        "s-fa",
+        "s-refuge",
+        "s-intruder",
+        "s-cctv",
+        "s-access",
+        "s-icv",
+        "s-spumps",
+        "s-risers",
+        "s-smoke",
+        "s-dampers",
+        "s-ahu",
+        "s-vrv",
+        "s-lcs",
+        "s-doors",
+        "s-lightning",
+        "s-hygiene",
+        "s-cwst",
+        "s-pat",
+        "s-spa"
+      ]
     }
   ]
 }
