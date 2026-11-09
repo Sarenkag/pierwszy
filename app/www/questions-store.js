@@ -6,7 +6,7 @@
     async function change(fn){const id=owner();let result;const state=await b.update(id,old=>{same(id);const s=load(old);result=fn(s);if(result?.then)throw Error('QUESTIONS_ASYNC_MUTATION');s.revision++;return Q.validate(s,o.ppm);});same(id);return {state,result};}
     async function exportJSON(){const id=owner(),s=await read();same(id);return JSON.stringify({...s,owner:id,exportedAt:new Date().toISOString()},null,2);}
     function checkBackup(raw){if(raw?.owner!==owner())throw Error('QUESTIONS_BACKUP_ACCOUNT');return Q.validate(raw,o.ppm);}
-    async function importBackup(raw,replace){const incoming=checkBackup(raw);return change(s=>{if(replace){const revision=s.revision;Object.assign(s,incoming);s.revision=revision;return;}for(const sec of incoming.sections)if(!s.sections.some(x=>x.id===sec.id))s.sections.push(sec);for(const q of incoming.questions)if(!s.questions.some(x=>x.id===q.id))s.questions.push(q);for(const [id,config]of Object.entries(incoming.selections))if(!s.selections[id])s.selections[id]=config;});}
+    async function importBackup(raw,replace){const incoming=checkBackup(raw);return change(s=>{if(replace){const revision=s.revision;Object.assign(s,incoming);if(!incoming.proposalKeys)delete s.proposalKeys;s.revision=revision;return;}for(const sec of incoming.sections)if(!s.sections.some(x=>x.id===sec.id))s.sections.push(sec);for(const q of incoming.questions)if(!s.questions.some(x=>x.id===q.id))s.questions.push(q);for(const [id,config]of Object.entries(incoming.selections))if(!s.selections[id])s.selections[id]=config;});}
     return {read,change,exportJSON,checkBackup,importBackup};
   }return {createRepository};
 });
