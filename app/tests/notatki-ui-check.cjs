@@ -168,6 +168,21 @@ function fakePhone() {
     await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector('.oest-ask [data-a=ok]'); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForTimeout(2500);
     check(await count() === '0', 'po „Wyczyść inspekcję” zostały notatki: ' + await count());
     R.poWyczysc = await count();
+    // 10. nowy termin: notatki idą z inspekcją do archiwum; nieudane przeniesienie nic nie kasuje i ponawia się przy następnym otwarciu (przegląd Codex #108)
+    log('10. nowy termin');
+    await record(1);
+    const K = await pg.evaluate(() => new Promise((res, rej) => { const rq = indexedDB.open('inspekcje', 1); rq.onerror = rej; rq.onsuccess = () => {
+      const t = rq.result.transaction('kv', 'readwrite'), st = t.objectStore('kv'), g = st.getAllKeys();
+      g.onsuccess = () => { const k = g.result.find(x => /^draft_.*EFA-INS-014/.test(x) && !String(x).includes('@')); const r = st.get(k); r.onsuccess = () => { const d = r.result; d.fin = Date.now(); d.finPeriod = '2000-01'; st.put(d, k); t.oncomplete = () => res(k); }; }; }; }));
+    R.kluczSzkicu = K;
+    await pg.addInitScript(() => { if (!sessionStorage.getItem('nt.moveFail')) return; let v; Object.defineProperty(window, 'OESTNotatki', { configurable: true, get: () => v, set: x => { const m = x.move; x.move = function () { if (sessionStorage.getItem('nt.moveFail')) { sessionStorage.removeItem('nt.moveFail'); return Promise.reject(Error('transakcja przerwana')); } return m.apply(this, arguments); }; v = x; } }); });
+    await pg.evaluate(() => sessionStorage.setItem('nt.moveFail', '1')); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
+    const stan = () => pg.evaluate(K => Promise.all([OESTNotatki.list(K), OESTNotatki.list(K + '@2000-01'), new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const r = rq.result.transaction('kv').objectStore('kv').get(K); r.onsuccess = () => res(r.result); }; })]).then(a => ({ teraz: a[0].length, archiwum: a[1].length, szkicFin: !!(a[2] && a[2].fin) })), K);
+    R.poBledzie = await stan(); R.komunikatBledu = await pg.locator('#formHint').textContent();
+    check(R.poBledzie.teraz === 1 && R.poBledzie.szkicFin && /archiwum/.test(R.komunikatBledu), 'nieudane przeniesienie notatek skasowało stary szkic albo nic nie powiedziało: ' + JSON.stringify(R.poBledzie) + ' ' + R.komunikatBledu);
+    await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
+    R.poPonowieniu = await stan();
+    check(R.poPonowieniu.teraz === 0 && R.poPonowieniu.archiwum === 1 && !R.poPonowieniu.szkicFin && await count() === '0', 'ponowne otwarcie nie przeniosło notatek do archiwum terminu: ' + JSON.stringify(R.poPonowieniu));
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   errors.forEach(e => fails.push('błąd strony: ' + e));

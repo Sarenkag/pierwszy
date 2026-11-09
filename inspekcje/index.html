@@ -1346,13 +1346,24 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       // (openForm zakłada już nowy etap „W trakcie”, więc porównujemy termin, za który inspekcja była Gotowa)
       if (REC && d === undefined) { d = JSON.parse(JSON.stringify(REC.snap)); delete d.fin; delete d.finPeriod; }
       if (REC) recLost = d && d.lost > 0 ? d.lost : 0; // zdjęcia raportu, których nie było w module zdjęć (zapis awaryjny) // pierwsze otwarcie odzyskanej: dane z raportu (po „Wyczyść” szkic = null i zostaje pusty)
-      if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) { kvSet(k + "@" + d.finPeriod, d).catch(function () {}); if (window.OESTNotatki) OESTNotatki.move(k, k + "@" + d.finPeriod).catch(function () {}); dropDraft(k); d = null; } } // nowy termin = pusty formularz; poprzednia inspekcja zostaje w archiwum (nic nie ginie, 04/11)
+      if (!REC && d && d.v === 1 && d.fin && cur.ppm && d.finPeriod) { var sNow = PPM.stage(cur.ppm); if (!sNow || (sNow.period && sNow.period !== d.finPeriod)) {
+        // nowy termin = pusty formularz; poprzednia inspekcja i jej notatki idą do archiwum (nic nie ginie, 04/11).
+        // Stary szkic kasujemy dopiero po udanym przeniesieniu; błąd = komunikat, szkic zostaje i następne otwarcie ponowi archiwizację
+        var arch = k + "@" + d.finPeriod;
+        return Promise.all([kvSet(arch, d), window.OESTNotatki ? OESTNotatki.move(k, arch) : null]).then(function () { return dropDraft(k); }).then(function () {
+          if (my === draftSeq && tok === formSeq && cur.code === code) draftReady(null, k, my, tok);
+        }, function () { if (my === draftSeq && tok === formSeq) $("formHint").textContent = T("Nie udało się przenieść poprzedniej inspekcji do archiwum. Nic nie skasowałem — otwórz inspekcję jeszcze raz.", "Could not move the previous inspection to the archive. Nothing was deleted — open the inspection again."); });
+      } }
+      draftReady(d, k, my, tok);
+    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
+  }
+  // szkic odczytany (albo nowy termin po archiwizacji): wypełnij formularz i włącz zapis
+  function draftReady(d, k, my, tok) {
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
       if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
       draftOn = true; if (typeof ntRefresh === "function") ntRefresh();
-    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
   function restoreDraft(d, tok) {
     var f = d.fields || {};
