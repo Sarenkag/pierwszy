@@ -38,6 +38,8 @@ jobs:
       APP_VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # pełna historia: lista zmian w klocku „O aplikacji” (app/scripts/wersja.js)
 
       - name: SHA budowanego kodu
         id: sha
