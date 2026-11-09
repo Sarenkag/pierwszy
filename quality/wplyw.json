@@ -28,6 +28,7 @@
     "app/tests/word-pdf-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/pl-en-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/notatki-ui-check.cjs": ["inspekcje/index.html"],
+    "app/tests/notatki-app-ui-check.cjs": ["index.html"],
     "app/tests/czyszczenie-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/moduly-zasady-ui-check.cjs": ["inspekcje/index.html"]
   },

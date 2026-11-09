@@ -48,7 +48,16 @@
       .then(function (tak) { pytam = false; if (tak) wyjdz(); }, function () { pytam = false; });
     return 'pytanie';
   }
+  // okna na wierzchu z wpisem historii (podgląd zdjęcia, okienka moduly/przycisk): stos zamknięć; Wstecz cofa wpis, strona zamyka najwyższe.
+  // Włącza strona apki (index.html: OESTOverlay = nakladki, on = true); inspekcja w przeglądarce ma własne cofanie (on = false).
+  // Tu, a nie w index.html, żeby moduły (przycisk) nie zależały od kodu apki (G1, 09/11/2026).
+  var nakladki = {
+    on: false, stack: [],
+    open: function (close) { this.stack.push(close); try { history.pushState({ n: ((history.state && history.state.n) || 0) + 1, overlay: 1 }, '', location.hash); } catch (e) {} },
+    close: function () { if (this.stack.length) history.back(); } // przycisk „Zamknij” = to samo co Wstecz
+  };
   w.OESTWstecz = {
+    nakladki: nakladki,
     okno: function (zamknij) { okna.push(zamknij); return function () { var i = okna.indexOf(zamknij); if (i >= 0) okna.splice(i, 1); }; },
     ustaw: function (o) { strona = o || {}; },
     wstecz: wstecz

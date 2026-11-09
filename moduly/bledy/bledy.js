@@ -76,6 +76,12 @@
     STOP_RECORDING_FIRST: ['Najpierw zatrzymaj nagrywanie.', 'Stop recording first.'],
     ANDROID_TRANSCRIPTION_REQUIRED: ['Zamiana nagrania na tekst działa tylko w aplikacji na Androidzie.', 'Transcription works only in the Android app.'],
     MICROPHONE_DENIED: ['Brak zgody na mikrofon.', 'Microphone permission denied.'],
+    AUDIO_SAVE_FAILED: ['Nie udało się zapisać nagrania. Nagraj jeszcze raz.', 'Could not save the recording. Record again.'],
+    AUDIO_BUSY: ['Mikrofon jest zajęty przez inną aplikację.', 'The microphone is busy in another app.'],
+    AUDIO_NOT_RECORDING: ['Nagrywanie już się zakończyło.', 'Recording has already stopped.'],
+    AUDIO_SILENT: ['Nagranie jest ciche — nic nie słychać. Nagraj jeszcze raz bliżej telefonu.', 'The recording is silent. Record again closer to the phone.'],
+    AUDIO_SIZE: ['Nagranie jest za długie do zamiany na tekst.', 'The recording is too long to turn into text.'],
+    AUDIO_FORMAT: ['Nieprawidłowy format nagrania.', 'Invalid recording format.'],
     // AI / model
     MODEL_NOT_CONFIGURED: ['Model AI nie jest ustawiony.', 'AI model is not configured.'],
     MODEL_KEY: ['Nieznany model AI.', 'Unknown AI model.'],
