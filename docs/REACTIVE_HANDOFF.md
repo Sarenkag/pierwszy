@@ -14,7 +14,7 @@ The SAME `OESTHandover.repository`/`oest-handover` IndexedDB is used. No paralle
 
 Text/field drafts are queued immediately to IndexedDB; photos/audio are persisted with the draft before a success message. The main action commits the actual job. Reopening offers recovery; a different preset explicitly asks before replacing a draft. Navigation is blocked while a save/recording is pending or after a failed draft save. A process killed mid-write/recording still needs device testing: only committed transactions and finished recordings are guaranteed, not an unfinished microphone buffer. Last confirmed location is remembered. No polling/background model; two-minute recording limit is shared with Handover.
 
-Voice recording/transcription is extracted into `handover-voice.js` and used by both modules, including the same native HandoverTools implementation. Device speech errors leave text/manual entry usable; transcription depends on the phone's configured offline speech service/language. The app does not claim an installed speech model if none exists.
+Voice recording/transcription is extracted into `moduly/notatki/glos.js` (was `app/www/handover-voice.js` until 08/11/2026) and used by both modules, including the same native HandoverTools implementation. Device speech errors leave text/manual entry usable; transcription depends on the phone's configured offline speech service/language. The app does not claim an installed speech model if none exists.
 
 ## Reports
 
