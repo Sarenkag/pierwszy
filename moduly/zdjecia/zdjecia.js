@@ -100,6 +100,8 @@
     var phoneBytes = local.reduce(function (t, r) { return t + (r.size || 0); }, 0), phoneRemove = [];
     for (var j = 0; j < local.length && phoneBytes > s.phoneLimitMB * MB; j++) {
       if (!local[j].driveId) continue; // niewysłane zostają na telefonie
+      // przegląd ChatGPT 09/11/2026, pkt 1: zdjęcie skasowane już z Dysku (limit Dysku) to jedyna kopia – zostaje na telefonie
+      if (local[j].driveDeleted) continue;
       if (local[j].hold) continue; // zdjęcie w inspekcji zostaje na telefonie
       phoneRemove.push(local[j].id); phoneBytes -= local[j].size || 0;
     }
@@ -200,8 +202,8 @@
       }
       for (var j = 0; j < p.phoneRemove.length; j++) {
         var x = await deps.db.get(p.phoneRemove[j]);
-        if (!x || !x.driveId) continue;
-        if (x.driveDeleted) await deps.db.del(x.id); else { x.blob = null; await deps.db.put(x); }
+        if (!x || !x.driveId || x.driveDeleted) continue; // bez kopii na Dysku nigdy nie kasujemy z telefonu (jedyna kopia)
+        x.blob = null; await deps.db.put(x);
       }
       return p;
     }
