@@ -159,7 +159,7 @@ function fakePhone() {
     await record('#rxNotes', 1);
     const jobId = await pg.evaluate(async () => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).find(x => !x.jobId);
       return (await r.saveReactive({ ...d, title: 'Leak', status: 'completed', actionId: 'repaired' })).id; });
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#rxAudio').waitFor({ state: 'attached' });
+    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
     check(await pg.locator('#rxNotes').count() === 0, 'Reactive historia: pasek nagrywania w zakończonym zadaniu');
     await pg.locator('#v-reactive .rx-notes').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak „📝 Notatki” w zakończonym zadaniu'));
     if (await pg.locator('#v-reactive .rx-notes').isVisible()) {
