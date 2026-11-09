@@ -25,7 +25,7 @@ function fakePhone() {
   const wav = btoa('RIFF' + '\0'.repeat(40) + 'abcd');
   const plugins = {
     HandoverTools: { startAudio: async () => ({}), stopAudio: async () => ({ data: wav }), transcribe: async () => { const t = SAID[said % SAID.length]; said++; sessionStorage.setItem('nt.said', said); return { text: t }; } },
-    Translate: { plToEn: async ({ text }) => ({ text: /strefie/.test(text) ? EN[1] : EN[0] }) },
+    Translate: { plToEn: async ({ text }) => { if (window.__ntSlow) await new Promise(r => setTimeout(r, window.__ntSlow)); return { text: /strefie/.test(text) ? EN[1] : EN[0] }; } },
     // model pobrany: zdanie zostaje jak z tłumacza; przy łączeniu notatek gubi „54” (ostrzeżenie musi się pojawić – przegląd Codex #108)
     OESTModel: { status: async () => ({ supported: true, ready: true, bytes: 1 }), generate: async ({ prompt }) => /^Combine/.test(prompt)
       ? { text: 'The isolator next to the AOV on level 13 has a cracked gland. The panel shows an error in zone 4.' }
@@ -94,7 +94,20 @@ function fakePhone() {
     await pg.locator('.nt-pop [data-nt=edit]').nth(1).click(); await pg.waitForSelector('.nt-pop .nt-warn');
     check(/12/.test(await pg.locator('.nt-pop .nt-warn').textContent()), 'edycja nie pokazuje brakującej liczby 12');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-liczby-PL.png') });
+    // „Ułóż z polskiego” dla notatki 2 → Anuluj → Popraw notatki 1: spóźniony wynik nie trafia do notatki 1 (przegląd Codex #108)
+    await pg.evaluate(() => { window.__ntSlow = 600; });
+    await pg.locator('.nt-pop [data-nt=redo]').click(); await pg.locator('.nt-pop [data-nt=cancel]').click(); await pg.waitForSelector('.nt-pop .nt-note');
+    await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]'); await pg.waitForTimeout(900);
+    await pg.evaluate(() => { window.__ntSlow = 0; });
+    R.poSpoznionymTlumaczeniu = await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue();
+    check(/level 13 has a cracked gland/.test(R.poSpoznionymTlumaczeniu), 'wynik „Ułóż” notatki 2 nadpisał edycję notatki 1: ' + R.poSpoznionymTlumaczeniu);
+    // zamknięcie okienka w trakcie poprawiania (Wstecz / Escape / obok): poprawka wraca przy następnym otwarciu (przegląd Codex #108)
+    await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('Draft kept after closing.');
+    await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
+    await pg.locator('#ntOpen').click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]'); await pg.waitForTimeout(300);
+    check(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue() === 'Draft kept after closing.', 'poprawka zgubiona po zamknięciu okienka w trakcie edycji');
     await pg.locator('.nt-pop [data-nt=cancel]').click(); await pg.waitForSelector('.nt-pop .nt-note');
+    check(/level 13 has a cracked gland/.test((await notes())[0].en), 'Anuluj po przywróconej poprawce zmienił zapisaną notatkę');
     await close();
     // 5. Połącz notatki → propozycja → Wstaw: komentarz ma oba zdania, nic nie wstawia się samo
     log('5. Połącz notatki');

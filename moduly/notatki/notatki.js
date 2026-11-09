@@ -78,10 +78,11 @@
   }
   function list(scope) {
     if (!scope) return Promise.resolve([]);
-    return tx('notes', 'readonly', function (s, m) { return m ? Object.keys(m).map(function (k) { return m[k]; }).filter(function (n) { return n.scope === scope; }) : s.index('scope').getAll(scope); })
+    return tx('notes', 'readonly', function (s, m) { return m ? Object.keys(m).map(function (k) { return cp(m[k]); }).filter(function (n) { return n.scope === scope; }) : s.index('scope').getAll(scope); })
       .then(function (a) { return (a || []).slice().sort(function (x, y) { return x.at - y.at || (x.seq || 0) - (y.seq || 0); }); });
   }
-  function put(n) { return tx('notes', 'readwrite', function (s, m) { if (m) m[n.id] = n; else s.put(n); }).then(function () { emit(n.scope); return n; }); }
+  function cp(n) { return JSON.parse(JSON.stringify(n)); } // pamięć testowa oddaje kopie jak IndexedDB
+  function put(n) { return tx('notes', 'readwrite', function (s, m) { if (m) m[n.id] = cp(n); else s.put(n); }).then(function () { emit(n.scope); return n; }); }
   function audioGet(id) { return tx('audio', 'readonly', function (s, m) { return m ? m[id] : s.get(id); }); }
   function audioPut(id, blob) { return tx('audio', 'readwrite', function (s, m) { if (m) m[id] = blob; else s.put(blob, id); }); }
   function remove(n) {
@@ -89,11 +90,11 @@
       .then(function () { return tx('notes', 'readwrite', function (s, m) { if (m) delete m[n.id]; else s.delete(n.id); }); })
       .then(function () { emit(n.scope); });
   }
-  function clear(scope) { return list(scope).then(function (a) { return a.reduce(function (p, n) { return p.then(function () { return remove(n); }); }, Promise.resolve()); }); }
+  function clear(scope) { delete szkice[scope]; return list(scope).then(function (a) { return a.reduce(function (p, n) { return p.then(function () { return remove(n); }); }, Promise.resolve()); }); }
   // szkic inspekcji przechodzi do archiwum (nowy termin): jego notatki idą razem z nim
   function move(from, to) { return list(from).then(function (a) { return Promise.all(a.map(function (n) { n.scope = to; return put(n); })).then(function () { emit(from); }); }); }
   // notatka „zamieniam na tekst” z poprzedniego uruchomienia (apka zamknięta w trakcie): zamiana rusza od nowa z zapisanego nagrania
-  var running = {};
+  var running = {}, szkice = {}; // szkice: niezapisana poprawka, gdy okienko zamknięto gestem Wstecz / obok okienka (wraca przy następnym otwarciu)
   function resume(a) {
     a.forEach(function (n) {
       if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
@@ -156,8 +157,9 @@
       .then(function () { n.st = ''; return keep(n); });
   }
   // wynik zamiany zapisujemy tylko, gdy notatka nadal istnieje (usunięta albo „Wyczyść inspekcję” w trakcie – nie wraca)
+  // miejsce (scope) bierzemy z zapisanego rekordu: notatka przeniesiona w trakcie do archiwum terminu zostaje w archiwum
   function keep(n) {
-    return tx('notes', 'readonly', function (s, m) { return m ? m[n.id] : s.get(n.id); }).then(function (cur) { return cur ? put(n) : n; });
+    return tx('notes', 'readonly', function (s, m) { return m ? m[n.id] : s.get(n.id); }).then(function (cur) { if (!cur) return n; n.scope = cur.scope; return put(n); });
   }
   // przycisk „🎤 Nagraj notatkę”: przytrzymaj = nagrywa do puszczenia; stuknij = do „Zakończ”. Jeden przycisk na stronę.
   // o: { scope(): string, ctx(): string, onSaved(note), onError(err) }
@@ -262,18 +264,19 @@
       var a = b.getAttribute('data-nt'), card = b.closest('[data-id]'), id = editing ? editing.id : card && card.getAttribute('data-id');
       if (a !== 'del' && sure) sure = '';
       if (a === 'tab-pl' || a === 'tab-en') { var pl = node.querySelector('[data-nt-f=pl]').value, en = node.querySelector('[data-nt-f=en]').value; editing.pl = pl; editing.en = en; tab = a.slice(4); drawEdit(); return; }
-      if (a === 'cancel') { editing = null; stop(); draw(); return; }
+      if (a === 'cancel') { editing = null; delete szkice[scope]; stop(); draw(); return; }
       if (a === 'save') {
         var n = editing; n.pl = node.querySelector('[data-nt-f=pl]').value.trim(); n.en = node.querySelector('[data-nt-f=en]').value.trim(); n.err = ''; n.st = '';
-        editing = null; stop(); put(n).then(draw); return;
+        editing = null; delete szkice[scope]; stop(); put(n).then(draw); return;
       }
       if (a === 'redo') {
         var plv = fix(node.querySelector('[data-nt-f=pl]').value, 'pl'), box = node.querySelector('.nt-warn');
         if (!plv) { box.textContent = T('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); return; }
         if (!translator()) { box.textContent = T('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); return; }
         b.disabled = true; box.textContent = T('Układam po angielsku…', 'Writing in English…');
-        english(plv, editing.ctx).then(function (out) {
-          if (!editing || !node.isConnected) return;
+        var ed = editing; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
+        english(plv, ed.ctx).then(function (out) {
+          if (editing !== ed || !node.isConnected) return;
           node.querySelector('[data-nt-f=pl]').value = plv; node.querySelector('[data-nt-f=en]').value = out || node.querySelector('[data-nt-f=en]').value;
           tab = 'en'; editing.pl = plv; editing.en = node.querySelector('[data-nt-f=en]').value; drawEdit();
           if (!out) node.querySelector('.nt-warn').textContent = T('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.');
@@ -298,9 +301,16 @@
       });
     });
     var off = on(function (s) { if (s === scope && !editing && node.isConnected) draw(); });
-    draw();
+    var sz = szkice[scope];
+    if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
+    else draw();
     return w.OESTPrzycisk.ask({ title: T('📝 Notatki', '📝 Notes'), node: node, ok: T('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
-      .then(function () { off(); stop(); });
+      .then(function () {
+        // zamknięte w trakcie poprawiania (Wstecz, stuknięcie obok): poprawka nie ginie – przy następnym otwarciu wraca edycja
+        var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]');
+        if (editing && fp && fe) szkice[scope] = { id: editing.id, pl: fp.value, en: fe.value, tab: tab };
+        off(); stop();
+      });
   }
 
   w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, combine: combine, open: open, addAudio: addAudio, english: english };

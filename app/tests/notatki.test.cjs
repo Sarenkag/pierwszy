@@ -51,3 +51,8 @@ test('notatki: usunięta w trakcie zamiany na tekst (Wyczyść inspekcję) nie w
   const N=load({OESTVoice:slow,Capacitor:{isNativePlatform:()=>true,Plugins:{}}}).OESTNotatki;
   await N.addAudio('s','',{blob:{}});await N.clear('s');assert.equal((await N.list('s')).length,0);await new Promise(r=>setTimeout(r,80));
   assert.equal((await N.list('s')).length,0);});
+test('notatki: przeniesiona do archiwum w trakcie zamiany na tekst zostaje w archiwum',async()=>{
+  const slow={create:()=>({busy:false,transcribe:()=>new Promise(r=>setTimeout(()=>r({text:'klapa zastawiona'}),40))}),holdButton(){}};
+  const N=load({OESTVoice:slow,Capacitor:{isNativePlatform:()=>true,Plugins:{}}}).OESTNotatki;
+  await N.addAudio('draft_A|1','',{blob:{}});await N.move('draft_A|1','draft_A|1@2026-11-01');await new Promise(r=>setTimeout(r,80));
+  assert.equal((await N.list('draft_A|1')).length,0);const a=await N.list('draft_A|1@2026-11-01');assert.equal(a.length,1);assert.equal(a[0].pl,'klapa zastawiona');});
