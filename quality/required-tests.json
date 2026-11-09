@@ -82,6 +82,9 @@
       "file": "app/tests/wysylka-adresaci.test.cjs"
     },
     {
+      "file": "app/tests/wysylka-kolejka.test.cjs"
+    },
+    {
       "file": "app/tests/zdjecia.test.cjs"
     },
     {
@@ -160,6 +163,11 @@
       "file": "app/tests/questions-ui-check.cjs",
       "passMarker": "QUESTIONS UI PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/reactive-rozmiar-ui-check.cjs",
+      "passMarker": "reactive-rozmiar-ui-check: ",
+      "timeoutSec": 600
     },
     {
       "file": "app/tests/raport-rozmiar-ui-check.cjs",

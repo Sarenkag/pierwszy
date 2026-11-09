@@ -19,7 +19,9 @@
   });
   function tx(mode, fn) {
     return dbP.then(function (db) {
-      if (!db) return null;
+      // przegląd ChatGPT 09/11/2026, pkt 4: bez magazynu zapis NIE może udawać sukcesu (raport nie trafiłby do kolejki);
+      // odczyt bez magazynu = pusta kolejka jak dawniej
+      if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return null; }
       return new Promise(function (res, rej) {
         var t = db.transaction("queue", mode), out = fn(t.objectStore("queue"));
         t.oncomplete = function () { res(out && out.result !== undefined ? out.result : out); };

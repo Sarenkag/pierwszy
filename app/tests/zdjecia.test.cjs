@@ -405,3 +405,22 @@ test('punkt 8 z prawdziwym adapterem Google: ponowna próba po przerwaniu (3 zdj
   assert.ok(ids.every(id => rows.get(id).upTry === false));
   assert.ok(peak <= 2);
 });
+
+// Przegląd ChatGPT 09/11/2026, pkt 1 (zgoda Grzegorza „lecisz z 1 4 6”): zdjęcie skasowane z Dysku po limicie Dysku,
+// a potem zwolnione z inspekcji, było kasowane też z telefonu – znikała ostatnia kopia.
+test('pkt 1: zdjęcie bez kopii na Dysku (driveDeleted) nigdy nie znika z telefonu', async () => {
+  const r = (id, day, size, extra) => Object.assign({ id, created: '2026-11-' + day + 'T10:00:00Z', size: size * MB, hasBlob: true }, extra);
+  const p = Z.plan([r('stare', '01', 150, { driveId: 'd1', driveDeleted: true }), r('nowe', '02', 100, { driveId: 'd2' })], { phoneLimitMB: 200 });
+  assert.deepStrictEqual(p.phoneRemove, ['nowe'], 'kasujemy tylko to, co jest na Dysku');
+  // pełna ścieżka: limit Dysku zdejmuje stare z Dysku (trzymane przez Reactive), potem release + limit telefonu
+  const { store, rows } = fakeStore();
+  store.setSettings({ phoneLimitMB: 100, driveLimitMB: 100 });
+  const a = await store.save({ size: 60 * MB }, { hold: 'reactive', when: new Date(2026, 10, 1, 9) });
+  await store.sync(fakeDrive());
+  const b = await store.save({ size: 60 * MB }, { when: new Date(2026, 10, 2, 9) });
+  const drive = fakeDrive(); await store.sync(drive);
+  assert.strictEqual(rows.get(a.id).driveDeleted, true, 'stare zdjęte z Dysku po limicie Dysku');
+  assert.strictEqual(await store.release('reactive', [], 0), 1);
+  assert.ok(rows.has(a.id) && rows.get(a.id).blob, 'jedyna kopia zostaje na telefonie');
+  assert.ok(!rows.get(b.id).blob, 'telefon zwalnia miejsce zdjęciem, które jest na Dysku');
+});
