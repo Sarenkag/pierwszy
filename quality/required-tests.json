@@ -95,6 +95,9 @@
     },
     {
       "file": "app/tests/notatki.test.cjs"
+    },
+    {
+      "file": "app/tests/moduly-zasady.test.cjs"
     }
   ],
   "browser": [
@@ -225,6 +228,11 @@
     {
       "file": "app/tests/notatki-ui-check.cjs",
       "passMarker": "notatki-ui-check PASS",
+      "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/moduly-zasady-ui-check.cjs",
+      "passMarker": "MODULY ZASADY UI PASS",
       "timeoutSec": 600
     }
   ],
