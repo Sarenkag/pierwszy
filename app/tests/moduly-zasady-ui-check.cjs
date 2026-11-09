@@ -11,7 +11,8 @@
 //     (--accent) i ✓; ekran, który ustawia własny rozmiar, wygrywa (reguły modułu mają zerową wagę).
 //  W  „Wyślij” w prawdziwej inspekcji (EFA-INS-014, PROD-025): raport trafia do kolejki, a odpowiedzi, zdjęcie i etap inspekcji
 //     zostają – także po ponownym otwarciu (pole komentarza w PPM jest schowane); przycisk Wyślij i sąsiedni ⚙ nie skaczą w trakcie (pomiar w każdej klatce).
-// Znane skoki (moduł przycisku rośnie w trakcie pracy) są w quality/baselines/moduly-zasady.json: test daje FAIL przy nowym skoku
+// Znane skoki (moduł przycisku rośnie w trakcie pracy) są w quality/baselines/moduly-zasady.json razem z największą zmierzoną zmianą
+// [środek x, środek y, szer., wys.]: test daje FAIL przy nowym skoku, przy skoku większym niż zapisany
 // i przy skoku, który zniknął, a dalej jest na liście. Pozostałe zasady bez wyjątków.
 // Nie mierzy czasu (zasada 08/11/2026): czeka na stan (kolejka, napis przycisku), klatki tylko zlicza.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/moduly-zasady-ui-check.cjs  (po npm run copy-web)
@@ -30,7 +31,8 @@ const check = (ok, msg) => { if (!ok) fails.push(msg); };
 // skoki rozmiaru/miejsca: porównanie z listą znanych odstępstw (quality/baselines/moduly-zasady.json) – lista może tylko maleć
 const BASELINE = path.resolve(__dirname, '../../quality/baselines/moduly-zasady.json');
 const znalezione = new Map(); // id → opisy
-const skok = (ok, id, msg) => { if (!ok) { if (!znalezione.has(id)) znalezione.set(id, []); znalezione.get(id).push(msg); } };
+// d = zmiana [środek x, środek y, szer., wys.] w px; znany wpis dopuszcza najwyżej swoje „maks” (+0,5 px zaokrąglenia) – większy skok = FAIL
+const skok = (ok, id, msg, d) => { if (!ok) { if (!znalezione.has(id)) znalezione.set(id, []); znalezione.get(id).push({ msg, d: d.map(v => Math.round(v * 10) / 10) }); } };
 const ID = 'EFA-INS-014';
 
 // ---------- w przeglądarce: pomiar położenia elementów w każdej klatce ----------
@@ -113,7 +115,7 @@ const stanInspekcji = () => ({
       const ETAPY = ['w trakcie', 'drugie stuknięcie', '✓ Gotowe', 'po powrocie', 'w trakcie (2)', 'po błędzie'];
       P.klatki.forEach((kl, n) => kl.forEach((r, i) => {
         const d = r.map((v, j) => Math.abs(v - P.start[i][j]));
-        skok(d.every(x => x <= 0.5), 'przycisk-w-grupie|zmiana-rozmiaru', `${L} P4: ${i ? 'sąsiedni przycisk' : 'przycisk akcji'} zmienił miejsce/rozmiar (${ETAPY[n]}): [środek x, środek y, szer., wys.] ${JSON.stringify(P.start[i])} → ${JSON.stringify(r)}`);
+        skok(d.every(x => x <= 0.5), 'przycisk-w-grupie|zmiana-rozmiaru', `${L} P4: ${i ? 'sąsiedni przycisk' : 'przycisk akcji'} zmienił miejsce/rozmiar (${ETAPY[n]}): [środek x, środek y, szer., wys.] ${JSON.stringify(P.start[i])} → ${JSON.stringify(r)}`, d);
       }));
       check(Math.abs(P.start[0][2] - P.start[1][2]) <= 0.5 && Math.abs(P.start[0][3] - P.start[1][3]) <= 0.5, `${L} P4: przyciski w grupie różnej wielkości: ${JSON.stringify(P.start)}`);
 
@@ -183,7 +185,7 @@ const stanInspekcji = () => ({
       ['Wyślij', '⚙ obok Wyślij'].forEach((nazwa, i) => {
         const z = zakres(klatki[i]);
         check(klatki[i].length > 2, `${L} W: brak pomiaru klatek dla ${nazwa}`);
-        if (z) skok(z.every(v => v <= 0.5), 'wyslij-w-inspekcji|zmiana-rozmiaru', `${L} W: ${nazwa} skacze w trakcie wysyłki (zmiana środka x/y, szer., wys. o ${JSON.stringify(z)} px w ${klatki[i].length} klatkach)`);
+        if (z) skok(z.every(v => v <= 0.5), 'wyslij-w-inspekcji|zmiana-rozmiaru', `${L} W: ${nazwa} skacze w trakcie wysyłki (zmiana środka x/y, szer., wys. o ${JSON.stringify(z)} px w ${klatki[i].length} klatkach)`, z);
       });
       check(!errors.length, `${L}: błędy JS: ` + errors.join(' | '));
       await ctx.close();
@@ -192,10 +194,14 @@ const stanInspekcji = () => ({
     const pl = R['okienkoPozycja-pl'], en = R['okienkoPozycja-en'];
     check(pl && en && pl.every((r, i) => r.every((v, j) => Math.abs(v - en[i][j]) <= 0.5)), `P5: przyciski okienka „Na pewno?” w innym miejscu po PL i EN: ${JSON.stringify(pl)} vs ${JSON.stringify(en)}`);
     // znane odstępstwa: dokładnie te – nic nowego i nic naprawionego bez usunięcia wpisu
-    const known = new Set(JSON.parse(fs.readFileSync(BASELINE, 'utf8')).entries.map(e => e.id));
-    for (const [id, opisy] of znalezione) if (!known.has(id)) fails.push(...opisy);
-      else R['znane: ' + id] = opisy;
-    for (const id of known) if (!znalezione.has(id)) fails.push(id + ': już nie występuje – usuń wpis z quality/baselines/moduly-zasady.json (lista może tylko maleć)');
+    const known = new Map(JSON.parse(fs.readFileSync(BASELINE, 'utf8')).entries.map(e => [e.id, e.maks]));
+    for (const [id, opisy] of znalezione) {
+      const maks = known.get(id);
+      if (!maks) { fails.push(...opisy.map(o => o.msg)); continue; }
+      R['znane: ' + id] = opisy.map(o => o.d);
+      for (const o of opisy) if (o.d.some((v, j) => v > maks[j] + 0.5)) fails.push(o.msg + ` – większy skok niż znany (maks ${JSON.stringify(maks)} px w quality/baselines/moduly-zasady.json)`);
+    }
+    for (const id of known.keys()) if (!znalezione.has(id)) fails.push(id + ': już nie występuje – usuń wpis z quality/baselines/moduly-zasady.json (lista może tylko maleć)');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   console.log('POMIARY ' + JSON.stringify(R));

@@ -2,14 +2,16 @@
   "schema": "oest.quality.baseline",
   "version": 1,
   "rule": "moduly-zasady",
-  "note": "Znane odstępstwa od zasady „przyciski w grupie mają stały rozmiar i miejsce, nic nie drga” znalezione przez app/tests/moduly-zasady-ui-check.cjs (09/11/2026). Wpis = miejsce + rodzaj błędu. Naprawa = osobne zadanie po decyzji Grzegorza, potem usunięcie wpisu. Lista może tylko maleć; dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md).",
+  "note": "Znane odstępstwa od zasady „przyciski w grupie mają stały rozmiar i miejsce, nic nie drga” znalezione przez app/tests/moduly-zasady-ui-check.cjs (09/11/2026). Wpis = miejsce + rodzaj błędu + „maks”: największa dopuszczona zmiana [środek x, środek y, szer., wys.] w px (zmierzona 09/11/2026, PL i EN); większy skok = FAIL. Naprawa = osobne zadanie po decyzji Grzegorza, potem usunięcie wpisu. Lista może tylko maleć; dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md).",
   "entries": [
     {
       "id": "przycisk-w-grupie|zmiana-rozmiaru",
+      "maks": [5, 2.5, 10, 4],
       "opis": "moduly/przycisk: w trakcie pracy (kręciołek + napis „Wysyłam…”) przycisk rośnie z 56 do 60 px wysokości, a po polsku także z 185 do 195 px szerokości; sąsiedni przycisk w tej samej grupie kurczy się i przesuwa. Po „✓ Gotowe” wszystko wraca."
     },
     {
       "id": "wyslij-w-inspekcji|zmiana-rozmiaru",
+      "maks": [0, 1, 0, 1],
       "opis": "inspekcja EFA-INS-014: w trakcie „Wyślij” (Przygotowuję raport…) wiersz Wyślij + ⚙ rośnie o 1 px wysokości (środek przesuwa się o 0,6 px). Prawdopodobnie ta sama przyczyna co wyżej (kręciołek modułu przycisku)."
     }
   ]
