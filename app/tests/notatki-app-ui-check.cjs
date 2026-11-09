@@ -108,8 +108,9 @@ function fakePhone() {
     await pg.evaluate(() => { window.__askMode = ''; });
 
     // ---------- Hand over ----------
-    await pg.goto(B + '/#home'); await pg.locator('[data-go=handover]').click(); await pg.locator('#hoStart').waitFor();
-    await pg.locator('#hoStart').fill('2026-11-09'); await pg.locator('#hoEnd').fill('2026-11-12'); await pg.locator('[data-ho=start]').click(); await pg.locator('#hoText').waitFor();
+    // okres zmiany tylko z grafiku (Ustawienia → Mój profil): Hand over sam otwiera bieżący blok 4/4
+    await pg.evaluate(() => { const d = new Date(), t = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); return window.OESTSettings.addSchedule({ effectiveFrom: '2026-01-01', anchor: t, kind: '4on4', start: '08:00', end: '20:00', endNextDay: false }); });
+    await pg.goto(B + '/#home'); await pg.locator('[data-go=handover]').click(); await pg.locator('#hoText').waitFor();
     check(await pg.locator('#hoNotes .nt-rec').isVisible(), 'Hand over: brak „🎤 Nagraj notatkę”');
     check(await pg.locator('[data-ho=record]').count() === 0, 'Hand over: stary przycisk nagrywania nadal jest');
     await record('#hoNotes', 1);
@@ -146,13 +147,14 @@ function fakePhone() {
     await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
 
     // notatka w szybkim wpisie nie zależy od id zmiany (scalanie kont zmienia id zmiany – przegląd Codex #113): nowa zmiana nadal ją widzi
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#handover'); await pg.locator('#hoStart').waitFor();
-    await pg.locator('#hoStart').fill('2026-11-13'); await pg.locator('#hoEnd').fill('2026-11-16'); await pg.locator('[data-ho=start]').click(); await pg.locator('#hoText').waitFor();
+    await pg.goto(B + '/#home'); await pg.goto(B + '/#handover'); await pg.locator('#hoText').waitFor(); // następny blok z grafiku
+    const sid1 = await pg.evaluate(() => OESTHandover.repository.get().then(d => (d.shifts.find(x => !x.archived) || {}).id));
     await record('#hoNotes', 1);
     await pg.evaluate(() => { window.__askMode = 'ok'; });
     await pg.locator('[data-ho-route^="draft/"]').click(); await pg.locator('[data-ho=archive]').click(); await pg.waitForFunction(() => /#handover$/.test(location.hash));
     await pg.evaluate(() => { window.__askMode = ''; });
-    await pg.locator('#hoStart').fill('2026-11-17'); await pg.locator('#hoEnd').fill('2026-11-20'); await pg.locator('[data-ho=start]').click(); await pg.locator('#hoNotes .nt-n').waitFor();
+    await pg.locator('#hoNotes .nt-n').waitFor(); // kolejny blok z grafiku, nowa zmiana (inne id)
+    check(await until(s => OESTHandover.repository.get().then(d => d.shifts.some(x => !x.archived && x.id !== s)), sid1), 'Hand over: po zamknięciu zmiany nie otwarto kolejnej z grafiku');
     check(await until(() => document.querySelector('#hoNotes .nt-n').textContent === '1'), 'Hand over: notatka szybkiego wpisu zgubiona po zmianie id zmiany');
     // zakończone zadanie (historia): notatki nadal do odsłuchu i odczytu, tylko do odczytu (przegląd Codex #113)
     await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
