@@ -296,7 +296,7 @@
       foot(true);
       list(scope).then(resume).then(function (a) {
         if (editing) return;
-        var h = '<div class="nt-h">' + esc(o.title || '') + (a.length ? ' · ' + T('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
+        var h = '<div class="nt-h">' + esc(o.title || '') + (a.length && !o.readonly ? ' · ' + T('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
         if (!a.length) h += '<div class="nt-empty">' + T('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
         a.forEach(function (n) {
           var s = state(n), miss = s === 'check' ? missing(n.pl, n.en) : [];
@@ -306,8 +306,9 @@
             (miss.length ? '<div class="nt-err">' + T('W oryginale jest: ', 'The original has: ') + esc(miss.join(', ')) + T(' – w tekście EN tego brak.', ' – missing in the English text.') + '</div>' : '') +
             (n.err && !n.pl ? '<div class="nt-err">' + esc(n.err) + '</div>' : '') +
             '<div class="nt-ic">' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + T('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<button type="button" disabled>—</button>') +
+            (o.readonly ? '' : // tylko odczyt (archiwum): bez poprawiania i usuwania
             '<button type="button" data-nt="edit"' + (s === 'busy' ? ' disabled' : '') + '>' + T('✎ Popraw', '✎ Edit') + '</button>' +
-            '<button type="button" class="del' + (sure === n.id ? ' sure' : '') + '" data-nt="del" aria-label="' + T('Usuń notatkę', 'Delete note') + '"' + (s === 'busy' ? ' disabled' : '') + '>' + (sure === n.id ? T('Usunąć?', 'Delete?') : '🗑') + '</button></div></div>';
+            '<button type="button" class="del' + (sure === n.id ? ' sure' : '') + '" data-nt="del" aria-label="' + T('Usuń notatkę', 'Delete note') + '"' + (s === 'busy' ? ' disabled' : '') + '>' + (sure === n.id ? T('Usunąć?', 'Delete?') : '🗑') + '</button>') + '</div></div>';
         });
         node.innerHTML = h;
       });
@@ -367,6 +368,7 @@
       }
       list(scope).then(function (all) {
         var n = all.filter(function (x) { return x.id === id; })[0]; if (!n) return;
+        if (o.readonly && a !== 'play') return;
         if (a === 'edit') { stop(); editing = n; tab = n.en ? 'en' : 'pl'; drawEdit(); return; }
         if (a === 'del') { if (sure !== n.id) { sure = n.id; draw(); return; } sure = ''; if (playing === n.id) stop(); remove(n).then(draw); return; }
         if (a === 'play') {

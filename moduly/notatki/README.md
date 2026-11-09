@@ -30,6 +30,6 @@ Nic nie trafia do raportu samo: „✨ Połącz notatki w komentarz” daje prop
 
 - Inspekcje (`inspekcje/index.html`): pole „Notatka” – „🎤 Nagraj notatkę”, „📝 Notatki N”, „✨ Połącz notatki w komentarz”. Notatki należą do szkicu inspekcji: „Wyczyść inspekcję” je usuwa, nowy termin przenosi je do archiwum razem ze szkicem. Test: `app/tests/notatki-ui-check.cjs`.
 - Reactive (09/11/2026): pasek pod „Opis / adnotacje”, „✨ Połącz notatki w opis” dopisuje pod opisem; notatki należą do zadania (`rx|<id szkicu>`), „Usuń szkic” je usuwa. Stare nagrania (sprzed zmiany) zostają niżej z „📝 Na tekst”.
-- Hand over (09/11/2026): pasek w „Szybki wpis”, „✨ Połącz notatki we wpis” (do pustego pola – zaznacza „po angielsku”); po „Zapisz wpis” nagrania trafiają do wpisu jako dowód (wpis z samym nagraniem też się zapisze), a notatki przechodzą do zapisanego wpisu (`ho|<zmiana>|<wpis>`) – przy wpisie „📝 Notatki wpisu”. Test: `app/tests/notatki-app-ui-check.cjs`.
+- Hand over (09/11/2026): pasek w „Szybki wpis”, „✨ Połącz notatki we wpis” (do pustego pola – zaznacza „po angielsku”); po „Zapisz wpis” nagrania trafiają do wpisu jako dowód (wpis z samym nagraniem też się zapisze), a notatki przechodzą do zapisanego wpisu (`ho|e|<id wpisu>`, stałe też po scaleniu kont) – przy wpisie „📝 Notatki wpisu”, w archiwum tylko odczyt i odsłuch. Test: `app/tests/notatki-app-ui-check.cjs`.
 
 Strona: `<script src="moduly/notatki/glos.js"></script>` i `<script src="moduly/notatki/notatki.js"></script>` (inspekcje: `../moduly/notatki/…`), po `moduly/model` i `moduly/przycisk`.

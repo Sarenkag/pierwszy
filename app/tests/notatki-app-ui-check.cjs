@@ -124,6 +124,18 @@ function fakePhone() {
       check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Hand over: okienko notatek wpisu bez tekstu');
       await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }
+    // notatki wpisu po id wpisu (nie zmiany – scalanie kont zmienia zmianę wpisu, przegląd Codex #113)
+    { const eid = await pg.evaluate(() => OESTHandover.repository.get().then(d => d.entries[0] && d.entries[0].id));
+      check((await notes('ho|e|' + eid)).length === 1, 'Hand over: notatki wpisu nie pod ho|e|<id wpisu>'); }
+    // archiwum = tylko odczyt: okienko notatek wpisu bez „Popraw” i 🗑 (przegląd Codex #113)
+    await pg.evaluate(() => { window.__askMode = 'ok'; });
+    await pg.locator('[data-ho-route^="draft/"]').click(); await pg.locator('[data-ho=archive]').click();
+    await pg.locator('[data-ho-route^="archive/"]').click(); await pg.locator('.ho-entry .ho-notes').waitFor({ timeout: 5000 });
+    await pg.evaluate(() => { window.__askMode = ''; });
+    await pg.locator('.ho-entry .ho-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
+    check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0, 'Hand over: w archiwum notatki wpisu da się poprawić/usunąć');
+    check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Hand over: w archiwum brak odsłuchu');
+    await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
 
     // ---------- EN ----------
     const p2 = await ctx.newPage(); p2.on('pageerror', e => errors.push(e.message)); // Hand over ma niezapisany wpis – osobna karta zamiast wychodzenia
@@ -134,5 +146,5 @@ function fakePhone() {
   finally { if (browser) await browser.close(); server.close(); }
   if (errors.length) fails.push('błędy strony: ' + errors.join(' | '));
   if (fails.length) { console.error('NOTATKI APP UI FAIL\n- ' + fails.join('\n- ')); process.exitCode = 1; }
-  else console.log('NOTATKI APP UI PASS: Reactive (🎤 → notatka → okienko → Połącz w opis → zapis szkicu → ‹ nie kasuje → stare nagranie zostaje → Usuń szkic czyści notatki), Hand over (pasek, Wstaw do wpisu + „po angielsku”, wpis z samym nagraniem, Notatki wpisu), EN.');
+  else console.log('NOTATKI APP UI PASS: Reactive (🎤 → notatka → okienko → Połącz w opis → zapis szkicu → ‹ nie kasuje → stare nagranie zostaje → Usuń szkic czyści notatki), Hand over (pasek, Wstaw do wpisu + „po angielsku”, wpis z samym nagraniem, Notatki wpisu, archiwum tylko do odczytu), EN.');
 })();
