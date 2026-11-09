@@ -5,13 +5,6 @@
   "note": "Lista może tylko maleć. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).",
   "entries": [
     {
-      "id": "CYCLE|index.html|calendar-ui.js>handover.js>home.js>index.html#inline-1>keys.js>moduly/model/model.js>moduly/przycisk/przycisk.js>moduly/wysylka/wysylka.js>powertrace.js>questions-ui.js>reactive.js>settings-google.js>settings-ui.js>update.js>zdjecia-ui.js",
-      "rule": "CYCLE",
-      "detail": "index.html: cykl calendar-ui.js → handover.js → home.js → index.html#inline-1 → keys.js → moduly/model/model.js → moduly/przycisk/przycisk.js → moduly/wysylka/wysylka.js → powertrace.js → questions-ui.js → reactive.js → settings-google.js → settings-ui.js → update.js → zdjecia-ui.js → calendar-ui.js",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|calendar-ui.js|OESTPrzycisk",
       "rule": "LOAD_ORDER",
       "detail": "index.html: calendar-ui.js (poz. 18) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
@@ -26,20 +19,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|handover.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: handover.js (poz. 26) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|handover.js|OESTPytaj",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: handover.js (poz. 26) używa OESTPytaj z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|handover.js|OESTZdjecia",
       "rule": "LOAD_ORDER",
       "detail": "index.html: handover.js (poz. 26) używa OESTZdjecia z moduly/zdjecia/zdjecia.js (poz. 43, ładowany później)",
@@ -47,30 +26,9 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|home.js|OESTOverlay",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: home.js (poz. 50) używa OESTOverlay z index.html#inline-1 (poz. 51, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|keys.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: keys.js (poz. 29) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|keys.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: keys.js (poz. 29) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|keys.js|OESTPytaj",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: keys.js (poz. 29) używa OESTPytaj z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     },
@@ -96,13 +54,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|moduly/przycisk/przycisk.js|OESTOverlay",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: moduly/przycisk/przycisk.js (poz. 46) używa OESTOverlay z index.html#inline-1 (poz. 51, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|moduly/wyglad/wyglad.js|OESTOverlay",
       "rule": "LOAD_ORDER",
       "detail": "index.html: moduly/wyglad/wyglad.js (poz. 8) używa OESTOverlay z index.html#inline-1 (poz. 51, ładowany później)",
@@ -117,34 +68,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|powertrace.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: powertrace.js (poz. 32) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|powertrace.js|OESTPytaj",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: powertrace.js (poz. 32) używa OESTPytaj z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|questions-ui.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: questions-ui.js (poz. 37) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|questions-ui.js|OESTPytaj",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: questions-ui.js (poz. 37) używa OESTPytaj z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|reactive-store.js|OESTZdjecia",
       "rule": "LOAD_ORDER",
       "detail": "index.html: reactive-store.js (poz. 23) używa OESTZdjecia z moduly/zdjecia/zdjecia.js (poz. 43, ładowany później)",
@@ -155,20 +78,6 @@
       "id": "LOAD_ORDER|index.html|reactive.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: reactive.js (poz. 42) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|reactive.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: reactive.js (poz. 42) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "LOAD_ORDER|index.html|reactive.js|OESTPytaj",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: reactive.js (poz. 42) używa OESTPytaj z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     },
@@ -215,13 +124,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|zdjecia-ui.js|OESTOverlay",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: zdjecia-ui.js (poz. 49) używa OESTOverlay z index.html#inline-1 (poz. 51, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|inspekcje/index.html|moduly/naglowek/naglowek.js|OESTPrzelacznik",
       "rule": "LOAD_ORDER",
       "detail": "inspekcje/index.html: moduly/naglowek/naglowek.js (poz. 7) używa OESTPrzelacznik z moduly/przelacznik/przelacznik.js (poz. 18, ładowany później)",
@@ -260,13 +162,6 @@
       "id": "MODULE_DEPENDS_ON_APP|moduly/naglowek/naglowek.js|OESTSettingsUI",
       "rule": "MODULE_DEPENDS_ON_APP",
       "detail": "moduly/naglowek/naglowek.js (moduł) zależy od OESTSettingsUI z kodu apki (settings-ui.js)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "MODULE_DEPENDS_ON_APP|moduly/przycisk/przycisk.js|OESTOverlay",
-      "rule": "MODULE_DEPENDS_ON_APP",
-      "detail": "moduly/przycisk/przycisk.js (moduł) zależy od OESTOverlay z kodu apki (index.html#inline-1)",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     },
@@ -316,13 +211,6 @@
       "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/naglowek/naglowek.js|OESTSettingsUI",
       "rule": "UNDEFINED_GLOBAL",
       "detail": "inspekcje/index.html: moduly/naglowek/naglowek.js używa OESTSettingsUI, którego żaden skrypt strony nie tworzy",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/przycisk/przycisk.js|OESTOverlay",
-      "rule": "UNDEFINED_GLOBAL",
-      "detail": "inspekcje/index.html: moduly/przycisk/przycisk.js używa OESTOverlay, którego żaden skrypt strony nie tworzy",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     },

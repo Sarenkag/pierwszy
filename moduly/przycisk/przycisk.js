@@ -61,7 +61,7 @@
         (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + "</button>") +
         '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>");
       if (o.node) box.querySelector(".oest-ask-body").appendChild(o.node); // własna treść okienka (np. tick boxy ustawień wysyłki)
-      var res = !!(o.alert || o.bare), over = false, O = w.OESTOverlay, own = false;
+      var res = !!(o.alert || o.bare), over = false, O = w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null, own = false; // stos okien apki (moduly/wstecz)
       function finish() { if (over) return; over = true; document.removeEventListener("keydown", key, true); w.removeEventListener("popstate", pop); box.remove(); done(res); }
       function closeVia(v) { res = v; if (O && O.stack && O.stack.indexOf(finish) >= 0) O.close(); else if (own) history.back(); else finish(); }
       function pop() { if (own) finish(); }

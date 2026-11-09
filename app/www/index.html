@@ -277,7 +277,10 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="reactive-core.js"></script>
 <script src="reactive-store.js"></script>
 <script src="moduly/wstecz/wstecz.js"></script>
+<script src="moduly/przycisk/przycisk.js"></script>
+<script src="moduly/model/model.js"></script>
 <script src="moduly/notatki/glos.js"></script>
+<script src="moduly/notatki/notatki.js"></script>
 <script src="handover-core.js"></script>
 <script src="handover.js"></script>
 <script src="keys-core.js"></script>
@@ -300,10 +303,8 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/zdjecia/zdjecia.js"></script>
 <script src="moduly/aparat/aparat.js"></script>
 <script src="moduly/checkbox/checkbox.js"></script>
-<script src="moduly/przycisk/przycisk.js"></script>
 <script src="moduly/raporty/przegladarka.js"></script>
 <script src="moduly/pole-email/pole-email.js"></script>
-<script src="moduly/model/model.js"></script>
 <script src="zdjecia-ui.js"></script>
 <script src="home.js"></script>
 <script>
@@ -383,11 +384,7 @@ input[type=text], input[type=email], input[type=date], select {
     history.back();
   }, true);
   // okna na wierzchu (np. podgląd zdjęcia) dokładają wpis historii; Wstecz telefonu najpierw zamyka okno (Grzegorz 03/11)
-  window.OESTOverlay = {
-    stack: [],
-    open: function (close) { this.stack.push(close); try { history.pushState({ n: depth() + 1, overlay: 1 }, "", location.hash); } catch (e) {} },
-    close: function () { if (this.stack.length) history.back(); } // przycisk „Zamknij” = to samo co Wstecz
-  };
+  window.OESTOverlay = window.OESTWstecz.nakladki; window.OESTOverlay.on = true; // stos okien: moduly/wstecz
   // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): zamyka okienko albo cofa o jeden poziom (jak strzałka ‹); na ekranie głównym pyta o wyjście
   window.OESTWstecz.ustaw({
     pytaj: window.OESTPrzycisk.confirm,
