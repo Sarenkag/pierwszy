@@ -81,6 +81,54 @@
     g.fillStyle = '#ffffff'; g.fillText(txt, x + sp, y + bh / 2);
   }
 
+  /* Data zrobienia z EXIF (DateTimeOriginal, zapas DateTime) – jedno miejsce dla apek (przeniesione z inspekcji 09/11/2026).
+     Zwraca Promise<Date|null> z dokładnością do minuty; brak EXIF / nie JPEG / błąd = null. */
+  function exifDate(file) {
+    if (!file || typeof file.slice !== 'function') return Promise.resolve(null);
+    return file.slice(0, 262144).arrayBuffer().then(function (buf) {
+      var v = new DataView(buf), n = v.byteLength;
+      if (n < 4 || v.getUint16(0) !== 0xFFD8) return null;
+      var o = 2;
+      while (o + 4 <= n) {
+        var mk = v.getUint16(o), len = v.getUint16(o + 2);
+        if (mk === 0xFFE1 && v.getUint32(o + 4) === 0x45786966) return tiff(o + 10);
+        if ((mk & 0xFF00) !== 0xFF00 || mk === 0xFFDA) return null;
+        o += 2 + len;
+      }
+      return null;
+      function tiff(t) {
+        var le = v.getUint16(t) === 0x4949;
+        function u16(p) { return v.getUint16(p, le); }
+        function u32(p) { return v.getUint32(p, le); }
+        function tags(ifd) {
+          var out = {}, c = u16(t + ifd);
+          for (var i = 0; i < c; i++) { var e = t + ifd + 2 + i * 12; if (e + 12 > n) break; out[u16(e)] = e; }
+          return out;
+        }
+        function str(e) {
+          var cnt = u32(e + 4), p = cnt > 4 ? t + u32(e + 8) : e + 8, s = '';
+          for (var i = 0; i < cnt - 1 && p + i < n; i++) s += String.fromCharCode(v.getUint8(p + i));
+          return s;
+        }
+        var i0 = tags(u32(t + 4)), s = '';
+        if (i0[0x8769]) { var ex = tags(u32(i0[0x8769] + 8)); if (ex[0x9003]) s = str(ex[0x9003]); }
+        if (!s && i0[0x0132]) s = str(i0[0x0132]);
+        var m = /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d)/.exec(s);
+        if (!m || +m[1] < 2000) return null;
+        return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+      }
+    }).catch(function () { return null; });
+  }
+  // kiedy zrobiono zdjęcie, gdy apka nie podała `when`: EXIF, potem data pliku (nie z przyszłości), na końcu „teraz”
+  // (przegląd Codex PR #127: zdjęcie z galerii w Reactive dostawało datę dodania zamiast zrobienia)
+  function takenAt(file, now) {
+    return exifDate(file).then(function (ex) {
+      if (ex) return ex;
+      var lm = file && Number(file.lastModified);
+      return lm > 0 && lm <= now + 60000 ? new Date(lm) : new Date(now);
+    });
+  }
+
   /* Wymiary po kompresji (bez powiększania). */
   // Rozmiar wg rodzaju zdjęcia w Standardzie (Grzegorz 05/11/2026): formularz na całą stronę A4 musi być czytelny,
   // ogólne trochę mniejsze, przy pytaniu / kranie najmniejsze (w raporcie są małe). Bez rodzaju = jak formularz.
@@ -168,7 +216,7 @@
 
     async function save(file, info) {
       info = info || {};
-      var when = info.when instanceof Date && !isNaN(info.when) ? info.when : new Date(deps.now());
+      var when = info.when instanceof Date && !isNaN(info.when) ? info.when : await takenAt(file, deps.now());
       var s = settings(), kind = info.kind === 'ogolne' ? generalKind(s.general) : KINDS[info.kind] ? info.kind : '';
       var stamp = s.stamp && info.stamp !== false ? stampText(when) : '', out = await deps.compress(file, s.preset, kind, stamp);
       var p = place(info, when);
@@ -466,10 +514,10 @@
     };
     store.preparedHits = function () { return hits; }; // ile zapisów wzięło gotowy wynik z podglądu – do testów
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
-    store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stampText = stampText; store.stats = stats; store.search = search;
+    store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stampText = stampText; store.exifDate = exifDate; store.stats = stats; store.search = search;
     return store;
   }
 
-  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, maxFor: maxFor, cleanSettings: cleanSettings, place: place, stampText: stampText, drawStamp: drawStamp, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
+  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, maxFor: maxFor, cleanSettings: cleanSettings, place: place, stampText: stampText, drawStamp: drawStamp, exifDate: exifDate, takenAt: takenAt, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
     search: search, createStore: createStore, createBrowser: createBrowser };
 });

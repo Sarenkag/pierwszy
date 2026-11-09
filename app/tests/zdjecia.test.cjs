@@ -465,3 +465,29 @@ test('data i godzina: napis w prawym dolnym rogu, w granicach zdjęcia (800 px i
   const none = []; Z.drawStamp({ fillRect: () => none.push(1), fillText: () => none.push(1), measureText: () => ({ width: 0 }) }, 800, 600, '');
   assert.strictEqual(none.length, 0, 'bez napisu nic nie rysuje');
 });
+
+// Data zrobienia, gdy apka nie podała `when` (przegląd Codex PR #127: zdjęcie z galerii w Reactive) – EXIF, potem data pliku, na końcu teraz
+function exifJpeg(dt) {
+  const str = Buffer.from(dt + '\0', 'latin1'), tiff = Buffer.alloc(8 + 2 + 12 + 4);
+  tiff.write('II', 0, 'latin1'); tiff.writeUInt16LE(42, 2); tiff.writeUInt32LE(8, 4); tiff.writeUInt16LE(1, 8);
+  tiff.writeUInt16LE(0x0132, 10); tiff.writeUInt16LE(2, 12); tiff.writeUInt32LE(str.length, 14); tiff.writeUInt32LE(tiff.length, 18); tiff.writeUInt32LE(0, 22);
+  const app1 = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff, str]), seg = Buffer.alloc(4);
+  seg.writeUInt16BE(0xFFE1, 0); seg.writeUInt16BE(app1.length + 2, 2);
+  return Buffer.concat([Buffer.from([0xFF, 0xD8]), seg, app1, Buffer.from([0xFF, 0xD9])]);
+}
+test('data zrobienia bez `when`: EXIF → data pliku → teraz; napis z tej daty', async () => {
+  const now = new Date(2026, 10, 9, 22, 30).getTime();
+  const exif = new Blob([exifJpeg('2025:01:15 08:30:12')]);
+  assert.strictEqual(String(await Z.exifDate(exif)), String(new Date(2025, 0, 15, 8, 30)));
+  assert.strictEqual(await Z.exifDate(new Blob([Buffer.from([0xFF, 0xD8, 0xFF, 0xD9])])), null);
+  assert.strictEqual(String(await Z.takenAt(exif, now)), String(new Date(2025, 0, 15, 8, 30)));
+  const file = new File([Buffer.from([1, 2, 3])], 'a.jpg', { lastModified: new Date(2026, 10, 1, 7, 5).getTime() });
+  assert.strictEqual(+(await Z.takenAt(file, now)), new Date(2026, 10, 1, 7, 5).getTime(), 'bez EXIF: data pliku');
+  const future = new File([Buffer.from([1])], 'b.jpg', { lastModified: now + 3600000 });
+  assert.strictEqual(+(await Z.takenAt(future, now)), now, 'data z przyszłości = teraz');
+  const got = [];
+  const { store } = fakeStore({ compress: async (f, p, k, stamp) => { got.push(stamp); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
+  store.setSettings({ stamp: true });
+  await store.save(exif, { kind: 'ogolne', source: 'reactive' }); // Reactive nie podaje `when`
+  assert.strictEqual(got[0], '15/01/2025 08:30', 'zdjęcie z galerii: data zrobienia, nie dodania');
+});
