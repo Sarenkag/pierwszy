@@ -7,7 +7,7 @@
     {
       "id": "przycisk-w-grupie|zmiana-rozmiaru",
       "maks": [10.5, 2.5, 21, 5],
-      "opis": "moduly/przycisk: w trakcie pracy (kręciołek + napis „Wysyłam…”) przycisk rośnie z 55–56 do 60 px wysokości, a po polsku także z 185 do 195 px szerokości; sąsiedni przycisk w tej samej grupie kurczy się i przesuwa. Po „✓ Gotowe” wszystko wraca."
+      "opis": "moduly/przycisk: w trakcie pracy (kręciołek + napis „Wysyłam…”) przycisk rośnie z 55–56 do 60 px wysokości, a po polsku także z 185 do 195–206 px szerokości (zależnie od czcionki); sąsiedni przycisk w tej samej grupie kurczy się i przesuwa. Po „✓ Gotowe” wszystko wraca."
     },
     {
       "id": "wyslij-w-inspekcji|zmiana-rozmiaru",
