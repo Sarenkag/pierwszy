@@ -156,9 +156,10 @@
   // ekran pyta tx('ekran.id', { n: 3 }). {nazwa} w tekście = wartość wstawiana przez apkę. Brak wpisu = id (test pilnuje, żeby nie było).
   var TEKSTY = {};
   function zaladujTeksty(d) { Object.keys(d || {}).forEach(function (k) { TEKSTY[k] = d[k]; }); }
-  function tx(id, v) {
+  // jezyk (opcjonalnie): 'pl' / 'en', gdy ekran sam pilnuje swojego języka (np. ustawienia kalendarza)
+  function tx(id, v, jezyk) {
     var e = TEKSTY[id]; if (!e) return id;
-    return t(e.pl, e.en).replace(/\{(\w+)\}/g, function (m, k) { return v && v[k] != null ? String(v[k]) : m; });
+    return ((jezyk || lang()) === 'en' ? e.en : e.pl).replace(/\{(\w+)\}/g, function (m, k) { return v && v[k] != null ? String(v[k]) : m; });
   }
   // Stały HTML strony: <b data-en="Keys">Klucze</b>, <button aria-label="Wstecz" data-en-aria-label="Back">.
   // Podmienia tylko tekst / atrybuty w miejscu (bez przerysowania ekranu). Polski oryginał zapamiętany w data-pl*.
