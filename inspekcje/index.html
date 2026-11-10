@@ -472,6 +472,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
     <p class="hint" id="formHint"></p>
   </section>
+  <script>/* wejście z karty PPM (#ppm=…): ramka formularza od pierwszej klatki, treść wpisuje start niżej – bez cudzego ekranu i bez pustej strony (bramka B1) */
+    if (/(^#|&)ppm=/.test(location.hash) && !/(^#|&)rec=/.test(location.hash)) { document.documentElement.classList.add("wy-wczytanie"); document.getElementById("v-form").hidden = false; }</script>
 
   <!-- 4. Podgląd -->
   <section class="view" id="v-preview" hidden>

@@ -37,7 +37,7 @@
   }
   // pierwszy ekran strony tylko się rozjaśnia (wyglad.css); od następnej zmiany ekranu – pełna Poświata
   root.classList.add("wy-wczytanie");
-  var pokazane = 0;
+  var pokazane = d.querySelector(".view:not([hidden])") ? 1 : 0; // ekran widoczny już przy wczytaniu (np. ramka formularza z karty PPM) to pierwszy ekran strony
   function poWczytaniu() { if (d.readyState !== "loading") root.classList.remove("wy-wczytanie"); }
   function nav() { navAt = Date.now(); }
   // okienko na wierzchu dokłada wpis historii z tym samym adresem – jego zamknięcie (Wstecz) to nie zmiana ekranu
