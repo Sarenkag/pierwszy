@@ -92,11 +92,14 @@
   }
   // Zapis + ponowny odczyt (DATA-002). Brak miejsca: mniejszy zapis (najnowsze wpisy); gdy i to nie wejdzie, kopia w pamięci.
   // Zwraca "ok" | "memory" | null (nic nowego).
-  function keepLog(entries) {
+  // big: „Zbadaj automatycznie” (do ~4000 wpisów) – większy zapis; gdy telefon nie zmieści, cały zostaje w pamięci do udostępnienia
+  function keepLog(entries, big) {
     if (!entries || !entries.length) return null;
-    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-1500), s, rec;
+    var MAXN = big ? 5000 : 1500, MAXB = big ? 3000000 : 900000;
+    if (big && JSON.stringify(entries).length > MAXB) { inMemory = { at: new Date().toISOString(), entries: entries }; return "memory"; } // nic nie ucinamy
+    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-MAXN), s, rec;
     for (;;) {
-      while ((s = JSON.stringify(rec = { at: new Date().toISOString(), entries: all })).length > 900000 && all.length > 50) all = all.slice(Math.floor(all.length / 4));
+      while ((s = JSON.stringify(rec = { at: new Date().toISOString(), entries: all })).length > MAXB && all.length > 50) all = all.slice(Math.floor(all.length / 4));
       try { ls().setItem(ZKEY, s); var back = JSON.parse(ls().getItem(ZKEY) || "null"); if (back && back.entries && back.entries.length === all.length) { inMemory = null; return "ok"; } } catch (e) {}
       if (all.length <= entries.length || all.length <= 50) break;
       all = all.slice(Math.floor(all.length / 2)); // najpierw oddaj starsze wpisy
@@ -122,11 +125,11 @@
   function explore(box) {
     var V = plugin("Vantify"), b = box.querySelector("#vtExplore");
     if (!V || !V.sync) { msg(box, L("Zbadaj automatycznie działa w aplikacji Android.", "Explore automatically works in the Android app.")); return; }
-    msg(box, L("Badam Vantify – tylko odczyt, do 4 minut. Możesz zostawić ten ekran otwarty.", "Exploring Vantify – read only, up to 4 minutes. Keep this screen open.")); if (b) b.disabled = true;
+    msg(box, L("Badam Vantify – tylko odczyt, do 10 minut. Zostaw ten ekran otwarty.", "Exploring Vantify – read only, up to 10 minutes. Keep this screen open.")); if (b) b.disabled = true;
     V.sync({ mode: "explore" }).then(function (r) {
       if (b) b.disabled = false;
       if (r && r.status === "ok") {
-        var kept = keepLog(r.log); draw(box);
+        var kept = keepLog(r.log, true); draw(box);
         msg(box, kept === "memory" ? L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app.")
           : L("Gotowe: ", "Done: ") + (r.count || 0) + L(" odczytów z Vantify. Dotknij „Udostępnij zapis „Zbadaj”” i wyślij mi plik.", " reads from Vantify. Tap “Share the Explore log” and send me the file."));
         return;

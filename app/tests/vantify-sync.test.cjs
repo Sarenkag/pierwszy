@@ -5,14 +5,16 @@ const test = require('node:test'), assert = require('node:assert'), fs = require
 const SRC = fs.readFileSync(path.join(__dirname, '../www/vantify-sync.js'), 'utf8');
 const API = 'https://savillsuk-api.cafm.vantify.com';
 function job(i) { return { id: 3051000 + i, type: i % 10 ? 'planned' : 'reactive', summary: 'Task ' + i, status: 'acknowledged', attendanceDueAt: '2026-12-18T18:00:00+00:00', completionDueAt: '2026-12-18T23:59:59+00:00', frequency: '1M', serviceProviderName: 'Jan Kowalski', description: 'Call Jan 07123' }; }
-function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait = 3000, login = null, dom = null } = {}) {
+function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait = 3000, login = null, dom = null, loginStatus = 401, hang = false } = {}) {
   const calls = [], results = [], timers = [];
   const all = Array.from({ length: total }, (_, i) => job(i));
   class XHR {
     open(m, u) { this.m = m; this.u = u; this.h = {}; }
     setRequestHeader(k, v) { this.h[k] = v; }
+    addEventListener(n, f) { if (n === 'loadend') this.le = f; }
     send() {
       calls.push({ m: this.m, u: this.u, h: { ...this.h } });
+      if (this.m === 'POST') { if (hang) return; this.status = loginStatus; this.responseText = '{}'; timers.push(() => { this.onload && this.onload(); this.le && this.le(); }); return; }
       const p = Number((/[?&]page=(\d+)/.exec(this.u) || [0, 1])[1]);
       const ok = this.h.Authorization === 'Bearer T';
       this.status = ok ? status : 401;
@@ -91,12 +93,19 @@ test('wygasłe logowanie + zapisany login: wpisuje login i hasło, loguje się r
   assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].count, 97);
   assert.doesNotMatch(JSON.stringify(s.results), /Tajne|greg@/, 'hasło i login nie wracają do apki');
 });
-test('zapisane hasło odrzucone (nadal ekran logowania) → login/bad po jednej próbie, bez drugiego logowania', async () => {
-  const f = loginForm(); const s = world({ hash: '#/login', login: { u: 'a', p: 'zle' }, dom: f.dom });
+function postLogin(sref) { return () => { const x = new sref.s.w.XMLHttpRequest(); x.open('POST', API + '/auth'); x.send('{}'); }; }
+test('zapisane hasło odrzucone (Vantify: 401) → login/bad po jednej próbie, bez drugiego logowania', async () => {
+  const ref = {}; const f = loginForm(postLogin(ref)); const s = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'zle' }, dom: f.dom });
   await s.run();
   assert.strictEqual(f.clicks(), 1); assert.deepStrictEqual(s.results, [{ status: 'login', code: 'bad' }]);
+  assert.ok(s.calls.some(c => c.m === 'POST'), 'odpowiedź logowania z Vantify');
   const g = world({ hash: '#/login', dom: loginForm().dom }); await g.run();
   assert.deepStrictEqual(g.results, [{ status: 'login' }], 'bez zapisanego loginu: jak dotąd');
+});
+test('brak odpowiedzi na logowanie (sieć) → błąd login-timeout, NIE „złe hasło” (bez blokady zapisanego hasła)', async () => {
+  const ref = {}; const f = loginForm(postLogin(ref)); const s = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'dobre' }, dom: f.dom, hang: true });
+  await s.run();
+  assert.strictEqual(f.clicks(), 1); assert.deepStrictEqual(s.results, [{ status: 'error', code: 'login-timeout' }]);
 });
 test('hasło już odrzucone wcześniej (VantifyLogin bad): bez wpisywania, od razu login/bad', async () => {
   const f = loginForm(); const s = world({ hash: '#/login', dom: { ...f.dom, __oestLoginBad: 1 } }); await s.run();
@@ -104,7 +113,7 @@ test('hasło już odrzucone wcześniej (VantifyLogin bad): bez wpisywania, od ra
 });
 test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logowania', async () => {
   const store = {}, ss = { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } };
-  const f1 = loginForm(); const a = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f1.dom, sessionStorage: ss } }); await a.run(2);
+  const ref = {}; const f1 = loginForm(postLogin(ref)); const a = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f1.dom, sessionStorage: ss } }); await a.run(4);
   assert.strictEqual(f1.clicks(), 1);
   const f2 = loginForm(); const b = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f2.dom, sessionStorage: ss } }); await b.run();
   assert.strictEqual(f2.clicks(), 0, 'nowa strona w tym samym oknie nie loguje drugi raz'); assert.deepStrictEqual(b.results, [{ status: 'login', code: 'bad' }]);
@@ -158,7 +167,8 @@ test('Zbadaj automatycznie: tylko GET po linkach API Vantify, pomija export/appr
   assert.ok(own.every(c => c.u.startsWith(API) || c.u === 'https://savillsuk.cafm.vantify.com/main.js'), 'tylko Vantify (bez Google i obcych)');
   assert.ok(!own.some(c => /export|approve/.test(c.u)), 'bez adresów, które mogą coś zmienić');
   assert.ok(own.some(c => c.u === API + '/sites/6324/meters'), 'idzie po linkach (_links)');
-  assert.ok(own.filter(c => /\/sites\/6324\/jobs\/\d+$/.test(c.u)).length <= 2, 'każdy wzór adresu najwyżej 2 razy');
+  assert.ok(own.filter(c => /\/sites\/6324\/jobs\/\d+$/.test(c.u)).length <= 3, 'każdy wzór adresu najwyżej 3 razy');
+  assert.ok(own.some(c => c.u === API + '/sites/6324/quotes'), 'wyceny (quotes)');
   const txt = JSON.stringify(r.log);
   assert.doesNotMatch(txt, /Kowalski|a@b\.c|Greg|Bearer/, 'bez danych osób i tokenu');
   assert.ok(r.log.some(e => e.k === 'code' && e.m === 'POST' && /complete/.test(e.u)), 'z kodu strony: jak zamyka zlecenie');

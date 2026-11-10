@@ -67,7 +67,7 @@ public class VantifyPlugin extends Plugin {
     private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
 
     static final class Sync {
-        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 240000;
+        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 600000;
         private String asset(String p) throws Exception {
             try (InputStream in = a.getAssets().open(p)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
         }
