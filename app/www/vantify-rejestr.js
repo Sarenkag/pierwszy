@@ -5,42 +5,52 @@
 // W przeglądarce (testy) eksportuje funkcje czyszczące przez module.exports.
 (function (g) {
   var SECRET = /pass|token|secret|auth|session|cookie|sig|key|code|otp|csrf/i;
-  var PERSON = /name|email|mail|phone|mobile|tel|contact|reporter|operative|approver|user|person|address|signature/i;
+  var PERSON = /name|email|mail|phone|mobile|tel|contact|reporter|operative|approver|user|person|address|signature|search|query|^q$|text|comment|note|desc/i;
+  // Lista dozwolonych (przegląd Codex #132): zapisujemy tylko to, co na pewno nie jest daną osoby ani sekretem.
+  // Parametry adresu: tylko techniczne nazwy i krótkie wartości (liczby, daty, proste słowa); reszta „…”.
+  var SAFE_Q = /^(page|pagesize|size|limit|offset|skip|take|top|sort|sortby|order|orderby|dir|direction|status|statuses|type|jobtype|types|from|to|start|end|date|datefrom|dateto|siteid|site|sites|buildingid|frequency|priority|view|tab|format|include|expand|fields|lang|version|v|_)$/i;
+  var NUM = /^-?\d+(\.\d+)?$/, DATE = /^\d{4}-\d\d-\d\d([T ][\d:.]+Z?)?([+-]\d\d:?\d\d)?$/;
+  // Wartości tekstowe: tylko liczby, daty i pola wyliczeniowe (status, typ, częstotliwość…) jako krótkie słowo.
+  var ENUM_K = /^(status|state|type|jobtype|kind|frequency|priority|category|format|method|unit|currency|sortorder|order|direction)$/i;
+  function word(v) { return /^[A-Za-z][A-Za-z_ -]{0,24}$/.test(v); }
+  function seg(x) { return /@|%40|\s|%20/.test(x) || x.length > 40 ? "…" : x; }
   function url(u, base) {
     try {
       var x = new URL(String(u), base || (g.location && g.location.href) || "https://x/");
       var q = [];
-      x.searchParams.forEach(function (v, k) { q.push(encodeURIComponent(k) + "=" + (SECRET.test(k) ? "…" : encodeURIComponent(v).slice(0, 80))); });
-      return x.origin + x.pathname + (q.length ? "?" + q.join("&") : "") + (x.hash ? x.hash.split("?")[0] : "");
-    } catch (e) { return String(u).slice(0, 200); }
+      x.searchParams.forEach(function (v, k) { q.push(encodeURIComponent(k) + "=" + (!SECRET.test(k) && SAFE_Q.test(k) && (NUM.test(v) || DATE.test(v) || word(v) || /^[\d,]+$/.test(v)) ? encodeURIComponent(v).slice(0, 40) : "…")); });
+      var h = x.hash ? x.hash.split("?")[0].split("/").map(seg).join("/") : "";
+      return x.origin + x.pathname.split("/").map(seg).join("/") + (q.length ? "?" + q.join("&") : "") + h;
+    } catch (e) { return "(adres)"; }
   }
-  function val(v) {
+  function val(v, k) {
     if (typeof v === "string") {
-      if (/@/.test(v)) return "(email)";
-      if (/^\+?[\d\s()-]{9,}$/.test(v) && !/^\d{4}-\d\d-\d\d/.test(v)) return "(tel)";
-      return v.length > 40 ? v.slice(0, 40) + "…" : v;
+      if (DATE.test(v) || NUM.test(v)) return v;
+      if (ENUM_K.test(k || "") && word(v)) return v;
+      return "(tekst " + v.length + ")";
     }
     return typeof v === "number" || typeof v === "boolean" || v === null ? v : typeof v;
   }
-  // kształt danych: klucze, długości list, przykładowe wartości (bez danych osób i sekretów); keysOnly = bez wartości
-  function shape(o, d, keysOnly) {
+  // kształt danych: klucze, długości list, liczby, daty i pola wyliczeniowe; keysOnly = bez wartości.
+  // Pod polem osoby (contact, reporter…) zapisujemy tylko nazwy kluczy, bez żadnych wartości.
+  function shape(o, d, keysOnly, k) {
     if (d > 4) return "…";
-    if (Array.isArray(o)) return { n: o.length, item: o.length ? shape(o[0], d + 1, keysOnly) : null };
+    if (Array.isArray(o)) return { n: o.length, item: o.length ? shape(o[0], d + 1, keysOnly, k) : null };
     if (o && typeof o === "object") {
       var r = {};
-      Object.keys(o).slice(0, 80).forEach(function (k) {
-        r[k] = SECRET.test(k) ? "(ukryte)" : keysOnly ? (o[k] && typeof o[k] === "object" ? shape(o[k], d + 1, true) : typeof o[k]) : PERSON.test(k) && typeof o[k] !== "object" ? "(osoba)" : shape(o[k], d + 1, false);
+      Object.keys(o).slice(0, 80).forEach(function (c) {
+        r[c] = SECRET.test(c) ? "(ukryte)" : PERSON.test(c) ? (o[c] && typeof o[c] === "object" ? shape(o[c], d + 1, true, c) : "(osoba)") : shape(o[c], d + 1, keysOnly, c);
       });
       return r;
     }
-    return keysOnly ? typeof o : val(o);
+    return keysOnly ? typeof o : val(o, k);
   }
   function body(text, keysOnly) {
     if (text == null || text === "") return null;
     if (typeof text !== "string") return { type: Object.prototype.toString.call(text).slice(8, -1) };
     try { return shape(JSON.parse(text), 0, keysOnly); } catch (e) {
-      if (keysOnly && /=/.test(text)) return { form: text.split("&").map(function (p) { return decodeURIComponent(p.split("=")[0]); }).slice(0, 40) };
-      return { text: text.length, head: keysOnly ? undefined : text.slice(0, 120).replace(/[^\n,]*@[^\n,]*/g, "(email)") };
+      if (keysOnly && /=/.test(text)) return { form: text.split("&").map(function (p) { try { return decodeURIComponent(p.split("=")[0]); } catch (x) { return "?"; } }).slice(0, 40) };
+      return { text: text.length }; // nie-JSON: tylko długość, bez treści
     }
   }
   var api = { url: url, shape: shape, body: body };

@@ -61,6 +61,18 @@ public class VantifyActivity extends Activity {
         root.addView(bar, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         root.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
+        // Android 15+ rysuje okno pod paskami (edge-to-edge, targetSdk 36): odsuń treść od pasków, wycięcia i klawiatury
+        root.setOnApplyWindowInsetsListener((v, in) -> {
+            int l, t, r, btm;
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets i = in.getInsets(android.view.WindowInsets.Type.systemBars() | android.view.WindowInsets.Type.displayCutout() | android.view.WindowInsets.Type.ime());
+                l = i.left; t = i.top; r = i.right; btm = i.bottom;
+            } else { l = in.getSystemWindowInsetLeft(); t = in.getSystemWindowInsetTop(); r = in.getSystemWindowInsetRight(); btm = in.getSystemWindowInsetBottom(); }
+            v.setPadding(l, t, r, btm);
+            return in;
+        });
+        // Android 13+: systemowy Wstecz (przy targetSdk 36 onBackPressed nie jest wołane)
+        if (android.os.Build.VERSION.SDK_INT >= 33) getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
         WebSettings s = web.getSettings();
@@ -147,7 +159,9 @@ public class VantifyActivity extends Activity {
         finish();
     }
 
-    @Override public void onBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else finishWithResult(); }
+    // Wstecz: poprzednia strona Vantify, a na pierwszej stronie wyjście z zapisem wyniku (eksport, zapis „Zbadaj”)
+    private void back() { if (web != null && web.canGoBack()) web.goBack(); else finishWithResult(); }
+    @Override public void onBackPressed() { back(); }
 
     @Override protected void onDestroy() { CookieManager.getInstance().flush(); if (web != null) web.destroy(); super.onDestroy(); }
 }

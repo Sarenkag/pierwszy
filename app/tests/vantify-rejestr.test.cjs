@@ -21,6 +21,17 @@ test('odpowiedzi: kształt danych bez osób, e-maili i telefonów; terminy i lic
   assert.doesNotMatch(s, /Kowalski|07123|jan@firma|abc|456 789/);
   assert.match(s, /"total":97/); assert.match(s, /"completeBy":"2026-11-20 23:59:59"/); assert.match(s, /"n":1/);
 });
+test('adres: dane osób w parametrach i ścieżce ukryte, zostają tylko techniczne parametry (przegląd Codex #132)', () => {
+  const u = R.url('https://a.vantify.com/api/people/greg@example.com?email=greg@example.com&phone=07123456789&search=Jan%20Kowalski&status=Open&from=2026-11-01&page=2');
+  assert.doesNotMatch(u, /greg|07123|Kowalski|Jan/);
+  assert.match(u, /status=Open&from=2026-11-01&page=2$/);
+});
+test('odpowiedzi: lista dozwolonych – teksty opisowe i wszystko pod polem osoby bez wartości, nie-JSON bez treści (przegląd Codex #132)', () => {
+  const s = JSON.stringify(R.body(JSON.stringify({ contact: { first: 'Jan', last: 'Kowalski' }, description: 'Call Jan on 07123 456789', title: 'Jan', status: 'Open', frequency: 'Quarterly', n: 3 }), false));
+  assert.doesNotMatch(s, /Jan|Kowalski|07123/);
+  assert.match(s, /"status":"Open"/); assert.match(s, /"frequency":"Quarterly"/); assert.match(s, /"first":"string"/);
+  assert.deepStrictEqual(R.body('<p>Jan Kowalski 07123 456789</p>', false), { text: '<p>Jan Kowalski 07123 456789</p>'.length });
+});
 test('Java: apka nie zapisuje loginu ani hasła Vantify', () => {
   for (const f of ['VantifyActivity.java', 'VantifyPlugin.java']) {
     const s = J('java/com/oest/inspekcje/' + f);
@@ -34,6 +45,10 @@ test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność 
   assert.match(a, /public void log\(String json\) \{\s*if \(!vantify\(host\)/);
   assert.match(a, /public void file\(String text, String name\) \{\s*if \(!vantify\(host\)/);
   assert.match(a, /setAllowFileAccess\(false\)/);
+  // Android 13+: systemowy Wstecz przez OnBackInvokedCallback (targetSdk 36 nie woła onBackPressed), wyjście zapisuje wynik
+  assert.match(a, /registerOnBackInvokedCallback/); assert.match(a, /private void back\(\) \{[^}]*finishWithResult\(\)/);
+  // edge-to-edge (Android 15+): okno odsuwa się od pasków systemowych i klawiatury
+  assert.match(a, /setOnApplyWindowInsetsListener/);
   const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);
   assert.match(J('java/com/oest/inspekcje/MainActivity.java'), /registerPlugin\(VantifyPlugin\.class\)/);
 });
