@@ -1,17 +1,32 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path'), vm = require('vm');
 function fakeDate(day) { const D = Date; return class extends D { constructor(...a) { super(...(a.length ? a : [day + 'T12:00:00'])); } static now() { return new D(day + 'T12:00:00').getTime(); } }; }
-function load(store, day) {
+// Scenariusze logiki terminów liczą na stałej kopii eksportu z 02/11/2026 (dane/vantify-plan-02112026.js),
+// żeby wgranie nowego eksportu Vantify nie zmieniało testów logiki. Bieżący plik sprawdzają testy „plik z eksportu”.
+const LIVE = path.join(__dirname, '..', 'www', 'vantify-plan.js'), FIX = path.join(__dirname, 'dane', 'vantify-plan-02112026.js');
+function load(store, day, plan = FIX) {
   const ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
   if (day) ctx.Date = fakeDate(day); // zegar apki w teście = podany dzień
   else ctx.Date = fakeDate('2026-11-05');
   ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
-  for (const f of ['vantify-plan.js', 'ppm.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
+  for (const f of [plan, path.join(__dirname, '..', 'www', 'ppm.js')]) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx);
   return ctx.window;
 }
-test('zlecenia Vantify: tylko id kart z ppm.js, bez danych osobowych', () => {
-  const w = load({}), V = w.OEST_VANTIFY, P = w.OEST_PPM;
+test('plik z eksportu: zlecenia Vantify tylko dla id kart z ppm.js, bez danych osobowych', () => {
+  for (const plan of [LIVE, FIX]) {
+  const w = load({}, null, plan), V = w.OEST_VANTIFY, P = w.OEST_PPM;
   for (const id of Object.keys(V.jobs)) { assert.ok(P.byId(id), id); for (const j of V.jobs[id]) assert.match(j.due, /^\d{4}-\d\d-\d\d$/); }
-  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'www', 'vantify-plan.js'), 'utf8'), /@|07\d{3} /);
+  assert.doesNotMatch(fs.readFileSync(plan, 'utf8'), /@|07\d{3} /);
+  }
+});
+// Eksport Job z 09/11/2026 (Grzegorz 10/11: „aktualny stan Vantify”): zlecenia zamknięte w Vantify znikają z pliku.
+test('plik z eksportu 09/11: dziś 10/11 termin karty = najbliższe otwarte zlecenie z pliku, bez przeliczania', () => {
+  const w = load({}, '2026-11-10', LIVE), P = w.OEST_PPM, d = id => P.iso(P.due(P.byId(id)));
+  assert.match(w.OEST_VANTIFY.exported, /^2026-11-09-/);
+  assert.strictEqual(d('EFA-INS-003'), '2026-11-20'); // 06/11 i 13/11 zamknięte w Vantify
+  assert.strictEqual(P.jobFor(P.byId('EFA-INS-003'), '2026-11-20').no, '3000623');
+  assert.strictEqual(d('EFA-INS-005'), '2026-11-13');
+  assert.strictEqual(d('EFA-INS-027'), '2026-12-10'); // 2991778 (10/11) zamknięte w Vantify
+  for (const [id, jobs] of Object.entries(w.OEST_VANTIFY.jobs)) assert.strictEqual(d(id), jobs.find(j => j.due >= '2026-11-10').due, id);
 });
 // Grzegorz 05/11/2026: terminy DOKŁADNIE jak w pliku Vantify; apka niczego nie przesuwa; inspekcję kończy tylko on.
 // Dziś w testach = 05/11/2026 (dzień zgłoszenia: Water Feature Checks 2985235 zniknęła z 06/11).
@@ -131,4 +146,21 @@ test('karta bez zleceń Vantify: Update i częstotliwość działają jak dotąd
   assert.strictEqual(r.due(t), '2026-11-20');
   r.P.close(t, '2026-11-20');
   assert.strictEqual(r.due(t), '2027-02-20');
+});
+// Codex #130: eksport ma tylko otwarte zlecenia. EFA-INS-001 (wszystkie zlecenia zamknięte w Vantify) zostaje kartą Vantify
+// (lista „cards”): bez terminu, P.close nic nie zapisuje, kalendarz nic nie planuje, stara data z telefonu się nie liczy.
+test('plik z eksportu 09/11: karta Vantify bez otwartych zleceń nie wraca do terminów liczonych w apce (PROD-010)', () => {
+  const store = { 'oest.ppm.due': JSON.stringify({ 'EFA-INS-001': '2026-11-01' }) };
+  const w = load(store, '2026-11-10', LIVE), P = w.OEST_PPM;
+  for (const id of ['EFA-INS-001', 'EFA-INS-011']) {
+    const t = P.byId(id);
+    assert.strictEqual(P.jobs(t).length, 0, id);
+    assert.ok(w.OEST_VANTIFY.cards.includes(id), id);
+    assert.strictEqual(P.due(t), null, id);
+    P.close(t, '2026-11-10');
+    assert.strictEqual(P.due(t), null, id);
+    assert.strictEqual(P.occurrences(t, '2026-11-01', '2027-03-31').length, 0, id);
+  }
+  assert.strictEqual(JSON.parse(store['oest.ppm.due'])['EFA-INS-001'], '2026-11-01'); // nic nowego nie zapisano
+  for (const id of Object.keys(w.OEST_VANTIFY.jobs)) assert.ok(w.OEST_VANTIFY.cards.includes(id), id);
 });
