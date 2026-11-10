@@ -175,6 +175,16 @@
   // z dwóch tekstów – PL i EN zajmują to samo miejsce. Liczone, gdy element jest widoczny, i od nowa przy zmianie szerokości.
   // Pomiar w paczce (3 przeliczenia układu na całą stronę): wszystkie w bieżącym języku, wszystkie w drugim, powrót.
   var RO = root.ResizeObserver ? new root.ResizeObserver(function (es) { reserve(es.map(function (e) { return e.target; })); }) : null;
+  // rozmiar w układzie strony, bez transformacji (09/11/2026): ekran w trakcie wejścia jest chwilowo pomniejszony (Poświata, moduly/wyglad),
+  // przycisk wciśnięty – getBoundingClientRect podałby wtedy za mały rozmiar i miejsce pod drugi język byłoby za ciasne (też moduly/podmien)
+  function prostokat(el) {
+    var r = el.getBoundingClientRect(), win = el.ownerDocument.defaultView, sx = 1, sy = 1;
+    for (var n = el; n && n.nodeType === 1; n = n.parentElement) {
+      var t = win.getComputedStyle(n).transform;
+      if (t && t !== 'none') { var m = new win.DOMMatrixReadOnly(t); sx *= Math.hypot(m.a, m.b) || 1; sy *= Math.hypot(m.c, m.d) || 1; }
+    }
+    return sx === 1 && sy === 1 ? r : { width: r.width / sx, height: r.height / sy };
+  }
   function reserve(els) {
     var todo = els.filter(function (el) {
       if (!el.isConnected || !el.getClientRects().length) return false;
@@ -185,9 +195,9 @@
       el.__oestW = pw; el.__oestT = cur; el.style.minHeight = ''; el.style.minWidth = ''; return true;
     }).map(function (el) { return { el: el, cur: el.textContent, alt: el.textContent === el.dataset.pl ? el.dataset.en : el.dataset.pl }; });
     if (!todo.length) return;
-    todo.forEach(function (x) { var cs = root.getComputedStyle(x.el), pr = x.el.parentNode.getBoundingClientRect(); x.cs = cs; x.a = x.el.getBoundingClientRect(); x.h = parseFloat(cs.height); x.w = parseFloat(cs.width); x.full = x.a.width >= pr.width - parseFloat(root.getComputedStyle(x.el.parentNode).paddingLeft) - parseFloat(root.getComputedStyle(x.el.parentNode).paddingRight) - 1; });
+    todo.forEach(function (x) { var cs = root.getComputedStyle(x.el), pr = prostokat(x.el.parentNode); x.cs = cs; x.a = prostokat(x.el); x.h = parseFloat(cs.height); x.w = parseFloat(cs.width); x.full = x.a.width >= pr.width - parseFloat(root.getComputedStyle(x.el.parentNode).paddingLeft) - parseFloat(root.getComputedStyle(x.el.parentNode).paddingRight) - 1; });
     todo.forEach(function (x) { x.el.textContent = x.alt; });
-    todo.forEach(function (x) { x.b = x.el.getBoundingClientRect(); });
+    todo.forEach(function (x) { x.b = prostokat(x.el); });
     todo.forEach(function (x) { x.el.textContent = x.cur; });
     todo.forEach(function (x) {
       if (x.b.height > x.a.height + 0.5) x.el.style.minHeight = (x.b.height - Math.max(0, x.a.height - x.h)) + 'px';
@@ -213,6 +223,6 @@
     });
     if (doc.documentElement) doc.documentElement.lang = en ? 'en' : 'pl';
   }
-  var api = { text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D };
+  var api = { text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D, prostokat: prostokat };
   if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; root.OESTTx = tx; }
 })(this);

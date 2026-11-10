@@ -314,7 +314,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <div class="wrap">
 
   <!-- 1. Rodzaje inspekcji -->
-  <section class="view" id="v-home">
+  <section class="view" id="v-home" hidden><!-- ekran wybiera skrypt – przy wejściu z listy PPM nie miga lista inspekcji (09/11/2026) -->
     <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" data-en-aria-label="App menu" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1><span data-en="Inspections">Inspekcje</span><span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
     <div class="notice" id="tplNotice" hidden></div>
     <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue" data-en="Queue">Kolejka</button></div>
@@ -3309,7 +3309,11 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   states = cur.type.checks.map(function (c) { return c.def; });
   var cached = load("setup", null);
   if (cached) applySetup(cached);
-  show(APP && location.hash === "#queue" ? "queue" : "home"); renderTranslate(); // z apki prosto do kolejki (bez przekierowania z ekranu startowego)
+  // wejście prosto do inspekcji (#ppm=…) albo odzyskanej (#rec=…): żaden ekran do czasu otwarcia formularza – wcześniej przez chwilę
+  // pokazywała się lista inspekcji, a telefon trzyma poprzedni ekran, dopóki nowy nie ma czego pokazać (Grzegorz 09/11/2026, „drżenie”)
+  var wprost = !!REC_ID || !!(PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || ""));
+  if (!wprost) show(APP && location.hash === "#queue" ? "queue" : "home"); // z apki prosto do kolejki (bez przekierowania z ekranu startowego)
+  renderTranslate();
   Promise.all([
     kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
     qAll().then(function (all) {
@@ -3320,6 +3324,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   ]).then(function () {
     refresh(); renderHome(); if (REC_ID) openRec(REC_ID); else openPpm();
     if (location.hash === "#queue") show("queue");
+    if (!REC_ID && !document.querySelector(".view:not([hidden])")) show("home"); // formularz się nie otworzył – lista inspekcji
     if (window.OESTSender) OESTSender.init({
       onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
         var q = queue.filter(function (x) { return x.id === it.id; })[0]; if (!q) return;
