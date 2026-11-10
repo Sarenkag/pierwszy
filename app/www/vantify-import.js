@@ -17,8 +17,13 @@
     if (!V) return;
     V.exported = p.exported; V.jobs = p.jobs; V.cards = union(p.cards, base.cards || Object.keys(base.jobs)); V.source = "phone"; V.importedAt = p.at;
   }
-  // wczytany plik obowiązuje, chyba że apka ma nowszy eksport (ten sam dzień = wczytany, bo zrobiony świadomie)
-  var s = stored(); if (s && s.date >= baseDate()) use(s);
+  // Data wczytanego planu = późniejsza z: najnowsze zlecenie w pliku, dzień wczytania (plik nie ma daty eksportu,
+  // a zamknięcie najnowszego zlecenia obniża maksimum createdAt). Wczytany obowiązuje, chyba że apka ma nowszy eksport.
+  function day(p) { var a = String(p.at || "").slice(0, 10); return a > p.date ? a : p.date; }
+  var s = stored();
+  if (s && day(s) >= baseDate()) use(s);
+  // Karty prowadzone przez Vantify zostają kartami Vantify także, gdy wygra plan wbudowany (bez powrotu do terminów liczonych przez apkę).
+  else if (s && V) V.cards = union(V.cards || Object.keys(V.jobs || {}), s.cards);
 
   function cur() { return V || base; }
   function lang() { return (document.documentElement.lang || "pl").slice(0, 2) === "en" ? "en" : "pl"; }
@@ -32,7 +37,8 @@
   function put(el, h) { if (w.OESTPodmien && el.firstChild) w.OESTPodmien.html(el, h); else el.innerHTML = h; }
   function count(j) { return Object.keys(j || {}).reduce(function (n, k) { return n + j[k].length; }, 0); }
 
-  // Podgląd przed zapisem: nic nie zapisuje. Błędy: VANTIFY_FORMAT, VANTIFY_EMPTY, VANTIFY_OLDER.
+  // Podgląd przed zapisem: nic nie zapisuje. Błędy: VANTIFY_FORMAT, VANTIFY_EMPTY. older = tylko ostrzeżenie
+  // (data pliku to najnowsze createdAt, nie dzień eksportu: świeży eksport po zamknięciu najnowszego zlecenia wygląda na starszy).
   function preview(text) {
     var c = cur(), p = E.plan(E.parseCsv(text), { match: E.matcher(cards()), prevCards: c.cards || Object.keys(c.jobs || {}) });
     var now = String(c.exported || "").slice(0, 10);
@@ -45,6 +51,8 @@
     var back = stored(); if (!back || back.exported !== rec.exported) throw new Error("VANTIFY_SAVE");
     use(back);
     try { w.dispatchEvent(new CustomEvent("oest:vantify", { detail: { exported: back.exported } })); } catch (e) {}
+    // zmiana terminów: ten sam sygnał co przy zmianie terminów PPM (kalendarz telefonu, ekran główny)
+    try { w.dispatchEvent(new CustomEvent("oest:ppm-due-changed", { detail: { source: "vantify" } })); } catch (e) {}
     return back;
   }
   function info() { var c = cur(); return { date: String(c.exported || "").slice(0, 10), source: c.source || "app", importedAt: c.importedAt || null, jobs: count(c.jobs) }; }
@@ -74,8 +82,7 @@
     var input = box.querySelector("#vtFile");
     function show(r) {
         var out = box.querySelector("#vtPreview"), ch = r.changes, p = r.plan; pending = r;
-        if (r.older) { pending = null; out.innerHTML = "<p class=\"settings-status warn\">" + L("Ten plik jest starszy (eksport z ", "This file is older (export from ") + dmy(p.date) + L(") niż obecny plan (", ") than the current plan (") + dmy(r.currentDate) + L("). Nic nie zmieniono.", "). Nothing changed.") + "</p>"; input.value = ""; return; }
-        put(out, "<h3>" + L("Eksport z ", "Export from ") + dmy(p.date) + " · " + ch.total + L(" zleceń", " jobs") + "</h3>" +
+        put(out, (r.older ? "<p class=\"settings-status warn\">" + L("Uwaga: najnowsze zlecenie w pliku jest z ", "Note: the newest job in the file is from ") + dmy(p.date) + L(", a w obecnym planie z ", ", the current plan has ") + dmy(r.currentDate) + L(". Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.", ". The file may be older. Save only if it is a fresh export.") + "</p>" : "") + "<h3>" + L("Eksport z ", "Export from ") + dmy(p.date) + " · " + ch.total + L(" zleceń", " jobs") + "</h3>" +
           "<p>" + L("Nowe zlecenia: ", "New jobs: ") + ch.added.length + "</p>" + (ch.added.length ? list(ch.added, 8) : "") +
           "<p>" + L("Zamknięte w Vantify (znikną z apki): ", "Closed in Vantify (removed from the app): ") + ch.closed.length + "</p>" + (ch.closed.length ? list(ch.closed, 8) : "") +
           (p.missing.length ? "<p class=\"hint\">" + L("Bez karty w apce (pominięte): ", "No card in the app (skipped): ") + esc(p.missing.join(", ")) + "</p>" : "") +
