@@ -72,12 +72,23 @@
   // Zapis „Zbadaj” z ostatnich wizyt w Vantify (vantify-rejestr.js): tylko w telefonie, do udostępnienia przez Grzegorza
   var showText = function () {};
   var ZKEY = "oest.vantify.zapis";
-  function zapis() { try { var z = JSON.parse(ls().getItem(ZKEY) || "null"); return z && z.entries ? { n: z.entries.length, z: z } : { n: 0 }; } catch (e) { return { n: 0 }; } }
+  var inMemory = null; // kopia w pamięci, gdy telefon nie zapisał (np. brak miejsca): do udostępnienia w tej sesji
+  function zapis() {
+    if (inMemory) return { n: inMemory.entries.length, z: inMemory, memory: true };
+    try { var z = JSON.parse(ls().getItem(ZKEY) || "null"); return z && z.entries ? { n: z.entries.length, z: z } : { n: 0 }; } catch (e) { return { n: 0 }; }
+  }
+  // Zapis + ponowny odczyt (DATA-002). Brak miejsca: mniejszy zapis (najnowsze wpisy); gdy i to nie wejdzie, kopia w pamięci.
+  // Zwraca "ok" | "memory" | null (nic nowego).
   function keepLog(entries) {
-    if (!entries || !entries.length) return;
-    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-1500), s;
-    while ((s = JSON.stringify({ at: new Date().toISOString(), entries: all })).length > 900000 && all.length > 50) all = all.slice(Math.floor(all.length / 4));
-    try { ls().setItem(ZKEY, s); } catch (e) {}
+    if (!entries || !entries.length) return null;
+    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-1500), s, rec;
+    for (;;) {
+      while ((s = JSON.stringify(rec = { at: new Date().toISOString(), entries: all })).length > 900000 && all.length > 50) all = all.slice(Math.floor(all.length / 4));
+      try { ls().setItem(ZKEY, s); var back = JSON.parse(ls().getItem(ZKEY) || "null"); if (back && back.entries && back.entries.length === all.length) { inMemory = null; return "ok"; } } catch (e) {}
+      if (all.length <= entries.length || all.length <= 50) break;
+      all = all.slice(Math.floor(all.length / 2)); // najpierw oddaj starsze wpisy
+    }
+    inMemory = rec; return "memory";
   }
   function plugin(name) { var C = w.Capacitor; if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin && C.registerPlugin(name)); }
   function msg(box, t) { var m = box.querySelector("#vtMsg"); if (m) m.textContent = t; }
@@ -85,10 +96,11 @@
     var V = plugin("Vantify");
     if (!V) { msg(box, L("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app.")); return; }
     V.open({ lang: lang() }).then(function (r) {
-      keepLog(r && r.log);
+      var kept = keepLog(r && r.log);
       draw(box);
+      if (kept === "memory") msg(box, L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app."));
       if (r && r.csv) { try { showText(box, r.csv); } catch (e) { box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; } }
-      else msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
+      else if (kept !== "memory") msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
     }).catch(function () { msg(box, L("Nie udało się otworzyć Vantify.", "Could not open Vantify.")); });
   }
   function shareLog(box) {

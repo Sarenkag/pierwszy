@@ -66,11 +66,18 @@ assert.match(await page.locator('#vtShare').textContent(),/Udostępnij zapis „
 await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__shared);
 const sh=await page.evaluate(()=>({name:window.__shared.files[0].name,text:decodeURIComponent(escape(atob(window.__shared.files[0].data)))}));
 assert.match(sh.name,/^vantify-zbadaj-\d{8}\.json$/);assert.match(sh.text,/api\/jobs/);
+// brak miejsca w telefonie (przegląd Codex #132): zapis „Zbadaj” nie ginie – komunikat i udostępnienie z pamięci
+await page.evaluate(()=>{const S=Storage.prototype.setItem;window.__S=S;Storage.prototype.setItem=function(k,v){if(k==='oest.vantify.zapis')throw new DOMException('full','QuotaExceededError');return S.call(this,k,v);};window.Capacitor.Plugins.Vantify.open=async()=>({log:[{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/nowe',st:200}]});window.__shared=null;});
+await page.locator('#vtOpen').click();await page.waitForFunction(()=>/nie zapisał zapisu „Zbadaj”/.test(document.getElementById('vtMsg')?.textContent||''));
+assert.match(await page.locator('#vtShare').textContent(),/\(3\)/,'nowy wpis jest w zapisie do udostępnienia');
+await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__shared);
+assert.match(await page.evaluate(()=>decodeURIComponent(escape(atob(window.__shared.files[0].data)))),/api\/nowe/,'udostępnienie zawiera wpis, którego telefon nie zapisał');
+await page.evaluate(()=>{Storage.prototype.setItem=window.__S;});
 await page.evaluate(()=>{delete window.Capacitor;});
 // EN, bez przewijania w bok
 await page.goto(url+'/#settings/vantify');await page.locator('#vtNow').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from 10\/11\/2026/.test(document.getElementById('vtNow')?.textContent||''));
 assert.match(await page.locator('#vtNow').textContent(),/loaded on this phone/);
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_EN.png'),fullPage:true});
-assert.deepEqual(errors,[]);console.log('VANTIFY WCZYTAJ UI PASS: klocek, ostrzeżenie przy starszym pliku, zły plik bez zmian, historia kart, sygnał terminów, podgląd nowych/zamkniętych, zapis + odczyt, restart, PPM i inspekcja, Vantify w apce (komunikat, eksport do podglądu, zapis Zbadaj), EN');
+assert.deepEqual(errors,[]);console.log('VANTIFY WCZYTAJ UI PASS: klocek, ostrzeżenie przy starszym pliku, zły plik bez zmian, historia kart, sygnał terminów, podgląd nowych/zamkniętych, zapis + odczyt, restart, PPM i inspekcja, Vantify w apce (komunikat, eksport do podglądu, zapis Zbadaj, brak miejsca), EN');
 }finally{if(browser)await browser.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
