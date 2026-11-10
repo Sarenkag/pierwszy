@@ -3,6 +3,7 @@
 // (VantifyPlugin.sync, tu atrapa), pokazuje ten sam podgląd co przy pliku i zapisuje dopiero po „Zapisz”.
 // Wygasłe logowanie: okno Vantify do zalogowania, po „Zakończ” pobranie jeszcze raz. Przy starcie: najwyżej co 4 h,
 // nowe/zamknięte zlecenia → pytanie „Pokazać?”, wygasłe logowanie → pytanie najwyżej raz na dobę.
+// Zapamiętany login i hasło: pola w Ustawienia → Vantify, „Pokaż”, zmiana bez pomocy, odrzucone hasło → prośba o nowe.
 const {chromium}=require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const base=path.resolve(__dirname,'../www');
@@ -80,6 +81,30 @@ await page.locator('#vtFile').setInputFiles({name:'job.csv',mimeType:'text/csv',
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null,'zapis pliku usuwa odłożony podgląd');
 await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtPull').waitFor();await page.waitForTimeout(300);
 assert.equal(await page.locator('#vtSave').count(),0,'po zapisie pliku stary podgląd nie wraca');
+// zapamiętany login i hasło (Grzegorz 10/11/2026): wpisuje raz, zmienia sam; hasło zagwiazdkowane, „Pokaż”; odrzucone hasło → prośba o nowe
+await page.evaluate(()=>{const V=window.Capacitor.Plugins.Vantify;window.__login=null;window.__bad=false;const info=()=>({saved:!!window.__login,user:window.__login?window.__login.user:'',bad:!!window.__login&&window.__bad});
+  V.loginInfo=async()=>info();V.saveLogin=async o=>{window.__login={user:o.user,pass:o.pass};window.__bad=false;return info();};V.showLogin=async()=>({user:window.__login?.user||'',pass:window.__login?.pass||''});V.clearLogin=async()=>{window.__login=null;return info();};
+  location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtUser').waitFor();
+await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));
+await page.locator('#vtLoginSave').click();assert.match(await page.locator('#vtLoginMsg').textContent(),/Wpisz login i hasło/);
+await page.locator('#vtUser').fill('greg@example.com');await page.locator('#vtPass').fill('Haslo1');await page.locator('#vtLoginSave').click();
+await page.waitForFunction(()=>/Zapisane\. Apka zaloguje się sama/.test(document.getElementById('vtLoginMsg')?.textContent||''));
+assert.deepEqual(await page.evaluate(()=>window.__login),{user:'greg@example.com',pass:'Haslo1'});
+assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value,p.placeholder,document.getElementById('vtUser').value];}),['password','','••••••••','greg@example.com'],'hasło zagwiazdkowane, login widoczny');
+await page.locator('#vtLoginShow').click();await page.waitForFunction(()=>document.getElementById('vtPass').type==='text');assert.equal(await page.locator('#vtPass').inputValue(),'Haslo1','„Pokaż” odsłania hasło');
+await page.locator('#vtLoginShow').click();assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value];}),['password',''],'„Ukryj” chowa');
+if(out)await page.screenshot({path:path.join(out,'VANTIFY_LOGIN_PL.png'),fullPage:true});
+// zmiana hasła bez pomocy: wpisz nowe, zapisz
+await page.locator('#vtPass').fill('Haslo2');await page.locator('#vtLoginSave').click();await page.waitForFunction(()=>window.__login.pass==='Haslo2');
+// Vantify odrzucił zapisane hasło: przy „Pobierz” komunikat i pole hasła, bez otwierania logowania w kółko
+await page.evaluate(()=>{window.__bad=true;window.__calls={sync:0,open:0};window.__seq=[{status:'login',code:'bad'}];});await page.locator('#vtPull').click();
+await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtPullMsg')?.textContent||''));assert.deepEqual(await page.evaluate(()=>window.__calls),{sync:1,open:0});
+await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtLoginMsg')?.textContent||''));
+// przy starcie: pytanie „Wpisać aktualne hasło?” → Ustawienia → Vantify, pole hasła
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login',code:'bad'}];location.hash='#home';});await page.waitForFunction(()=>location.hash==='#home');
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/nie przyjął zapisanego hasła/);
+await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await page.waitForFunction(()=>location.hash==='#settings/vantify'&&document.activeElement&&document.activeElement.id==='vtPass');assert.equal(await page.evaluate(()=>window.__calls.open),0);
+await page.locator('#vtLoginClear').click();await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));assert.equal(await page.evaluate(()=>window.__login),null);
 // strona inspekcji nie sprawdza Vantify sama (tylko główne okno apki)
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});

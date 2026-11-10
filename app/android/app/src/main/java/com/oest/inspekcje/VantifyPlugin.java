@@ -39,12 +39,28 @@ public class VantifyPlugin extends Plugin {
 
     // „Pobierz z Vantify” i sprawdzanie przy starcie (Grzegorz 10/11/2026): ukryte okno Vantify z zalogowaniem zapamiętanym
     // w WebView (to samo co w „Otwórz Vantify w apce”) i skrypt vantify-sync.js, który czyta listę zleceń (tylko GET).
-    // Wynik: {status:"ok", count, jobs} | {status:"login"} | {status:"error"|"timeout", code}. Bez loginu, hasła i tokenu.
+    // Wynik: {status:"ok", count, jobs} | {status:"login", code?:"bad"} | {status:"error"|"timeout", code}. Bez hasła i tokenu.
+    // Gdy logowanie wygasło, a login i hasło są zapisane (VantifyLogin), okno loguje się samo – najwyżej raz.
     @PluginMethod public void sync(PluginCall call) {
         Activity a = getActivity();
         if (a == null) { call.reject("VANTIFY_SYNC"); return; }
         a.runOnUiThread(() -> new Sync(a, call).start());
     }
+
+    // Zapamiętany login i hasło (Grzegorz 10/11/2026): zapis z Ustawień, odczyt bez hasła, usunięcie. Szczegóły: VantifyLogin.
+    @PluginMethod public void saveLogin(PluginCall call) {
+        String u = call.getString("user", ""), p = call.getString("pass", "");
+        if (u.trim().isEmpty() || p.isEmpty()) { call.reject("VANTIFY_LOGIN_EMPTY"); return; }
+        try { VantifyLogin.save(getContext(), u.trim(), p); call.resolve(info()); } catch (Exception e) { call.reject("VANTIFY_LOGIN_SAVE"); }
+    }
+    @PluginMethod public void loginInfo(PluginCall call) { call.resolve(info()); }
+    // „Pokaż” przy zagwiazdkowanym haśle (Grzegorz 10/11/2026) – tylko na jego dotknięcie
+    @PluginMethod public void showLogin(PluginCall call) {
+        String[] l = VantifyLogin.load(getContext());
+        JSObject o = new JSObject(); o.put("user", l != null ? l[0] : ""); o.put("pass", l != null ? l[1] : ""); call.resolve(o);
+    }
+    @PluginMethod public void clearLogin(PluginCall call) { VantifyLogin.clear(getContext()); call.resolve(info()); }
+    private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
 
     static final class Sync {
         static final long TIMEOUT = 60000;
@@ -78,13 +94,19 @@ public class VantifyPlugin extends Plugin {
             @JavascriptInterface public void result(String json) { if (VantifyActivity.vantify(host) && json != null && json.length() < 2000000) h.post(() -> finish(json)); }
         }
 
-        private void inject() { if (web != null && VantifyActivity.vantify(host)) web.evaluateJavascript(script, null); }
+        // login i hasło tylko dla strony Vantify, tylko w tym ukrytym oknie
+        private void inject() { if (web != null && VantifyActivity.vantify(host)) web.evaluateJavascript(VantifyLogin.script(a) + script, null); }
 
         private void finish(String json) {
             if (finished) return;
             finished = true;
             h.removeCallbacksAndMessages(null);
-            try { call.resolve(new JSObject(json)); } catch (Exception e) { call.reject("VANTIFY_SYNC"); }
+            try {
+                JSObject r = new JSObject(json);
+                // Vantify odrzucił zapisane hasło: nie próbuj więcej, dopóki nie wpiszesz nowego (blokada konta)
+                if ("login".equals(r.optString("status")) && "bad".equals(r.optString("code"))) VantifyLogin.markBad(a);
+                call.resolve(r);
+            } catch (Exception e) { call.reject("VANTIFY_SYNC"); }
             if (web != null) {
                 try { CookieManager.getInstance().flush(); ViewGroup p = (ViewGroup) web.getParent(); if (p != null) p.removeView(web); web.destroy(); } catch (Exception e) {}
                 web = null;
