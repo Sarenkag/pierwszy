@@ -13,6 +13,13 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- Vantify w apce (10/11/2026): strona Vantify, logowanie na stronie (bez zapisu hasła w apce), pobrany eksport Job -->
+        <activity
+            android:name=".VantifyActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
