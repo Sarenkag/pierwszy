@@ -76,15 +76,15 @@ function fakePhone() {
     await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note');
     check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Reactive: okienko bez tekstu EN');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_REACTIVE_POPUP.png') });
-    await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     // ✨ Połącz → propozycja w okienku → Wstaw do opisu
     await pg.locator('#rxNotes .nt-join').click(); await pg.waitForSelector('.oest-ask textarea');
-    check((await pg.locator('.oest-ask [data-a=ok]').textContent()).trim() === 'Wstaw do opisu', 'Reactive: przycisk „Wstaw do opisu”');
+    check((await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').textContent()).trim() === 'Wstaw do opisu', 'Reactive: przycisk „Wstaw do opisu”');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_REACTIVE_JOIN.png') });
     // poprawka w okienku, która gubi liczbę (12) → ostrzeżenie od razu, także gdy propozycja na starcie miała wszystkie liczby (przegląd Codex #113)
     { const ta = pg.locator('.oest-ask textarea'), v = await ta.inputValue(); await ta.fill(v.replace(/12/g, '')); await pg.waitForTimeout(100);
       const warn = await pg.locator('.oest-ask .nt-warn').textContent(); check(/12/.test(warn), 'Reactive: brak ostrzeżenia po usunięciu liczby 12: „' + warn + '”'); await ta.fill(v); }
-    await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     await pg.waitForFunction(() => /Pump number 12/.test(document.querySelector('[data-rx-field=note]').value));
     check(await until(() => OESTReactiveUI.repository.get().then(d => /Pump number 12/.test(Object.values(d.reactiveDrafts || {}).at(-1).note || ''))), 'Reactive: opis z notatek nie zapisany w szkicu');
     // ‹ i ponowne otwarcie: szkic z notatką zostaje (nie jest „pusty”), notatka ta sama
@@ -116,8 +116,8 @@ function fakePhone() {
     check(await pg.locator('[data-ho=record]').count() === 0, 'Hand over: stary przycisk nagrywania nadal jest');
     await record('#hoNotes', 1);
     await pg.locator('#hoNotes .nt-join').click(); await pg.waitForSelector('.oest-ask textarea');
-    check((await pg.locator('.oest-ask [data-a=ok]').textContent()).trim() === 'Wstaw do wpisu', 'Hand over: przycisk „Wstaw do wpisu”');
-    await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    check((await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').textContent()).trim() === 'Wstaw do wpisu', 'Hand over: przycisk „Wstaw do wpisu”');
+    await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     check(/Pump number 12/.test(await pg.locator('#hoText').inputValue()), 'Hand over: tekst nie wstawiony do wpisu');
     check(await pg.locator('#hoEnglish').isChecked(), 'Hand over: „po angielsku” nie zaznaczone po wstawieniu do pustego pola');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_HANDOVER.png'), fullPage: true });
@@ -132,7 +132,7 @@ function fakePhone() {
       await pg.locator('.ho-entry .ho-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
       check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Hand over: okienko notatek wpisu bez tekstu');
       check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0, 'Hand over: notatki zapisanego wpisu da się poprawić/usunąć (archiwum dzieli je z aktywną zmianą)');
-      await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+      await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }
     // notatki wpisu po id wpisu (nie zmiany – scalanie kont zmienia zmianę wpisu, przegląd Codex #113)
     { const eid = await pg.evaluate(() => OESTHandover.repository.get().then(d => (d.entries.find(x => x.kind !== 'reactive') || {}).id));
@@ -145,7 +145,7 @@ function fakePhone() {
     await pg.locator('.ho-entry .ho-notes').click(); await pg.waitForSelector('.nt-pop .nt-note');
     check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0, 'Hand over: w archiwum notatki wpisu da się poprawić/usunąć');
     check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Hand over: w archiwum brak odsłuchu');
-    await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
 
     // notatka w szybkim wpisie nie zależy od id zmiany (scalanie kont zmienia id zmiany – przegląd Codex #113): nowa zmiana nadal ją widzi
     await pg.goto(B + '/#home'); await pg.goto(B + '/#handover'); await pg.locator('#hoText').waitFor(); // następny blok z grafiku
@@ -186,7 +186,7 @@ function fakePhone() {
       check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del], .nt-pop textarea, .nt-pop [data-nt=save]').count() === 0, 'Reactive historia: notatki da się poprawić/usunąć (także przez przerwaną poprawkę)');
       check(await pg.locator('.nt-pop .nt-en').count() === 1 && /Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()) && /54 °C/.test(await pg.locator('.nt-pop').textContent()), 'Reactive historia: okienko bez EN/PL');
       check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Reactive historia: brak odsłuchu');
-      await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+      await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }
 
     // ---------- EN ----------
