@@ -47,13 +47,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|moduly/wyglad/wyglad.js|OESTOverlay",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: moduly/wyglad/wyglad.js (poz. 8) używa OESTOverlay z index.html#inline-1 (poz. 51, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|powertrace.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: powertrace.js (poz. 32) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",
@@ -145,13 +138,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "MODULE_DEPENDS_ON_APP|moduly/wyglad/wyglad.js|OESTOverlay",
-      "rule": "MODULE_DEPENDS_ON_APP",
-      "detail": "moduly/wyglad/wyglad.js (moduł) zależy od OESTOverlay z kodu apki (index.html#inline-1)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "MODULE_DEPENDS_ON_APP|moduly/wysylka/wysylka.js|OEST_CONFIG",
       "rule": "MODULE_DEPENDS_ON_APP",
       "detail": "moduly/wysylka/wysylka.js (moduł) zależy od OEST_CONFIG z kodu apki (config.js)",
@@ -190,13 +176,6 @@
       "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/naglowek/naglowek.js|OESTSettingsUI",
       "rule": "UNDEFINED_GLOBAL",
       "detail": "inspekcje/index.html: moduly/naglowek/naglowek.js używa OESTSettingsUI, którego żaden skrypt strony nie tworzy",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/wyglad/wyglad.js|OESTOverlay",
-      "rule": "UNDEFINED_GLOBAL",
-      "detail": "inspekcje/index.html: moduly/wyglad/wyglad.js używa OESTOverlay, którego żaden skrypt strony nie tworzy",
       "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
       "owner": "Grzegorz"
     }

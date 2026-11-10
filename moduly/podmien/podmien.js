@@ -56,8 +56,10 @@
     if (ac.length !== bc.length) return;
     for (var i = 0; i < ac.length; i++) { if (ac[i].tagName !== bc[i].tagName) continue; out.push([ac[i], bc[i]]); pairs(ac[i], bc[i], out); }
   }
+  // rozmiar bez chwilowej transformacji (Poświata, wciśnięcie) – jedno miejsce: moduly/bledy (OESTBledy.prostokat)
+  function prostokat(el) { var B = (el.ownerDocument.defaultView || {}).OESTBledy; return B && B.prostokat ? B.prostokat(el) : el.getBoundingClientRect(); }
   // element nie wypełnia szerokości rodzica (przycisk, napis w rzędzie, wyśrodkowany) – wtedy liczy się też szerokość
-  function narrow(e, r, win) { var p = e.parentNode, pc = win.getComputedStyle(p), pr = p.getBoundingClientRect(); return r.width < pr.width - parseFloat(pc.paddingLeft) - parseFloat(pc.paddingRight) - parseFloat(pc.borderLeftWidth) - parseFloat(pc.borderRightWidth) - 1; }
+  function narrow(e, r, win) { var p = e.parentNode, pc = win.getComputedStyle(p), pr = prostokat(p); return r.width < pr.width - parseFloat(pc.paddingLeft) - parseFloat(pc.paddingRight) - parseFloat(pc.borderLeftWidth) - parseFloat(pc.borderRightWidth) - 1; }
   function texts(e) { var out = [], w = e.ownerDocument.createTreeWalker(e, 4); while (w.nextNode()) out.push(w.currentNode); return out; }
   function rezerwuj(el, html2) {
     if (!el) return;
@@ -70,9 +72,9 @@
       var a = p[0], ta = texts(a), tb = texts(p[1]), cs = win.getComputedStyle(a);
       return { a: a, ta: ta, tb: ta.length === tb.length ? tb.map(function (n) { return n.nodeValue; }) : null, cs: cs };
     }).filter(function (x) { return x.tb && x.ta.some(function (n, i) { return n.nodeValue !== x.tb[i]; }); });
-    todo.forEach(function (x) { x.ra = x.a.getBoundingClientRect(); x.row = narrow(x.a, x.ra, win); x.h = parseFloat(x.cs.height); x.w = parseFloat(x.cs.width); x.keep = x.ta.map(function (n) { return n.nodeValue; }); });
+    todo.forEach(function (x) { x.ra = prostokat(x.a); x.row = narrow(x.a, x.ra, win); x.h = parseFloat(x.cs.height); x.w = parseFloat(x.cs.width); x.keep = x.ta.map(function (n) { return n.nodeValue; }); });
     todo.forEach(function (x) { x.ta.forEach(function (n, i) { n.nodeValue = x.tb[i]; }); });
-    todo.forEach(function (x) { x.rb = x.a.getBoundingClientRect(); });
+    todo.forEach(function (x) { x.rb = prostokat(x.a); });
     todo.forEach(function (x) { x.ta.forEach(function (n, i) { n.nodeValue = x.keep[i]; }); });
     todo.forEach(function (x) {
       var dh = x.ra.height - x.h, dw = x.ra.width - x.w;
@@ -88,8 +90,8 @@
     var win = el.ownerDocument.defaultView;
     if (el.__oestMin) { el.style.minHeight = ""; el.style.minWidth = ""; el.__oestMin = false; }
     var cs = win.getComputedStyle(el), keep = el.textContent; if (inny == null || inny === keep) return;
-    var ra = el.getBoundingClientRect(), row = narrow(el, ra, win), h = parseFloat(cs.height), w = parseFloat(cs.width);
-    el.textContent = inny; var rb = el.getBoundingClientRect(); el.textContent = keep;
+    var ra = prostokat(el), row = narrow(el, ra, win), h = parseFloat(cs.height), w = parseFloat(cs.width);
+    el.textContent = inny; var rb = prostokat(el); el.textContent = keep;
     if (rb.height > ra.height + 0.5) { el.style.minHeight = (rb.height - Math.max(0, ra.height - h)) + "px"; el.__oestMin = true; }
     if (row && cs.display !== "inline" && rb.width > ra.width + 0.5) { el.style.minWidth = (rb.width - Math.max(0, ra.width - w)) + "px"; el.__oestMin = true; }
   }

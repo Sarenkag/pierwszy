@@ -160,6 +160,11 @@
       "osobno": true
     },
     {
+      "file": "app/tests/przejscie-ekranu-ui-check.cjs",
+      "passMarker": "PRZEJSCIE EKRANU UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/questions-ui-check.cjs",
       "passMarker": "QUESTIONS UI PASS",
       "timeoutSec": 900

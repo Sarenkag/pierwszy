@@ -1,5 +1,5 @@
 // Moduł wyglądu (moduly/wyglad) – ruch w całej apce, bez zmian w poszczególnych ekranach (Grzegorz 04/11/2026):
-//  • ekran wjeżdża łagodnie (do przodu z prawej, Wstecz z lewej), karty listy pojawiają się kolejno,
+//  • ekran pojawia się „Poświatą” (wyglad.css), przy Wstecz w odwrotnym kierunku; karty pojawiają się kolejno tylko po zmianie listy,
 //  • lista po zmianie filtra pokazuje nowe karty płynnie (te same karty – bez migania),
 //  • każde okienko na wierzchu rośnie z miejsca stuknięcia i zamyka się pomniejszeniem.
 // „Ogranicz animacje” (Ustawienia → Wygląd) i systemowe „mniej ruchu” wyłączają wszystko.
@@ -25,32 +25,40 @@
     var items = list || [].slice.call(root.querySelectorAll(CARDS)).filter(function (el) { return !el.closest(".wy-item") && el.getBoundingClientRect().top < w.innerHeight; });
     items.slice(0, 14).forEach(function (el, i) { el.style.setProperty("--wy-i", i); play(el, "wy-item", function () { el.style.removeProperty("--wy-i"); }); });
   }
-  // ---------- wejście ekranu ----------
-  var back = false, navAt = 0;
-  w.addEventListener("popstate", function (e) { back = !(e.state && e.state.overlay); navAt = Date.now(); }, true);
-  var push = history.pushState;
-  history.pushState = function (s) { var r = push.apply(this, arguments); if (!(s && s.overlay)) { back = false; navAt = Date.now(); schedule(); } return r; };
-  w.addEventListener("hashchange", function () { navAt = Date.now(); schedule(); });
-  w.addEventListener("popstate", function (e) { if (!(e.state && e.state.overlay) && !overlayOpen()) schedule(); });
-  function overlayOpen() { return !!(w.OESTOverlay && w.OESTOverlay.stack && w.OESTOverlay.stack.length); }
-  var queued = false, lastView = null, lastSig = "";
-  function schedule() { if (queued) return; queued = true; w.requestAnimationFrame(function () { w.requestAnimationFrame(function () { queued = false; enter(); }); }); }
-  function current() { return [].slice.call(d.querySelectorAll(".view")).filter(visible)[0] || null; }
-  function enter() {
-    var v = current(); if (!v) return;
-    var sig = v.id + "|" + location.hash.replace(/#?/, "").split("?")[0];
-    if (v === lastView && sig === lastSig && Date.now() - navAt > 600) return;
-    lastView = v; lastSig = sig;
-    if (reduce()) return;
-    v.classList.toggle("wy-back", back);
-    play(v, "wy-enter", function () { v.classList.remove("wy-back"); });
-    stagger(v);
-    back = false;
+  // ---------- przejście między ekranami (Poświata, Grzegorz 09/11/2026) ----------
+  // Samą animację robi CSS (.view:not([hidden]) w wyglad.css) w klatce, w której ekran się pokazuje. Tu tylko:
+  //  • kierunek: Wstecz (systemowy i strzałka ‹ = history.back) → html.wy-wstecz odwraca efekt,
+  //  • navAt: karty wstawione przy wejściu na ekran nie „podjeżdżają” osobno (to też wyglądało jak drżenie),
+  //  • nowa strona (wejście do inspekcji, powrót z niej, start apki): bez prześwitu ekranu startowego, potem samo rozjaśnienie.
+  var root = d.documentElement, navAt = Date.now(), backT = 0;
+  function wstecz(on) {
+    clearTimeout(backT); root.classList.toggle("wy-wstecz", !!on);
+    if (on) backT = setTimeout(function () { root.classList.remove("wy-wstecz"); }, 700);
   }
-  // ekrany przełączane atrybutem hidden (inspekcje, moduły) – ta sama animacja
+  root.classList.add("wy-wczytanie"); // pierwszy ekran strony tylko się rozjaśnia (wyglad.css); od pierwszej zmiany ekranu – pełna Poświata
+  function nav() {
+    navAt = Date.now();
+    if (root.classList.contains("wy-gotowe")) root.classList.remove("wy-wczytanie");
+  }
+  w.addEventListener("popstate", function (e) { nav(); if (!(e.state && e.state.overlay)) wstecz(true); }, true);
+  var push = history.pushState;
+  history.pushState = function (s) { var r = push.apply(this, arguments); if (!(s && s.overlay)) { nav(); wstecz(false); } return r; };
+  w.addEventListener("hashchange", nav);
+  // ekran schowany i od razu pokazany w tym samym kroku (przebudowa, zmiana języka, powrót po błędzie) nie jest zmianą ekranu:
+  // dostaje wy-zostaje i nie animuje się od nowa (inaczej „drgnąłby” w miejscu) – do czasu, aż naprawdę zniknie
   new MutationObserver(function (ms) {
-    for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t.classList && t.classList.contains("view") && !t.hidden) { schedule(); return; } }
-  }).observe(d.documentElement, { attributes: true, attributeFilter: ["hidden"], subtree: true });
+    var first = new Map(), shown = false;
+    ms.forEach(function (m) { var t = m.target; if (t.classList && t.classList.contains("view") && !first.has(t)) first.set(t, m.oldValue); });
+    first.forEach(function (old, t) {
+      if (t.hidden) { t.classList.remove("wy-zostaje"); return; }
+      if (old === null) t.classList.add("wy-zostaje"); else shown = true;
+    });
+    if (shown) nav();
+  }).observe(root, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true, subtree: true });
+  // ekran pokazuje się dopiero, gdy strona wybrała właściwy ekran (koniec wczytywania skryptów) – inaczej przez chwilę
+  // prześwitywał ekran startowy (logowanie / lista inspekcji), zanim apka przełączyła na właściwy
+  function gotowe() { root.classList.add("wy-gotowe"); navAt = Date.now(); }
+  if (d.readyState !== "loading") gotowe(); else d.addEventListener("DOMContentLoaded", gotowe);
   // ---------- lista po zmianie (filtr, dzień, nowe zadanie) ----------
   // ten sam zestaw kart = brak animacji (np. wpisywanie w polu nie miga); nowy zestaw = karty pojawiają się kolejno
   var sigs = new WeakMap(), quietUntil = 0;
@@ -126,13 +134,13 @@
   var ROLE = {
     przycisk: ["czas", "easing", "nacisk"], kafelek: ["czas", "easing", "nacisk"], stan: ["czas"], znacznik: ["czas", "easing", "efekt"],
     status: ["czas", "easing", "efekt"], okno: ["czas", "easing", "efekt", "zamkniecie-czas", "zamkniecie-efekt", "tlo-czas"],
-    ekran: ["czas", "easing", "efekt", "przesuniecie"], lista: ["czas", "easing", "efekt", "odstep"]
+    ekran: ["czas", "easing", "efekt", "skala", "przesuniecie"], lista: ["czas", "easing", "efekt", "odstep"]
   };
   var WARIANTY = { // gotowe zestawy z efektów, które już są w wyglad.css (bez nowego wyglądu)
     przycisk: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
     kafelek: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
     okno: { wzrost: { efekt: "wyPop", "zamkniecie-efekt": "wyOut" }, zanikanie: { efekt: "wyFade", "zamkniecie-efekt": "wyOut" } },
-    ekran: { wjazd: { efekt: "wyIn" }, zanikanie: { efekt: "wyFade" } },
+    ekran: { poswiata: { efekt: "wyPoswiataIn" }, zanikanie: { efekt: "wyFade" }, wjazd: { efekt: "wyIn" } },
     lista: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
     status: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
     znacznik: { wyskok: { efekt: "oest-n-in" }, zanikanie: { efekt: "wyFade" }, brak: { efekt: "none" } }
@@ -157,6 +165,5 @@
     domyslne: function () { Object.keys(ROLE).forEach(function (r) { ROLE[r].forEach(function (p) { d.documentElement.style.removeProperty(nazwa(r, p)); }); }); },
     ograniczony: reduce
   };
-  w.OESTWyglad = { stagger: stagger, enter: schedule, reduce: reduce, tap: function () { return tap; }, ruch: ruch };
-  if (d.readyState !== "loading") schedule(); else d.addEventListener("DOMContentLoaded", schedule);
+  w.OESTWyglad = { stagger: stagger, enter: nav, reduce: reduce, tap: function () { return tap; }, ruch: ruch };
 })(window, document);

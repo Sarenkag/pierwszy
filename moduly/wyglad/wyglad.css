@@ -38,8 +38,10 @@
   /* okno: okienko na wierzchu i menu ⋮ (otwarcie, zamknięcie, przyciemnione tło) */
   --ruch-okno-czas:.22s;--ruch-okno-easing:var(--ruch-easing);--ruch-okno-efekt:wyPop;
   --ruch-okno-zamkniecie-czas:.18s;--ruch-okno-zamkniecie-efekt:wyOut;--ruch-okno-tlo-czas:.2s;--ruch-menu-czas:.2s;
-  /* ekran: przejście między ekranami; wariant = przesunięcie (do przodu z prawej, Wstecz z lewej) */
-  --ruch-ekran-czas:.24s;--ruch-ekran-easing:var(--ruch-easing);--ruch-ekran-efekt:wyIn;--ruch-ekran-przesuniecie:14px;
+  /* ekran: przejście między ekranami – „Poświata” (Grzegorz 09/11/2026, wariant A): nowy ekran wyłania się z lekkiego pomniejszenia
+     i rozjaśnia; przy Wstecz z lekkiego powiększenia. Rusza od pierwszej klatki nowego ekranu (bez mignięcia).
+     skala = o ile ekran jest mniejszy/większy na starcie; przesuniecie = tylko wariant „wjazd” */
+  --ruch-ekran-czas:.23s;--ruch-ekran-easing:cubic-bezier(0,0,.2,1);--ruch-ekran-efekt:wyPoswiataIn;--ruch-ekran-skala:.04;--ruch-ekran-przesuniecie:14px;
   /* znacznik: licznik w rogu i ikonki stanu na klocku pojawiają się „wyskokiem” (moduly/znacznik) */
   --ruch-znacznik-czas:.28s;--ruch-znacznik-easing:cubic-bezier(.34,1.56,.64,1);--ruch-znacznik-efekt:oest-n-in;
   /* lista: karty pojawiają się kolejno; wariant = odstęp między kartami */
@@ -116,15 +118,27 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
 :where(button,.btn,.chip,.tile,.prow,.day,.cd,.settings-card,.pbtn,input,select,textarea,summary){transition:transform var(--wy-fast) var(--wy-ease),background-color var(--wy-mid),border-color var(--wy-mid),color var(--wy-mid),box-shadow var(--wy-mid),opacity var(--wy-mid),filter var(--wy-mid)}
 .ck-row .seg button{transition:transform .2s var(--wy-ease),box-shadow .2s,background .2s,border-color .2s}
 .kbar i,.zd-bar i,[class*=bar]>i{transition:width .45s var(--wy-ease)}
-/* wejście ekranu (wyglad.js dokłada klasę): do przodu z prawej, wstecz z lewej */
 /* biblioteka efektów – nowy efekt = nowy @keyframes tutaj + jego nazwa w tabeli ruchu */
-@keyframes wyIn{from{opacity:0;transform:translateX(var(--wy-dx,var(--ruch-ekran-przesuniecie)))}to{opacity:1;transform:none}}
+@keyframes wyIn{from{opacity:0;transform:translateX(var(--wy-dx))}to{opacity:1;transform:none}}
+@keyframes wyPoswiataIn{from{opacity:0;transform:scale(var(--wy-s-in))}to{opacity:1;transform:none}}
 @keyframes wyUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes wyPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
 @keyframes wyOut{from{opacity:1;transform:none}to{opacity:0;transform:scale(.86)}}
 @keyframes wyFade{from{opacity:0}to{opacity:1}}
-.wy-enter{animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) both}
-.wy-enter.wy-back{--wy-dx:calc(-1 * var(--ruch-ekran-przesuniecie))}
+/* ---------- przejście między ekranami (Poświata, 09/11/2026) ----------
+   Ekran w apce: animacja startuje sama w tej samej klatce, w której ekran się pokazuje (CSS, bez czekania na skrypt) – dawniej
+   nowy ekran był widoczny 4–9 klatek, potem znikał i wjeżdżał od nowa, co wyglądało jak szarpnięcie.
+   Kierunek: html.wy-wstecz (wyglad.js ustawia przy Wstecz) odwraca skalę/przesunięcie. */
+:root{--wy-s-in:calc(1 - var(--ruch-ekran-skala));--wy-dx:var(--ruch-ekran-przesuniecie)}
+:root.wy-wstecz{--wy-s-in:calc(1 + var(--ruch-ekran-skala));--wy-dx:calc(-1 * var(--ruch-ekran-przesuniecie))}
+.view:not([hidden]):not(.wy-zostaje){animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) backwards}
+/* zanim strona wybierze właściwy ekran (wyglad.js: html.wy-gotowe po wczytaniu skryptów), żaden ekran nie prześwituje;
+   bez wyglad.js ekran i tak pokaże się po 1 s */
+@keyframes wyCzekaj{from{opacity:0}to{opacity:0}}
+@media (prefers-reduced-motion:no-preference){:root:not(.wy-gotowe):not([data-settings-motion=reduce]) .view:not([hidden]){animation:wyCzekaj 1s linear}}
+/* pierwsze pokazanie strony (start apki, wejście do inspekcji i powrót, gdy przeglądarka nie przenika stron): samo rozjaśnienie,
+   bez zmiany rozmiaru – układ od pierwszej klatki stoi w miejscu; telefon trzyma poprzedni ekran do pierwszej klatki nowego */
+:root.wy-gotowe.wy-wczytanie .view:not([hidden]){animation-name:wyFade}
 .wy-item{animation:var(--ruch-lista-efekt) var(--ruch-lista-czas) var(--ruch-lista-easing) both;animation-delay:calc(var(--wy-i,0) * var(--ruch-lista-odstep))}
 /* okienka: rosną z miejsca stuknięcia, zamykają się pomniejszeniem (origin ustawia wyglad.js) */
 .wy-pop{animation:var(--ruch-okno-efekt) var(--ruch-okno-czas) var(--ruch-okno-easing) both}
@@ -143,10 +157,10 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
 .settings-status:not(:empty),.toast:not(:empty){animation:var(--ruch-status-efekt) var(--ruch-status-czas) var(--ruch-status-easing) both}
 
 @media (prefers-reduced-motion:reduce){
-  .wy-enter,.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}
+  .view:not([hidden]),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}
   details::details-content{transition:none!important}
 }
-:root[data-settings-motion=reduce] :is(.wy-enter,.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty)){animation:none!important}
+:root[data-settings-motion=reduce] :is(.view:not([hidden]),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty)){animation:none!important}
 :root[data-settings-motion=reduce] details::details-content{transition:none!important}
 
 /* „Dodaj / Nowe …” – główny przycisk listy w każdym module: pełna szerokość, kolor akcji (Reactive, Klucze, Power trace, Pytania) */
