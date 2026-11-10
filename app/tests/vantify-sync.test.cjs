@@ -132,7 +132,7 @@ test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logo
 
 // „Zbadaj automatycznie” (Grzegorz 10/11/2026): bot czyta zamiast klikać – tylko GET, po linkach _links, limit, bez danych osób
 const REJ = fs.readFileSync(path.join(__dirname, '../www/vantify-rejestr.js'), 'utf8');
-function explorer({ max = 300 } = {}) {
+function explorer({ max = 300, pages = 0, expire = 0 } = {}) {
   const calls = [], results = [], timers = [];
   const site = { id: 6324, name: 'One Eastside', _links: { self: { href: API + '/sites/6324' }, jobs: { href: API + '/sites/6324/jobs{?page}', templated: true }, meters: { href: API + '/sites/6324/meters' }, export_jobs: { href: API + '/sites/6324/jobs/export' }, approve: { href: API + '/sites/6324/quotes/1/approve' }, foreign: { href: 'https://evil.example.com/x' } } };
   const jobs = n => ({ count: 3, jobs: [1, 2, 3].map(i => ({ id: 3051000 + i, summary: 'Task ' + i, contactName: 'Jan Kowalski', _links: { self: { href: API + '/sites/6324/jobs/' + (3051000 + i) } } })) });
@@ -142,6 +142,7 @@ function explorer({ max = 300 } = {}) {
     if (/^\/sites\/6324\/jobs$/.test(p) || /\/users\/14255\/jobs$/.test(p)) return jobs();
     if (/^\/sites\/6324\/jobs\/\d+$/.test(p)) return { id: 1, status: 'acknowledged', reporterEmail: 'a@b.c', _links: { files: { href: API + p + '/files' } } };
     if (/\/files$/.test(p)) return { files: [] };
+    if (pages && p === '/sites/6324/meters') return { pages, count: pages * 2, meters: [] };
     if (p === '/users/14255') return { id: 14255, firstName: 'Greg', _links: { sites: { href: API + '/users/14255/sites' } } };
     return { ok: true };
   }
@@ -153,7 +154,7 @@ function explorer({ max = 300 } = {}) {
     send() {
       calls.push({ m: this.m, u: this.u, h: { ...this.h } });
       if (/main\.js$/.test(this.u)) { this.status = 200; this.responseText = 'a.post(this.api+"/sites/"+s+"/jobs/"+j+"/complete",b);c.post(u+"/files",fd);x="/sites/{site}/jobs/{job}/paperwork"'; }
-      else { this.status = this.h.Authorization === 'Bearer T' ? 200 : 401; this.responseText = JSON.stringify(respond(this.u)); }
+      else { this.status = this.h.Authorization === 'Bearer T' && !(expire && calls.length > expire) ? 200 : 401; this.responseText = JSON.stringify(respond(this.u)); }
       timers.push(() => this.onload && this.onload());
     }
   }
@@ -189,6 +190,16 @@ test('Zbadaj automatycznie: tylko GET po linkach API Vantify, pomija export/appr
 test('Zbadaj automatycznie: limit zapytań', async () => {
   const s = explorer({ max: 3 }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
   assert.strictEqual(s.results[0].count, 3); assert.strictEqual(s.results[0].log.filter(e => e.k === 'auto').length, 3);
+});
+test('Zbadaj automatycznie: lista ze stronami bez _links.next – strony 2–5 (przegląd Codex #135)', async () => {
+  const s = explorer({ pages: 7 }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
+  const m = s.calls.filter(c => /\/sites\/6324\/meters/.test(c.u)).map(c => c.u.replace(API, ''));
+  assert.deepStrictEqual(m, ['/sites/6324/meters', '/sites/6324/meters?page=2', '/sites/6324/meters?page=3', '/sites/6324/meters?page=4', '/sites/6324/meters?page=5']);
+});
+test('Zbadaj automatycznie: logowanie wygasło w trakcie → status login z częściowym zapisem, nie „Gotowe” (przegląd Codex #135)', async () => {
+  const s = explorer({ expire: 4 }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
+  assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'login');
+  assert.ok(s.results[0].log.some(e => e.k === 'auto' && e.st === 200), 'to, co odczytane przed wygaśnięciem, zostaje');
 });
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {

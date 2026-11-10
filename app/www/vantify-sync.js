@@ -148,12 +148,13 @@
     }, Promise.resolve()).then(function () { return Object.keys(found).sort().map(function (k) { var i = k.indexOf(" "); return { k: "code", m: k.slice(0, i), u: k.slice(i + 1) }; }); });
   }
   function explore(id) {
-    var R = g.__oestRejestr, log = [], queue = [], count = {}, n = 0, started = Date.now();
+    var R = g.__oestRejestr, log = [], queue = [], count = {}, n = 0, started = Date.now(), lost = false, queued = {};
     function add(u) {
       try { u = new URL(String(u).replace(/\{[^}]*\}/g, ""), id.base + "/").href; } catch (e) { return; }
       if (u.indexOf(id.base + "/") !== 0 || UNSAFE.test(u.replace(id.base, ""))) return;
+      if (queued[u]) return; // ten sam adres raz
       var pg = /[?&]page=([2-5])(&|$)/.exec(u), t = tpl(u) + (pg ? "#p" + pg[1] : ""); if ((count[t] = (count[t] || 0) + 1) > 3) return;
-      queue.push(u);
+      queued[u] = 1; queue.push(u);
     }
     // start: to, co widać w zapisach „Zbadaj” 10/11 (użytkownik, alerty, budynek, zlecenia, urządzenia, pliki), dalej po linkach
     var U = id.base + "/users/" + id.user;
@@ -166,11 +167,17 @@
     function step() {
       if (!queue.length || n >= MAX_REQ || Date.now() - started > 540000) {
         var front = (g.location && g.location.origin) || "";
-        return code(front).then(function (c) { out({ status: "ok", count: n, log: log.concat(c) }); });
+        // logowanie wygasło w trakcie: apka ma poprosić o logowanie, nie pisać „Gotowe”; to, co już odczytane, zostaje w zapisie
+        return code(front).then(function (c) { out({ status: lost ? "login" : "ok", count: n, log: log.concat(c) }); });
       }
       var u = queue.shift(); n++;
-      return get(u).then(function (r) { log.push({ t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: 200, res: shapeOf(r) }); links(r, 0, []).forEach(add); },
-        function (e) { log.push({ t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: e.message }); if (e.message === "login") queue = []; })
+      return get(u).then(function (r) {
+          log.push({ t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: 200, res: shapeOf(r) }); links(r, 0, []).forEach(add);
+          // lista ze stronami bez _links.next (jak lista zleceń: pages, count) – kolejne strony do 5. (przegląd Codex #135)
+          var pg = /[?&]page=(\d+)/.exec(u), pages = r && Number(r.pages);
+          if ((!pg || pg[1] === "1") && pages > 1) for (var i = 2; i <= Math.min(pages, 5); i++) add(withPage(u, i));
+        },
+        function (e) { log.push({ t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: e.message }); if (e.message === "login") { queue = []; lost = true; } })
         .then(function () { return new Promise(function (res) { setTimeout(res, 120); }); }).then(step);
     }
     step();

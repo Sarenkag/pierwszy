@@ -122,6 +122,15 @@ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('oest.vanti
 assert.equal(await page.locator('#vtShare').isVisible(),true,'zapis do udostępnienia');assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),plan0,'badanie nie zmienia terminów');
 await page.evaluate(()=>{window.Capacitor.Plugins.Vantify.sync=async()=>{throw new Error('VANTIFY_BUSY');};});await page.locator('#vtExplore').click();
 await page.waitForFunction(()=>/Spróbuj za chwilę/.test(document.getElementById('vtMsg')?.textContent||''));
+// duży nowy zapis + starszy w telefonie (przegląd Codex #135): oddajemy tylko starsze wpisy, nowy zostaje cały
+await page.evaluate(()=>{const pad=n=>'x'.repeat(n);localStorage.setItem('oest.vantify.zapis',JSON.stringify({at:'x',entries:Array.from({length:100},(_,i)=>({t:i,k:'old',u:pad(2000)}))}));
+  window.__big=Array.from({length:1500},(_,i)=>({t:1000+i,k:'auto',m:'GET',u:pad(1900)}));window.Capacitor.Plugins.Vantify.sync=async()=>({status:'ok',count:1500,log:window.__big});});
+await page.locator('#vtExplore').click();await page.waitForFunction(()=>/Gotowe: 1500 odczytów/.test(document.getElementById('vtMsg')?.textContent||''));
+assert.deepEqual(await page.evaluate(()=>{const e=JSON.parse(localStorage.getItem('oest.vantify.zapis')).entries.filter(x=>x.k==='auto');return [e.length,e[0].t];}),[1500,1000],'cały nowy zapis „Zbadaj automatycznie”');
+// logowanie wygasło w trakcie badania: prośba o logowanie (nie „Gotowe”), odczytane wpisy zostają w zapisie
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.zapis');window.Capacitor.Plugins.Vantify.sync=async()=>({status:'login',count:2,log:[{t:5,k:'auto',m:'GET',u:'/sites/6324',st:200},{t:6,k:'auto',m:'GET',u:'/sites/6324/meters',st:'login'}]});});
+await page.locator('#vtExplore').click();await page.waitForFunction(()=>{const t=document.getElementById('vtMsg')?.textContent||'';return t&&!/Badam/.test(t);});
+assert.doesNotMatch(await page.locator('#vtMsg').textContent(),/Gotowe/);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('oest.vantify.zapis')).entries.length),2);
 // strona inspekcji nie sprawdza Vantify sama (tylko główne okno apki)
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});
