@@ -46,7 +46,9 @@ public class VantifyPlugin extends Plugin {
         if (a == null) { call.reject("VANTIFY_SYNC"); return; }
         // jedno ukryte okno naraz: drugie wywołanie (np. „Pobierz” w trakcie sprawdzania przy starcie) czeka na ten sam wynik,
         // więc zapisane hasło nie trafia do dwóch formularzy logowania równocześnie (blokada konta)
-        a.runOnUiThread(() -> { if (Sync.current != null && Sync.current.join(call)) return; Sync.current = new Sync(a, call); Sync.current.start(); });
+        // mode "explore" = „Zbadaj automatycznie”: to samo ukryte okno, tylko odczyt, dłuższy limit czasu, wynik = zapis „Zbadaj”
+        boolean ex = "explore".equals(call.getString("mode", ""));
+        a.runOnUiThread(() -> { if (Sync.current != null && Sync.current.join(call, ex)) return; Sync.current = new Sync(a, call, ex); Sync.current.start(); });
     }
 
     // Zapamiętany login i hasło (Grzegorz 10/11/2026): zapis z Ustawień, odczyt bez hasła, usunięcie. Szczegóły: VantifyLogin.
@@ -65,16 +67,21 @@ public class VantifyPlugin extends Plugin {
     private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
 
     static final class Sync {
-        static final long TIMEOUT = 60000;
+        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 240000;
+        private String asset(String p) throws Exception {
+            try (InputStream in = a.getAssets().open(p)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
+        }
         static Sync current; // tylko wątek UI
         private final Activity a; private final java.util.List<PluginCall> calls = new java.util.ArrayList<>();
         private final Handler h = new Handler(Looper.getMainLooper());
         private WebView web; private String script = ""; private volatile String host = ""; private boolean finished;
-        Sync(Activity a, PluginCall call) { this.a = a; calls.add(call); }
-        boolean join(PluginCall c) { if (finished) return false; calls.add(c); return true; }
+        private final boolean explore;
+        Sync(Activity a, PluginCall call, boolean explore) { this.a = a; this.explore = explore; calls.add(call); }
+        // trwające okno: to samo zadanie dołącza; inne zadanie czeka na koniec (odrzucone, apka powie „spróbuj za chwilę”)
+        boolean join(PluginCall c, boolean ex) { if (finished) return false; if (ex != explore) { c.reject("VANTIFY_BUSY"); return true; } calls.add(c); return true; }
 
         void start() {
-            try (InputStream in = a.getAssets().open("public/vantify-sync.js")) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); script = new String(o.toByteArray(), StandardCharsets.UTF_8); }
+            try { script = (explore ? "window.__oestMode='explore';" + asset("public/vantify-rejestr.js") : "") + asset("public/vantify-sync.js"); }
             catch (Exception e) { finish("{\"status\":\"error\",\"code\":\"asset\"}"); return; }
             web = new WebView(a);
             CookieManager.getInstance().setAcceptCookie(true);
@@ -89,13 +96,13 @@ public class VantifyPlugin extends Plugin {
             // niewidoczne (1×1 px, przezroczyste), ale podpięte do okna, żeby strona działała jak zwykle
             web.setAlpha(0f);
             ((ViewGroup) a.getWindow().getDecorView()).addView(web, new FrameLayout.LayoutParams(1, 1));
-            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), TIMEOUT);
+            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : TIMEOUT);
             web.loadUrl(VantifyActivity.START + "#/user/jobs");
         }
 
         public final class Bridge {
             // tylko strona Vantify może oddać wynik
-            @JavascriptInterface public void result(String json) { if (VantifyActivity.vantify(host) && json != null && json.length() < 2000000) h.post(() -> finish(json)); }
+            @JavascriptInterface public void result(String json) { if (VantifyActivity.vantify(host) && json != null && json.length() < 4000000) h.post(() -> finish(json)); }
         }
 
         // login i hasło tylko dla strony Vantify, tylko w tym ukrytym oknie

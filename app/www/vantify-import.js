@@ -117,6 +117,23 @@
       else if (kept !== "memory") msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
     }).catch(function () { msg(box, L("Nie udało się otworzyć Vantify.", "Could not open Vantify.")); });
   }
+  // „Zbadaj automatycznie” (Grzegorz 10/11/2026): ukryte okno Vantify samo czyta listy i szczegóły (tylko GET, vantify-sync.js
+  // tryb explore) i kod strony; wynik dopisuje się do zapisu „Zbadaj” – udostępnia Grzegorz.
+  function explore(box) {
+    var V = plugin("Vantify"), b = box.querySelector("#vtExplore");
+    if (!V || !V.sync) { msg(box, L("Zbadaj automatycznie działa w aplikacji Android.", "Explore automatically works in the Android app.")); return; }
+    msg(box, L("Badam Vantify – tylko odczyt, do 4 minut. Możesz zostawić ten ekran otwarty.", "Exploring Vantify – read only, up to 4 minutes. Keep this screen open.")); if (b) b.disabled = true;
+    V.sync({ mode: "explore" }).then(function (r) {
+      if (b) b.disabled = false;
+      if (r && r.status === "ok") {
+        var kept = keepLog(r.log); draw(box);
+        msg(box, kept === "memory" ? L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app.")
+          : L("Gotowe: ", "Done: ") + (r.count || 0) + L(" odczytów z Vantify. Dotknij „Udostępnij zapis „Zbadaj”” i wyślij mi plik.", " reads from Vantify. Tap “Share the Explore log” and send me the file."));
+        return;
+      }
+      msg(box, r && r.status === "login" ? errText(new Error(r.code === "bad" ? "VANTIFY_BAD_LOGIN" : "VANTIFY_LOGIN")) : errText(new Error("VANTIFY_SYNC")));
+    }).catch(function (e) { if (b) b.disabled = false; msg(box, e && e.message === "VANTIFY_BUSY" ? L("Vantify jest teraz sprawdzany. Spróbuj za chwilę.", "Vantify is being checked right now. Try again in a moment.") : errText(new Error("VANTIFY_SYNC"))); });
+  }
   function shareLog(box) {
     var z = zapis().z, S = plugin("ReportShare");
     if (!z) return;
@@ -219,11 +236,13 @@
       "<button type=\"button\" class=\"btn\" id=\"vtLoginClear\">" + L("Usuń", "Remove") + "</button></div>" +
       "<p class=\"hint\" id=\"vtLoginMsg\" aria-live=\"polite\"></p>" +
       "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtOpen\">" + L("Otwórz Vantify w apce", "Open Vantify in the app") + "</button>" +
+      "<button type=\"button\" class=\"btn\" id=\"vtExplore\">" + L("Zbadaj automatycznie", "Explore automatically") + "</button>" +
       "<button type=\"button\" class=\"btn\" id=\"vtShare\"" + (zapis().n ? "" : " hidden") + ">" + L("Udostępnij zapis „Zbadaj” (", "Share the “Explore” log (") + zapis().n + ")</button></div>" +
       "<p class=\"hint\" id=\"vtMsg\" aria-live=\"polite\"></p></div>");
     box.querySelector("#vtOpen").onclick = function () { openVantify(box); };
     box.querySelector("#vtPull").onclick = function () { pull(box); };
     box.querySelector("#vtShare").onclick = function () { shareLog(box); };
+    box.querySelector("#vtExplore").onclick = function () { explore(box); };
     loginUi(box);
     var input = box.querySelector("#vtFile");
     function show(r) {

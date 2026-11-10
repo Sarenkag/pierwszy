@@ -113,6 +113,15 @@ await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__s
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/nie przyjął zapisanego hasła/);
 await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await page.waitForFunction(()=>location.hash==='#settings/vantify'&&document.activeElement&&document.activeElement.id==='vtPass');assert.equal(await page.evaluate(()=>window.__calls.open),0);
 await page.locator('#vtLoginClear').click();await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));assert.equal(await page.evaluate(()=>window.__login),null);
+// „Zbadaj automatycznie”: ukryte okno w trybie explore, wynik dopisany do zapisu „Zbadaj” (do udostępnienia), nic więcej się nie zmienia
+await page.evaluate(()=>{const V=window.Capacitor.Plugins.Vantify,old=V.sync;window.__modes=[];V.sync=async o=>{window.__modes.push(o&&o.mode||'');if(o&&o.mode==='explore')return {status:'ok',count:5,log:[{t:1,k:'auto',m:'GET',u:'https://savillsuk-api.cafm.vantify.com/sites/6324/meters',st:200,res:{n:3}},{t:2,k:'code',m:'POST',u:'"/jobs/"+j+"/complete"'}]};return old(o);};});
+const plan0=await page.evaluate(()=>localStorage.getItem('oest.vantify.plan'));
+await page.locator('#vtExplore').click();await page.waitForFunction(()=>/Gotowe: 5 odczytów/.test(document.getElementById('vtMsg')?.textContent||''));
+assert.deepEqual(await page.evaluate(()=>window.__modes),['explore']);
+assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('oest.vantify.zapis')).entries.slice(-2).map(e=>e.k).join(',')),'auto,code');
+assert.equal(await page.locator('#vtShare').isVisible(),true,'zapis do udostępnienia');assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),plan0,'badanie nie zmienia terminów');
+await page.evaluate(()=>{window.Capacitor.Plugins.Vantify.sync=async()=>{throw new Error('VANTIFY_BUSY');};});await page.locator('#vtExplore').click();
+await page.waitForFunction(()=>/Spróbuj za chwilę/.test(document.getElementById('vtMsg')?.textContent||''));
 // strona inspekcji nie sprawdza Vantify sama (tylko główne okno apki)
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});
