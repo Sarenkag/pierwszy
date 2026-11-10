@@ -26,6 +26,12 @@ test('adres: dane osób w parametrach i ścieżce ukryte, zostają tylko technic
   assert.doesNotMatch(u, /greg|07123|Kowalski|Jan/);
   assert.match(u, /status=Open&from=2026-11-01&page=2$/);
 });
+test('adres: nazwy w ścieżce i parametry we fragmencie ukryte, techniczne segmenty i numery zostają (przegląd Codex #132)', () => {
+  assert.strictEqual(R.url('https://a.vantify.com/api/people/Jan-Kowalski'), 'https://a.vantify.com/api/people/…');
+  assert.strictEqual(R.url('https://a.vantify.com/api/users/jan-kowalski/jobs'), 'https://a.vantify.com/api/users/…/jobs');
+  assert.strictEqual(R.url('https://a.vantify.com/#access_token=abc123'), 'https://a.vantify.com/#…');
+  assert.strictEqual(R.url('https://a.vantify.com/api/v2/jobTypes/3000623#/user/jobs/42'), 'https://a.vantify.com/api/v2/jobTypes/3000623#/user/jobs/42');
+});
 test('odpowiedzi: lista dozwolonych – teksty opisowe i wszystko pod polem osoby bez wartości, nie-JSON bez treści (przegląd Codex #132)', () => {
   const s = JSON.stringify(R.body(JSON.stringify({ contact: { first: 'Jan', last: 'Kowalski' }, description: 'Call Jan on 07123 456789', title: 'Jan', status: 'Open', frequency: 'Quarterly', n: 3 }), false));
   assert.doesNotMatch(s, /Jan|Kowalski|07123/);

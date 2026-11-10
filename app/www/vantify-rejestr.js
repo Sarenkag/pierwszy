@@ -13,14 +13,25 @@
   // Wartości tekstowe: tylko liczby, daty i pola wyliczeniowe (status, typ, częstotliwość…) jako krótkie słowo.
   var ENUM_K = /^(status|state|type|jobtype|kind|frequency|priority|category|format|method|unit|currency|sortorder|order|direction)$/i;
   function word(v) { return /^[A-Za-z][A-Za-z_ -]{0,24}$/.test(v); }
-  function seg(x) { return /@|%40|\s|%20/.test(x) || x.length > 40 ? "…" : x; }
+  // Segmenty ścieżki (lista dozwolonych, przegląd Codex #132): zostają tylko liczby, identyfikatory (hex/uuid) i techniczne
+  // słowa zaczynające się małą literą (api, v2, jobs, jobTypes…). Imiona/nazwy (wielka litera, spacja, @, „=”) → „…”.
+  // Segment po kolekcji osób lub wyszukiwaniu (people/users/contacts/search…) zawsze ukryty, nawet pisany małymi literami.
+  var PERSON_COLL = /^(people|persons|users|contacts|operatives|reporters|approvers|employees|staff|members|search|find|lookup|query|emails?)$/i;
+  function seg(x, i, all) {
+    if (!x) return x;
+    if (i > 0 && PERSON_COLL.test(all[i - 1] || "") && !/^\d+$/.test(x)) return "…";
+    if (/^\d+$/.test(x) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x) || /^[0-9a-f]{16,40}$/i.test(x)) return x;
+    return /^[a-z][a-zA-Z0-9]{0,29}([_.-][a-z0-9]{1,20}){0,3}$/.test(x) && !SECRET.test(x) ? x : "…";
+  }
+  function path(p) { var a = p.split("/"); return a.map(function (x, i) { return seg(x, i, a); }).join("/"); }
   function url(u, base) {
     try {
       var x = new URL(String(u), base || (g.location && g.location.href) || "https://x/");
       var q = [];
       x.searchParams.forEach(function (v, k) { q.push(encodeURIComponent(k) + "=" + (!SECRET.test(k) && SAFE_Q.test(k) && (NUM.test(v) || DATE.test(v) || word(v) || /^[\d,]+$/.test(v)) ? encodeURIComponent(v).slice(0, 40) : "…")); });
-      var h = x.hash ? x.hash.split("?")[0].split("/").map(seg).join("/") : "";
-      return x.origin + x.pathname.split("/").map(seg).join("/") + (q.length ? "?" + q.join("&") : "") + h;
+      // fragment: ścieżka SPA (#/user/jobs) jak ścieżka; parametry fragmentu (#access_token=…) nigdy nie są zapisywane
+      var hp = x.hash.slice(1).split("?")[0], h = !x.hash ? "" : /[=&]/.test(hp) ? "#…" : "#" + path(hp);
+      return x.origin + path(x.pathname) + (q.length ? "?" + q.join("&") : "") + h;
     } catch (e) { return "(adres)"; }
   }
   function val(v, k) {
