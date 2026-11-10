@@ -509,7 +509,9 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/naglowek/naglowek.js"></script>
 <script src="../moduly/wyglad/wyglad.js"></script>
 <script src="../vantify-plan.js"></script>
+<script src="../moduly/eksport-vantify/eksport-vantify.js"></script>
 <script src="../ppm.js"></script>
+<script src="../vantify-import.js"></script>
 <script>/* wejście z karty PPM (#ppm=…) prosto do formularza: ramka formularza od pierwszej klatki, treść wpisuje start niżej – bez cudzego ekranu i bez pustej strony (bramka B1).
    Karta z listą urządzeń (np. izolatory, t.open bez t.dev) otwiera listę – tu nic nie odsłaniam (przegląd Codex #129). */
   (function () { try { var h = new URLSearchParams(location.hash.slice(1)), P = window.OEST_PPM, t = !h.get("rec") && P && P.byId(h.get("ppm") || "");
