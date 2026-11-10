@@ -53,6 +53,13 @@ assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),
 // podgląd czeka też po wyjściu i powrocie; Anuluj go usuwa
 await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtSave').waitFor();
 await page.locator('#vtCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null);
+// telefon nie zapisze nowego podglądu (brak miejsca): „Pokaż” pokazuje świeżą listę z pamięci, nie starszą z magazynu (przegląd Codex #135)
+await page.evaluate(()=>{const I=window.OESTVantifyImport;I.keepNew({jobs:window.__jobs});const j2=window.__jobs.concat([{id:3080001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-08T23:59:59+00:00',frequency:'1W'}]);
+  const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='oest.vantify.nowe')throw new DOMException('full','QuotaExceededError');return set.call(this,k,v);};try{I.keepNew({jobs:j2});}finally{Storage.prototype.setItem=set;}
+  location.hash='#settings';});
+await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtSave').waitFor();
+assert.match(await page.locator('#vtPreview').textContent(),/08\/01\/2027 · AOV Operation Test \(TA\) · 3080001/,'świeży podgląd z pamięci');
+await page.locator('#vtCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null);
 // najwyżej co 4 h
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>window.__calls.sync),1,'drugie sprawdzenie dopiero po 4 h');
 // bez zmian → bez pytania
