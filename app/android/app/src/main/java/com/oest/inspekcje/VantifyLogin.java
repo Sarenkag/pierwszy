@@ -37,7 +37,7 @@ final class VantifyLogin {
         Cipher x = Cipher.getInstance("AES/GCM/NoPadding"); x.init(Cipher.ENCRYPT_MODE, key());
         byte[] ct = x.doFinal(pass.getBytes(StandardCharsets.UTF_8));
         boolean ok = prefs(c).edit().putString("u", user).putString("iv", Base64.encodeToString(x.getIV(), Base64.NO_WRAP))
-            .putString("ct", Base64.encodeToString(ct, Base64.NO_WRAP)).putBoolean("bad", false).commit();
+            .putString("ct", Base64.encodeToString(ct, Base64.NO_WRAP)).putBoolean("bad", false).putLong("ver", ver(c) + 1).commit();
         if (!ok || load(c) == null) throw new Exception("VANTIFY_LOGIN_SAVE"); // DATA-002: zapis potwierdzony odczytem
     }
 
@@ -53,9 +53,12 @@ final class VantifyLogin {
         } catch (Exception e) { return null; }
     }
 
-    static void clear(Context c) { prefs(c).edit().clear().commit(); }
+    static void clear(Context c) { long v = ver(c) + 1; prefs(c).edit().clear().putLong("ver", v).commit(); }
     static boolean bad(Context c) { return prefs(c).getBoolean("bad", false); }
-    static void markBad(Context c) { prefs(c).edit().putBoolean("bad", true).commit(); }
+    // wersja zapisu: odrzucenie dotyczy tylko tych danych, którymi okno się logowało (przegląd Codex #134) –
+    // gdy w międzyczasie zapisano nowe hasło, stara odpowiedź „odrzucone” go nie blokuje
+    static long ver(Context c) { return prefs(c).getLong("ver", 0); }
+    static void markBad(Context c, long usedVer) { if (ver(c) == usedVer) prefs(c).edit().putBoolean("bad", true).commit(); }
 
     // dla ekranu Ustawień: sam login (bez hasła), czy zapisane, czy odrzucone
     static JSONObject info(Context c) {

@@ -203,8 +203,10 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);
   // login i hasło tylko w ukrytym oknie i tylko dla strony Vantify; odrzucone hasło blokuje kolejne próby
   assert.match(j, /VantifyLogin\.script\(a\) \+ script/);
-  assert.match(j, /"bad"\.equals\(r\.optString\("code"\)\)\) VantifyLogin\.markBad\(a\)/);
+  assert.match(j, /"bad"\.equals\(r\.optString\("code"\)\)\) VantifyLogin\.markBad\(a, loginVer\)/);
   const k = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyLogin.java'), 'utf8');
+  assert.match(k, /static void markBad\(Context c, long usedVer\) \{ if \(ver\(c\) == usedVer\)/, 'stara odpowiedź nie blokuje nowo zapisanego hasła');
+  assert.match(k, /putLong\("ver", ver\(c\) \+ 1\)/);
   assert.match(k, /"AndroidKeyStore"/); assert.match(k, /AES\/GCM\/NoPadding/);
   assert.match(k, /if \(bad\(c\)\) return "window\.__oestLoginBad=1;";/, 'po odrzuceniu nie loguje się ponownie, bez hasła');
   assert.match(j, /Sync\.current != null && Sync\.current\.join\(call, ex\)/, 'jedno ukryte okno naraz (równoległe wywołania czekają na ten sam wynik)');
