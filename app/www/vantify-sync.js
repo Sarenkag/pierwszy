@@ -8,7 +8,8 @@
 //     status, terminy, częstotliwość. Bez danych osób, bez tokenu.
 // Wynik przez most OESTVantifySync.result(json): {status:"ok", count, jobs} | {status:"login", code?} | {status:"error", code}.
 // Logowanie wygasło, a w Ustawieniach są zapisane login i hasło (VantifyLogin wstawia je jako window.__oestLogin):
-// skrypt wpisuje je w formularz logowania Vantify i loguje się RAZ. Nadal ekran logowania → {status:"login", code:"bad"}.
+// skrypt wpisuje je w formularz logowania Vantify i loguje się RAZ. Vantify odrzucił (400/401/403/422) → {status:"login", code:"bad"};
+// brak odpowiedzi → {status:"error", code:"login-timeout"} (bez blokady zapisanego hasła).
 (function (g) {
   if (g.__oestVantifySync) return;
   g.__oestVantifySync = 1;
@@ -26,9 +27,25 @@
   }
   if (!X) { out({ status: "error", code: "xhr" }); return; }
   X.open = function (m, u) {
-    try { this.__oestU = String(u); if (/^get$/i.test(m) && API.test(this.__oestU) && LIST.test(this.__oestU)) list = this.__oestU; } catch (e) {}
+    try { this.__oestM = String(m).toUpperCase(); this.__oestU = String(u); if (/^get$/i.test(m) && API.test(this.__oestU) && LIST.test(this.__oestU)) list = this.__oestU; } catch (e) {}
     return open.apply(this, arguments);
   };
+  // odpowiedź na logowanie (POST do API po wysłaniu formularza): odrzucenie hasła = 400/401/403/422; brak odpowiedzi ≠ odrzucenie
+  var loginSt = 0, armed = false, send0 = X && X.send;
+  // zapamiętane w sesji okna: strona może się przeładować po odpowiedzi logowania
+  function keepSt(v) { loginSt = v; try { g.sessionStorage.setItem("oestVantifyLoginSt", String(v)); } catch (e) {} }
+  try { loginSt = Number(g.sessionStorage && g.sessionStorage.getItem("oestVantifyLoginSt")) || 0; } catch (e) {}
+  if (send0) X.send = function () {
+    var x = this;
+    try { if (armed && x.__oestM === "POST" && x.__oestU && API.test(x.__oestU) && x.addEventListener) x.addEventListener("loadend", function () { if (x.status) keepSt(x.status); }); } catch (e) {}
+    return send0.apply(this, arguments);
+  };
+  if (g.fetch) { var f0 = g.fetch; g.fetch = function (input, init) {
+    var p = f0.apply(this, arguments);
+    try { var u = typeof input === "string" ? input : input && input.url, m = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+      if (armed && m === "POST" && API.test(String(u))) p.then(function (r) { keepSt(r.status); }, function () {}); } catch (e) {}
+    return p;
+  }; }
   X.setRequestHeader = function (k, v) {
     try { if (/^authorization$/i.test(k) && this.__oestU && API.test(this.__oestU) && v) auth = String(v); } catch (e) {}
     return setHeader.apply(this, arguments);
@@ -80,6 +97,7 @@
     for (var i = at - 1; i >= 0 && !user; i--) if (/^(text|email|)$/i.test(fields[i].getAttribute("type") || "")) user = fields[i];
     if (!user) return false;
     type(user, c.u); type(pw, c.p);
+    armed = true; // od teraz zapytanie POST do API to logowanie (jego odpowiedź mówi, czy hasło przyjęte)
     var btn = form.querySelector("button[type=submit],input[type=submit]") || form.querySelector("button");
     if (btn) btn.click(); else if (pw.form && pw.form.requestSubmit) pw.form.requestSubmit();
     return true;
@@ -93,7 +111,9 @@
       var c = g.__oestLogin;
       if (!c || !c.u || !c.p) return out({ status: "login" });
       if (!tried) { if (login(c)) { tried = true; triedAt = Date.now() || 1; try { g.sessionStorage.setItem("oestVantifyTried", String(triedAt)); } catch (e) {} } else if (Date.now() - t0 > WAIT) return out({ status: "login" }); }
-      else if (Date.now() - triedAt > LOGIN_WAIT) return out({ status: "login", code: "bad" }); // jedna próba, bez blokady konta
+      else if (/^(400|401|403|422)$/.test(String(loginSt))) return out({ status: "login", code: "bad" }); // Vantify odrzucił hasło: jedna próba
+      // bez odpowiedzi odrzucenia (brak sieci, wolna odpowiedź): błąd, NIE „złe hasło” – następnym razem apka spróbuje znów
+      else if (Date.now() - triedAt > LOGIN_WAIT) return out({ status: "error", code: "login-timeout" });
       return setTimeout(tick, 300);
     }
     if (tried && !auth) t0 = Math.max(t0, triedAt); // po zalogowaniu strona zaczyna od nowa: pełny czas na listę
