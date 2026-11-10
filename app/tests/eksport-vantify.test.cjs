@@ -48,3 +48,22 @@ test('skrypt vantify-plan.cjs liczy tym samym modułem: plik wbudowany = plan mo
   assert.ok(w.OEST_VANTIFY.cards.includes('EFA-INS-003'));
   assert.doesNotMatch(fs.readFileSync(out, 'utf8'), /Kowalski|example\.com/);
 });
+// Lista z API Vantify (zapis „Zbadaj” 10/11/2026: GET /users/{id}/jobs) daje ten sam plan co eksport CSV z tymi samymi zleceniami.
+test('fromApi: lista zleceń z API → ten sam plan co eksport; termin = dzień UK (zima i lato), bez danych osób', () => {
+  const api = [
+    { id: 3051375, type: 'planned', summary: 'Weekly AOV Test (Tower A)', status: 'acknowledged', attendanceDueAt: '2026-11-20T18:00:00+00:00', completionDueAt: '2026-11-20T23:59:59+00:00', frequency: '1W', serviceProviderName: 'Jan Kowalski' },
+    { id: 3051376, type: 'planned', summary: 'Weekly AOV Test (Tower A)', status: 'acknowledged', completionDueAt: '2027-06-11T22:59:59+00:00', frequency: '1W' }, // 23:59:59 BST
+    { id: 3003949, type: 'reactive', summary: 'Leak', status: 'extension_pending', completionDueAt: '2026-10-30T18:00:00+00:00' },
+    { id: 3051377, type: 'planned', summary: '(Sub) Monthly Spa Sampling', completionDueAt: '2026-11-30T23:59:59+00:00', frequency: '1M' }
+  ];
+  const rows = E.fromApi(api, '2026-11-10');
+  assert.deepStrictEqual(rows[1], { id: '3051376', jobType: 'Planned', task: 'Weekly AOV Test (Tower A)', completeBy: '2027-06-11', frequency: '1W', createdAt: '2026-11-10' });
+  assert.strictEqual(rows[2].jobType, 'reactive');
+  const fromApi = E.plan(rows, { match });
+  const fromCsv = E.plan(E.parseCsv(csv([job('3051375', 'Weekly AOV Test (Tower A)', '2026-11-20', { createdAt: '2026-11-10 08:00:00' }), job('3051376', 'Weekly AOV Test (Tower A)', '2027-06-11', { createdAt: '2026-11-10 08:00:00' }), job('3051377', '(Sub) Monthly Spa Sampling', '2026-11-30', { createdAt: '2026-11-10 08:00:00', frequency: '1M' })])), { match });
+  assert.deepStrictEqual(fromApi.jobs, fromCsv.jobs);
+  assert.strictEqual(fromApi.exported, fromCsv.exported, 'ta sama treść = ta sama wersja, niezależnie od drogi');
+  assert.strictEqual(fromApi.date, '2026-11-10');
+  assert.doesNotMatch(JSON.stringify(fromApi), /Kowalski|acknowledged/);
+  assert.deepStrictEqual(E.fromApi(null, '2026-11-10'), []);
+});

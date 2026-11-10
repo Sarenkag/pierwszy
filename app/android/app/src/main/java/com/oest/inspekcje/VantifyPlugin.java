@@ -9,7 +9,20 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import android.app.Activity;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.ViewGroup;
+import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -22,6 +35,61 @@ public class VantifyPlugin extends Plugin {
         Intent i = new Intent(getContext(), VantifyActivity.class);
         i.putExtra("lang", call.getString("lang", "pl"));
         startActivityForResult(call, i, "done");
+    }
+
+    // „Pobierz z Vantify” i sprawdzanie przy starcie (Grzegorz 10/11/2026): ukryte okno Vantify z zalogowaniem zapamiętanym
+    // w WebView (to samo co w „Otwórz Vantify w apce”) i skrypt vantify-sync.js, który czyta listę zleceń (tylko GET).
+    // Wynik: {status:"ok", count, jobs} | {status:"login"} | {status:"error"|"timeout", code}. Bez loginu, hasła i tokenu.
+    @PluginMethod public void sync(PluginCall call) {
+        Activity a = getActivity();
+        if (a == null) { call.reject("VANTIFY_SYNC"); return; }
+        a.runOnUiThread(() -> new Sync(a, call).start());
+    }
+
+    static final class Sync {
+        static final long TIMEOUT = 60000;
+        private final Activity a; private final PluginCall call;
+        private final Handler h = new Handler(Looper.getMainLooper());
+        private WebView web; private String script = ""; private volatile String host = ""; private boolean finished;
+        Sync(Activity a, PluginCall call) { this.a = a; this.call = call; }
+
+        void start() {
+            try (InputStream in = a.getAssets().open("public/vantify-sync.js")) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); script = new String(o.toByteArray(), StandardCharsets.UTF_8); }
+            catch (Exception e) { finish("{\"status\":\"error\",\"code\":\"asset\"}"); return; }
+            web = new WebView(a);
+            CookieManager.getInstance().setAcceptCookie(true);
+            WebSettings s = web.getSettings();
+            s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true); s.setAllowFileAccess(false); s.setAllowContentAccess(false); s.setSupportMultipleWindows(false);
+            web.addJavascriptInterface(new Bridge(), "OESTVantifySync");
+            web.setWebViewClient(new WebViewClient() {
+                @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) { return !"https".equals(r.getUrl().getScheme()); }
+                @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap icon) { host = Uri.parse(url).getHost(); inject(); }
+                @Override public void onPageFinished(WebView v, String url) { host = Uri.parse(url).getHost(); inject(); }
+            });
+            // niewidoczne (1×1 px, przezroczyste), ale podpięte do okna, żeby strona działała jak zwykle
+            web.setAlpha(0f);
+            ((ViewGroup) a.getWindow().getDecorView()).addView(web, new FrameLayout.LayoutParams(1, 1));
+            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), TIMEOUT);
+            web.loadUrl(VantifyActivity.START + "#/user/jobs");
+        }
+
+        public final class Bridge {
+            // tylko strona Vantify może oddać wynik
+            @JavascriptInterface public void result(String json) { if (VantifyActivity.vantify(host) && json != null && json.length() < 2000000) h.post(() -> finish(json)); }
+        }
+
+        private void inject() { if (web != null && VantifyActivity.vantify(host)) web.evaluateJavascript(script, null); }
+
+        private void finish(String json) {
+            if (finished) return;
+            finished = true;
+            h.removeCallbacksAndMessages(null);
+            try { call.resolve(new JSObject(json)); } catch (Exception e) { call.reject("VANTIFY_SYNC"); }
+            if (web != null) {
+                try { CookieManager.getInstance().flush(); ViewGroup p = (ViewGroup) web.getParent(); if (p != null) p.removeView(web); web.destroy(); } catch (Exception e) {}
+                web = null;
+            }
+        }
     }
 
     @ActivityCallback private void done(PluginCall call, ActivityResult result) {
