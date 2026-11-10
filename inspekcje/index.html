@@ -3324,7 +3324,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   ]).then(function () {
     refresh(); renderHome(); if (REC_ID) openRec(REC_ID); else openPpm();
     if (location.hash === "#queue") show("queue");
-    if (!REC_ID && !document.querySelector(".view:not([hidden])")) show("home"); // formularz się nie otworzył – lista inspekcji
+    if (!REC_ID && !cur.ppm && !document.querySelector(".view:not([hidden])")) show("home"); // nie ma takiej karty PPM – lista inspekcji (karta otwiera swój ekran sama, też z opóźnieniem, np. izolatory)
     if (window.OESTSender) OESTSender.init({
       onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
         var q = queue.filter(function (x) { return x.id === it.id; })[0]; if (!q) return;

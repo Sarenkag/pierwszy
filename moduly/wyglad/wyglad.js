@@ -35,15 +35,28 @@
     clearTimeout(backT); root.classList.toggle("wy-wstecz", !!on);
     if (on) backT = setTimeout(function () { root.classList.remove("wy-wstecz"); }, 700);
   }
-  root.classList.add("wy-wczytanie"); // pierwszy ekran strony tylko się rozjaśnia (wyglad.css); od pierwszej zmiany ekranu – pełna Poświata
+  // pierwszy ekran strony tylko się rozjaśnia (wyglad.css); od następnej zmiany ekranu – pełna Poświata
+  root.classList.add("wy-wczytanie");
+  var pokazane = 0;
+  function poWczytaniu() { if (d.readyState !== "loading") root.classList.remove("wy-wczytanie"); }
   function nav() { navAt = Date.now(); }
-  function ruchUzytkownika() { nav(); if (d.readyState === "complete") root.classList.remove("wy-wczytanie"); } // pierwsza zmiana ekranu po wczytaniu strony
-  w.addEventListener("popstate", function (e) { ruchUzytkownika(); if (!(e.state && e.state.overlay)) wstecz(true); }, true);
+  // okienko na wierzchu dokłada wpis historii z tym samym adresem – jego zamknięcie (Wstecz) to nie zmiana ekranu
+  var adres = location.hash;
+  w.addEventListener("popstate", function (e) {
+    var zmiana = location.hash !== adres; adres = location.hash;
+    if (!zmiana || (e.state && e.state.overlay)) return;
+    nav(); poWczytaniu(); wstecz(true);
+  }, true);
   var push = history.pushState;
-  history.pushState = function (s) { var r = push.apply(this, arguments); if (!(s && s.overlay)) { ruchUzytkownika(); wstecz(false); } return r; };
-  w.addEventListener("hashchange", nav);
+  history.pushState = function (s) {
+    var r = push.apply(this, arguments), zmiana = location.hash !== adres; adres = location.hash;
+    if (zmiana && !(s && s.overlay)) { nav(); poWczytaniu(); wstecz(false); }
+    return r;
+  };
+  w.addEventListener("hashchange", function () { adres = location.hash; nav(); });
   // ekran schowany i od razu pokazany w tym samym kroku (przebudowa, zmiana języka, powrót po błędzie) nie jest zmianą ekranu:
-  // dostaje wy-zostaje i nie animuje się od nowa (inaczej „drgnąłby” w miejscu) – do czasu, aż naprawdę zniknie
+  // dostaje wy-zostaje i nie animuje się od nowa (inaczej „drgnąłby” w miejscu) – do czasu, aż naprawdę zniknie.
+  // Zmiana ekranu bez historii (inspekcja: formularz → podgląd → kolejka) też kończy tryb wczytywania.
   new MutationObserver(function (ms) {
     var first = new Map(), shown = false;
     ms.forEach(function (m) { var t = m.target; if (t.classList && t.classList.contains("view") && !first.has(t)) first.set(t, m.oldValue); });
@@ -51,7 +64,9 @@
       if (t.hidden) { t.classList.remove("wy-zostaje"); return; }
       if (old === null) t.classList.add("wy-zostaje"); else shown = true;
     });
-    if (shown) nav();
+    if (!shown) return;
+    nav();
+    if (pokazane++ > 0) poWczytaniu();
   }).observe(root, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true, subtree: true });
   // ---------- lista po zmianie (filtr, dzień, nowe zadanie) ----------
   // ten sam zestaw kart = brak animacji (np. wpisywanie w polu nie miga); nowy zestaw = karty pojawiają się kolejno
