@@ -1,7 +1,8 @@
 // Sprawdzanie Vantify przy starcie apki i po powrocie do niej (Grzegorz 10/11/2026: „Zacznij od automatycznego updatu”).
 // Najwyżej co 4 h pyta Vantify po cichu (VantifyPlugin.sync przez OESTVantifyImport.sync). Nic nie zapisuje samo:
 //  - nowe albo zamknięte zlecenia → okienko „Pokazać?” → Ustawienia → Vantify z podglądem (zapis po „Zapisz”),
-//  - wygasłe logowanie (24 h) → okienko „Zalogować się?” najwyżej raz na dobę,
+//  - wygasłe logowanie (24 h): z zapisanym loginem i hasłem okno Vantify loguje się samo (VantifyLogin); bez nich albo gdy
+//    Vantify odrzuci hasło → okienko najwyżej raz na dobę,
 //  - brak sieci, błąd, brak zmian → cisza.
 // Ładowany na końcu głównej strony apki (po moduly/przycisk – okienka), nie na stronie inspekcji.
 (function (w) {
@@ -27,7 +28,10 @@
       if (r.status === "login") {
         var s2 = V.state(); if (s2.askedLogin && now - s2.askedLogin < ASK_LOGIN && now >= s2.askedLogin) return;
         s2.askedLogin = now; V.state(s2);
-        return ask({ title: "Vantify", text: L("Logowanie do Vantify wygasło (trwa 24 h). Zalogować się teraz, żeby apka pobrała nowe terminy?", "Your Vantify sign-in has expired (it lasts 24 h). Sign in now so the app can get new due dates?"), ok: L("Zaloguj", "Sign in"), cancel: L("Później", "Later") })
+        // zapisane hasło odrzucone (zmienione w Vantify?) → Ustawienia → Vantify, wpisać nowe; bez zapisanego → okno logowania
+        if (r.code === "bad") return ask({ title: "Vantify", text: L("Vantify nie przyjął zapisanego hasła. Wpisać aktualne hasło?", "Vantify did not accept the saved password. Type the current password?"), ok: L("Wpisz", "Type it"), cancel: L("Później", "Later") })
+          .then(function (yes) { if (yes) V.go("haslo"); });
+        return ask({ title: "Vantify", text: L("Logowanie do Vantify wygasło (trwa 24 h). Zalogować się teraz, żeby apka pobrała nowe terminy? Możesz też zapisać login i hasło w Ustawienia → Vantify – wtedy apka loguje się sama.", "Your Vantify sign-in has expired (it lasts 24 h). Sign in now so the app can get new due dates? You can also save the login and password in Settings → Vantify – then the app signs in by itself."), ok: L("Zaloguj", "Sign in"), cancel: L("Później", "Later") })
           .then(function (yes) { if (yes) V.go("login"); });
       }
     }).catch(function () {});

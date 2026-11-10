@@ -5,14 +5,16 @@ const test = require('node:test'), assert = require('node:assert'), fs = require
 const SRC = fs.readFileSync(path.join(__dirname, '../www/vantify-sync.js'), 'utf8');
 const API = 'https://savillsuk-api.cafm.vantify.com';
 function job(i) { return { id: 3051000 + i, type: i % 10 ? 'planned' : 'reactive', summary: 'Task ' + i, status: 'acknowledged', attendanceDueAt: '2026-12-18T18:00:00+00:00', completionDueAt: '2026-12-18T23:59:59+00:00', frequency: '1M', serviceProviderName: 'Jan Kowalski', description: 'Call Jan 07123' }; }
-function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait = 3000 } = {}) {
+function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait = 3000, login = null, dom = null, loginStatus = 401, hang = false } = {}) {
   const calls = [], results = [], timers = [];
   const all = Array.from({ length: total }, (_, i) => job(i));
   class XHR {
     open(m, u) { this.m = m; this.u = u; this.h = {}; }
     setRequestHeader(k, v) { this.h[k] = v; }
+    addEventListener(n, f) { if (n === 'loadend') this.le = f; }
     send() {
       calls.push({ m: this.m, u: this.u, h: { ...this.h } });
+      if (this.m === 'POST') { if (hang) return; this.status = loginStatus; this.responseText = '{}'; timers.push(() => { this.onload && this.onload(); this.le && this.le(); }); return; }
       const p = Number((/[?&]page=(\d+)/.exec(this.u) || [0, 1])[1]);
       const ok = this.h.Authorization === 'Bearer T';
       this.status = ok ? status : 401;
@@ -20,7 +22,9 @@ function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait 
       timers.push(() => this.onload && this.onload());
     }
   }
-  const w = { XMLHttpRequest: XHR, location: { hash }, __oestSyncWait: wait, OESTVantifySync: { result: j => results.push(JSON.parse(j)) } };
+  const w = { XMLHttpRequest: XHR, location: { hash }, __oestSyncWait: wait, __oestLoginWait: 3000, OESTVantifySync: { result: j => results.push(JSON.parse(j)) } };
+  if (login) w.__oestLogin = login;
+  if (dom) Object.assign(w, dom);
   let now = 0;
   const ctx = vm.createContext({ window: w, Date: { now: () => now }, setTimeout: (f, ms) => timers.push(f), Promise, JSON, Array, Number, String, Error, isNaN });
   vm.runInContext(SRC, ctx);
@@ -79,6 +83,52 @@ test('obce adresy (np. Google Analytics) nie dają tokenu ani listy', async () =
   await s.run();
   assert.deepStrictEqual(s.results, [{ status: 'login' }]);
 });
+// Zapamiętany login i hasło (Grzegorz 10/11/2026): formularz logowania Vantify wypełniony i wysłany RAZ
+function loginForm(onSubmit) {
+  const ev = [], user = { getAttribute: () => 'email', dispatchEvent: e => ev.push('u:' + e.type) }, pw = { getAttribute: () => 'password', dispatchEvent: e => ev.push('p:' + e.type) };
+  let clicks = 0;
+  const form = { querySelectorAll: () => [user, pw], querySelector: () => ({ click: () => { clicks++; onSubmit && setImmediate(() => onSubmit(user, pw)); } }) };
+  pw.form = form;
+  let shown = true;
+  const document = { querySelector: q => (q === 'input[type=password]' && shown ? pw : null) };
+  return { dom: { document, HTMLInputElement: { prototype: {} }, Event: function (t) { this.type = t; } }, user, pw, ev, clicks: () => clicks, hide: () => { shown = false; } };
+}
+test('wygasłe logowanie + zapisany login: wpisuje login i hasło, loguje się raz, potem pobiera listę', async () => {
+  let s;
+  const f = loginForm((u, p) => { s.w.location.hash = '#/user/dashboard'; f.hide(); s.spa(API + '/users/14255/jobs?limit=30&page=1&site=6324'); });
+  s = world({ hash: '#/login', login: { u: 'greg@example.com', p: 'Tajne"1' }, dom: f.dom });
+  await s.run();
+  assert.strictEqual(f.user.value, 'greg@example.com'); assert.strictEqual(f.pw.value, 'Tajne"1');
+  assert.ok(f.ev.includes('u:input') && f.ev.includes('p:input'), 'strona widzi wpisanie (zdarzenia input)');
+  assert.strictEqual(f.clicks(), 1, 'jedno logowanie');
+  assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].count, 97);
+  assert.doesNotMatch(JSON.stringify(s.results), /Tajne|greg@/, 'hasło i login nie wracają do apki');
+});
+function postLogin(sref) { return () => { const x = new sref.s.w.XMLHttpRequest(); x.open('POST', API + '/auth'); x.send('{}'); }; }
+test('zapisane hasło odrzucone (Vantify: 401) → login/bad po jednej próbie, bez drugiego logowania', async () => {
+  const ref = {}; const f = loginForm(postLogin(ref)); const s = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'zle' }, dom: f.dom });
+  await s.run();
+  assert.strictEqual(f.clicks(), 1); assert.deepStrictEqual(s.results, [{ status: 'login', code: 'bad' }]);
+  assert.ok(s.calls.some(c => c.m === 'POST'), 'odpowiedź logowania z Vantify');
+  const g = world({ hash: '#/login', dom: loginForm().dom }); await g.run();
+  assert.deepStrictEqual(g.results, [{ status: 'login' }], 'bez zapisanego loginu: jak dotąd');
+});
+test('brak odpowiedzi na logowanie (sieć) → błąd login-timeout, NIE „złe hasło” (bez blokady zapisanego hasła)', async () => {
+  const ref = {}; const f = loginForm(postLogin(ref)); const s = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'dobre' }, dom: f.dom, hang: true });
+  await s.run();
+  assert.strictEqual(f.clicks(), 1); assert.deepStrictEqual(s.results, [{ status: 'error', code: 'login-timeout' }]);
+});
+test('hasło już odrzucone wcześniej (VantifyLogin bad): bez wpisywania, od razu login/bad', async () => {
+  const f = loginForm(); const s = world({ hash: '#/login', dom: { ...f.dom, __oestLoginBad: 1 } }); await s.run();
+  assert.strictEqual(f.clicks(), 0); assert.deepStrictEqual(s.results, [{ status: 'login', code: 'bad' }]);
+});
+test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logowania', async () => {
+  const store = {}, ss = { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } };
+  const ref = {}; const f1 = loginForm(postLogin(ref)); const a = ref.s = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f1.dom, sessionStorage: ss } }); await a.run(4);
+  assert.strictEqual(f1.clicks(), 1);
+  const f2 = loginForm(); const b = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f2.dom, sessionStorage: ss } }); await b.run();
+  assert.strictEqual(f2.clicks(), 0, 'nowa strona w tym samym oknie nie loguje drugi raz'); assert.deepStrictEqual(b.results, [{ status: 'login', code: 'bad' }]);
+});
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {
   const j = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyPlugin.java'), 'utf8');
@@ -89,5 +139,16 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);
   assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), TIMEOUT\)/);
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);
-  assert.doesNotMatch(j, /password|haslo|hasło/i);
+  // login i hasło tylko w ukrytym oknie i tylko dla strony Vantify; odrzucone hasło blokuje kolejne próby
+  assert.match(j, /VantifyLogin\.script\(a\) \+ script/);
+  assert.match(j, /"bad"\.equals\(r\.optString\("code"\)\)\) VantifyLogin\.markBad\(a, loginVer\)/);
+  const k = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyLogin.java'), 'utf8');
+  assert.match(k, /static void markBad\(Context c, long usedVer\) \{ if \(ver\(c\) == usedVer\)/, 'stara odpowiedź nie blokuje nowo zapisanego hasła');
+  assert.match(k, /putLong\("ver", ver\(c\) \+ 1\)/);
+  assert.match(k, /"AndroidKeyStore"/); assert.match(k, /AES\/GCM\/NoPadding/);
+  assert.match(k, /if \(bad\(c\)\) return "window\.__oestLoginBad=1;";/, 'po odrzuceniu nie loguje się ponownie, bez hasła');
+  assert.match(j, /Sync\.current != null && Sync\.current\.join\(call\)/, 'jedno ukryte okno naraz (równoległe wywołania czekają na ten sam wynik)');
+  assert.match(j, /for \(PluginCall c : calls\) c\.resolve\(r\)/);
+  assert.match(k, /JSONObject\.quote\(l\[1\]\)/, 'hasło jako bezpieczny literał JS');
+  assert.doesNotMatch(j + k, /Log\.(d|i|w|e|v)\(/, 'bez wypisywania do logów');
 });
