@@ -155,6 +155,9 @@
   // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń; podgląd i zapis jak przy pliku.
   // Gdy Vantify prosi o logowanie: otwiera okno Vantify, a po „Zakończ” pobiera jeszcze raz (raz, bez pętli).
   var AKEY = "oest.vantify.auto", NKEY = "oest.vantify.nowe";
+  // odłożony podgląd z Vantify; gdy telefon go nie zapisze (brak miejsca), zostaje w pamięci – „Pokaż” nie otworzy starszej listy (przegląd Codex #135)
+  var memNew = null;
+  function dropNew() { memNew = null; setJson(NKEY, null); }
   var showApi = function () {}, goAfter = null;
   function getJson(k) { try { return JSON.parse(ls().getItem(k) || "null"); } catch (e) { return null; } }
   function setJson(k, v) { try { if (v == null) ls().removeItem(k); else ls().setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -260,9 +263,9 @@
           "<p>" + L("Zamknięte w Vantify (znikną z apki): ", "Closed in Vantify (removed from the app): ") + ch.closed.length + "</p>" + (ch.closed.length ? list(ch.closed, 8) : "") +
           (p.missing.length ? "<p class=\"hint\">" + L("Bez karty w apce (pominięte): ", "No card in the app (skipped): ") + esc(p.missing.join(", ")) + "</p>" : "") +
           "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtSave\">" + L("Zapisz w apce", "Save in the app") + "</button><button type=\"button\" class=\"btn\" id=\"vtCancel\">" + L("Anuluj", "Cancel") + "</button></div>");
-        out.querySelector("#vtCancel").onclick = function () { if (r.api) setJson(NKEY, null); pending = null; out.innerHTML = ""; input.value = ""; };
+        out.querySelector("#vtCancel").onclick = function () { if (r.api) dropNew(); pending = null; out.innerHTML = ""; input.value = ""; };
         out.querySelector("#vtSave").onclick = function () {
-          try { save(p); setJson(NKEY, null); /* każdy zapis (API albo plik) unieważnia odłożony podgląd */ pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
+          try { save(p); dropNew(); /* każdy zapis (API albo plik) unieważnia odłożony podgląd */ pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
           catch (e) { out.insertAdjacentHTML("beforeend", "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"); }
         };
     }
@@ -278,8 +281,8 @@
     else if (goAfter === "login") { goAfter = null; pullMsg(box, L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself.")); openVantify(box, function () { pull(box, true); }); }
     else {
       // nowe terminy znalezione przy starcie apki: podgląd czeka tutaj, dopóki nie zapiszesz albo nie anulujesz
-      goAfter = null; var nw = getJson(NKEY);
-      if (nw && nw.jobs) { try { var pv = apiPreview(nw, nw.day); if (pv.changes.added.length || pv.changes.closed.length) show(pv); else setJson(NKEY, null); } catch (e) { setJson(NKEY, null); } }
+      goAfter = null; var nw = memNew || getJson(NKEY);
+      if (nw && nw.jobs) { try { var pv = apiPreview(nw, nw.day); if (pv.changes.added.length || pv.changes.closed.length) show(pv); else dropNew(); } catch (e) { dropNew(); } }
     }
   }
   w.addEventListener("oest:vantify-ui", function (e) { draw(e.detail); });
@@ -287,5 +290,9 @@
   w.OESTVantifyImport = { preview: preview, apiPreview: apiPreview, save: save, info: info, draw: draw,
     // dla vantify-auto.js: pobranie, stan sprawdzania, podgląd odłożony do Ustawienia → Vantify
     sync: sync, today: today, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); },
-    keepNew: function (r) { setJson(NKEY, r ? { day: today(), jobs: r.jobs } : null); }, go: goVantify };
+    keepNew: function (r) {
+      if (!r) { dropNew(); return; }
+      var v = { day: today(), jobs: r.jobs }; memNew = null;
+      try { ls().setItem(NKEY, JSON.stringify(v)); } catch (e) { memNew = v; try { ls().removeItem(NKEY); } catch (e2) {} }
+    }, go: goVantify };
 })(window);
