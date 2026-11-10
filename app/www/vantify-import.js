@@ -156,10 +156,17 @@
     }).catch(function (e) { if (b) b.disabled = false; pullMsg(box, errText(e)); });
   }
   // Sprawdzanie przy starcie apki: app/www/vantify-auto.js (ładowany na końcu głównej strony, po module okienek).
-  function goVantify(what) { goAfter = what; if (location.hash === "#settings/vantify") w.dispatchEvent(new HashChangeEvent("hashchange")); location.hash = "#settings/vantify"; }
+  // już na Ustawienia → Vantify: ten sam adres nie przerysuje widoku, więc rysujemy od razu (przegląd Codex #133)
+  var lastBox = null;
+  function goVantify(what) {
+    goAfter = what;
+    if (location.hash === "#settings/vantify" && lastBox && lastBox.isConnected) { pending = null; draw(lastBox); }
+    else location.hash = "#settings/vantify";
+  }
   var pending = null; // podgląd czekający na „Zapisz”
   function draw(box) {
     if (!box) return;
+    lastBox = box;
     var i = info();
     put(box, "<div class=\"panel\"><h2>" + L("Terminy PPM z Vantify", "PPM due dates from Vantify") + "</h2>" +
       "<p class=\"settings-selected\" id=\"vtNow\">" + L("Eksport z ", "Export from ") + dmy(i.date) + " · " + i.jobs + L(" zleceń", " jobs") + " · " +
@@ -187,7 +194,7 @@
           "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtSave\">" + L("Zapisz w apce", "Save in the app") + "</button><button type=\"button\" class=\"btn\" id=\"vtCancel\">" + L("Anuluj", "Cancel") + "</button></div>");
         out.querySelector("#vtCancel").onclick = function () { if (r.api) setJson(NKEY, null); pending = null; out.innerHTML = ""; input.value = ""; };
         out.querySelector("#vtSave").onclick = function () {
-          try { save(p); if (r.api) setJson(NKEY, null); pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
+          try { save(p); setJson(NKEY, null); /* każdy zapis (API albo plik) unieważnia odłożony podgląd */ pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
           catch (e) { out.insertAdjacentHTML("beforeend", "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"); }
         };
     }

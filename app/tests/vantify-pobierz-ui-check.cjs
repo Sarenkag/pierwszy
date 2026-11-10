@@ -68,6 +68,18 @@ await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.a
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();
 await page.waitForFunction(()=>window.__calls.open===1);await page.locator('#vtSave').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#settings/vantify','„Zaloguj” → okno Vantify, potem podgląd');
 await page.locator('#vtCancel').click();
+// już na Ustawienia → Vantify: „Pokaż” rysuje podgląd od razu (ten sam adres nie przerysowuje widoku)
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__jobs.push({id:3080001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-08T23:59:59+00:00',frequency:'1W'});});
+assert.equal(await page.evaluate(()=>location.hash),'#settings/vantify');assert.equal(await page.locator('#vtSave').count(),0);
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();
+await page.locator('#vtSave').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/3080001/,'podgląd bez zmiany adresu');
+// zapis pliku CSV unieważnia odłożony podgląd z Vantify (inaczej stara lista pokazałaby nowe zlecenia jako „zamknięte”)
+await page.locator('#vtCancel').click();await page.evaluate(()=>window.OESTVantifyImport.keepNew({jobs:window.__jobs}));
+const csv=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,q=s=>'"'+String(s).replace(/"/g,'""')+'"',d=new Date().toISOString().slice(0,10);let t='id,jobType,task,completeBy,frequency,createdAt\n';for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])t+=[j.no,'Planned',q(P.byId(id).name),j.due+' 23:59',j.f,d+' 08:00'].join(',')+'\n';return t+['3090001','Planned',q('AOV Operation Testing (Tower A)'),'2027-01-15 23:59','1W',d+' 08:00'].join(',')+'\n';});
+await page.locator('#vtFile').setInputFiles({name:'job.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});await page.locator('#vtSave').waitFor();await page.locator('#vtSave').click();await page.locator('#vtPreview .ok').waitFor();
+assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null,'zapis pliku usuwa odłożony podgląd');
+await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtPull').waitFor();await page.waitForTimeout(300);
+assert.equal(await page.locator('#vtSave').count(),0,'po zapisie pliku stary podgląd nie wraca');
 // strona inspekcji nie sprawdza Vantify sama (tylko główne okno apki)
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});
