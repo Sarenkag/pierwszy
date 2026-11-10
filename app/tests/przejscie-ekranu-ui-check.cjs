@@ -9,6 +9,8 @@
 //  Z4 nowa strona (lista → inspekcja, Wstecz z inspekcji): żaden „cudzy” ekran (logowanie, lista inspekcji) nie prześwituje przed właściwym,
 //  Z5 ekran przebudowany w miejscu (schowany i pokazany w jednym kroku) nie animuje się od nowa,
 //  Z6 tabela ruchu: podmiana efektu ekranu działa bez zmian na ekranach; „mniej ruchu” = zero animacji ekranu,
+//  Z8 zamknięcie okienka nie animuje ekranu, Z9 zmiana ekranu bez historii (inspekcja: formularz → podgląd) = Poświata,
+//  Z10 karta otwierana z opóźnieniem (izolatory) zostaje w inspekcji,
 //  Z7 rezerwacja miejsca pod drugi język (moduly/bledy, moduly/podmien) liczy rozmiar bez chwilowego pomniejszenia ekranu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
@@ -136,6 +138,30 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
       box.remove(); return out;
     });
     check(R.prostokat.szer === 120 && R.prostokat.wys === 20, `Z7: OESTBledy.prostokat liczy z pomniejszeniem: ${JSON.stringify(R.prostokat)}`);
+    // ---------- Z8: zamknięcie okienka (Wstecz) nie animuje ekranu pod spodem; Z9: zmiana ekranu bez historii po wczytaniu = Poświata ----------
+    await p.goto(url + '/index.html#home'); await klatki();
+    R.okienko = await p.evaluate(async () => {
+      window.__anim = []; OESTWstecz.nakladki.open(() => {}); history.back();
+      await new Promise(r => setTimeout(r, 300));
+      return { animacje: window.__anim.slice(), wstecz: document.documentElement.classList.contains('wy-wstecz'), wczytanie: document.documentElement.classList.contains('wy-wczytanie') };
+    });
+    check(!R.okienko.animacje.length && !R.okienko.wstecz, `Z8: zamknięcie okienka animuje ekran pod spodem: ${JSON.stringify(R.okienko)}`);
+    await p.goto(url + '/index.html?z9#home'); await klatki(); // świeża strona: sama zmiana ekranu bez historii
+    R.bezHistorii = await p.evaluate(async () => {
+      window.__anim = []; const a = document.getElementById('v-home'), b = document.getElementById('v-cal');
+      a.hidden = true; b.hidden = false; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return window.__anim.slice();
+    });
+    check(R.bezHistorii.length === 1 && R.bezHistorii[0] === efekt + '@v-cal', `Z9: zmiana ekranu bez historii po wczytaniu: ${R.bezHistorii} (oczekiwana ${efekt})`);
+    // ---------- Z10: karta otwierana z opóźnieniem (izolatory, #ppm=iso) zostaje w inspekcji, nie wraca do listy ----------
+    // zapis każdego odsłoniętego ekranu od początku wczytania: karta z listą urządzeń nie pokazuje po drodze formularza (przegląd Codex #129)
+    await p.addInitScript(() => { window.__ekrany = []; new MutationObserver(ms => ms.forEach(m => { const t = m.target; if (t.classList && t.classList.contains('view') && !t.hidden) window.__ekrany.push(t.id); }))
+      .observe(document, { attributes: true, attributeFilter: ['hidden'], subtree: true }); });
+    await p.goto(url + '/inspekcje/index.html#ppm=iso'); await klatki();
+    await p.waitForFunction(() => document.querySelector('.view:not([hidden])'), null, { timeout: 10000 }).catch(() => {});
+    R.izolatory = { adres: p.url().replace(url, ''), ekran: await p.evaluate(() => (document.querySelector('.view:not([hidden])') || {}).id || null), poDrodze: await p.evaluate(() => window.__ekrany) };
+    check(/\/inspekcje\//.test(R.izolatory.adres) && R.izolatory.ekran, `Z10: wejście w izolatory: ${JSON.stringify(R.izolatory)}`);
+    check(R.izolatory.poDrodze && !R.izolatory.poDrodze.includes('v-form'), `Z10: izolatory pokazały po drodze formularz: ${JSON.stringify(R.izolatory.poDrodze)}`);
     check(!bledy.length, 'błędy JS na stronie: ' + bledy.slice(0, 3).join(' | '));
     await c.close();
 
