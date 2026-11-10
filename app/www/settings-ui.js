@@ -85,7 +85,7 @@
     r.innerHTML=html(page);
     r.querySelectorAll('[data-route]').forEach(function(b){b.onclick=function(){if(canLeave())navigate(b.dataset.route==='questions'?'questions':b.dataset.route==='zdjecia'?'zdjecia':b.dataset.route==='home'?'home':b.dataset.route?'settings/'+b.dataset.route:'settings');};});
     r.querySelectorAll('[data-action]').forEach(function(b){b.onclick=function(){action(b.dataset.action);};});
-    var form=document.getElementById('settingsForm');if(form){form.addEventListener('input',function(e){if(!/^(shift|newEntry)/.test(e.target.id||''))dirty=true;});/* pola grafiku zapisuje „Dodaj wersję grafiku”, nie „Zapisz” */form.addEventListener('submit',function(e){e.preventDefault();saveForm();});}
+    var form=document.getElementById('settingsForm');if(form){form.addEventListener('input',function(e){if(!/^(shift|newEntry|vt)/.test(e.target.id||''))dirty=true;/* plik Vantify ma własne Zapisz/Anuluj */});/* pola grafiku zapisuje „Dodaj wersję grafiku”, nie „Zapisz” */form.addEventListener('submit',function(e){e.preventDefault();saveForm();});}
     r.querySelectorAll('[data-image]').forEach(function(i){i.onchange=function(){importImage(i).catch(function(e){message(err(e),true);});};});
     var restore=document.getElementById('restoreFile');if(restore)restore.onchange=previewBackup;
     both(page);

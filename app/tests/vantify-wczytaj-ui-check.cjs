@@ -25,6 +25,9 @@ await page.locator('#vtFile').setInputFiles({name:'job-old.csv',mimeType:'text/c
 await page.locator('#vtPreview .warn').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/najnowsze zlecenie w pliku jest z 01\/11\/2026.*09\/11\/2026.*może być starszy/);
 assert.equal(await page.locator('#vtSave').count(),1,'świeży eksport po zamknięciu najnowszego zlecenia da się zapisać');
 await page.locator('#vtCancel').click();assert.equal(await page.locator('#vtPreview').textContent(),'');
+// wybór pliku to nie niezapisana zmiana Ustawień: wyjście z ekranu bez okienka „Masz niezapisane zmiany”
+await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');
+assert.equal(await page.locator('.oest-ask').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtNow').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null);
 // zły plik: komunikat, bez zapisu
 await page.locator('#vtFile').setInputFiles({name:'inny.csv',mimeType:'text/csv',buffer:Buffer.from('a,b\n1,2\n')});
