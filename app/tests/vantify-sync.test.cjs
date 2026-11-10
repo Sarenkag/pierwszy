@@ -132,7 +132,7 @@ test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logo
 
 // „Zbadaj automatycznie” (Grzegorz 10/11/2026): bot czyta zamiast klikać – tylko GET, po linkach _links, limit, bez danych osób
 const REJ = fs.readFileSync(path.join(__dirname, '../www/vantify-rejestr.js'), 'utf8');
-function explorer({ max = 300, pages = 0, expire = 0, hang = null } = {}) {
+function explorer({ max = 300, pages = 0, expire = 0, hang = null, part = 0 } = {}) {
   const calls = [], results = [], timers = [];
   const site = { id: 6324, name: 'One Eastside', _links: { self: { href: API + '/sites/6324' }, jobs: { href: API + '/sites/6324/jobs{?page}', templated: true }, meters: { href: API + '/sites/6324/meters' }, export_jobs: { href: API + '/sites/6324/jobs/export' }, approve: { href: API + '/sites/6324/quotes/1/approve' }, foreign: { href: 'https://evil.example.com/x' } } };
   const jobs = n => ({ count: 3, jobs: [1, 2, 3].map(i => ({ id: 3051000 + i, summary: 'Task ' + i, contactName: 'Jan Kowalski', _links: { self: { href: API + '/sites/6324/jobs/' + (3051000 + i) } } })) });
@@ -161,13 +161,14 @@ function explorer({ max = 300, pages = 0, expire = 0, hang = null } = {}) {
   }
   const w = { XMLHttpRequest: XHR, location: { hash: '#/user/jobs', href: 'https://savillsuk.cafm.vantify.com/#/user/jobs', origin: 'https://savillsuk.cafm.vantify.com' }, __oestMode: 'explore', __oestExploreMax: max, __oestSyncWait: 3000,
     addEventListener() {}, document: { scripts: [{ src: 'https://savillsuk.cafm.vantify.com/main.js' }, { src: 'https://www.googletagmanager.com/gtag.js' }] },
-    OESTVantifySync: { result: j => results.push(JSON.parse(j)) } };
+    OESTVantifySync: { parts: [], part(c) { this.parts.push(c); }, result(j) { results.push(JSON.parse(j === '__parts__' ? this.parts.join('') : j)); } } };
+  if (part) w.__oestPart = part;
   let now = 0;
   const ctx = vm.createContext({ window: w, Date: { now: () => now }, setTimeout: (f) => timers.push(f), Promise, JSON, Array, Number, String, Error, isNaN, URL, Object, encodeURIComponent, decodeURIComponent });
   vm.runInContext(REJ, ctx); vm.runInContext(SRC, ctx);
   function spa(u) { const x = new w.XMLHttpRequest(); x.open('GET', u); x.setRequestHeader('Authorization', 'Bearer T'); x.send(); }
   async function run(n = 3000) { for (let i = 0; i < n && timers.length; i++) { const f = timers.shift(); now += 300; f(); await new Promise(r => setImmediate(r)); } }
-  return { calls, results, spa, run };
+  return { calls, results, spa, run, bridge: w.OESTVantifySync };
 }
 test('Zbadaj automatycznie: tylko GET po linkach API Vantify, pomija export/approve i obce strony, kod strony, bez danych osób', async () => {
   const s = explorer();
@@ -208,6 +209,12 @@ test('Zbadaj automatycznie: zapytanie bez odpowiedzi nie zatrzymuje badania, zap
   assert.ok(s.results[0].log.some(e => /\/sites\/6324\/meters$/.test(e.u) && e.st === 'timeout'), 'zapytanie bez odpowiedzi zapisane jako timeout');
   assert.ok(s.results[0].log.some(e => e.k === 'auto' && e.st === 200), 'reszta odczytów zostaje');
 });
+test('Zbadaj automatycznie: duży zapis idzie do apki częściami, nic nie ginie (przegląd Codex #135)', async () => {
+  const a = explorer(); a.spa(API + '/users/14255/jobs?page=1&site=6324'); await a.run();
+  const b = explorer({ part: 500 }); b.spa(API + '/users/14255/jobs?page=1&site=6324'); await b.run();
+  assert.ok(b.bridge.parts.length > 1, 'wynik przyszedł częściami'); assert.strictEqual(a.bridge.parts.length, 0, 'mały wynik w całości');
+  assert.strictEqual(b.results.length, 1); assert.deepStrictEqual(b.results[0].log.map(e => e.u), a.results[0].log.map(e => e.u), 'ten sam zapis po złożeniu części');
+});
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {
   const j = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyPlugin.java'), 'utf8');
@@ -215,7 +222,8 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /asset\("public\/vantify-sync\.js"\)/);
   assert.match(j, /explore \? "window\.__oestMode='explore';" \+ asset\("public\/vantify-rejestr\.js"\)/, 'Zbadaj automatycznie: ten sam zapis bez danych osób');
   assert.match(j, /private void inject\(\) \{ if \(web != null && VantifyActivity\.vantify\(host\)\)/);
-  assert.match(j, /public void result\(String json\) \{ if \(VantifyActivity\.vantify\(host\)/);
+  assert.match(j, /public synchronized void result\(String json\) \{\s*if \(!VantifyActivity\.vantify\(host\) \|\| json == null\) return;/);
+  assert.match(j, /public synchronized void part\(String c\) \{ if \(!VantifyActivity\.vantify\(host\)/, 'części wyniku tylko od strony Vantify');
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);
   assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : TIMEOUT\)/);
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);

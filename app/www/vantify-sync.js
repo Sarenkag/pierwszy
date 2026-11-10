@@ -23,7 +23,13 @@
   function out(o) {
     if (done) return;
     done = true;
-    try { if (g.OESTVantifySync) g.OESTVantifySync.result(JSON.stringify(o)); } catch (e) {}
+    // duży zapis „Zbadaj automatycznie” idzie częściami (po 1 MB), żeby most aplikacji go nie odrzucił (przegląd Codex #135)
+    try {
+      var B = g.OESTVantifySync, s = JSON.stringify(o), P = g.__oestPart || 1000000;
+      if (!B) return;
+      if (B.part && s.length > P) { for (var i = 0; i < s.length; i += P) B.part(s.slice(i, i + P)); B.result("__parts__"); }
+      else B.result(s);
+    } catch (e) {}
   }
   if (!X) { out({ status: "error", code: "xhr" }); return; }
   X.open = function (m, u) {

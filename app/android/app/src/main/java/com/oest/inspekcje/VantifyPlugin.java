@@ -102,7 +102,14 @@ public class VantifyPlugin extends Plugin {
 
         public final class Bridge {
             // tylko strona Vantify może oddać wynik
-            @JavascriptInterface public void result(String json) { if (VantifyActivity.vantify(host) && json != null && json.length() < 4000000) h.post(() -> finish(json)); }
+            // duży wynik przychodzi częściami (part), potem result("__parts__"); limit całości 32 MB (przegląd Codex #135)
+            private final StringBuilder parts = new StringBuilder(); private boolean partsBad;
+            @JavascriptInterface public synchronized void part(String c) { if (!VantifyActivity.vantify(host) || c == null || parts.length() + c.length() > 32000000) partsBad = true; else parts.append(c); }
+            @JavascriptInterface public synchronized void result(String json) {
+                if (!VantifyActivity.vantify(host) || json == null) return;
+                if ("__parts__".equals(json)) { String all = partsBad ? "{\"status\":\"error\",\"code\":\"too-big\"}" : parts.toString(); parts.setLength(0); h.post(() -> finish(all)); return; }
+                if (json.length() < 4000000) h.post(() -> finish(json));
+            }
         }
 
         // login i hasło tylko dla strony Vantify, tylko w tym ukrytym oknie
