@@ -1,17 +1,32 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path'), vm = require('vm');
 function fakeDate(day) { const D = Date; return class extends D { constructor(...a) { super(...(a.length ? a : [day + 'T12:00:00'])); } static now() { return new D(day + 'T12:00:00').getTime(); } }; }
-function load(store, day) {
+// Scenariusze logiki terminów liczą na stałej kopii eksportu z 02/11/2026 (dane/vantify-plan-02112026.js),
+// żeby wgranie nowego eksportu Vantify nie zmieniało testów logiki. Bieżący plik sprawdzają testy „plik z eksportu”.
+const LIVE = path.join(__dirname, '..', 'www', 'vantify-plan.js'), FIX = path.join(__dirname, 'dane', 'vantify-plan-02112026.js');
+function load(store, day, plan = FIX) {
   const ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
   if (day) ctx.Date = fakeDate(day); // zegar apki w teście = podany dzień
   else ctx.Date = fakeDate('2026-11-05');
   ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
-  for (const f of ['vantify-plan.js', 'ppm.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
+  for (const f of [plan, path.join(__dirname, '..', 'www', 'ppm.js')]) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx);
   return ctx.window;
 }
-test('zlecenia Vantify: tylko id kart z ppm.js, bez danych osobowych', () => {
-  const w = load({}), V = w.OEST_VANTIFY, P = w.OEST_PPM;
+test('plik z eksportu: zlecenia Vantify tylko dla id kart z ppm.js, bez danych osobowych', () => {
+  for (const plan of [LIVE, FIX]) {
+  const w = load({}, null, plan), V = w.OEST_VANTIFY, P = w.OEST_PPM;
   for (const id of Object.keys(V.jobs)) { assert.ok(P.byId(id), id); for (const j of V.jobs[id]) assert.match(j.due, /^\d{4}-\d\d-\d\d$/); }
-  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'www', 'vantify-plan.js'), 'utf8'), /@|07\d{3} /);
+  assert.doesNotMatch(fs.readFileSync(plan, 'utf8'), /@|07\d{3} /);
+  }
+});
+// Eksport Job z 09/11/2026 (Grzegorz 10/11: „aktualny stan Vantify”): zlecenia zamknięte w Vantify znikają z pliku.
+test('plik z eksportu 09/11: dziś 10/11 termin karty = najbliższe otwarte zlecenie z pliku, bez przeliczania', () => {
+  const w = load({}, '2026-11-10', LIVE), P = w.OEST_PPM, d = id => P.iso(P.due(P.byId(id)));
+  assert.match(w.OEST_VANTIFY.exported, /^2026-11-09-/);
+  assert.strictEqual(d('EFA-INS-003'), '2026-11-20'); // 06/11 i 13/11 zamknięte w Vantify
+  assert.strictEqual(P.jobFor(P.byId('EFA-INS-003'), '2026-11-20').no, '3000623');
+  assert.strictEqual(d('EFA-INS-005'), '2026-11-13');
+  assert.strictEqual(d('EFA-INS-027'), '2026-12-10'); // 2991778 (10/11) zamknięte w Vantify
+  for (const [id, jobs] of Object.entries(w.OEST_VANTIFY.jobs)) assert.strictEqual(d(id), jobs.find(j => j.due >= '2026-11-10').due, id);
 });
 // Grzegorz 05/11/2026: terminy DOKŁADNIE jak w pliku Vantify; apka niczego nie przesuwa; inspekcję kończy tylko on.
 // Dziś w testach = 05/11/2026 (dzień zgłoszenia: Water Feature Checks 2985235 zniknęła z 06/11).
