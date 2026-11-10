@@ -22,7 +22,15 @@ exp=max(x["createdAt"][:10] for x in rows)
 ver=exp+"-"+hashlib.sha1(json.dumps(out,sort_keys=True).encode()).hexdigest()[:8]  # zmiana treści = nowa wersja
 js="// Zlecenia PPM z Vantify (eksport Job "+exp+"): numer zlecenia + termin (completeBy). Bez danych osobowych.\n// Aktualizacja: nowy eksport → python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js. Klucz = id karty z ppm.js.\nwindow.OEST_VANTIFY = { exported: \""+ver+"\", jobs: {\n"
 js+=",\n".join('  "%s": [%s]'%(k,", ".join('{ no: "%s", due: "%s", f: "%s" }'%(j['no'],j['due'],j['f']) for j in out[k])) for k in sorted(out))
-js+="\n} };\n"
+js+="\n}"
+# Karty prowadzone zleceniami Vantify: suma z poprzedniego pliku i z tego eksportu. Eksport ma tylko otwarte zlecenia,
+# więc karta, której Vantify zamknął wszystkie zlecenia, nie może wrócić do terminów liczonych w apce (PROD-010).
+import os
+prev=set()
+if os.path.exists(sys.argv[2]):
+    old=open(sys.argv[2],encoding='utf-8').read(); m=re.search(r'cards: (\[[^\]]*\])',old)
+    prev=set(json.loads(m.group(1))) if m else set(re.findall(r'^  "([^"]+)": \[\{ no:',old,re.M))
+js+=", cards: "+json.dumps(sorted(prev|set(out)))
 tk={}
 if len(sys.argv)>3:
     for x in csv.DictReader(open(sys.argv[3],encoding='utf-8-sig')):
@@ -32,8 +40,9 @@ if len(sys.argv)>3:
         if not i: continue
         tk.setdefault(i,[]).append({"f":x['frequency'],"no":x['frequencyId'],"name":n})
 if tk:
-    js=js[:-len("\n} };\n")]+"\n}, tasks: {\n"
+    js+=", tasks: {\n"
     js+=",\n".join('  "%s": [%s]'%(k,", ".join('{ f: "%s", no: "%s", name: %s }'%(j['f'],j['no'],json.dumps(j['name'],ensure_ascii=False)) for j in tk[k])) for k in sorted(tk))
-    js+="\n} };\n"
+    js+="\n}"
     print("tasks:",len(tk),file=sys.stderr)
+js+=" };\n"
 open(sys.argv[2],'w').write(js)

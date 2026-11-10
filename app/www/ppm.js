@@ -231,6 +231,9 @@ window.OEST_PPM = {
   // „Zrobione w apce” = inspekcja zakończona/wysłana DLA TEGO terminu (period ≥ termin zlecenia).
   // Stare zapisy z testów (period sprzed zlecenia) niczego nie przesuwają.
   function jobsOf(id) { var V = window.OEST_VANTIFY; return (V && V.jobs && V.jobs[id]) || []; }
+  // Karta prowadzona zleceniami Vantify (lista „cards” w vantify-plan.js, sumowana przez kolejne eksporty).
+  // Gdy Vantify zamknie wszystkie jej zlecenia, karta dalej jest kartą Vantify: bez terminu, bez prognozy (PROD-010).
+  function isVantify(id) { var V = window.OEST_VANTIFY; return jobsOf(id).length > 0 || !!(V && V.cards && V.cards.indexOf(id) >= 0); }
   function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
   // Zakończone terminy trzymane osobno od bieżącego etapu (localStorage "oest.ppm.done" = { id: ["RRRR-MM-DD", ...] }),
   // żeby rozpoczęcie następnej inspekcji nie otwierało z powrotem poprzedniego zlecenia. Zapis/cofnięcie: P.setStage.
@@ -264,7 +267,7 @@ window.OEST_PPM = {
   // Karta ze zleceniami Vantify: termin TYLKO z pliku. Po ostatnim zleceniu z importu nie ma terminu (null) –
   // apka nie tworzy kolejnej daty ani nie bierze starej daty z telefonu (PROD-010, audyt 06/11/2026).
   P.due = function (t) {
-    if (jobsOf(t.id).length) { var v = vantifyDue(t.id); return v ? parse(v) : null; }
+    if (isVantify(t.id)) { var v = vantifyDue(t.id); return v ? parse(v) : null; }
     var s = all()[t.id];
     return s ? parse(s) : null;
   };
@@ -273,7 +276,7 @@ window.OEST_PPM = {
   // z terminem przesuwa go o jeden okres. Karta ze zleceniami Vantify: nic nie zapisuje – następne zlecenie wynika
   // z pliku, a po ostatnim zleceniu z importu nie powstaje żaden termin (PROD-010).
   P.close = function (t, day) {
-    if (!t.freq.length || jobsOf(t.id).length) return;
+    if (!t.freq.length || isVantify(t.id)) return;
     var d = P.due(t);
     put(t.id, iso(next(t, d || parse(day))));
   };
@@ -285,7 +288,7 @@ window.OEST_PPM = {
     var jobs = jobsOf(t.id), d0 = P.due(t), a = d0 ? iso(d0) : "", out = [];
     if (!a) return out;
     function put(d, e) { if (d >= from && d <= to) { e.d = d; out.push(e); } }
-    if (jobs.length) {
+    if (isVantify(t.id)) {
       jobs.forEach(function (j) { if (j.due >= a) put(j.due, { job: j.no }); });
       return out;
     }
@@ -307,7 +310,7 @@ window.OEST_PPM = {
   };
   P.endsText = function (left, t) {
     var T = function (pl, en) { return window.OESTT ? window.OESTT(pl, en) : en; };
-    if (left === null && t && jobsOf(t.id).length) return T("Brak kolejnego zlecenia w Vantify", "No next Vantify job"); // po ostatnim zleceniu z importu
+    if (left === null && t && isVantify(t.id)) return T("Brak kolejnego zlecenia w Vantify", "No next Vantify job"); // po ostatnim zleceniu z importu
     if (left === null) return T("Brak terminu – ustaw w Update", "No date – set Update");
     if (left === 0) return T("Dziś", "Today");
     if (left < 0) return T("Po terminie " + -left + " " + P.dni(-left)[0], "Overdue " + -left + "d");

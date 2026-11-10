@@ -26,7 +26,7 @@ window.OEST_VANTIFY = { exported: "2026-11-09-a1e97c94", jobs: {
   "EFA-INS-025": [{ no: "2991777", due: "2026-11-13", f: "1W" }, { no: "3000612", due: "2026-11-20", f: "1W" }, { no: "3010472", due: "2026-11-27", f: "1W" }, { no: "3029022", due: "2026-12-04", f: "1W" }, { no: "3043094", due: "2026-12-11", f: "1W" }, { no: "3051364", due: "2026-12-18", f: "1W" }],
   "EFA-INS-026": [{ no: "3000611", due: "2026-11-20", f: "1W" }, { no: "3010471", due: "2026-11-27", f: "1W" }, { no: "3029021", due: "2026-12-04", f: "1W" }, { no: "3043093", due: "2026-12-11", f: "1W" }, { no: "3051363", due: "2026-12-18", f: "1W" }],
   "EFA-INS-027": [{ no: "3043095", due: "2026-12-10", f: "1M" }]
-}, tasks: {
+}, cards: ["EFA-INS-001", "EFA-INS-002", "EFA-INS-003", "EFA-INS-004", "EFA-INS-005", "EFA-INS-006", "EFA-INS-007", "EFA-INS-008", "EFA-INS-009", "EFA-INS-010", "EFA-INS-011", "EFA-INS-012", "EFA-INS-013", "EFA-INS-014", "EFA-INS-015", "EFA-INS-016", "EFA-INS-017", "EFA-INS-018", "EFA-INS-019", "EFA-INS-020", "EFA-INS-021", "EFA-INS-022", "EFA-INS-023", "EFA-INS-024", "EFA-INS-025", "EFA-INS-026", "EFA-INS-027"], tasks: {
   "EFA-INS-001": [{ f: "1M", no: "964842", name: "Emergency Lighting Test (Tower A)" }, { f: "12M", no: "964843", name: "Emergency Lighting Test (Tower A)" }],
   "EFA-INS-002": [{ f: "1M", no: "964839", name: "Water Temperature Checks (Tower A)" }],
   "EFA-INS-003": [{ f: "1W", no: "964837", name: "AOV Operation Testing (Tower A)" }],

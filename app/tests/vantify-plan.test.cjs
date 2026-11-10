@@ -147,3 +147,20 @@ test('karta bez zleceń Vantify: Update i częstotliwość działają jak dotąd
   r.P.close(t, '2026-11-20');
   assert.strictEqual(r.due(t), '2027-02-20');
 });
+// Codex #130: eksport ma tylko otwarte zlecenia. EFA-INS-001 (wszystkie zlecenia zamknięte w Vantify) zostaje kartą Vantify
+// (lista „cards”): bez terminu, P.close nic nie zapisuje, kalendarz nic nie planuje, stara data z telefonu się nie liczy.
+test('plik z eksportu 09/11: karta Vantify bez otwartych zleceń nie wraca do terminów liczonych w apce (PROD-010)', () => {
+  const store = { 'oest.ppm.due': JSON.stringify({ 'EFA-INS-001': '2026-11-01' }) };
+  const w = load(store, '2026-11-10', LIVE), P = w.OEST_PPM;
+  for (const id of ['EFA-INS-001', 'EFA-INS-011']) {
+    const t = P.byId(id);
+    assert.strictEqual(P.jobs(t).length, 0, id);
+    assert.ok(w.OEST_VANTIFY.cards.includes(id), id);
+    assert.strictEqual(P.due(t), null, id);
+    P.close(t, '2026-11-10');
+    assert.strictEqual(P.due(t), null, id);
+    assert.strictEqual(P.occurrences(t, '2026-11-01', '2027-03-31').length, 0, id);
+  }
+  assert.strictEqual(JSON.parse(store['oest.ppm.due'])['EFA-INS-001'], '2026-11-01'); // nic nowego nie zapisano
+  for (const id of Object.keys(w.OEST_VANTIFY.jobs)) assert.ok(w.OEST_VANTIFY.cards.includes(id), id);
+});
