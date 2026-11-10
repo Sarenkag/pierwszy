@@ -116,6 +116,9 @@
     },
     {
       "file": "app/tests/vantify-rejestr.test.cjs"
+    },
+    {
+      "file": "app/tests/vantify-sync.test.cjs"
     }
   ],
   "browser": [
@@ -281,6 +284,11 @@
     {
       "file": "app/tests/vantify-wczytaj-ui-check.cjs",
       "passMarker": "VANTIFY WCZYTAJ UI PASS",
+      "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/vantify-pobierz-ui-check.cjs",
+      "passMarker": "VANTIFY POBIERZ UI PASS",
       "timeoutSec": 900
     }
   ],

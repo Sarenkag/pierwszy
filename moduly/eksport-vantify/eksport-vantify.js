@@ -72,5 +72,19 @@
       total: Object.keys(b).length
     };
   }
-  return { parseCsv: parseCsv, norm: norm, matcher: matcher, plan: plan, changes: changes };
+  // Dzień w czasie brytyjskim (Vantify One Eastside): API podaje czas UTC, eksport CSV – czas lokalny.
+  function ukDay(iso) {
+    var d = new Date(iso); if (!iso || isNaN(d)) return String(iso || "").slice(0, 10);
+    try { return d.toLocaleDateString("en-CA", { timeZone: "Europe/London" }); } catch (e) { return String(iso).slice(0, 10); }
+  }
+  // Lista zleceń z API Vantify (GET /users/{id}/jobs, zapis „Zbadaj” 10/11/2026) → te same wiersze co eksport Job,
+  // żeby plan liczył się jedną drogą. summary = task (w eksporcie z 10/11 tak jest dla każdego zlecenia Planned),
+  // completionDueAt = completeBy (dzień UK), createdAt = dzień pobrania (lista go nie podaje; dane są aktualne na ten dzień).
+  function fromApi(items, day) {
+    return (items || []).map(function (j) {
+      return { id: String(j.id), jobType: j.type === "planned" ? "Planned" : String(j.type || ""), task: String(j.summary || ""),
+        completeBy: ukDay(j.completionDueAt), frequency: String(j.frequency || ""), createdAt: String(day || "") };
+    });
+  }
+  return { parseCsv: parseCsv, norm: norm, matcher: matcher, plan: plan, changes: changes, fromApi: fromApi };
 });

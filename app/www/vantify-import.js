@@ -39,10 +39,18 @@
 
   // Podgląd przed zapisem: nic nie zapisuje. Błędy: VANTIFY_FORMAT, VANTIFY_EMPTY. older = tylko ostrzeżenie
   // (data pliku to najnowsze createdAt, nie dzień eksportu: świeży eksport po zamknięciu najnowszego zlecenia wygląda na starszy).
-  function preview(text) {
-    var c = cur(), p = E.plan(E.parseCsv(text), { match: E.matcher(cards()), prevCards: c.cards || Object.keys(c.jobs || {}) });
+  function previewRows(rows) {
+    var c = cur(), p = E.plan(rows, { match: E.matcher(cards()), prevCards: c.cards || Object.keys(c.jobs || {}) });
     var now = String(c.exported || "").slice(0, 10);
     return { plan: p, changes: E.changes(c.jobs, p.jobs), older: p.date < now, currentDate: now };
+  }
+  function preview(text) { return previewRows(E.parseCsv(text)); }
+  // Lista zleceń z Vantify (vantify-sync.js, bez eksportu): ta sama droga co plik (moduł eksport-vantify), data = dzień pobrania.
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function apiPreview(r, day) {
+    var rows = E.fromApi(r && r.jobs, day || today());
+    if (!rows.some(function (x) { return x.jobType === "Planned"; })) throw new Error("VANTIFY_EMPTY_LIST");
+    var pv = previewRows(rows); pv.api = true; pv.older = false; return pv;
   }
   // Zapis + ponowny odczyt (DATA-002): sukces dopiero, gdy telefon oddał to samo.
   function save(p) {
@@ -61,6 +69,10 @@
     var m = e && e.message;
     if (m === "VANTIFY_FORMAT") return L("To nie jest eksport Job z Vantify (brak kolumn zleceń).", "This is not a Vantify Job export (job columns missing).");
     if (m === "VANTIFY_EMPTY") return L("W pliku nie ma zleceń planowych (Planned).", "The file has no Planned jobs.");
+    if (m === "VANTIFY_EMPTY_LIST") return L("Lista Jobs w Vantify nie pokazuje zleceń planowych (Planned). Otwórz Vantify w apce i na liście Jobs ustaw filtr ze zleceniami PPM One Eastside – apka bierze listę z tym filtrem.", "The Jobs list in Vantify shows no Planned jobs. Open Vantify in the app and set the Jobs list filter to show One Eastside PPM jobs – the app uses the list with that filter.");
+    if (m === "VANTIFY_LOGIN") return L("Vantify prosi o zalogowanie. Otwórz Vantify w apce, zaloguj się i spróbuj jeszcze raz.", "Vantify asks you to sign in. Open Vantify in the app, sign in and try again.");
+    if (m === "VANTIFY_SYNC") return L("Nie udało się pobrać zleceń z Vantify (brak sieci albo Vantify nie odpowiada). Spróbuj później albo wczytaj eksport.", "Could not get jobs from Vantify (no network or Vantify not responding). Try later or load an export.");
+    if (m === "VANTIFY_NATIVE") return L("Pobieranie z Vantify działa w aplikacji Android.", "Getting jobs from Vantify works in the Android app.");
     if (m === "VANTIFY_SAVE") return L("Telefon nie zapisał planu. Nic nie zmieniono.", "The phone did not save the plan. Nothing changed.");
     return L("Nie udało się odczytać pliku.", "Could not read the file.");
   }
@@ -92,7 +104,7 @@
   }
   function plugin(name) { var C = w.Capacitor; if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin && C.registerPlugin(name)); }
   function msg(box, t) { var m = box.querySelector("#vtMsg"); if (m) m.textContent = t; }
-  function openVantify(box) {
+  function openVantify(box, after) {
     var V = plugin("Vantify");
     if (!V) { msg(box, L("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app.")); return; }
     V.open({ lang: lang() }).then(function (r) {
@@ -100,6 +112,7 @@
       draw(box);
       if (kept === "memory") msg(box, L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app."));
       if (r && r.csv) { try { showText(box, r.csv); } catch (e) { pending = null; box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; } }
+      else if (after) after(); // po zalogowaniu: od razu pobierz zlecenia
       else if (kept !== "memory") msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
     }).catch(function () { msg(box, L("Nie udało się otworzyć Vantify.", "Could not open Vantify.")); });
   }
@@ -113,6 +126,37 @@
       .then(function () { msg(box, L("Przekazano do udostępnienia.", "Handed over for sharing.")); })
       .catch(function () { msg(box, L("Nie udało się udostępnić zapisu.", "Could not share the log.")); });
   }
+  // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń; podgląd i zapis jak przy pliku.
+  // Gdy Vantify prosi o logowanie: otwiera okno Vantify, a po „Zakończ” pobiera jeszcze raz (raz, bez pętli).
+  var AKEY = "oest.vantify.auto", NKEY = "oest.vantify.nowe";
+  var showApi = function () {}, goAfter = null;
+  function getJson(k) { try { return JSON.parse(ls().getItem(k) || "null"); } catch (e) { return null; } }
+  function setJson(k, v) { try { if (v == null) ls().removeItem(k); else ls().setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function sync() {
+    var V = plugin("Vantify");
+    if (!V || !V.sync) return Promise.reject(new Error("VANTIFY_NATIVE"));
+    return V.sync({}).then(function (r) {
+      var st = getJson(AKEY) || {}; st.at = Date.now(); st.last = (r && r.status) || "error"; setJson(AKEY, st);
+      return r || {};
+    });
+  }
+  function pullMsg(box, t) { var m = box.querySelector("#vtPullMsg"); if (m) m.textContent = t; }
+  function pull(box, retried) {
+    var b = box.querySelector("#vtPull");
+    pullMsg(box, L("Łączę z Vantify…", "Connecting to Vantify…")); if (b) b.disabled = true;
+    sync().then(function (r) {
+      if (b) b.disabled = false;
+      if (r.status === "ok") { pullMsg(box, ""); try { showApi(apiPreview(r)); } catch (e) { pending = null; box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; } return; }
+      if (r.status === "login" && !retried) {
+        pullMsg(box, L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."));
+        openVantify(box, function () { pull(box, true); });
+        return;
+      }
+      pullMsg(box, errText(new Error(r.status === "login" ? "VANTIFY_LOGIN" : "VANTIFY_SYNC")));
+    }).catch(function (e) { if (b) b.disabled = false; pullMsg(box, errText(e)); });
+  }
+  // Sprawdzanie przy starcie apki: app/www/vantify-auto.js (ładowany na końcu głównej strony, po module okienek).
+  function goVantify(what) { goAfter = what; if (location.hash === "#settings/vantify") w.dispatchEvent(new HashChangeEvent("hashchange")); location.hash = "#settings/vantify"; }
   var pending = null; // podgląd czekający na „Zapisz”
   function draw(box) {
     if (!box) return;
@@ -120,8 +164,10 @@
     put(box, "<div class=\"panel\"><h2>" + L("Terminy PPM z Vantify", "PPM due dates from Vantify") + "</h2>" +
       "<p class=\"settings-selected\" id=\"vtNow\">" + L("Eksport z ", "Export from ") + dmy(i.date) + " · " + i.jobs + L(" zleceń", " jobs") + " · " +
       (i.source === "phone" ? L("wczytany w telefonie ", "loaded on this phone ") + dmy((i.importedAt || "").slice(0, 10)) + " " + hm(i.importedAt) : L("wbudowany w apkę", "built into the app")) + "</p>" +
-      "<p class=\"hint\">" + L("W Vantify: Jobs → Export → Download. Potem tutaj wybierz pobrany plik job…csv. Terminy będą dokładnie takie jak w pliku.", "In Vantify: Jobs → Export → Download. Then pick the downloaded job…csv here. Due dates stay exactly as in the file.") + "</p>" +
-      "<label class=\"btn go vt-file\">" + L("Wczytaj eksport Vantify", "Load Vantify export") + "<input id=\"vtFile\" type=\"file\" accept=\".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel,text/plain\"></label>" +
+      "<p class=\"hint\">" + L("„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h). Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Zapas: Jobs → Export → Download i wybierz plik job…csv.", "“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h). The app also checks on start, at most every 4 h. Due dates exactly from Vantify. Backup: Jobs → Export → Download and pick the job…csv file.") + "</p>" +
+      "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtPull\">" + L("Pobierz z Vantify", "Get from Vantify") + "</button>" +
+      "<label class=\"btn vt-file\">" + L("Wczytaj eksport Vantify", "Load Vantify export") + "<input id=\"vtFile\" type=\"file\" accept=\".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel,text/plain\"></label></div>" +
+      "<p class=\"hint\" id=\"vtPullMsg\" aria-live=\"polite\"></p>" +
       "<div id=\"vtPreview\" aria-live=\"polite\"></div></div>" +
       "<div class=\"panel\"><h2>" + L("Vantify w apce", "Vantify in the app") + "</h2>" +
       "<p class=\"hint\">" + L("Logujesz się sam na stronie Vantify (apka nie zapisuje hasła, może je podpowiedzieć menedżer haseł Google). Jobs → Export → Download: apka sama weźmie plik i pokaże zmiany.", "You sign in yourself on the Vantify page (the app does not store the password; Google Password Manager may fill it). Jobs → Export → Download: the app takes the file and shows the changes.") + "</p>" +
@@ -129,30 +175,41 @@
       "<button type=\"button\" class=\"btn\" id=\"vtShare\"" + (zapis().n ? "" : " hidden") + ">" + L("Udostępnij zapis „Zbadaj” (", "Share the “Explore” log (") + zapis().n + ")</button></div>" +
       "<p class=\"hint\" id=\"vtMsg\" aria-live=\"polite\"></p></div>");
     box.querySelector("#vtOpen").onclick = function () { openVantify(box); };
+    box.querySelector("#vtPull").onclick = function () { pull(box); };
     box.querySelector("#vtShare").onclick = function () { shareLog(box); };
     var input = box.querySelector("#vtFile");
     function show(r) {
         var out = box.querySelector("#vtPreview"), ch = r.changes, p = r.plan; pending = r;
-        put(out, (r.older ? "<p class=\"settings-status warn\">" + L("Uwaga: najnowsze zlecenie w pliku jest z ", "Note: the newest job in the file is from ") + dmy(p.date) + L(", a w obecnym planie z ", ", the current plan has ") + dmy(r.currentDate) + L(". Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.", ". The file may be older. Save only if it is a fresh export.") + "</p>" : "") + "<h3>" + L("Eksport z ", "Export from ") + dmy(p.date) + " · " + ch.total + L(" zleceń", " jobs") + "</h3>" +
+        put(out, (r.older ? "<p class=\"settings-status warn\">" + L("Uwaga: najnowsze zlecenie w pliku jest z ", "Note: the newest job in the file is from ") + dmy(p.date) + L(", a w obecnym planie z ", ", the current plan has ") + dmy(r.currentDate) + L(". Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.", ". The file may be older. Save only if it is a fresh export.") + "</p>" : "") + "<h3>" + (r.api ? L("Vantify, stan na ", "Vantify as of ") : L("Eksport z ", "Export from ")) + dmy(p.date) + " · " + ch.total + L(" zleceń", " jobs") + "</h3>" +
           "<p>" + L("Nowe zlecenia: ", "New jobs: ") + ch.added.length + "</p>" + (ch.added.length ? list(ch.added, 8) : "") +
           "<p>" + L("Zamknięte w Vantify (znikną z apki): ", "Closed in Vantify (removed from the app): ") + ch.closed.length + "</p>" + (ch.closed.length ? list(ch.closed, 8) : "") +
           (p.missing.length ? "<p class=\"hint\">" + L("Bez karty w apce (pominięte): ", "No card in the app (skipped): ") + esc(p.missing.join(", ")) + "</p>" : "") +
           "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtSave\">" + L("Zapisz w apce", "Save in the app") + "</button><button type=\"button\" class=\"btn\" id=\"vtCancel\">" + L("Anuluj", "Cancel") + "</button></div>");
-        out.querySelector("#vtCancel").onclick = function () { pending = null; out.innerHTML = ""; input.value = ""; };
+        out.querySelector("#vtCancel").onclick = function () { if (r.api) setJson(NKEY, null); pending = null; out.innerHTML = ""; input.value = ""; };
         out.querySelector("#vtSave").onclick = function () {
-          try { save(p); pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ") + dmy(p.date) + ".</p>"; }
+          try { save(p); if (r.api) setJson(NKEY, null); pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
           catch (e) { out.insertAdjacentHTML("beforeend", "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"); }
         };
     }
     showText = function (bx, text) { show(preview(text)); };
+    showApi = function (r) { show(r); };
     input.onchange = function () {
       var f = input.files && input.files[0], out = box.querySelector("#vtPreview"); if (!f) return;
       f.text().then(function (text) { show(preview(text)); })
         .catch(function (e) { pending = null; out.innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; input.value = ""; });
     };
     if (pending) show(pending); // zmiana języka: podgląd zostaje, tylko w drugim języku
+    else if (goAfter === "login") { goAfter = null; pullMsg(box, L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself.")); openVantify(box, function () { pull(box, true); }); }
+    else {
+      // nowe terminy znalezione przy starcie apki: podgląd czeka tutaj, dopóki nie zapiszesz albo nie anulujesz
+      goAfter = null; var nw = getJson(NKEY);
+      if (nw && nw.jobs) { try { var pv = apiPreview(nw, nw.day); if (pv.changes.added.length || pv.changes.closed.length) show(pv); else setJson(NKEY, null); } catch (e) { setJson(NKEY, null); } }
+    }
   }
   w.addEventListener("oest:vantify-ui", function (e) { draw(e.detail); });
   w.addEventListener("hashchange", function () { if (!/vantify/.test(location.hash)) pending = null; });
-  w.OESTVantifyImport = { preview: preview, save: save, info: info, draw: draw };
+  w.OESTVantifyImport = { preview: preview, apiPreview: apiPreview, save: save, info: info, draw: draw,
+    // dla vantify-auto.js: pobranie, stan sprawdzania, podgląd odłożony do Ustawienia → Vantify
+    sync: sync, today: today, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); },
+    keepNew: function (r) { setJson(NKEY, r ? { day: today(), jobs: r.jobs } : null); }, go: goVantify };
 })(window);

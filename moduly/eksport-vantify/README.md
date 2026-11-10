@@ -13,6 +13,7 @@ Eksport „Job” z Vantify (CSV) → plan zleceń planowych PPM. Grzegorz, 10/1
 | `matcher(cards)` | `[[id, nazwa], …]` | `fn(nazwaZadania) → id \| null` |
 | `plan(rows, {match, prevCards})` | wiersze eksportu | `{exported, date, jobs, cards, missing, planned}`; `VANTIFY_FORMAT`, `VANTIFY_EMPTY` |
 | `changes(oldJobs, newJobs)` | dwa plany | `{added, closed, total}` po numerze zlecenia |
+| `fromApi(items, day)` | zlecenia z API Vantify (`id, type, summary, completionDueAt, frequency`), dzień pobrania | wiersze jak z `parseCsv` (do `plan`) |
 
 ## Zasady
 
@@ -20,6 +21,7 @@ Eksport „Job” z Vantify (CSV) → plan zleceń planowych PPM. Grzegorz, 10/1
 - Tylko zlecenia `Planned`. Wynik bez danych osobowych (tylko numer, termin, częstotliwość).
 - `cards` = karty z poprzedniego planu + karty z pliku: eksport ma tylko otwarte zlecenia, więc karta z zamkniętymi zleceniami zostaje kartą Vantify (bez terminu).
 - `date` = najnowsze `createdAt` w pliku; `exported` = data + skrót treści (ta sama treść = ta sama wersja).
+- Lista z API (przycisk „Pobierz z Vantify” i sprawdzanie przy starcie, `app/www/vantify-sync.js`) idzie tą samą drogą co plik: `fromApi` → `plan`. Termin = dzień `completionDueAt` w czasie UK.
 - Moduł nie zna OEST: dopasowanie zadania do karty podaje wywołujący.
 
 ## Testy
