@@ -65,11 +65,12 @@
     X.setRequestHeader = function (k) { if (this.__r) this.__r.h.push(k); return setH.apply(this, arguments); };
     X.send = function (b) {
       var x = this, r = x.__r;
+      // jednorazowo: ten sam obiekt XHR może być użyty ponownie dla innego adresu
       if (r) x.addEventListener("loadend", function () {
         var ct = "", res = null; try { ct = x.getResponseHeader("content-type") || ""; } catch (e) {}
         try { if (!x.responseType || x.responseType === "text") res = /json/.test(ct) ? body(x.responseText, false) : { text: (x.responseText || "").length }; else if (x.responseType === "json") res = shape(x.response, 0, false); } catch (e) {}
         send({ t: Date.now(), k: "xhr", m: r.m, u: url(r.u), st: x.status, ct: ct.split(";")[0], h: r.h, req: body(b, true), res: res });
-      });
+      }, { once: true });
       return sendX.apply(this, arguments);
     };
   }

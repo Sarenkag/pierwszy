@@ -32,6 +32,20 @@ test('odpowiedzi: lista dozwolonych – teksty opisowe i wszystko pod polem osob
   assert.match(s, /"status":"Open"/); assert.match(s, /"frequency":"Quarterly"/); assert.match(s, /"first":"string"/);
   assert.deepStrictEqual(R.body('<p>Jan Kowalski 07123 456789</p>', false), { text: '<p>Jan Kowalski 07123 456789</p>'.length });
 });
+test('XHR użyty ponownie: każde żądanie zapisane raz, ze swoim adresem (przegląd Codex #132)', () => {
+  const vm = require('vm'), logs = [];
+  class X { constructor() { this.l = []; this.status = 200; this.responseType = ''; }
+    open() {} setRequestHeader() {} getResponseHeader() { return 'application/json'; }
+    addEventListener(t, f, o) { this.l.push({ f, once: !!(o && o.once) }); }
+    send() { const l = this.l; this.l = l.filter(x => !x.once); l.forEach(x => x.f()); } }
+  const w = { XMLHttpRequest: X, location: { href: 'https://savillsuk.cafm.vantify.com/' }, addEventListener() {}, OESTVantifyBridge: { log: j => logs.push(JSON.parse(j)) }, URL, Headers: class {} };
+  w.window = w; vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'www', 'vantify-rejestr.js'), 'utf8'), Object.assign(w, { JSON, Date, Object, encodeURIComponent, decodeURIComponent }));
+  const x = new w.XMLHttpRequest();
+  x.open('GET', '/api/jobs'); x.responseText = '{"n":1}'; x.send();
+  x.open('GET', '/api/counts'); x.responseText = '{"n":2}'; x.send();
+  const xhr = logs.filter(e => e.k === 'xhr').map(e => e.u.replace(/^https:\/\/[^/]+/, ''));
+  assert.strictEqual(xhr.join(','), '/api/jobs,/api/counts');
+});
 test('Java: apka nie zapisuje loginu ani hasła Vantify', () => {
   for (const f of ['VantifyActivity.java', 'VantifyPlugin.java']) {
     const s = J('java/com/oest/inspekcje/' + f);
@@ -49,6 +63,8 @@ test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność 
   assert.match(a, /registerOnBackInvokedCallback/); assert.match(a, /private void back\(\) \{[^}]*finishWithResult\(\)/);
   // edge-to-edge (Android 15+): okno odsuwa się od pasków systemowych i klawiatury
   assert.match(a, /setOnApplyWindowInsetsListener/);
+  // wpis o pobieraniu: tylko host i rozszerzenie (bez nazwy pliku i ścieżki)
+  assert.match(a, /add\("download", url\.startsWith\("blob:"\) \? "blob" : Uri\.parse\(url\)\.getHost\(\), ext\(name\)\)/);
   const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);
   assert.match(J('java/com/oest/inspekcje/MainActivity.java'), /registerPlugin\(VantifyPlugin\.class\)/);
 });

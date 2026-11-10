@@ -93,7 +93,8 @@ public class VantifyActivity extends Activity {
         });
         web.setDownloadListener((url, ua, cd, mime, len) -> {
             String name = URLUtil.guessFileName(url, cd, mime);
-            add("download", url.startsWith("blob:") ? "blob" : Uri.parse(url).getHost() + Uri.parse(url).getPath(), name);
+            // do zapisu „Zbadaj” tylko bezpieczne metadane: host i rozszerzenie pliku (nazwa i ścieżka mogą zawierać dane osób)
+            add("download", url.startsWith("blob:") ? "blob" : Uri.parse(url).getHost(), ext(name));
             info.setText(pl ? "Pobieranie " + name + "…" : "Downloading " + name + "…");
             if (url.startsWith("blob:")) {
                 web.evaluateJavascript("fetch(" + JSONObject.quote(url) + ").then(function(r){return r.text()}).then(function(t){OESTVantifyBridge.file(t," + JSONObject.quote(name) + ")})", null);
@@ -127,6 +128,8 @@ public class VantifyActivity extends Activity {
         info.setText(pl ? "Mam eksport " + name : "Got export " + name);
         finishWithResult(); // od razu do podglądu w apce
     }
+
+    static String ext(String name) { int i = name == null ? -1 : name.lastIndexOf('.'); String e = i >= 0 ? name.substring(i).toLowerCase() : ""; return e.matches("\\.[a-z0-9]{1,5}") ? e : ""; }
 
     private synchronized void add(String k, String u, String name) {
         try { if (log.length() < MAX_LOG) log.put(new JSONObject().put("t", System.currentTimeMillis()).put("k", k).put("u", u).put("name", name)); } catch (Exception e) {}
