@@ -472,8 +472,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
     <p class="hint" id="formHint"></p>
   </section>
-  <script>/* wejście z karty PPM (#ppm=…): ramka formularza od pierwszej klatki, treść wpisuje start niżej – bez cudzego ekranu i bez pustej strony (bramka B1) */
-    if (/(^#|&)ppm=/.test(location.hash) && !/(^#|&)rec=/.test(location.hash)) { document.documentElement.classList.add("wy-wczytanie"); document.getElementById("v-form").hidden = false; }</script>
 
   <!-- 4. Podgląd -->
   <section class="view" id="v-preview" hidden>
@@ -512,6 +510,10 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/wyglad/wyglad.js"></script>
 <script src="../vantify-plan.js"></script>
 <script src="../ppm.js"></script>
+<script>/* wejście z karty PPM (#ppm=…) prosto do formularza: ramka formularza od pierwszej klatki, treść wpisuje start niżej – bez cudzego ekranu i bez pustej strony (bramka B1).
+   Karta z listą urządzeń (np. izolatory, t.open bez t.dev) otwiera listę – tu nic nie odsłaniam (przegląd Codex #129). */
+  (function () { try { var h = new URLSearchParams(location.hash.slice(1)), P = window.OEST_PPM, t = !h.get("rec") && P && P.byId(h.get("ppm") || "");
+    if (t && !(t.open && !t.dev)) { document.documentElement.classList.add("wy-wczytanie"); document.getElementById("v-form").hidden = false; } } catch (e) {} })();</script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
 <script src="../moduly/czcionka-pdf/czcionka-pdf.js"></script>

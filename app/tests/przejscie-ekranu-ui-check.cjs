@@ -154,10 +154,14 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     });
     check(R.bezHistorii.length === 1 && R.bezHistorii[0] === efekt + '@v-cal', `Z9: zmiana ekranu bez historii po wczytaniu: ${R.bezHistorii} (oczekiwana ${efekt})`);
     // ---------- Z10: karta otwierana z opóźnieniem (izolatory, #ppm=iso) zostaje w inspekcji, nie wraca do listy ----------
+    // zapis każdego odsłoniętego ekranu od początku wczytania: karta z listą urządzeń nie pokazuje po drodze formularza (przegląd Codex #129)
+    await p.addInitScript(() => { window.__ekrany = []; new MutationObserver(ms => ms.forEach(m => { const t = m.target; if (t.classList && t.classList.contains('view') && !t.hidden) window.__ekrany.push(t.id); }))
+      .observe(document, { attributes: true, attributeFilter: ['hidden'], subtree: true }); });
     await p.goto(url + '/inspekcje/index.html#ppm=iso'); await klatki();
     await p.waitForFunction(() => document.querySelector('.view:not([hidden])'), null, { timeout: 10000 }).catch(() => {});
-    R.izolatory = { adres: p.url().replace(url, ''), ekran: await p.evaluate(() => (document.querySelector('.view:not([hidden])') || {}).id || null) };
+    R.izolatory = { adres: p.url().replace(url, ''), ekran: await p.evaluate(() => (document.querySelector('.view:not([hidden])') || {}).id || null), poDrodze: await p.evaluate(() => window.__ekrany) };
     check(/\/inspekcje\//.test(R.izolatory.adres) && R.izolatory.ekran, `Z10: wejście w izolatory: ${JSON.stringify(R.izolatory)}`);
+    check(R.izolatory.poDrodze && !R.izolatory.poDrodze.includes('v-form'), `Z10: izolatory pokazały po drodze formularz: ${JSON.stringify(R.izolatory.poDrodze)}`);
     check(!bledy.length, 'błędy JS na stronie: ' + bledy.slice(0, 3).join(' | '));
     await c.close();
 
