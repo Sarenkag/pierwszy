@@ -49,16 +49,20 @@
   function pick(j) {
     return { id: j.id, type: j.type, summary: j.summary, status: j.status, attendanceDueAt: j.attendanceDueAt, completionDueAt: j.completionDueAt, frequency: j.frequency };
   }
+  // liczba zleceń i stron z PIERWSZEJ strony; każda strona musi mieć listę jobs, inaczej błąd (przegląd Codex #135):
+  // niepełna lista byłaby gorsza niż żadna – brakujące zlecenia pokazałyby się jako „zamknięte w Vantify”
   function fetchAll(u) {
-    var jobs = [], p = 1;
+    var jobs = [], p = 1, expected = null, pages = 1;
     (function next() {
       get(withPage(u, p)).then(function (r) {
-        var page = Array.isArray(r && r.jobs) ? r.jobs : [];
-        jobs = jobs.concat(page.map(pick));
-        var pages = Number(r && r.pages) || 1, count = Number(r && r.count);
+        if (!r || !Array.isArray(r.jobs)) return out({ status: "error", code: "shape" });
+        if (p === 1) {
+          expected = Number(r.count); pages = Number(r.pages) || 1;
+          if (isNaN(expected) || r.count == null) return out({ status: "error", code: "shape" });
+        }
+        jobs = jobs.concat(r.jobs.map(pick));
         if (p < pages && p < MAX_PAGES) { p++; return next(); }
-        // niepełna lista byłaby gorsza niż żadna: zamknięte zlecenia pokazałyby się jako „zamknięte w Vantify”
-        if (!isNaN(count) && count !== jobs.length) return out({ status: "error", code: "partial" });
+        if (jobs.length !== expected) return out({ status: "error", code: "partial" });
         out({ status: "ok", count: jobs.length, jobs: jobs });
       }).catch(function (e) { out(e.message === "login" ? { status: "login" } : { status: "error", code: e.message }); });
     })();

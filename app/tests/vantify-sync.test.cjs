@@ -62,6 +62,17 @@ test('odmowa w trakcie (401) → login; niepełna lista → błąd (lepiej nic n
   b.spa(API + '/users/1/jobs?page=1&site=6324'); await b.run();
   assert.deepStrictEqual(b.results, [{ status: 'error', code: 'partial' }]);
 });
+test('kolejna strona bez listy albo bez liczby zleceń → błąd, nie „ok” z niepełną listą', async () => {
+  for (const second of [{}, { pages: 2, jobs: null }]) {
+    const s = world({ total: 2, per: 1 });
+    let n = 0; s.w.XMLHttpRequest.prototype.send = function () { n++; this.status = 200; this.responseText = JSON.stringify(n === 1 ? { pages: 2, count: 2, jobs: [job(1)] } : second); const x = this; setImmediate(() => x.onload && x.onload()); };
+    s.spa(API + '/users/1/jobs?page=1&site=6324'); n = 0; await s.run(); for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r));
+    assert.strictEqual(s.results[0].status, 'error', JSON.stringify(second));
+  }
+  const t = world(); t.w.XMLHttpRequest.prototype.send = function () { this.status = 200; this.responseText = JSON.stringify({ pages: 1, jobs: [job(1)] }); const x = this; setImmediate(() => x.onload && x.onload()); };
+  t.spa(API + '/users/1/jobs?page=1&site=6324'); await t.run(); for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r));
+  assert.deepStrictEqual(t.results, [{ status: 'error', code: 'shape' }], 'bez liczby zleceń nie wiadomo, czy lista pełna');
+});
 test('obce adresy (np. Google Analytics) nie dają tokenu ani listy', async () => {
   const s = world({ wait: 1500 });
   const x = new s.w.XMLHttpRequest(); x.open('GET', 'https://evil.example.com/users/1/jobs?page=1'); x.setRequestHeader('Authorization', 'Bearer X'); x.send();
