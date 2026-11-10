@@ -92,15 +92,22 @@
   }
   // Zapis + ponowny odczyt (DATA-002). Brak miejsca: mniejszy zapis (najnowsze wpisy); gdy i to nie wejdzie, kopia w pamięci.
   // Zwraca "ok" | "memory" | null (nic nowego).
-  function keepLog(entries) {
+  // big: „Zbadaj automatycznie” (do ~4000 wpisów) – większy zapis; gdy telefon nie zmieści, cały zostaje w pamięci do udostępnienia
+  function keepLog(entries, big) {
     if (!entries || !entries.length) return null;
-    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-1500), s, rec;
+    var MAXN = big ? 5000 : 1500, MAXB = big ? 3000000 : 900000;
+    if (big && JSON.stringify(entries).length > MAXB) { inMemory = { at: new Date().toISOString(), entries: entries }; return "memory"; } // nic nie ucinamy
+    if (big && entries.length > MAXN) { inMemory = { at: new Date().toISOString(), entries: entries }; return "memory"; }
+    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-MAXN), s, rec;
+    // ile wpisów z początku oddać; przy „Zbadaj automatycznie” tylko starsze – nowy zapis zostaje cały (przegląd Codex #135)
+    function cut(part) { var k = Math.floor(all.length * part); return big ? Math.min(k, all.length - entries.length) : k; }
     for (;;) {
-      while ((s = JSON.stringify(rec = { at: new Date().toISOString(), entries: all })).length > 900000 && all.length > 50) all = all.slice(Math.floor(all.length / 4));
-      try { ls().setItem(ZKEY, s); var back = JSON.parse(ls().getItem(ZKEY) || "null"); if (back && back.entries && back.entries.length === all.length) { inMemory = null; return "ok"; } } catch (e) {}
-      if (all.length <= entries.length || all.length <= 50) break;
-      all = all.slice(Math.floor(all.length / 2)); // najpierw oddaj starsze wpisy
+      while ((s = JSON.stringify(rec = { at: new Date().toISOString(), entries: all })).length > MAXB && all.length > 50 && cut(1 / 4) > 0) all = all.slice(cut(1 / 4));
+      if (!big || s.length <= MAXB) try { ls().setItem(ZKEY, s); var back = JSON.parse(ls().getItem(ZKEY) || "null"); if (back && back.entries && back.entries.length === all.length) { inMemory = null; return "ok"; } } catch (e) {}
+      if (all.length <= entries.length || all.length <= 50 || cut(1 / 2) <= 0) break;
+      all = all.slice(cut(1 / 2)); // najpierw oddaj starsze wpisy
     }
+    if (big) rec = { at: new Date().toISOString(), entries: entries };
     inMemory = rec; return "memory";
   }
   function plugin(name) { var C = w.Capacitor; if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin && C.registerPlugin(name)); }
@@ -116,6 +123,24 @@
       else if (after) after(); // po zalogowaniu: od razu pobierz zlecenia
       else if (kept !== "memory") msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
     }).catch(function () { msg(box, L("Nie udało się otworzyć Vantify.", "Could not open Vantify.")); });
+  }
+  // „Zbadaj automatycznie” (Grzegorz 10/11/2026): ukryte okno Vantify samo czyta listy i szczegóły (tylko GET, vantify-sync.js
+  // tryb explore) i kod strony; wynik dopisuje się do zapisu „Zbadaj” – udostępnia Grzegorz.
+  function explore(box) {
+    var V = plugin("Vantify"), b = box.querySelector("#vtExplore");
+    if (!V || !V.sync) { msg(box, L("Zbadaj automatycznie działa w aplikacji Android.", "Explore automatically works in the Android app.")); return; }
+    msg(box, L("Badam Vantify – tylko odczyt, do 10 minut. Zostaw ten ekran otwarty.", "Exploring Vantify – read only, up to 10 minutes. Keep this screen open.")); if (b) b.disabled = true;
+    V.sync({ mode: "explore" }).then(function (r) {
+      if (b) b.disabled = false;
+      if (r && r.status === "ok") {
+        var kept = keepLog(r.log, true); draw(box);
+        msg(box, kept === "memory" ? L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app.")
+          : L("Gotowe: ", "Done: ") + (r.count || 0) + L(" odczytów z Vantify. Dotknij „Udostępnij zapis „Zbadaj”” i wyślij mi plik.", " reads from Vantify. Tap “Share the Explore log” and send me the file."));
+        return;
+      }
+      if (r && r.status === "login" && r.log && r.log.length) { keepLog(r.log, true); draw(box); } // częściowy zapis zostaje
+      msg(box, r && r.status === "login" ? errText(new Error(r.code === "bad" ? "VANTIFY_BAD_LOGIN" : "VANTIFY_LOGIN")) : errText(new Error("VANTIFY_SYNC")));
+    }).catch(function (e) { if (b) b.disabled = false; msg(box, e && e.message === "VANTIFY_BUSY" ? L("Vantify jest teraz sprawdzany. Spróbuj za chwilę.", "Vantify is being checked right now. Try again in a moment.") : errText(new Error("VANTIFY_SYNC"))); });
   }
   function shareLog(box) {
     var z = zapis().z, S = plugin("ReportShare");
@@ -222,11 +247,13 @@
       "<button type=\"button\" class=\"btn\" id=\"vtLoginClear\">" + L("Usuń", "Remove") + "</button></div>" +
       "<p class=\"hint\" id=\"vtLoginMsg\" aria-live=\"polite\"></p>" +
       "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtOpen\">" + L("Otwórz Vantify w apce", "Open Vantify in the app") + "</button>" +
+      "<button type=\"button\" class=\"btn\" id=\"vtExplore\">" + L("Zbadaj automatycznie", "Explore automatically") + "</button>" +
       "<button type=\"button\" class=\"btn\" id=\"vtShare\"" + (zapis().n ? "" : " hidden") + ">" + L("Udostępnij zapis „Zbadaj” (", "Share the “Explore” log (") + zapis().n + ")</button></div>" +
       "<p class=\"hint\" id=\"vtMsg\" aria-live=\"polite\"></p></div>");
     box.querySelector("#vtOpen").onclick = function () { openVantify(box); };
     box.querySelector("#vtPull").onclick = function () { pull(box); };
     box.querySelector("#vtShare").onclick = function () { shareLog(box); };
+    box.querySelector("#vtExplore").onclick = function () { explore(box); };
     loginUi(box);
     var input = box.querySelector("#vtFile");
     function show(r) {
