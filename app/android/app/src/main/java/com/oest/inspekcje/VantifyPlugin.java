@@ -44,7 +44,9 @@ public class VantifyPlugin extends Plugin {
     @PluginMethod public void sync(PluginCall call) {
         Activity a = getActivity();
         if (a == null) { call.reject("VANTIFY_SYNC"); return; }
-        a.runOnUiThread(() -> new Sync(a, call).start());
+        // jedno ukryte okno naraz: drugie wywołanie (np. „Pobierz” w trakcie sprawdzania przy starcie) czeka na ten sam wynik,
+        // więc zapisane hasło nie trafia do dwóch formularzy logowania równocześnie (blokada konta)
+        a.runOnUiThread(() -> { if (Sync.current != null && Sync.current.join(call)) return; Sync.current = new Sync(a, call); Sync.current.start(); });
     }
 
     // Zapamiętany login i hasło (Grzegorz 10/11/2026): zapis z Ustawień, odczyt bez hasła, usunięcie. Szczegóły: VantifyLogin.
@@ -64,10 +66,12 @@ public class VantifyPlugin extends Plugin {
 
     static final class Sync {
         static final long TIMEOUT = 60000;
-        private final Activity a; private final PluginCall call;
+        static Sync current; // tylko wątek UI
+        private final Activity a; private final java.util.List<PluginCall> calls = new java.util.ArrayList<>();
         private final Handler h = new Handler(Looper.getMainLooper());
         private WebView web; private String script = ""; private volatile String host = ""; private boolean finished;
-        Sync(Activity a, PluginCall call) { this.a = a; this.call = call; }
+        Sync(Activity a, PluginCall call) { this.a = a; calls.add(call); }
+        boolean join(PluginCall c) { if (finished) return false; calls.add(c); return true; }
 
         void start() {
             try (InputStream in = a.getAssets().open("public/vantify-sync.js")) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); script = new String(o.toByteArray(), StandardCharsets.UTF_8); }
@@ -105,8 +109,9 @@ public class VantifyPlugin extends Plugin {
                 JSObject r = new JSObject(json);
                 // Vantify odrzucił zapisane hasło: nie próbuj więcej, dopóki nie wpiszesz nowego (blokada konta)
                 if ("login".equals(r.optString("status")) && "bad".equals(r.optString("code"))) VantifyLogin.markBad(a);
-                call.resolve(r);
-            } catch (Exception e) { call.reject("VANTIFY_SYNC"); }
+                for (PluginCall c : calls) c.resolve(r);
+            } catch (Exception e) { for (PluginCall c : calls) c.reject("VANTIFY_SYNC"); }
+            if (current == this) current = null;
             if (web != null) {
                 try { CookieManager.getInstance().flush(); ViewGroup p = (ViewGroup) web.getParent(); if (p != null) p.removeView(web); web.destroy(); } catch (Exception e) {}
                 web = null;

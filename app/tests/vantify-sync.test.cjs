@@ -98,6 +98,10 @@ test('zapisane hasło odrzucone (nadal ekran logowania) → login/bad po jednej 
   const g = world({ hash: '#/login', dom: loginForm().dom }); await g.run();
   assert.deepStrictEqual(g.results, [{ status: 'login' }], 'bez zapisanego loginu: jak dotąd');
 });
+test('hasło już odrzucone wcześniej (VantifyLogin bad): bez wpisywania, od razu login/bad', async () => {
+  const f = loginForm(); const s = world({ hash: '#/login', dom: { ...f.dom, __oestLoginBad: 1 } }); await s.run();
+  assert.strictEqual(f.clicks(), 0); assert.deepStrictEqual(s.results, [{ status: 'login', code: 'bad' }]);
+});
 test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logowania', async () => {
   const store = {}, ss = { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } };
   const f1 = loginForm(); const a = world({ hash: '#/login', login: { u: 'a', p: 'b' }, dom: { ...f1.dom, sessionStorage: ss } }); await a.run(2);
@@ -120,7 +124,9 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /"bad"\.equals\(r\.optString\("code"\)\)\) VantifyLogin\.markBad\(a\)/);
   const k = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyLogin.java'), 'utf8');
   assert.match(k, /"AndroidKeyStore"/); assert.match(k, /AES\/GCM\/NoPadding/);
-  assert.match(k, /if \(bad\(c\)\) return "";/, 'po odrzuceniu nie loguje się ponownie');
+  assert.match(k, /if \(bad\(c\)\) return "window\.__oestLoginBad=1;";/, 'po odrzuceniu nie loguje się ponownie, bez hasła');
+  assert.match(j, /Sync\.current != null && Sync\.current\.join\(call\)/, 'jedno ukryte okno naraz (równoległe wywołania czekają na ten sam wynik)');
+  assert.match(j, /for \(PluginCall c : calls\) c\.resolve\(r\)/);
   assert.match(k, /JSONObject\.quote\(l\[1\]\)/, 'hasło jako bezpieczny literał JS');
   assert.doesNotMatch(j + k, /Log\.(d|i|w|e|v)\(/, 'bez wypisywania do logów');
 });

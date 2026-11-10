@@ -66,7 +66,7 @@ final class VantifyLogin {
 
     // skrypt dla ukrytego okna Vantify: login i hasło jako bezpieczne literały JS (JSONObject.quote)
     static String script(Context c) {
-        if (bad(c)) return "";
+        if (bad(c)) return "window.__oestLoginBad=1;"; // bez hasła; okno zgłasza „bad”, apka prosi o aktualne hasło
         String[] l = load(c);
         if (l == null) return "";
         return "window.__oestLogin={u:" + JSONObject.quote(l[0]) + ",p:" + JSONObject.quote(l[1]) + "};";

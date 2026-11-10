@@ -96,6 +96,14 @@ await page.locator('#vtLoginShow').click();assert.deepEqual(await page.evaluate(
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_LOGIN_PL.png'),fullPage:true});
 // zmiana hasła bez pomocy: wpisz nowe, zapisz
 await page.locator('#vtPass').fill('Haslo2');await page.locator('#vtLoginSave').click();await page.waitForFunction(()=>window.__login.pass==='Haslo2');
+// zmiana języka w trakcie wpisywania nie kasuje wpisanego loginu i hasła
+await page.locator('#vtUser').fill('nowy@example.com');await page.locator('#vtPass').fill('Haslo3');
+await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Save login and password/.test(document.getElementById('vtLoginSave')?.textContent||''));
+assert.deepEqual(await page.evaluate(()=>[document.getElementById('vtUser').value,document.getElementById('vtPass').value,document.getElementById('vtPass').type]),['nowy@example.com','Haslo3','password'],'PL→EN zachowuje wpisane pola');
+await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Zapisz login i hasło/.test(document.getElementById('vtLoginSave')?.textContent||''));
+assert.equal(await page.locator('#vtPass').inputValue(),'Haslo3');assert.equal(await page.evaluate(()=>window.__login.pass),'Haslo2','bez „Zapisz” nic się nie zmienia');
+await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtUser').waitFor();
+await page.waitForFunction(()=>document.getElementById('vtUser').value==='greg@example.com');assert.equal(await page.locator('#vtPass').inputValue(),'','wyjście z ekranu porzuca niezapisane');
 // Vantify odrzucił zapisane hasło: przy „Pobierz” komunikat i pole hasła, bez otwierania logowania w kółko
 await page.evaluate(()=>{window.__bad=true;window.__calls={sync:0,open:0};window.__seq=[{status:'login',code:'bad'}];});await page.locator('#vtPull').click();
 await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtPullMsg')?.textContent||''));assert.deepEqual(await page.evaluate(()=>window.__calls),{sync:1,open:0});

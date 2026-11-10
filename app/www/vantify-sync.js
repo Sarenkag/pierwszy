@@ -89,6 +89,7 @@
     if (done) return;
     var h = String(g.location.hash || "");
     if (/^#\/login/.test(h)) {
+      if (g.__oestLoginBad) return out({ status: "login", code: "bad" }); // zapisane hasło już odrzucone: nie próbuj, poproś o nowe
       var c = g.__oestLogin;
       if (!c || !c.u || !c.p) return out({ status: "login" });
       if (!tried) { if (login(c)) { tried = true; triedAt = Date.now() || 1; try { g.sessionStorage.setItem("oestVantifyTried", String(triedAt)); } catch (e) {} } else if (Date.now() - t0 > WAIT) return out({ status: "login" }); }

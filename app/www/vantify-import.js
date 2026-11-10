@@ -168,12 +168,18 @@
   }
   // Zapamiętany login i hasło (Grzegorz 10/11/2026): wpisujesz raz, zmieniasz, kiedy chcesz; hasło zagwiazdkowane, „Pokaż” je odsłania.
   // Zapis i szyfrowanie w telefonie (VantifyPlugin.saveLogin → Keystore). Ukryte okno Vantify loguje się nimi samo, najwyżej raz.
+  // wpisane, a jeszcze niezapisane pola: zmiana języka przerysowuje ekran, wpisane wartości zostają (przegląd Codex #134)
+  var draftLogin = null;
   function loginUi(box) {
     var V = plugin("Vantify"), u = box.querySelector("#vtUser"), pw = box.querySelector("#vtPass"), sh = box.querySelector("#vtLoginShow");
+    var keep = draftLogin; draftLogin = null;
+    function remember() { draftLogin = { u: u.value, p: pw.dataset.shown ? "" : pw.value, show: pw.type === "text" && !pw.dataset.shown }; }
+    u.oninput = pw.oninput = function () { delete pw.dataset.shown; remember(); };
     function m(t) { var e = box.querySelector("#vtLoginMsg"); if (e) e.textContent = t; }
     function state(r) {
-      r = r || {}; if (r.user) u.value = r.user;
-      pw.value = ""; pw.type = "password"; sh.textContent = L("Pokaż", "Show");
+      r = r || {};
+      if (keep) { u.value = keep.u; pw.value = keep.p; pw.type = keep.show ? "text" : "password"; sh.textContent = keep.show ? L("Ukryj", "Hide") : L("Pokaż", "Show"); draftLogin = keep; keep = null; }
+      else { if (r.user) u.value = r.user; pw.value = ""; pw.type = "password"; sh.textContent = L("Pokaż", "Show"); draftLogin = null; }
       pw.placeholder = r.saved ? "••••••••" : "";
       m(r.bad ? L("Vantify nie przyjął zapisanego hasła. Wpisz aktualne hasło i zapisz – do tego czasu apka nie loguje się sama.", "Vantify did not accept the saved password. Type the current password and save – until then the app does not sign in by itself.")
         : r.saved ? L("Zapisane. Apka zaloguje się sama, gdy logowanie wygaśnie.", "Saved. The app signs in by itself when the sign-in expires.") : L("Nic nie zapisano.", "Nothing saved."));
@@ -185,8 +191,8 @@
       V.saveLogin({ user: u.value.trim(), pass: pw.value }).then(state).catch(function () { m(L("Nie udało się zapisać. Spróbuj jeszcze raz.", "Could not save. Try again.")); });
     };
     sh.onclick = function () {
-      if (pw.type === "text") { pw.type = "password"; if (pw.dataset.shown) { pw.value = ""; delete pw.dataset.shown; } sh.textContent = L("Pokaż", "Show"); return; }
-      if (pw.value) { pw.type = "text"; sh.textContent = L("Ukryj", "Hide"); return; }
+      if (pw.type === "text") { pw.type = "password"; if (pw.dataset.shown) { pw.value = ""; delete pw.dataset.shown; } sh.textContent = L("Pokaż", "Show"); if (draftLogin) remember(); return; }
+      if (pw.value) { pw.type = "text"; sh.textContent = L("Ukryj", "Hide"); remember(); return; }
       V.showLogin().then(function (r) { if (!r || !r.pass) { m(L("Nie ma zapisanego hasła.", "No saved password.")); return; } pw.value = r.pass; pw.dataset.shown = "1"; pw.type = "text"; sh.textContent = L("Ukryj", "Hide"); }).catch(function () {});
     };
     box.querySelector("#vtLoginClear").onclick = function () { V.clearLogin().then(function (r) { u.value = ""; state(r); }).catch(function () {}); };
@@ -250,7 +256,7 @@
     }
   }
   w.addEventListener("oest:vantify-ui", function (e) { draw(e.detail); });
-  w.addEventListener("hashchange", function () { if (!/vantify/.test(location.hash)) pending = null; });
+  w.addEventListener("hashchange", function () { if (!/vantify/.test(location.hash)) { pending = null; draftLogin = null; } });
   w.OESTVantifyImport = { preview: preview, apiPreview: apiPreview, save: save, info: info, draw: draw,
     // dla vantify-auto.js: pobranie, stan sprawdzania, podgląd odłożony do Ustawienia → Vantify
     sync: sync, today: today, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); },
