@@ -66,6 +66,13 @@ assert.match(await page.locator('#vtShare').textContent(),/Udostępnij zapis „
 await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__shared);
 const sh=await page.evaluate(()=>({name:window.__shared.files[0].name,text:decodeURIComponent(escape(atob(window.__shared.files[0].data)))}));
 assert.match(sh.name,/^vantify-zbadaj-\d{8}\.json$/);assert.match(sh.text,/api\/jobs/);
+// błąd pliku z Vantify w apce po wcześniejszym podglądzie: stary podgląd nie wraca po zmianie języka (przegląd Codex #132)
+await page.locator('#vtFile').setInputFiles({name:'job2.csv',mimeType:'text/csv',buffer:Buffer.from(csv(now))});await page.locator('#vtSave').waitFor();
+await page.evaluate(()=>{window.Capacitor.Plugins.Vantify.open=async()=>({csv:'id,jobType,task,completeBy,frequency,createdAt\n1,Reactive,X,2026-11-20,,2026-11-10\n',name:'job.csv',log:[]});});
+await page.locator('#vtOpen').click();await page.waitForFunction(()=>/Planned/.test(document.getElementById('vtPreview')?.textContent||''));
+await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from/.test(document.getElementById('vtNow')?.textContent||''));
+assert.equal(await page.locator('#vtSave').count(),0,'po błędzie nie wraca poprzedni podgląd z „Zapisz”');
+await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Eksport z/.test(document.getElementById('vtNow')?.textContent||''));
 // brak miejsca w telefonie (przegląd Codex #132): zapis „Zbadaj” nie ginie – komunikat i udostępnienie z pamięci
 await page.evaluate(()=>{const S=Storage.prototype.setItem;window.__S=S;Storage.prototype.setItem=function(k,v){if(k==='oest.vantify.zapis')throw new DOMException('full','QuotaExceededError');return S.call(this,k,v);};window.Capacitor.Plugins.Vantify.open=async()=>({log:[{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/nowe',st:200}]});window.__shared=null;});
 await page.locator('#vtOpen').click();await page.waitForFunction(()=>/nie zapisał zapisu „Zbadaj”/.test(document.getElementById('vtMsg')?.textContent||''));

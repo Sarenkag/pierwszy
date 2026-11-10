@@ -46,6 +46,15 @@ test('XHR użyty ponownie: każde żądanie zapisane raz, ze swoim adresem (prze
   const xhr = logs.filter(e => e.k === 'xhr').map(e => e.u.replace(/^https:\/\/[^/]+/, ''));
   assert.strictEqual(xhr.join(','), '/api/jobs,/api/counts');
 });
+test('fetch z obiektem URL: zapisany prawdziwy adres (przegląd Codex #132)', async () => {
+  const vm = require('vm'), logs = [];
+  const w = { location: { href: 'https://savillsuk.cafm.vantify.com/' }, addEventListener() {}, OESTVantifyBridge: { log: j => logs.push(JSON.parse(j)) }, URL, Headers,
+    fetch: async () => ({ status: 200, headers: new Headers({ 'content-type': 'application/json' }), clone() { return { text: async () => '{"n":1}' }; } }) };
+  w.window = w; vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'www', 'vantify-rejestr.js'), 'utf8'), Object.assign(w, { JSON, Date, Object, String, encodeURIComponent, decodeURIComponent }));
+  await w.fetch(new URL('/api/jobs?page=2', w.location.href)); await w.fetch({ url: 'https://savillsuk.cafm.vantify.com/api/req', method: 'POST' });
+  await new Promise(r => setTimeout(r, 10));
+  assert.strictEqual(logs.filter(e => e.k === 'fetch').map(e => e.u.replace(/^https:\/\/[^/]+/, '')).join(','), '/api/jobs?page=2,/api/req');
+});
 test('Java: apka nie zapisuje loginu ani hasła Vantify', () => {
   for (const f of ['VantifyActivity.java', 'VantifyPlugin.java']) {
     const s = J('java/com/oest/inspekcje/' + f);
@@ -63,6 +72,8 @@ test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność 
   assert.match(a, /registerOnBackInvokedCallback/); assert.match(a, /private void back\(\) \{[^}]*finishWithResult\(\)/);
   // edge-to-edge (Android 15+): okno odsuwa się od pasków systemowych i klawiatury
   assert.match(a, /setOnApplyWindowInsetsListener/);
+  // zapis „Zbadaj” przetrwa zamknięcie apki w tle: zapis przy przejściu w tło, odzyskanie przy następnym otwarciu
+  assert.match(a, /protected void onPause\(\) \{[^\n]*write\("log\.json"/); assert.doesNotMatch(a, /for \(File f : old\) f\.delete\(\)/);
   // wpis o pobieraniu: tylko host i rozszerzenie (bez nazwy pliku i ścieżki)
   assert.match(a, /add\("download", url\.startsWith\("blob:"\) \? "blob" : Uri\.parse\(url\)\.getHost\(\), ext\(name\)\)/);
   const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);

@@ -49,7 +49,10 @@ public class VantifyActivity extends Activity {
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         pl = !"en".equals(getIntent().getStringExtra("lang"));
-        File[] old = dir(this).listFiles(); if (old != null) for (File f : old) f.delete();
+        // Stary eksport kasujemy; log.json zostaje, gdy poprzednia wizyta została przerwana (np. Android zamknął apkę w tle):
+        // wpisy wracają do bieżącego zapisu. Zapis odbiera i usuwa VantifyPlugin po zakończeniu.
+        new File(dir(this), "export.csv").delete(); new File(dir(this), "name.txt").delete();
+        try { JSONArray prev = new JSONArray(read(new File(dir(this), "log.json"))); for (int i = 0; i < prev.length() && log.length() < MAX_LOG; i++) log.put(prev.get(i)); } catch (Exception e) {}
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.rgb(11, 22, 32));
         LinearLayout bar = new LinearLayout(this); bar.setGravity(Gravity.CENTER_VERTICAL); bar.setPadding(32, 24, 24, 24);
         info = new TextView(this); info.setTextColor(Color.WHITE); info.setTextSize(15);
@@ -150,6 +153,13 @@ public class VantifyActivity extends Activity {
     private String asset(String path) throws Exception {
         try (InputStream in = getAssets().open(path)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
     }
+
+    private static String read(File f) throws Exception {
+        try (InputStream in = new java.io.FileInputStream(f)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
+    }
+
+    // przejście w tło: zapis „Zbadaj” trafia do pliku, żeby nie zginął, gdy Android zamknie apkę
+    @Override protected void onPause() { super.onPause(); try { synchronized (this) { write("log.json", log.toString()); } } catch (Exception e) {} }
 
     private void write(String name, String text) throws Exception { try (FileOutputStream o = new FileOutputStream(new File(dir(this), name))) { o.write(text.getBytes(StandardCharsets.UTF_8)); } }
 

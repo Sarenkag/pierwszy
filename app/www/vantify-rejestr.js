@@ -77,7 +77,8 @@
   if (g.fetch) {
     var f0 = g.fetch;
     g.fetch = function (input, init) {
-      var u = typeof input === "string" ? input : input && input.url, m = (init && init.method) || (input && input.method) || "GET";
+      // adres: tekst, obiekt URL (href) albo Request (url)
+      var u = typeof input === "string" ? input : input && typeof input.url === "string" ? input.url : String(input), m = (init && init.method) || (input && input.method) || "GET";
       var h = []; try { var H = new Headers((init && init.headers) || (input && input.headers) || {}); H.forEach(function (v, k) { h.push(k); }); } catch (e) {}
       return f0.apply(this, arguments).then(function (resp) {
         var ct = (resp.headers.get("content-type") || "").split(";")[0];
