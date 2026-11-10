@@ -161,13 +161,25 @@ public class VantifyActivity extends Activity {
     // przejście w tło: zapis „Zbadaj” trafia do pliku, żeby nie zginął, gdy Android zamknie apkę
     @Override protected void onPause() { super.onPause(); try { synchronized (this) { write("log.json", log.toString()); } } catch (Exception e) {} }
 
-    private void write(String name, String text) throws Exception { try (FileOutputStream o = new FileOutputStream(new File(dir(this), name))) { o.write(text.getBytes(StandardCharsets.UTF_8)); } }
+    // zapis atomowy: najpierw plik tymczasowy, potem zmiana nazwy – urwany zapis (brak miejsca) nigdy nie zostaje pod właściwą nazwą
+    private void write(String name, String text) throws Exception {
+        File tmp = new File(dir(this), name + ".tmp"), dst = new File(dir(this), name);
+        try (FileOutputStream o = new FileOutputStream(tmp)) { o.write(text.getBytes(StandardCharsets.UTF_8)); o.getFD().sync(); }
+        catch (Exception e) { tmp.delete(); throw e; }
+        if (!tmp.renameTo(dst)) { tmp.delete(); throw new java.io.IOException("rename " + name); }
+    }
 
     private void finishWithResult() {
-        try {
-            synchronized (this) { write("log.json", log.toString()); }
-            if (csv != null) { write("export.csv", csv); write("name.txt", csvName == null ? "export.csv" : csvName); }
-        } catch (Exception e) {}
+        try { synchronized (this) { write("log.json", log.toString()); } } catch (Exception e) {}
+        if (csv != null) {
+            // eksport przekazujemy tylko w całości: name.txt, potem export.csv (jego obecność = kompletny plik)
+            try { write("name.txt", csvName == null ? "export.csv" : csvName); write("export.csv", csv); }
+            catch (Exception e) {
+                new File(dir(this), "export.csv").delete(); new File(dir(this), "name.txt").delete();
+                if (info != null) info.setText(pl ? "Telefon nie zapisał eksportu (brak miejsca?). Zwolnij miejsce i dotknij Zakończ jeszcze raz." : "The phone could not save the export (out of space?). Free some space and tap Done again.");
+                return; // zostajemy w Vantify, eksport w pamięci – można ponowić
+            }
+        }
         setResult(RESULT_OK, new Intent());
         finish();
     }

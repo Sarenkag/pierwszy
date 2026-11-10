@@ -80,6 +80,11 @@ test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność 
   assert.match(a, /setOnApplyWindowInsetsListener/);
   // zapis „Zbadaj” przetrwa zamknięcie apki w tle: zapis przy przejściu w tło, odzyskanie przy następnym otwarciu
   assert.match(a, /protected void onPause\(\) \{[^\n]*write\("log\.json"/); assert.doesNotMatch(a, /for \(File f : old\) f\.delete\(\)/);
+  // eksport przekazywany tylko w całości: zapis atomowy (tmp → rename), export.csv na końcu, przy błędzie zostaje w Vantify bez RESULT_OK
+  assert.match(a, /new File\(dir\(this\), name \+ "\.tmp"\)/); assert.match(a, /tmp\.renameTo\(dst\)/);
+  assert.match(a, /write\("name\.txt"[^;]*\); write\("export\.csv", csv\);/);
+  const fin = a.slice(a.indexOf('private void finishWithResult()')); const res = fin.indexOf('setResult(RESULT_OK');
+  assert.ok(/catch \(Exception e\) \{[^}]*export\.csv"\)\.delete\(\)[\s\S]*?return;/.test(fin.slice(0, res)), 'błąd zapisu eksportu: kasuje plik i wraca przed RESULT_OK');
   // wpis o pobieraniu: tylko host i rozszerzenie (bez nazwy pliku i ścieżki)
   assert.match(a, /add\("download", url\.startsWith\("blob:"\) \? "blob" : Uri\.parse\(url\)\.getHost\(\), ext\(name\)\)/);
   const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);
