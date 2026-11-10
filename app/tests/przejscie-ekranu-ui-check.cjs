@@ -38,16 +38,16 @@ function rejestrator() {
   requestAnimationFrame(krok);
 }
 // ocena jednego przejścia: ekran docelowy, czy Wstecz
-function ocen(nazwa, k, anim, cel, wstecz, efekt) {
+function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
   const i = k.findIndex(f => f && f.id === cel);
-  const r = { klatkiDoEkranu: i, pierwsza: i >= 0 ? k[i] : null, animacje: anim };
+  const r = { klatkiDoEkranu: i, pierwsza: i >= 0 ? k[i] : null, animacje: anim, koniec };
   R[nazwa] = r;
   if (i < 0) { check(false, `${nazwa}: ekran ${cel} się nie pokazał`); return; }
   const dalej = k.slice(i).filter(Boolean);
   check(k[i].op <= 0.05, `Z1 ${nazwa}: nowy ekran w pierwszej klatce ma jasność ${k[i].op} (mignięcie przed animacją)`);
   let spadek = null; for (let j = 1; j < dalej.length; j++) if (dalej[j].id === cel && dalej[j].op < dalej[j - 1].op - 0.001) { spadek = `${dalej[j - 1].op} → ${dalej[j].op}`; break; }
   check(!spadek, `Z2 ${nazwa}: jasność ekranu spadła w trakcie (${spadek}) – animacja ruszyła drugi raz`);
-  check(dalej[dalej.length - 1].op === 1, `Z2 ${nazwa}: ekran nie doszedł do pełnej jasności (${dalej[dalej.length - 1].op})`);
+  check(koniec === 1, `Z2 ${nazwa}: ekran po animacji nie ma pełnej jasności (${koniec})`);
   const naCel = anim.filter(a => a.endsWith('@' + cel));
   check(naCel.length === 1 && naCel[0].startsWith(efekt + '@'), `Z2 ${nazwa}: animacje ekranu ${JSON.stringify(anim)} (oczekiwana jedna: ${efekt})`);
   if (wstecz !== null) check(k[i].wstecz === wstecz, `Z3 ${nazwa}: kierunek ${k[i].wstecz ? 'Wstecz' : 'do przodu'} zamiast ${wstecz ? 'Wstecz' : 'do przodu'}`);
@@ -77,7 +77,8 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt) {
     const krokApki = async (nazwa, akcja, cel, wstecz) => {
       await p.evaluate(() => window.__start()); await akcja(); await klatki();
       const [k, a] = await p.evaluate(() => [window.__klatki, window.__anim]);
-      ocen(nazwa, k, a, cel, wstecz, efekt);
+      const koniec = await p.evaluate(async cel => { const v = document.getElementById(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel); // koniec animacji (stan, nie zegar)
+      ocen(nazwa, k, a, cel, wstecz, efekt, koniec);
     };
     for (const [go, cel] of [['ppm', 'v-ppm'], ['settings', 'v-settings'], ['cal', 'v-cal']]) {
       await krokApki(`ekran główny → ${go}`, () => p.click(`#hmTiles [data-go="${go}"]`), cel, false);
@@ -97,12 +98,13 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt) {
       const i = k.findIndex(f => f && f.id === cel);
       check(i >= 0 && k[i].op <= 0.05, `Z4 ${nazwa}: ekran ${cel} w pierwszej klatce ma jasność ${i >= 0 ? k[i].op : 'brak'}`);
       let spadek = false; const d = k.slice(i).filter(f => f && f.id === cel); for (let j = 1; j < d.length; j++) if (d[j].op < d[j - 1].op - 0.001) spadek = true;
-      check(!spadek && d.length && d[d.length - 1].op === 1, `Z4 ${nazwa}: jasność ekranu ${cel} nie rośnie równo do 1`);
+      const koniec = await p.evaluate(async cel => { const v = document.getElementById(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel);
+      check(!spadek && koniec === 1, `Z4 ${nazwa}: jasność ekranu ${cel} nie rośnie równo do 1 (spadek: ${spadek}, koniec: ${koniec})`);
     };
     try {
       await nowaStrona('lista → inspekcja', () => p.click('#ppmList [data-id]'), /inspekcje\//, 'v-form');
-      await nowaStrona('inspekcja → Wstecz', () => p.evaluate(() => [...document.querySelectorAll('.view:not([hidden]) .back')].find(b => b.offsetParent).click()), /\/index\.html/, 'v-ppm');
-    } catch (e) { check(false, 'Z4: przejście między stronami się nie udało: ' + e.message.split('\n')[0]); await p.goto(url + '/index.html#ppm'); await klatki(); }
+      await nowaStrona('inspekcja → Wstecz', () => p.evaluate(() => [...document.querySelectorAll('.view:not([hidden]) .back')].find(b => b.offsetParent).click()), /:\d+\/index\.html/, 'v-ppm');
+    } catch (e) { check(false, 'Z4: przejście między stronami się nie udało: ' + e.message.split('\n')[0]); await p.waitForLoadState('load').catch(() => {}); await p.goto(url + '/index.html#ppm'); await klatki(); }
 
     // ---------- Z5: przebudowa ekranu w miejscu (schowany i pokazany w jednym kroku) ----------
     R.przebudowa = await p.evaluate(async () => {
