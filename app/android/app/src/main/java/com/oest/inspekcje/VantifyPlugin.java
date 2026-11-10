@@ -99,7 +99,8 @@ public class VantifyPlugin extends Plugin {
         }
 
         // login i hasło tylko dla strony Vantify, tylko w tym ukrytym oknie
-        private void inject() { if (web != null && VantifyActivity.vantify(host)) web.evaluateJavascript(VantifyLogin.script(a) + script, null); }
+        private long loginVer = -1; // wersja loginu i hasła podanych oknu (VantifyLogin.ver)
+        private void inject() { if (web != null && VantifyActivity.vantify(host)) { if (loginVer < 0) loginVer = VantifyLogin.ver(a); web.evaluateJavascript(VantifyLogin.script(a) + script, null); } }
 
         private void finish(String json) {
             if (finished) return;
@@ -108,7 +109,7 @@ public class VantifyPlugin extends Plugin {
             try {
                 JSObject r = new JSObject(json);
                 // Vantify odrzucił zapisane hasło: nie próbuj więcej, dopóki nie wpiszesz nowego (blokada konta)
-                if ("login".equals(r.optString("status")) && "bad".equals(r.optString("code"))) VantifyLogin.markBad(a);
+                if ("login".equals(r.optString("status")) && "bad".equals(r.optString("code"))) VantifyLogin.markBad(a, loginVer);
                 for (PluginCall c : calls) c.resolve(r);
             } catch (Exception e) { for (PluginCall c : calls) c.reject("VANTIFY_SYNC"); }
             if (current == this) current = null;
