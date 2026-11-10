@@ -64,6 +64,8 @@
         try { res(JSON.parse(x.responseText)); } catch (e) { rej(new Error("json")); }
       };
       x.onerror = function () { rej(new Error("net")); };
+      // odpowiedź, która nie przychodzi, nie zatrzymuje pobierania ani badania (przegląd Codex #135): po 30 s błąd, dalej
+      x.timeout = 30000; x.ontimeout = function () { rej(new Error("timeout")); };
       x.send();
     });
   }
@@ -142,7 +144,7 @@
             while ((m = str.exec(t)) && Object.keys(found).length < 1500) found["PATH " + m[1]] = 1;
             res();
           };
-          x.onerror = function () { res(); }; x.send();
+          x.onerror = function () { res(); }; x.timeout = 30000; x.ontimeout = function () { res(); }; x.send();
         });
       });
     }, Promise.resolve()).then(function () { return Object.keys(found).sort().map(function (k) { var i = k.indexOf(" "); return { k: "code", m: k.slice(0, i), u: k.slice(i + 1) }; }); });

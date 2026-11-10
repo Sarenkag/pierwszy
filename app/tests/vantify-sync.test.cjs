@@ -132,7 +132,7 @@ test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logo
 
 // „Zbadaj automatycznie” (Grzegorz 10/11/2026): bot czyta zamiast klikać – tylko GET, po linkach _links, limit, bez danych osób
 const REJ = fs.readFileSync(path.join(__dirname, '../www/vantify-rejestr.js'), 'utf8');
-function explorer({ max = 300, pages = 0, expire = 0 } = {}) {
+function explorer({ max = 300, pages = 0, expire = 0, hang = null } = {}) {
   const calls = [], results = [], timers = [];
   const site = { id: 6324, name: 'One Eastside', _links: { self: { href: API + '/sites/6324' }, jobs: { href: API + '/sites/6324/jobs{?page}', templated: true }, meters: { href: API + '/sites/6324/meters' }, export_jobs: { href: API + '/sites/6324/jobs/export' }, approve: { href: API + '/sites/6324/quotes/1/approve' }, foreign: { href: 'https://evil.example.com/x' } } };
   const jobs = n => ({ count: 3, jobs: [1, 2, 3].map(i => ({ id: 3051000 + i, summary: 'Task ' + i, contactName: 'Jan Kowalski', _links: { self: { href: API + '/sites/6324/jobs/' + (3051000 + i) } } })) });
@@ -153,6 +153,7 @@ function explorer({ max = 300, pages = 0, expire = 0 } = {}) {
     getResponseHeader() { return 'application/json'; }
     send() {
       calls.push({ m: this.m, u: this.u, h: { ...this.h } });
+      if (hang && hang.test(this.u)) { if (this.timeout > 0) timers.push(() => this.ontimeout && this.ontimeout()); return; } // brak odpowiedzi
       if (/main\.js$/.test(this.u)) { this.status = 200; this.responseText = 'a.post(this.api+"/sites/"+s+"/jobs/"+j+"/complete",b);c.post(u+"/files",fd);x="/sites/{site}/jobs/{job}/paperwork"'; }
       else { this.status = this.h.Authorization === 'Bearer T' && !(expire && calls.length > expire) ? 200 : 401; this.responseText = JSON.stringify(respond(this.u)); }
       timers.push(() => this.onload && this.onload());
@@ -200,6 +201,12 @@ test('Zbadaj automatycznie: logowanie wygasło w trakcie → status login z czę
   const s = explorer({ expire: 4 }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
   assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'login');
   assert.ok(s.results[0].log.some(e => e.k === 'auto' && e.st === 200), 'to, co odczytane przed wygaśnięciem, zostaje');
+});
+test('Zbadaj automatycznie: zapytanie bez odpowiedzi nie zatrzymuje badania, zapis wraca (przegląd Codex #135)', async () => {
+  const s = explorer({ hang: /\/sites\/6324\/meters$/ }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
+  assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'ok');
+  assert.ok(s.results[0].log.some(e => /\/sites\/6324\/meters$/.test(e.u) && e.st === 'timeout'), 'zapytanie bez odpowiedzi zapisane jako timeout');
+  assert.ok(s.results[0].log.some(e => e.k === 'auto' && e.st === 200), 'reszta odczytów zostaje');
 });
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {
