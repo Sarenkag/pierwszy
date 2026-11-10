@@ -29,20 +29,18 @@
   // Samą animację robi CSS (.view:not([hidden]) w wyglad.css) w klatce, w której ekran się pokazuje. Tu tylko:
   //  • kierunek: Wstecz (systemowy i strzałka ‹ = history.back) → html.wy-wstecz odwraca efekt,
   //  • navAt: karty wstawione przy wejściu na ekran nie „podjeżdżają” osobno (to też wyglądało jak drżenie),
-  //  • nowa strona (wejście do inspekcji, powrót z niej, start apki): bez prześwitu ekranu startowego, potem samo rozjaśnienie.
+  //  • nowa strona (wejście do inspekcji, powrót z niej, start apki): pierwszy ekran tylko się rozjaśnia (html.wy-wczytanie).
   var root = d.documentElement, navAt = Date.now(), backT = 0;
   function wstecz(on) {
     clearTimeout(backT); root.classList.toggle("wy-wstecz", !!on);
     if (on) backT = setTimeout(function () { root.classList.remove("wy-wstecz"); }, 700);
   }
   root.classList.add("wy-wczytanie"); // pierwszy ekran strony tylko się rozjaśnia (wyglad.css); od pierwszej zmiany ekranu – pełna Poświata
-  function nav() {
-    navAt = Date.now();
-    if (root.classList.contains("wy-gotowe")) root.classList.remove("wy-wczytanie");
-  }
-  w.addEventListener("popstate", function (e) { nav(); if (!(e.state && e.state.overlay)) wstecz(true); }, true);
+  function nav() { navAt = Date.now(); }
+  function ruchUzytkownika() { nav(); if (d.readyState === "complete") root.classList.remove("wy-wczytanie"); } // pierwsza zmiana ekranu po wczytaniu strony
+  w.addEventListener("popstate", function (e) { ruchUzytkownika(); if (!(e.state && e.state.overlay)) wstecz(true); }, true);
   var push = history.pushState;
-  history.pushState = function (s) { var r = push.apply(this, arguments); if (!(s && s.overlay)) { nav(); wstecz(false); } return r; };
+  history.pushState = function (s) { var r = push.apply(this, arguments); if (!(s && s.overlay)) { ruchUzytkownika(); wstecz(false); } return r; };
   w.addEventListener("hashchange", nav);
   // ekran schowany i od razu pokazany w tym samym kroku (przebudowa, zmiana języka, powrót po błędzie) nie jest zmianą ekranu:
   // dostaje wy-zostaje i nie animuje się od nowa (inaczej „drgnąłby” w miejscu) – do czasu, aż naprawdę zniknie
@@ -55,10 +53,6 @@
     });
     if (shown) nav();
   }).observe(root, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true, subtree: true });
-  // ekran pokazuje się dopiero, gdy strona wybrała właściwy ekran (koniec wczytywania skryptów) – inaczej przez chwilę
-  // prześwitywał ekran startowy (logowanie / lista inspekcji), zanim apka przełączyła na właściwy
-  function gotowe() { root.classList.add("wy-gotowe"); navAt = Date.now(); }
-  if (d.readyState !== "loading") gotowe(); else d.addEventListener("DOMContentLoaded", gotowe);
   // ---------- lista po zmianie (filtr, dzień, nowe zadanie) ----------
   // ten sam zestaw kart = brak animacji (np. wpisywanie w polu nie miga); nowy zestaw = karty pojawiają się kolejno
   var sigs = new WeakMap(), quietUntil = 0;

@@ -132,13 +132,10 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
 :root{--wy-s-in:calc(1 - var(--ruch-ekran-skala));--wy-dx:var(--ruch-ekran-przesuniecie)}
 :root.wy-wstecz{--wy-s-in:calc(1 + var(--ruch-ekran-skala));--wy-dx:calc(-1 * var(--ruch-ekran-przesuniecie))}
 .view:not([hidden]):not(.wy-zostaje){animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) backwards}
-/* zanim strona wybierze właściwy ekran (wyglad.js: html.wy-gotowe po wczytaniu skryptów), żaden ekran nie prześwituje;
-   bez wyglad.js ekran i tak pokaże się po 1 s */
-@keyframes wyCzekaj{from{opacity:0}to{opacity:0}}
-@media (prefers-reduced-motion:no-preference){:root:not(.wy-gotowe):not([data-settings-motion=reduce]) .view:not([hidden]){animation:wyCzekaj 1s linear}}
 /* pierwsze pokazanie strony (start apki, wejście do inspekcji i powrót, gdy przeglądarka nie przenika stron): samo rozjaśnienie,
    bez zmiany rozmiaru – układ od pierwszej klatki stoi w miejscu; telefon trzyma poprzedni ekran do pierwszej klatki nowego */
-:root.wy-gotowe.wy-wczytanie .view:not([hidden]){animation-name:wyFade}
+@keyframes wyWczytanie{from{opacity:.01}to{opacity:1}} /* .01, nie 0: przeglądarka liczy pierwszy obraz od pierwszej klatki, nie od końca rozjaśniania */
+:root.wy-wczytanie .view:not([hidden]){animation-name:wyWczytanie}
 .wy-item{animation:var(--ruch-lista-efekt) var(--ruch-lista-czas) var(--ruch-lista-easing) both;animation-delay:calc(var(--wy-i,0) * var(--ruch-lista-odstep))}
 /* okienka: rosną z miejsca stuknięcia, zamykają się pomniejszeniem (origin ustawia wyglad.js) */
 .wy-pop{animation:var(--ruch-okno-efekt) var(--ruch-okno-czas) var(--ruch-okno-easing) both}

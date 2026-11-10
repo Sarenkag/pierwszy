@@ -47,7 +47,7 @@ Ograniczenie ruchu: systemowe „mniej ruchu” i „Ogranicz animacje” w Usta
 Nowy ekran wyłania się z lekkiego pomniejszenia (`skala` .04) i rozjaśnia; przy Wstecz (systemowym i strzałce ‹) – z lekkiego powiększenia.
 - Animację uruchamia **CSS** (`.view:not([hidden])`) w tej samej klatce, w której ekran się pokazuje. Wcześniej skrypt czekał 2 klatki: nowy ekran był chwilę w pełni widoczny, potem znikał i wjeżdżał – to było „drżenie”.
 - Kierunek: `html.wy-wstecz` (wyglad.js przy `popstate`).
-- Nowa strona (lista → inspekcja, Wstecz z inspekcji, start apki): do końca wczytywania skryptów żaden ekran nie prześwituje (`html.wy-gotowe`), potem pierwszy ekran tylko się rozjaśnia (`html.wy-wczytanie`, bez zmiany rozmiaru). Wcześniej przed listą PPM mignął ekran logowania, a przed inspekcją lista inspekcji.
+- Nowa strona (lista → inspekcja, Wstecz z inspekcji, start apki): pierwszy ekran tylko się rozjaśnia (`html.wy-wczytanie`, efekt `wyWczytanie` od 1%, bez zmiany rozmiaru). Żeby nie migał cudzy ekran, strony nie pokazują ekranu domyślnego, zanim skrypt wybierze właściwy (`v-start` w apce i `v-home` w inspekcji mają `hidden`). Wcześniej przed listą PPM mignął ekran logowania, a przed inspekcją lista inspekcji.
 - Ekran schowany i pokazany w jednym kroku (przebudowa, zmiana języka) dostaje `wy-zostaje` i nie animuje się od nowa.
 - Karty nie „podjeżdżają” osobno przy wejściu na ekran (tylko po zmianie listy).
 - Mierzenie rozmiarów pod drugi język: `OESTBledy.prostokat(el)` (używa go też `moduly/podmien`) – rozmiar bez transformacji (ekran w trakcie Poświaty jest chwilowo pomniejszony).
