@@ -47,10 +47,20 @@ assert.ok(d.jobs.includes('3060001')&&!d.jobs.includes('3000623'),'lista PPM: zl
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
 assert.equal(await page.evaluate(()=>window.OEST_VANTIFY.source),'phone','inspekcja widzi ten sam plan');
 assert.equal(await page.evaluate(()=>window.OEST_PPM.jobFor(window.OEST_PPM.byId('EFA-INS-003'),'2026-12-25')?.no),'3060001');
+// Vantify w apce (PROD-035, 10/11/2026): w przeglądarce uczciwy komunikat; w apce Android pobrany eksport idzie do podglądu, zapis „Zbadaj” do udostępnienia
+await page.goto(url+'/#settings/vantify');await page.locator('#vtOpen').click();await page.waitForFunction(()=>/działa w aplikacji Android/.test(document.getElementById('vtMsg')?.textContent||''));
+assert.equal(await page.locator('#vtShare').isHidden(),true,'bez zapisu nie ma czego udostępniać');
+await page.evaluate(t=>{window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{open:async o=>({csv:t,name:'job1.csv',log:[{k:'nav',u:'https://savillsuk.cafm.vantify.com/#/user/jobs'},{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/jobs',st:200}]})},ReportShare:{share:async o=>{window.__shared=o;return {status:'shared'};}}}};},csv(now));
+await page.locator('#vtOpen').click();await page.locator('#vtSave').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/Eksport z 10\/11\/2026[\s\S]*Nowe zlecenia: 0[\s\S]*Zamknięte w Vantify \(znikną z apki\): 0/);
+assert.match(await page.locator('#vtShare').textContent(),/Udostępnij zapis „Zbadaj” \(2\)/);await page.locator('#vtCancel').click();
+await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__shared);
+const sh=await page.evaluate(()=>({name:window.__shared.files[0].name,text:decodeURIComponent(escape(atob(window.__shared.files[0].data)))}));
+assert.match(sh.name,/^vantify-zbadaj-\d{8}\.json$/);assert.match(sh.text,/api\/jobs/);
+await page.evaluate(()=>{delete window.Capacitor;});
 // EN, bez przewijania w bok
 await page.goto(url+'/#settings/vantify');await page.locator('#vtNow').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from 10\/11\/2026/.test(document.getElementById('vtNow')?.textContent||''));
 assert.match(await page.locator('#vtNow').textContent(),/loaded on this phone/);
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_EN.png'),fullPage:true});
-assert.deepEqual(errors,[]);console.log('VANTIFY WCZYTAJ UI PASS: klocek, starszy i zły plik bez zmian, podgląd nowych/zamkniętych, zapis + odczyt, restart, PPM i inspekcja, EN');
+assert.deepEqual(errors,[]);console.log('VANTIFY WCZYTAJ UI PASS: klocek, starszy i zły plik bez zmian, podgląd nowych/zamkniętych, zapis + odczyt, restart, PPM i inspekcja, Vantify w apce (komunikat, eksport do podglądu, zapis Zbadaj), EN');
 }finally{if(browser)await browser.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

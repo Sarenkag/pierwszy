@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(AppUpdatePlugin.class);
         registerPlugin(PhotoEditPlugin.class);
         registerPlugin(ModelPlugin.class);
+        registerPlugin(VantifyPlugin.class); // Vantify w apce: logowanie na stronie Vantify, pobrany eksport do wczytania (10/11/2026)
         registerPlugin(GoogleTokenPlugin.class); // ciche odnowienie pozwoleń Google (Gmail, Dysk) bez okna
         super.onCreate(savedInstanceState);
         // Każda strona (menu → inspekcje → menu) ładuje się od nowa: prosimy system o ponowne podanie wysokości pasków,

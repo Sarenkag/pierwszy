@@ -61,6 +61,38 @@
       (items.length > max ? "<li>" + L("i jeszcze ", "and ") + (items.length - max) + "</li>" : "") + "</ul>";
   }
   // Ekran w Ustawieniach (settings-ui wysyła zdarzenie z miejscem na ekran; Ustawienia nie zależą od tego pliku)
+  // Zapis „Zbadaj” z ostatnich wizyt w Vantify (vantify-rejestr.js): tylko w telefonie, do udostępnienia przez Grzegorza
+  var showText = function () {};
+  var ZKEY = "oest.vantify.zapis";
+  function zapis() { try { var z = JSON.parse(ls().getItem(ZKEY) || "null"); return z && z.entries ? { n: z.entries.length, z: z } : { n: 0 }; } catch (e) { return { n: 0 }; } }
+  function keepLog(entries) {
+    if (!entries || !entries.length) return;
+    var old = zapis().z, all = ((old && old.entries) || []).concat(entries).slice(-1500), s;
+    while ((s = JSON.stringify({ at: new Date().toISOString(), entries: all })).length > 900000 && all.length > 50) all = all.slice(Math.floor(all.length / 4));
+    try { ls().setItem(ZKEY, s); } catch (e) {}
+  }
+  function plugin(name) { var C = w.Capacitor; if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin && C.registerPlugin(name)); }
+  function msg(box, t) { var m = box.querySelector("#vtMsg"); if (m) m.textContent = t; }
+  function openVantify(box) {
+    var V = plugin("Vantify");
+    if (!V) { msg(box, L("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app.")); return; }
+    V.open({ lang: lang() }).then(function (r) {
+      keepLog(r && r.log);
+      draw(box);
+      if (r && r.csv) { try { showText(box, r.csv); } catch (e) { box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; } }
+      else msg(box, L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone."));
+    }).catch(function () { msg(box, L("Nie udało się otworzyć Vantify.", "Could not open Vantify.")); });
+  }
+  function shareLog(box) {
+    var z = zapis().z, S = plugin("ReportShare");
+    if (!z) return;
+    var json = JSON.stringify(z, null, 1), d = new Date(), name = "vantify-zbadaj-" + ("0" + d.getDate()).slice(-2) + ("0" + (d.getMonth() + 1)).slice(-2) + d.getFullYear() + ".json";
+    if (!S) { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click(); return; }
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    S.share({ subject: "Vantify – zapis Zbadaj", body: L("Zapis bez haseł, tokenów i danych osób.", "Log without passwords, tokens or personal data."), files: [{ name: name, data: b64 }] })
+      .then(function () { msg(box, L("Przekazano do udostępnienia.", "Handed over for sharing.")); })
+      .catch(function () { msg(box, L("Nie udało się udostępnić zapisu.", "Could not share the log.")); });
+  }
   var pending = null; // podgląd czekający na „Zapisz”
   function draw(box) {
     if (!box) return;
@@ -70,7 +102,14 @@
       (i.source === "phone" ? L("wczytany w telefonie ", "loaded on this phone ") + dmy((i.importedAt || "").slice(0, 10)) + " " + hm(i.importedAt) : L("wbudowany w apkę", "built into the app")) + "</p>" +
       "<p class=\"hint\">" + L("W Vantify: Jobs → Export → Download. Potem tutaj wybierz pobrany plik job…csv. Terminy będą dokładnie takie jak w pliku.", "In Vantify: Jobs → Export → Download. Then pick the downloaded job…csv here. Due dates stay exactly as in the file.") + "</p>" +
       "<label class=\"btn go vt-file\">" + L("Wczytaj eksport Vantify", "Load Vantify export") + "<input id=\"vtFile\" type=\"file\" accept=\".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel,text/plain\"></label>" +
-      "<div id=\"vtPreview\" aria-live=\"polite\"></div></div>");
+      "<div id=\"vtPreview\" aria-live=\"polite\"></div></div>" +
+      "<div class=\"panel\"><h2>" + L("Vantify w apce", "Vantify in the app") + "</h2>" +
+      "<p class=\"hint\">" + L("Logujesz się sam na stronie Vantify (apka nie zapisuje hasła, może je podpowiedzieć menedżer haseł Google). Jobs → Export → Download: apka sama weźmie plik i pokaże zmiany.", "You sign in yourself on the Vantify page (the app does not store the password; Google Password Manager may fill it). Jobs → Export → Download: the app takes the file and shows the changes.") + "</p>" +
+      "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtOpen\">" + L("Otwórz Vantify w apce", "Open Vantify in the app") + "</button>" +
+      "<button type=\"button\" class=\"btn\" id=\"vtShare\"" + (zapis().n ? "" : " hidden") + ">" + L("Udostępnij zapis „Zbadaj” (", "Share the “Explore” log (") + zapis().n + ")</button></div>" +
+      "<p class=\"hint\" id=\"vtMsg\" aria-live=\"polite\"></p></div>");
+    box.querySelector("#vtOpen").onclick = function () { openVantify(box); };
+    box.querySelector("#vtShare").onclick = function () { shareLog(box); };
     var input = box.querySelector("#vtFile");
     function show(r) {
         var out = box.querySelector("#vtPreview"), ch = r.changes, p = r.plan; pending = r;
@@ -86,6 +125,7 @@
           catch (e) { out.insertAdjacentHTML("beforeend", "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"); }
         };
     }
+    showText = function (bx, text) { show(preview(text)); };
     input.onchange = function () {
       var f = input.files && input.files[0], out = box.querySelector("#vtPreview"); if (!f) return;
       f.text().then(function (text) { show(preview(text)); })

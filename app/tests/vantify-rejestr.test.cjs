@@ -1,0 +1,39 @@
+// Vantify w apce i zapis „Zbadaj” (Grzegorz 10/11/2026, PROD-035): zasady blokujące build.
+// 1) zapis nie zawiera haseł, tokenów, wartości wysyłanych formularzy, e-maili, telefonów ani danych osób,
+// 2) apka nie zapisuje loginu/hasła Vantify (brak SharedPreferences, brak odczytu pól formularza w Javie),
+// 3) okno Vantify: tylko https, most JS tylko dla stron vantify.com, aktywność niewystawiona innym apkom.
+const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path');
+const R = require('../www/vantify-rejestr.js');
+const J = p => fs.readFileSync(path.join(__dirname, '..', 'android', 'app', 'src', 'main', p), 'utf8');
+test('adres: tokeny i klucze w adresie ukryte, ścieżka SPA (#/…) zostaje bez parametrów', () => {
+  assert.strictEqual(R.url('https://savillsuk.cafm.vantify.com/api/v2/jobs?page=1&access_token=abc&sig=zz#/user/jobs?jobsPage=1'),
+    'https://savillsuk.cafm.vantify.com/api/v2/jobs?page=1&access_token=…&sig=…#/user/jobs');
+});
+test('wysyłane dane (np. logowanie): tylko nazwy pól, nigdy wartości; hasło ukryte', () => {
+  const s = JSON.stringify(R.body(JSON.stringify({ username: 'greg@example.com', password: 'Tajne123', site: { id: 6324 } }), true));
+  assert.doesNotMatch(s, /greg|Tajne|6324/);
+  assert.match(s, /"password":"\(ukryte\)"/);
+  assert.deepStrictEqual(R.body('username=greg%40x.com&password=Tajne', true), { form: ['username', 'password'] });
+});
+test('odpowiedzi: kształt danych bez osób, e-maili i telefonów; terminy i liczby zostają', () => {
+  const res = { total: 97, data: [{ id: 3000623, completeBy: '2026-11-20 23:59:59', reporterName: 'Jan Kowalski', siteContactPhoneNumber: '07123 456789', note: 'kontakt jan@firma.pl', phone2: '+44 7123 456 789', token: 'abc' }] };
+  const s = JSON.stringify(R.body(JSON.stringify(res), false));
+  assert.doesNotMatch(s, /Kowalski|07123|jan@firma|abc|456 789/);
+  assert.match(s, /"total":97/); assert.match(s, /"completeBy":"2026-11-20 23:59:59"/); assert.match(s, /"n":1/);
+});
+test('Java: apka nie zapisuje loginu ani hasła Vantify', () => {
+  for (const f of ['VantifyActivity.java', 'VantifyPlugin.java']) {
+    const s = J('java/com/oest/inspekcje/' + f);
+    assert.doesNotMatch(s, /SharedPreferences|getSharedPreferences|setSavePassword|\.value\s*\)|querySelector\(['"]input/, f);
+  }
+});
+test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność niewystawiona', () => {
+  const a = J('java/com/oest/inspekcje/VantifyActivity.java');
+  assert.match(a, /return !"https"\.equals\(r\.getUrl\(\)\.getScheme\(\)\)/);
+  assert.match(a, /h\.endsWith\("\.vantify\.com"\)/);
+  assert.match(a, /public void log\(String json\) \{\s*if \(!vantify\(host\)/);
+  assert.match(a, /public void file\(String text, String name\) \{\s*if \(!vantify\(host\)/);
+  assert.match(a, /setAllowFileAccess\(false\)/);
+  const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);
+  assert.match(J('java/com/oest/inspekcje/MainActivity.java'), /registerPlugin\(VantifyPlugin\.class\)/);
+});
