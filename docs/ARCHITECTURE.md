@@ -13,7 +13,7 @@
 | Obszar | Implementacje obecne w repo | Odpowiedzialność |
 |---|---|---|
 | UI i nawigacja | `app/www/index.html`, `home.js`, `theme.css`, `settings-ui.js` | widoki, routing, prezentacja |
-| PPM i Vantify | `app/www/ppm.js`, `vantify-plan.js` | lista, harmonogram i importowane zlecenia |
+| PPM i Vantify | `app/www/ppm.js`, `vantify-plan.js`, `vantify-import.js`, `moduly/eksport-vantify` | lista, harmonogram i importowane zlecenia; plan wbudowany w apkę albo eksport wczytany w telefonie (Ustawienia → Vantify, 10/11/2026), jeden moduł liczy oba |
 | Reactive/Handover | `reactive*.js`, `handover*.js` | usterki, przekazanie zmiany, stan |
 | Calendar | `calendar-*.js` | grafik, zdarzenia, synchronizacja |
 | Inspekcje i raporty | `inspekcje/index.html`, `tpl-*.js`, `app/www/templates/` | formularze i DOCX/PDF |

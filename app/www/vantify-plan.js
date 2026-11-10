@@ -1,6 +1,7 @@
 // Zlecenia PPM z Vantify (eksport Job 2026-11-09): numer zlecenia + termin (completeBy). Bez danych osobowych.
-// Aktualizacja: nowy eksport → python3 app/scripts/vantify-plan.py job.csv app/www/vantify-plan.js. Klucz = id karty z ppm.js.
-window.OEST_VANTIFY = { exported: "2026-11-09-a1e97c94", jobs: {
+// Aktualizacja: nowy eksport → node app/scripts/vantify-plan.cjs job.csv app/www/vantify-plan.js [task_frequencies.csv]
+// albo w telefonie: Ustawienia → Vantify → Wczytaj eksport. Klucz = id karty z ppm.js.
+window.OEST_VANTIFY = { exported: "2026-11-09-ef98d061", jobs: {
   "EFA-INS-002": [{ no: "3029047", due: "2026-11-30", f: "1M" }],
   "EFA-INS-003": [{ no: "3000623", due: "2026-11-20", f: "1W" }, { no: "3010483", due: "2026-11-27", f: "1W" }, { no: "3029046", due: "2026-12-04", f: "1W" }, { no: "3043106", due: "2026-12-11", f: "1W" }, { no: "3051375", due: "2026-12-18", f: "1W" }],
   "EFA-INS-004": [{ no: "3000622", due: "2026-11-20", f: "1W" }, { no: "3010482", due: "2026-11-27", f: "1W" }, { no: "3029045", due: "2026-12-04", f: "1W" }, { no: "3043105", due: "2026-12-11", f: "1W" }, { no: "3051374", due: "2026-12-18", f: "1W" }],

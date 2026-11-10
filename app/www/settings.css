@@ -31,3 +31,5 @@
 :root[data-settings-motion="reduce"] *, :root[data-settings-motion="reduce"] *::before,:root[data-settings-motion="reduce"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(max-width:380px){.settings-page .row2{grid-template-columns:1fr}.settings-card{padding:12px}.settings-card b{font-size:.92rem}}
 @media(prefers-reduced-motion:reduce){.settings-page *{animation:none!important;transition:none!important}}
+.vt-file{position:relative;display:inline-flex;overflow:hidden;cursor:pointer}.vt-file input{position:absolute;width:1px;height:1px;opacity:0}.vt-file:focus-within{outline:2px solid #29dfcd}.vt-list{margin:4px 0 10px;padding-left:18px;font-size:.9rem;overflow-wrap:anywhere}
+#vtPreview .settings-actions{margin-top:14px}
