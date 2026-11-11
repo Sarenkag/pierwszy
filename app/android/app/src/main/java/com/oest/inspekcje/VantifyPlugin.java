@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -96,6 +97,8 @@ public class VantifyPlugin extends Plugin {
             // niewidoczne (1×1 px, przezroczyste), ale podpięte do okna, żeby strona działała jak zwykle
             web.setAlpha(0f);
             ((ViewGroup) a.getWindow().getDecorView()).addView(web, new FrameLayout.LayoutParams(1, 1));
+            // Zbadaj trwa minuty: ekran nie gaśnie, bo uśpiony telefon wstrzymuje okno (Zbadaj 11/11: 20 min przerwy po 150 odczytach)
+            if (explore) a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : TIMEOUT);
             web.loadUrl(VantifyActivity.START + "#/user/jobs");
         }
@@ -120,6 +123,7 @@ public class VantifyPlugin extends Plugin {
             if (finished) return;
             finished = true;
             h.removeCallbacksAndMessages(null);
+            if (explore) a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             try {
                 JSObject r = new JSObject(json);
                 // Vantify odrzucił zapisane hasło: nie próbuj więcej, dopóki nie wpiszesz nowego (blokada konta)
