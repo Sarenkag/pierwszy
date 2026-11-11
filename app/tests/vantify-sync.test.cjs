@@ -223,6 +223,13 @@ test('Zbadaj automatycznie: brak uprawnień do jednej listy nie kończy badania 
   const i = log.findIndex(e => /\/sites\/6324\/surveys$/.test(e.u));
   assert.ok(log.slice(i + 1).some(e => e.k === 'auto' && e.st === 200), 'badanie idzie dalej po odmowie');
 });
+test('Zbadaj automatycznie: sprawdzenie sesji po odmowie wlicza się do limitu zapytań (przegląd Codex #136)', async () => {
+  const s = explorer({ max: 3, deny: /\/sites\/6324\/quotes$/ }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
+  assert.strictEqual(s.results.length, 1);
+  const api = s.calls.filter(c => c.u.indexOf(API) === 0 && c.h.Authorization === 'Bearer T').length - 1; // bez zapytania samej strony
+  assert.ok(api <= 3, 'najwyżej 3 zapytania API przy limicie 3, było ' + api);
+  assert.strictEqual(s.results[0].count, api, 'licznik = liczba zapytań');
+});
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {
   const j = fs.readFileSync(path.join(__dirname, '../android/app/src/main/java/com/oest/inspekcje/VantifyPlugin.java'), 'utf8');

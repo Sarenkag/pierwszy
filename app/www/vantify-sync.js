@@ -187,7 +187,8 @@
         },
         function (e) {
           var entry = { t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: e.message }; log.push(entry);
-          if (e.message !== "login") return;
+          if (e.message !== "login" || n >= MAX_REQ) return; // limit wyczerpany: bez sprawdzenia, badanie i tak się kończy
+          n++; // sprawdzenie sesji to też zapytanie: liczy się do limitu (przegląd Codex #136)
           // 401/403 na jednej liście to często tylko brak uprawnień (Zbadaj 11/11: „surveys”), nie wygasłe logowanie:
           // sprawdź sesję na profilu użytkownika – działa → zapisz „brak dostępu” i badaj dalej; nie działa → logowanie
           return get(U).then(function () { entry.st = "denied"; }, function () { queue = []; lost = true; });
