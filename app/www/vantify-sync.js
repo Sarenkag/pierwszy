@@ -185,7 +185,13 @@
           var pg = /[?&]page=(\d+)/.exec(u), pages = r && Number(r.pages);
           if ((!pg || pg[1] === "1") && pages > 1) for (var i = 2; i <= Math.min(pages, 5); i++) add(withPage(u, i));
         },
-        function (e) { log.push({ t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: e.message }); if (e.message === "login") { queue = []; lost = true; } })
+        function (e) {
+          var entry = { t: Date.now(), k: "auto", m: "GET", u: R ? R.url(u) : tpl(u), st: e.message }; log.push(entry);
+          if (e.message !== "login") return;
+          // 401/403 na jednej liście to często tylko brak uprawnień (Zbadaj 11/11: „surveys”), nie wygasłe logowanie:
+          // sprawdź sesję na profilu użytkownika – działa → zapisz „brak dostępu” i badaj dalej; nie działa → logowanie
+          return get(U).then(function () { entry.st = "denied"; }, function () { queue = []; lost = true; });
+        })
         .then(function () { return new Promise(function (res) { setTimeout(res, 120); }); }).then(step);
     }
     step();

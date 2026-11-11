@@ -132,7 +132,7 @@ test('przeładowanie strony po wysłaniu formularza nie daje drugiej próby logo
 
 // „Zbadaj automatycznie” (Grzegorz 10/11/2026): bot czyta zamiast klikać – tylko GET, po linkach _links, limit, bez danych osób
 const REJ = fs.readFileSync(path.join(__dirname, '../www/vantify-rejestr.js'), 'utf8');
-function explorer({ max = 300, pages = 0, expire = 0, hang = null, part = 0 } = {}) {
+function explorer({ max = 300, pages = 0, expire = 0, hang = null, part = 0, deny = null } = {}) {
   const calls = [], results = [], timers = [];
   const site = { id: 6324, name: 'One Eastside', _links: { self: { href: API + '/sites/6324' }, jobs: { href: API + '/sites/6324/jobs{?page}', templated: true }, meters: { href: API + '/sites/6324/meters' }, export_jobs: { href: API + '/sites/6324/jobs/export' }, approve: { href: API + '/sites/6324/quotes/1/approve' }, foreign: { href: 'https://evil.example.com/x' } } };
   const jobs = n => ({ count: 3, jobs: [1, 2, 3].map(i => ({ id: 3051000 + i, summary: 'Task ' + i, contactName: 'Jan Kowalski', _links: { self: { href: API + '/sites/6324/jobs/' + (3051000 + i) } } })) });
@@ -155,7 +155,7 @@ function explorer({ max = 300, pages = 0, expire = 0, hang = null, part = 0 } = 
       calls.push({ m: this.m, u: this.u, h: { ...this.h } });
       if (hang && hang.test(this.u)) { if (this.timeout > 0) timers.push(() => this.ontimeout && this.ontimeout()); return; } // brak odpowiedzi
       if (/main\.js$/.test(this.u)) { this.status = 200; this.responseText = 'a.post(this.api+"/sites/"+s+"/jobs/"+j+"/complete",b);c.post(u+"/files",fd);x="/sites/{site}/jobs/{job}/paperwork"'; }
-      else { this.status = this.h.Authorization === 'Bearer T' && !(expire && calls.length > expire) ? 200 : 401; this.responseText = JSON.stringify(respond(this.u)); }
+      else { this.status = this.h.Authorization === 'Bearer T' && !(expire && calls.length > expire) ? (deny && deny.test(this.u) ? 403 : 200) : 401; this.responseText = JSON.stringify(respond(this.u)); }
       timers.push(() => this.onload && this.onload());
     }
   }
@@ -214,6 +214,14 @@ test('Zbadaj automatycznie: duży zapis idzie do apki częściami, nic nie ginie
   const b = explorer({ part: 500 }); b.spa(API + '/users/14255/jobs?page=1&site=6324'); await b.run();
   assert.ok(b.bridge.parts.length > 1, 'wynik przyszedł częściami'); assert.strictEqual(a.bridge.parts.length, 0, 'mały wynik w całości');
   assert.strictEqual(b.results.length, 1); assert.deepStrictEqual(b.results[0].log.map(e => e.u), a.results[0].log.map(e => e.u), 'ten sam zapis po złożeniu części');
+});
+test('Zbadaj automatycznie: brak uprawnień do jednej listy nie kończy badania (Zbadaj 11/11: surveys 403)', async () => {
+  const s = explorer({ deny: /\/sites\/6324\/surveys$/ }); s.spa(API + '/users/14255/jobs?page=1&site=6324'); await s.run();
+  assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'ok', 'nie prosi o logowanie');
+  const log = s.results[0].log;
+  assert.ok(log.some(e => /\/sites\/6324\/surveys$/.test(e.u) && e.st === 'denied'), 'zapisane jako brak dostępu');
+  const i = log.findIndex(e => /\/sites\/6324\/surveys$/.test(e.u));
+  assert.ok(log.slice(i + 1).some(e => e.k === 'auto' && e.st === 200), 'badanie idzie dalej po odmowie');
 });
 // Java: ukryte okno (VantifyPlugin.sync) wstrzykuje skrypt tylko na stronach Vantify, przyjmuje wynik tylko od nich, ma limit czasu i sprząta
 test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno usuwane po wyniku', async () => {
