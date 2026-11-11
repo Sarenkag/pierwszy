@@ -242,6 +242,9 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);
   assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : TIMEOUT\)/);
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);
+  // Zbadaj: ekran nie gaśnie w trakcie (uśpiony telefon wstrzymuje okno), po wyniku zwykłe wygaszanie
+  assert.match(j, /if \(explore\) a\.getWindow\(\)\.addFlags\(WindowManager\.LayoutParams\.FLAG_KEEP_SCREEN_ON\)/);
+  assert.match(j, /if \(finished\) return;\s*finished = true;\s*h\.removeCallbacksAndMessages\(null\);\s*if \(explore\) a\.getWindow\(\)\.clearFlags\(WindowManager\.LayoutParams\.FLAG_KEEP_SCREEN_ON\)/);
   // login i hasło tylko w ukrytym oknie i tylko dla strony Vantify; odrzucone hasło blokuje kolejne próby
   assert.match(j, /VantifyLogin\.script\(a\) \+ script/);
   assert.match(j, /"bad"\.equals\(r\.optString\("code"\)\)\) VantifyLogin\.markBad\(a, loginVer\)/);
