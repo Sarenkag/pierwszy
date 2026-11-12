@@ -68,7 +68,9 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         if (await vis('#ck button[data-s="fail"]')) { await pg.locator('#ck button[data-s="fail"]').nth(1).click(); if (await vis('#ck button[data-r]')) await pg.locator('#ck button[data-r]').first().click(); }
         if (await vis('#faults button[data-f]')) await pg.locator('#faults button[data-f]').first().click();
         if (await vis('#galIn')) { await pg.setInputFiles('#galIn', await jpeg(pg, FOTO.galeria, '#36c')); zdj.push('galeria'); }
-        if (await vis('#shGalIn')) { await pg.setInputFiles('#shGalIn', await jpeg(pg, FOTO.kartka, '#c63')); zdj.push('kartka'); }
+        // zdjęcie kartki przyciskiem „Formularz” (w inspekcjach z kartki to jedyny sposób dodania formularza – Grzegorz 12/11/2026)
+        const kartkaIn = (await vis('#shGalIn')) ? '#shGalIn' : (await vis('label:has(#shCamIn)')) ? '#shCamIn' : '';
+        if (kartkaIn) { await pg.setInputFiles(kartkaIn, await jpeg(pg, FOTO.kartka, '#c63')); zdj.push('kartka'); }
         // zdjęcia gotowe: tyle miniatur, ile dodano (stan, nie czas)
         if (zdj.length && !(await pg.waitForFunction(n => document.querySelectorAll('#photos img, #sheetPhotos img, #flList img, [data-flcam] img').length >= n, zdj.length, { timeout: 15000 }).then(() => true, () => false))) return zle('dodane zdjęcia (' + zdj.join(', ') + ') nie wczytały się w formularzu');
         await idle();
