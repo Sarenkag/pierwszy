@@ -98,6 +98,7 @@
     ENTRY_INVALID: ['Wpis jest niepełny.', 'The entry is incomplete.'],
     REACTIVE_FIELDS: ['Uzupełnij wymagane pola zadania.', 'Fill in the required task fields.'],
     VANTIFY_FIELDS: ['Rubryki Vantify są niepoprawne. Popraw je w części Vantify zadania.', 'The Vantify fields are not valid. Correct them in the Vantify part of the job.'],
+    VANTIFY_LABOUR: ['Czas pracy: od 1 do 24 godzin, co pół godziny.', 'Time worked: 1 to 24 hours, in half hours.'],
     VANTIFY_JOB_NO: ['Nr zlecenia Vantify to same cyfry, np. 3051375.', 'The Vantify job no. is digits only, e.g. 3051375.'],
     REACTIVE_STATUS: ['Nieprawidłowy status zadania.', 'Invalid task status.'],
     REACTIVE_TREE: ['Nieprawidłowy wybór z listy usterek.', 'Invalid fault selection.'],

@@ -21,7 +21,7 @@ STEP='krok 1';// 1. Bez list z Vantify: przycisk, szkic z rubrykami domyślnymi,
 await page.goto(url+'/#reactive');await page.locator('[data-rx=new-vantify]').waitFor();
 assert.match(await page.locator('[data-rx=new-vantify]').textContent(),/Zrobione → Vantify/);assert.ok(await page.locator('[data-rx=new]').isVisible(),'zwykłe „Nowe zadanie” zostaje');
 await page.locator('[data-rx=new-vantify]').click();await page.locator('[data-rx-vfield=jobGroup]').waitFor();
-{const d=await draft();assert.deepEqual({...d.vantify},{jobNo:'',location:'',jobGroup:'',priority:'P5 - Within 5 Days',asset:'',po:'',statutory:false,documentRequired:'',serviceProvider:'HR Facilities Limited t/a Smart Managed Solutions',siteContactSelf:true,relationship:'Service Provider',siteContactAvailable:true});}
+{const d=await draft();assert.deepEqual({...d.vantify},{jobNo:'',labourHours:1,location:'',jobGroup:'',priority:'P5 - Within 5 Days',asset:'',po:'',statutory:false,documentRequired:'',serviceProvider:'HR Facilities Limited t/a Smart Managed Solutions',siteContactSelf:true,relationship:'Service Provider',siteContactAvailable:true});}
 assert.equal(await page.locator('[data-rx-vfield=summary],[data-rx-vfield=description]').count(),0,'Summary/Description bez osobnych pól (jedno źródło z worksheetem)');
 await page.locator('[data-rx-field=title]').fill('Repair light fixture on book shelf');await saved();
 await row('where');await page.locator('[data-rx=building][data-value="Tower A"]').click();await page.locator('[data-rx-field=level]').selectOption('49');
@@ -49,6 +49,7 @@ await page.locator('[data-rx=preview-back]').click();
 
 await page.evaluate(()=>{const e=document.querySelector('[data-rx-field=doneDate]');e.value='2026-10-05';e.dispatchEvent(new Event('input'));});await saved();assert.equal((await draft()).doneDate,'2026-10-05','data wykonania do zmiany ręcznie');
 await page.locator('[data-rx=v-today]').click();await saved();assert.equal((await draft()).doneDate,await page.evaluate(()=>OESTReactiveVantify.ymd(new Date())),'„Dziś”');
+await page.locator('[data-rx-vfield=labourHours]').fill('2');await saved();assert.equal((await draft()).vantify.labourHours,2,'czas pracy liczbą');
 STEP='krok 4';// 4. Listy z Vantify (zapis odczytu): Location/Job Group/Priority do wyboru, wybór zapisany.
 await page.evaluate(()=>localStorage.setItem('oest.vantify.lookup',JSON.stringify({at:'2026-11-13T15:00:00Z',locations:[{name:'49th Floor and Ground Floor Amenity of Blocks A and B'}],jobGroups:['Fabric','Lighting'],priorities:['P4 - Within 3 Days','P5 - Within 5 Days']})));
 await page.reload();await page.locator('[data-rx=row][data-id=v-location]').waitFor();

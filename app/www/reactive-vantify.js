@@ -26,7 +26,7 @@
   const LIMITS = { jobNo: 20, location: 300, jobGroup: 120, priority: 120, asset: 300, po: 60 };
 
   function defaults() {
-    return { jobNo: '', location: '', jobGroup: '', priority: PRIORITY, asset: '', po: '', statutory: false, documentRequired: '', serviceProvider: SERVICE_PROVIDER, siteContactSelf: true, relationship: RELATIONSHIP, siteContactAvailable: true };
+    return { jobNo: '', labourHours: 1, location: '', jobGroup: '', priority: PRIORITY, asset: '', po: '', statutory: false, documentRequired: '', serviceProvider: SERVICE_PROVIDER, siteContactSelf: true, relationship: RELATIONSHIP, siteContactAvailable: true };
   }
   function lists(store) {
     try {
@@ -60,6 +60,8 @@
     const v = d?.vantify;
     if (!v || typeof v !== 'object') throw Error('VANTIFY_FIELDS');
     for (const k of KEYS) if (String(v[k] ?? '').length > LIMITS[k]) throw Error('VANTIFY_FIELDS');
+    // Labour Lines: czas pracy w godzinach, domyślnie i co najmniej 1 h (Grzegorz 13/11/2026), krok 0,5 h
+    { const h = Number(v.labourHours); if (!(h >= 1 && h <= 24) || h * 2 !== Math.round(h * 2)) throw Error('VANTIFY_LABOUR'); }
     if (d.doneDate && !dmy(d.doneDate)) throw Error('VANTIFY_FIELDS');
     if (String(d.afterNote || '').length > 4000) throw Error('VANTIFY_FIELDS');
     if (v.jobNo && !/^\d{1,20}$/.test(String(v.jobNo).trim())) throw Error('VANTIFY_JOB_NO');
@@ -87,6 +89,7 @@
       ['Job Details', 'PO Number', v.po],
       ['Update', 'Update', update(d)],
       ['Update', 'File', (d?.afterMediaIds || []).length + ' after'],
+      ['Labour Lines', 'Labour Line', (me || '—') + ' · ' + (dmy(d?.doneDate) || '—') + ' · ' + String(v.labourHours).replace('.', ',') + ' h'],
     ];
   }
   return { ymd, dmy, update, after, LOOKUP_KEY, SERVICE_PROVIDER, RELATIONSHIP, PRIORITY, KEYS, LIMITS, defaults, lists, summary, description, missing, validate, rubrics };

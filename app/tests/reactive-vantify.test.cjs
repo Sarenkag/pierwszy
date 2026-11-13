@@ -63,3 +63,10 @@ test('daty ze zdjęć: Update i worksheet z datą wykonania', () => {
   assert.equal(V.ymd(new Date(2026, 0, 9)), '2026-01-09');
   assert.throws(() => V.validate(job({ doneDate: '5/10/2026' })), /VANTIFY_FIELDS/);
 });
+
+test('Labour Lines: domyślnie 1 h, minimum 1 h, co pół godziny', () => {
+  assert.equal(V.defaults().labourHours, 1);
+  assert.doesNotThrow(() => V.validate(job({ vantify: { ...V.defaults(), labourHours: 1.5 } })));
+  for (const h of [0.5, 0, 25, 1.25, NaN]) assert.throws(() => V.validate(job({ vantify: { ...V.defaults(), labourHours: h } })), /VANTIFY_LABOUR/);
+  assert.equal(V.rubrics(job({ vantify: { ...V.defaults(), labourHours: 1.5 } }), profile).find(r => r[1] === 'Labour Line')[2], 'Greg Sarna · 13/11/2026 · 1,5 h');
+});
