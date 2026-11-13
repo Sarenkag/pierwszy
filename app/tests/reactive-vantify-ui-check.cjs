@@ -33,7 +33,7 @@ STEP='krok 2';// 2. Podgląd: wszystkie rubryki Vantify w kolejności formularza
 await page.locator('[data-rx=vantify-preview]').click();await page.locator('[data-rx=preview-back]').waitFor();
 {const t=await page.locator('.rx-body').innerText();let at=-1;for(const k of ['I am the Site Contact','Relationship to the property','Site contact available','Summary','Description','Location','Is Statutory Type?','Document Required','Service Provider','Operative','Job Group','Asset','Priority','File','PO Number']){const i=t.indexOf(k,at+1);assert.ok(i>at,'rubryka w kolejności Vantify: '+k);at=i;}
  assert.match(t,/Repair light fixture on book shelf/,'Summary = nazwa zadania');assert.match(t,/Light fitting on the book shelf not working/,'Description = dopisek przed');assert.match(t,/Work completed on —\./,'Update bez daty, dopóki nie ma zdjęcia po');assert.match(t,/Greg Sarna/,'Operative = ja');assert.match(t,/HR Facilities Limited t\/a Smart Managed Solutions/);
- assert.match(t,/Uzupełnij: dopisek po \(Update\), data wykonania, zdjęcie przed, zdjęcie po/);assert.match(t,/nic nie trafia do Vantify/);assert.doesNotMatch(t,RAW_CODE);}
+ assert.match(t,/Uzupełnij: dopisek po \(Update\), data wykonania(?!, zdjęcie)/);assert.match(t,/nic nie trafia do Vantify/);assert.doesNotMatch(t,RAW_CODE);}
 await snap('09-vantify-preview');
 await page.locator('[data-rx=preview-back]').click();await page.locator('[data-rx-vfield=jobGroup]').waitFor();
 

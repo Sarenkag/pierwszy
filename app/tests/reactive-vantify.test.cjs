@@ -23,10 +23,10 @@ test('Summary = nazwa zadania, Description = dopisek przed, Update = dopisek po 
   assert.deepEqual(rows.slice(0, 15).map(r => r[1]), ['I am the Site Contact', 'Relationship to the property', 'Site contact available', 'Summary', 'Description', 'Location', 'Is Statutory Type?', 'Document Required', 'Service Provider', 'Operative', 'Job Group', 'Asset', 'Priority', 'File', 'PO Number']);
 });
 
-test('braki: oba dopiski, Job Group, Priority, zdjęcie przed i po', () => {
+test('braki: oba dopiski, Job Group, Priority; zdjęcia opcjonalne', () => {
   assert.deepEqual(V.missing(job()), []);
   const m = V.missing(job({ beforeMediaIds: [], afterMediaIds: [], vantify: { ...V.defaults(), priority: '' } })).map(x => x[1]);
-  assert.deepEqual(m, ['Job Group', 'Priority', 'photo before', 'photo after']);
+  assert.deepEqual(m, ['Job Group', 'Priority']);
   assert.deepEqual(V.missing(job({ title: '', note: '', afterNote: ' ' })).map(x => x[1]), ['job name (Summary)', 'note before (Description)', 'note after (Update)']);
   assert.deepEqual(V.missing(job({ title: 'x'.repeat(256) })).map(x => x[1]), ['shorter job name (Summary up to 255 characters)']);
   assert.deepEqual(V.missing(job({ doneDate: '' })).map(x => x[1]), ['date completed']);

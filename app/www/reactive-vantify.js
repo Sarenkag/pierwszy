@@ -43,6 +43,7 @@
   const dmy = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s.split('-').reverse().join('/') : '';
   // tekst Update w kroku 2: dopisek po + data wykonania (pole „Data wykonania” = najpóźniejsze zdjęcie po; bez daty – brak)
   function update(d) { const a = after(d); return (a ? a.replace(/[.\s]+$/, '') + '.\n' : '') + 'Work completed on ' + (dmy(d?.doneDate) || '—') + '.'; }
+  // zdjęcia NIE są wymagane (Grzegorz 13/11/2026): mogą być przed i po, tylko przed, tylko po albo wcale
   function missing(d) {
     const v = d?.vantify || {}, m = [];
     if (!summary(d)) m.push(['nazwa zadania (Summary)', 'job name (Summary)']);
@@ -52,8 +53,6 @@
     if (!dmy(d?.doneDate)) m.push(['data wykonania', 'date completed']);
     if (!String(v.jobGroup || '').trim()) m.push(['Job Group', 'Job Group']);
     if (!String(v.priority || '').trim()) m.push(['Priority', 'Priority']);
-    if (!(d?.beforeMediaIds || []).length) m.push(['zdjęcie przed', 'photo before']);
-    if (!(d?.afterMediaIds || []).length) m.push(['zdjęcie po', 'photo after']);
     return m;
   }
   function validate(d) {
