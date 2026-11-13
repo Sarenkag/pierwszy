@@ -3,7 +3,7 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const V = require('../www/reactive-vantify.js'), C = require('../www/reactive-core.js');
 const profile = { first: 'Greg', last: 'Sarna', formSignature: '' };
-const job = over => ({ title: 'Repair light fixture on book shelf', note: 'Light fitting on the book shelf not working.', afterNote: 'Loose connection re-terminated, fitting tested', completedAt: '2026-11-13T15:00:00', building: 'Tower A', level: '49', requestedBy: 'self', status: 'open', beforeMediaIds: ['b'], afterMediaIds: ['a'], vantify: { ...V.defaults(), jobGroup: 'Lighting' }, ...over });
+const job = over => ({ title: 'Repair light fixture on book shelf', note: 'Light fitting on the book shelf not working.', afterNote: 'Loose connection re-terminated, fitting tested', doneDate: '2026-11-13', building: 'Tower A', level: '49', requestedBy: 'self', status: 'open', beforeMediaIds: ['b'], afterMediaIds: ['a'], vantify: { ...V.defaults(), jobGroup: 'Lighting' }, ...over });
 
 test('domyślne rubryki = ręczne założenie zlecenia 13/11/2026', () => {
   const d = V.defaults();
@@ -29,6 +29,7 @@ test('braki: oba dopiski, Job Group, Priority, zdjęcie przed i po', () => {
   assert.deepEqual(m, ['Job Group', 'Priority', 'photo before', 'photo after']);
   assert.deepEqual(V.missing(job({ title: '', note: '', afterNote: ' ' })).map(x => x[1]), ['job name (Summary)', 'note before (Description)', 'note after (Update)']);
   assert.deepEqual(V.missing(job({ title: 'x'.repeat(256) })).map(x => x[1]), ['shorter job name (Summary up to 255 characters)']);
+  assert.deepEqual(V.missing(job({ doneDate: '' })).map(x => x[1]), ['date completed']);
 });
 
 test('kontrola: numer z cyframi, stałe rubryki niezmienione', () => {
@@ -52,4 +53,13 @@ test('worksheet: numer zlecenia Vantify na początku treści, bez numeru bez zmi
   assert.match(C.report(d, profile).details, /^Vantify Job No\.: 3051375\n/);
   assert.doesNotMatch(C.report(job(), profile).details, /Vantify/);
   assert.doesNotMatch(C.details(d), /Vantify Job No/, 'Description do Vantify bez numeru');
+});
+
+test('daty ze zdjęć: Update i worksheet z datą wykonania', () => {
+  const d = job({ doneDate: '2026-10-05' });
+  assert.match(V.update(d), /Work completed on 05\/10\/2026\.$/);
+  assert.equal(C.report(d, profile).date, '05/10/2026');
+  assert.match(C.report(d, profile).fileName, / 05102026$/);
+  assert.equal(V.ymd(new Date(2026, 0, 9)), '2026-01-09');
+  assert.throws(() => V.validate(job({ doneDate: '5/10/2026' })), /VANTIFY_FIELDS/);
 });

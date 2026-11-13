@@ -39,15 +39,17 @@
     function summary(d) { return String(d?.title || d?.problem || '').trim(); }
   function description(d) { return String(d?.note || '').trim(); }
   function after(d) { return String(d?.afterNote || '').trim(); }
-  function day(at) { const t = at ? new Date(at) : new Date(); return isNaN(t) ? '' : String(t.getDate()).padStart(2, '0') + '/' + String(t.getMonth() + 1).padStart(2, '0') + '/' + t.getFullYear(); }
-  // tekst Update w kroku 2: dopisek po + data wykonania (data zakończenia zadania albo dzisiejsza)
-  function update(d, at) { const a = after(d); return (a ? a.replace(/[.\s]+$/, '') + '.\n' : '') + 'Work completed on ' + day(at || d?.completedAt) + '.'; }
+  const ymd = t => t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  const dmy = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s.split('-').reverse().join('/') : '';
+  // tekst Update w kroku 2: dopisek po + data wykonania (pole „Data wykonania” = najpóźniejsze zdjęcie po; bez daty – brak)
+  function update(d) { const a = after(d); return (a ? a.replace(/[.\s]+$/, '') + '.\n' : '') + 'Work completed on ' + (dmy(d?.doneDate) || '—') + '.'; }
   function missing(d) {
     const v = d?.vantify || {}, m = [];
     if (!summary(d)) m.push(['nazwa zadania (Summary)', 'job name (Summary)']);
     else if (summary(d).length > 255) m.push(['krótsza nazwa zadania (Summary do 255 znaków)', 'shorter job name (Summary up to 255 characters)']);
     if (!description(d)) m.push(['dopisek przed (Description)', 'note before (Description)']);
     if (!after(d)) m.push(['dopisek po (Update)', 'note after (Update)']);
+    if (!dmy(d?.doneDate)) m.push(['data wykonania', 'date completed']);
     if (!String(v.jobGroup || '').trim()) m.push(['Job Group', 'Job Group']);
     if (!String(v.priority || '').trim()) m.push(['Priority', 'Priority']);
     if (!(d?.beforeMediaIds || []).length) m.push(['zdjęcie przed', 'photo before']);
@@ -58,6 +60,7 @@
     const v = d?.vantify;
     if (!v || typeof v !== 'object') throw Error('VANTIFY_FIELDS');
     for (const k of KEYS) if (String(v[k] ?? '').length > LIMITS[k]) throw Error('VANTIFY_FIELDS');
+    if (d.doneDate && !dmy(d.doneDate)) throw Error('VANTIFY_FIELDS');
     if (String(d.afterNote || '').length > 4000) throw Error('VANTIFY_FIELDS');
     if (v.jobNo && !/^\d{1,20}$/.test(String(v.jobNo).trim())) throw Error('VANTIFY_JOB_NO');
     if (v.statutory !== false || v.documentRequired || v.serviceProvider !== SERVICE_PROVIDER) throw Error('VANTIFY_FIELDS');
@@ -86,5 +89,5 @@
       ['Update', 'File', (d?.afterMediaIds || []).length + ' after'],
     ];
   }
-  return { update, after, LOOKUP_KEY, SERVICE_PROVIDER, RELATIONSHIP, PRIORITY, KEYS, LIMITS, defaults, lists, summary, description, missing, validate, rubrics };
+  return { ymd, dmy, update, after, LOOKUP_KEY, SERVICE_PROVIDER, RELATIONSHIP, PRIORITY, KEYS, LIMITS, defaults, lists, summary, description, missing, validate, rubrics };
 });

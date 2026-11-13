@@ -32,8 +32,8 @@ await page.locator('[data-rx-vfield=jobGroup]').fill('Lighting');await page.loca
 STEP='krok 2';// 2. Podgląd: wszystkie rubryki Vantify w kolejności formularza, braki zdjęć, uczciwa informacja o braku wysyłki.
 await page.locator('[data-rx=vantify-preview]').click();await page.locator('[data-rx=preview-back]').waitFor();
 {const t=await page.locator('.rx-body').innerText();let at=-1;for(const k of ['I am the Site Contact','Relationship to the property','Site contact available','Summary','Description','Location','Is Statutory Type?','Document Required','Service Provider','Operative','Job Group','Asset','Priority','File','PO Number']){const i=t.indexOf(k,at+1);assert.ok(i>at,'rubryka w kolejności Vantify: '+k);at=i;}
- assert.match(t,/Repair light fixture on book shelf/,'Summary = nazwa zadania');assert.match(t,/Light fitting on the book shelf not working/,'Description = dopisek przed');assert.match(t,/Work completed on \d\d\/\d\d\/\d{4}/,'Update z datą');assert.match(t,/Greg Sarna/,'Operative = ja');assert.match(t,/HR Facilities Limited t\/a Smart Managed Solutions/);
- assert.match(t,/Uzupełnij: dopisek po \(Update\), zdjęcie przed, zdjęcie po/);assert.match(t,/nic nie trafia do Vantify/);assert.doesNotMatch(t,RAW_CODE);}
+ assert.match(t,/Repair light fixture on book shelf/,'Summary = nazwa zadania');assert.match(t,/Light fitting on the book shelf not working/,'Description = dopisek przed');assert.match(t,/Work completed on —\./,'Update bez daty, dopóki nie ma zdjęcia po');assert.match(t,/Greg Sarna/,'Operative = ja');assert.match(t,/HR Facilities Limited t\/a Smart Managed Solutions/);
+ assert.match(t,/Uzupełnij: dopisek po \(Update\), data wykonania, zdjęcie przed, zdjęcie po/);assert.match(t,/nic nie trafia do Vantify/);assert.doesNotMatch(t,RAW_CODE);}
 await snap('09-vantify-preview');
 await page.locator('[data-rx=preview-back]').click();await page.locator('[data-rx-vfield=jobGroup]').waitFor();
 
@@ -42,10 +42,13 @@ await page.locator('[data-rx-field=afterNote]').fill('Loose connection re-termin
 const encoded=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=320;c.height=240;const x=c.getContext('2d');x.fillStyle='#ddd';x.fillRect(0,0,320,240);return c.toDataURL('image/png').split(',')[1];}),photo=n=>({name:n+'.png',mimeType:'image/png',buffer:Buffer.from(encoded,'base64')});
 await page.locator('[data-rx-photos=before]').setInputFiles(photo('before'));await page.waitForFunction(()=>document.querySelector('#rx-before img'));await saved();
 await page.locator('[data-rx-photos=after]').setInputFiles(photo('after'));await page.waitForFunction(()=>document.querySelector('#rx-after img'));await saved();
+{const d=await draft(),today=await page.evaluate(()=>OESTReactiveVantify.ymd(new Date()));assert.equal(d.doneDate,today,'data wykonania ze zdjęcia po');assert.equal(d.orderDate,today,'data zlecenia ze zdjęcia przed');assert.equal(await page.locator('[data-rx-field=doneDate]').inputValue(),today);}
 await page.reload();await page.locator('[data-rx-vfield=jobGroup]').waitFor();assert.equal(await page.locator('[data-rx-vfield=jobGroup]').inputValue(),'Lighting','po przeładowaniu');assert.equal(await page.locator('[data-rx-field=afterNote]').inputValue(),'Loose connection re-terminated, fitting tested.');
 await page.locator('[data-rx=vantify-preview]').click();await page.locator('[data-rx=preview-back]').waitFor();{const t=await page.locator('.rx-body').innerText();assert.doesNotMatch(t,/Uzupełnij/);assert.match(t,/Loose connection re-terminated, fitting tested\.\nWork completed on/);}
 await page.locator('[data-rx=preview-back]').click();
 
+await page.evaluate(()=>{const e=document.querySelector('[data-rx-field=doneDate]');e.value='2026-10-05';e.dispatchEvent(new Event('input'));});await saved();assert.equal((await draft()).doneDate,'2026-10-05','data wykonania do zmiany ręcznie');
+await page.locator('[data-rx=v-today]').click();await saved();assert.equal((await draft()).doneDate,await page.evaluate(()=>OESTReactiveVantify.ymd(new Date())),'„Dziś”');
 STEP='krok 4';// 4. Listy z Vantify (zapis odczytu): Location/Job Group/Priority do wyboru, wybór zapisany.
 await page.evaluate(()=>localStorage.setItem('oest.vantify.lookup',JSON.stringify({at:'2026-11-13T15:00:00Z',locations:[{name:'49th Floor and Ground Floor Amenity of Blocks A and B'}],jobGroups:['Fabric','Lighting'],priorities:['P4 - Within 3 Days','P5 - Within 5 Days']})));
 await page.reload();await page.locator('[data-rx=row][data-id=v-location]').waitFor();
@@ -64,5 +67,5 @@ await page.locator('[data-rx=job]').click();await page.locator('[data-rx=vantify
 await page.evaluate(()=>OESTSettings.update(s=>{s.appearance.language='pl';}));
 assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 assert.deepEqual(errors,[]);
-console.log('REACTIVE VANTIFY UI PASS: button next to New job, draft with Vantify defaults (Smart, P5, Statutory No, no Document Required, site contact me/Service Provider/available), Summary/Description from job name/EN report (no separate fields), text fields without Vantify lists, picks from Vantify lists, persistence after reload, Vantify job no. saved + shown on the card, preview of all Vantify fields in form order with missing photos, PL/EN without raw codes, honest "nothing sent to Vantify"; 412x915. Not covered: sending to Vantify (not built), camera, Pixel.');
+console.log('REACTIVE VANTIFY UI PASS: button next to New job, draft with Vantify defaults (Smart, P5, Statutory No, no Document Required, site contact me/Service Provider/available), Summary/Description from job name/EN report (no separate fields), text fields without Vantify lists, picks from Vantify lists, dates from photos (order = before, completed = after) editable + Today, persistence after reload, Vantify job no. saved + shown on the card, preview of all Vantify fields in form order with missing photos, PL/EN without raw codes, honest "nothing sent to Vantify"; 412x915. Not covered: sending to Vantify (not built), camera, Pixel.');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error('Reactive Vantify – błąd w: '+STEP);console.error(e);process.exitCode=1;});
