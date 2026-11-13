@@ -90,3 +90,13 @@ test('Java: okno Vantify tylko https, most JS tylko na vantify.com, aktywność 
   const m = J('AndroidManifest.xml'); assert.match(m, /android:name="\.VantifyActivity"\s+android:exported="false"/);
   assert.match(J('java/com/oest/inspekcje/MainActivity.java'), /registerPlugin\(VantifyPlugin\.class\)/);
 });
+
+test('Zbadaj: wysyłka pliku (FormData) – nazwy pól i rozmiar, bez treści', () => {
+  const fd = new FormData();
+  fd.append('file', new Blob(['tajne zdjecie'], { type: 'image/jpeg' }), 'przed.jpg');
+  fd.append('description', 'Repair light fixture');
+  fd.append('password', 'x');
+  const r = R.body(fd, true);
+  assert.deepEqual(r, { formData: [{ k: 'file', file: 'image/jpeg', size: 13 }, { k: 'description', v: '(tekst 20)' }, { k: 'password', v: '(ukryte)' }] });
+  assert.ok(!JSON.stringify(r).includes('tajne') && !JSON.stringify(r).includes('Repair'));
+});
