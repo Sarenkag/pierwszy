@@ -55,6 +55,9 @@
       "file": "app/tests/reactive.test.cjs"
     },
     {
+      "file": "app/tests/reactive-vantify.test.cjs"
+    },
+    {
       "file": "app/tests/report-template.test.cjs"
     },
     {
@@ -199,6 +202,11 @@
       "file": "app/tests/reactive-ui-check.cjs",
       "passMarker": "REACTIVE UI PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/reactive-vantify-ui-check.cjs",
+      "passMarker": "REACTIVE VANTIFY UI PASS",
+      "timeoutSec": 600
     },
     {
       "file": "app/tests/settings-ui-check.cjs",

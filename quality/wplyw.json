@@ -19,6 +19,7 @@
     "app/tests/powertrace-ui-check.cjs": ["index.html"],
     "app/tests/questions-ui-check.cjs": ["index.html"],
     "app/tests/reactive-ui-check.cjs": ["index.html"],
+    "app/tests/reactive-vantify-ui-check.cjs": ["index.html"],
     "app/tests/settings-ui-check.cjs": ["index.html"],
     "app/tests/vantify-wczytaj-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/vantify-pobierz-ui-check.cjs": ["index.html", "inspekcje/index.html"],
