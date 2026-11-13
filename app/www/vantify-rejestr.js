@@ -58,6 +58,12 @@
   }
   function body(text, keysOnly) {
     if (text == null || text === "") return null;
+    // wysyłka pliku (FormData): tylko nazwy pól i rodzaj/rozmiar pliku – bez treści pliku i bez wartości tekstowych
+    if (typeof text !== "string" && text && typeof text.forEach === "function" && Object.prototype.toString.call(text) === "[object FormData]") {
+      var f = [];
+      text.forEach(function (v, k) { if (f.length < 40) f.push(SECRET.test(k) ? { k: k, v: "(ukryte)" } : v && typeof v === "object" && "size" in v ? { k: k, file: String(v.type || "?").slice(0, 60), size: v.size } : { k: k, v: val(String(v), k) }); });
+      return { formData: f };
+    }
     if (typeof text !== "string") return { type: Object.prototype.toString.call(text).slice(8, -1) };
     try { return shape(JSON.parse(text), 0, keysOnly); } catch (e) {
       if (keysOnly && /=/.test(text)) return { form: text.split("&").map(function (p) { try { return decodeURIComponent(p.split("=")[0]); } catch (x) { return "?"; } }).slice(0, 40) };
