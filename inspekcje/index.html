@@ -1488,9 +1488,14 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
+    if (F.ui === "checks") { // lista potwierdzeń (Weekly Spa Checks): bez kartki, bez przycisków AOV
+      $("flOnL").textContent = T("Lista sprawdzeń (z apki)", "Check list (in the app)");
+      $("flHint").textContent = T("Zaznacz, co potwierdzasz (domyślnie Yes). Do raportu idzie lista i zdjęcia z plant roomów. Zdjęcie kartki nie jest wymagane – przycisk „Formularz” zostaje na zaś.", "Mark what you confirm (Yes by default). The report gets the list and the plant room photos. A form photo is not required – the “Form” button stays just in case.");
+    } else {
     $("flOnL").textContent = F.points ? T("Lista przycisków (sprawdzenie z apki)", "Call point list (check in the app)") : T("Formularz elektroniczny", "Electronic form");
     $("flHint").textContent = F.points ? T("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia kartki. Włączony: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach.", "“Our report” in ⚙ next to Send off: only photos of the paper form go to the report. On: the report also has a call point table (Yes = vents opened from this call point and closed after reset) and photos per call point.") :
       T("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.", "“Our report” in ⚙ next to Send off: only photos of the filled-in forms go to the report. On: the filled-in Word form goes, with form photos as an extra.");
+    }
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
     $("flList").innerHTML = F.taps.map(function (name, i) {
@@ -1522,7 +1527,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
-    return { points: !!F.points, col: F.col, groups: F.groups || null, building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
+    return { points: !!F.points, ui: F.ui || "", col: F.col, groups: F.groups || null, building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
@@ -2363,7 +2368,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
       var pts = !!cur.type.flush.points, fpn = sheetPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
       $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? T("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
-        (pts ? T("Przyciski: ", "Call points: ") : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
+        (pts ? (cur.type.flush.ui === "checks" ? T("Punkty: ", "Checks: ") : T("Przyciski: ", "Call points: ")) : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
       $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
     }
@@ -2825,6 +2830,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     return { d: dd, pics: ph };
   }
   function pointsSummary(f) {
+    if (f.ui === "checks") { var bad = f.taps.filter(function (t) { return t.state === "no"; }).length; // Weekly Spa Checks
+      return bad ? bad + " check(s) not satisfactory – record in the Fault and Remedial Actions Log" : "Spa checked – all items satisfactory, no issues observed"; }
     var no = f.taps.filter(function (t) { return t.state === "no"; }).length, na = f.taps.filter(function (t) { return t.state === "na"; }).length;
     var yes = f.taps.length - no - na;
     if (no) return no + " call point(s) failed – AOVs did not operate correctly; record in the Fault and Remedial Actions Log";
