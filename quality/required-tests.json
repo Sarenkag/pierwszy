@@ -282,6 +282,11 @@
       "timeoutSec": 600
     },
     {
+      "file": "app/tests/spa-checks-ui-check.cjs",
+      "passMarker": "SPA-CHECKS PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/moduly-zasady-ui-check.cjs",
       "passMarker": "MODULY ZASADY UI PASS",
       "timeoutSec": 600

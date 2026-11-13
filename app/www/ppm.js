@@ -67,6 +67,11 @@ window.OEST_PPM = {
         "Shower Disable Toilet", "Shower in SPA", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107"] },
       P: { title: "Weekly Taps/Shower Flushing Record Pavilion", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"] },
       // AOV Tower B (Grzegorz 03/11/2026): 3 przyciski pod 2 grupami klap. Lista punktów (bez tygodnia i bez wzoru Word): tak jak krany, Yes/No/N/A + 📷 + 📝, domyślnie Yes.
+      // Weekly Spa Checks (Grzegorz 13/11/2026): bez zdjęcia ręcznego formularza – lista potwierdzeń (Yes/No/N/A + 📷 + 📝, domyślnie Yes)
+      // i zdjęcia z plant roomów Spa. „Spa” = spa pool + plunge pool. Przycisk „Formularz” zostaje na zaś, ale nie jest wymagany (sheet: false).
+      SPA: { points: true, ui: "checks", sheet: false, title: "Weekly Spa Checks", building: "B", col: "Confirmed",
+        taps: ["Spa inspected (spa pool and plunge pool)", "Spa regularly supervised", "Water samples taken regularly", "Spa plant rooms clean and tidy",
+          "Pumps operating correctly", "Filters operating correctly", "Readings within normal range", "Water clear", "No issues observed"] },
       "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
         groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
         taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },
@@ -88,7 +93,7 @@ window.OEST_PPM = {
     { id: "EFA-INS-005", group: "fire", name: "Weekly Sprinkler Testing", freq: ["1W"], cfg: true },
     { id: "EFA-INS-006", form: "folder", group: "fire", name: "Weekly Fire Alarm Test (TA)", freq: ["1W"] },
     { id: "EFA-INS-007", group: "water", name: "Water Feature Checks", freq: ["1W"], cfg: true },
-    { id: "EFA-INS-008", form: "folder", group: "water", name: "Weekly Spa Checks", freq: ["1W"] },
+    { id: "EFA-INS-008", form: "folder", flush: "SPA", group: "water", name: "Weekly Spa Checks", freq: ["1W"] },
     { id: "EFA-INS-009", form: "folder", group: "water", name: "Daily Spa Pool Sampling", freq: ["1W"] },
     { id: "EFA-INS-010", group: "water", name: "Monthly Tap Temperature Check (P)", freq: ["1M"], cfg: true },
     { id: "EFA-INS-011", group: "fire", name: "Monthly Emergency Lighting Test (P)", freq: ["1M",  "12M"], cfg: true },
@@ -382,8 +387,9 @@ window.OEST_PPM = {
   // p zdjęcia ogólne, t zdjęcia do pytań (przy kranie / punkcie). Wysyłka (11:34): do sp mój prywatny (05/11) / sm mój firmowy / se inżyniera / sg managera,
   // format xp PDF / xw Word, one = jeden dokument (false = osobne pliki). Jedno miejsce dla wszystkich inspekcji, pamiętane dla każdej.
   P.needsDefault = function (t) {
-    var folder = t.form === "folder", pts = !!t.flush;
-    return { q: !folder && !t.cfg, p: true, t: pts, f: folder, sp: false, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
+    var folder = t.form === "folder", pts = !!t.flush, F = pts && P.forms && P.forms.flush ? P.forms.flush[t.flush] : null, noSheet = !!(F && F.sheet === false);
+    // noSheet (Spa): lista z apki włączona od razu, zdjęcie formularza niewymagane
+    return { q: (!folder && !t.cfg) || noSheet, p: true, t: pts, f: folder && !noSheet, sp: false, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
   };
   P.needs = function (t) { return Object.assign(P.needsDefault(t), needsAll()[t.id] || {}); };
   P.setNeeds = function (t, patch) {
