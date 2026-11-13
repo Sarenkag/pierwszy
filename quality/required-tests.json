@@ -277,6 +277,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/formularz-ptaszek-ui-check.cjs",
+      "passMarker": "FORMULARZ-PTASZEK PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/moduly-zasady-ui-check.cjs",
       "passMarker": "MODULY ZASADY UI PASS",
       "timeoutSec": 600

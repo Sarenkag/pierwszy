@@ -1129,9 +1129,10 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   var thumbFor = null, noTrack = false;
   // liczniki na klocek (Grzegorz 04/11): zdjęcie formularza (jest / brak), zdjęcia bez formularza, OK / pytania w użyciu (jak licznik w formularzu – N/A się nie liczy)
   function ppmCounts() {
-    var ck = cur.type && cur.type.checks, folder = cur.type && cur.type.folder;
-    return { photos: folder ? photos.filter(function (p) { return p.tap != null; }).length : photos.filter(function (p) { return !p.sheet; }).length,
-      sheet: folder ? formPhotos().length : sheetPhotos().length, issues: ck ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: ck ? ck.length : 0,
+    var ck = cur.type && cur.type.checks;
+    // formularz = tylko zdjęcia z przycisku „Formularz” (Grzegorz 12/11/2026: zdjęcie call pointu z „Zrób zdjęcie” to nie formularz)
+    return { photos: photos.filter(function (p) { return !p.sheet; }).length,
+      sheet: sheetPhotos().length, issues: ck ? (function () { try { return failCount(); } catch (e) { return 0; } })() : 0, total: ck ? ck.length : 0,
       ok: ck ? states.filter(function (x) { return x === "ok"; }).length : 0, used: ck ? states.filter(function (x) { return x !== "na"; }).length : 0 };
   }
   // odcisk całej treści inspekcji (to samo, co idzie do szkicu: pola raportu, odpowiedzi, powody, notatki, krany, pomiary, zdjęcia),
@@ -1475,7 +1476,6 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
 
   // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
   var fl = { on: false, week: 0, open: {}, taps: [] };
-  function formPhotos() { return photos.filter(function (p) { return p.tap == null; }); }
   // zdjęcie wypełnionego formularza (osobny przycisk w inspekcji, Grzegorz 04/11) – w raporcie na końcu, po zdjęciach z inspekcji
   function sheetPhotos() { return photos.filter(function (p) { return p.sheet; }); }
   function tapPhotos(i) { return photos.filter(function (p) { return p.tap === i; }); }
@@ -2082,7 +2082,6 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       grid.appendChild(d);
     });
     var shn = sheetPhotos().length, Z = window.OESTZnacznik, nd = typeof needsNow === "function" ? needsNow() : null, req = !!(nd && nd.f);
-    if (cur.type && cur.type.folder) shn = formPhotos().length; // inspekcja „z kartki”: każde jej zdjęcie to strona formularza
     var fst = shn ? "ok" : req ? "blad" : "";
     $("sheetState").innerHTML = Z && fst ? Z.formularz(fst) : "";
     // wymóg formularza widać na samym przycisku „Formularz” (Grzegorz 04/11) – bez dodatkowego okna, układ ten sam w każdej inspekcji
@@ -2091,7 +2090,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     fbd.innerHTML = Z && fst ? Z.formularz(fst) : ""; fb.classList.toggle("req", fst === "blad");
     $("sheetInfo").textContent = shn ? T("Dodane: ", "Added: ") + shn + T(" — w raporcie na końcu.", " — at the end of the report.") : T("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
-    var fp = cur.type && cur.type.folder ? formPhotos().length : photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
+    var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").innerHTML) renderSugs();
     updateFormHint(); scheduleDraft();
@@ -2286,7 +2285,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // (rozmiar, jakość, stempel); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
   var finalCache = typeof WeakMap === "function" ? new WeakMap() : null;
   function finalOpts(p, d) {
-    var general = !p.sheet && p.tap == null && !p.code, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
+    var general = !p.sheet && p.tap == null && !p.code && !p.small, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
     var px = p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink), q = p.sheet ? SHEET_Q : rs.q;
     var stamp = cfg.stamp ? fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
     return { px: px, q: q, stamp: stamp, key: px + "|" + q + "|" + stamp };
@@ -2362,15 +2361,15 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     }
     if (cur.type && cur.type.flush && fl.on) {
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
-      var pts = !!cur.type.flush.points, fpn = formPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
+      var pts = !!cur.type.flush.points, fpn = sheetPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
       $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? T("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
         (pts ? T("Przyciski: ", "Call points: ") : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
       $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
     }
     if (cur.type && cur.type.folder) {
-      var none = !formPhotos().length;
-      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? T("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : T("Zdjęć: ", "Photos: ") + formPhotos().length + T(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
+      var none = !sheetPhotos().length;
+      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? T("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : T("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + T(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? T("Dodaj zdjęcie formularza", "Add form photo") : T("Wyślij · ", "Send · ") + fmtDate(reportDate());
@@ -2722,19 +2721,36 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, M + (i % 2) * (HH + M) + (HH - ih) / 2, iw, ih);
     });
   }
-  function addFull(pdf, pics, first) {
-    var M = 6, PW = 210 - 2 * M, PH = 297 - 2 * M;
+  // land: poziome zdjęcie formularza na poziomej stronie (inspekcje z kartki, Grzegorz 12/11/2026); pierwsza strona
+  // dokumentu ma już właściwą orientację (buildPhotoPdf)
+  function addFull(pdf, pics, first, land) {
+    var M = 6;
     pics.forEach(function (p, i) {
-      if (i || !first) pdf.addPage("a4", "p");
+      var l = !!land && p.width > p.height, W = l ? 297 : 210, H = l ? 210 : 297, PW = W - 2 * M, PH = H - 2 * M;
+      if (i || !first) pdf.addPage("a4", l ? "l" : "p");
       var iw = PW, ih = iw * p.height / p.width;
       if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, (297 - ih) / 2, iw, ih);
+      pdf.addImage(p.bytes, "JPEG", (W - iw) / 2, (H - ih) / 2, iw, ih);
     });
+  }
+  // małe zdjęcia (inspekcje z kartki, np. Fire Test – Grzegorz 12/11/2026): 4 w rzędzie, rząd wyśrodkowany, od górnego
+  // marginesu, 3 rzędy na stronę; ten sam układ w Wordzie (photoDocx)
+  var SMALL = { cols: 4, rows: 3, M: 6, gap: 3 };
+  function addSmall(pdf, pics, first) {
+    var cw = (210 - 2 * SMALL.M - (SMALL.cols - 1) * SMALL.gap) / SMALL.cols, ch = cw * 4 / 3, y = SMALL.M;
+    for (var a = 0; a < pics.length; a += SMALL.cols) {
+      var row = pics.slice(a, a + SMALL.cols), r = a / SMALL.cols;
+      if (r % SMALL.rows === 0) { if (a || !first) pdf.addPage("a4", "p"); y = SMALL.M; }
+      var sz = row.map(function (p) { var iw = cw, ih = iw * p.height / p.width; if (ih > ch) { ih = ch; iw = ih * p.width / p.height; } return [iw, ih]; });
+      var tw = sz.reduce(function (t, z) { return t + z[0]; }, 0) + (row.length - 1) * SMALL.gap, x = (210 - tw) / 2, rh = 0;
+      row.forEach(function (p, k) { pdf.addImage(p.bytes, "JPEG", x, y, sz[k][0], sz[k][1]); x += sz[k][0] + SMALL.gap; rh = Math.max(rh, sz[k][1]); });
+      y += rh + SMALL.gap;
+    }
   }
   // Word z samych zdjęć (zdjęcia formularza wypełnionego ręcznie): jedno zdjęcie = jedna strona A4, jak buildPhotoPdf —
   // ten sam formularz w Wordzie i w PDF-ie (Grzegorz 04/11)
   var PHOTO_DOCX = null;
-  function photoDocx(pics) {
+  function photoDocx(pics, small) {
     if (!PHOTO_DOCX) {
       var z = new PizZip();
       z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
@@ -2744,13 +2760,44 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       PHOTO_DOCX = z.generate({ type: "uint8array" });
     }
     var out = fillDocx(PizZip, docxtemplater, PHOTO_DOCX, {}, pics), x = out.file("word/document.xml").asText();
-    out.file("word/document.xml", x.replace('<w:r><w:br w:type="page"/></w:r>', "")); // pierwsze zdjęcie bez pustej strony przed nim
+    if (small) x = smallDocxBody(x, pics);
+    else x = x.replace('<w:r><w:br w:type="page"/></w:r>', ""); // pierwsze zdjęcie bez pustej strony przed nim
+    out.file("word/document.xml", x);
     return out.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
-  function buildPhotoPdf(pics) {
-    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4" });
+  // Word inspekcji z kartki (small): ten sam układ co buildPhotoPdf(…, true) – formularz strona po stronie (poziomy na
+  // poziomej stronie: każda kartka to osobna sekcja), potem małe zdjęcia po 4 w wyśrodkowanym rzędzie, 3 rzędy na stronę
+  function smallDocxBody(x, pics) {
+    var TW = 56.7, EMU = 635, pg = { w: 11906, h: 16838 }, M = SMALL.M * TW;
+    var dr = x.match(/<w:r><w:drawing>[\s\S]*?<\/w:drawing><\/w:r>/g) || [];
+    function size(d, cx, cy) { return d.replace(/<wp:extent cx="\d+" cy="\d+"\/>/, '<wp:extent cx="' + cx + '" cy="' + cy + '"/>').replace(/<a:ext cx="\d+" cy="\d+"\/>/, '<a:ext cx="' + cx + '" cy="' + cy + '"/>'); }
+    function fit(p, w, h) { var cw = w, ch = Math.round(w * p.height / p.width); if (ch > h) { ch = h; cw = Math.round(h * p.width / p.height); } return [cw, ch]; }
+    function sect(l) { return '<w:sectPr><w:pgSz w:w="' + (l ? pg.h : pg.w) + '" w:h="' + (l ? pg.w : pg.h) + '"' + (l ? ' w:orient="landscape"' : "") + '/><w:pgMar w:top="' + Math.round(M) + '" w:right="' + Math.round(M) + '" w:bottom="' + Math.round(M) + '" w:left="' + Math.round(M) + '" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>'; }
+    var P0 = '<w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/>', body = "", idx = pics.map(function (p, i) { return i; });
+    var sh = idx.filter(function (i) { return pics[i].sheet; }), gen = idx.filter(function (i) { return !pics[i].sheet; });
+    sh.forEach(function (i, k) {
+      var p = pics[i], l = p.width > p.height, W = (l ? pg.h : pg.w) - 2 * M, H = (l ? pg.w : pg.h) - 2 * M - 300, z = fit(p, W, H);
+      // ostatnia kartka bez małych zdjęć za nią: jej strona to sekcja końcowa dokumentu
+      var last = k === sh.length - 1 && !gen.length;
+      body += "<w:p><w:pPr>" + P0 + (last ? "" : sect(l)) + "</w:pPr>" + size(dr[i] || "", Math.round(z[0] * EMU), Math.round(z[1] * EMU)) + "</w:p>";
+      if (last) body += "§LAST§" + (l ? "L" : "P");
+    });
+    var cw = ((pg.w - 2 * M) - (SMALL.cols - 1) * SMALL.gap * TW) / SMALL.cols, ch = cw * 4 / 3;
+    for (var a = 0; a < gen.length; a += SMALL.cols) {
+      var row = gen.slice(a, a + SMALL.cols), r = a / SMALL.cols, brk = r && r % SMALL.rows === 0;
+      body += "<w:p><w:pPr>" + (brk ? "<w:pageBreakBefore/>" : "") + '<w:spacing w:before="0" w:after="' + Math.round(SMALL.gap * TW) + '" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>' +
+        row.map(function (i, k) { var z = fit(pics[i], cw, ch); return (k ? '<w:r><w:t xml:space="preserve"> </w:t></w:r>' : "") + size(dr[i] || "", Math.round(z[0] * EMU), Math.round(z[1] * EMU)); }).join("") + "</w:p>";
+    }
+    var lm = /§LAST§([LP])$/.exec(body), fin = sect(lm ? lm[1] === "L" : false);
+    body = body.replace(/§LAST§[LP]$/, "");
+    return x.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>" + body + fin + "</w:body>");
+  }
+  // small: inspekcja z kartki (Fire Test itp.) – formularz najpierw, poziomy na poziomej stronie, zdjęcia małe (addSmall)
+  function buildPhotoPdf(pics, small) {
     var sh = pics.filter(function (p) { return p.sheet; }), gen = pics.filter(function (p) { return !p.sheet; });
-    addFull(pdf, sh, true); addHalf(pdf, gen, !sh.length); // formularz na całą stronę, ogólne na pół strony
+    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4", orientation: small && sh[0] && sh[0].width > sh[0].height ? "l" : "p" });
+    addFull(pdf, sh, true, small);
+    if (small) addSmall(pdf, gen, !sh.length); else addHalf(pdf, gen, !sh.length); // formularz na całą stronę, ogólne na pół strony
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   function fillFlushDocx(f) {
@@ -2882,7 +2929,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function buildAll(opt) {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
     if (opt && opt.word) n = Object.assign({}, n, { xw: true }); // Update: Word do archiwum i na Dysk zawsze, niezależnie od ⚙ maila (uwaga Codex #101)
-    var PDF = "application/pdf";
+    var PDF = "application/pdf", small = !!(cur.type.folder && !cur.type.flush); // inspekcja z kartki (Fire Test itp.)
     function file(suffix, mime, bytes) { return { name: name + suffix + (mime === PDF ? ".pdf" : ".docx"), mime: mime, bytes: bytes }; }
     function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
     function done(r, form) { // form: { pdf: fn(pics) → bajty raportu (z wybranymi zdjęciami), docx: bajty Worda | null }
@@ -2891,15 +2938,15 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       if (n.one) { // jeden dokument: raport → zdjęcia formularza → zdjęcia (Word nie scala zdjęć: idzie obok, gdy zaznaczony)
         if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); }
         else if (sel.length) files.push(file(" - photos", PDF, photosPdf(sel)));
-        if (!form && n.xw && sel.length) files.push(file("", MIME_DOCX, photoDocx(sh.concat(rest)))); // sam formularz ze zdjęć: ten sam w Wordzie
+        if (!form && n.xw && sel.length) files.push(file("", MIME_DOCX, photoDocx(sh.concat(rest), small))); // sam formularz ze zdjęć: ten sam w Wordzie
         if (word && main) files.push(file("", MIME_DOCX, form.docx));
         if (word && form.basic) files.push(file(main ? " - basic" : "", MIME_DOCX, form.basic(sel))); // Flushing: basic form Smart z listą kranów i zdjęciami
       } else {
         if (wantForm && n.xp) files.push(file(" - report", PDF, form.pdf([])));
         if (word && main) files.push(file(" - report", MIME_DOCX, form.docx));
         if (word && form.basic) files.push(file(main ? " - basic" : " - report", MIME_DOCX, form.basic([])));
-        if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh)));
-        if (sh.length && n.xw) files.push(file(" - form", MIME_DOCX, photoDocx(sh)));
+        if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh, small)));
+        if (sh.length && n.xw) files.push(file(" - form", MIME_DOCX, photoDocx(sh, small)));
         if (rest.length) files.push(file(" - photos", PDF, photosPdf(rest)));
       }
       r.files = files; return r;
@@ -2907,9 +2954,9 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     // plik zdjęć: przy kranach / punktach z ich nazwą (także bez formularza elektronicznego), reszta strona po stronie
     function photosPdf(pics) {
       var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
-      return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })));
+      return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })), small);
     }
-    function fin(ph) { return finalPhoto(cur.type.folder && !cur.type.flush && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { sheet: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
+    function fin(ph) { return finalPhoto(small && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { small: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
       // PDF rysowany z tego samego wypełnionego formularza firmy (QHS-031) – Word = PDF (moduly/word-pdf)
       var docx = fillTempDocx(d), pdf = OESTWordPdf.pdf(docx, { PizZip: PizZip, jsPDF: window.jspdf.jsPDF, czcionka: OESTCzcionkaPdf });
@@ -2918,10 +2965,10 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (cur.type.folder) {
       // Flushing / AOV / zdjęcia kartki: wszystkie zdjęcia z oznaczeniem (kran / formularz / ogólne)
       return mapLimit(photos, 3, fin).then(function (pics) {
-        // stare inspekcje kartkowe: zdjęcie dodane zwykłym aparatem też jest zdjęciem kartki
-        if (!cur.type.flush) pics.forEach(function (p) { if (p.tap == null) p.sheet = true; });
+        // formularz (zdjęcia z przycisku „Formularz”) zawsze pierwszy, zdjęcia za nim – niezależnie od kolejności robienia (Grzegorz 12/11/2026)
+        if (small) pics = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; }));
         if (!d.flush) {
-          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics), pics: pics, info: {}, logoUrl: "" };
+          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics, small), pics: pics, info: {}, logoUrl: "" };
           return done(r0, null);
         }
         d.stan_ogolny = d.stan = d.flush.points ? pointsSummary(d.flush) : OESTFlush.summary(d.flush);
@@ -3193,7 +3240,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || T("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {
-    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !formPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
+    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !sheetPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
   });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });

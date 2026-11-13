@@ -203,7 +203,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
       await pg.evaluate(({ AOV, failSave }) => { const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[AOV] = Object.assign({}, n[AOV] || {}, { xw: false, xp: true }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
         if (failSave) window.OESTZdjecia.save = () => Promise.reject(new Error('brak miejsca')); }, { AOV, failSave });
       const n0 = await qLen();
-      await pg.setInputFiles('#galIn', { name: 'f.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500);
+      await pg.setInputFiles('#shGalIn', { name: 'f.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500); // zdjęcie kartki przyciskiem „Formularz”
       await pg.locator('#toQueue').click(); await waitQ(n0);
       return pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.sort((a, b) => b.created - a.created)[0]); }; }; }));
     };

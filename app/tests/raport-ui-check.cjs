@@ -48,6 +48,8 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
         if (!new RegExp('Wpisano ' + temps + '/' + temps + '\\.').test(hint) || /Poza zakresem/.test(hint)) bad.push(id + ': po wpisaniu ' + temps + ' pomiarów w zakresie formularz pokazuje: ' + hint);
       }
       else if (flush) { const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="0"]')]); await fc.setFiles({ name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
+      // inspekcja z kartki: formularz dodaje się przyciskiem „Formularz” (zwykłe zdjęcie to nie formularz – Grzegorz 12/11/2026)
+      else if ((PPM.find(t => t.id === id) || {}).form === 'folder' && await pg.locator('#shGalIn').count()) { await pg.setInputFiles('#shGalIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
       else if (await pg.locator('#galIn').count()) { await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
       if (await pg.locator('#toQueue').isDisabled()) { const ok = pg.locator('[data-allok], #allOk, button:has-text("Wszystko OK")').first(); if (await ok.count()) await ok.click().catch(() => {}); await pg.waitForTimeout(300); }
       if (await pg.locator('#toQueue').isDisabled()) { bad.push(id + ': Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')'); await ctx.close(); return; }
