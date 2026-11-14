@@ -47,7 +47,7 @@
     BACKUP_NOT_CONFIRMED: ['Nie potwierdzono zapisu kopii.', 'Backup was not confirmed.'],
     SIGNATURE_TRANSPARENCY: ['Wybierz PNG z przezroczystym tłem.', 'Choose a PNG with a transparent background.'],
     SCHEDULE_DUPLICATE: ['Grafik z tą datą już istnieje.', 'A schedule starting on this date already exists.'],
-    SHIFT_MISSING: ['Brak grafiku. Ustaw go w Ustawieniach → Kalendarz i grafik.', 'No shift pattern. Set it in Settings → Calendar & shifts.'],
+    SHIFT_MISSING: ['Brak grafiku. Ustaw go w Ustawieniach → Mój profil → Mój grafik.', 'No shift pattern. Set it in Settings → My Profile → My shifts.'],
     SHIFT_OVERLAP: ['Zmiany nachodzą na siebie.', 'Shifts overlap.'],
     SHIFT_DATE: ['Nieprawidłowa data zmiany.', 'Invalid shift date.'],
     SHIFT_ARCHIVED: ['Ta zmiana jest już zarchiwizowana.', 'This shift is already archived.'],

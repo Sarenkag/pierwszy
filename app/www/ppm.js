@@ -1,5 +1,6 @@
 // Lista PPM One Eastside (78 zadań Vantify, 70 kart): 27 inspekcji EFA-INS + rozdzielnice i izolatory + 5 in-house + podwykonawcy (Sub).
-// freq: "1W", "3M" itd.; kilka częstotliwości (np. 1M + 12M) — termin liczy się z najkrótszej.
+// freq: "1W", "3M" itd. Karta ze zleceniami Vantify: termin TYLKO z pliku Vantify, częstotliwość tylko do opisu (PROD-010).
+// Karta bez zleceń Vantify: kilka częstotliwości (np. 1M + 12M) — następny termin z najkrótszej.
 // open: karta otwiera istniejący rodzaj inspekcji z listą urządzeń (db, iso).
 window.OEST_PPM = {
   groups: [
@@ -264,7 +265,7 @@ window.OEST_PPM = {
     while (i < j.length && j[i].due < td) i++;
     if (i > 0 && !doneFor(id, j[i - 1].due)) return j[i - 1].due;
     for (; i < j.length; i++) if (!doneFor(id, j[i].due)) return j[i].due;
-    return ""; // wszystkie zlecenia z pliku zrobione – dalej termin z apki (częstotliwość)
+    return ""; // wszystkie zlecenia z pliku zrobione – brak terminu (P.due → null), apka nie tworzy kolejnej daty (PROD-010)
   }
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { LS.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
