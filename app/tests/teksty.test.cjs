@@ -88,3 +88,12 @@ test('moduł wybiera język i wstawia wartości', () => {
   assert.strictEqual(bledy.wJezyku('pl', () => bledy.tx('ekran-glowny.do-zrobienia', { n: 2 }, 'en')), '2 to do');
   assert.strictEqual(bledy.wJezyku('en', () => bledy.tx('ekran-glowny.do-zrobienia', { n: 2 }, 'pl')), '2 do zrobienia');
 });
+
+// Przegląd 12/11/2026 pkt 3: grafik jest w Mój profil → Mój grafik (settings-ui.js), nie w „Kalendarz i grafik”
+test('komunikat o braku grafiku kieruje do Mój profil → Mój grafik', () => {
+  const pl = bledy.wJezyku('pl', () => bledy.text(new Error('SHIFT_MISSING')));
+  const en = bledy.wJezyku('en', () => bledy.text(new Error('SHIFT_MISSING')));
+  assert.match(pl, /Mój profil → Mój grafik/);
+  assert.match(en, /My Profile → My shifts/);
+  assert.doesNotMatch(pl + en, /Kalendarz i grafik|Calendar & shifts/);
+});
