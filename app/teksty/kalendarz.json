@@ -4,8 +4,8 @@
   "teksty": [
     {
       "id": "wybierz-swoj-kalendarz-google-z",
-      "pl": "Wybierz swój kalendarz Google z telefonu, np. „Smart Managed Solutions”. Apka dodaje tam tylko swoje wpisy i nigdy nie zmienia Twoich.",
-      "en": "Choose your own Google calendar from the phone, e.g. “Smart Managed Solutions”. The app adds only its own entries and never changes yours."
+      "pl": "Wybierz kalendarz na terminy inspekcji, np. „OEST Inspekcje”. Apka dodaje tam tylko swoje wpisy i nigdy nie zmienia Twoich. Przy zmianie kalendarza wpisy apki znikają ze starego.",
+      "en": "Choose a calendar for inspection dates, e.g. “OEST Inspekcje”. The app adds only its own entries and never changes yours. When you switch calendars, the app’s entries are removed from the old one."
     },
     {
       "id": "synchronizacja",
@@ -196,6 +196,56 @@
       "id": "synchronizacja-wylaczona",
       "pl": "Synchronizacja wyłączona.",
       "en": "Sync disabled."
+    },
+    {
+      "id": "inspekcje-naglowek",
+      "pl": "Inspekcje PPM · Google Calendar",
+      "en": "PPM inspections · Google Calendar"
+    },
+    {
+      "id": "grafik-naglowek",
+      "pl": "Grafik zmian · SMART WORK",
+      "en": "Shifts · SMART WORK"
+    },
+    {
+      "id": "grafik-opis",
+      "pl": "Dni pracy apka bierze z wpisów „SMART WORK” w tym kalendarzu, np. „Smart Managed Solutions”. Zmiana grafiku w apce zmienia też ten kalendarz (po potwierdzeniu).",
+      "en": "The app takes workdays from “SMART WORK” entries in this calendar, e.g. “Smart Managed Solutions”. Changing shifts in the app also changes this calendar (after you confirm)."
+    },
+    {
+      "id": "grafik-kalendarz",
+      "pl": "Kalendarz grafiku:",
+      "en": "Shift calendar:"
+    },
+    {
+      "id": "grafik-nie-wybrano",
+      "pl": "nie wybrano",
+      "en": "not chosen"
+    },
+    {
+      "id": "grafik-wybierz",
+      "pl": "Wybierz kalendarz grafiku",
+      "en": "Choose shift calendar"
+    },
+    {
+      "id": "grafik-uzywaj",
+      "pl": "Używaj tego kalendarza do grafiku",
+      "en": "Use this calendar for shifts"
+    },
+    {
+      "id": "grafik-odczytaj",
+      "pl": "Odczytaj grafik teraz",
+      "en": "Read shifts now"
+    },
+    {
+      "id": "grafik-odczytano",
+      "pl": "Odczytano {n} dni pracy (SMART WORK).",
+      "en": "Read {n} workdays (SMART WORK)."
+    },
+    {
+      "id": "grafik-brak-kalendarza",
+      "pl": "Brak własnego kalendarza Google w telefonie.",
+      "en": "No owned Google calendar on this phone."
     }
   ]
 }

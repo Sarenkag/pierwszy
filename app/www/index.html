@@ -651,6 +651,8 @@ input[type=text], input[type=email], input[type=date], select {
   // dynamicznie (Grzegorz 02/11): lista i kalendarz odświeżają się same po powrocie z inspekcji, wysłaniu i zmianie etapu/terminu
   function liveRefresh() { if (!$("v-ppm").hidden) renderPpm(); if (!$("v-cal").hidden) renderCal(); }
   ["oest:ppm-stage", "oest:ppm-due-changed", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, liveRefresh); });
+  // grafik odczytany z kalendarza Google („SMART WORK”) → odśwież zaznaczenie dni pracy
+  window.addEventListener("oest:shifts-changed", function () { liveRefresh(); if ($("v-home") && !$("v-home").hidden) renderHome(); });
   window.addEventListener("storage", function (e) { if (!e.key || /^oest\.ppm\./.test(e.key)) liveRefresh(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) liveRefresh(); });
   $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
@@ -668,9 +670,10 @@ input[type=text], input[type=email], input[type=date], select {
   calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
   function calShift(iso) {
     try {
-      var ss = window.OESTSettings.get().schedules.filter(function (s) { return s.effectiveFrom <= iso; }).sort(function (a, b) { return a.effectiveFrom < b.effectiveFrom ? 1 : -1; });
-      if (!ss.length) return false;
-      return window.OESTCalendarCore.isWorkday(iso, function () { return ss[0]; });
+      // jedno źródło: Ustawienia (kalendarz Google „SMART WORK”, zapasowo wersje grafiku)
+      var sc = window.OESTSettings.scheduleOn(iso);
+      if (!sc) return false;
+      return window.OESTCalendarCore.isWorkday(iso, function () { return sc; });
     } catch (e) { return false; }
   }
   // Dzień → lista {t, job, plan} (P.occurrences: zlecenia Vantify, bieżący termin, dalej planowane)
@@ -699,7 +702,7 @@ input[type=text], input[type=email], input[type=date], select {
       return window.OESTKlocek.inspekcja({ id: t.id, data: { day: calSel }, color: g.color, name: P.short(t).name, status: tryb, loc: k.loc.code, freq: e.job ? (P.jobFor(t, calSel) || {}).f || k.freq : k.freq, form: cur ? k.form : (k.nd.f ? "blad" : "brak"),
         due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: T("Otwórz", "Open"), plan: e.plan, glow: tryb === "gotowa" });
     }).join("") : '<p class="hint">' + T("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
-    var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0; } catch (e2) {}
+    var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0 || !!window.OESTSettings.scheduleOn(P.iso(new Date())); } catch (e2) {}
     $("calNoShift").hidden = hasShift;
   }
   document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });

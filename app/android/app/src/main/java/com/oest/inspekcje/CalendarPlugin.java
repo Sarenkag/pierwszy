@@ -10,6 +10,8 @@ import android.database.Cursor;
 import android.provider.CalendarContract;
 import android.provider.CalendarContract.Calendars;
 import android.provider.CalendarContract.Events;
+import android.provider.CalendarContract.Instances;
+import android.net.Uri;
 import android.util.Base64;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -32,7 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.json.JSONObject;
 
-/** Calendar Provider only. Never creates a Google calendar or reads the user's shift events. */
+/** Calendar Provider only. Never creates a Google calendar. Shift events ("SMART WORK") in the bound calendar are read, and replaced only after the user's explicit confirmation (owner decision 14/11/2026). */
 @CapacitorPlugin(name="OESTCalendar",permissions={@Permission(alias="calendar",strings={Manifest.permission.READ_CALENDAR,Manifest.permission.WRITE_CALENDAR})})
 public class CalendarPlugin extends Plugin {
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
@@ -64,4 +66,23 @@ public class CalendarPlugin extends Plugin {
     @PluginMethod public void removeOwnedEvents(PluginCall call){run(call,()->{String scope=scope(call);long id=bound(call,scope);JSArray rows=owned(id,scope);ArrayList<ContentProviderOperation> batch=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);batch.add(ContentProviderOperation.newDelete(Events.CONTENT_URI).withSelection(Events._ID+"=? AND "+Events.CALENDAR_ID+"=? AND "+Events.DESCRIPTION+"=?",new String[]{row.getString("eventId"),Long.toString(id),row.getString("expectedDescription")}).withExpectedCount(1).build());}if(!batch.isEmpty())getContext().getContentResolver().applyBatch(CalendarContract.AUTHORITY,batch);JSObject o=new JSObject();o.put("removed",batch.size());return o;});}
     @PluginMethod public void openCalendar(PluginCall call){getActivity().runOnUiThread(()->{try{Intent i=new Intent(Intent.ACTION_VIEW,ContentUris.withAppendedId(CalendarContract.CONTENT_URI.buildUpon().appendPath("time").build(),System.currentTimeMillis()));getActivity().startActivity(i);call.resolve();}catch(Exception e){call.reject("CALENDAR_APP_UNAVAILABLE");}});}
     @Override protected void handleOnDestroy(){worker.shutdown();super.handleOnDestroy();}
+
+    // ---- Grafik z kalendarza Google (Grzegorz 14/11/2026) ----
+    private SimpleDateFormat localStamp(){SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm",Locale.ROOT);f.setTimeZone(TimeZone.getDefault());f.setLenient(false);return f;}
+    private long localDay(String date) throws Exception {if(date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}"))throw new IllegalArgumentException("CALENDAR_DATE");SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd",Locale.ROOT);f.setTimeZone(TimeZone.getDefault());f.setLenient(false);Date d=f.parse(date);if(d==null||!f.format(d).equals(date))throw new IllegalArgumentException("CALENDAR_DATE");return d.getTime();}
+    private String shiftTitle(PluginCall call){String t=call.getString("title","").trim();if(t.isEmpty()||t.length()>100)throw new IllegalArgumentException("CALENDAR_SHIFT_TITLE");return t;}
+    private boolean hasInstanceFrom(long eventId,long from){Uri.Builder b=Instances.CONTENT_URI.buildUpon();ContentUris.appendId(b,from);ContentUris.appendId(b,from+5L*366L*86400000L);try(Cursor c=getContext().getContentResolver().query(b.build(),new String[]{Instances._ID},Instances.EVENT_ID+"=?",new String[]{Long.toString(eventId)},null)){return c!=null&&c.moveToFirst();}}
+    private String until(String rrule,long from){StringBuilder out=new StringBuilder();for(String part:rrule.split(";")){String p=part.trim();if(p.isEmpty()||p.toUpperCase(Locale.ROOT).startsWith("UNTIL=")||p.toUpperCase(Locale.ROOT).startsWith("COUNT="))continue;if(out.length()>0)out.append(';');out.append(p);}SimpleDateFormat u=new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'",Locale.ROOT);u.setTimeZone(TimeZone.getTimeZone("UTC"));return out+";UNTIL="+u.format(new Date(from-1000L));}
+    @PluginMethod public void readShifts(PluginCall call){run(call,()->{String scope=scope(call);long id=bound(call,scope);String title=shiftTitle(call);long from=localDay(call.getString("from","")),to=localDay(call.getString("to",""))+86400000L;if(to<=from||to-from>800L*86400000L)throw new IllegalArgumentException("CALENDAR_RANGE");Uri.Builder b=Instances.CONTENT_URI.buildUpon();ContentUris.appendId(b,from);ContentUris.appendId(b,to);SimpleDateFormat f=localStamp();JSArray rows=new JSArray();
+        try(Cursor c=getContext().getContentResolver().query(b.build(),new String[]{Instances.EVENT_ID,Instances.BEGIN,Instances.END,Instances.TITLE,Instances.ALL_DAY},Instances.CALENDAR_ID+"=? AND "+Events.DELETED+"=0",new String[]{Long.toString(id)},Instances.BEGIN)){if(c==null)throw new IllegalStateException("CALENDAR_READ_FAILED");while(c.moveToNext()){String t=c.getString(3);if(c.getInt(4)!=0||t==null||!t.trim().equalsIgnoreCase(title))continue;JSObject o=new JSObject();o.put("eventId",Long.toString(c.getLong(0)));o.put("start",f.format(new Date(c.getLong(1))));o.put("end",f.format(new Date(c.getLong(2))));rows.put(o);}}
+        JSObject o=new JSObject();o.put("instances",rows);return o;});}
+    /** Od dnia "from": wpisy o tym tytule kończą się dzień wcześniej (seria) albo są usuwane (zaczynają się od "from"), potem jedna nowa seria. Jedna paczka zmian. */
+    @PluginMethod public void replaceShifts(PluginCall call){run(call,()->{if(!Boolean.TRUE.equals(call.getBoolean("confirmed",false)))throw new IllegalStateException("CALENDAR_SHIFT_CONFIRMATION");String scope=scope(call);long id=bound(call,scope);String title=shiftTitle(call);long from=localDay(call.getString("from",""));String start=call.getString("start",""),duration=call.getString("duration",""),rrule=call.getString("rrule","");
+        if(!start.matches("\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d")||!duration.matches("P(\\d{1,2}D)?(T\\d{1,4}M)?")||duration.equals("P")||!rrule.matches("FREQ=DAILY;INTERVAL=8|FREQ=WEEKLY;BYDAY=(MO,TU,WE,TH,FR|SA,SU)"))throw new IllegalArgumentException("CALENDAR_SHIFT_INVALID");Date parsed=localStamp().parse(start);if(parsed==null||parsed.getTime()<from)throw new IllegalArgumentException("CALENDAR_SHIFT_INVALID");
+        ArrayList<ContentProviderOperation> batch=new ArrayList<>();int removed=0,trimmed=0;
+        try(Cursor c=getContext().getContentResolver().query(Events.CONTENT_URI,new String[]{Events._ID,Events.DTSTART,Events.RRULE,Events.TITLE,Events.ALL_DAY},Events.CALENDAR_ID+"=? AND "+Events.DELETED+"=0",new String[]{Long.toString(id)},null)){if(c==null)throw new IllegalStateException("CALENDAR_READ_FAILED");while(c.moveToNext()){String t=c.getString(3);if(c.getInt(4)!=0||t==null||!t.trim().equalsIgnoreCase(title))continue;long eid=c.getLong(0),st=c.getLong(1);String rr=c.getString(2);String sel=Events._ID+"=? AND "+Events.CALENDAR_ID+"=?";String[] args={Long.toString(eid),Long.toString(id)};
+            if(st>=from){batch.add(ContentProviderOperation.newDelete(Events.CONTENT_URI).withSelection(sel,args).withExpectedCount(1).build());removed++;}
+            else if(rr!=null&&!rr.trim().isEmpty()&&hasInstanceFrom(eid,from)){ContentValues v=new ContentValues();v.put(Events.RRULE,until(rr,from));batch.add(ContentProviderOperation.newUpdate(Events.CONTENT_URI).withValues(v).withSelection(sel,args).withExpectedCount(1).build());trimmed++;}}}
+        ContentValues v=new ContentValues();v.put(Events.CALENDAR_ID,id);v.put(Events.TITLE,title);v.put(Events.DTSTART,parsed.getTime());v.put(Events.DURATION,duration);v.put(Events.RRULE,rrule);v.put(Events.ALL_DAY,0);v.put(Events.EVENT_TIMEZONE,TimeZone.getDefault().getID());v.put(Events.AVAILABILITY,Events.AVAILABILITY_BUSY);batch.add(ContentProviderOperation.newInsert(Events.CONTENT_URI).withValues(v).build());
+        ContentProviderResult[] results=getContext().getContentResolver().applyBatch(CalendarContract.AUTHORITY,batch);if(results.length!=batch.size())throw new IllegalStateException("CALENDAR_WRITE_UNCONFIRMED");JSObject o=new JSObject();o.put("removed",removed);o.put("trimmed",trimmed);o.put("inserted",1);return o;});}
 }

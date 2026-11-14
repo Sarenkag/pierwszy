@@ -20,7 +20,7 @@
       profile:{first:account.first || '',last:account.last || '',title:'',position:'',workplace:'',companyEmail:'',privateEmail:'',formSignature:'',photo:'',signatureImage:'',language:'pl'},
       schedules:[],contacts:[],contactsLabel:{id:'',name:'',lastImportedAt:''},
       mail:{managerId:'',engineerId:''},drive:{folderId:'',folderName:'',lastBackupAt:''},
-      calendar:{calendarId:'',name:'',exportShifts:false,exportInspections:true,enabled:false,nativeCalendarId:'',accountName:'',weeks:8,workdayMode:'all',groups:['fire','water','elec','mech','sub'],shiftMarkers:false},
+      calendar:{calendarId:'',name:'',exportShifts:false,exportInspections:true,enabled:false,nativeCalendarId:'',accountName:'',weeks:8,workdayMode:'all',groups:['fire','water','elec','mech','sub'],shiftMarkers:false,shiftCalendarId:'',shiftCalendarName:''},
       sync:{preferWifi:true,mobile:'manual',warnMB:null,maxConcurrent:1},
       reports:{language:'en',compression:'readable',photosPerPage:10,formats:['docx','pdf']},
       inspection:{startMode:'empty'},ai:{location:'phone',provider:'local',visionModel:'',textModel:'',cloudModel:'',ocrEnabled:true,autoAnalyzePhotos:true,maxConcurrent:1,autoCloudFallback:false},appearance:{language:'pl',theme:'graphite',accent:'default',density:'comfortable',reduceMotion:false},legacyProfile:{}};
@@ -52,6 +52,7 @@
     if(s.ai.location!=='phone'||s.ai.autoCloudFallback!==false||s.ai.maxConcurrent!==1||['local','openai','anthropic','gemini'].indexOf(s.ai.provider)<0||typeof s.ai.ocrEnabled!=='boolean'||typeof s.ai.autoAnalyzePhotos!=='boolean')fail('AI_POLICY');
     ['visionModel','textModel','cloudModel'].forEach(function(k){if(typeof s.ai[k]!=='string'||s.ai[k].length>200)fail('AI_MODEL');});
     if(typeof s.calendar.exportShifts!=='boolean'||typeof s.calendar.exportInspections!=='boolean') fail('CALENDAR_POLICY');
+    if(typeof s.calendar.shiftCalendarId!=='string'||typeof s.calendar.shiftCalendarName!=='string') fail('CALENDAR_POLICY');
     if(typeof s.calendar.enabled!=='boolean'||typeof s.calendar.shiftMarkers!=='boolean'||typeof s.calendar.nativeCalendarId!=='string'||typeof s.calendar.accountName!=='string'||!Number.isInteger(s.calendar.weeks)||s.calendar.weeks<1||s.calendar.weeks>52||!['all','skip','next'].includes(s.calendar.workdayMode)||!Array.isArray(s.calendar.groups)||s.calendar.groups.some(g=>!['fire','water','elec','mech','sub'].includes(g))) fail('CALENDAR_POLICY');
     if(s.drive.folderId && !/^[a-zA-Z0-9_-]+$/.test(s.drive.folderId)) fail('FOLDER_ID');
     if(!Array.isArray(s.schedules)||!Array.isArray(s.contacts)) fail('SETTINGS_SCHEMA');
@@ -108,7 +109,18 @@
       if(opts.changed)opts.changed(copy(s));return {state:copy(s),bridgeError:bridgeError};
     }
     function addSchedule(x){return update(function(s){s.schedules.push(copy(x));s.schedules.sort(function(a,b){return a.effectiveFrom.localeCompare(b.effectiveFrom);});});}
-    function scheduleOn(day){return get().schedules.filter(function(x){return x.effectiveFrom<=day;}).at(-1)||null;}
+    /* Grafik z kalendarza Google (Grzegorz 14/11/2026): jedno źródło = wpisy „SMART WORK” z kalendarza grafiku (calendar.shiftCalendarId, np. „Smart Managed Solutions”).
+       Inspekcje PPM idą do osobnego kalendarza (calendar.nativeCalendarId, np. „OEST Inspekcje”).
+       Wersje grafiku poniżej to tylko zapas, gdy kalendarz nie jest połączony albo nie obejmuje danego dnia. */
+    function shiftKey(id){return 'oest.shifts.calendar.v1.'+encodeURIComponent(id);}
+    function calendarShifts(){var c;try{c=read(shiftKey(identity().id),null);}catch(_){return null;}return c&&c.days&&typeof c.days==='object'&&date(c.from)&&date(c.to)?c:null;}
+    function setCalendarShifts(c){if(!c||!date(c.from)||!date(c.to)||!c.days||typeof c.days!=='object')fail('CALENDAR_SHIFTS');write(shiftKey(identity().id),c);}
+    function step(d,n){return new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);}
+    function fromCalendar(day,s){var c=calendarShifts();if(!c||!s.calendar.shiftCalendarId||c.calendarId!==s.calendar.shiftCalendarId||day<c.from||day>c.to)return null;var x=c.days[day],r={kind:'calendar',effectiveFrom:day,anchor:day,work:!!x,start:x?x.start:'',end:x?x.end:'',endNextDay:!!(x&&x.endNextDay)},a,b;
+      if(x){a=day;b=day;while(step(a,-1)>=c.from&&c.days[step(a,-1)])a=step(a,-1);while(c.days[step(b,1)])b=step(b,1);r.blockStart=a;r.blockEnd=b;}
+      else{a=step(day,1);while(a<=c.to&&!c.days[a])a=step(a,1);if(a<=c.to){b=a;while(c.days[step(b,1)])b=step(b,1);r.blockStart=a;r.blockEnd=b;}}
+      return r;}
+    function scheduleOn(day){var s=get();return fromCalendar(day,s)||s.schedules.filter(function(x){return x.effectiveFrom<=day;}).at(-1)||null;}
     function importContacts(labelId,contacts){return update(function(s){
       var previous=s.contacts;
       previous.forEach(function(c){if(c.labelId && (c.labelId===labelId || c.labelId===s.contactsLabel.id))c.active=false;}); // wpisy ręczne (bez etykiety) zostają
@@ -138,7 +150,7 @@
     }
     function previewRestore(b){var s=checkBackup(b);return {profileName:[s.profile.first,s.profile.last].filter(Boolean).join(' '),contacts:s.contacts.length,schedules:s.schedules.length,exportedAt:b.exportedAt};}
     function restore(b,confirmed){if(confirmed!==true)fail('RESTORE_CONFIRM');var incoming=checkBackup(b);return update(function(s){var legacy=s.legacyProfile;Object.assign(s,incoming);s.legacyProfile=legacy;});}
-    return {get:get,update:update,addSchedule:addSchedule,scheduleOn:scheduleOn,importContacts:importContacts,people:people,addEntry:addEntry,removeEntry:removeEntry,recipients:recipients,exportBackup:exportBackup,previewRestore:previewRestore,restore:restore,
+    return {get:get,update:update,addSchedule:addSchedule,scheduleOn:scheduleOn,calendarShifts:calendarShifts,setCalendarShifts:setCalendarShifts,importContacts:importContacts,people:people,addEntry:addEntry,removeEntry:removeEntry,recipients:recipients,exportBackup:exportBackup,previewRestore:previewRestore,restore:restore,
       syncLegacy:function(){bridge(get());},
       // Grzegorz 08/11/2026: język z profilu = domyślny. Przełącznik PL/EN u góry zmienia tylko bieżącą sesję; start apki wraca do profilu.
       startLanguage:function(){var s=get();if(s.appearance.language!==s.profile.language||s.appearance.density!=='comfortable'||s.appearance.reduceMotion!==false)update(function(x){x.appearance.language=x.profile.language;x.appearance.density='comfortable';x.appearance.reduceMotion=false;});},validate:validate};
