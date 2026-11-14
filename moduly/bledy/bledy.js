@@ -63,6 +63,10 @@
     CALENDAR_DISABLE_FIRST: ['Najpierw wyłącz synchronizację kalendarza.', 'Turn off calendar sync first.'],
     CALENDAR_ACCOUNT_CHANGED: ['Zmieniło się konto. Kalendarz nie został zmieniony.', 'The account changed. Calendar was not changed.'],
     CALENDAR_CONFIG_CHANGED: ['Ustawienia kalendarza zmieniły się w trakcie. Spróbuj ponownie.', 'Calendar settings changed meanwhile. Try again.'],
+    CALENDAR_SHIFTS: ['Nie udało się odczytać grafiku (SMART WORK) z kalendarza.', 'Could not read shifts (SMART WORK) from the calendar.'],
+    CALENDAR_SHIFT_INVALID: ['Tego grafiku nie da się zapisać w kalendarzu – sprawdź daty i godziny.', 'This schedule cannot be saved to the calendar – check dates and times.'],
+    CALENDAR_SHIFT_CONFIRMATION: ['Zmiana w kalendarzu Google wymaga potwierdzenia.', 'A Google Calendar change needs your confirmation.'],
+    CALENDAR_NOT_ENABLED: ['Najpierw wybierz kalendarz Google w Ustawieniach.', 'Choose your Google calendar in Settings first.'],
     // zdjęcia / aparat / nagrania
     IMAGE_INVALID: ['To nie jest prawidłowe zdjęcie.', 'This is not a valid image.'],
     IMAGE_TOO_LARGE: ['Zdjęcie jest za duże.', 'The image is too large.'],
