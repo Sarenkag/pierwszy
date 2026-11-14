@@ -33,7 +33,7 @@
 | Moduł | Integracja | Przenośność / uwagi |
 |---|---|---|
 | `moduly/wiedza` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL / kandydat REUSABLE |
-| `moduly/odczyt` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL / kandydat REUSABLE |
+| `moduly/odczyt` | INTEGRATED (14/11/2026: jedyne wywołanie OCR telefonu; Klucze i Power trace przez `OESTOdczyt.tekst`) | INTERNAL / kandydat REUSABLE |
 | `moduly/naglowek` | IMPLEMENTED, bez potwierdzonego użycia w aplikacji | INTERNAL; zamierzony komponent |
 | `moduly/wysylka` | INTEGRATED | INTERNAL; zależy m.in. od `OEST_PPM.markSent` oraz danych inspekcji |
 | pozostałe moduły | stan ustalany z analizy kodu i testów | INTERNAL, dopóki nie zaliczą REUSE-004 |

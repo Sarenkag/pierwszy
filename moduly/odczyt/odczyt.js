@@ -21,9 +21,17 @@
     return { text: lines.join('\n'), lines: lines, numbers: numbers };
   }
   function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
+  // jedyne miejsce w apce, które woła OCR telefonu (wtyczka OESTKeys.recognize) – Klucze, Power trace i pick()/read()
+  function ocr(b64) { return w.Capacitor.Plugins.OESTKeys.recognize({ base64: b64 }); }
+  /* tekst(canvas) – surowy tekst OCR z gotowego obrazu (bez zmiany rozmiaru i bez porządkowania linii), tak jak
+     dotąd w Kluczach i Power trace; błąd wtyczki przechodzi bez zmian (ekran pokazuje go przez OESTBledy). */
+  function tekst(canvas) {
+    return Promise.resolve().then(function () { return ocr(canvas.toDataURL('image/jpeg', 0.9).split(',')[1]); })
+      .then(function (r) { return (r && r.text) || ''; });
+  }
   function read(blob) {
     if (!available()) return Promise.reject(Error(T('Odczyt tekstu działa w apce na telefonie.', 'Text reading works in the phone app.')));
-    return prepare(blob).then(function (b64) { return w.Capacitor.Plugins.OESTKeys.recognize({ base64: b64 }); })
+    return prepare(blob).then(ocr)
       .then(function (r) { return parse(r && r.text); }, function (e) { throw Error(T('Nie udało się odczytać: ', 'Could not read: ') + (e && e.message || e)); });
   }
   var css = false;
@@ -73,5 +81,5 @@
     });
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  w.OESTOdczyt = { available: available, read: read, parse: parse, pick: pick, numberOf: numberOf };
+  w.OESTOdczyt = { available: available, tekst: tekst, read: read, parse: parse, pick: pick, numberOf: numberOf };
 })(window);
