@@ -9,3 +9,12 @@ test('odczyt: plus usunięty z liczby',()=>{assert.equal(w.OESTOdczyt.numberOf('
 test('odczyt: minus unicode',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('−3.0 °C').numbers),['-3.0 °C']);assert.equal(w.OESTOdczyt.numberOf('−3.0 °C'),'-3.0');assert.equal(w.OESTOdczyt.numberOf('–2,5'),'-2.5');});
 test('odczyt: notacja naukowa nie daje wykładnika',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('1.2e-3 A').numbers),[]);assert.equal(w.OESTOdczyt.numberOf('1.2e-3 A'),null);assert.equal(w.OESTOdczyt.numberOf('5E+2'),null);assert.equal(w.OESTOdczyt.numberOf('Zone A -3'),'-3');});
 test('odczyt: znak po literze nie gubi minusa',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('T-3.0 °C').numbers),[]);assert.equal(w.OESTOdczyt.numberOf('T-3.0 °C'),null);assert.equal(w.OESTOdczyt.numberOf('T -3.0 °C'),'-3.0');});
+// 14/11/2026 (przegląd pkt 7): Klucze i Power trace czytają przez OESTOdczyt.tekst – ten sam obraz i surowy tekst co wcześniej
+test('odczyt: tekst(canvas) wysyła obraz bez zmian i oddaje surowy tekst, błąd wtyczki przechodzi bez zmian',async()=>{
+  const sent=[],plug={recognize:o=>{sent.push(o);return Promise.resolve({text:'L1 Lights\nL1 Lights\n12 SPARE'});}},w2={Capacitor:{isNativePlatform:()=>true,Plugins:{OESTKeys:plug}}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/odczyt/odczyt.js'),'utf8'),{window:w2});
+  const canvas={toDataURL:(t,q)=>{assert.equal(t,'image/jpeg');assert.equal(q,0.9);return 'data:image/jpeg;base64,QUJD';}};
+  assert.equal(await w2.OESTOdczyt.tekst(canvas),'L1 Lights\nL1 Lights\n12 SPARE');assert.deepEqual(J(sent),[{base64:'QUJD'}]);
+  plug.recognize=()=>Promise.resolve({});assert.equal(await w2.OESTOdczyt.tekst(canvas),'');
+  const err=Error('KEY_OCR');plug.recognize=()=>Promise.reject(err);await assert.rejects(w2.OESTOdczyt.tekst(canvas),e=>e===err);
+});

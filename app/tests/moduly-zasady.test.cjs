@@ -262,6 +262,13 @@ test('M1: każde pole „Zrób zdjęcie” (capture) w apce przechodzi przez OES
   assert.deepEqual(zle, [], zle.join('\n'));
 });
 
+test('M1: OCR telefonu tylko przez moduly/odczyt – wtyczkę recognize woła wyłącznie odczyt.js (Klucze, Power trace)', () => {
+  const zle = ZR.filter(f => f.p !== 'moduly/odczyt/odczyt.js' && /\.recognize\s*\(/.test(f.t)).map(f => f.p);
+  assert.deepEqual(zle, [], 'własny OCR poza moduly/odczyt: ' + zle.join(', '));
+  const uzycia = ZR.filter(f => /OESTOdczyt\.tekst\(/.test(f.t)).map(f => f.p).sort();
+  assert.deepEqual(uzycia, ['app/www/keys.js', 'app/www/powertrace.js']);
+});
+
 test('M2: zgody, tokeny i adresy API usług Google tylko w jednym miejscu (settings-google.js)', () => {
   // logowanie do samej apki (konto: e-mail i profil, ekran startowy index.html) to osobna funkcja – tu tylko dostęp do usług Google
   const wzory = [/OESTGoogleToken/, /googleapis\.com/, /oest\.gsess/, /gmail\/v1/, /gmail\.send|drive\.file|contacts\.readonly/];

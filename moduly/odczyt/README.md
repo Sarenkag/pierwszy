@@ -9,6 +9,8 @@ Czyta tekst i liczby ze zdjęcia – **do ekranu SPA Daily Sampling** (wyświetl
 OESTOdczyt.pick(blob, { targets: [{ label: 'Komentarz', el: textarea }, { label: 'Temp. CWU', el: input }] });
 OESTOdczyt.read(blob).then(r => r.lines /* r.numbers, r.text */);
 ```
+`OESTOdczyt.tekst(canvas)` – surowy tekst z gotowego obrazu (bez zmiany rozmiaru i porządkowania linii); używają go Klucze (numer klucza) i Power trace (OCR → szkic). Nikt poza tym modułem nie woła wtyczki `recognize` (test M1 w `app/tests/moduly-zasady.test.cjs`).
+
 `OESTOdczyt.available()` = apka Android. W przeglądarce przycisk się nie pokazuje.
 
 Strona: `<script src="moduly/odczyt/odczyt.js"></script>` (w inspekcjach `../moduly/odczyt/odczyt.js`).
