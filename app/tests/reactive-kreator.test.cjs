@@ -57,5 +57,6 @@ test('przegląd Codex #147: powierzchnia, własna ciężka pozycja, zakończenie
   assert.match(K.closing(own), /Manual handling procedures followed\.$/);
   assert.equal(K.closing({ type: 'UNBLOCK', items: ['sink'] }, true, true), K.CLOSING, 'firma/tymczasowe: bez „no further issues”');
   const all = { type: 'REPAIR', items: K.GROUPS[0].items.concat(K.GROUPS[1].items).map(i => i.en), where: { building: 'Tower B', level: '5', room: 'Office' } };
+  assert.match(K.request(all), /coat stand, mirror, blinds, curtain rail and picture at Office/, 'opis zlecenia: pełna lista');
   const sm = K.summary(all); assert.ok(sm.length <= 200, sm.length); assert.match(sm, / and \d+ more – Office, Level 5, Tower B$/);
 });

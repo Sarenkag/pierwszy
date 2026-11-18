@@ -109,7 +109,7 @@
     return out.join(' ');
   }
   /* opis przy zakładaniu (Open Vantify): co trzeba zrobić, bez „zrobione” */
-  function request(sel) { const s = summary(sel); return s ? s.replace(/ – /, ' at ').replace(/^./, c => c.toUpperCase()) + '.' : ''; }
+  function request(sel) { const s = summary(sel, Infinity); /* pełna lista pozycji – skraca się tylko Summary (przegląd Codex #147) */ return s ? s.replace(/ – /, ' at ').replace(/^./, c => c.toUpperCase()) + '.' : ''; }
   /* unfinished: naprawa tymczasowa / firma – bez dodatków „tested and working” (przegląd Codex #147) */
   function closing(sel, on, unfinished) {
     if (on === false) return '';
