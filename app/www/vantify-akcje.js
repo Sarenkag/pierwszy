@@ -27,6 +27,11 @@
       b._date = typeof b.completionDate === "string" ? b.completionDate : ""; delete b.completionDate;
       var f = Array.isArray(b.files) ? b.files.filter(function (x) { return x && x._links && x._links.documentType; }) : [];
       if (!f.length) return null; // bez pliku z typem dokumentu nie wiadomo, jak dołączyć Job Sheet
+      // wzór z załącznika Job Sheet (nazwa „REACTIVE …”), nie z przypadkowego pierwszego (np. zdjęcia) – przegląd Codex #146;
+      // niejednoznacznie (różne typy dokumentów, żaden nie jest Job Sheet) = bez wzoru, następne zamknięcie znowu w oknie
+      var typ = function (x) { return x._links.documentType.href; }, one = function (a) { return a.length && a.every(function (x) { return typ(x) === typ(a[0]); }); };
+      var js = f.filter(function (x) { return /^REACTIVE\b/i.test(String(x.title || "")) || /^REACTIVE\b/i.test(String(x.filename || "")); });
+      if (one(js)) f = js; else if (!one(f)) return null;
       var it = f[0]; delete it.id; delete it.title; delete it.description; delete it.documentDate; delete it.formFile; it._links.file = { href: "" };
       b._file = it; b.files = [];
     }

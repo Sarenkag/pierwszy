@@ -35,6 +35,11 @@ test('wzór bez tekstów, dat i plików tego zlecenia; reszta (firma, priorytet,
   assert.ok(!('title' in k._file) && !('description' in k._file) && !('documentDate' in k._file)); assert.strictEqual(k._file._links.file.href, '');
   assert.strictEqual(A.wzor('complete', { completionDate: 'x', files: [] }), null, 'bez pliku nie wiadomo, jak dołączyć Job Sheet');
   assert.strictEqual(JSON.stringify(A.wzor('complete', COMPLETE)).includes('LED'), false);
+  // zdjęcie dołączone przed Job Sheet: wzór i tak z Job Sheet (przegląd Codex #146); bez Job Sheet i różne typy = bez wzoru
+  const odwr = { ...COMPLETE, files: [COMPLETE.files[1], COMPLETE.files[0]] };
+  assert.strictEqual(A.wzor('complete', odwr)._file._links.documentType.href, '/documenttypes/1');
+  assert.strictEqual(A.wzor('complete', { ...COMPLETE, files: [COMPLETE.files[1], { ...COMPLETE.files[0], title: 'meter' }] }), null);
+  assert.strictEqual(A.wzor('complete', { ...COMPLETE, files: [COMPLETE.files[1]] })._file._links.documentType.href, '/documenttypes/3', 'jeden plik: jego typ');
 });
 test('daty w tym samym zapisie co strona Vantify', () => {
   const d = new Date(Date.UTC(2026, 10, 5, 19, 26, 9));

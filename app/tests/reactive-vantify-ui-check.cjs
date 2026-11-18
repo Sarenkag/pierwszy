@@ -79,6 +79,17 @@ function fakePhone() {
     await pg.evaluate(() => { window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
     await pg.locator('[data-rx=vt-check]').first().click(); await msg(/Vantify #3070001: czeka na zatwierdzenie/);
     { const k = await calls(); check(k.length === 3 && k[2].op === 'status' && k[2].ids[0] === 3070001 && k[2].site === 6324 && k[2].nonce, 'sprawdzenie: złe zapytanie ' + JSON.stringify(k[2])); }
+    // ---------- 2b. zadanie zakończone w apce, zlecenie czeka w Vantify: przyciski Vantify zostają (przegląd Codex #146) ----------
+    { const id = await pg.evaluate(async () => { const R = OESTReactiveUI.repository, j = (await R.get()).jobs.find(x => x.reactive?.vantify?.id === 3070001); await R.saveReactive({ ...j.reactive, status: 'completed' }); return j.id; });
+      const at0 = (await jobs()).find(x => x.id === id).closedAt;
+      await pg.goto(B + '/#reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor();
+      check(/Czeka na zatwierdzenie/.test(await pg.locator('.rx-vt-row').textContent()), 'zakończone w apce: brak przycisków Vantify');
+      await pg.waitForTimeout(50);
+      await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'acknowledged', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
+      await pg.locator('.rx-vt-row [data-rx=vt-check]').nth(1).click(); await msg(/zatwierdzone – można zamknąć/);
+      const j = (await jobs()).find(x => x.id === id);
+      check(j.reactive.status === 'completed' && j.reactive.vantify.status === 'acknowledged' && j.closedAt === at0, 'zakończone w apce: sprawdzenie Vantify zmieniło stan zadania albo datę zakończenia ' + JSON.stringify({ s: j.reactive.status, v: j.reactive.vantify, a: [at0, j.closedAt] }));
+      check(await pg.locator('[data-rx=vt-close].go').count() === 1, 'zakończone w apce: Close Vantify niedostępny po zatwierdzeniu'); }
     // ---------- 3. Open z wzorem: apka zakłada sama ----------
     await pg.locator('[data-rx=back]').first().click().catch(() => {}); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' } }); });
