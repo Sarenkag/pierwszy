@@ -78,7 +78,7 @@
           // kanał bez odpowiedzi: zostają jego ostatnio zapisane pozycje (nic nie znika przez chwilowy błąd)
           if (l === null) l = ((c && c.items) || []).filter(function (x) { return x.k === i; });
           (l || []).forEach(function (x) { x.k = i;
-          var k = x.title.toLowerCase().replace(/\W+/g, "");
+          var k = x.praca ? x.url : x.title.toLowerCase().replace(/\W+/g, ""); // oferty pracy po adresie (ta sama nazwa stanowiska w dwóch miastach), wiadomości po tytule
           if (seen[k]) { if (x.oes) seen[k].oes = true; return; }
           if (x.date && x.date < old) return;
           seen[k] = x; items.push(x);

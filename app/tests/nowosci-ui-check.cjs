@@ -29,7 +29,7 @@ const FEEDS = [
   ['Smart Managed Solutions', rss([item('Investcorp to take majority stake in Smart Managed Solutions', 'PEI Private Equity', 25), item('Smart Managed Solutions wins new data centre contract', 'FM World', 10)])]
 ];
 const job = (t, city, days, id) => `<item><title>${t}</title><pubDate>${d(days)}</pubDate><link>https://smartmanagedsolutions-1734694596.teamtailor.com/jobs/${id}</link><tt:locations><tt:location><tt:name>${city}</tt:name><tt:city>${city}</tt:city></tt:location></tt:locations></item>`;
-const JOBS = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:tt="https://teamtailor.com/locations"><channel><title>Smart</title>${[job('Mechanical Engineer', 'London', 0, 1), job('Electrical  Engineer', 'Birmingham', 2, 2), job('Contract Supervisor', 'London', 5, 3)].join('')}</channel></rss>`;
+const JOBS = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:tt="https://teamtailor.com/locations"><channel><title>Smart</title>${[job('Mechanical Engineer', 'London', 0, 1), job('Electrical  Engineer', 'Birmingham', 2, 2), job('Contract Supervisor', 'London', 5, 3), job('Electrical Engineer', 'Coventry', 3, 4)].join('')}</channel></rss>`;
 const fails = [];
 function check(ok, msg) { if (!ok) fails.push(msg); }
 
@@ -71,13 +71,14 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const all = await p.evaluate(() => [...document.querySelectorAll('#hmPop .hm-nw')].map(a => ({ f: a.querySelector('.hm-nf').textContent, t: a.querySelector('b').textContent, s: a.querySelector('small').textContent, href: a.getAttribute('href') })));
     const rows = all.slice(0, 5), sum = all[5];
     check(all.length === 6, 'N4: wierszy ' + all.length + ' zamiast 5 + 1 zbiorczy ofert pracy');
-    check(sum && sum.f === 'Smart' && /3 ofert pracy/.test(sum.t) && /teamtailor\.com\/jobs$/.test(sum.href), 'N4: brak wiersza zbiorczego ofert pracy: ' + JSON.stringify(sum));
+    check(sum && sum.f === 'Smart' && /4 ofert pracy/.test(sum.t) && /teamtailor\.com\/jobs$/.test(sum.href), 'N4: brak wiersza zbiorczego ofert pracy: ' + JSON.stringify(sum));
     check(rows.length === 5, 'N4: nagłówków ' + rows.length + ' zamiast 5');
     const exp = [['Savills', 'Savills lets final penthouse at One Eastside', /One Eastside/], ['PIC', 'Sphere hands Birmingham skyscraper to PIC', /One Eastside/], ['PIC', 'PIC completes One Eastside in Birmingham', /One Eastside/],
-      ['Smart', 'Electrical Engineer', /Oferta pracy · Birmingham/], ['Smart', 'Smart Managed Solutions wins new data centre contract', /FM World/]];
+      ['Smart', 'Electrical Engineer', /Oferta pracy · Birmingham/], ['Smart', 'Electrical Engineer', /Oferta pracy · Coventry/]];
+    // ta sama nazwa stanowiska w dwóch miastach = dwie oferty (klucz = adres oferty, nie tytuł)
     exp.forEach(([f, t, s], i) => check(rows[i] && rows[i].f === f && rows[i].t === t && s.test(rows[i].s), 'N4: pozycja ' + (i + 1) + ' powinna być ' + f + ' „' + t + '”, jest ' + JSON.stringify(rows[i])));
     check(!all.some(r => /London/.test(r.s)), 'N4: oferta z Londynu jako osobny wiersz (powinna być tylko w zbiorczym)');
-    check(new Set(rows.map(r => r.t)).size === rows.length, 'N4: dubel nagłówka');
+    check(new Set(rows.map(r => r.href)).size === rows.length, 'N4: dubel pozycji');
     check(rows.every(r => !/ - (PIC|Property Week|React News|PEI Private Equity)$/.test(r.t)), 'N4: wydawca doklejony do tytułu');
     check(rows.every(r => /^https:\/\/(news\.google\.com|smartmanagedsolutions-1734694596\.teamtailor\.com)\//.test(r.href)), 'N4: link nie do artykułu/oferty');
     check(rows.every(r => /\d{2}\/\d{2}\/\d{4}$/.test(r.s)), 'N4b: data nie w formacie DD/MM/YYYY: ' + rows.map(r => r.s).join(' | '));
