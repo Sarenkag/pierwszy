@@ -27,7 +27,7 @@
   }
   // ---------- przejście między ekranami (Poświata, Grzegorz 09/11/2026) ----------
   // Samą animację robi CSS (.view:not([hidden]) w wyglad.css) w klatce, w której ekran się pokazuje. Tu tylko:
-  //  • kierunek: Wstecz (systemowy i strzałka ‹ = history.back) → html.wy-wstecz odwraca efekt,
+  //  • kierunek: Wstecz (systemowy, strzałka ‹ = wpis z up: 1, albo history.back) → html.wy-wstecz odwraca efekt,
   //  • navAt: karty wstawione przy wejściu na ekran nie „podjeżdżają” osobno (to też wyglądało jak drżenie),
   //  • nowa strona (wejście do inspekcji, powrót z niej, start apki): pierwszy ekran tylko się rozjaśnia (html.wy-wczytanie).
   var root = d.documentElement, navAt = Date.now(), backT = 0;
@@ -50,7 +50,7 @@
   var push = history.pushState;
   history.pushState = function (s) {
     var r = push.apply(this, arguments), zmiana = location.hash !== adres; adres = location.hash;
-    if (zmiana && !(s && s.overlay)) { nav(); poWczytaniu(); wstecz(false); }
+    if (zmiana && !(s && s.overlay)) { nav(); poWczytaniu(); wstecz(!!(s && s.up)); } // strzałka ‹ idzie do rodzica nowym wpisem (up) – animacja powrotu
     return r;
   };
   w.addEventListener("hashchange", function () { adres = location.hash; nav(); });
