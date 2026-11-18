@@ -119,6 +119,15 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       localStorage.setItem('oest.news', old); return r;
     });
     check(part.before === 2 && part.after === 2 && part.retryInH === 1, 'N4d: zawodzący kanał wyczyścił zapisane albo brak ponowienia za godzinę: ' + JSON.stringify(part));
+    // N4e HTML zamiast RSS (HTTP 200) to błąd kanału, nie pusty kanał: zapisane pozycje zostają
+    const html = await p.evaluate(async () => {
+      const old = localStorage.getItem('oest.news'), f = window.fetch;
+      window.fetch = u => Promise.resolve(new Response(/Pension/.test(decodeURIComponent(u)) ? '<!doctype html><html><body>Consent</body></html>' : '<rss><channel></channel></rss>'));
+      const c = await OESTNowosci.load(true); window.fetch = f;
+      const r = { after: c.items.filter(x => x.src === 'pic').length, retryInH: Math.round((c.t + 864e5 - Date.now()) / 36e5) };
+      localStorage.setItem('oest.news', old); return r;
+    });
+    check(html.after === 2 && html.retryInH === 1, 'N4e: odpowiedź HTML wyczyściła zapisane nagłówki: ' + JSON.stringify(html));
     // N4c „przeczytane” przy pustej pamięci nie przesuwa granicy
     const seen = await p.evaluate(() => { const old = localStorage.getItem('oest.news'), s0 = localStorage.getItem('oest.news.seen'); localStorage.removeItem('oest.news'); OESTNowosci.seen(); const s1 = localStorage.getItem('oest.news.seen'); localStorage.setItem('oest.news', old); return s0 === s1; });
     check(seen, 'N4c: seen() bez pobranych nagłówków przesunął granicę przeczytania');

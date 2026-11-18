@@ -37,6 +37,8 @@
   function parse(xml, k) {
     k = typeof k === "string" ? { src: k } : (k || {});
     var doc = new w.DOMParser().parseFromString(String(xml || ""), "text/xml"), out = [];
+    // HTML zamiast RSS albo uszkodzony XML = błąd kanału (zostają zapisane pozycje), nie pusty kanał
+    if (doc.getElementsByTagName("parsererror").length || !doc.getElementsByTagName("channel").length) throw Error("NEWS_RSS");
     var items = doc.getElementsByTagName("item");
     for (var i = 0; i < items.length; i++) {
       var it = items[i], title = txt(it, "title").replace(/\s+/g, " "), pub = txt(it, "source"), link = txt(it, "link"), dt = Date.parse(txt(it, "pubDate"));
@@ -66,7 +68,7 @@
     if (!force && c && Date.now() - c.t < AGE) return Promise.resolve(c);
     if (w.navigator.onLine === false || !w.DOMParser) return Promise.resolve(c); // najpierw połączenie; bez sieci – ostatnie zapisane
     if (loading) return loading;
-    loading = Promise.all(KANALY.map(function (k) { return get(url(k)).then(function (x) { return parse(x, k); }, function () { return null; }); }))
+    loading = Promise.all(KANALY.map(function (k) { return get(url(k)).then(function (x) { return parse(x, k); }).catch(function () { return null; }); }))
       .then(function (lists) {
         if (lists.every(function (l) { return l === null; })) return c; // nic nie przyszło – nie kasuj zapisanych
         var seen = {}, items = [], old = Date.now() - MAX_DAYS * 86400000, jobs = null;
