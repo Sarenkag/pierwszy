@@ -119,5 +119,11 @@
     return all.map((e, k) => ({ e, k })).sort((a, b) => n(b.e) - n(a.e) || a.k - b.k).map(x => x.e);
   }
   function learn(stats, sel) { const s = { ...(stats || {}) }; for (const i of sel.items || []) s[i] = (s[i] || 0) + 1; return s; }
-  return { TYPES, TYPE_PL, GROUPS, SURFACES, WEIGHT, FIXED, CLOSING, sentence, summary, description, request, closing, jobSheet, ordered, learn, where, groupOf };
+  /* karta Reactive → wybory kreatora (draft.jobType + draft.kreator = {items, on, weight, closing}); bez pozycji = null */
+  function fromDraft(d, room) {
+    const k = d && d.kreator; if (!k || !Array.isArray(k.items) || !k.items.length) return null;
+    return { type: TYPES.includes(d.jobType) ? d.jobType : 'REPAIR', items: k.items.slice(), on: k.on || '', weight: k.weight || '', closing: k.closing !== false, where: { building: d.building || '', level: d.level || '', flat: d.flat || '', room: room === undefined ? d.room || '' : room } };
+  }
+  const heavy = sel => !!sel && (sel.items || []).some(i => (groupOf(i) || {}).kind === 'heavy');
+  return { fromDraft, heavy, TYPES, TYPE_PL, GROUPS, SURFACES, WEIGHT, FIXED, CLOSING, sentence, summary, description, request, closing, jobSheet, ordered, learn, where, groupOf };
 });

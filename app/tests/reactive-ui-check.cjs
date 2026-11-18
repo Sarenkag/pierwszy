@@ -37,16 +37,16 @@ await page.locator('[data-rx-photos=before]').setInputFiles(photoFile);await pag
 {const d=Object.values((await state()).reactiveDrafts)[0];assert.equal(d.title,'Door handle detached');assert.equal(d.building,'Tower B');assert.equal(d.level,'5');assert.equal(d.problemId,'','drzewko nie jest wymagane');assert.equal(d.beforeMediaIds.length,1);assert.equal(d.requestedBy,'General request','domyślnie pierwszy dział z ⚙');}
 await snap('05-details');
 
-STEP='krok 3';// 3. Drzewko „Co dokładnie” (opcjonalne): Drzwi › Zwykłe › Klamka › problem – opis do raportu podstawia się sam.
-await row('tree');await page.locator('[data-rx=pick-node][data-id=doors]').click();await page.locator('[data-rx=pick-node][data-id=ordinary]').click();await page.locator('[data-rx=pick-node][data-id=handle]').click();await page.locator('[data-rx=pick-leaf][data-id=handle-1]').click();await saved();
-{const d=Object.values((await state()).reactiveDrafts)[0];assert.equal(d.problemId,'handle-1');assert.ok(d.problem.length>5,'opis z drzewka');assert.equal(d.title,'Door handle detached','wybór z drzewka nie nadpisuje wpisanej nazwy');}
+STEP='krok 3';// 3. Kreator „Co” (Grzegorz 18/11/2026, zastępuje drzewko): okno grup → Drzwi → checkbox „handle” → Gotowe; opis EN składa się sam, wpisana nazwa zostaje.
+await row('co');await page.locator('[data-rx=kr-open]').click();await page.locator('[data-rx=kr-group][data-id=doors]').click();await page.locator('[data-rx=kr-item][data-id=handle]').click();await page.locator('[data-rx=kr-done]').click();await saved();
+{const d=Object.values((await state()).reactiveDrafts)[0];assert.deepEqual(d.kreator.items,['handle']);assert.equal(d.jobType,'REPAIR','typ domyślny REPAIR');assert.equal(d.problem,'Handle repaired, checked and working correctly.');assert.equal(d.title,'Door handle detached','kreator nie nadpisuje wpisanej nazwy');}
 
 STEP='krok 4';// 4. Trwałość szkicu: przeładowanie strony → te same pola, drzewko i zdjęcie.
 await page.reload();await page.locator('[data-rx-field=title]').waitFor();assert.equal(await page.evaluate(()=>location.hash),draftHash);
 assert.equal(await page.locator('[data-rx-field=title]').inputValue(),'Door handle detached');assert.equal(await page.locator('[data-rx-field=note]').inputValue(),'Handle detached from the door.');
 await page.waitForFunction(()=>document.querySelectorAll('#rx-before img').length===1);
 assert.match(await page.locator('[data-rx=row][data-id=where]').textContent(),/TB|Tower B/);assert.match(await page.locator('[data-rx=row][data-id=where]').textContent(),/Kitchen/);
-assert.match(await page.locator('[data-rx=row][data-id=tree]').textContent(),/›/,'drzewko po przeładowaniu');
+assert.match(await page.locator('[data-rx=row][data-id=co]').textContent(),/handle/,'kreator po przeładowaniu');
 
 STEP='krok 5';// 5. Status „Czeka na części” + jakie części, potem Odłóż → zadanie zapisane, klocek na liście z licznikiem zdjęć.
 await row('more');await page.locator('[data-rx=status][data-status=parts]').click();await page.locator('[data-rx-field=partsNote]').fill('New lever handle');await saved();
@@ -79,7 +79,7 @@ job=result.state.jobs[0];assert.equal(result.state.jobs.length,1,'Wyślij nie tw
 assert.match(rx[0].name,/^REACTIVE Door handle detached \d{8}$/,'nazwa pliku: '+rx[0].name);const files={'.docx':{name:rx[0].name+'.docx',buf:Buffer.from(rx[0].docx,'base64')},'.pdf':{name:rx[0].name+'.pdf',buf:Buffer.from(rx[0].pdf,'base64')}};
 const out=process.env.OEST_REACTIVE_REPORTS;if(out){fs.mkdirSync(out,{recursive:true});for(const f of Object.values(files))fs.writeFileSync(path.join(out,f.name),f.buf);}assert.ok(files['.docx'].buf.length>1000&&files['.pdf'].buf.length>1000,'para .docx + .pdf w kolejce');
 const wordTxt=docxText(files['.docx'].buf),pdfTxt=pdfText(files['.pdf'].buf);
-for(const [label,needle]of [['tytuł','Door handle detached'],['budynek','Tower B'],['opis z drzewka',job.reactive.problem.replace(/[.\s]+$/,'')],['akcja','Made safe temporarily'],['pomieszczenie','Kitchen'],['notatka','Handle detached from the door.'],['części','New lever handle'],['inżynier','Greg Sarna']]){
+for(const [label,needle]of [['tytuł','Door handle detached'],['budynek','Tower B'],['opis z kreatora (naprawa tymczasowa: co zlecono, bez „repaired”)','Repair handle.'],['akcja','Made safe temporarily'],['pomieszczenie','Kitchen'],['notatka','Handle detached from the door.'],['części','New lever handle'],['inżynier','Greg Sarna']]){
   assert.ok(includesFlat(wordTxt,needle),'Word nie zawiera ('+label+'): '+needle);assert.ok(includesFlat(pdfTxt,needle),'PDF nie zawiera ('+label+'): '+needle);}
 /* Stan „Open — Temporary repair”: w PDF linia ze znakiem „—” jest rysowana jako obrazek (reactive-report.js line()), więc tekstowo sprawdzamy ją tylko w Word. */assert.ok(includesFlat(wordTxt,'Overall Condition: Open — Temporary repair'),'Word: stan zadania');assert.ok(includesFlat(wordTxt,'Before — Photo 1')&&includesFlat(wordTxt,'After — Photo 2'),'Word: podpisy zdjęć przed/po');assert.ok(docxImages(files['.docx'].buf)>=2,'Word: zdjęcia w pliku');assert.ok(pdfImages(files['.pdf'].buf)>=2,'PDF: co najmniej 2 zdjęcia');
 
@@ -120,5 +120,5 @@ STEP='krok 13';// 13. Drzewko jako osobny ekran (zakres prac oświetlenia) i bra
 await page.goto(url+'/#reactive/tree/lighting');await page.locator('[data-id=lighting-scope-0]').waitFor();await snap('08-scope');
 assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 assert.deepEqual(errors,[]);
-console.log('REACTIVE UI PASS: new job without tree, optional tree, draft persistence after reload (fields/tree/photo), parts status + park, before/after photos, temporary/contractor/repaired + close, status history, completed list + history view with photos, summary, Word+PDF content (same data, 2 photos), company email only, send keeps photos/job, Gmail send queue entry with honest message (no real email), Handover entry, drop draft, PL/EN missing-field messages without raw codes; 412x915. Not covered: camera, voice notes, actual Gmail delivery, Android share fallback.');
+console.log('REACTIVE UI PASS: new job without builder, builder „Co” (Doors › handle), draft persistence after reload (fields/builder/photo), parts status + park, before/after photos, temporary/contractor/repaired + close, status history, completed list + history view with photos, summary, Word+PDF content (same data, 2 photos), company email only, send keeps photos/job, Gmail send queue entry with honest message (no real email), Handover entry, drop draft, PL/EN missing-field messages without raw codes; 412x915. Not covered: camera, voice notes, actual Gmail delivery, Android share fallback.');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error('Reactive – błąd w: '+STEP);console.error(e);process.exitCode=1;});
