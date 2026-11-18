@@ -31,7 +31,7 @@ await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=t
 const draftHash=await page.evaluate(()=>location.hash);
 await page.locator('[data-rx-field=title]').fill('Door handle detached');await saved();
 await row('where');await page.locator('[data-rx=building][data-value="Tower B"]').click();await page.locator('[data-rx-field=level]').selectOption('5');await page.locator('[data-rx-field=room]').fill('Kitchen');
-await page.locator('[data-rx-field=note]').fill('Handle detached from the door.');await saved();
+await row('start');await page.locator('[data-rx-field=note]').fill('Handle detached from the door.');await saved();
 const encoded=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,640,480);x.fillStyle='#777';x.fillRect(90,30,450,430);x.fillStyle='#222';x.fillRect(370,240,130,25);x.fillStyle='white';x.font='25px sans-serif';x.fillText('Door handle',130,90);return c.toDataURL('image/png').split(',')[1];}),photoFile={name:'door.png',mimeType:'image/png',buffer:Buffer.from(encoded,'base64')};
 await page.locator('[data-rx-photos=before]').setInputFiles(photoFile);await page.waitForFunction(()=>document.querySelector('#rx-before img')&&document.querySelector('#rxMessage')?.textContent.includes('Szkic zapisany'));
 {const d=Object.values((await state()).reactiveDrafts)[0];assert.equal(d.title,'Door handle detached');assert.equal(d.building,'Tower B');assert.equal(d.level,'5');assert.equal(d.problemId,'','drzewko nie jest wymagane');assert.equal(d.beforeMediaIds.length,1);assert.equal(d.requestedBy,'General request','domyślnie pierwszy dział z ⚙');}
@@ -49,7 +49,7 @@ assert.match(await page.locator('[data-rx=row][data-id=where]').textContent(),/T
 assert.match(await page.locator('[data-rx=row][data-id=tree]').textContent(),/›/,'drzewko po przeładowaniu');
 
 STEP='krok 5';// 5. Status „Czeka na części” + jakie części, potem Odłóż → zadanie zapisane, klocek na liście z licznikiem zdjęć.
-await row('status');await page.locator('[data-rx=status][data-status=parts]').click();await page.locator('[data-rx-field=partsNote]').fill('New lever handle');await saved();
+await row('more');await page.locator('[data-rx=status][data-status=parts]').click();await page.locator('[data-rx-field=partsNote]').fill('New lever handle');await saved();
 await page.locator('[data-rx=park]').click();await page.locator('[data-rx=new]').waitFor();
 let s=await state();assert.equal(s.jobs.length,1);assert.equal(Object.keys(s.reactiveDrafts||{}).length,0,'szkic zamieniony w zadanie');
 let job=s.jobs[0];assert.equal(job.reactive.status,'parts');assert.equal(job.reactive.partsNote,'New lever handle');assert.equal(job.reactive.beforeMediaIds.length,1);assert.ok(Array.isArray(job.history)&&job.history.length>=1,'historia zadania');
@@ -85,7 +85,7 @@ for(const [label,needle]of [['tytuł','Door handle detached'],['budynek','Tower 
 
 STEP='krok 8';// 8. Potrzebna firma (podwykonawca) → status Subcontractor required, zapis przez Odłóż.
 /* moduly/przycisk: „✓ Gotowe” trwa chwilę, potem przycisk wraca – dopiero wtedy ekran przyjmuje kolejne dotknięcie */await page.waitForFunction(()=>/Zbuduj i wyślij/.test(document.querySelector('[data-rx=send-now]')?.textContent||''));await page.locator('[data-rx=back]').click();await page.locator('[data-rx=new]').waitFor().catch(async()=>{throw Error('Wstecz po wysłaniu: '+JSON.stringify({hash:await page.evaluate(()=>location.hash),msg:await msg()}));});await page.locator('[data-rx=job]').click();await page.locator('[data-rx-field=title]').waitFor();
-await row('finish');await page.locator('[data-rx=action][data-id=contractor]').click();await saved();await page.locator('[data-rx=park]').click();await page.locator('[data-rx=new]').waitFor();
+await row('finish');await page.locator('[data-rx=action][data-id=contractor]').click();await saved();await row('more');await page.locator('[data-rx=park]').click();await page.locator('[data-rx=new]').waitFor();
 job=(await state()).jobs[0];assert.equal(job.reactive.status,'contractor');assert.equal(job.reactive.temporary,false);
 
 STEP='krok 9';// 9. Naprawione → ✓ Zakończ zadanie: zadanie zakończone, w historii, zdjęcia i raporty zostają.

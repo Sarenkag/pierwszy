@@ -204,6 +204,11 @@
       "timeoutSec": 900
     },
     {
+      "file": "app/tests/reactive-start-end-ui-check.cjs",
+      "passMarker": "REACTIVE START/END UI PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/settings-ui-check.cjs",
       "passMarker": "UI PASS: ",
       "timeoutSec": 900

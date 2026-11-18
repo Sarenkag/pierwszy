@@ -103,7 +103,7 @@
   function resume(a) {
     a.forEach(function (n) {
       if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
-      queue = queue.then(function () { return audioGet(n.audio && n.audio[0]).then(function (blob) {
+      queue = queue.then(function () { if (!(n.audio && n.audio.length)) return retext(n); /* notatka pisana: tylko tłumaczenie od nowa */ return audioGet(n.audio && n.audio[0]).then(function (blob) {
         if (blob) return transcribe(n, blob);
         n.st = ''; n.err = T('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
       }); }).catch(function () {}).then(function () { delete running[n.id]; });
@@ -228,16 +228,23 @@
   function mount(box, o) {
     if (!box) return null; o = o || {}; css();
     box.classList.add('nt-bar');
-    box.innerHTML = '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + T('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
-      '<button type="button" class="btn nt-open">' + T('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>' +
+    // icons: układ „Voice / Text” (Reactive, Grzegorz 18/11): 🎤+ nagranie, 📝+ notatka pisana, rząd ponumerowanych ikonek (stuknięcie = ta jedna notatka)
+    box.innerHTML = (o.icons ? '<div class="nt-btns2"><button type="button" class="btn nt-rec" aria-label="' + T('Nagraj notatkę', 'Record note') + '">' + T('🎤+ Głos', '🎤+ Voice') + '</button>' +
+      '<button type="button" class="btn nt-add" aria-label="' + T('Dopisz notatkę', 'Write a note') + '">' + T('📝+ Tekst', '📝+ Text') + '</button></div><div class="nt-icons"><span class="nt-list"></span>' +
+      '<button type="button" class="nt-i nt-open" aria-label="' + T('Wszystkie notatki', 'All notes') + '">' + T('Notatki', 'Notes') + ' <span class="nt-n">0</span></button></div>'
+      : '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + T('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
+      '<button type="button" class="btn nt-open">' + T('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>') +
       '<button type="button" class="btn nt-join" hidden>' + esc(o.join || T('✨ Połącz notatki', '✨ Combine notes')) + '</button>';
-    var rec = box.querySelector('.nt-rec'), opn = box.querySelector('.nt-open'), join = box.querySelector('.nt-join'), num = box.querySelector('.nt-n');
+    var rec = box.querySelector('.nt-rec'), opn = box.querySelector('.nt-open'), join = box.querySelector('.nt-join'), num = box.querySelector('.nt-n'), row = box.querySelector('.nt-list'), add = box.querySelector('.nt-add');
     var ctx = function () { return o.ctx ? o.ctx() || '' : ''; };
     var m = { box: box, scope: function () { return o.scope ? o.scope() || '' : ''; } };
     m.refresh = function () {
       var k = m.scope(); box.hidden = !k; if (!k) return Promise.resolve();
-      return summary(k).then(function (r) { if (k !== m.scope()) return; num.textContent = r.all; join.hidden = r.ready < 1; }, function () {});
+      return summary(k).then(function (r) { if (k !== m.scope()) return; num.textContent = r.all; join.hidden = r.ready < 1; return row ? list(k) : null; })
+        .then(function (a) { if (!a || k !== m.scope()) return; row.innerHTML = a.map(function (n, i) { var s = state(n); return '<button type="button" class="nt-i' + (s === 'busy' ? ' busy' : s === 'ready' ? '' : ' w') + '" data-nt-id="' + esc(n.id) + '">' + (n.audio && n.audio.length ? '🎤' : '📝') + (i + 1) + '</button>'; }).join(''); }, function () {});
     };
+    if (row) row.addEventListener('click', function (e) { var b = e.target.closest('[data-nt-id]'), k = m.scope(); if (b && k) open(k, { title: o.title ? o.title() : ctx(), only: b.getAttribute('data-nt-id') }); });
+    if (add) add.addEventListener('click', function () { var k = m.scope(); if (!k || add.disabled) return; add.disabled = true; write(k, ctx()).then(function (n) { if (n && o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); }).then(function () { add.disabled = false; }); });
     mounts = mounts.filter(function (x) { return x.box !== box && x.box.isConnected; }); mounts.push(m);
     if (!watching) { watching = true; on(function (k) { mounts = mounts.filter(function (x) { return x.box.isConnected; }); mounts.forEach(function (x) { if (x.scope() === k) x.refresh(); }); }); }
     if (!bind(rec, { scope: m.scope, ctx: ctx, onSaved: function (n) { m.refresh(); if (o.onSaved) o.onSaved(n); }, onError: o.onError })) rec.disabled = true;
@@ -250,6 +257,25 @@
     });
     m.refresh();
     return m;
+  }
+  // 📝+ notatka pisana: okienko z polem; tekst (po polsku albo po angielsku) → angielski w tle jak przy nagraniu; Anuluj = null
+  function addText(scope, ctx, text) {
+    var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), pl = fix(text, 'pl');
+    var n = { id: id, scope: scope, at: Date.now(), seq: ++seq, ctx: ctx || '', ms: 0, audio: [], pl: pl, en: '', st: 'busy', err: '' };
+    running[id] = 1; // przed put(): odświeżenie paska (summary → resume) nie może uruchomić drugiego tłumaczenia (Codex #144)
+    return put(n).then(function () {
+      queue = queue.then(function () { return retext(n); }).catch(function () {}).then(function () { delete running[id]; });
+      return n;
+    }, function (e) { delete running[id]; throw e; });
+  }
+  function retext(n) { return english(n.pl, n.ctx).then(function (en) { n.en = en || ''; }, function () {}).then(function () { n.st = ''; return keep(n); }); }
+  function write(scope, ctx) {
+    css(); var node = document.createElement('div'); node.className = 'nt-pop';
+    node.innerHTML = '<div class="nt-h">' + T('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.') + '</div><textarea data-nt-f="pl" maxlength="4000"></textarea>';
+    var ta = node.querySelector('textarea');
+    setTimeout(function () { try { ta.focus(); } catch (e) {} }, 50);
+    return w.OESTPrzycisk.ask({ title: T('📝 Nowa notatka', '📝 New note'), node: node, ok: T('Zapisz', 'Save'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
+      .then(function (yes) { var t = ta.value.trim(); return yes && t ? addText(scope, ctx, t) : null; });
   }
   // nagrania notatek jako dowody (Hand over: wpis zachowuje oryginalne audio, jak dawniej) → [{ id, kind:'audio', blob, name, mime, size, ms }]
   function media(scope) {
@@ -276,6 +302,8 @@
     '.nt-empty{color:var(--muted,#9aa3cc);text-align:center;padding:14px 0}' +
     '.nt-bar .nt-btns2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.nt-bar .btn{min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px;margin:0}.nt-bar .nt-join{width:100%;margin-top:8px}' +
     '.nt-bar .nt-rec{border-color:rgba(255,77,94,.7)!important;background:rgba(255,77,94,.12)!important;touch-action:none;-webkit-user-select:none;user-select:none}' +
+    '.nt-bar .nt-add{touch-action:manipulation}.nt-icons{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch}.nt-icons .nt-list{display:contents}' +
+    '.nt-i{flex:none;min-height:36px;min-width:52px;padding:0 10px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.18));background:rgba(255,255,255,.05);color:var(--ink,#fff);font:600 14px var(--font-body,system-ui),sans-serif}.nt-i.w{border-color:rgba(255,210,63,.6)}.nt-i.busy{opacity:.55}.nt-icons .nt-open{margin-left:auto}' +
     '.nt-bar .nt-n{display:inline-block;min-width:22px;padding:0 7px;border-radius:11px;background:rgba(124,132,255,.25);border:1px solid rgba(124,132,255,.6);font-size:.8rem;line-height:20px;text-align:center}';
   function css() { if (document.getElementById('oest-notatki-css')) return; var s = document.createElement('style'); s.id = 'oest-notatki-css'; s.textContent = CSS; document.head.appendChild(s); }
   function clock(ms) { var s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -298,6 +326,7 @@
       foot(true);
       list(scope).then(resume).then(function (a) {
         if (editing) return;
+        if (o.only) a = a.filter(function (n) { return n.id === o.only; }); // stuknięta ikonka: tylko ta jedna notatka
         var h = '<div class="nt-h">' + esc(o.title || '') + (a.length && !o.readonly ? ' · ' + T('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
         if (!a.length) h += '<div class="nt-empty">' + T('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
         a.forEach(function (n) {
@@ -388,7 +417,7 @@
       });
     });
     var off = on(function (s) { if (s === scope && !editing && node.isConnected) draw(); });
-    var sz = o.readonly ? null : szkice[scope]; // tylko odczyt: nie wracamy do przerwanej poprawki
+    var sz = o.readonly ? null : szkice[scope]; if (sz && o.only && sz.id !== o.only) sz = null; // ikonka innej notatki: przerwana poprawka czeka na swoją notatkę (Codex #144) // tylko odczyt: nie wracamy do przerwanej poprawki
     if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
     else draw();
     return w.OESTPrzycisk.ask({ title: T('📝 Notatki', '📝 Notes'), node: node, ok: T('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
@@ -400,5 +429,5 @@
       });
   }
 
-  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, english: english };
+  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, addText: addText, write: write, english: english };
 })(window);

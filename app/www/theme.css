@@ -22,7 +22,7 @@ h1 span{color:inherit}
 /* nagłówki grup w Ustawieniach widoczne (Grzegorz 03/11 szukał „Połączenia i kopie”) */
 .settings-group>.settings-eyebrow{display:block!important;font-size:.78rem;padding:2px 4px 0;color:var(--muted)}
 .settings-group{background:transparent!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-.back{width:38px!important;height:38px!important;border:0!important;background:transparent!important;font-size:1.6rem!important;color:var(--ink)!important}
+.back,.rx-more{width:38px!important;height:38px!important;border:0!important;background:transparent!important;font-size:1.6rem!important;color:var(--ink)!important}
 /* karty szklane */
 /* B4 (07/11/2026): bez .settings-group – grupy Ustawień są bez ramki (reguła wyżej), ta lista ją nadpisywała */
 .panel,.tile,.prow,.settings-card,.settings-hero,.day,.chip,.btn:not(.go),.pbtn,.sm{background:var(--panel)!important;border:1px solid var(--line)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
@@ -142,3 +142,7 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .rx-vt{width:100%;margin:-2px 0 8px;font:inherit;font-size:.85rem;border-radius:10px;padding:8px;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid rgba(255,255,255,.14)}
 #v-reactive .rx-fr input.v{min-height:0;height:34px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.2);flex:none;width:auto}
 #v-reactive .rx-fr{min-height:40px;padding:3px 0}
+/* szkic Grzegorza 18/11/2026: dwa pola w rzędzie (DATA+TYP, KTO+GDZIE); info na start/koniec – pole tylko wydłużane, nie zwężane */
+#v-reactive .rx-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}#v-reactive .rx-2 .rx-fr{flex-wrap:wrap;gap:0 6px;min-width:0}
+#v-reactive .rx-2 .rx-fr .k{width:100%;font-size:.72rem}#v-reactive .rx-2 .rx-fr input.v{width:100%;flex:1}
+#v-reactive .rx-info-t{display:block;width:100%;min-width:100%;max-width:100%;box-sizing:border-box;min-height:84px;resize:vertical;margin-top:8px;font:inherit;font-size:.9rem;border-radius:10px;padding:8px;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid rgba(255,255,255,.14)}
