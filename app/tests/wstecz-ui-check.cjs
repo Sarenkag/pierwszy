@@ -4,7 +4,7 @@
 // chodzenie po klockach → lista PPM → inspekcja → aparat (podgląd zdjęcia, edytor) → Wstecz:
 //   edytor → podgląd → ta sama inspekcja → lista, z której przyszedł (ten sam dzień) → ekran główny → „Chcesz wyjść z aplikacji?” (Tak/Nie).
 // Do tego: po kilku inspekcjach Wstecz z listy nie wraca do żadnej z nich, podgląd raportu (okienko) zamyka się Wstecz, Ustawienia → Raporty → Ustawienia → ekran główny,
-// odzyskana inspekcja wraca do klocka Raporty. Wstecz = OESTWstecz.wstecz() – dokładnie to, co woła klawisz w telefonie (wtyczka App, backButton).
+// odzyskana inspekcja wraca do klocka Raporty. Strzałka ‹ = zawsze rodzic, nie historia (18/11: Ustawienia ↔ Vantify w kółko). Wstecz = OESTWstecz.wstecz() – dokładnie to, co woła klawisz w telefonie (wtyczka App, backButton).
 // Wynik NIE zastępuje sprawdzenia na Pixelu 8 Pro (gest Wstecz, prawdziwy aparat).
 // Uruchomienie: node app/tests/wstecz-ui-check.cjs (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
@@ -147,6 +147,30 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 7. z każdego ekranu z kafelka ekranu głównego: najwyżej 3 naciśnięcia do ekranu głównego
     const tiles = await pg.$$eval('#v-home [data-go]', a => [...new Set(a.map(e => e.getAttribute('data-go')))]);
     for (const t of tiles) { await pg.click('#v-home [data-go="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
+    // 8. Strzałka ‹ u góry = zawsze poziom wyżej, nigdy po historii (Grzegorz 18/11/2026: krążyła Ustawienia ↔ Vantify, „na każdej stronie”)
+    const arrow = async () => { await pg.locator('.view:not([hidden]) .top .back').first().click(); await wait(900); return where(); };
+    await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#home'); }); await pg.reload(); await wait(1500);
+    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
+    await pg.evaluate(() => { location.hash = '#settings/vantify'; }); await wait(1200); // wejście z okienka „Nowe terminy → Pokaż” (zmiana adresu, bez wpisu n)
+    s = await where(); check(s.hash === '#settings/vantify', '8: Vantify otwarte z okienka, jest ' + s.hash);
+    s = await arrow(); check(s.hash === '#settings', '8: ‹ z Vantify → Ustawienia, jest ' + s.hash);
+    s = await arrow(); check(s.view === 'v-home', '8: ‹ z Ustawień → ekran główny (nie z powrotem do Vantify), jest ' + s.view + s.hash);
+    // to samo Wstecz telefonu
+    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
+    await pg.evaluate(() => { location.hash = '#settings/vantify'; }); await wait(1200);
+    s = await back(); check(s.hash === '#settings', '8: Wstecz z Vantify → Ustawienia, jest ' + s.hash);
+    s = await back(); check(s.view === 'v-home', '8: Wstecz z Ustawień → ekran główny, jest ' + s.view + s.hash);
+    // każdy klocek Ustawień: ‹ → Ustawienia → ekran główny, także po krążeniu między klockami
+    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
+    const routes = await pg.$$eval('#v-settings [data-route]:not(.back)', a => [...new Set(a.map(e => e.dataset.route).filter(Boolean))]);
+    check(routes.length > 3, '8: klocki Ustawień: ' + routes.length);
+    for (const r of routes) {
+      await pg.click('#v-settings [data-route="' + r + '"]').catch(() => {}); await wait(1000);
+      const from = (await where()).hash;
+      s = await arrow(); check(s.hash === '#settings', '8: ‹ z ' + from + ' → Ustawienia, jest ' + s.hash);
+      if (s.hash !== '#settings') { await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#settings'); }); await pg.reload(); await wait(1500); }
+    }
+    s = await arrow(); check(s.view === 'v-home', '8: po wszystkich klockach ‹ z Ustawień → ekran główny, jest ' + s.view + s.hash);
     check(!errors.length, 'błędy strony: ' + errors.join(' | '));
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }

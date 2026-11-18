@@ -371,9 +371,11 @@ input[type=text], input[type=email], input[type=date], select {
     window.scrollTo(0, 0);
   }
   function depth() { return (history.state && history.state.n) || 0; }
+  // strzałka ‹ (i Wstecz telefonu, który ją klika): ekran sam idzie do rodzica; tu tylko znacznik „w górę” dla animacji powrotu
+  var upClick = false;
   function show(v) {
     if (location.hash === "#" + v) { render(v); return; }
-    history.pushState({ n: depth() + 1 }, "", "#" + v);
+    history.pushState({ n: depth() + 1, up: upClick ? 1 : 0 }, "", "#" + v);
     render(v);
   }
   window.OESTSettingsUI.setNavigate(show);
@@ -383,14 +385,12 @@ input[type=text], input[type=email], input[type=date], select {
   window.OESTQuestionsUI.setNavigate(show);
   window.OESTReactiveUI.setNavigate(show);
   if (window.OESTZdjeciaUI) window.OESTZdjeciaUI.setNavigate(show);
+  // Strzałka ‹ = ZAWSZE jeden poziom wyżej (Grzegorz 08/11 i 18/11/2026: „na każdej stronie”), nigdy po historii:
+  // history.back() krążył Ustawienia ↔ Vantify, gdy na ekran weszło się z okienka albo linku. Rodzica wybiera sam ekran
+  // (Ustawienia → ekran główny, Ustawienia/Vantify → Ustawienia, Klucze/edycja → Klucze …); niezapisane zmiany pilnuje jego canLeave.
   document.addEventListener("click", function (e) {
-    var b = e.target.closest(".top .back");
-    if (b && b.closest("#v-reactive")) return;
-    if (!b || depth() < 1) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-    // niezapisane zmiany w Ustawieniach: zapytaj przed wyjściem (pozostałe moduły pilnuje popstate)
-    if (b.closest("#v-settings") && !window.OESTSettingsUI.canLeave()) return;
-    history.back();
+    if (!e.target.closest(".top .back")) return;
+    upClick = true; setTimeout(function () { upClick = false; }, 0);
   }, true);
   // okna na wierzchu (np. podgląd zdjęcia) dokładają wpis historii; Wstecz telefonu najpierw zamyka okno (Grzegorz 03/11)
   window.OESTOverlay = window.OESTWstecz.nakladki; window.OESTOverlay.on = true; // stos okien: moduly/wstecz
@@ -429,13 +429,9 @@ input[type=text], input[type=email], input[type=date], select {
     }
     render(location.hash.slice(1));
   });
-  // Strzałka „wstecz” cofa w historii (jak systemowy „wstecz”); przy wejściu prosto na ekran idzie do rodzica
+  // Strzałka ‹ na stałych ekranach: zawsze do rodzica z data-go (nie po historii)
   document.querySelectorAll(".back[data-go]").forEach(function (b) {
-    b.addEventListener("click", function (e) {
-      e.stopImmediatePropagation();
-      if (depth() > 0) history.back();
-      else { history.replaceState({ n: 0 }, "", "#" + b.dataset.go); render(b.dataset.go); }
-    }, true);
+    b.addEventListener("click", function (e) { e.stopImmediatePropagation(); show(b.dataset.go); }, true);
   });
   document.querySelectorAll("[data-go]").forEach(function (b) {
     b.addEventListener("click", function () {

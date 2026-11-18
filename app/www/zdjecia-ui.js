@@ -110,7 +110,7 @@
     await Z.remove(r.id); return true;
   }
   function bind(root, found) {
-    root.querySelector('.back').onclick = function () { navigate('settings'); }; // przy historii wstecz obsługuje index.html
+    root.querySelector('.back').onclick = function () { navigate('settings'); }; // strzałka ‹ = zawsze rodzic (Ustawienia), nie historia
     root.querySelector('[data-zd="sync"]').onclick = function () {
       // wspólny przycisk (moduly/przycisk): kółko + etap na przycisku, potem „✓ Gotowe” (Grzegorz 03/11)
       var P = w.OESTPrzycisk, h = P ? P.start(this, { busy: T('Sprawdzam połączenie', 'Checking connection'), keep: false }) : null;
