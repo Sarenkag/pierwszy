@@ -1,4 +1,5 @@
-// Wczytanie eksportu Vantify w telefonie (Grzegorz 10/11/2026): Ustawienia → Vantify → Wczytaj eksport → podgląd zmian → Zapisz.
+// Wczytanie eksportu Vantify w telefonie (Grzegorz 10/11/2026): eksport CSV „Job” z okna Vantify w apce → podgląd zmian → Zapisz.
+// Przycisk „Wczytaj eksport” z pliku usunięty 18/11/2026 (Grzegorz: „Pobierz” wczytuje samo) – ten sam podgląd z CSV sprawdzany przez okno Vantify.
 // Scenariusz Grzegorza: eksport z Vantify z nowszą datą, część zleceń zamknięta, nowe zlecenia; po zapisie lista PPM i strona
 // inspekcji biorą terminy z wczytanego pliku, także po ponownym uruchomieniu. Starszy plik niczego nie zmienia.
 const {chromium}=require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
@@ -8,6 +9,7 @@ const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url
 const HEAD=['id','jobType','summary','reporterName','createdAt','completeBy','frequency','task'];
 function csv(rows){return '﻿'+HEAD.join(',')+'\r\n'+rows.map(r=>HEAD.map(h=>{const v=String(r[h]??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n')+'\r\n';}
 const job=(id,task,due,created='2026-11-10 08:00:00',f='1W')=>({id,jobType:'Planned',summary:'Opis, "x"',reporterName:'Jan Kowalski',createdAt:created,completeBy:due+' 23:59:59',frequency:f,task});
+async function loadCsv(page,text){await page.evaluate(t=>{window.__capPrev=window.Capacitor;const C=window.Capacitor||{},Pl=Object.assign({},C.Plugins||{}),V=Object.assign({},Pl.Vantify||{});V.open=async()=>({csv:t,name:'job.csv',log:[]});Pl.Vantify=V;window.Capacitor=Object.assign({},C,{isNativePlatform:()=>true,Plugins:Pl});},text);await page.locator('#vtOpen').click();await page.waitForFunction(()=>(document.getElementById('vtPreview')?.textContent||'').length>0);await page.evaluate(()=>{window.Capacitor=window.__capPrev;});}
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{browser=await chromium.launch({headless:true, ...(process.env.OEST_BROWSER_PATH ? {executablePath:process.env.OEST_BROWSER_PATH} : {})});const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
 await context.addInitScript(()=>{if(!localStorage.getItem('oest.account')){localStorage.setItem('oest.account',JSON.stringify({provider:'local',id:'test',email:'demo@example.com',first:'Greg',last:'Sarna'}));localStorage.setItem('oest.profile',JSON.stringify({first:'Greg',last:'Sarna',email1:'demo@example.com'}));}});
@@ -21,7 +23,7 @@ assert.match(await page.locator('#vtNow').textContent(),/Eksport z 09\/11\/2026 
 const rows=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,r=[];for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])r.push({id:j.no,task:P.byId(id).name,due:j.due,f:j.f});return r;});
 const now=rows.filter(r=>r.id!=='3000623').map(r=>job(r.id,r.task,r.due,'2026-11-10 08:00:00',r.f));now.push(job('3060001','AOV Operation Testing (Tower A)','2026-12-25'));now.push(job('9999','(Sub) Monthly Spa Sampling','2026-11-30'));
 // plik z wcześniejszym najnowszym zleceniem: tylko ostrzeżenie (data pliku = najnowsze createdAt, nie dzień eksportu), Anuluj nic nie zmienia
-await page.locator('#vtFile').setInputFiles({name:'job-old.csv',mimeType:'text/csv',buffer:Buffer.from(csv([job('1','AOV Operation Test (TA)','2026-11-06','2026-11-01 08:00:00')]))});
+await loadCsv(page,csv([job('1','AOV Operation Test (TA)','2026-11-06','2026-11-01 08:00:00')]));
 await page.locator('#vtPreview .warn').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/najnowsze zlecenie w pliku jest z 01\/11\/2026.*09\/11\/2026.*może być starszy/);
 assert.equal(await page.locator('#vtSave').count(),1,'świeży eksport po zamknięciu najnowszego zlecenia da się zapisać');
 await page.locator('#vtCancel').click();assert.equal(await page.locator('#vtPreview').textContent(),'');
@@ -30,10 +32,10 @@ await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction
 assert.equal(await page.locator('.oest-ask').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtNow').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null);
 // zły plik: komunikat, bez zapisu
-await page.locator('#vtFile').setInputFiles({name:'inny.csv',mimeType:'text/csv',buffer:Buffer.from('a,b\n1,2\n')});
+await loadCsv(page,'a,b\n1,2\n');
 await page.waitForFunction(()=>/nie jest eksport Job/.test(document.getElementById('vtPreview').textContent));
 // właściwy plik: podgląd
-await page.locator('#vtFile').setInputFiles({name:'job179.csv',mimeType:'text/csv',buffer:Buffer.from(csv(now))});
+await loadCsv(page,csv(now));
 await page.locator('#vtSave').waitFor();const pv=await page.locator('#vtPreview').textContent();
 assert.match(pv,/Eksport z 10\/11\/2026 · \d+ zleceń/);assert.match(pv,/Nowe zlecenia: 1/);assert.match(pv,/25\/12\/2026 · AOV Operation Test \(TA\) · 3060001/);
 assert.match(pv,/Zamknięte w Vantify \(znikną z apki\): 1/);assert.match(pv,/20\/11\/2026 · AOV Operation Test \(TA\) · 3000623/);assert.match(pv,/Bez karty w apce \(pominięte\): \(Sub\) Monthly Spa Sampling/);
@@ -70,7 +72,7 @@ await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__s
 const sh=await page.evaluate(()=>({name:window.__shared.files[0].name,text:decodeURIComponent(escape(atob(window.__shared.files[0].data)))}));
 assert.match(sh.name,/^vantify-zbadaj-\d{8}\.json$/);assert.match(sh.text,/api\/jobs/);
 // błąd pliku z Vantify w apce po wcześniejszym podglądzie: stary podgląd nie wraca po zmianie języka (przegląd Codex #132)
-await page.locator('#vtFile').setInputFiles({name:'job2.csv',mimeType:'text/csv',buffer:Buffer.from(csv(now))});await page.locator('#vtSave').waitFor();
+await loadCsv(page,csv(now));await page.locator('#vtSave').waitFor();
 await page.evaluate(()=>{window.Capacitor.Plugins.Vantify.open=async()=>({csv:'id,jobType,task,completeBy,frequency,createdAt\n1,Reactive,X,2026-11-20,,2026-11-10\n',name:'job.csv',log:[]});});
 await page.locator('#vtOpen').click();await page.waitForFunction(()=>/Planned/.test(document.getElementById('vtPreview')?.textContent||''));
 await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from/.test(document.getElementById('vtNow')?.textContent||''));
