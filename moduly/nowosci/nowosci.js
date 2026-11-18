@@ -75,14 +75,18 @@
             if (l) jobs = { n: l.length, url: KARIERA }; else if (c && c.jobs) jobs = c.jobs;
             l = (l || []).filter(function (x) { return x.blisko; });
           }
-          (l || []).forEach(function (x) {
+          // kanał bez odpowiedzi: zostają jego ostatnio zapisane pozycje (nic nie znika przez chwilowy błąd)
+          if (l === null) l = ((c && c.items) || []).filter(function (x) { return x.k === i; });
+          (l || []).forEach(function (x) { x.k = i;
           var k = x.title.toLowerCase().replace(/\W+/g, "");
           if (seen[k]) { if (x.oes) seen[k].oes = true; return; }
           if (x.date && x.date < old) return;
           seen[k] = x; items.push(x);
         }); });
         items.sort(function (a, b) { return rank(b) - rank(a) || (b.date - a.date); }); // One Eastside i praca w Birmingham przed obcięciem do 40 – nigdy nie wypadają
-        var out = { t: Date.now(), items: items.slice(0, 40), jobs: jobs };
+        // gdy któryś kanał zawiódł, ponów za godzinę zamiast za dobę
+        var fail = lists.some(function (l) { return l === null; });
+        var out = { t: fail ? Date.now() - AGE + 3600000 : Date.now(), items: items.slice(0, 40), jobs: jobs };
         try { w.localStorage.setItem(KEY, JSON.stringify(out)); } catch (e) {}
         return out;
       }).finally(function () { loading = null; });

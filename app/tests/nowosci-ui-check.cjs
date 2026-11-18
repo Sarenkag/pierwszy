@@ -108,6 +108,16 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       localStorage.setItem('oest.news', old); return r;
     });
     check(keep.inCache && keep.first === 'Old One Eastside story', 'N4b: One Eastside wypadł przy obcięciu: ' + JSON.stringify(keep));
+    // N4d jeden kanał zawodzi przy odświeżeniu: jego zapisane pozycje zostają, ponowienie za godzinę (nie za dobę)
+    const part = await p.evaluate(async () => {
+      const old = localStorage.getItem('oest.news'), f = window.fetch;
+      window.fetch = u => /Pension/.test(decodeURIComponent(u)) ? Promise.reject(new TypeError('offline')) : Promise.resolve(new Response('<rss><channel></channel></rss>'));
+      const r0 = OESTNowosci.cache().items.filter(x => x.src === 'pic').length;
+      const c = await OESTNowosci.load(true); window.fetch = f;
+      const r = { before: r0, after: c.items.filter(x => x.src === 'pic').length, retryInH: Math.round((c.t + 864e5 - Date.now()) / 36e5) };
+      localStorage.setItem('oest.news', old); return r;
+    });
+    check(part.before === 2 && part.after === 2 && part.retryInH === 1, 'N4d: zawodzący kanał wyczyścił zapisane albo brak ponowienia za godzinę: ' + JSON.stringify(part));
     // N4c „przeczytane” przy pustej pamięci nie przesuwa granicy
     const seen = await p.evaluate(() => { const old = localStorage.getItem('oest.news'), s0 = localStorage.getItem('oest.news.seen'); localStorage.removeItem('oest.news'); OESTNowosci.seen(); const s1 = localStorage.getItem('oest.news.seen'); localStorage.setItem('oest.news', old); return s0 === s1; });
     check(seen, 'N4c: seen() bez pobranych nagłówków przesunął granicę przeczytania');
