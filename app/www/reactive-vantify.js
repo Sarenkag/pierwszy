@@ -109,6 +109,8 @@
     await update(x, j);
     if (j.final || j.status === 'approval_pending') return x.message('Vantify #' + d.vantify.id + ': ' + label(j, L));
     if (d.vantify.summary && j.summary.trim() !== d.vantify.summary.trim()) return x.message(L('W Vantify zlecenie ma inną nazwę: „', 'In Vantify the job has a different name: “') + j.summary + L('”. Nic nie wysłałem.', '”. Nothing was sent.'));
+    /* okno podsumowania przed zamknięciem (PROD-039): „Popraw” wraca do karty, nic nie wysyła */
+    if (x.review && !await x.review()) return x.message('');
     x.message(L('Tworzę Job Sheet (PDF)…', 'Creating the Job Sheet (PDF)…'));
     const sheet = await x.jobSheet(), day = sheet.date.toLocaleDateString('en-GB');
     if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + L(' oraz plik ', ' with the file ') + sheet.name + '.', ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
