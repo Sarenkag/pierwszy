@@ -1,0 +1,121 @@
+/* Przyciski Vantify na karcie Reactive (Grzegorz 18/11/2026 „Tak”, PROD-038).
+   Open Vantify: Summary = nazwa, Description = „Dodaj info na start” (+ miejsce), oba po angielsku, podgląd i poprawa przed wysłaniem.
+     Po założeniu przycisk: „✓ Vantify #nr” (drugi raz się nie da). Bez PDF (Grzegorz 18/11: „przy tworzeniu nie musimy robić pdf”).
+   Close Vantify: szary „Czeka na zatwierdzenie”, dopóki Josh nie zatwierdzi (stuknięcie = sprawdź teraz). Potem: braki (zdjęcia po,
+     info na koniec) → Wróć / Zamknij mimo to; Job Sheet (tylko PDF, data zdjęcia) → „Tak” → Commence (gdy trzeba) + Complete z plikiem
+     → ponowny odczyt; „✓ Zamknięte w Vantify” dopiero, gdy Vantify potwierdzi zamknięcie (PROD-035).
+   Pierwszy raz (brak wzoru w telefonie): okno Vantify w apce z tekstem do wklejenia / Job Sheet do pola Upload; apka uczy się z tego.
+   Stan na karcie: draft.vantify = {id, status, summary, at, closedAt}. Ekran reactive.js daje ctx: draft, L, persist, render, message,
+   english(scope, extra), jobSheet(date). Bez Capacitora (komputer, testy) przyciski mówią, że to działa w telefonie. */
+(function (w) {
+  'use strict';
+  const SITE = 6324, esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const plugin = () => { const C = w.Capacitor; if (!C?.isNativePlatform?.()) return null; return C.registerPlugin ? C.registerPlugin('Vantify') : C.Plugins?.Vantify || null; };
+  const ask = o => w.OESTPrzycisk?.ask ? w.OESTPrzycisk.ask(o) : Promise.resolve(false);
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function state(d) {
+    const v = d?.vantify;
+    if (!v?.id) return 'none';
+    if (v.closedAt || v.status === 'completed' || v.final) return 'closed';
+    return v.status === 'approval_pending' ? 'approval' : 'open';
+  }
+  /* rząd przycisków nad „Wyślij / Zakończ” – ta sama wielkość co reszta (klasa btn) */
+  function html(d, L) {
+    const s = state(d), v = d?.vantify || {}, b = (label, act, cls) => '<button type="button" class="btn rx-vt' + (cls ? ' ' + cls : '') + '" data-rx="' + act + '">' + esc(label) + '</button>';
+    const open = s === 'none' ? b('Open Vantify', 'vt-open') : b('✓ Vantify #' + v.id, 'vt-check', 'rx-vt-done');
+    const close = s === 'none' ? b('Close Vantify', 'vt-close', 'rx-vt-off') : s === 'approval' ? b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'rx-vt-off') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'rx-vt-done') : b('Close Vantify', 'vt-close', 'go');
+    return '<div class="rx-row rx-vt-row">' + open + close + '</div>';
+  }
+  function why(r, L) {
+    const c = r?.code || r?.status || '';
+    if (r?.status === 'login' || c === 'login') return L('Logowanie do Vantify wygasło. Zaloguj się w Ustawienia → Vantify i spróbuj jeszcze raz.', 'Your Vantify sign-in has expired. Sign in in Settings → Vantify and try again.');
+    if (c === 'VANTIFY_BUSY') return L('Vantify jest teraz zajęty innym sprawdzaniem. Spróbuj za chwilę.', 'Vantify is busy with another check. Try again in a moment.');
+    if (c === 'timeout' || c === 'net' || c === 'repeat') return L('Brak odpowiedzi z Vantify. Sprawdź w Vantify, czy zlecenie nie zmieniło się, zanim spróbujesz znowu.', 'No answer from Vantify. Check in Vantify whether the job changed before you try again.');
+    return L('Vantify nie przyjął: ', 'Vantify did not accept it: ') + (r?.msg || c) + (r?.step ? ' (' + r.step + ')' : '');
+  }
+  async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
+  async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
+
+  async function open(x) {
+    const { draft: d, L } = x, P = plugin();
+    if (state(d) !== 'none') return check(x);
+    if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
+    x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
+    const where = [d.building, d.level, d.room].filter(Boolean).join(', ');
+    const sum = await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
+    const desc = [body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');
+    const node = document.createElement('div');
+    node.innerHTML = '<label class="field"><span>Summary</span><input class="rx-vt-sum" maxlength="250" value="' + esc(sum) + '"></label><label class="field"><span>Description</span><textarea class="rx-vt-desc rx-info-t" rows="6">' + esc(desc) + '</textarea></label>';
+    x.message('');
+    if (!await ask({ title: 'Open Vantify', node, ok: L('Załóż zlecenie', 'Create the job'), cancel: L('Wróć', 'Back') })) return;
+    const summary = node.querySelector('.rx-vt-sum').value.trim(), description = node.querySelector('.rx-vt-desc').value.trim();
+    if (!summary || !description) return x.message(L('Summary i Description nie mogą być puste.', 'Summary and Description cannot be empty.'));
+    const W = await wzory(P);
+    if (!W.create) {
+      await ask({ title: 'Open Vantify', text: L('Pierwszy raz: załóż zlecenie w oknie Vantify, jak zwykle. Summary i Description są gotowe do skopiowania (przyciski u góry). Apka zapamięta ustawienia i numer zlecenia, a następne założy sama.', 'First time: create the job in the Vantify window as usual. Summary and Description are ready to copy (buttons at the top). The app remembers the settings and the job number and creates the next ones by itself.'), alert: true });
+      let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/add//site', summary, description }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
+      const ev = (r?.events || []).filter(e => e.op === 'create' && e.id).pop();
+      if (!ev) return x.message(L('Nie widzę nowego zlecenia w Vantify. Jeśli je założyłeś, wpisz numer w ⋮ albo spróbuj jeszcze raz.', 'I do not see a new job in Vantify. If you created it, try again.'));
+      return saved(x, { id: Number(ev.id), status: 'approval_pending', summary });
+    }
+    x.message(L('Zakładam zlecenie w Vantify…', 'Creating the job in Vantify…'));
+    const r = await act(P, { op: 'create', summary, description });
+    if (r.status === 'ok' && r.id) return saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary });
+    x.message(why(r, L));
+  }
+  async function saved(x, v) {
+    x.draft.vantify = { ...v, at: new Date().toISOString() };
+    await x.persist(); x.render();
+    x.message(x.L('Założone w Vantify #', 'Created in Vantify #') + v.id + x.L('. Czeka na zatwierdzenie.', '. Awaiting approval.'));
+  }
+  /* sprawdź status teraz (stuknięcie w „Czeka na zatwierdzenie” albo w „✓ Vantify #nr”) */
+  async function check(x) {
+    const { draft: d, L } = x, P = plugin(), v = d.vantify;
+    if (!v?.id) return;
+    if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
+    x.message(L('Sprawdzam w Vantify…', 'Checking Vantify…'));
+    const r = await act(P, { op: 'status', ids: [v.id] }), j = r.status === 'ok' ? (r.jobs || [])[0] : null;
+    if (!j || j.error) return x.message(why(j?.error ? { code: j.error } : r, L));
+    await update(x, j);
+    x.message('Vantify #' + v.id + ': ' + label(j, L));
+  }
+  function label(j, L) { return j.final ? L('zamknięte', 'closed') : j.status === 'approval_pending' ? L('czeka na zatwierdzenie', 'awaiting approval') : j.status === 'acknowledged' ? L('zatwierdzone – można zamknąć', 'approved – ready to close') : j.status === 'commenced' ? L('rozpoczęte', 'commenced') : j.status; }
+  async function update(x, j) { const v = x.draft.vantify; if (v.status === j.status && !!v.final === !!j.final) return; x.draft.vantify = { ...v, status: j.status, final: !!j.final, ...(j.final && !v.closedAt ? { closedAt: new Date().toISOString() } : {}) }; await x.persist(); x.render(); }
+
+  async function close(x) {
+    const { draft: d, L } = x, P = plugin(), s = state(d);
+    if (s === 'none') return x.message(L('Najpierw Open Vantify.', 'Open Vantify first.'));
+    if (s !== 'open') return check(x);
+    if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
+    const miss = [];
+    if (!(d.afterMediaIds || []).length) miss.push(L('zdjęć po', 'after photos'));
+    if (!String(d.endNote || '').trim() && !await x.english('end', '', true)) miss.push(L('info na koniec', 'end info'));
+    if (miss.length && !await ask({ title: 'Close Vantify', text: L('Brakuje: ', 'Missing: ') + miss.join(', ') + '.', ok: L('Zamknij mimo to', 'Close anyway'), cancel: L('Wróć', 'Back') })) return;
+    x.message(L('Sprawdzam zlecenie w Vantify…', 'Checking the job in Vantify…'));
+    const st = await act(P, { op: 'status', ids: [d.vantify.id] }), j = st.status === 'ok' ? (st.jobs || [])[0] : null;
+    if (!j || j.error) return x.message(why(j?.error ? { code: j.error } : st, L));
+    await update(x, j);
+    if (j.final || j.status === 'approval_pending') return x.message('Vantify #' + d.vantify.id + ': ' + label(j, L));
+    if (d.vantify.summary && j.summary.trim() !== d.vantify.summary.trim()) return x.message(L('W Vantify zlecenie ma inną nazwę: „', 'In Vantify the job has a different name: “') + j.summary + L('”. Nic nie wysłałem.', '”. Nothing was sent.'));
+    x.message(L('Tworzę Job Sheet (PDF)…', 'Creating the Job Sheet (PDF)…'));
+    const sheet = await x.jobSheet(), day = sheet.date.toLocaleDateString('en-GB');
+    if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + L(' oraz plik ', ' with the file ') + sheet.name + '.', ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
+    const b64 = await w.OESTVoice.base64(new Blob([sheet.pdf], { type: 'application/pdf' })), W = await wzory(P);
+    if (!W.commence || !W.complete) {
+      await ask({ title: 'Close Vantify', text: L('Pierwszy raz: zamknij zlecenie w oknie Vantify, jak zwykle (Commence, potem Complete). Przy Upload apka sama poda Job Sheet. Apka zapamięta, jak to zrobiłeś, a następne zamknie sama.', 'First time: close the job in the Vantify window as usual (Commence, then Complete). At Upload the app offers the Job Sheet. The app remembers how you did it and closes the next ones by itself.'), alert: true });
+      let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + d.vantify.id + '/status', fileB64: b64, fileName: sheet.name }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
+      const done = (r?.events || []).some(e => e.op === 'complete' && Number(e.id) === Number(d.vantify.id));
+      return done ? check(x) : x.message(L('Nie widzę zamknięcia w Vantify. Zlecenie zostaje otwarte.', 'I do not see the job closed in Vantify. It stays open.'));
+    }
+    x.message(L('Zamykam w Vantify…', 'Closing in Vantify…'));
+    const r = await act(P, { op: 'close', id: d.vantify.id, summary: d.vantify.summary || '', onSite: sheet.start.toISOString(), done: sheet.date.toISOString(), file: { b64, name: sheet.name, title: sheet.title, type: 'application/pdf' } });
+    if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(L('Zlecenie w Vantify różni się od karty (', 'The job in Vantify differs from the card (') + r.why + L('). Nic nie wysłałem.', '). Nothing was sent.')); }
+    if (r.status !== 'ok') return x.message(why(r, L));
+    await update(x, r.job || { status: d.vantify.status });
+    if (!r.closed) return x.message(L('Vantify nie potwierdził zamknięcia. Sprawdź zlecenie w Vantify.', 'Vantify did not confirm the job is closed. Check the job in Vantify.'));
+    x.message(r.fileSeen ? L('✓ Zamknięte w Vantify z Job Sheet.', '✓ Closed in Vantify with the Job Sheet.') : L('✓ Zamknięte w Vantify, ale nie widzę pliku przy zleceniu – sprawdź w Vantify.', '✓ Closed in Vantify, but I do not see the file on the job – check in Vantify.'));
+  }
+  /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
+  function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
+  w.OESTReactiveVantify = { html, open, close, check, state, clampDay, ymd };
+})(window);

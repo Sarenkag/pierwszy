@@ -48,7 +48,12 @@ public class VantifyActivity extends Activity {
     static final int PICK = 4711;
     private ValueCallback<Uri[]> pick;
 
-    static File dir(Activity a) { File d = new File(a.getCacheDir(), "vantify"); d.mkdirs(); return d; }
+    static File dir(Activity a) { return dirOf(a); }
+    static File dirOf(android.content.Context c) { File d = new File(c.getCacheDir(), "vantify"); d.mkdirs(); return d; }
+    // przyciski Vantify (PROD-038): wzór z działań Grzegorza (vantify-akcje.js) i zdarzenia dla karty Reactive
+    private String akcje = "";
+    private final JSONArray events = new JSONArray();
+    private File sheet; // gotowy Job Sheet do pola Upload (pierwsze zamknięcie w oknie)
     static boolean vantify(String h) { return h != null && (h.equals("vantify.com") || h.endsWith(".vantify.com")); }
     static boolean jobExport(String text) { if (text == null) return false; int nl = text.indexOf('\n'); String head = nl > 0 ? text.substring(0, nl) : text; return head.contains("jobType") && head.contains("completeBy"); }
 
@@ -59,6 +64,7 @@ public class VantifyActivity extends Activity {
         // wpisy wracają do bieżącego zapisu. Zapis odbiera i usuwa VantifyPlugin po zakończeniu.
         new File(dir(this), "export.csv").delete(); new File(dir(this), "name.txt").delete();
         try { JSONArray prev = new JSONArray(read(new File(dir(this), "log.json"))); for (int i = 0; i < prev.length() && log.length() < MAX_LOG; i++) log.put(prev.get(i)); } catch (Exception e) {}
+        try { JSONArray prev = new JSONArray(read(new File(dir(this), "events.json"))); for (int i = 0; i < prev.length() && i < 50; i++) events.put(prev.get(i)); } catch (Exception e) {}
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.rgb(11, 22, 32));
         LinearLayout bar = new LinearLayout(this); bar.setGravity(Gravity.CENTER_VERTICAL); bar.setPadding(32, 24, 24, 24);
         info = new TextView(this); info.setTextColor(Color.WHITE); info.setTextSize(15);
@@ -92,6 +98,13 @@ public class VantifyActivity extends Activity {
         s.setAllowContentAccess(false);
         if (android.os.Build.VERSION.SDK_INT >= 26) web.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_YES); // menedżer haseł Google może podpowiedzieć login
         try { rejestr = asset("public/vantify-rejestr.js"); } catch (Exception e) { rejestr = ""; }
+        try { akcje = asset("public/vantify-akcje.js"); } catch (Exception e) { akcje = ""; }
+        String fp = getIntent().getStringExtra("file");
+        if (fp != null && !fp.isEmpty() && new File(fp).isFile()) sheet = new File(fp);
+        String sum = getIntent().getStringExtra("summary"), desc = getIntent().getStringExtra("description");
+        if (sum != null && !sum.isEmpty()) { bar.addView(copy(pl ? "Kopiuj Summary" : "Copy Summary", "Summary", sum), 0); info.setText(pl ? "Wklej Summary i Description po angielsku" : "Paste the English Summary and Description"); }
+        if (desc != null && !desc.isEmpty()) bar.addView(copy(pl ? "Kopiuj Description" : "Copy Description", "Description", desc), sum != null && !sum.isEmpty() ? 1 : 0);
+        if (sheet != null) info.setText(pl ? "Przy Upload apka poda Job Sheet: " + sheet.getName() : "At Upload the app offers the Job Sheet: " + sheet.getName());
         web.addJavascriptInterface(new Bridge(), "OESTVantifyBridge");
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
@@ -104,6 +117,7 @@ public class VantifyActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
                 if (pick != null) pick.onReceiveValue(null); // poprzedni wybór niezakończony: strona musi dostać odpowiedź
                 pick = cb;
+                if (sheet != null && sheet.isFile()) { offerSheet(p); return true; }
                 boolean many = p.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
                 String[] types = mimes(p.getAcceptTypes());
                 add("upload", String.join(",", types), many ? "multiple" : "single"); // do „Zbadaj”: tylko rodzaje plików, bez nazw
@@ -138,7 +152,37 @@ public class VantifyActivity extends Activity {
                 } catch (Exception e) { runOnUiThread(() -> info.setText(pl ? "Nie udało się pobrać pliku. Spróbuj jeszcze raz." : "Could not download the file. Try again.")); }
             }).start();
         });
-        web.loadUrl(START);
+        String hash = getIntent().getStringExtra("hash");
+        web.loadUrl(START + (hash != null && hash.matches("#/user/jobs(/[0-9]+/status|/add//site)?") ? hash : ""));
+    }
+
+    private Button copy(String label, String what, String text) {
+        Button b = new Button(this); b.setText(label); b.setAllCaps(false);
+        b.setOnClickListener(v -> {
+            android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText(what, text));
+            info.setText(pl ? what + " skopiowane – wklej w Vantify" : what + " copied – paste it in Vantify");
+        });
+        return b;
+    }
+
+    // pole Upload przy zamykaniu: najpierw Job Sheet przygotowany w apce, „Inny plik” = zwykły wybór pliku
+    private void offerSheet(WebChromeClient.FileChooserParams p) {
+        boolean many = p.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE;
+        String[] types = mimes(p.getAcceptTypes());
+        android.app.AlertDialog d = new android.app.AlertDialog.Builder(this)
+            .setTitle(pl ? "Job Sheet z apki" : "Job Sheet from the app").setMessage(sheet.getName())
+            .setPositiveButton(pl ? "Dołącz" : "Attach", (x, w) -> {
+                Uri u = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", sheet);
+                add("upload-picked", "sheet", ""); if (pick != null) { pick.onReceiveValue(new Uri[] { u }); pick = null; }
+            })
+            .setNegativeButton(pl ? "Inny plik" : "Other file", (x, w) -> {
+                try { startActivityForResult(pickIntent(types, many, pl ? "Wybierz plik" : "Choose a file"), PICK); }
+                catch (Exception e) { if (pick != null) { pick.onReceiveValue(null); pick = null; } }
+            })
+            .setOnCancelListener(x -> { if (pick != null) { pick.onReceiveValue(null); pick = null; } })
+            .create();
+        d.show();
     }
 
     // rodzaje z pola <input accept> (".pdf", "image/*", "application/pdf") → typy MIME dla wyboru pliku Androida; puste = wszystkie
@@ -170,7 +214,7 @@ public class VantifyActivity extends Activity {
         pick.onReceiveValue(got); pick = null; // zawsze odpowiedź (także Anuluj) – inaczej pole przestaje reagować
     }
 
-    private void inject() { if (vantify(host) && !rejestr.isEmpty()) web.evaluateJavascript(rejestr, null); }
+    private void inject() { if (vantify(host) && !rejestr.isEmpty()) web.evaluateJavascript(rejestr + "\n" + akcje, null); }
 
     private void onFile(String text, String name) {
         if (!jobExport(text)) { info.setText(pl ? "Pobrany plik to nie eksport Job: " + name : "The downloaded file is not a Job export: " + name); return; }
@@ -191,6 +235,13 @@ public class VantifyActivity extends Activity {
             if (!vantify(host) || json == null || json.length() > 20000) return;
             synchronized (VantifyActivity.this) { try { if (log.length() < MAX_LOG) log.put(new JSONObject(json)); } catch (Exception e) {} }
         }
+        // udane założenie / Commence / Complete w tym oknie: wzór zapytania (bez tekstów) do telefonu, numer zlecenia do karty
+        @JavascriptInterface public void wzor(String kind, String tpl, String id) {
+            if (!vantify(host) || kind == null || !kind.matches("create|commence|complete") || tpl == null || tpl.length() > 200000) return;
+            if (!tpl.isEmpty()) VantifyPlugin.Wzory.save(VantifyActivity.this, kind, tpl);
+            synchronized (VantifyActivity.this) { try { events.put(new JSONObject().put("op", kind).put("id", id == null ? "" : id).put("t", System.currentTimeMillis())); } catch (Exception e) {} }
+            runOnUiThread(() -> info.setText(pl ? "Zapisane w apce: " + kind + (id == null || id.isEmpty() ? "" : " #" + id) : "Saved in the app: " + kind + (id == null || id.isEmpty() ? "" : " #" + id)));
+        }
         @JavascriptInterface public void file(String text, String name) {
             if (!vantify(host) || text == null || text.length() > MAX_FILE) return;
             runOnUiThread(() -> onFile(text, name));
@@ -206,7 +257,7 @@ public class VantifyActivity extends Activity {
     }
 
     // przejście w tło: zapis „Zbadaj” trafia do pliku, żeby nie zginął, gdy Android zamknie apkę
-    @Override protected void onPause() { super.onPause(); try { synchronized (this) { write("log.json", log.toString()); } } catch (Exception e) {} }
+    @Override protected void onPause() { super.onPause(); try { synchronized (this) { write("log.json", log.toString()); write("events.json", events.toString()); } } catch (Exception e) {} }
 
     // zapis atomowy: najpierw plik tymczasowy, potem zmiana nazwy – urwany zapis (brak miejsca) nigdy nie zostaje pod właściwą nazwą
     private void write(String name, String text) throws Exception {
@@ -217,7 +268,7 @@ public class VantifyActivity extends Activity {
     }
 
     private void finishWithResult() {
-        try { synchronized (this) { write("log.json", log.toString()); } } catch (Exception e) {}
+        try { synchronized (this) { write("log.json", log.toString()); write("events.json", events.toString()); } } catch (Exception e) {}
         if (csv != null) {
             // eksport przekazujemy tylko w całości: name.txt, potem export.csv (jego obecność = kompletny plik)
             try { write("name.txt", csvName == null ? "export.csv" : csvName); write("export.csv", csv); }

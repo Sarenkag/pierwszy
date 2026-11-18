@@ -1,5 +1,6 @@
 package com.oest.inspekcje;
 
+import android.content.Context;
 import android.content.Intent;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSArray;
@@ -27,6 +28,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import org.json.JSONObject;
 
 // Vantify w apce (Grzegorz 10/11/2026): otwiera VantifyActivity, po zamknięciu oddaje pobrany eksport Job (csv)
 // i zapis „Zbadaj” (log). Pliki przechodzą przez cache, nie przez Intent (limit wielkości). Bez loginu i hasła.
@@ -35,7 +38,54 @@ public class VantifyPlugin extends Plugin {
     @PluginMethod public void open(PluginCall call) {
         Intent i = new Intent(getContext(), VantifyActivity.class);
         i.putExtra("lang", call.getString("lang", "pl"));
+        // przyciski Vantify (PROD-038), pierwsze użycie: okno otwiera się od razu na zakładaniu/zleceniu, z tekstem EN do skopiowania
+        // i z gotowym Job Sheet do pola Upload (plik w cache/vantify, udostępniany tylko temu oknu przez FileProvider)
+        i.putExtra("hash", call.getString("hash", ""));
+        i.putExtra("summary", call.getString("summary", ""));
+        i.putExtra("description", call.getString("description", ""));
+        new File(VantifyActivity.dirOf(getContext()), "events.json").delete();
+        String b64 = call.getString("fileB64", ""), name = call.getString("fileName", "");
+        File sheets = new File(VantifyActivity.dirOf(getContext()), "jobsheet");
+        if (sheets.exists()) for (File f : sheets.listFiles()) f.delete();
+        if (!b64.isEmpty() && name.matches("[^/\\\\]{1,180}\\.pdf")) {
+            try { sheets.mkdirs(); File f = new File(sheets, name); try (FileOutputStream o = new FileOutputStream(f)) { o.write(android.util.Base64.decode(b64, android.util.Base64.DEFAULT)); } i.putExtra("file", f.getAbsolutePath()); }
+            catch (Exception e) { call.reject("VANTIFY_FILE"); return; }
+        }
         startActivityForResult(call, i, "done");
+    }
+
+    // Przyciski Vantify (Grzegorz 18/11/2026 „Tak”, PROD-038): jedno zadanie w ukrytym oknie Vantify (vantify-akcje.js):
+    // op create | close | status. Wzory zapytań (nauczone w oknie Vantify w apce) dokłada telefon; apka ich nie widzi.
+    // Wynik: {status:"ok"|"nowzor"|"differs"|"login"|"error", …}. Zawsze tylko jedno okno naraz.
+    @PluginMethod public void action(PluginCall call) {
+        Activity a = getActivity();
+        JSObject act = call.getObject("action");
+        if (a == null || act == null) { call.reject("VANTIFY_ACTION"); return; }
+        String wz = Wzory.load(getContext()).toString(), payload = act.toString();
+        a.runOnUiThread(() -> {
+            if (Sync.current != null) { call.reject("VANTIFY_BUSY"); return; }
+            Sync.current = new Sync(a, call, "action", "window.__oestAction=" + payload + ";window.__oestWzory=" + wz + ";"); Sync.current.start();
+        });
+    }
+    // które wzory już są w telefonie (bez treści): {create, commence, complete}
+    @PluginMethod public void wzory(PluginCall call) {
+        JSONObject w = Wzory.load(getContext()); JSObject o = new JSObject();
+        for (String k : new String[] { "create", "commence", "complete" }) o.put(k, w.has(k));
+        call.resolve(o);
+    }
+
+    // Wzory zapytań Vantify (PROD-038): tylko w tym telefonie, poza kopią zapasową (noBackupFilesDir), bez Summary, Description, dat i plików.
+    static final class Wzory {
+        static File file(Context c) { return new File(c.getNoBackupFilesDir(), "vantify-wzory.json"); }
+        static synchronized JSONObject load(Context c) { try { return new JSONObject(read(file(c))); } catch (Exception e) { return new JSONObject(); } }
+        static synchronized void save(Context c, String kind, String json) {
+            try {
+                JSONObject all = load(c); all.put(kind, new JSONObject(json));
+                File tmp = new File(file(c).getPath() + ".tmp");
+                try (FileOutputStream o = new FileOutputStream(tmp)) { o.write(all.toString().getBytes(StandardCharsets.UTF_8)); o.getFD().sync(); }
+                if (!tmp.renameTo(file(c))) tmp.delete();
+            } catch (Exception e) {}
+        }
     }
 
     // „Pobierz z Vantify” i sprawdzanie przy starcie (Grzegorz 10/11/2026): ukryte okno Vantify z zalogowaniem zapamiętanym
@@ -48,8 +98,8 @@ public class VantifyPlugin extends Plugin {
         // jedno ukryte okno naraz: drugie wywołanie (np. „Pobierz” w trakcie sprawdzania przy starcie) czeka na ten sam wynik,
         // więc zapisane hasło nie trafia do dwóch formularzy logowania równocześnie (blokada konta)
         // mode "explore" = „Zbadaj automatycznie”: to samo ukryte okno, tylko odczyt, dłuższy limit czasu, wynik = zapis „Zbadaj”
-        boolean ex = "explore".equals(call.getString("mode", ""));
-        a.runOnUiThread(() -> { if (Sync.current != null && Sync.current.join(call, ex)) return; Sync.current = new Sync(a, call, ex); Sync.current.start(); });
+        String mode = "explore".equals(call.getString("mode", "")) ? "explore" : "list";
+        a.runOnUiThread(() -> { if (Sync.current != null && Sync.current.join(call, mode)) return; Sync.current = new Sync(a, call, mode, ""); Sync.current.start(); });
     }
 
     // Zapamiętany login i hasło (Grzegorz 10/11/2026): zapis z Ustawień, odczyt bez hasła, usunięcie. Szczegóły: VantifyLogin.
@@ -68,7 +118,7 @@ public class VantifyPlugin extends Plugin {
     private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
 
     static final class Sync {
-        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 600000;
+        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 600000, TIMEOUT_ACTION = 180000;
         private String asset(String p) throws Exception {
             try (InputStream in = a.getAssets().open(p)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
         }
@@ -76,13 +126,13 @@ public class VantifyPlugin extends Plugin {
         private final Activity a; private final java.util.List<PluginCall> calls = new java.util.ArrayList<>();
         private final Handler h = new Handler(Looper.getMainLooper());
         private WebView web; private String script = ""; private volatile String host = ""; private boolean finished;
-        private final boolean explore;
-        Sync(Activity a, PluginCall call, boolean explore) { this.a = a; this.explore = explore; calls.add(call); }
-        // trwające okno: to samo zadanie dołącza; inne zadanie czeka na koniec (odrzucone, apka powie „spróbuj za chwilę”)
-        boolean join(PluginCall c, boolean ex) { if (finished) return false; if (ex != explore) { c.reject("VANTIFY_BUSY"); return true; } calls.add(c); return true; }
+        private final boolean explore, action; private final String mode, pre;
+        Sync(Activity a, PluginCall call, String mode, String pre) { this.a = a; this.mode = mode; this.pre = pre; explore = "explore".equals(mode); action = "action".equals(mode); calls.add(call); }
+        // trwające okno: to samo zadanie (odczyt listy, Zbadaj) dołącza; inne zadanie albo przycisk Vantify – odrzucone („spróbuj za chwilę”)
+        boolean join(PluginCall c, String m) { if (finished) return false; if (action || !m.equals(mode)) { c.reject("VANTIFY_BUSY"); return true; } calls.add(c); return true; }
 
         void start() {
-            try { script = (explore ? "window.__oestMode='explore';" + asset("public/vantify-rejestr.js") : "") + asset("public/vantify-sync.js"); }
+            try { script = (explore ? "window.__oestMode='explore';" + asset("public/vantify-rejestr.js") : action ? "window.__oestMode='action';" + pre + asset("public/vantify-akcje.js") : "") + asset("public/vantify-sync.js"); }
             catch (Exception e) { finish("{\"status\":\"error\",\"code\":\"asset\"}"); return; }
             web = new WebView(a);
             CookieManager.getInstance().setAcceptCookie(true);
@@ -99,7 +149,7 @@ public class VantifyPlugin extends Plugin {
             ((ViewGroup) a.getWindow().getDecorView()).addView(web, new FrameLayout.LayoutParams(1, 1));
             // Zbadaj trwa minuty: ekran nie gaśnie, bo uśpiony telefon wstrzymuje okno (Zbadaj 11/11: 20 min przerwy po 150 odczytach)
             if (explore) a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : TIMEOUT);
+            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : action ? TIMEOUT_ACTION : TIMEOUT);
             web.loadUrl(VantifyActivity.START + "#/user/jobs");
         }
 
@@ -143,10 +193,12 @@ public class VantifyPlugin extends Plugin {
         File dir = new File(getContext().getCacheDir(), "vantify");
         try {
             JSObject out = new JSObject();
-            File csv = new File(dir, "export.csv"), name = new File(dir, "name.txt"), log = new File(dir, "log.json");
+            File csv = new File(dir, "export.csv"), name = new File(dir, "name.txt"), log = new File(dir, "log.json"), ev = new File(dir, "events.json");
             if (csv.exists()) { out.put("csv", read(csv)); out.put("name", name.exists() ? read(name) : "export.csv"); }
             out.put("log", log.exists() ? new JSArray(read(log)) : new JSArray());
-            for (File f : new File[] { csv, name, log }) f.delete();
+            // przyciski Vantify (PROD-038): co Grzegorz zrobił w oknie – założone/rozpoczęte/zamknięte zlecenia (rodzaj i numer)
+            out.put("events", ev.exists() ? new JSArray(read(ev)) : new JSArray());
+            for (File f : new File[] { csv, name, log, ev }) f.delete();
             call.resolve(out);
         } catch (Exception e) { call.reject("VANTIFY_RESULT"); }
     }
