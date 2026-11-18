@@ -140,7 +140,7 @@
     const made=new Map();try{for(const r of (Z?.list?await Z.list():[]))made.set(r.id,r.created);}catch(e){}
     for(const phase of ['before','after'])for(const id of draft[phase+'MediaIds']||[]){const m=await repo.media(id);if(!m)throw Error('EVIDENCE_MISSING');photos.push({...m,phase});let d=m.zid&&made.get(m.zid)?new Date(made.get(m.zid)):null;if(!(d instanceof Date)||isNaN(d)){try{d=Z?.exifDate?await Z.exifDate(m.blob):null;}catch(e){d=null;}}if(d instanceof Date&&!isNaN(d))days[phase].push(d);}
     days.before.sort((a,b)=>a-b);days.after.sort((a,b)=>a-b);
-    const from=draft.vantify?.at,end=V.clampDay(days.after.at(-1)||days.before.at(-1),from),start=V.clampDay(days.before[0]&&days.before[0]<=end?days.before[0]:end,from);
+    /* dolna granica = data zadania w apce (PROD-038), nie data zlecenia w Vantify – zdjęcia sprzed założenia w Vantify zostają (przegląd Codex #146) */const from=rxDate(draft,draft.createdAt||draft.vantify?.at),end=V.clampDay(days.after.at(-1)||days.before.at(-1),from),start=V.clampDay(days.before[0]&&days.before[0]<=end?days.before[0]:end,from);
     /* Job Sheet do Vantify po angielsku (przegląd Codex #146): nazwa = Summary z Vantify, info na start/koniec z notatek EN, bez polskich nagrań */
     const en={...draft,title:draft.vantify?.summary||await vtEnglish(draft.title||draft.problem||''),note:await vtEnglish('start',draft.note),endNote:await vtEnglish('end',draft.endNote),audioMediaIds:[],actionId:draft.pendingActionId||draft.actionId,reportText:draft.reportEdited?draft.reportText:''};
     const fields=C.report(en,profile,end),RR=w.OESTReactiveReport,mb=n=>(n/1048576).toFixed(1).replace('.',L(',','.'));

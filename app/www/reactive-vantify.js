@@ -43,7 +43,8 @@
     /* poprzednie zakładanie bez odpowiedzi (przegląd Codex #146): zlecenie mogło powstać – najpierw sprawdzić w Vantify */
     if (state(d) === 'pending' && !await ask({ title: 'Open Vantify', text: L('Poprzednie zakładanie (', 'The previous attempt (') + new Date(d.vantify.at).toLocaleString('en-GB') + L(') nie dostało odpowiedzi z Vantify i zlecenie mogło już powstać: „', ') got no answer from Vantify and the job may already exist: “') + (d.vantify.summary || '') + L('”. Sprawdź najpierw listę zleceń w Vantify. Założyć nowe mimo to?', '”. Check the job list in Vantify first. Create a new one anyway?'), ok: L('Załóż mimo to', 'Create anyway'), cancel: L('Wróć', 'Back') })) return;
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
-    const where = [d.building, d.level, d.room].filter(Boolean).join(', ');
+    /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
+    const where = [d.building, d.level, String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : ''].filter(Boolean).join(', ');
     const sum = await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
     const desc = [body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');
     const node = document.createElement('div');

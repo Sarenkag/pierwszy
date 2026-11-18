@@ -65,7 +65,7 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor();
     const sum = await pg.locator('.rx-vt-sum').inputValue(), desc = await pg.locator('.rx-vt-desc').inputValue();
     check(/^EN Haczyki na drzwiach biura$/.test(sum), 'Summary nie przetłumaczone: ' + sum);
-    check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, 5, Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
+    check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, 5, EN Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
     await pg.locator('.rx-vt-sum').fill('Coat hooks on office door – Tower B');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podglad.png') });
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
@@ -130,7 +130,10 @@ function fakePhone() {
     { const k = await calls(); check(k.length === 1 && k[0].op === 'status', 'inna nazwa: poszło coś poza odczytem'); }
     // ---------- 6. zamknięcie: Job Sheet PDF, „Tak, zamknij”, potwierdzenie z Vantify ----------
     // data zdjęcia z modułu zdjęć (pole created), nie z pliku (plik w raporcie jest już bez EXIF) – przegląd Codex #146
-    await pg.waitForTimeout(1200); const shot = await pg.evaluate(() => Date.now() - 600);
+    // zdjęcie z wczoraj, zadanie w apce z wczoraj, zlecenie w Vantify dziś: daty z wczoraj (granica = data zadania w apce, PROD-038)
+    const y = new Date(Date.now() - 86400000), ymdY = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+    await pg.locator('[data-rx-field=orderDate]').fill(ymdY); await pg.locator('[data-rx-field=orderDate]').dispatchEvent('change'); await saved();
+    const shot = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 12, 0, 0).getTime();
     await pg.evaluate(t => { const Z = window.OESTZdjecia, o = Z.list.bind(Z); Z.list = async (...a) => (await o(...a)).map(r => ({ ...r, created: new Date(t).toISOString() })); }, shot);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: false }); });
     await pg.locator('[data-rx=vt-close]').click(); await ask().locator('[data-a=ok]').waitFor({ timeout: 20000 });
