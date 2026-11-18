@@ -22,12 +22,14 @@ const DAY = 86400000, NOW = Date.now();
 const d = n => new Date(NOW - n * DAY).toUTCString();
 const item = (t, pub, days) => `<item><title>${t} - ${pub}</title><link>https://news.google.com/rss/articles/${encodeURIComponent(t.slice(0, 20))}</link><pubDate>${d(days)}</pubDate><source url="https://x.example">${pub}</source></item>`;
 const rss = items => `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>t</title>${items.join('')}</channel></rss>`;
-const FEEDS = {
-  'Pension Insurance Corporation': rss([item('PIC paves the way to a £85 million buy-in for the Interface Europe Pension Scheme', 'PIC', 28), item('From gridlock to growth: cities need more planning powers', 'PIC', 37)]),
-  'Savills': rss([item('Savills: Birmingham build to rent pipeline hits record', 'Property Week', 4), item('Savills advises on Midlands BTR portfolio sale', 'React News', 12)]),
-  'Smart Managed Solutions': rss([item('Investcorp to take majority stake in Smart Managed Solutions', 'PEI Private Equity', 25)]),
-  'One Eastside': rss([item('PIC completes One Eastside in Birmingham', 'PIC', 107), item('Savills: Birmingham build to rent pipeline hits record', 'Property Week', 4)])
-};
+// Filtry Grzegorza 18/11 20:32: PIC i Savills tylko o One Eastside (zapytanie wymaga „One Eastside”), Smart – wszystko + oferty pracy.
+const FEEDS = [
+  ['Pension Insurance Corporation', rss([item('PIC completes One Eastside in Birmingham', 'PIC', 107), item('Sphere hands Birmingham skyscraper to PIC', 'Sustainable Construction', 106)])],
+  ['Savills', rss([item('Savills lets final penthouse at One Eastside', 'Property Week', 4)])],
+  ['Smart Managed Solutions', rss([item('Investcorp to take majority stake in Smart Managed Solutions', 'PEI Private Equity', 25), item('Smart Managed Solutions wins new data centre contract', 'FM World', 10)])]
+];
+const job = (t, city, days, id) => `<item><title>${t}</title><pubDate>${d(days)}</pubDate><link>https://smartmanagedsolutions-1734694596.teamtailor.com/jobs/${id}</link><tt:locations><tt:location><tt:name>${city}</tt:name><tt:city>${city}</tt:city></tt:location></tt:locations></item>`;
+const JOBS = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:tt="https://teamtailor.com/locations"><channel><title>Smart</title>${[job('Mechanical Engineer', 'London', 0, 1), job('Electrical  Engineer', 'Birmingham', 2, 2), job('Contract Supervisor', 'London', 5, 3)].join('')}</channel></rss>`;
 const fails = [];
 function check(ok, msg) { if (!ok) fails.push(msg); }
 
@@ -42,10 +44,11 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await c.route(/^https:\/\/news\.google\.com\/rss\/search/, r => {
       calls++;
       const q = decodeURIComponent(new URL(r.request().url()).searchParams.get('q'));
-      const k = Object.keys(FEEDS).find(k => q.includes(k));
-      r.fulfill({ status: 200, contentType: 'application/xml', body: k ? FEEDS[k] : rss([]) });
+      const f = FEEDS.find(([k]) => q.includes(k));
+      r.fulfill({ status: 200, contentType: 'application/xml', body: f ? f[1] : rss([]) });
     });
-    await c.route(/^https?:\/\/(?!127\.0\.0\.1|news\.google\.com)/, r => r.abort());
+    await c.route(/^https:\/\/smartmanagedsolutions-1734694596\.teamtailor\.com\/jobs\.rss/, r => { calls++; r.fulfill({ status: 200, contentType: 'application/rss+xml', body: JOBS }); });
+    await c.route(/^https?:\/\/(?!127\.0\.0\.1|news\.google\.com|smartmanagedsolutions-1734694596\.teamtailor\.com)/, r => r.abort());
     await c.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
     const p = await c.newPage(); const errors = []; p.on('pageerror', e => errors.push(e.message));
     await p.goto(url + '#home');
@@ -57,7 +60,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(!tiles.some(t => t.t === 'Statystyki'), 'N1: Statystyki nadal na ekranie');
     const scroll = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
     check(scroll <= 0, 'N1: ekran główny przewija się o ' + scroll + ' px');
-    check(calls === 4, 'N2: pierwsze pobranie = 4 zapytania, było ' + calls);
+    check(calls === 4, 'N2: pierwsze pobranie = 4 zapytania (3 × Google News + oferty pracy), było ' + calls);
     // N5 znaczek
     const badge = await p.evaluate(() => { const b = document.querySelector('#hmTiles [data-hnews] .kf-n'); return b && !b.hidden ? b.textContent : ''; });
     check(badge === '5', 'N5: znaczek nowych „' + badge + '” zamiast 5');
@@ -65,15 +68,18 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // N4 okienko
     await p.click('#hmTiles [data-hnews]');
     await p.waitForSelector('#hmPop.in .hm-nw');
-    const rows = await p.evaluate(() => [...document.querySelectorAll('#hmPop .hm-nw')].map(a => ({ f: a.querySelector('.hm-nf').textContent, t: a.querySelector('b').textContent, s: a.querySelector('small').textContent, href: a.getAttribute('href') })));
+    const all = await p.evaluate(() => [...document.querySelectorAll('#hmPop .hm-nw')].map(a => ({ f: a.querySelector('.hm-nf').textContent, t: a.querySelector('b').textContent, s: a.querySelector('small').textContent, href: a.getAttribute('href') })));
+    const rows = all.slice(0, 5), sum = all[5];
+    check(all.length === 6, 'N4: wierszy ' + all.length + ' zamiast 5 + 1 zbiorczy ofert pracy');
+    check(sum && sum.f === 'Smart' && /3 ofert pracy/.test(sum.t) && /teamtailor\.com\/jobs$/.test(sum.href), 'N4: brak wiersza zbiorczego ofert pracy: ' + JSON.stringify(sum));
     check(rows.length === 5, 'N4: nagłówków ' + rows.length + ' zamiast 5');
-    check(rows[0] && /One Eastside/.test(rows[0].s) && rows[1] && /One Eastside/.test(rows[1].s), 'N4: One Eastside nie na górze: ' + JSON.stringify(rows.slice(0, 2)));
-    check(rows[0] && rows[0].t === 'Savills: Birmingham build to rent pipeline hits record' && rows[0].f === 'Savills', 'N4: pierwszy powinien być najnowszy o One Eastside (Savills): ' + JSON.stringify(rows[0]));
-    check(rows[1] && rows[1].f === 'PIC' && rows[1].t === 'PIC completes One Eastside in Birmingham', 'N4: drugi = PIC One Eastside: ' + JSON.stringify(rows[1]));
+    const exp = [['Savills', 'Savills lets final penthouse at One Eastside', /One Eastside/], ['PIC', 'Sphere hands Birmingham skyscraper to PIC', /One Eastside/], ['PIC', 'PIC completes One Eastside in Birmingham', /One Eastside/],
+      ['Smart', 'Electrical Engineer', /Oferta pracy · Birmingham/], ['Smart', 'Smart Managed Solutions wins new data centre contract', /FM World/]];
+    exp.forEach(([f, t, s], i) => check(rows[i] && rows[i].f === f && rows[i].t === t && s.test(rows[i].s), 'N4: pozycja ' + (i + 1) + ' powinna być ' + f + ' „' + t + '”, jest ' + JSON.stringify(rows[i])));
+    check(!all.some(r => /London/.test(r.s)), 'N4: oferta z Londynu jako osobny wiersz (powinna być tylko w zbiorczym)');
     check(new Set(rows.map(r => r.t)).size === rows.length, 'N4: dubel nagłówka');
     check(rows.every(r => !/ - (PIC|Property Week|React News|PEI Private Equity)$/.test(r.t)), 'N4: wydawca doklejony do tytułu');
-    check(rows.every(r => /^https:\/\/news\.google\.com\//.test(r.href)), 'N4: link nie do artykułu');
-    check(rows.slice(2).map(r => r.f).join(',') === 'Savills,Smart,PIC', 'N4: kolejność po One Eastside nie wg daty: ' + rows.slice(2).map(r => r.f));
+    check(rows.every(r => /^https:\/\/(news\.google\.com|smartmanagedsolutions-1734694596\.teamtailor\.com)\//.test(r.href)), 'N4: link nie do artykułu/oferty');
     check(rows.every(r => /\d{2}\/\d{2}\/\d{4}$/.test(r.s)), 'N4b: data nie w formacie DD/MM/YYYY: ' + rows.map(r => r.s).join(' | '));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'okno-PL.png') });
     const before = await p.evaluate(() => document.querySelector('#hmPop .hm-nw'));
@@ -89,13 +95,13 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await p.reload(); await p.waitForFunction(() => window.OESTNowosci && document.querySelector('#hmTiles [data-hnews]'));
     await p.evaluate(() => OESTNowosci.load(false));
     check(calls === 4, 'N2: w tej samej dobie kolejne zapytania (' + calls + ')');
-    // N4b 45 nowszych zwykłych + 1 starszy One Eastside → One Eastside zostaje w pamięci i na górze
+    // N4b 45 nowszych zwykłych (Smart) + 1 starszy One Eastside → One Eastside zostaje w pamięci i na górze
     const keep = await p.evaluate(async () => {
       const old = localStorage.getItem('oest.news'); localStorage.removeItem('oest.news');
       const f = window.fetch; const now = Date.now();
       window.fetch = u => { const q = decodeURIComponent(new URL(u).searchParams.get('q'));
-        const it = q.includes('One Eastside') ? '<item><title>Old One Eastside story - X</title><link>https://news.google.com/a/oes</link><pubDate>' + new Date(now - 300 * 864e5).toUTCString() + '</pubDate><source>X</source></item>'
-          : q.includes('Pension') ? Array.from({ length: 45 }, (_, i) => '<item><title>PIC news number ' + i + ' - X</title><link>https://news.google.com/a/' + i + '</link><pubDate>' + new Date(now - i * 36e5).toUTCString() + '</pubDate><source>X</source></item>').join('') : '';
+        const it = q.includes('Pension') ? '<item><title>Old One Eastside story - X</title><link>https://news.google.com/a/oes</link><pubDate>' + new Date(now - 300 * 864e5).toUTCString() + '</pubDate><source>X</source></item>'
+          : q.includes('Smart Managed') ? Array.from({ length: 45 }, (_, i) => '<item><title>Smart news number ' + i + ' - X</title><link>https://news.google.com/a/' + i + '</link><pubDate>' + new Date(now - i * 36e5).toUTCString() + '</pubDate><source>X</source></item>').join('') : '';
         return Promise.resolve(new Response('<rss><channel>' + it + '</channel></rss>')); };
       await OESTNowosci.load(true); window.fetch = f;
       const r = { inCache: OESTNowosci.cache().items.some(x => x.oes), first: OESTNowosci.top(5)[0].title };
@@ -118,5 +124,5 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(!errors.length, 'błędy JS: ' + errors.join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }
   if (fails.length) { console.error('NOWOSCI UI FAIL\n- ' + fails.join('\n- ')); process.exit(1); }
-  console.log('NOWOSCI UI PASS: kafelek na miejscu Statystyk (2×4, bez przewijania), pobranie raz na dobę, bez sieci zero zapytań, 5 nagłówków z One Eastside na górze, znaczek nowych, PL/EN.');
+  console.log('NOWOSCI UI PASS: kafelek na miejscu Statystyk (2×4, bez przewijania), pobranie raz na dobę, bez sieci zero zapytań, PIC i Savills tylko o One Eastside, Smart: wiadomości + oferty pracy (Birmingham osobno, reszta w wierszu zbiorczym), daty DD/MM/YYYY, znaczek nowych, PL/EN.');
 })().catch(e => { console.error(e); process.exit(1); });

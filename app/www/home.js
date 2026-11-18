@@ -206,13 +206,15 @@
   }
   function fillNews() {
     var N = w.OESTNowosci, c = N ? N.cache() : null, list = N ? N.top(5) : [], h = head("📰 " + X("nowosci-firm"), "PIC · Savills · Smart");
-    if (!list.length) h += '<p class="hm-note">' + (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) + "</p>";
+    if (!list.length && !(N && N.jobs())) h += '<p class="hm-note">' + (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) + "</p>";
     h += list.map(function (x) {
       var f = (N.FIRMY[x.src] || {}).skrot || "", dt = x.date ? new Date(x.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "" /* DD/MM/YYYY (AI-008) */;
       return '<a class="hm-nt hm-nw" href="' + esc(x.url) + '" rel="noopener"><span class="hm-nf ' + esc(x.src) + '">' + esc(f) + "</span><span><b>" + esc(x.title) + "</b><small>" +
-        (x.oes ? "One Eastside · " : "") + esc(x.pub) + (dt ? " · " + esc(dt) : "") + '</small></span><span class="hm-ar">›</span></a>';
+        (x.oes ? "One Eastside · " : x.praca ? esc(X("nowosci-praca")) + " · " : "") + esc(x.pub) + (dt ? " · " + esc(dt) : "") + '</small></span><span class="hm-ar">›</span></a>';
     }).join("");
-    if (c) h += '<p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) +
+    var J = N ? N.jobs() : null; // oferty pracy Smart: jeden wiersz zbiorczy (strona kariery)
+    if (J) h += '<a class="hm-nt hm-nw" href="' + esc(J.url) + '" rel="noopener"><span class="hm-nf smart">Smart</span><span><b>' + esc(X("nowosci-oferty", { n: J.n })) + "</b><small>" + esc(X("nowosci-kariera")) + '</small></span><span class="hm-ar">›</span></a>';
+    if (c) h += '<p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") }) +
       (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") + "</p>";
     body(h);
   }
