@@ -62,11 +62,11 @@ function fakePhone() {
     // ---------- 2. Open pierwszy raz: podgląd EN → okno Vantify z tekstem → numer z okna ----------
     // w oknie Grzegorz poprawił nazwę – karta ma zapisać Summary z Vantify, nie z podglądu (przegląd Codex #146)
     await pg.evaluate(() => { window.__vt.open = { events: [{ op: 'create', id: '3070001', t: 1 }] }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
-    await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor();
-    const sum = await pg.locator('.rx-vt-sum').inputValue(), desc = await pg.locator('.rx-vt-desc').inputValue();
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
+    const sum = await ask().locator('.rx-vt-sum').inputValue(), desc = await ask().locator('.rx-vt-desc').inputValue();
     check(/^EN Haczyki na drzwiach biura$/.test(sum), 'Summary nie przetłumaczone: ' + sum);
     check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, 5, EN Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
-    await pg.locator('.rx-vt-sum').fill('Coat hooks on office door – Tower B');
+    await ask().locator('.rx-vt-sum').fill('Coat hooks on office door – Tower B');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podglad.png') });
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
     check(/Pierwszy raz/.test(await ask().textContent()), 'pierwszy raz: brak wyjaśnienia');
@@ -95,7 +95,7 @@ function fakePhone() {
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' } }); });
     await job('Wieszaki w kuchni');
     // 3a. brak odpowiedzi: karta pamięta „mogło powstać” (przegląd Codex #146)
-    await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await msg(/Brak odpowiedzi z Vantify/);
     { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && j.reactive.vantify && j.reactive.vantify.pending === true && !j.reactive.vantify.id && j.reactive.vantify.summary === 'EN Wieszaki w kuchni', 'brak odpowiedzi: karta nie pamięta niepewnego zakładania ' + JSON.stringify(j && j.reactive.vantify)); }
     check(await pg.locator('[data-rx=vt-open].rx-vt-off').count() === 1, 'niepewne zakładanie: Open Vantify bez wyszarzenia');
@@ -105,11 +105,11 @@ function fakePhone() {
     await ask().locator('[data-a=no]').click(); await gone();
     check((await calls()).length === 1, 'Wróć przy niepewnym zakładaniu coś wysłało');
     // 3c. „Załóż mimo to” → Vantify odmówił (HTTP 4xx) = pewnie nie założone → karta wraca do zwykłego „Open Vantify”
-    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('[data-a=ok]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('[data-a=ok]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await msg(/Vantify nie przyjął: Invalid/);
     { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && !j.reactive.vantify, 'odmowa 4xx: karta dalej „niepewna”'); }
     // 3d. zakładanie udane
-    await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => /✓ Vantify #3070002/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     { const k = await calls(); check(k.length === 3 && k.every(c => c.op === 'create') && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
     { const k = await calls(); check(new Set(k.map(c => c.nonce)).size === 3, 'ponowne zakładanie z tym samym nonce'); }
