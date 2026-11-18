@@ -72,7 +72,7 @@
           if (x.date && x.date < old) return;
           seen[k] = x; items.push(x);
         }); });
-        items.sort(function (a, b) { return b.date - a.date; });
+        items.sort(function (a, b) { return (b.oes - a.oes) || (b.date - a.date); }); // One Eastside przed obcięciem do 40 – nigdy nie wypada
         var out = { t: Date.now(), items: items.slice(0, 40) };
         try { w.localStorage.setItem(KEY, JSON.stringify(out)); } catch (e) {}
         return out;
@@ -85,6 +85,10 @@
   }
   function seenAt() { try { return +w.localStorage.getItem(SEEN) || 0; } catch (e) { return 0; } }
   function unread() { var s = seenAt(); return top(5).filter(function (x) { return x.date > s; }).length; }
-  function markSeen() { var c = cache(), m = 0; ((c && c.items) || []).forEach(function (x) { if (x.date > m) m = x.date; }); try { w.localStorage.setItem(SEEN, String(m || Date.now())); } catch (e) {} }
+  function markSeen() {
+    var c = cache(), m = 0; ((c && c.items) || []).forEach(function (x) { if (x.date > m) m = x.date; });
+    if (!m || m <= seenAt()) return; // nic nie pobrane jeszcze – nie przesuwaj granicy (późniejsze nagłówki dostaną znaczek)
+    try { w.localStorage.setItem(SEEN, String(m)); } catch (e) {}
+  }
   w.OESTNowosci = { load: load, cache: cache, top: top, unread: unread, seen: markSeen, parse: parse, FIRMY: FIRMY, KANALY: KANALY };
 })(window);

@@ -208,7 +208,7 @@
     var N = w.OESTNowosci, c = N ? N.cache() : null, list = N ? N.top(5) : [], h = head("📰 " + X("nowosci-firm"), "PIC · Savills · Smart");
     if (!list.length) h += '<p class="hm-note">' + (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) + "</p>";
     h += list.map(function (x) {
-      var f = (N.FIRMY[x.src] || {}).skrot || "", dt = x.date ? new Date(x.date).toLocaleDateString(loc(), { day: "numeric", month: "short", year: "numeric" }) : "";
+      var f = (N.FIRMY[x.src] || {}).skrot || "", dt = x.date ? new Date(x.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "" /* DD/MM/YYYY (AI-008) */;
       return '<a class="hm-nt hm-nw" href="' + esc(x.url) + '" rel="noopener"><span class="hm-nf ' + esc(x.src) + '">' + esc(f) + "</span><span><b>" + esc(x.title) + "</b><small>" +
         (x.oes ? "One Eastside · " : "") + esc(x.pub) + (dt ? " · " + esc(dt) : "") + '</small></span><span class="hm-ar">›</span></a>';
     }).join("");

@@ -3,6 +3,7 @@
 // N2 apka pobiera nagłówki raz na dobę (drugie otwarcie w tej samej dobie = zero zapytań);
 // N3 bez sieci żadnego zapytania, okienko mówi „Brak sieci”, nic nie udaje;
 // N4 okienko: max 5 nagłówków, One Eastside na górze, potem najnowsze, skrót firmy przy każdym, bez dubli;
+// N4b data artykułu DD/MM/YYYY (AI-008); One Eastside nie wypada przy obcięciu do 40; N4c „przeczytane” bez pobranych nie przesuwa granicy.
 // N5 znaczek z liczbą nowych na kafelku znika po otwarciu okienka; zmiana PL/EN nie przerysowuje listy.
 // Chrome 412×915 jak Pixel 8 Pro. Zapytania do Google News są podstawione (stałe dane), nic nie wychodzi do sieci.
 // Wynik NIE zastępuje sprawdzenia na Pixelu.
@@ -73,6 +74,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(rows.every(r => !/ - (PIC|Property Week|React News|PEI Private Equity)$/.test(r.t)), 'N4: wydawca doklejony do tytułu');
     check(rows.every(r => /^https:\/\/news\.google\.com\//.test(r.href)), 'N4: link nie do artykułu');
     check(rows.slice(2).map(r => r.f).join(',') === 'Savills,Smart,PIC', 'N4: kolejność po One Eastside nie wg daty: ' + rows.slice(2).map(r => r.f));
+    check(rows.every(r => /\d{2}\/\d{2}\/\d{4}$/.test(r.s)), 'N4b: data nie w formacie DD/MM/YYYY: ' + rows.map(r => r.s).join(' | '));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'okno-PL.png') });
     const before = await p.evaluate(() => document.querySelector('#hmPop .hm-nw'));
     await p.evaluate(() => { OESTSettings.update(s => { s.appearance.language = 'en'; }); OESTSettingsUI.applyTheme(); });
@@ -87,6 +89,22 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await p.reload(); await p.waitForFunction(() => window.OESTNowosci && document.querySelector('#hmTiles [data-hnews]'));
     await p.evaluate(() => OESTNowosci.load(false));
     check(calls === 4, 'N2: w tej samej dobie kolejne zapytania (' + calls + ')');
+    // N4b 45 nowszych zwykłych + 1 starszy One Eastside → One Eastside zostaje w pamięci i na górze
+    const keep = await p.evaluate(async () => {
+      const old = localStorage.getItem('oest.news'); localStorage.removeItem('oest.news');
+      const f = window.fetch; const now = Date.now();
+      window.fetch = u => { const q = decodeURIComponent(new URL(u).searchParams.get('q'));
+        const it = q.includes('One Eastside') ? '<item><title>Old One Eastside story - X</title><link>https://news.google.com/a/oes</link><pubDate>' + new Date(now - 300 * 864e5).toUTCString() + '</pubDate><source>X</source></item>'
+          : q.includes('Pension') ? Array.from({ length: 45 }, (_, i) => '<item><title>PIC news number ' + i + ' - X</title><link>https://news.google.com/a/' + i + '</link><pubDate>' + new Date(now - i * 36e5).toUTCString() + '</pubDate><source>X</source></item>').join('') : '';
+        return Promise.resolve(new Response('<rss><channel>' + it + '</channel></rss>')); };
+      await OESTNowosci.load(true); window.fetch = f;
+      const r = { inCache: OESTNowosci.cache().items.some(x => x.oes), first: OESTNowosci.top(5)[0].title };
+      localStorage.setItem('oest.news', old); return r;
+    });
+    check(keep.inCache && keep.first === 'Old One Eastside story', 'N4b: One Eastside wypadł przy obcięciu: ' + JSON.stringify(keep));
+    // N4c „przeczytane” przy pustej pamięci nie przesuwa granicy
+    const seen = await p.evaluate(() => { const old = localStorage.getItem('oest.news'), s0 = localStorage.getItem('oest.news.seen'); localStorage.removeItem('oest.news'); OESTNowosci.seen(); const s1 = localStorage.getItem('oest.news.seen'); localStorage.setItem('oest.news', old); return s0 === s1; });
+    check(seen, 'N4c: seen() bez pobranych nagłówków przesunął granicę przeczytania');
     // N3 bez sieci: zero zapytań, komunikat
     await p.evaluate(() => { localStorage.removeItem('oest.news'); });
     await c.setOffline(true);
