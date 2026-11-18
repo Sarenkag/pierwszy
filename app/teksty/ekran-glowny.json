@@ -221,6 +221,36 @@
       "id": "polaczono-z-dyskiem",
       "pl": "Połączono z Dyskiem.",
       "en": "Connected to Drive."
+    },
+    {
+      "id": "nowosci-firm",
+      "pl": "Nowości firm",
+      "en": "Company news"
+    },
+    {
+      "id": "nowosci-brak",
+      "pl": "Brak nagłówków – sprawdzę ponownie jutro.",
+      "en": "No headlines yet – will check again tomorrow."
+    },
+    {
+      "id": "nowosci-brak-sieci",
+      "pl": "Brak sieci – nagłówki pobiorą się po połączeniu.",
+      "en": "No network – headlines will load once connected."
+    },
+    {
+      "id": "nowosci-praca",
+      "pl": "Oferta pracy",
+      "en": "Job opening"
+    },
+    {
+      "id": "nowosci-oferty",
+      "pl": "Smart rekrutuje: {n} ofert pracy",
+      "en": "Smart is hiring: {n} job openings"
+    },
+    {
+      "id": "nowosci-kariera",
+      "pl": "Wszystkie oferty na stronie kariery Smart",
+      "en": "All openings on the Smart careers page"
     }
   ]
 }

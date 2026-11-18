@@ -330,6 +330,11 @@
       "file": "app/tests/reactive-kreator-ui-check.cjs",
       "passMarker": "REACTIVE KREATOR UI PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/nowosci-ui-check.cjs",
+      "passMarker": "NOWOSCI UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []

@@ -312,6 +312,7 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/raporty/przegladarka.js"></script>
 <script src="moduly/pole-email/pole-email.js"></script>
 <script src="zdjecia-ui.js"></script>
+<script src="moduly/nowosci/nowosci.js"></script>
 <script src="home.js"></script>
 <script src="vantify-auto.js"></script>
 <script>
@@ -332,10 +333,11 @@ input[type=text], input[type=email], input[type=date], select {
       { go: "cal", t: ["Kalendarz", "Calendar"], icon: '<rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/>' },
       { go: "keys", t: ["Klucze", "Keys"], icon: '<circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/>' },
       { go: "handover", t: ["Handover", "Handover"], icon: '<rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/>' },
-      { go: "soon", t: ["Statystyki", "Stats"], icon: '<path d="M8 40h32M13 34V22M21 34V12M29 34V18M37 34V26"/>' },
+      // nowości firm (moduly/nowosci, 18/11/2026): na miejscu „Statystyk” (jeszcze niezrobione) – siatka 2×4 zostaje, ekran się nie przewija
+      { data: { hnews: "1" }, t: ["Nowości firm", "Company news"], icon: '<rect x="6" y="9" width="30" height="30" rx="2"/><path d="M36 17h6v18a4 4 0 0 1-4 4H10M12 16h18M12 23h18M12 30h11"/>' },
       { go: "settings", t: ["Ustawienia", "Settings"], icon: '<circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/>' }
     ];
-    $("hmTiles").innerHTML = HOME_TILES.map(function (t) { return window.OESTKafelek.html({ name: t.t[0], en: t.t[1], icon: t.icon, data: { go: t.go } }); }).join("");
+    $("hmTiles").innerHTML = HOME_TILES.map(function (t) { return window.OESTKafelek.html({ name: t.t[0], en: t.t[1], icon: t.icon, sub: t.sub, cls: t.cls, data: t.data || { go: t.go } }); }).join("");
 
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
