@@ -110,6 +110,8 @@
     badge();
     photoStats().then(function () { lamps(); if (popKind === "drive") fillDrive(); });
     wxLoad(false).then(function () { header(); days(); if (popKind === "wx") fillWx(); });
+    newsBadge();
+    if (w.OESTNowosci) w.OESTNowosci.load(false).then(function () { newsBadge(); if (popKind === "news") fillNews(); });
   }
   function relang() { if (!deps || $("v-home").hidden) return; header(); lamps(); days(); badge(); if (popKind) fill(popKind); }
 
@@ -147,7 +149,7 @@
   function svg(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS[k] + "</svg>"; }
 
   // ---------- okienka ----------
-  function fill(kind) { if (kind === "wx") fillWx(); else if (kind === "bell") fillBell(); else if (kind === "drive") fillDrive(); else if (kind === "net") fillNet(); }
+  function fill(kind) { if (kind === "wx") fillWx(); else if (kind === "bell") fillBell(); else if (kind === "drive") fillDrive(); else if (kind === "net") fillNet(); else if (kind === "news") fillNews(); }
   function head(title, extra) {
     return '<div class="hm-ph"><b>' + title + "</b>" + (extra ? "<span>" + extra + "</span>" : "") +
       '<button class="hm-x" type="button" data-hx aria-label="' + X("zamknij") + '">✕</button></div>';
@@ -193,6 +195,25 @@
       : X("opis-polaczono")) + "</p>";
     h += '<button class="hm-op" type="button" data-hgo="queue"><span>' + X("raporty-w-kolejce") + "</span><small>" + q + " ›</small></button>";
     h += '<button class="hm-op" type="button" data-hgo="settings/sync"><span>' + X("ustawienia-wysylki") + "</span><small>›</small></button>";
+    body(h);
+  }
+  // ---------- nowości firm (moduly/nowosci, Grzegorz 18/11/2026) ----------
+  function newsBadge() {
+    var N = w.OESTNowosci, b = d.querySelector('#hmTiles [data-hnews] .kf-n'), tile = d.querySelector("#hmTiles [data-hnews]"); if (!N || !tile) return;
+    var n = N.unread();
+    if (!b && n) { tile.insertAdjacentHTML("beforeend", '<span class="kf-n"></span>'); b = tile.querySelector(".kf-n"); }
+    if (b) { b.hidden = !n; b.textContent = n; }
+  }
+  function fillNews() {
+    var N = w.OESTNowosci, c = N ? N.cache() : null, list = N ? N.top(5) : [], h = head("📰 " + X("nowosci-firm"), "PIC · Savills · Smart");
+    if (!list.length) h += '<p class="hm-note">' + (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) + "</p>";
+    h += list.map(function (x) {
+      var f = (N.FIRMY[x.src] || {}).skrot || "", dt = x.date ? new Date(x.date).toLocaleDateString(loc(), { day: "numeric", month: "short", year: "numeric" }) : "";
+      return '<a class="hm-nt hm-nw" href="' + esc(x.url) + '" rel="noopener"><span class="hm-nf ' + esc(x.src) + '">' + esc(f) + "</span><span><b>" + esc(x.title) + "</b><small>" +
+        (x.oes ? "One Eastside · " : "") + esc(x.pub) + (dt ? " · " + esc(dt) : "") + '</small></span><span class="hm-ar">›</span></a>';
+    }).join("");
+    if (c) h += '<p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) +
+      (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") + "</p>";
     body(h);
   }
   function reduce() { return d.documentElement.dataset.settingsMotion === "reduce"; }
@@ -256,6 +277,10 @@
     $("hmDrive").addEventListener("click", function () { openPop("drive", this); });
     if ($("hmPhotos")) $("hmPhotos").addEventListener("click", function () { goFromPop("zdjecia"); });
     $("hmNet").addEventListener("click", function () { openPop("net", this); });
+    $("hmTiles").addEventListener("click", function (e) {
+      var t = e.target.closest("[data-hnews]"); if (!t || !w.OESTNowosci) return;
+      openPop("news", t); w.OESTNowosci.seen(); newsBadge();
+    });
     $("hmLang").addEventListener("click", function () {
       var next = en() ? "pl" : "en";
       try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
