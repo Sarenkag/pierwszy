@@ -101,6 +101,9 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .panel .rx-chips{justify-content:flex-start}
 #v-reactive .rx-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #v-reactive .rx-row>.btn{min-height:52px;margin:4px 0}
+/* przyciski Vantify (PROD-038): stan bez nowych kolorów – zielona obwódka „✓”, przygaszony „czeka” */
+#v-reactive .rx-vt-done{border-color:var(--ok)!important;color:var(--ok)!important}
+#v-reactive .rx-vt-off{opacity:.6}
 #v-reactive .rx-photos .ph{position:relative}
 #v-reactive .rx-photos .ph button{position:absolute;top:4px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(10,16,20,.72);color:#fff;font-size:.95rem}
 #v-reactive .rx-photos .ph .del{right:4px}

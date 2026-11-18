@@ -240,7 +240,7 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /public synchronized void result\(String json\) \{\s*if \(!VantifyActivity\.vantify\(host\) \|\| json == null\) return;/);
   assert.match(j, /public synchronized void part\(String c\) \{ if \(!VantifyActivity\.vantify\(host\)/, 'części wyniku tylko od strony Vantify');
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);
-  assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : TIMEOUT\)/);
+  assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : action \? TIMEOUT_ACTION : TIMEOUT\)/); // przycisk Vantify (PROD-038): własny limit 3 min
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);
   // Zbadaj: ekran nie gaśnie w trakcie (uśpiony telefon wstrzymuje okno), po wyniku zwykłe wygaszanie
   assert.match(j, /if \(explore\) a\.getWindow\(\)\.addFlags\(WindowManager\.LayoutParams\.FLAG_KEEP_SCREEN_ON\)/);
@@ -253,7 +253,7 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(k, /putLong\("ver", ver\(c\) \+ 1\)/);
   assert.match(k, /"AndroidKeyStore"/); assert.match(k, /AES\/GCM\/NoPadding/);
   assert.match(k, /if \(bad\(c\)\) return "window\.__oestLoginBad=1;";/, 'po odrzuceniu nie loguje się ponownie, bez hasła');
-  assert.match(j, /Sync\.current != null && Sync\.current\.join\(call, ex\)/, 'jedno ukryte okno naraz (równoległe wywołania czekają na ten sam wynik)');
+  assert.match(j, /Sync\.current != null && Sync\.current\.join\(call, mode\)/, 'jedno ukryte okno naraz (równoległe wywołania czekają na ten sam wynik)');
   assert.match(j, /for \(PluginCall c : calls\) c\.resolve\(r\)/);
   assert.match(k, /JSONObject\.quote\(l\[1\]\)/, 'hasło jako bezpieczny literał JS');
   assert.doesNotMatch(j + k, /Log\.(d|i|w|e|v)\(/, 'bez wypisywania do logów');

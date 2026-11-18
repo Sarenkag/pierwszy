@@ -213,7 +213,9 @@
     }
     if (tried && !auth) t0 = Math.max(t0, triedAt); // po zalogowaniu strona zaczyna od nowa: pełny czas na listę
     if (g.__oestMode === "explore" && auth && ids()) return explore(ids());
-    if (g.__oestMode !== "explore" && auth && list) return fetchAll(list);
+    // przyciski Vantify na karcie Reactive (vantify-akcje.js, PROD-038): to samo zalogowanie, potem jedno zadanie
+    if (g.__oestMode === "action" && auth && seen.length && g.__oestAkcja) return g.__oestAkcja(/^https:\/\/[^/]+/.exec(seen[0])[0], auth, out);
+    if (g.__oestMode !== "explore" && g.__oestMode !== "action" && auth && list) return fetchAll(list);
     var wait = Date.now() - t0;
     if (wait > WAIT) return out(auth ? { status: "error", code: g.__oestMode === "explore" ? "noids" : "nolist" } : { status: "login" });
     // lista zleceń otwiera się tylko na ekranie Jobs; gdy strona pokazała co innego albo zapytała, zanim byliśmy gotowi – przejdź jeszcze raz

@@ -121,7 +121,19 @@
       "file": "app/tests/vantify-rejestr.test.cjs"
     },
     {
+      "file": "app/tests/vantify-wybor-pliku.test.cjs"
+    },
+    {
       "file": "app/tests/vantify-sync.test.cjs"
+    },
+    {
+      "file": "app/tests/vantify-akcje.test.cjs"
+    },
+    {
+      "file": "app/tests/reactive-kreator.test.cjs"
+    },
+    {
+      "file": "app/tests/vantify-przyciski-java.test.cjs"
     }
   ],
   "browser": [
@@ -308,6 +320,16 @@
       "file": "app/tests/vantify-pobierz-ui-check.cjs",
       "passMarker": "VANTIFY POBIERZ UI PASS",
       "timeoutSec": 900
+    },
+    {
+      "file": "app/tests/reactive-vantify-ui-check.cjs",
+      "passMarker": "REACTIVE VANTIFY UI PASS",
+      "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/reactive-kreator-ui-check.cjs",
+      "passMarker": "REACTIVE KREATOR UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []
