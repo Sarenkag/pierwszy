@@ -146,7 +146,9 @@ function fakePhone() {
     { const k = await calls(); check(k.length === 1 && k[0].op === 'status', 'Popraw w podsumowaniu coś wysłało ' + JSON.stringify(k)); }
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: false }); });
     await pg.evaluate(() => { window.__rep = []; const K = window.OESTReactiveCore, R = K.report; K.report = function (d, ...a) { window.__rep.push(JSON.parse(JSON.stringify(d))); return R.call(this, d, ...a); }; });
-    await pg.locator('[data-rx=vt-close]').click(); await pg.locator('[data-rx=sum-ok]').click({ timeout: 20000 }); await ask().locator('[data-a=ok]').waitFor({ timeout: 20000 });
+    await pg.locator('[data-rx=vt-close]').click(); await pg.locator('[data-rx=sum-ok]').waitFor({ timeout: 20000 });
+    { const dd = String(y.getDate()).padStart(2, '0') + String(y.getMonth() + 1).padStart(2, '0') + y.getFullYear(); check(new RegExp(dd + ' \\(\\.pdf\\)').test(await pg.locator('.rx-body').innerText()), 'podsumowanie: data pliku inna niż w PDF (zdjęcie z wczoraj)'); }
+    await pg.locator('[data-rx=sum-ok]').click(); await ask().locator('[data-a=ok]').waitFor({ timeout: 20000 });
     { const r = await pg.evaluate(() => window.__rep.at(-1) || {}); check(r.room === 'EN Office door' && /^EN 10 hooks installed/.test(r.endNote || '') && r.title === 'EN Wieszaki w kuchni', 'Job Sheet: pola wpisane ręcznie nie po angielsku ' + JSON.stringify({ room: r.room, endNote: r.endNote, title: r.title })); }
     const q = await ask().textContent();
     check(/Commence \(jeśli trzeba\) i Complete z datą \d\d\/\d\d\/\d{4}/.test(q) && /REACTIVE EN Wieszaki w kuchni \d{8}\.pdf/.test(q), 'pytanie przed zamknięciem bez daty/pliku PDF albo nazwa nie po angielsku (Summary z Vantify): ' + q);
