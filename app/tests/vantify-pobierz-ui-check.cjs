@@ -8,12 +8,15 @@ const {chromium}=require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const base=path.resolve(__dirname,'../www');
 const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url.split('?')[0]);let p=path.resolve(base,'.'+name);if(!p.startsWith(base+path.sep)&&p!==base){res.writeHead(403);return res.end();}if(name.endsWith('/'))p=path.join(p,'index.html');fs.readFile(p,(e,b)=>{if(e){res.writeHead(404);return res.end();}res.setHeader('Content-Type',p.endsWith('.js')?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream');res.end(b);});});
+async function loadCsv(page,text){await page.evaluate(t=>{window.__capPrev=window.Capacitor;const C=window.Capacitor||{},Pl=Object.assign({},C.Plugins||{}),V=Object.assign({},Pl.Vantify||{});V.open=async()=>({csv:t,name:'job.csv',log:[]});Pl.Vantify=V;window.Capacitor=Object.assign({},C,{isNativePlatform:()=>true,Plugins:Pl});},text);await page.locator('#vtOpen').click();await page.waitForFunction(()=>(document.getElementById('vtPreview')?.textContent||'').length>0);await page.evaluate(()=>{window.Capacitor=window.__capPrev;});}
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{browser=await chromium.launch({headless:true, ...(process.env.OEST_BROWSER_PATH ? {executablePath:process.env.OEST_BROWSER_PATH} : {})});const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
 await context.addInitScript(()=>{if(!localStorage.getItem('oest.account')){localStorage.setItem('oest.account',JSON.stringify({provider:'local',id:'test',email:'demo@example.com',first:'Greg',last:'Sarna'}));localStorage.setItem('oest.profile',JSON.stringify({first:'Greg',last:'Sarna',email1:'demo@example.com'}));}});
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 const url='http://127.0.0.1:'+server.address().port,out=process.env.OEST_SCREENSHOTS;
 await page.goto(url+'/#settings/vantify');await page.locator('#vtPull').waitFor();
+// tylko „Pobierz z Vantify” – bez przycisku „Wczytaj eksport” z pliku (Grzegorz 18/11/2026: zbędny, mylił)
+assert.equal(await page.locator('#vtFile').count(),0);assert.doesNotMatch(await page.locator('#app, body').first().textContent(),/Wczytaj eksport|wybierz plik/);
 // w przeglądarce (bez apki Android): uczciwy komunikat, nic się nie zmienia
 await page.locator('#vtPull').click();await page.waitForFunction(()=>/działa w aplikacji Android/.test(document.getElementById('vtPullMsg')?.textContent||''));
 // lista z Vantify = plan wbudowany bez 3000623 (zamknięte) + nowe 3060001 (AOV TA, 25/12) + jedno Reactive (pomijane)
@@ -84,7 +87,7 @@ await page.locator('#vtSave').waitFor();assert.match(await page.locator('#vtPrev
 // zapis pliku CSV unieważnia odłożony podgląd z Vantify (inaczej stara lista pokazałaby nowe zlecenia jako „zamknięte”)
 await page.locator('#vtCancel').click();await page.evaluate(()=>window.OESTVantifyImport.keepNew({jobs:window.__jobs}));
 const csv=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,q=s=>'"'+String(s).replace(/"/g,'""')+'"',d=new Date().toISOString().slice(0,10);let t='id,jobType,task,completeBy,frequency,createdAt\n';for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])t+=[j.no,'Planned',q(P.byId(id).name),j.due+' 23:59',j.f,d+' 08:00'].join(',')+'\n';return t+['3090001','Planned',q('AOV Operation Testing (Tower A)'),'2027-01-15 23:59','1W',d+' 08:00'].join(',')+'\n';});
-await page.locator('#vtFile').setInputFiles({name:'job.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});await page.locator('#vtSave').waitFor();await page.locator('#vtSave').click();await page.locator('#vtPreview .ok').waitFor();
+await loadCsv(page,csv);await page.locator('#vtSave').waitFor();await page.locator('#vtSave').click();await page.locator('#vtPreview .ok').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null,'zapis pliku usuwa odłożony podgląd');
 await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtPull').waitFor();await page.waitForTimeout(300);
 assert.equal(await page.locator('#vtSave').count(),0,'po zapisie pliku stary podgląd nie wraca');
