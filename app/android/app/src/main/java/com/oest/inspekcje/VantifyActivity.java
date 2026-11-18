@@ -9,7 +9,10 @@ import android.view.Gravity;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -41,6 +44,9 @@ public class VantifyActivity extends Activity {
     private volatile String host = "";
     private String rejestr = "", csv = null, csvName = null;
     private boolean pl = true;
+    // wybór pliku na stronie Vantify (np. Job Sheet przy Complete, Grzegorz 18/11/2026): bez WebChromeClient pole „Upload” nic nie otwierało
+    static final int PICK = 4711;
+    private ValueCallback<Uri[]> pick;
 
     static File dir(Activity a) { File d = new File(a.getCacheDir(), "vantify"); d.mkdirs(); return d; }
     static boolean vantify(String h) { return h != null && (h.equals("vantify.com") || h.endsWith(".vantify.com")); }
@@ -94,6 +100,18 @@ public class VantifyActivity extends Activity {
             @Override public void onPageStarted(WebView v, String url, android.graphics.Bitmap icon) { host = Uri.parse(url).getHost(); inject(); }
             @Override public void onPageFinished(WebView v, String url) { host = Uri.parse(url).getHost(); inject(); }
         });
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
+                if (pick != null) pick.onReceiveValue(null); // poprzedni wybór niezakończony: strona musi dostać odpowiedź
+                pick = cb;
+                boolean many = p.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
+                String[] types = mimes(p.getAcceptTypes());
+                add("upload", String.join(",", types), many ? "multiple" : "single"); // do „Zbadaj”: tylko rodzaje plików, bez nazw
+                try { startActivityForResult(pickIntent(types, many, pl ? "Wybierz plik" : "Choose a file"), PICK); }
+                catch (Exception e) { pick = null; cb.onReceiveValue(null); info.setText(pl ? "Nie można otworzyć wyboru pliku." : "Cannot open the file picker."); }
+                return true;
+            }
+        });
         web.setDownloadListener((url, ua, cd, mime, len) -> {
             String name = URLUtil.guessFileName(url, cd, mime);
             // do zapisu „Zbadaj” tylko bezpieczne metadane: host i rozszerzenie pliku (nazwa i ścieżka mogą zawierać dane osób)
@@ -121,6 +139,35 @@ public class VantifyActivity extends Activity {
             }).start();
         });
         web.loadUrl(START);
+    }
+
+    // rodzaje z pola <input accept> (".pdf", "image/*", "application/pdf") → typy MIME dla wyboru pliku Androida; puste = wszystkie
+    static String[] mimes(String[] accept) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        if (accept != null) for (String a : accept) for (String t : (a == null ? "" : a).split(",")) {
+            t = t.trim().toLowerCase(); if (t.isEmpty()) continue;
+            if (t.startsWith(".")) { String m = MimeTypeMap.getSingleton().getMimeTypeFromExtension(t.substring(1)); if (m != null) out.add(m); }
+            else if (t.contains("/")) out.add(t);
+        }
+        return out.toArray(new String[0]);
+    }
+    static Intent pickIntent(String[] types, boolean many, String title) {
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType(types.length == 1 ? types[0] : "*/*");
+        if (types.length > 1) i.putExtra(Intent.EXTRA_MIME_TYPES, types);
+        if (many) i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        return Intent.createChooser(i, title);
+    }
+    @Override protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req != PICK || pick == null) return;
+        Uri[] got = null;
+        if (res == RESULT_OK && data != null) {
+            if (data.getClipData() != null) { int n = data.getClipData().getItemCount(); got = new Uri[n]; for (int k = 0; k < n; k++) got[k] = data.getClipData().getItemAt(k).getUri(); }
+            else if (data.getData() != null) got = new Uri[] { data.getData() };
+        }
+        add("upload-picked", got == null ? "cancel" : String.valueOf(got.length), ""); // liczba plików, bez nazw
+        pick.onReceiveValue(got); pick = null; // zawsze odpowiedź (także Anuluj) – inaczej pole przestaje reagować
     }
 
     private void inject() { if (vantify(host) && !rejestr.isEmpty()) web.evaluateJavascript(rejestr, null); }
