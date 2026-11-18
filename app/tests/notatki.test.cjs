@@ -79,3 +79,11 @@ test('notatki: propozycja z notatek ostrzega o liczbie zgubionej już przez tłu
   const x=await N.addAudio('s','',{blob:{}});await new Promise(r=>setTimeout(r,20));Object.assign(x,{st:'',err:'',pl:'błąd na strefie 4 i 12',en:'Fault on zone 4.'});await N.put(x);
   const r=J(await N.propose('s'));assert.deepEqual({text:r.text,miss:r.miss},{text:'Fault on zone 4.',miss:['12']});
   /* ostrzeżenie w okienku sprawdza po każdej zmianie wszystkie liczby z notatek (PL i EN) */assert.deepEqual(J(N.missing(r.src,'Fault on zone.')),['4','12']);});
+test('notatki: notatka pisana – odświeżenie paska w trakcie tłumaczenia nie nadpisuje wyniku (Codex #144)',async()=>{
+  const Translate={plToEn:({text})=>new Promise(r=>setTimeout(()=>r({text:'Pump 12 is leaking.'}),60))};
+  const N=load({Capacitor:{isNativePlatform:()=>true,registerPlugin:n=>n==='Translate'?Translate:{}}}).OESTNotatki;
+  N.on(k=>{N.summary(k);});// jak pasek: każda zmiana → summary() → resume()
+  const n=await N.addText('rx|t','Pompa','pompa 12 cieknie');
+  assert.equal(n.st,'busy');await N.summary('rx|t');
+  await new Promise(r=>setTimeout(r,300));
+  const [x]=await N.list('rx|t');assert.equal(x.en,'Pump 12 is leaking.');assert.equal(x.err,'');assert.equal(N.state(x),'ready');assert.equal(x.pl,'pompa 12 cieknie');});

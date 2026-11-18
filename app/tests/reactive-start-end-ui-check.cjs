@@ -53,15 +53,27 @@ function fakePhone() {
     check(await pg.locator('#rxNotes .nt-rec').isVisible() && await pg.locator('#rxNotes .nt-add').isVisible(), 'start: brak 🎤+ / 📝+');
     const css = await pg.locator('.rx-info-t').evaluate(e => { const c = getComputedStyle(e); return c.resize + '|' + (e.getBoundingClientRect().width >= e.parentElement.getBoundingClientRect().width - 12) + '|' + c.minWidth; });
     check(/^vertical\|true\|/.test(css), 'start: pole nie jest „tylko wydłużane” na całą szerokość: ' + css);
+    // wolny tłumacz + odświeżanie paska w trakcie: wynik tłumaczenia nie może zostać nadpisany drugim przetwarzaniem (Codex #144 P1)
+    await pg.evaluate(() => { const t = window.Capacitor.Plugins.Translate, f = t.plToEn; t.plToEn = a => new Promise(r => setTimeout(() => r(f(a)), 900)); });
     await pg.locator('#rxNotes .nt-add').click(); await pg.waitForSelector('.nt-pop textarea');
     await pg.locator('.nt-pop textarea').fill('pompa numer 12 cieknie'); await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => document.querySelector('#rxNotes .nt-list [data-nt-id]')?.textContent === '📝1', null, { timeout: 10000 });
+    await pg.evaluate(k => Promise.all([OESTNotatki.summary(k), OESTNotatki.summary(k)]), scope);
     check(await until(k => OESTNotatki.list(k).then(a => a.length === 1 && /Pump number 12/.test(a[0].en) && a[0].pl === 'pompa numer 12 cieknie'), scope), 'start: notatka pisana bez tekstu EN');
+    await pg.waitForTimeout(1200); check(await pg.evaluate(k => OESTNotatki.list(k).then(a => a.length === 1 && /Pump number 12/.test(a[0].en) && !a[0].err && a[0].st !== 'busy'), scope), 'start: tłumaczenie notatki pisanej nadpisane drugim przetwarzaniem');
     await pg.locator('#rxNotes .nt-rec').click(); await pg.waitForSelector('.oest-rec'); await pg.waitForTimeout(1200); await pg.locator('.oest-rec button').click();
     await pg.waitForFunction(() => document.querySelectorAll('#rxNotes .nt-list [data-nt-id]').length === 2 && document.querySelectorAll('#rxNotes .nt-list [data-nt-id]')[1].textContent === '🎤2', null, { timeout: 10000 });
     await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.waitForSelector('.nt-pop .nt-note');
     check(await pg.locator('.nt-pop .nt-note').count() === 1 && await pg.locator('.nt-pop [data-nt=edit]').count() === 1 && await pg.locator('.nt-pop .nt-del, .nt-pop [data-nt=del]').count() === 1, 'ikonka: okienko nie z tą jedną notatką (edycja/usuwanie)');
     await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    // przerwana poprawka notatki 1 (Popraw → Wstecz) nie otwiera się po stuknięciu ikonki 2 (Codex #144)
+    await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.locator('.nt-pop [data-nt=edit]').click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
+    await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
+    await pg.locator('#rxNotes .nt-list [data-nt-id]').nth(1).click(); await pg.waitForSelector('.nt-pop .nt-note');
+    check(await pg.locator('.nt-pop textarea').count() === 0 && await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'ikonka 2: otwarła się przerwana poprawka notatki 1');
+    await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
+    await ask().locator('[data-nt=cancel]').click(); await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     await pg.locator('[data-rx-field=note]').fill('Leak at pump 12.'); await saved();
     if (SHOTS) { await pg.locator('#rxNotes').scrollIntoViewIfNeeded(); await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-notatki.png') }); }
     // ---------- info na koniec: osobne notatki ----------

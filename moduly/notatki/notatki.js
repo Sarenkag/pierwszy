@@ -103,7 +103,7 @@
   function resume(a) {
     a.forEach(function (n) {
       if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
-      queue = queue.then(function () { return audioGet(n.audio && n.audio[0]).then(function (blob) {
+      queue = queue.then(function () { if (!(n.audio && n.audio.length)) return retext(n); /* notatka pisana: tylko tłumaczenie od nowa */ return audioGet(n.audio && n.audio[0]).then(function (blob) {
         if (blob) return transcribe(n, blob);
         n.st = ''; n.err = T('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
       }); }).catch(function () {}).then(function () { delete running[n.id]; });
@@ -262,11 +262,13 @@
   function addText(scope, ctx, text) {
     var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), pl = fix(text, 'pl');
     var n = { id: id, scope: scope, at: Date.now(), seq: ++seq, ctx: ctx || '', ms: 0, audio: [], pl: pl, en: '', st: 'busy', err: '' };
+    running[id] = 1; // przed put(): odświeżenie paska (summary → resume) nie może uruchomić drugiego tłumaczenia (Codex #144)
     return put(n).then(function () {
-      queue = queue.then(function () { return english(pl, n.ctx); }).then(function (en) { n.en = en || ''; }, function () {}).then(function () { n.st = ''; return keep(n); });
+      queue = queue.then(function () { return retext(n); }).catch(function () {}).then(function () { delete running[id]; });
       return n;
-    });
+    }, function (e) { delete running[id]; throw e; });
   }
+  function retext(n) { return english(n.pl, n.ctx).then(function (en) { n.en = en || ''; }, function () {}).then(function () { n.st = ''; return keep(n); }); }
   function write(scope, ctx) {
     css(); var node = document.createElement('div'); node.className = 'nt-pop';
     node.innerHTML = '<div class="nt-h">' + T('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.') + '</div><textarea data-nt-f="pl" maxlength="4000"></textarea>';
@@ -415,7 +417,7 @@
       });
     });
     var off = on(function (s) { if (s === scope && !editing && node.isConnected) draw(); });
-    var sz = o.readonly ? null : szkice[scope]; // tylko odczyt: nie wracamy do przerwanej poprawki
+    var sz = o.readonly ? null : szkice[scope]; if (sz && o.only && sz.id !== o.only) sz = null; // ikonka innej notatki: przerwana poprawka czeka na swoją notatkę (Codex #144) // tylko odczyt: nie wracamy do przerwanej poprawki
     if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
     else draw();
     return w.OESTPrzycisk.ask({ title: T('📝 Notatki', '📝 Notes'), node: node, ok: T('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })

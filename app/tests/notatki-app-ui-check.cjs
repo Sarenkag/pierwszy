@@ -175,17 +175,25 @@ function fakePhone() {
     // przerwana poprawka (Popraw → Wstecz) przed zakończeniem: w historii nie wraca edytor (przegląd Codex #113)
     await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note'); await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
     await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
+    await pg.locator('[data-rx=row][data-id=end]').click(); await record('#rxNotesEnd', 1); // info na koniec – w historii też do odczytu (Codex #144)
     const jobId = await pg.evaluate(async () => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).find(x => !x.jobId);
       return (await r.saveReactive({ ...d, title: 'Leak', status: 'completed', actionId: 'repaired' })).id; });
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
+    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
     check(await pg.locator('#rxNotes').count() === 0, 'Reactive historia: pasek nagrywania w zakończonym zadaniu');
-    await pg.locator('#v-reactive .rx-notes').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak „📝 Notatki” w zakończonym zadaniu'));
-    if (await pg.locator('#v-reactive .rx-notes').isVisible()) {
-      check((await pg.locator('#v-reactive .rx-notes .nt-n').textContent()) === '1', 'Reactive historia: licznik notatek');
-      await pg.locator('#v-reactive .rx-notes').click(); await pg.waitForSelector('.nt-pop'); await pg.waitForTimeout(500);
+    await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak „📝 Notatki” w zakończonym zadaniu'));
+    if (await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').isVisible()) {
+      check((await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end) .nt-n').textContent()) === '1', 'Reactive historia: licznik notatek');
+      await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').click(); await pg.waitForSelector('.nt-pop'); await pg.waitForTimeout(500);
       check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del], .nt-pop textarea, .nt-pop [data-nt=save]').count() === 0, 'Reactive historia: notatki da się poprawić/usunąć (także przez przerwaną poprawkę)');
       check(await pg.locator('.nt-pop .nt-en').count() === 1 && /Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()) && /54 °C/.test(await pg.locator('.nt-pop').textContent()), 'Reactive historia: okienko bez EN/PL');
       check(await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Reactive historia: brak odsłuchu');
+      await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    }
+    await pg.locator('#v-reactive .rx-notes-end').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak notatek na koniec'));
+    if (await pg.locator('#v-reactive .rx-notes-end').isVisible()) {
+      check((await pg.locator('#v-reactive .rx-notes-end .nt-n').textContent()) === '1', 'Reactive historia: licznik notatek na koniec');
+      await pg.locator('#v-reactive .rx-notes-end').click(); await pg.waitForSelector('.nt-pop .nt-note');
+      check(await pg.locator('.nt-pop [data-nt=edit], .nt-pop [data-nt=del]').count() === 0 && await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'Reactive historia: notatki na koniec nie tylko do odczytu');
       await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     }
 
