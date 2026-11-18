@@ -64,7 +64,14 @@
     if (job.status === "approval_pending") return "approval";
     if (exp.summary && String(job.summary || "").trim() !== String(exp.summary).trim()) return "summary";
     if (!job._links || !(job._links.commence || job._links.complete)) return "state";
+    // zlecenie wymaga innego typu dokumentu niż zapamiętany Job Sheet (np. certyfikat) → nie zgadywać, okno Vantify (przegląd Codex #146)
+    if (exp.docType) { var need = docTypes(job); if (need.length && need.indexOf(exp.docType) < 0) return "doctype"; }
     return "";
+  }
+  function docTypes(job) {
+    var r = job && job.requiredDocumentTypes, l = r && r.documentTypes; if (!r || !r.count) return [];
+    l = Array.isArray(l) ? l : l && Array.isArray(l.items) ? l.items : l ? [l] : [];
+    return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
   var api = { op: op, wzor: wzor, fmt: fmt, create: create, commence: commence, complete: complete, check: check, brief: brief };
@@ -144,7 +151,8 @@
       var j0, href, d0 = new Date(a.onSite || Date.now()), d1 = new Date(a.done || Date.now());
       step = "read";
       return job(a.id).then(function (j) {
-        j0 = j; var why = check(j, { id: a.id, summary: a.summary });
+        j0 = j; var dt = W.complete._file && W.complete._file._links && W.complete._file._links.documentType && W.complete._file._links.documentType.href, why = check(j, { id: a.id, summary: a.summary, docType: dt });
+        if (why === "doctype") { end({ status: "nowzor", op: "complete", why: why }); throw { stop: 1 }; }
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
         if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
         step = "upload";

@@ -156,6 +156,16 @@ test('status: odczyt kilku zleceń, tylko GET; wygasłe logowanie → login', as
   const t = world({ op: 'status', nonce: 's2', ids: [1] }, {}, {}); t.w.XMLHttpRequest.prototype.send = function () { this.status = 401; this.responseText = ''; setImmediate(() => this.onload()); }; await t.run();
   assert.strictEqual(t.results[0].status, 'login');
 });
+test('zlecenie wymaga innego typu dokumentu niż zapamiętany Job Sheet → okno Vantify, nic nie wysłane (przegląd Codex #146)', async () => {
+  const need = id => ({ count: 1, documentTypes: [{ id, _links: { self: { href: '/documenttypes/' + id } } }] });
+  const job = rd => ({ 3066755: { id: 3066755, status: 'acknowledged', summary: 'Coat hooks', _links: { commence: {} }, requiredDocumentTypes: rd } });
+  const a = { op: 'close', id: 3066755, summary: 'Coat hooks', file: { b64: PDF, name: 'REACTIVE Coat hooks 05112026.pdf', title: 'REACTIVE Coat hooks 05112026', type: 'application/pdf' } };
+  const s = world({ ...a, nonce: 'd1' }, WZ, job(need(7))); await s.run();
+  assert.deepStrictEqual(s.results, [{ status: 'nowzor', op: 'complete', why: 'doctype' }]); assert.ok(s.calls.every(c => c.m === 'GET'));
+  const t = world({ ...a, nonce: 'd2' }, WZ, job(need(1))); await t.run(); assert.strictEqual(t.results[0].status, 'ok', 'wymagany ten sam typ – zamyka');
+  const u = world({ ...a, nonce: 'd3' }, WZ, job({ count: 0 })); await u.run(); assert.strictEqual(u.results[0].status, 'ok', 'bez wymagań – zamyka');
+  assert.strictEqual(A.check({ id: 1, status: 'acknowledged', _links: { complete: {} }, requiredDocumentTypes: { count: 1, documentTypes: [{ id: 3 }] } }, { id: 1, docType: '/documenttypes/1' }), 'doctype');
+});
 test('status z tytułem pliku: ponowne sprawdzenie, czy Job Sheet jest przy zamkniętym zleceniu (przegląd Codex #146)', async () => {
   const links = id => ({ files: { href: '/sites/6324/jobs/' + id + '/files' } });
   const jobs = { 1: { id: 1, status: 'completed', is_final_status: true, summary: 'A', _links: links(1), files: [{ title: 'REACTIVE A 05112026' }] }, 2: { id: 2, status: 'completed', is_final_status: true, summary: 'B', _links: links(2), files: [{ title: 'Other' }] } };

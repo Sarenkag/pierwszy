@@ -136,7 +136,9 @@ function fakePhone() {
     const shot = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 12, 0, 0).getTime();
     await pg.evaluate(t => { const Z = window.OESTZdjecia, o = Z.list.bind(Z); Z.list = async (...a) => (await o(...a)).map(r => ({ ...r, created: new Date(t).toISOString() })); }, shot);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: false }); });
+    await pg.evaluate(() => { window.__rep = []; const K = window.OESTReactiveCore, R = K.report; K.report = function (d, ...a) { window.__rep.push(JSON.parse(JSON.stringify(d))); return R.call(this, d, ...a); }; });
     await pg.locator('[data-rx=vt-close]').click(); await ask().locator('[data-a=ok]').waitFor({ timeout: 20000 });
+    { const r = await pg.evaluate(() => window.__rep[0] || {}); check(r.room === 'EN Office door' && /^EN 10 hooks installed/.test(r.endNote || '') && r.title === 'EN Wieszaki w kuchni', 'Job Sheet: pola wpisane ręcznie nie po angielsku ' + JSON.stringify({ room: r.room, endNote: r.endNote, title: r.title })); }
     const q = await ask().textContent();
     check(/Commence \(jeśli trzeba\) i Complete z datą \d\d\/\d\d\/\d{4}/.test(q) && /REACTIVE EN Wieszaki w kuchni \d{8}\.pdf/.test(q), 'pytanie przed zamknięciem bez daty/pliku PDF albo nazwa nie po angielsku (Summary z Vantify): ' + q);
     check(!/docx/i.test(q), 'przy zamknięciu Word zamiast tylko PDF');

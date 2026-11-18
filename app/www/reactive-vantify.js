@@ -111,15 +111,18 @@
     const sheet = await x.jobSheet(), day = sheet.date.toLocaleDateString('en-GB');
     if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + L(' oraz plik ', ' with the file ') + sheet.name + '.', ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
     const b64 = await w.OESTVoice.base64(new Blob([sheet.pdf], { type: 'application/pdf' })), W = await wzory(P);
-    if (!W.commence || !W.complete) {
-      await ask({ title: 'Close Vantify', text: L('Pierwszy raz: zamknij zlecenie w oknie Vantify, jak zwykle (Commence, potem Complete). Przy Upload apka sama poda Job Sheet. Apka zapamięta, jak to zrobiłeś, a następne zamknie sama.', 'First time: close the job in the Vantify window as usual (Commence, then Complete). At Upload the app offers the Job Sheet. The app remembers how you did it and closes the next ones by itself.'), alert: true });
+    /* zamknięcie w oknie Vantify: pierwszy raz (brak wzoru) albo gdy zlecenie wymaga innego typu dokumentu (przegląd Codex #146) */
+    const inWindow = async other => {
+      await ask({ title: 'Close Vantify', text: other ? L('To zlecenie wymaga innego typu dokumentu niż zwykły Job Sheet. Zamknij je w oknie Vantify i wybierz typ przy Upload – apka poda Job Sheet.', 'This job needs a different document type than the usual Job Sheet. Close it in the Vantify window and pick the type at Upload – the app offers the Job Sheet.') : L('Pierwszy raz: zamknij zlecenie w oknie Vantify, jak zwykle (Commence, potem Complete). Przy Upload apka sama poda Job Sheet. Apka zapamięta, jak to zrobiłeś, a następne zamknie sama.', 'First time: close the job in the Vantify window as usual (Commence, then Complete). At Upload the app offers the Job Sheet. The app remembers how you did it and closes the next ones by itself.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + d.vantify.id + '/status', fileB64: b64, fileName: sheet.name }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
       const done = (r?.events || []).some(e => e.op === 'complete' && Number(e.id) === Number(d.vantify.id));
       return done ? check(x) : x.message(L('Nie widzę zamknięcia w Vantify. Zlecenie zostaje otwarte.', 'I do not see the job closed in Vantify. It stays open.'));
-    }
+    };
+    if (!W.commence || !W.complete) return inWindow();
     x.message(L('Zamykam w Vantify…', 'Closing in Vantify…'));
     const r = await act(P, { op: 'close', id: d.vantify.id, summary: d.vantify.summary || '', onSite: sheet.start.toISOString(), done: sheet.date.toISOString(), file: { b64, name: sheet.name, title: sheet.title, type: 'application/pdf' } });
     if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(L('Zlecenie w Vantify różni się od karty (', 'The job in Vantify differs from the card (') + r.why + L('). Nic nie wysłałem.', '). Nothing was sent.')); }
+    if (r.status === 'nowzor') return inWindow(r.why === 'doctype');
     if (r.status !== 'ok') return x.message(why(r, L));
     /* plik zapamiętany na karcie: bez potwierdzenia pliku karta pokazuje „⚠ Brak pliku”, stuknięcie sprawdza znowu (przegląd Codex #146) */
     await update(x, r.job || { status: d.vantify.status }, { fileSeen: !!r.fileSeen, sheetTitle: sheet.title });
