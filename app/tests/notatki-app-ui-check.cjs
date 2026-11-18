@@ -79,7 +79,7 @@ function fakePhone() {
     await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
     // ✨ Połącz → propozycja w okienku → Wstaw do opisu
     await pg.locator('#rxNotes .nt-join').click(); await pg.waitForSelector('.oest-ask textarea');
-    check((await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').textContent()).trim() === 'Wstaw do opisu', 'Reactive: przycisk „Wstaw do opisu”');
+    check((await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').textContent()).trim() === 'Wstaw', 'Reactive: przycisk „Wstaw”');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_REACTIVE_JOIN.png') });
     // poprawka w okienku, która gubi liczbę (12) → ostrzeżenie od razu, także gdy propozycja na starcie miała wszystkie liczby (przegląd Codex #113)
     { const ta = pg.locator('.oest-ask textarea'), v = await ta.inputValue(); await ta.fill(v.replace(/12/g, '')); await pg.waitForTimeout(100);
@@ -193,7 +193,7 @@ function fakePhone() {
     const p2 = await ctx.newPage(); p2.on('pageerror', e => errors.push(e.message)); // Hand over ma niezapisany wpis – osobna karta zamiast wychodzenia
     await p2.goto(B + '/#reactive'); await p2.locator('[data-rx=new]').waitFor(); await p2.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await p2.locator('[data-rx=new]').click(); await p2.locator('#rxNotes .nt-rec').waitFor();
     const en = await p2.locator('#rxNotes').innerText();
-    check(/Record note/.test(en) && /Notes/.test(en) && !/[ąćęłńóśźż]/i.test(en), 'EN: pasek notatek nie po angielsku: ' + en);
+    check(/Voice/.test(en) && /Text/.test(en) && /Notes/.test(en) && !/[ąćęłńóśźż]/i.test(en), 'EN: pasek notatek nie po angielsku: ' + en);
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   if (errors.length) fails.push('błędy strony: ' + errors.join(' | '));
