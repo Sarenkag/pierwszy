@@ -1,4 +1,5 @@
-// Eksport Vantify wczytany w telefonie (Grzegorz 10/11/2026): Ustawienia → Vantify → Wczytaj eksport (CSV „Job”).
+// Terminy PPM z Vantify w telefonie: „Pobierz z Vantify” (lista Jobs z API) albo eksport CSV „Job” pobrany w oknie Vantify w apce.
+// Przycisk „Wczytaj eksport” z pliku usunięty (Grzegorz 18/11/2026: „Pobierz” wczytuje samo, przycisk zbędny).
 // Plan z wczytanego pliku zastępuje plan wbudowany w apkę (vantify-plan.js), dopóki nowa wersja apki nie przyniesie
 // eksportu z późniejszą datą. Terminy dokładnie z pliku (PROD-010). Liczy moduł moduly/eksport-vantify.
 // Ładowany zaraz po ppm.js (index.html i inspekcje/index.html), przed pierwszym rysowaniem – obie strony widzą ten sam plan.
@@ -233,9 +234,8 @@
     put(box, "<div class=\"panel\"><h2>" + L("Terminy PPM z Vantify", "PPM due dates from Vantify") + "</h2>" +
       "<p class=\"settings-selected\" id=\"vtNow\">" + L("Eksport z ", "Export from ") + dmy(i.date) + " · " + i.jobs + L(" zleceń", " jobs") + " · " +
       (i.source === "phone" ? L("wczytany w telefonie ", "loaded on this phone ") + dmy((i.importedAt || "").slice(0, 10)) + " " + hm(i.importedAt) : L("wbudowany w apkę", "built into the app")) + "</p>" +
-      "<p class=\"hint\">" + L("„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h). Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Zapas: Jobs → Export → Download i wybierz plik job…csv.", "“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h). The app also checks on start, at most every 4 h. Due dates exactly from Vantify. Backup: Jobs → Export → Download and pick the job…csv file.") + "</p>" +
-      "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtPull\">" + L("Pobierz z Vantify", "Get from Vantify") + "</button>" +
-      "<label class=\"btn vt-file\">" + L("Wczytaj eksport Vantify", "Load Vantify export") + "<input id=\"vtFile\" type=\"file\" accept=\".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel,text/plain\"></label></div>" +
+      "<p class=\"hint\">" + L("„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h). Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Po pobraniu dotknij „Zapisz w apce” pod listą.", "“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h). The app also checks on start, at most every 4 h. Due dates exactly from Vantify. After getting them, tap “Save in the app” below the list.") + "</p>" +
+      "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtPull\">" + L("Pobierz z Vantify", "Get from Vantify") + "</button></div>" +
       "<p class=\"hint\" id=\"vtPullMsg\" aria-live=\"polite\"></p>" +
       "<div id=\"vtPreview\" aria-live=\"polite\"></div></div>" +
       "<div class=\"panel\"><h2>" + L("Vantify w apce", "Vantify in the app") + "</h2>" +
@@ -255,7 +255,6 @@
     box.querySelector("#vtShare").onclick = function () { shareLog(box); };
     box.querySelector("#vtExplore").onclick = function () { explore(box); };
     loginUi(box);
-    var input = box.querySelector("#vtFile");
     function show(r) {
         var out = box.querySelector("#vtPreview"), ch = r.changes, p = r.plan; pending = r;
         put(out, (r.older ? "<p class=\"settings-status warn\">" + L("Uwaga: najnowsze zlecenie w pliku jest z ", "Note: the newest job in the file is from ") + dmy(p.date) + L(", a w obecnym planie z ", ", the current plan has ") + dmy(r.currentDate) + L(". Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.", ". The file may be older. Save only if it is a fresh export.") + "</p>" : "") + "<h3>" + (r.api ? L("Vantify, stan na ", "Vantify as of ") : L("Eksport z ", "Export from ")) + dmy(p.date) + " · " + ch.total + L(" zleceń", " jobs") + "</h3>" +
@@ -263,7 +262,7 @@
           "<p>" + L("Zamknięte w Vantify (znikną z apki): ", "Closed in Vantify (removed from the app): ") + ch.closed.length + "</p>" + (ch.closed.length ? list(ch.closed, 8) : "") +
           (p.missing.length ? "<p class=\"hint\">" + L("Bez karty w apce (pominięte): ", "No card in the app (skipped): ") + esc(p.missing.join(", ")) + "</p>" : "") +
           "<div class=\"settings-actions\"><button type=\"button\" class=\"btn go\" id=\"vtSave\">" + L("Zapisz w apce", "Save in the app") + "</button><button type=\"button\" class=\"btn\" id=\"vtCancel\">" + L("Anuluj", "Cancel") + "</button></div>");
-        out.querySelector("#vtCancel").onclick = function () { if (r.api) dropNew(); pending = null; out.innerHTML = ""; input.value = ""; };
+        out.querySelector("#vtCancel").onclick = function () { if (r.api) dropNew(); pending = null; out.innerHTML = ""; };
         out.querySelector("#vtSave").onclick = function () {
           try { save(p); dropNew(); /* każdy zapis (API albo plik) unieważnia odłożony podgląd */ pending = null; draw(box); box.querySelector("#vtPreview").innerHTML = "<p class=\"settings-status ok\">" + (r.api ? L("Zapisano. Terminy z Vantify z dnia ", "Saved. Due dates from Vantify as of ") : L("Zapisano. Terminy z eksportu ", "Saved. Due dates from the export of ")) + dmy(p.date) + ".</p>"; }
           catch (e) { out.insertAdjacentHTML("beforeend", "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"); }
@@ -271,11 +270,6 @@
     }
     showText = function (bx, text) { show(preview(text)); };
     showApi = function (r) { show(r); };
-    input.onchange = function () {
-      var f = input.files && input.files[0], out = box.querySelector("#vtPreview"); if (!f) return;
-      f.text().then(function (text) { show(preview(text)); })
-        .catch(function (e) { pending = null; out.innerHTML = "<p class=\"settings-status warn\">" + esc(errText(e)) + "</p>"; input.value = ""; });
-    };
     if (pending) show(pending); // zmiana języka: podgląd zostaje, tylko w drugim języku
     else if (goAfter === "haslo") { goAfter = null; pullMsg(box, errText(new Error("VANTIFY_BAD_LOGIN"))); var pf = box.querySelector("#vtPass"); if (pf) { pf.scrollIntoView({ block: "center" }); pf.focus(); } }
     else if (goAfter === "login") { goAfter = null; pullMsg(box, L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself.")); openVantify(box, function () { pull(box, true); }); }
