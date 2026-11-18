@@ -110,13 +110,19 @@
       });
     }
     function job(id) { return req("GET", "/sites/" + site + "/jobs/" + id); }
+    // czy plik (Job Sheet) jest przy zleceniu: po adresie pliku albo po tytule (przegląd Codex #146 – sprawdzane też później, przy „sprawdź”)
+    function hasFile(j, title, href) {
+      var fl = j && j._links && j._links.files && j._links.files.href;
+      if (!fl || (!title && !href)) return Promise.resolve(false);
+      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; return list.some(function (f) { return f && (href && f._links && f._links.file && f._links.file.href === href || title && f.title === title); }); }, function () { return false; });
+    }
     function fail(e) { end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step }); }
     var step = a.op || "";
     // to samo zadanie wysłane drugi raz (np. strona przeładowała się w trakcie) nie zakłada drugiego zlecenia
     try { if (a.nonce && g.sessionStorage.getItem("oestAkcja:" + a.nonce)) return end({ status: "error", code: "repeat" }); if (a.nonce) g.sessionStorage.setItem("oestAkcja:" + a.nonce, "1"); } catch (e) {}
     if (a.op === "status") {
       var ids = (a.ids || []).slice(0, 20), got = [];
-      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { got.push(brief(j)); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
+      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); if (!a.fileTitle) return got.push(b); return hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
         .then(function () { end({ status: "ok", jobs: got }); }, fail);
     }
     if (a.op === "create") {
@@ -156,9 +162,7 @@
       }).then(function () {
         step = "verify";
         return job(a.id).then(function (j) {
-          var fl = j && j._links && j._links.files && j._links.files.href;
-          var seen = !fl ? Promise.resolve(false) : req("GET", fl).then(function (r) { var list = (r && (r.files || r.items)) || []; return list.some(function (f) { return f && f._links && f._links.file && f._links.file.href === href || f && f.title === a.file.title; }); }, function () { return false; });
-          return seen.then(function (s) { end({ status: "ok", job: brief(j), closed: !!(j && j.is_final_status), fileSeen: s }); });
+          return hasFile(j, a.file.title, href).then(function (s) { end({ status: "ok", job: brief(j), closed: !!(j && j.is_final_status), fileSeen: s }); });
         });
       }).catch(function (e) { if (e && e.stop) return; fail(e); });
     }

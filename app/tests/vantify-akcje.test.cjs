@@ -151,6 +151,14 @@ test('status: odczyt kilku zleceń, tylko GET; wygasłe logowanie → login', as
   const t = world({ op: 'status', nonce: 's2', ids: [1] }, {}, {}); t.w.XMLHttpRequest.prototype.send = function () { this.status = 401; this.responseText = ''; setImmediate(() => this.onload()); }; await t.run();
   assert.strictEqual(t.results[0].status, 'login');
 });
+test('status z tytułem pliku: ponowne sprawdzenie, czy Job Sheet jest przy zamkniętym zleceniu (przegląd Codex #146)', async () => {
+  const links = id => ({ files: { href: '/sites/6324/jobs/' + id + '/files' } });
+  const jobs = { 1: { id: 1, status: 'completed', is_final_status: true, summary: 'A', _links: links(1), files: [{ title: 'REACTIVE A 05112026' }] }, 2: { id: 2, status: 'completed', is_final_status: true, summary: 'B', _links: links(2), files: [{ title: 'Other' }] } };
+  const s = world({ op: 'status', nonce: 's3', ids: [1, 2], fileTitle: 'REACTIVE A 05112026' }, {}, jobs); await s.run();
+  assert.deepStrictEqual(s.results, [{ status: 'ok', jobs: [{ id: 1, status: 'completed', final: true, summary: 'A', fileSeen: true }, { id: 2, status: 'completed', final: true, summary: 'B', fileSeen: false }] }]);
+  assert.ok(s.calls.every(c => c.m === 'GET'));
+  assert.deepStrictEqual(s.calls.map(c => c.u.replace(API, '')), ['/sites/6324/jobs/1', '/sites/6324/jobs/1/files', '/sites/6324/jobs/2', '/sites/6324/jobs/2/files']);
+});
 test('okno Vantify w apce: udane zapytanie strony → wzór bez tekstów i numer zlecenia do telefonu; nieudane nic', async () => {
   const got = [], listeners = [];
   class XHR { open() {} send() {} addEventListener(n, f) { listeners.push(() => f()); } }

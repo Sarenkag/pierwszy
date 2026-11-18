@@ -60,7 +60,8 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-close]').click(); await msg(/Najpierw Open Vantify/);
     check((await calls()).length === 0, 'Close bez założenia coś wysłało');
     // ---------- 2. Open pierwszy raz: podgląd EN → okno Vantify z tekstem → numer z okna ----------
-    await pg.evaluate(() => { window.__vt.open = { events: [{ op: 'create', id: '3070001', t: 1 }] }; });
+    // w oknie Grzegorz poprawił nazwę – karta ma zapisać Summary z Vantify, nie z podglądu (przegląd Codex #146)
+    await pg.evaluate(() => { window.__vt.open = { events: [{ op: 'create', id: '3070001', t: 1 }] }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
     await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor();
     const sum = await pg.locator('.rx-vt-sum').inputValue(), desc = await pg.locator('.rx-vt-desc').inputValue();
     check(/^EN Haczyki na drzwiach biura$/.test(sum), 'Summary nie przetłumaczone: ' + sum);
@@ -71,20 +72,37 @@ function fakePhone() {
     check(/Pierwszy raz/.test(await ask().textContent()), 'pierwszy raz: brak wyjaśnienia');
     await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => /✓ Vantify #3070001/.test(document.querySelector('[data-rx=vt-check]')?.textContent || ''));
-    { const k = await calls(); check(k.length === 1 && k[0].op === 'window' && k[0].hash === '#/user/jobs/add//site' && k[0].summary === 'Coat hooks on office door – Tower B' && /Location: Tower B/.test(k[0].description) && !k[0].fileB64, 'okno Vantify: zły adres/tekst albo PDF przy zakładaniu: ' + JSON.stringify(k)); }
-    { const j = (await jobs()).find(x => x.reactive?.vantify); check(j && j.reactive.vantify.id === 3070001 && j.reactive.vantify.status === 'approval_pending' && j.reactive.vantify.summary === 'Coat hooks on office door – Tower B', 'numer zlecenia nie zapisany w zadaniu'); }
+    { const k = await calls(); check(k.length === 2 && k[0].op === 'window' && k[1].op === 'status' && k[1].ids[0] === 3070001 && k[0].hash === '#/user/jobs/add//site' && k[0].summary === 'Coat hooks on office door – Tower B' && /Location: Tower B/.test(k[0].description) && !k[0].fileB64, 'okno Vantify: zły adres/tekst albo PDF przy zakładaniu: ' + JSON.stringify(k)); }
+    { const j = (await jobs()).find(x => x.reactive?.vantify); check(j && j.reactive.vantify.id === 3070001 && j.reactive.vantify.status === 'approval_pending' && j.reactive.vantify.summary === 'Coat hooks – office door, Tower B', 'numer zlecenia albo Summary z Vantify nie zapisane w zadaniu: ' + JSON.stringify(j && j.reactive.vantify)); }
     check(/Czeka na zatwierdzenie/.test(await pg.locator('.rx-vt-row').textContent()), 'brak „Czeka na zatwierdzenie”');
     // drugi raz Open się nie da: stuknięcie = sprawdzenie statusu
-    await pg.evaluate(() => { window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks on office door – Tower B' }] }); });
+    await pg.evaluate(() => { window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
     await pg.locator('[data-rx=vt-check]').first().click(); await msg(/Vantify #3070001: czeka na zatwierdzenie/);
-    { const k = await calls(); check(k.length === 2 && k[1].op === 'status' && k[1].ids[0] === 3070001 && k[1].site === 6324 && k[1].nonce, 'sprawdzenie: złe zapytanie ' + JSON.stringify(k[1])); }
+    { const k = await calls(); check(k.length === 3 && k[2].op === 'status' && k[2].ids[0] === 3070001 && k[2].site === 6324 && k[2].nonce, 'sprawdzenie: złe zapytanie ' + JSON.stringify(k[2])); }
     // ---------- 3. Open z wzorem: apka zakłada sama ----------
     await pg.locator('[data-rx=back]').first().click().catch(() => {}); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
-    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending' } }); });
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' } }); });
     await job('Wieszaki w kuchni');
+    // 3a. brak odpowiedzi: karta pamięta „mogło powstać” (przegląd Codex #146)
+    await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/Brak odpowiedzi z Vantify/);
+    { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && j.reactive.vantify && j.reactive.vantify.pending === true && !j.reactive.vantify.id && j.reactive.vantify.summary === 'EN Wieszaki w kuchni', 'brak odpowiedzi: karta nie pamięta niepewnego zakładania ' + JSON.stringify(j && j.reactive.vantify)); }
+    check(await pg.locator('[data-rx=vt-open].rx-vt-off').count() === 1, 'niepewne zakładanie: Open Vantify bez wyszarzenia');
+    // 3b. ponowne Open: najpierw pytanie, czy na pewno (zlecenie mogło powstać); Wróć = nic nie wysłane
+    await pg.locator('[data-rx=vt-open]').click(); await ask().waitFor();
+    check(/mogło już powstać/.test(await ask().textContent()), 'ponowne Open bez ostrzeżenia o możliwym duplikacie');
+    await ask().locator('[data-a=no]').click(); await gone();
+    check((await calls()).length === 1, 'Wróć przy niepewnym zakładaniu coś wysłało');
+    // 3c. „Załóż mimo to” → Vantify odmówił (HTTP 4xx) = pewnie nie założone → karta wraca do zwykłego „Open Vantify”
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('[data-a=ok]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/Vantify nie przyjął: Invalid/);
+    { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && !j.reactive.vantify, 'odmowa 4xx: karta dalej „niepewna”'); }
+    // 3d. zakładanie udane
     await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => /✓ Vantify #3070002/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
-    { const k = await calls(); check(k.length === 1 && k[0].op === 'create' && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
+    { const k = await calls(); check(k.length === 3 && k.every(c => c.op === 'create') && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
+    { const k = await calls(); check(new Set(k.map(c => c.nonce)).size === 3, 'ponowne zakładanie z tym samym nonce'); }
+    { const k = await calls(); check(k.length === 3 && k[0].op === 'create' && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
     // ---------- 4. Close: braki → Wróć ----------
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, commence: true, complete: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }); });
     await pg.locator('[data-rx=vt-check]').first().click(); await msg(/zatwierdzone – można zamknąć/);
@@ -100,17 +118,25 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-close]').click(); await msg(/inną nazwę: „Something else”\. Nic nie wysłałem/);
     { const k = await calls(); check(k.length === 1 && k[0].op === 'status', 'inna nazwa: poszło coś poza odczytem'); }
     // ---------- 6. zamknięcie: Job Sheet PDF, „Tak, zamknij”, potwierdzenie z Vantify ----------
-    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: true }); });
+    // data zdjęcia z modułu zdjęć (pole created), nie z pliku (plik w raporcie jest już bez EXIF) – przegląd Codex #146
+    await pg.waitForTimeout(1200); const shot = await pg.evaluate(() => Date.now() - 600);
+    await pg.evaluate(t => { const Z = window.OESTZdjecia, o = Z.list.bind(Z); Z.list = async (...a) => (await o(...a)).map(r => ({ ...r, created: new Date(t).toISOString() })); }, shot);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: false }); });
     await pg.locator('[data-rx=vt-close]').click(); await ask().locator('[data-a=ok]').waitFor({ timeout: 20000 });
     const q = await ask().textContent();
-    check(/Commence \(jeśli trzeba\) i Complete z datą \d\d\/\d\d\/\d{4}/.test(q) && /REACTIVE Wieszaki w kuchni \d{8}\.pdf/.test(q), 'pytanie przed zamknięciem bez daty/pliku PDF: ' + q);
+    check(/Commence \(jeśli trzeba\) i Complete z datą \d\d\/\d\d\/\d{4}/.test(q) && /REACTIVE EN Wieszaki w kuchni \d{8}\.pdf/.test(q), 'pytanie przed zamknięciem bez daty/pliku PDF albo nazwa nie po angielsku (Summary z Vantify): ' + q);
     check(!/docx/i.test(q), 'przy zamknięciu Word zamiast tylko PDF');
     await ask().locator('[data-a=ok]').click();
-    await pg.waitForFunction(() => /✓ Zamknięte w Vantify/.test(document.querySelector('.rx-vt-row')?.textContent || ''), null, { timeout: 15000 });
-    await msg(/✓ Zamknięte w Vantify z Job Sheet/);
+    // Vantify zamknął, ale pliku nie widać: karta pamięta to na stałe („⚠ Brak pliku”), stuknięcie sprawdza plik znowu (przegląd Codex #146)
+    await pg.waitForFunction(() => /⚠ Brak pliku w Vantify/.test(document.querySelector('.rx-vt-row')?.textContent || ''), null, { timeout: 15000 });
+    await msg(/nie widzę pliku przy zleceniu/);
     { const k = await calls(), cl = k[1] || {}; const pdf = cl.file && Buffer.from(cl.file.b64, 'base64').subarray(0, 5).toString();
-      check(k.length === 2 && cl.op === 'close' && cl.id === 3070002 && cl.summary === 'EN Wieszaki w kuchni' && pdf === '%PDF-' && cl.file.type === 'application/pdf' && /\.pdf$/.test(cl.file.name) && cl.onSite && cl.done && cl.onSite <= cl.done, 'zamknięcie: złe zapytanie ' + JSON.stringify({ ...cl, file: cl.file && { ...cl.file, b64: (cl.file.b64 || '').length } })); }
-    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070002); check(j && j.reactive.vantify.final && j.reactive.vantify.closedAt, 'zamknięcie nie zapisane w zadaniu'); }
+      check(k.length === 2 && cl.op === 'close' && cl.id === 3070002 && cl.summary === 'EN Wieszaki w kuchni' && pdf === '%PDF-' && cl.file.type === 'application/pdf' && /\.pdf$/.test(cl.file.name) && cl.onSite && cl.done && cl.onSite <= cl.done && cl.done === new Date(shot).toISOString(), 'zamknięcie: złe zapytanie ' + JSON.stringify({ ...cl, file: cl.file && { ...cl.file, b64: (cl.file.b64 || '').length } })); }
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070002); check(j && j.reactive.vantify.final && j.reactive.vantify.closedAt && j.reactive.vantify.fileSeen === false && /REACTIVE EN Wieszaki/.test(j.reactive.vantify.sheetTitle || ''), 'zamknięcie / brak pliku nie zapisane w zadaniu ' + JSON.stringify(j && j.reactive.vantify)); }
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'completed', final: true, summary: 'EN Wieszaki w kuchni', fileSeen: true }] }); });
+    await pg.locator('.rx-vt-row [data-rx=vt-check]').nth(1).click(); await msg(/Job Sheet jest przy zleceniu/);
+    await pg.waitForFunction(() => /✓ Zamknięte w Vantify/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
+    { const k = await calls(); check(k.length === 1 && k[0].op === 'status' && /REACTIVE EN Wieszaki/.test(k[0].fileTitle || ''), 'ponowne sprawdzenie pliku: złe zapytanie ' + JSON.stringify(k)); }
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-zamkniete.png') });
     // ---------- 7. Vantify nie potwierdził → bez „✓” ----------
     // (sprawdzone na module: wynik bez closed nie zmienia stanu na zamknięte)
