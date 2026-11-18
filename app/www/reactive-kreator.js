@@ -49,6 +49,8 @@
     'MOVE:heavy item': 'Heavy item {w} moved to the requested location.',
     'TRANSPORT:heavy item': 'Heavy item {w} moved to the requested location.'
   };
+  /* gotowe zdanie z konkretną powierzchnią – tylko gdy wybrana ta sama albo żadna (przegląd Codex #147) */
+  const FIXED_ON = { 'HANG:coat hooks': 'door' };
   const WEIGHT = { heavy: '(approx. 60–100 kg)', veryHeavy: '(approx. over 100 kg)' };
   const it = (en, pl) => ({ en, pl });
   /* grupy „Co” – najczęstsze roboty Grzegorza na początku grup (potem kolejność z nauki) */
@@ -74,24 +76,30 @@
   const CLOSING = 'Work carried out in a safe manner, in line with health and safety procedures. Area left clean and tidy.';
   const CLOSING_ADD = { heavy: 'Manual handling procedures followed.', electrical: 'Tested and working correctly.', plumbing: 'Checked for leaks, no further issues.' };
 
-  const groupOf = name => GROUPS.find(g => g.items.some(i => i.en === name)) || null;
+  /* grupa pozycji; własne pozycje („＋ Dodaj”) niosą swoją grupę w wyborach (sel.groups), np. własny ciężki przedmiot */
+  const groupOf = (name, own) => GROUPS.find(g => g.items.some(i => i.en === name)) || (own && own[name] ? GROUPS.find(g => g.id === own[name]) || null : null);
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   function list(a) { a = a.filter(Boolean); return a.length < 2 ? a[0] || '' : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
   /* jedno zdanie dla jednej pozycji (zatwierdzone albo z szablonu) */
   function sentence(type, item, o) {
     o = o || {}; const w = o.weight && WEIGHT[o.weight] ? WEIGHT[o.weight] : '';
-    let s = FIXED[type + ':' + item] || FIXED[type + ':*'] || '';
+    const key = type + ':' + item, on = FIXED_ON[key];
+    let s = (on && o.on && o.on !== on) ? '' : FIXED[key] || FIXED[type + ':*'] || '';
     if (s) return s.replace('{w}', w).replace(/\s+/g, ' ').replace(' .', '.');
-    const name = item + (w && (groupOf(item) || {}).kind === 'heavy' ? ' ' + w : '');
+    const name = item + (w && (groupOf(item, o.groups) || {}).kind === 'heavy' ? ' ' + w : '');
     return (TEMPLATE[type] || '{I} done.').replace('{i}', name).replace('{I}', cap(name)).replace('{on}', o.on ? ' on the ' + o.on : '');
   }
   /* wybory → teksty po angielsku. sel = {type, items:[en], on, weight:'heavy'|'veryHeavy', where:{building, level, flat, room}} */
   function where(w) { w = w || {}; return [w.flat ? 'Flat ' + w.flat : '', w.room || '', w.level ? (/^\d/.test(w.level) ? 'Level ' + w.level : w.level) : '', w.building || ''].filter(Boolean).join(', '); }
-  function summary(sel) {
-    const items = (sel.items || []).slice(), verb = VERB[sel.type] || cap(String(sel.type || '').toLowerCase());
-    const w = sel.weight && WEIGHT[sel.weight] && items.some(i => (groupOf(i) || {}).kind === 'heavy') ? ' ' + WEIGHT[sel.weight] : '';
-    const what = list(items) + w + (sel.on ? ' on ' + sel.on : ''), place = where(sel.where);
-    return (verb + ' ' + what).replace(/\s+/g, ' ').trim() + (place ? ' – ' + place : '');
+  /* max długość: nazwa zadania (limit 300) i Summary w Vantify (pole 250) – przy wielu pozycjach „… and N more”, pełna lista zostaje w opisie (przegląd Codex #147) */
+  const MAX = 200;
+  function summary(sel, max) {
+    const items = (sel.items || []).slice(), verb = VERB[sel.type] || cap(String(sel.type || '').toLowerCase()), lim = max || MAX;
+    const w = sel.weight && WEIGHT[sel.weight] && items.some(i => (groupOf(i, sel.groups) || {}).kind === 'heavy') ? ' ' + WEIGHT[sel.weight] : '';
+    const place = where(sel.where), build = n => (verb + ' ' + (n < items.length ? items.slice(0, n).join(', ') + ' and ' + (items.length - n) + ' more' : list(items)) + w + (sel.on ? ' on ' + sel.on : '')).replace(/\s+/g, ' ').trim() + (place ? ' – ' + place : '');
+    let n = items.length, out = build(n);
+    while (out.length > lim && n > 1) out = build(--n);
+    return out.length > lim ? out.slice(0, lim - 1).trimEnd() + '…' : out;
   }
   function description(sel) {
     const t = sel.type, items = sel.items || [];
@@ -102,9 +110,11 @@
   }
   /* opis przy zakładaniu (Open Vantify): co trzeba zrobić, bez „zrobione” */
   function request(sel) { const s = summary(sel); return s ? s.replace(/ – /, ' at ').replace(/^./, c => c.toUpperCase()) + '.' : ''; }
-  function closing(sel, on) {
+  /* unfinished: naprawa tymczasowa / firma – bez dodatków „tested and working” (przegląd Codex #147) */
+  function closing(sel, on, unfinished) {
     if (on === false) return '';
-    const kinds = new Set((sel.items || []).map(i => (groupOf(i) || {}).kind));
+    if (unfinished) return CLOSING;
+    const kinds = new Set((sel.items || []).map(i => (groupOf(i, sel.groups) || {}).kind));
     if (sel.weight) kinds.add('heavy');
     if (sel.type === 'LEAK' || sel.type === 'UNBLOCK') kinds.add('plumbing');
     return [CLOSING, ...['heavy', 'electrical', 'plumbing'].filter(k => kinds.has(k)).map(k => CLOSING_ADD[k])].join(' ');
@@ -122,8 +132,8 @@
   /* karta Reactive → wybory kreatora (draft.jobType + draft.kreator = {items, on, weight, closing}); bez pozycji = null */
   function fromDraft(d, room) {
     const k = d && d.kreator; if (!k || !Array.isArray(k.items) || !k.items.length) return null;
-    return { type: TYPES.includes(d.jobType) ? d.jobType : 'REPAIR', items: k.items.slice(), on: k.on || '', weight: k.weight || '', closing: k.closing !== false, where: { building: d.building || '', level: d.level || '', flat: d.flat || '', room: room === undefined ? d.room || '' : room } };
+    return { type: TYPES.includes(d.jobType) ? d.jobType : 'REPAIR', items: k.items.slice(), groups: { ...(k.groups || {}) }, on: k.on || '', weight: k.weight || '', closing: k.closing !== false, where: { building: d.building || '', level: d.level || '', flat: d.flat || '', room: room === undefined ? d.room || '' : room } };
   }
-  const heavy = sel => !!sel && (sel.items || []).some(i => (groupOf(i) || {}).kind === 'heavy');
+  const heavy = sel => !!sel && (sel.items || []).some(i => (groupOf(i, sel.groups) || {}).kind === 'heavy');
   return { fromDraft, heavy, TYPES, TYPE_PL, GROUPS, SURFACES, WEIGHT, FIXED, CLOSING, sentence, summary, description, request, closing, jobSheet, ordered, learn, where, groupOf };
 });

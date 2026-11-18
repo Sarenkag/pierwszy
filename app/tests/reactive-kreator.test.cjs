@@ -49,3 +49,13 @@ test('nauka: częste na górę, dopisane przez Grzegorza na końcu grupy, bez du
   const ids = K.GROUPS.flatMap(g => g.items.map(i => i.en)); assert.equal(new Set(ids).size, ids.length, 'pozycje unikalne');
   for (const g of K.GROUPS) for (const i of g.items) assert.ok(i.pl, g.id + ' ' + i.en + ' bez PL');
 });
+test('przegląd Codex #147: powierzchnia, własna ciężka pozycja, zakończenie przy niedokończonej pracy, długość nazwy', () => {
+  assert.equal(K.sentence('HANG', 'coat hooks', { on: 'wall' }), 'Coat hooks hung on the wall, level and checked secure.', 'gotowiec „to the door” tylko dla drzwi');
+  assert.equal(K.sentence('HANG', 'coat hooks', { on: 'door' }), 'Coat hooks fixed to the door, evenly spaced and checked secure.');
+  const own = { type: 'MOVE', items: ['marble slab'], groups: { 'marble slab': 'heavy' }, weight: 'veryHeavy' };
+  assert.ok(K.heavy(own)); assert.equal(K.description(own), 'Marble slab (approx. over 100 kg) moved to the requested location.');
+  assert.match(K.closing(own), /Manual handling procedures followed\.$/);
+  assert.equal(K.closing({ type: 'UNBLOCK', items: ['sink'] }, true, true), K.CLOSING, 'firma/tymczasowe: bez „no further issues”');
+  const all = { type: 'REPAIR', items: K.GROUPS[0].items.concat(K.GROUPS[1].items).map(i => i.en), where: { building: 'Tower B', level: '5', room: 'Office' } };
+  const sm = K.summary(all); assert.ok(sm.length <= 200, sm.length); assert.match(sm, / and \d+ more – Office, Level 5, Tower B$/);
+});
