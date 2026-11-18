@@ -95,6 +95,10 @@ function fakePhone() {
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.reload(); await pg.locator('[data-rx-field=title]').waitFor();
     await row('co'); await pg.locator('[data-rx=kr-open]').first().click(); await pg.locator('[data-rx=kr-group]').first().waitFor();
     { const t = await pg.locator('.rx-body').innerText(); check(/Furniture/.test(t) && !/Meble/.test(t), 'EN: grupy po polsku'); }
+    // ---------- 9. stare zadanie z drzewka: zostaje „What exactly” z dotychczasowym wyborem (PROD-039, przegląd Codex #147) ----------
+    await pg.goto(B + '/#reactive/new/handle-0'); await pg.reload(); await pg.locator('[data-rx-field=title]').waitFor();
+    check(await pg.locator('[data-rx=row][data-id=tree]').count() === 1 && await pg.locator('[data-rx=row][data-id=co]').count() === 0, 'stare zadanie: brak sekcji drzewka, wymuszony kreator');
+    check(/›/.test(await pg.locator('[data-rx=row][data-id=tree]').textContent()), 'stare zadanie: zniknął zapisany wybór');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   if (errors.length) fails.push('błędy strony: ' + errors.join(' | '));

@@ -84,6 +84,8 @@
     const g=K.GROUPS.find(x=>x.id===kr.gid),list=K.ordered(kr.gid,kd.stats,kd.added);
     return {title:L(g.pl,g.en),body:panel(list.map(e=>'<label class="check rx-kr-i"><input type="checkbox" data-rx="kr-item" data-id="'+esc(e.en)+'"'+(sel.has(e.en)?' checked':'')+'>'+esc(label(e))+'</label>').join('')+'<button type="button" class="rx-opt add" data-rx="kr-add">'+L('＋ Dodaj','＋ Add')+'</button>'),footer:'<div class="rx-row">'+btn(L('‹ Grupy','‹ Groups'),'kr-groups')+btn(L('Gotowe','Done'),'kr-done','',true)+'</div>'};}
   /* wybory → opis do raportu (EN) i nazwa zadania, jeśli Grzegorz jej sam nie wpisał */
+  /* stare zadanie z drzewka / ręcznym opisem bez kreatora: zostaje dotychczasowa sekcja „Co dokładnie” (PROD-039, przegląd Codex #147) */
+  function oldTree(){return !krItems().length&&!!draft.problemId&&(draft.problemId!=='other'||(!!String(draft.problem||'').trim()&&!draft.kreatorAuto));}
   function coInner(){const k=draft.kreator||{},items=krItems();if(!items.length)return btn(L('Wybierz z listy','Pick from the list'),'kr-open','',true);
     const sur=K.SURFACES.map(x=>chip(L(x.pl,x.en),'kr-on','data-value="'+x.en+'"',k.on===x.en)).join(''),ks=K.fromDraft(draft);
     return '<div class="rx-chips">'+items.map(i=>chip('✓ '+i,'kr-open','',true)).join('')+'</div>'+btn(L('Zmień','Change'),'kr-open')+'<div class="rx-sub">'+L('Na czym','On what')+'</div><div class="rx-chips">'+sur+'</div>'+
@@ -117,7 +119,7 @@
     const body=more+panel('<label class="field rx-name"><span>'+L('Nazwa zadania','Job name')+'</span><input type="text" data-rx-field="title" value="'+esc(draft.title||'')+'" maxlength="300" placeholder="'+L('np. Zepsuty zamek w kuchni','e.g. Broken lock in the kitchen')+'"></label>'+
         pair(dateCell,cell('type',L('Typ','Type'),typeTxt),openRow==='type'?typeInner:'')+
         pair(cell('who',L('Kto zlecił','By who'),whoTxt),cell('where',L('Gdzie','Where'),whereTxt),openRow==='who'?whoInner:openRow==='where'?whereInner:'')+
-        row('co',L('Co','What'),krItems().join(', '),coInner(),L('wybierz','choose')))+
+        (oldTree()?row('tree',L('Co dokładnie','What exactly'),treeTxt,blocks(),L('opcjonalnie','optional')):row('co',L('Co','What'),krItems().join(', '),coInner(),L('wybierz','choose'))))+
       panel('<div class="rx-pics"><div>'+photoRow('before',L('Przed','Before'))+'</div><div>'+photoRow('after',L('Po','After'))+'</div></div>')+
       panel(info('start',L('Dodaj info na start','Add info on start'),'note','rxNotes',L('co zlecono','what was requested'))+info('end',L('Dodaj info na koniec','Add info on end'),'endNote','rxNotesEnd',L('co zrobiono','what was done')))+
       panel(row('finish',L('Zakończenie i raport','Finish and report'),act0?tl(act0):'',finishInner,L('gdy skończysz','when you finish')))+
