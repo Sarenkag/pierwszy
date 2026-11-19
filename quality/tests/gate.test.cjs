@@ -31,7 +31,7 @@ const REJESTR = { rzeczy: [
 const g1 = (d, baseline, zbaseline, rejestr) => {
   const b = path.join(d, 'baseline.json'), zb = path.join(d, 'zasady.json'), rj = path.join(d, 'rejestr.json');
   fs.writeFileSync(b, JSON.stringify({ entries: (baseline || []).map(id => ({ id })) }));
-  fs.writeFileSync(zb, JSON.stringify({ entries: (zbaseline || []).map(id => ({ id })) }));
+  fs.writeFileSync(zb, JSON.stringify({ entries: (zbaseline || []).map(e => typeof e === 'string' ? { id: e } : e) }));
   fs.writeFileSync(rj, typeof rejestr === 'string' ? rejestr : JSON.stringify(rejestr || REJESTR));
   return run('check-architecture.cjs', ['--www', d, '--baseline', b, '--baseline-zasady', zb, '--rejestr', rj, '--json', path.join(d, 'out.json')]);
 };
@@ -92,21 +92,31 @@ test('Zasady: brak pliku mapy, sekcja bez wpisu, wpis bez sekcji, „up” jako 
 test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
-  zasadaFail(g1(zla, [], ['ZNACZNIK|brak|index.html|1', 'ZNACZNIK|stary|index.html|data-go|1']), /EKRANY\|strzalka\|v-questions\|home/);
+  zasadaFail(g1(zla, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }]), /EKRANY\|strzalka\|v-questions\|home/);
   const dobra = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="settings">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
-  const r = g1(dobra, [], ['ZNACZNIK|brak|index.html|1', 'ZNACZNIK|stary|index.html|data-go|1']); assert.equal(r.code, 0, r.out);
+  const r = g1(dobra, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }]); assert.equal(r.code, 0, r.out);
 });
 test('Zasady JM: historia poza właścicielem, window.open i window["open"] (także w apostrofach) → FAIL; w komentarzu → PASS', () => {
-  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.pushState({}, "", "#x"); return w.OESTA.x; } }; })(window);' })), /JM\|historia\|app\.js\|1/);
-  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ w.open('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\|1/);
-  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ window['open']('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\|1/);
+  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.pushState({}, "", "#x"); return w.OESTA.x; } }; })(window);' })), /JM\|historia\|app\.js\]/);
+  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ w.open('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\]/);
+  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ window['open']('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\]/);
   assert.equal(g1(www('', { 'app.js': '(function(w){ /* history.pushState({}) */ w.OESTApp = { go(){ return w.OESTA.x; } }; })(window); // w.open(x)' })).code, 0);
 });
-test('Zasady JM: jedno nowe trafienie przy zastanych = nowe id → FAIL; mniej trafień = wpis nieaktualny → FAIL', () => {
-  const dwa = www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); history.back(); return w.OESTA.x; } }; })(window);' });
-  assert.equal(g1(dwa, [], ['JM|historia|app.js|2']).code, 0);
-  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); history.back(); history.back(); return w.OESTA.x; } }; })(window);' }), [], ['JM|historia|app.js|2']), /JM\|historia\|app\.js\|3/);
-  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); return w.OESTA.x; } }; })(window);' }), [], ['JM|historia|app.js|2']), /lista zastanych nieaktualna::JM\|historia\|app\.js\|2/);
+test('Zasady JM: jedno nowe trafienie ponad „maks” → FAIL; mniej trafień = obniż „maks” → FAIL; równe → PASS', () => {
+  const app = n => www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ ' + 'history.back(); '.repeat(n) + 'return w.OESTA.x; } }; })(window);' });
+  const zb = [{ id: 'JM|historia|app.js', maks: 2 }];
+  assert.equal(g1(app(2), [], zb).code, 0);
+  zasadaFail(g1(app(3), [], zb), /JM\|historia\|app\.js\]/);
+  zasadaFail(g1(app(1), [], zb), /lista zastanych nieaktualna::JM\|historia\|app\.js: trafień 1, a na liście maks 2 – obniż/);
+  assert.equal(g1(app(1), [], [{ id: 'JM|historia|app.js', maks: 1 }]).code, 0);
+  zasadaFail(g1(app(1), [], ['JM|historia|app.js']), /maks undefined/);
+});
+test('Zasady EKRANY: mapa nie jest obiektem (liczba, null, tablica) albo nie ma listy ekranów → FAIL', () => {
+  for (const zla of ['5', 'null', '[]', '{}', '{"ekrany":3}']) zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': zla })), /EKRANY\|zly-ksztalt/);
+});
+test('Zasady JM: Wstecz Androida z dodatkowym wywołaniem przed wstecz() → PASS', () => {
+  const r = g1(www('', { 'moduly/wstecz/wstecz.js': "(function(w){ function wstecz(){} if (w.App) w.App.addListener('backButton', function () { console.debug('x'); wstecz(); }); })(window);" }));
+  assert.equal(r.code, 0, r.out);
 });
 test('Zasady JM: klucz oest.* i baza w dwóch plikach, Wstecz Androida zarejestrowany dwa razy albo wcale, brak właściciela z rejestru → FAIL', () => {
   zasadaFail(g1(www('', { 'b.js': 'localStorage.getItem("oest.lang");', 'c.js': "localStorage.setItem('oest.lang','pl');" })), /JM\|klucz\|oest\.lang\|b\.js/);
@@ -126,9 +136,9 @@ test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa iden
   assert.equal(g1(www('', { 'b.js': 'function f(a){ return a + 1; }', 'c.js': 'function g(a){ return a + 1; } var c = 2;' })).code, 0);
 });
 test('Zasady ZNACZNIK: przycisk bez znacznika, z dwoma znacznikami, stary data-go → FAIL; jeden znacznik → PASS', () => {
-  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button type=\"button\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\|1/);
-  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\" data-akcja=\"zapisz\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\|1/);
-  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<a href=\"#\" data-go=\"cal\" data-nav=\"cal\">A</a>';" })), /ZNACZNIK\|stary\|b\.js\|data-go\|1/);
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button type=\"button\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\" data-akcja=\"zapisz\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<a href=\"#\" data-go=\"cal\" data-nav=\"cal\">A</a>';" })), /ZNACZNIK\|stary\|b\.js\|data-go\]/);
   assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\">A</button><a href=\"#\" data-akcja=\"x\">B</a><div role=\"button\" data-okno=\"y\"></div>';" })).code, 0);
 });
 
@@ -200,6 +210,15 @@ test('Ratchet: nowy wpis w baseline → FAIL; usunięcie wpisu → PASS', () => 
   ({ d, g } = repo(M, ['X', 'Y']));
   write(d, { 'quality/baselines/architecture.json': JSON.stringify({ entries: [{ id: 'X' }] }) }); g('commit', '-qam', 'pr');
   assert.equal(ratchet(d).code, 0);
+});
+test('Ratchet: licznik „maks” wpisu zasad może tylko maleć – obniżenie → PASS; podniesienie albo usunięcie licznika → FAIL', () => {
+  for (const [nowy, kod] of [[1, 0], [3, 1], [undefined, 1]]) {
+    const { d, g } = repo(M, []);
+    write(d, { 'quality/baselines/zasady.json': JSON.stringify({ entries: [{ id: 'JM|historia|a.js', maks: 2 }] }) }); g('add', '-A'); g('commit', '-qm', 'base2');
+    write(d, { 'quality/baselines/zasady.json': JSON.stringify({ entries: [{ id: 'JM|historia|a.js', ...(nowy ? { maks: nowy } : {}) }] }) }); g('commit', '-qam', 'pr');
+    g('branch', '-f', 'main', 'HEAD~1');
+    const r = ratchet(d); assert.equal(r.code, kod, r.out); if (kod) assert.match(r.out, /podniesiono „maks”/);
+  }
 });
 test('Ratchet: usunięcie pliku testu z app/tests → FAIL', () => {
   const { d, g } = repo(M, []); g('rm', '-q', 'app/tests/a.test.cjs'); g('commit', '-qm', 'pr');

@@ -151,8 +151,8 @@ function main() {
   try { zv = zasady.analyse(WWW, { rejestr: JSON.parse(fs.readFileSync(REJESTR, 'utf8')) }); }
   catch (e) { console.error('::error title=G1 zasady::Nie da się odczytać rejestru ' + path.relative(ROOT, REJESTR) + ': ' + e.message); process.exitCode = 1; console.log('G1 FAIL'); return; }
   if (process.argv.includes('--write-baseline-zasady')) {
-    const entries = zv.map(v => ({ id: v.id, rule: v.rule, detail: v.detail, punkt: v.punkt || '', usuwa: v.usuwa || '', reason: 'Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury).' }));
-    fs.writeFileSync(BASELINE_Z, JSON.stringify({ schema: 'oest.quality.baseline', version: 1, rule: 'zasady', note: 'Zastane naruszenia zasad architektury (docs/ZASADY.md). Lista może tylko maleć: wpis usuwa PR wskazany w „usuwa”. Liczba trafień jest częścią id, więc każde nowe trafienie to nowe id = FAIL. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).', entries }, null, 2) + '\n');
+    const entries = zv.map(v => ({ id: v.id, rule: v.rule, detail: v.detail, ...(v.liczba ? { maks: v.liczba } : {}), punkt: v.punkt || '', usuwa: v.usuwa || '', reason: 'Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury).' }));
+    fs.writeFileSync(BASELINE_Z, JSON.stringify({ schema: 'oest.quality.baseline', version: 1, rule: 'zasady', note: 'Zastane naruszenia zasad architektury (docs/ZASADY.md). Lista może tylko maleć: wpis usuwa PR wskazany w „usuwa”. „maks” = dzisiejsza liczba trafień: więcej = FAIL, mniej = obniż „maks” w tym samym PR (check-ratchet blokuje podniesienie). Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).', entries }, null, 2) + '\n');
     console.log('Zapisano baseline zasad: ' + entries.length + ' wpisów'); return;
   }
   if (process.argv.includes('--write-baseline')) {
@@ -171,13 +171,21 @@ function main() {
   for (const v of fresh) console.log('::error title=G1 nowe naruszenie (' + v.rule + ')::' + v.detail);
   for (const id of stale) console.log('::error title=G1 baseline nieaktualny::' + id + ' już nie występuje – usuń wpis z quality/baselines/architecture.json (baseline może tylko maleć).');
   // zasady architektury: ta sama logika listy zastanych (tylko maleje)
-  const zBase = fs.existsSync(BASELINE_Z) ? JSON.parse(fs.readFileSync(BASELINE_Z, 'utf8')).entries.map(e => e.id) : [];
+  const zEntries = fs.existsSync(BASELINE_Z) ? JSON.parse(fs.readFileSync(BASELINE_Z, 'utf8')).entries : [];
+  const zBase = zEntries.map(e => e.id), zMaks = new Map(zEntries.map(e => [e.id, e.maks]));
   const zNow = new Set(zv.map(v => v.id)), zBaseSet = new Set(zBase);
   const zFresh = zv.filter(v => !zBaseSet.has(v.id)), zStale = zBase.filter(id => !zNow.has(id));
+  // liczba trafień zastanego naruszenia: więcej niż „maks” = nowe trafienie (FAIL); mniej = obniż „maks” (lista tylko maleje)
+  for (const v of zv) {
+    if (!zBaseSet.has(v.id) || !v.liczba) continue;
+    const m = zMaks.get(v.id);
+    if (typeof m !== 'number' || v.liczba > m) zFresh.push({ ...v, detail: v.detail + ` Na liście zastanych: maks ${m}.` });
+    else if (v.liczba < m) zStale.push(`${v.id}: trafień ${v.liczba}, a na liście maks ${m} – obniż „maks” do ${v.liczba}`);
+  }
   const zByRule = {}; for (const v of zv) zByRule[v.rule] = (zByRule[v.rule] || 0) + 1;
   console.log('Zasady (ZASADY.md): naruszenia ' + zv.length + ' ' + JSON.stringify(zByRule) + ' | zastane: ' + (zv.length - zFresh.length) + ' | NOWE: ' + zFresh.length + ' | nieaktualne wpisy: ' + zStale.length);
   for (const v of zFresh) console.log('::error title=G1 zasada (' + v.rule + ')::' + v.detail + ' [' + v.id + ']');
-  for (const id of zStale) console.log('::error title=G1 lista zastanych nieaktualna::' + id + ' już nie występuje – usuń wpis z quality/baselines/zasady.json (lista może tylko maleć).');
+  for (const id of zStale) console.log('::error title=G1 lista zastanych nieaktualna::' + (id.includes(' – obniż') ? id : id + ' już nie występuje – usuń wpis z quality/baselines/zasady.json (lista może tylko maleć).'));
   const status = fresh.length || stale.length || zFresh.length || zStale.length ? 'FAIL' : 'PASS';
   if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages, zasady: { total: zv.length, byRule: zByRule, fresh: zFresh, stale: zStale } }, null, 2));
   console.log('G1 ' + status);

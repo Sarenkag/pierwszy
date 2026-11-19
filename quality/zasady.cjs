@@ -9,8 +9,9 @@
 //   KOPIA   – ta sama funkcja (min. 40 tokenów, R25/JM-2) w dwóch plikach; dwa identyczne pliki (JM-3).
 //   ZNACZNIK – klikalny element (button, a, role=button) bez dokładnie jednego znacznika data-nav / data-okno / data-akcja,
 //             stare znaczniki data-go, data-href, data-open, data-hnews, data-rx, data-key-action, data-pt-action, data-qq (R26).
-// Identyfikator naruszenia nie ma numerów linii; liczba trafień jest częścią identyfikatora (np. JM|historia|keys.js|2),
-// więc każde nowe trafienie daje nowy identyfikator, którego nie ma na liście zastanych → FAIL (lista może tylko maleć).
+// Identyfikator naruszenia nie ma numerów linii ani liczby trafień (np. JM|historia|keys.js); liczba trafień jest w polu „liczba”.
+// Na liście zastanych wpis ma „maks” = dzisiejsza liczba: więcej trafień → FAIL, mniej → FAIL z prośbą o obniżenie „maks”
+// (lista może tylko maleć; check-ratchet.cjs blokuje podniesienie „maks”).
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 
@@ -70,8 +71,11 @@ function analyse(www, opts) {
   let mapa = null;
   if (!fs.existsSync(mapaPlik)) add('EKRANY|brak-pliku', 'EKRANY', 'Brak moduly/ekrany/ekrany.json (jedna mapa ekranów, R1).');
   else { try { mapa = JSON.parse(fs.readFileSync(mapaPlik, 'utf8')); } catch (e) { add('EKRANY|zly-json', 'EKRANY', 'moduly/ekrany/ekrany.json to nie poprawny JSON: ' + e.message); } }
+  if (fs.existsSync(mapaPlik) && mapa !== null && (typeof mapa !== 'object' || Array.isArray(mapa) || !Array.isArray(mapa.ekrany)))
+    { add('EKRANY|zly-ksztalt', 'EKRANY', 'ekrany.json: oczekiwany obiekt z listą „ekrany”.'); mapa = null; }
+  else if (fs.existsSync(mapaPlik) && mapa === null && !v.has('EKRANY|zly-json')) add('EKRANY|zly-ksztalt', 'EKRANY', 'ekrany.json: oczekiwany obiekt z listą „ekrany”, jest null.');
   if (mapa) {
-    const ekr = Array.isArray(mapa.ekrany) ? mapa.ekrany : [];
+    const ekr = mapa.ekrany;
     if (!ekr.length) add('EKRANY|pusta-mapa', 'EKRANY', 'ekrany.json: brak listy „ekrany”.');
     const ids = new Map(), nazwy = new Set();
     for (const e of ekr) {
@@ -117,7 +121,7 @@ function analyse(www, opts) {
     for (const [f, c] of kod) {
       if ((r.wlasciciele || []).includes(f)) continue;
       const n = wzory.reduce((a, re) => a + (c.match(re) || []).length, 0);
-      if (n) add(`JM|${r.rzecz}|${f}|${n}`, 'JM', `${f}: ${r.opis} – ${n}× poza właścicielem (${(r.wlasciciele || []).join(', ') || 'zakazane'}).`, { punkt: r.punkt, usuwa: r.usuwa });
+      if (n) add(`JM|${r.rzecz}|${f}`, 'JM', `${f}: ${r.opis} – ${n}× poza właścicielem (${(r.wlasciciele || []).join(', ') || 'zakazane'}).`, { punkt: r.punkt, usuwa: r.usuwa, liczba: n });
     }
   }
   // klucze „oest.*” i bazy IndexedDB: każdy w jednym pliku (R8, R9)
@@ -134,7 +138,11 @@ function analyse(www, opts) {
   }
   for (const [b, fs_] of bazy) if (fs_.size > 1) for (const f of fs_) add(`JM|baza|${b}|${f}`, 'JM', `${f}: baza ${b} otwierana w ${fs_.size} plikach (${[...fs_].join(', ')}).`, { punkt: 'D4/D21', usuwa: 'D-3/F3' });
   // Wstecz Androida: dokładnie jedna rejestracja, w moduly/wstecz/wstecz.js, wołająca wstecz()
-  const bb = [...kod].flatMap(([f, c]) => [...c.matchAll(/addListener\(\s*["']backButton["']\s*,([^;]*)/g)].map(m => ({ f, cb: m[1] })));
+  // ciało całego callbacka (od „{” do pasującej „}”), nie do pierwszego średnika
+  const bb = [...kod].flatMap(([f, c]) => [...c.matchAll(/addListener\(\s*["']backButton["']\s*,/g)].map(m => {
+    const i = c.indexOf('{', m.index), j = i < 0 ? -1 : klamra(c, i);
+    return { f, cb: j < 0 ? c.slice(m.index, m.index + 200) : c.slice(i, j + 1) };
+  }));
   const ok = bb.length === 1 && bb[0].f === 'moduly/wstecz/wstecz.js' && /\bwstecz\(\)/.test(bb[0].cb);
   if (!ok) add('JM|backButton|' + (bb.map(x => x.f).join('+') || 'brak'), 'JM', `Wstecz Androida (backButton) ma być zarejestrowany dokładnie raz, w moduly/wstecz/wstecz.js, i wołać wstecz(); jest: ${bb.length ? bb.map(x => x.f).join(', ') : 'brak'}.`);
 
@@ -163,8 +171,8 @@ function analyse(www, opts) {
       const n = ZNACZNIKI.filter(z => new RegExp('\\b' + z + '\\s*=').test(tag)).length;
       if (n !== 1) brak++;
     }
-    if (brak) add(`ZNACZNIK|brak|${f}|${brak}`, 'ZNACZNIK', `${f}: ${brak} klikalnych elementów bez dokładnie jednego znacznika ${ZNACZNIKI.join('/')}.`, { punkt: 'R26/D12', usuwa: 'N1–N3' });
-    for (const s of STARE) { const n = (c.match(new RegExp('\\b' + s + '\\b(?!-)', 'g')) || []).length; if (n) add(`ZNACZNIK|stary|${f}|${s}|${n}`, 'ZNACZNIK', `${f}: stary znacznik ${s} ${n}×.`, { punkt: 'R26/D12', usuwa: 'N1–N3' }); }
+    if (brak) add(`ZNACZNIK|brak|${f}`, 'ZNACZNIK', `${f}: ${brak} klikalnych elementów bez dokładnie jednego znacznika ${ZNACZNIKI.join('/')}.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: brak });
+    for (const s of STARE) { const n = (c.match(new RegExp('\\b' + s + '\\b(?!-)', 'g')) || []).length; if (n) add(`ZNACZNIK|stary|${f}|${s}`, 'ZNACZNIK', `${f}: stary znacznik ${s} ${n}×.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: n }); }
   }
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
