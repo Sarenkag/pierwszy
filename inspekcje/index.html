@@ -967,7 +967,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function online() { return navigator.onLine !== false; }
 
   // ---------- baza w telefonie (IndexedDB): kolejka raportów + szablon ----------
-  var mem = { queue: {}, kv: {} }; // zapas, gdy IndexedDB niedostępne (wtedy kolejka ginie po zamknięciu)
+  var mem = { queue: {}, kv: {} }; // bez IndexedDB: odczyt = pusto; zapis = jawny błąd STORAGE_WRITE (audyt 19/11/2026 nr 21, D11 – nie cichy zapas w pamięci)
   var dbP = new Promise(function (res) {
     try {
       var rq = indexedDB.open("inspekcje", 1);
@@ -978,7 +978,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   });
   function idb(store, mode, fn) {
     return dbP.then(function (db) {
-      if (!db) return fn(null, mem[store]);
+      if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return fn(null, mem[store]); }
       return new Promise(function (res, rej) {
         var tx = db.transaction(store, mode), out = fn(tx.objectStore(store));
         tx.oncomplete = function () { res(out instanceof IDBRequest ? out.result : out); };
@@ -1264,7 +1264,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
     draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
     roomNotes = {};
-    restoring = 0; formSeq++; unsent = null; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
+    restoring = 0; formSeq++; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
     $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
@@ -3060,7 +3060,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
   // ---------- kolejka: raport gotowy w telefonie, wysyłka gdy jest sieć ----------
-  var queue = [], sending = false, unsent = null, unsentData = null; // unsent: raport bez IndexedDB, którego wysyłka się nie udała
+  var queue = [], sending = false;
   // OEST Raporty / budynek / rodzaj – nazwy po angielsku jak raporty
   // budynek z danych raportu (urządzenie / lokalizacja), rodzaj = rodzaj inspekcji bez znaczka budynku, np. „Distribution Boards”, „Weekly Flushing”
   function reportFolder(from, d) {
@@ -3103,17 +3103,11 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var d = r.data;
     if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
     var it = queueItem(r, from);
-    // Bez IndexedDB raport żyje tylko do zamknięcia apki: formularz znika dopiero, gdy raport faktycznie wyszedł
     if (sendBtn && sendBtn.step) sendBtn.step(T("Dodaję do kolejki…", "Adding to the queue…"));
     return dbP.then(function (db) {
-      if (db) return qPut(it);
-      if (!online()) throw new Error(T("ta przeglądarka nie zapisuje kolejki, a nie ma sieci. Raport zostaje w formularzu — wyślij, gdy wróci zasięg", "this browser does not keep the queue and there is no network. The report stays in the form — send it when the signal returns"));
-      // ponowna próba wysyła ten sam raport (to samo id), żeby serwer nie zrobił duplikatu, gdy zginęła tylko odpowiedź
-      if (unsent) { it = unsent; d = unsentData; }
-      return api("submit", submitArg(it)).then(function (r) { unsent = null; markSent(it, r); return qPut(it); }, function (e) {
-        unsent = it; unsentData = d;
-        throw new Error(T("ta przeglądarka nie zapisuje kolejki, więc raport musi wyjść od razu, a wysyłka się nie udała (", "this browser does not keep the queue, so the report has to go at once, and sending failed (") + gErr(e) + T("). Formularz zostaje — ponowna próba wyśle ten sam raport, bez późniejszych zmian", "). The form stays — a retry sends the same report, without later changes"));
-      });
+      // bez pamięci telefonu raport nie trafia do kolejki ani nie „wychodzi od razu”: jawny błąd, formularz zostaje (D11)
+      if (!db) throw Error("STORAGE_WRITE");
+      return qPut(it);
     }).then(function () {
       queue.push(it); lastQueued = it.code;
       if (!from.finish) {
