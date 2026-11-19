@@ -141,19 +141,26 @@ test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa iden
   zasadaFail(g1(www('', { 'b.js': fn, 'c.js': '// inna\n' + fn.replace('function dzien', 'function data') })), /Ta sama funkcja w 2 plikach: data@c\.js, dzien@b\.js\. \[KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js\]/);
   // zmiana nazwy zastanej kopii nie tworzy nowego wyjątku (id = treść + pliki)
   const id = JSON.parse(fs.readFileSync(path.join((() => { const d = www('', { 'b.js': fn, 'c.js': fn.replace('function dzien', 'function data') }); g1(d); return d; })(), 'out.json'), 'utf8')).zasady.fresh[0].id;
-  assert.equal(g1(www('', { 'b.js': fn.replace('function dzien', 'function dzien2'), 'c.js': fn.replace('function dzien', 'function inna') }), [], [id]).code, 0);
+  assert.equal(g1(www('', { 'b.js': fn.replace('function dzien', 'function dzien2'), 'c.js': fn.replace('function dzien', 'function inna') }), [], [{ id, maks: 2 }]).code, 0);
   zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'c.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+c\.js/);
   // strzałkowa i metoda obiektu/klasy też są kopią
   const ciało = '{ var x = new Date(d); var y = x.getFullYear(); var m = x.getMonth() + 1; var dd = x.getDate(); return (dd < 10 ? "0" : "") + dd + "/" + (m < 10 ? "0" : "") + m + "/" + y; }';
   zasadaFail(g1(www('', { 'b.js': 'const A = { f: (d) => ' + ciało + ' };', 'c.js': 'var g = (d) => ' + ciało + ';' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
   zasadaFail(g1(www('', { 'b.js': 'const A = { data(d) ' + ciało + ' };', 'c.js': 'class B { dzien(d) ' + ciało + ' }' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
   assert.equal(g1(www('', { 'b.js': 'if (a) { b(); }', 'c.js': 'while (a) { b(); }' })).code, 0);
+  // trzecia kopia w pliku już objętym wyjątkiem → więcej niż „maks” → FAIL
+  const kop = n => www('', { 'b.js': Array.from({ length: n }, (_, i) => 'function f' + i + '(d) ' + ciało).join('\n'), 'c.js': 'function g(d) ' + ciało });
+  const kid = JSON.parse(fs.readFileSync(path.join((() => { const d = kop(1); g1(d); return d; })(), 'out.json'), 'utf8')).zasady.fresh[0].id;
+  assert.equal(g1(kop(1), [], [{ id: kid, maks: 2 }]).code, 0);
+  zasadaFail(g1(kop(2), [], [{ id: kid, maks: 2 }]), /maks 2/);
   assert.equal(g1(www('', { 'b.js': 'function f(a){ return a + 1; }', 'c.js': 'function g(a){ return a + 1; } var c = 2;' })).code, 0);
 });
 test('Zasady ZNACZNIK: przycisk bez znacznika, z dwoma znacznikami, stary data-go → FAIL; jeden znacznik → PASS', () => {
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button type=\"button\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\" data-akcja=\"zapisz\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<a href=\"#\" data-go=\"cal\" data-nav=\"cal\">A</a>';" })), /ZNACZNIK\|stary\|b\.js\|data-go\]/);
+  // „>” w wartości atrybutu i w ${…} nie kończy znacznika
+  assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button title=\"A > B\" data-akcja=\"porownaj\">A</button>'; y = `<button ${a > 1 ? 'x' : 'y'} data-nav=\"cal\">B</button>`;" })).code, 0);
   assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\">A</button><a href=\"#\" data-akcja=\"x\">B</a><div role=\"button\" data-okno=\"y\"></div>';" })).code, 0);
 });
 

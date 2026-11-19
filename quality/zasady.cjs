@@ -157,7 +157,7 @@ function analyse(www, opts) {
     if (plikiF.length < 2) continue;
     const opis = lista.map(x => x.nazwa + '@' + x.f).sort();
     // id = treść (hash bez nazwy) + pliki; nazwy tylko w opisie, więc zmiana nazwy nie tworzy nowego wyjątku
-    add(`KOPIA|funkcja|${h.slice(0, 10)}|${plikiF.sort().join('+')}`, 'KOPIA', `Ta sama funkcja w ${plikiF.length} plikach: ${opis.join(', ')}.`, { punkt: 'R25', usuwa: 'P7/P8' });
+    add(`KOPIA|funkcja|${h.slice(0, 10)}|${plikiF.sort().join('+')}`, 'KOPIA', `Ta sama funkcja w ${plikiF.length} plikach: ${opis.join(', ')}.`, { punkt: 'R25', usuwa: 'P7/P8', liczba: lista.length });
   }
   const tresci = new Map();
   for (const f of all) { const h = crypto.createHash('sha1').update(src.get(f)).digest('hex'); if (!tresci.has(h)) tresci.set(h, []); tresci.get(h).push(f); }
@@ -166,8 +166,11 @@ function analyse(www, opts) {
   // ---------- ZNACZNIK: klikalne elementy (R26) ----------
   for (const [f, c] of kod) {
     let brak = 0;
-    for (const m of c.matchAll(/<(button|a)\b[^>]*>|<[a-z]+\b[^>]*\brole=\\?["']button\\?["'][^>]*>/gi)) {
+    // znacznik do zamykającego „>”, z pominięciem „>” w wartości atrybutu (="…", ='…') i w ${…} szablonu JS
+    const ATR = String.raw`(?:=\s*"[^"<]*"|=\s*'[^'<]*'|\$\{[^}]*\}|[^>])*`;
+    for (const m of c.matchAll(new RegExp(String.raw`<(?:button|a|[a-z]+(?=${ATR}\brole=\\?["']button))\b${ATR}>`, 'gi'))) {
       const tag = m[0];
+      if (!/^<(button|a)\b/i.test(tag) && !/\brole=\\?["']button/i.test(tag)) continue;
       if (/^<a\b/i.test(tag) && !/\bhref\s*=/.test(tag)) continue; // <a> bez href to nie link
       const n = ZNACZNIKI.filter(z => new RegExp('\\b' + z + '\\s*=').test(tag)).length;
       if (n !== 1) brak++;

@@ -1094,6 +1094,7 @@
       "id": "KOPIA|funkcja|951fad04bb|home.js+moduly/pasek-dni/pasek-dni.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: iso@home.js, iso@moduly/pasek-dni/pasek-dni.js.",
+      "maks": 2,
       "punkt": "R25",
       "usuwa": "P7/P8",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -1102,6 +1103,7 @@
       "id": "KOPIA|funkcja|c772d406dd|handover.js+moduly/notatki/glos.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: (anonimowa)@handover.js, (anonimowa)@moduly/notatki/glos.js.",
+      "maks": 2,
       "punkt": "R25",
       "usuwa": "P7/P8",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -1110,6 +1112,7 @@
       "id": "KOPIA|funkcja|f15739c20c|moduly/raporty/raporty.js+moduly/zdjecia/zdjecia.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: who@moduly/raporty/raporty.js, who@moduly/zdjecia/zdjecia.js.",
+      "maks": 2,
       "punkt": "R25",
       "usuwa": "P7/P8",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
