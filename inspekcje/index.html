@@ -3007,7 +3007,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
     }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });
   });
-  function buildErr(e) { return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
+  function buildErr(e) { if (e && /^[A-Z][A-Z0-9_]{3,}$/.test(e.message || "")) return gErr(e); /* kod aplikacji (np. STORAGE_WRITE) → tekst z moduly/bledy (uwaga Codex #164) */ return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
     var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();
     if (d.temps) {
