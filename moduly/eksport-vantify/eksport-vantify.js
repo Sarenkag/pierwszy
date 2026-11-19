@@ -35,9 +35,16 @@
       .split("Roof 1").join("R1").split("Roof 2").join("R2").split("Operation Testing").join("Operation Test");
     return s.replace(/\s+/g, " ").trim().toLowerCase();
   }
+  // Rozdzielnice: Vantify nazywa zadanie „Distribution Boards (DB-TB-LL-14)”, karta w apce to „LL-14” albo „MSDB-TB-01”
+  // (19/11/2026: zlecenia rozdzielnic z Vantify były pomijane – brak inspekcji na dziś w apce).
+  var DB = /^Distribution Boards \((.+)\)$/;
   function matcher(cards) { // cards: [[id, nazwa], ...]
     var by = {}; (cards || []).forEach(function (c) { by[norm(c[1])] = c[0]; });
-    return function (name) { return by[norm(name)] || null; };
+    function one(n) { return by[norm(n)] || null; }
+    return function (name) {
+      var m = DB.exec(String(name || "").trim());
+      return one(name) || (m && (one(m[1]) || one(m[1].replace(/^DB-TB-/, "")))) || null;
+    };
   }
   function hash8(s) { var h = 0x811c9dc5; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ("0000000" + h.toString(16)).slice(-8); }
   function sortedJson(o) { return JSON.stringify(Object.keys(o).sort().reduce(function (a, k) { a[k] = o[k]; return a; }, {})); }
