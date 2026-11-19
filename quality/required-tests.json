@@ -350,6 +350,11 @@
       "timeoutSec": 600
     },
     {
+      "file": "app/tests/wstecz-ladowanie-ui-check.cjs",
+      "passMarker": "WSTECZ LADOWANIE UI PASS",
+      "timeoutSec": 300
+    },
+    {
       "file": "app/tests/udostepnij-ui-check.cjs",
       "passMarker": "UDOSTEPNIJ UI PASS",
       "timeoutSec": 600

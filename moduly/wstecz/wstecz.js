@@ -16,7 +16,7 @@
 (function (w) {
   'use strict';
   if (w.OESTWstecz) return;
-  var okna = [], strona = {}, pytam = false;
+  var okna = [], strona = {}, pytam = false, gotowa = false; // gotowa = strona podała ustaw() (do tego czasu trwa ładowanie)
   function T(pl, en) { try { return localStorage.getItem('oest.lang') === 'en' ? en : pl; } catch (e) { return pl; } }
   function widoczna(el) { return !!el && !el.hidden && el.offsetParent !== null; }
   // strzałka ‹ na widocznym ekranie (górny pasek .top .back)
@@ -30,6 +30,8 @@
     if (App && App.exitApp) App.exitApp();
   }
   function wstecz() {
+    // 0. strona jeszcze się ładuje (skrypt jest pierwszy w <head>, nr 41): Wstecz nic nie robi – ani historia, ani wyjście z apki
+    if (!gotowa) return 'ladowanie';
     // 1. okienko bez historii (aparat) – zamknij najwyższe
     if (okna.length) { var z = okna[okna.length - 1]; try { z(); } catch (e) {} return 'okno'; }
     // 1a. otwarty <dialog> (Klucze, Power trace: zdjęcie, znacznik) – zamknij najwyższy, ekran zostaje (audyt 19/11/2026 nr 35:
@@ -63,7 +65,7 @@
   w.OESTWstecz = {
     nakladki: nakladki,
     okno: function (zamknij) { okna.push(zamknij); return function () { var i = okna.indexOf(zamknij); if (i >= 0) okna.splice(i, 1); }; },
-    ustaw: function (o) { strona = o || {}; },
+    ustaw: function (o) { strona = o || {}; gotowa = true; },
     wstecz: wstecz
   };
   // telefon: własna obsługa Wstecz wyłącza domyślne cofanie Androida po historii WebView
