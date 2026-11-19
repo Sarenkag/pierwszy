@@ -6,7 +6,7 @@
 //  2. jest internet → okno się otwiera, raport ma status „przekazano · niepotwierdzone”: Word i zdjęcia zostają, PPM nie jest „Wysłana”,
 //  3. drugie „Wyślij wszystko” nie otwiera wyboru apki drugi raz dla tego samego raportu (bez dubli maili),
 //  4. „Potwierdzam, wysłane” → dopiero wtedy status wysłany i PPM „Wysłana”,
-//  5. „Wyślij ponownie” → raport wraca do kolejki,
+//  5. „Wyślij ponownie” → raport wraca do kolejki; dwa szybkie „Wyślij wszystko” przy wolnej sieci = jedno okno wyboru,
 //  6. błąd wtyczki → status błąd, raport czeka.
 // NIE sprawdza (Pixel 8 Pro): prawdziwego okna Androida i Gmaila.
 // Uruchomienie: node app/tests/udostepnij-ui-check.cjs (po npm run copy-web)
@@ -67,8 +67,11 @@ let STEP = 'start';
       for (let i = 0; i < 150 && !page.said.join(' ').includes('Brak połączenia z internetem'); i++) await new Promise(r => setTimeout(r, 100));
       assert.match(page.said.join(' '), /Brak połączenia z internetem/, 'komunikat o braku połączenia');
       assert.equal(page.shares, 0, 'bez internetu okno wyboru apki się nie otwiera');
-      await page.goto(base + '/inspekcje/index.html#queue'); await page.locator('#qSend').waitFor({ state: 'visible' });
-      const q = await queue(page);
+      await page.waitForURL(u => !/\/inspekcje\//.test(u.href), { timeout: 8000 }).catch(() => {}); // po Wyślij inspekcja sama wychodzi do rodzica – nie ścigamy się z tym przejściem
+      // kolejka w nowej karcie: ta karta pamięta otwartą inspekcję (sessionStorage) i czasem wraca do formularza zamiast kolejki
+      const qp = await ctx.newPage(); qp.on('pageerror', e => errors.push(e.message));
+      await qp.goto(base + '/inspekcje/index.html#queue'); await qp.locator('#qSend').waitFor({ state: 'visible' });
+      const q = await queue(qp);
       assert.equal(q.length, 1, 'raport w kolejce'); assert.equal(q[0].status, 'wait', 'raport czeka');
       assert.ok(q[0].docx > 0, 'Word zostaje');
       assert.deepEqual(errors, []);
@@ -103,8 +106,15 @@ let STEP = 'start';
       await page.locator('[data-again]').click();
       await page.waitForFunction(() => !document.querySelector('[data-again]'));
       q = await queue(page); assert.equal(q[0].status, 'wait', 'ponownie = znów w kolejce');
-      await page.locator('#qSend').click();
+      // wolna sieć: drugie „Wyślij wszystko” w trakcie sprawdzania połączenia nie otwiera wyboru apki drugi raz (uwaga Codex #158)
+      await ctx.unroute('https://www.gstatic.com/generate_204');
+      await ctx.route('https://www.gstatic.com/generate_204', r => setTimeout(() => r.fulfill({ status: 204, body: '' }).catch(() => {}), 1500));
+      await page.evaluate(() => document.getElementById('qSend').click());
+      await page.waitForTimeout(300);
+      await page.evaluate(() => document.getElementById('qSend').click());
       await page.waitForFunction(() => window.__shareCalls.length === 1, null, { timeout: 15000 });
+      await page.waitForTimeout(2500);
+      assert.equal(await calls(page), 1, 'dwa kliknięcia w czasie sprawdzania sieci = jedno okno wyboru');
       await page.locator('[data-ok]').waitFor();
 
       STEP = '4 potwierdzenie';
@@ -125,9 +135,12 @@ let STEP = 'start';
       assert.equal(page.shares, 1, 'okno wyboru apki otwierane raz');
       for (let i = 0; i < 50 && !page.said.join(' ').includes('Nie udało się otworzyć'); i++) await new Promise(r => setTimeout(r, 100));
       assert.match(page.said.join(' '), /Nie udało się otworzyć Gmaila/, 'komunikat o błędzie');
-      await page.goto(base + '/inspekcje/index.html#queue'); await page.locator('#qSend').waitFor({ state: 'visible' });
-      await page.waitForFunction(() => new Promise(res => { const rq = indexedDB.open('inspekcje'); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => res(g.result.length === 1 && g.result[0].status === 'err'); }; }), null, { timeout: 15000 });
-      const q = await queue(page); assert.ok(q[0].docx > 0, 'Word zostaje po błędzie');
+      await page.waitForURL(u => !/\/inspekcje\//.test(u.href), { timeout: 8000 }).catch(() => {}); // po Wyślij inspekcja sama wychodzi do rodzica – nie ścigamy się z tym przejściem
+      // kolejka w nowej karcie: ta karta pamięta otwartą inspekcję (sessionStorage) i czasem wraca do formularza zamiast kolejki
+      const qp = await ctx.newPage(); qp.on('pageerror', e => errors.push(e.message));
+      await qp.goto(base + '/inspekcje/index.html#queue'); await qp.locator('#qSend').waitFor({ state: 'visible' });
+      await qp.waitForFunction(() => new Promise(res => { const rq = indexedDB.open('inspekcje'); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => res(g.result.length === 1 && g.result[0].status === 'err'); }; }), null, { timeout: 15000 });
+      const q = await queue(qp); assert.ok(q[0].docx > 0, 'Word zostaje po błędzie');
       assert.deepEqual(errors, []);
       await ctx.close();
     }

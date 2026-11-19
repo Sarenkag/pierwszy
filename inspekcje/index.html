@@ -3338,6 +3338,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     return "";
   }
   function shareSend(it) {
+    if (sending || !it) return Promise.resolve(); // jedno przekazanie naraz
     var files = [];
     if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
     else {
@@ -3345,7 +3346,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: bytesToB64(it.docx) });
     }
     var to = Array.isArray(it.toList) ? it.toList : [it.to || myEmail()].filter(Boolean);
-    it.status = "sending"; refresh();
+    sending = true; it.status = "sending"; refresh(); // blokada na całe sprawdzanie sieci i przekazanie (drugie „Wyślij wszystko” nie otwiera wyboru drugi raz)
     // najpierw połączenie (zasada wysyłki): bez internetu nie otwieramy wyboru apki, raport czeka w kolejce
     var net = window.OESTSender && OESTSender.reachable ? OESTSender.reachable() : Promise.resolve(online());
     return net.then(function (up) {
@@ -3354,7 +3355,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       // Android mówi tylko, że okno wyboru apki się otworzyło – nie, że mail wyszedł: nic nie kasujemy, PPM nie jest „wysłane”
       it.status = "shared"; it.sharedAt = Date.now(); it.err = ""; return qPut(it);
     }, function (e) { it.status = "err"; it.err = gErr(e); say(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
-    });
+    }).then(function () { sending = false; refresh(); }, function (e) { sending = false; refresh(); throw e; });
   }
   function sendQueue(manual) {
     if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
