@@ -96,18 +96,18 @@ function analyse(www, opts) {
     }
     if (!ids.has('home')) add('EKRANY|brak-home', 'EKRANY', 'ekrany.json: brak ekranu głównego „home”.');
     const index = src.get('index.html') || '';
-    const sekcje = [...index.replace(/<!--[\s\S]*?-->/g, ' ').matchAll(/<section\b[^>]*\bid="(v-[\w-]+)"[^>]*>/g)].map(m => m[1]);
+    const sekcje = [...index.replace(/<!--[\s\S]*?-->/g, ' ').matchAll(/<section\b[^>]*\bid=["'](v-[\w-]+)["'][^>]*>/g)].map(m => m[1]);
     const pudelka = new Set([...ids.values()].map(e => e.pudelko));
     for (const s of sekcje) if (!pudelka.has(s)) add('EKRANY|sekcja-bez-wpisu|' + s, 'EKRANY', `index.html: sekcja #${s} nie ma wpisu w ekrany.json.`);
     for (const p of pudelka) if (!sekcje.includes(p)) add('EKRANY|wpis-bez-sekcji|' + p, 'EKRANY', `ekrany.json: pudełko #${p} nie istnieje w index.html.`);
     // strzałka ‹ wpisana w sekcję index.html: data-go = rodzic ekranu tej sekcji (ekran z id równym nazwie sekcji)
     const bez = index.replace(/<!--[\s\S]*?-->/g, ' ');
-    const starty = [...bez.matchAll(/<section\b[^>]*\bid="(v-[\w-]+)"/g)];
+    const starty = [...bez.matchAll(/<section\b[^>]*\bid=["'](v-[\w-]+)["']/g)];
     starty.forEach((m, i) => {
       const kawalek = bez.slice(m.index, i + 1 < starty.length ? starty[i + 1].index : bez.length);
       const e = [...ids.values()].find(x => x.pudelko === m[1] && !x.id.includes('/'));
-      for (const b of kawalek.matchAll(/<button\b[^>]*\bclass="[^"]*\bback\b[^"]*"[^>]*>/g)) {
-        const go = (b[0].match(/\bdata-go="([^"]*)"/) || [])[1];
+      for (const b of kawalek.matchAll(/<button\b[^>]*\bclass=(["'])(?:(?!\1).)*\bback\b(?:(?!\1).)*\1[^>]*>/g)) {
+        const go = (b[0].match(/\bdata-go=["']([^"']*)["']/) || [])[1];
         if (e && go !== undefined && go !== e.rodzic) add(`EKRANY|strzalka|${m[1]}|${go}`, 'EKRANY', `index.html #${m[1]}: strzałka ‹ prowadzi do „${go}”, a rodzic ${e.id} w ekrany.json to „${e.rodzic}”.`);
       }
     });
@@ -178,20 +178,35 @@ function analyse(www, opts) {
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// funkcje z kodu: „function nazwa(…) {…}” i „nazwa = function(…) {…}” oraz „nazwa(…) {…}” w obiektach;
-// treść porównywana po tokenach (bez spacji i komentarzy), nazwa funkcji nie wchodzi do porównania
+// funkcje z kodu: „function nazwa(…) {…}”, „nazwa = function(…) {…}”, strzałkowe „(…) => {…}” / „x => {…}”
+// i metody „nazwa(…) {…}” w obiektach i klasach; treść porównywana po tokenach (bez spacji i komentarzy),
+// nazwa funkcji nie wchodzi do porównania
+const NIE_METODA = new Set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'with', 'do', 'else', 'try', 'new', 'typeof', 'await', 'yield', 'super']);
 function funkcjeZ(c) {
-  const out = [];
-  const re = /\bfunction\b\s*([\w$]*)\s*\(/g;
-  let m;
-  while ((m = re.exec(c))) {
-    const start = c.indexOf('{', m.index); if (start < 0) break;
-    const end = klamra(c, start); if (end < 0) continue;
-    let nazwa = m[1];
-    if (!nazwa) { const przed = c.slice(Math.max(0, m.index - 60), m.index).match(/([\w$]+)\s*[:=]\s*$/); nazwa = przed ? przed[1] : '(anonimowa)'; }
-    const ciało = c.slice(c.indexOf('(', m.index), end + 1);
+  const out = [], start0 = new Set();
+  const dodaj = (od, nazwa) => {
+    const start = c.indexOf('{', od); if (start < 0) return;
+    if (start0.has(start)) return; start0.add(start);
+    const end = klamra(c, start); if (end < 0) return;
+    const ciało = c.slice(od, end + 1);
     const tokeny = ciało.match(/[\w$]+|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[^\s\w$]/g) || [];
     out.push({ nazwa, tokeny: tokeny.length, hash: crypto.createHash('sha1').update(tokeny.join(' ')).digest('hex') });
+  };
+  const przedNazwa = i => { const p = c.slice(Math.max(0, i - 60), i).match(/([\w$]+)\s*[:=]\s*(?:async\s*)?$/); return p ? p[1] : '(anonimowa)'; };
+  let m;
+  // function / function nazwa – od nawiasu z parametrami
+  const re = /\bfunction\b\s*\*?\s*([\w$]*)\s*\(/g;
+  while ((m = re.exec(c))) dodaj(c.indexOf('(', m.index), m[1] || przedNazwa(m.index));
+  // strzałkowe z klamrą: (a, b) => { … }  albo  a => { … }
+  const ra = /(\([^()]*\)|[\w$]+)\s*=>\s*\{/g;
+  while ((m = ra.exec(c))) dodaj(m.index, przedNazwa(m.index));
+  // metody: nazwa(…) { … } (obiekt, klasa); słowa kluczowe pomijane
+  const rm = /(^|[,{;}\s])(?:async\s+|static\s+|get\s+|set\s+)*([\w$]+)\s*\(([^()]*)\)\s*\{/g;
+  while ((m = rm.exec(c))) {
+    const nazwa = m[2]; if (NIE_METODA.has(nazwa)) continue;
+    const at = m.index + m[1].length, przed = c.slice(Math.max(0, at - 12), at);
+    if (/\bfunction\s*\*?\s*$/.test(przed) || /[\w$.]\s*$/.test(c.slice(Math.max(0, at - 1), at))) continue; // wywołanie albo już policzona function
+    dodaj(c.indexOf('(', at), nazwa);
   }
   return out;
 }

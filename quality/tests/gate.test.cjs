@@ -89,6 +89,13 @@ test('Zasady: brak pliku mapy, sekcja bez wpisu, wpis bez sekcji, „up” jako 
   zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'a', rodzic: 'b', pudelko: 'v-home', pl: 'a', en: 'a' }, { id: 'b', rodzic: 'a', pudelko: 'v-home', pl: 'b', en: 'b' }]) })), /EKRANY\|petla\|a/);
   zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'x', rodzic: 'home', pudelko: 'v-home', pl: 'x' }]) })), /EKRANY\|brak-pola\|x\|en/);
 });
+test('Zasady EKRANY: id sekcji i strzałka ‹ w apostrofach czytane tak samo jak w cudzysłowach', () => {
+  const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
+  const zb = [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }];
+  const html = go => "<section class='view' id='v-settings'></section><section class='view' id='v-questions'><div class='top'><button class='back' type='button' data-go='" + go + "'>‹</button></div></section>";
+  assert.equal(g1(www(html('settings'), { 'moduly/ekrany/ekrany.json': m }), [], zb).code, 0);
+  zasadaFail(g1(www(html('home'), { 'moduly/ekrany/ekrany.json': m }), [], zb), /EKRANY\|strzalka\|v-questions\|home/);
+});
 test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
@@ -136,6 +143,11 @@ test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa iden
   const id = JSON.parse(fs.readFileSync(path.join((() => { const d = www('', { 'b.js': fn, 'c.js': fn.replace('function dzien', 'function data') }); g1(d); return d; })(), 'out.json'), 'utf8')).zasady.fresh[0].id;
   assert.equal(g1(www('', { 'b.js': fn.replace('function dzien', 'function dzien2'), 'c.js': fn.replace('function dzien', 'function inna') }), [], [id]).code, 0);
   zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'c.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+c\.js/);
+  // strzałkowa i metoda obiektu/klasy też są kopią
+  const ciało = '{ var x = new Date(d); var y = x.getFullYear(); var m = x.getMonth() + 1; var dd = x.getDate(); return (dd < 10 ? "0" : "") + dd + "/" + (m < 10 ? "0" : "") + m + "/" + y; }';
+  zasadaFail(g1(www('', { 'b.js': 'const A = { f: (d) => ' + ciało + ' };', 'c.js': 'var g = (d) => ' + ciało + ';' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
+  zasadaFail(g1(www('', { 'b.js': 'const A = { data(d) ' + ciało + ' };', 'c.js': 'class B { dzien(d) ' + ciało + ' }' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
+  assert.equal(g1(www('', { 'b.js': 'if (a) { b(); }', 'c.js': 'while (a) { b(); }' })).code, 0);
   assert.equal(g1(www('', { 'b.js': 'function f(a){ return a + 1; }', 'c.js': 'function g(a){ return a + 1; } var c = 2;' })).code, 0);
 });
 test('Zasady ZNACZNIK: przycisk bez znacznika, z dwoma znacznikami, stary data-go → FAIL; jeden znacznik → PASS', () => {

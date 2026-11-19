@@ -32,7 +32,7 @@ Ten plik obowiązuje razem z `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN-S
 | R20 | Każdy plik i każdy ekran ma wejście, inaczej jest usuwany. | check-architecture |
 | R21 | Każda zasada ma strażnika, który sprawdza **dokładnie**: id rodzica, liczbę elementów, selektor, tekst PL/EN i położenie w px. | `quality/` |
 | R22 | Bez nowych bibliotek. Małe PR-y. Nic nie scala się bez Twojego „tak”. | Grzegorz |
-| R23 | Zakazane: luzowanie progu, `skip`/`todo`, dopisywanie wyjątku, żeby przeszło, usuwanie asercji, łapanie błędu testu. Zmiana samego testu tylko osobnym PR za Twoim „tak” i zawsze na równie ostry albo ostrzejszy. **Wymuszone:** bramka odrzuca PR, który zmienia naraz testy/`quality/` i kod apki. | check-ratchet |
+| R23 | Zakazane: luzowanie progu, `skip`/`todo`, dopisywanie wyjątku, żeby przeszło, usuwanie asercji, łapanie błędu testu. Zmiana samego testu tylko osobnym PR za Twoim „tak” i zawsze na równie ostry albo ostrzejszy. **Jeszcze niewymuszone:** dziś `check-ratchet` tylko ostrzega, gdy PR zmienia naraz testy/`quality/` i kod apki (blokuje usunięcie testu, luzowanie progów i nowe wyjątki). Twarda blokada – osobny PR po decyzji właściciela. | check-ratchet |
 | R24 | Każdy strażnik ma próbkę z celowym błędem (literówka w id, przecinek, brak elementu, zły rodzic). Build pada, jeśli strażnik jej nie złapie. | `quality/tests/gate.test.cjs` |
 | R25 | Jedna rzecz = jedno miejsce (sprawdza JM). Jeden sprawdzacz architektury (JM wbudowany w istniejący `check-architecture.cjs`) i jeden format listy naruszeń (istniejące `quality/baselines/*.json`). | `quality/check-architecture.cjs` |
 | R26 | Jedno słownictwo znaczników: `data-nav="<ekran>"`, `data-nav="up"`, `data-okno="<okienko>"`, `data-akcja="<nazwa>"`. Stare `data-go`, `data-href`, `data-open`, `data-hnews`, `data-rx`, `data-key-action`, `data-pt-action`, `data-qq` znikają. | `moduly/ekrany` |
@@ -51,11 +51,11 @@ Ten plik obowiązuje razem z `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN-S
 - **Rejestr „jedna rzecz = jedno miejsce”:** `quality/jedno-miejsce.json` (R25, JM-1 i JM-4). Każda rzecz ma właściciela, a trafienie poza nim to naruszenie. Dodatkowo:
   - klucz `oest.*` i baza w telefonie mają być w jednym pliku;
   - Wstecz Androida rejestruje tylko `moduly/wstecz`.
-- **Kopie:** ta sama funkcja (min. 40 tokenów) w dwóch plikach i dwa identyczne pliki (JM-2, JM-3).
+- **Kopie:** ta sama funkcja (min. 40 tokenów; `function`, strzałkowa z klamrą, metoda obiektu/klasy) w dwóch plikach i dwa identyczne pliki (JM-2, JM-3).
 - **Znaczniki klikalnych elementów (R26):** każdy przycisk, link i `role=button` ma dokładnie jeden znacznik: `data-nav`, `data-okno` albo `data-akcja`.
 - **Zastane naruszenia** są w `quality/baselines/zasady.json`:
   - każdy wpis ma punkt planu i PR, który go usuwa;
-  - liczba trafień jest częścią identyfikatora, więc każde nowe trafienie daje FAIL;
+  - identyfikator to plik + rzecz (bez nazw funkcji i liczby trafień), a liczba trafień jest w polu „maks”: więcej = FAIL, mniej = trzeba obniżyć „maks” w tym samym PR;
   - lista może tylko maleć (`check-ratchet.cjs`).
 - **Strażnik sprawdza sam siebie (R24):** `quality/tests/gate.test.cjs` ma próbki z celowym błędem. Są tam:
   - rodzic „hme”;
