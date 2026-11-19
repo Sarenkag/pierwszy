@@ -3,7 +3,7 @@
  * Zasada (Grzegorz 08/11/2026): „back powinien cofać max o poziom wyżej lub spuszczać dane okienko”.
  * Wcześniej Android cofał się po całej historii przeglądania (nawet 15 naciśnięć do ekranu głównego,
  * po wyjściu z inspekcji Wstecz otwierał ją z powrotem). Teraz Wstecz telefonu, po kolei:
- *   1. zamyka okienko na wierzchu (podgląd zdjęcia, edytor, pytanie, okienko z ekranu głównego),
+ *   1. zamyka okienko na wierzchu (podgląd zdjęcia, edytor, pytanie, okienko z ekranu głównego, otwarty <dialog>),
  *   2. robi dokładnie to samo co strzałka ‹ na widocznym ekranie (jeden poziom wyżej),
  *   3. na ekranie głównym: okienko „Chcesz wyjść z aplikacji?” (Tak / Nie), jak każde inne pytanie w apce.
  *
@@ -32,6 +32,10 @@
   function wstecz() {
     // 1. okienko bez historii (aparat) – zamknij najwyższe
     if (okna.length) { var z = okna[okna.length - 1]; try { z(); } catch (e) {} return 'okno'; }
+    // 1a. otwarty <dialog> (Klucze, Power trace: zdjęcie, znacznik) – zamknij najwyższy, ekran zostaje (audyt 19/11/2026 nr 35:
+    //     wcześniej Wstecz zmieniał ekran pod spodem, a modalny dialog zostawał i blokował apkę)
+    var dl = document.querySelectorAll('dialog[open]');
+    if (dl.length) { try { dl[dl.length - 1].close(); } catch (e) {} return 'okno'; }
     // 1b. okienko z wpisem historii (OESTOverlay, OESTPytaj) – zamyka je cofnięcie tego wpisu
     if (history.state && history.state.overlay) { history.back(); return 'okno'; }
     // 2. jeden poziom wyżej

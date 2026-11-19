@@ -353,6 +353,11 @@
       "file": "app/tests/zapis-bez-bazy-ui-check.cjs",
       "passMarker": "ZAPIS BEZ BAZY UI PASS",
       "timeoutSec": 300
+    },
+    {
+      "file": "app/tests/udostepnij-ui-check.cjs",
+      "passMarker": "UDOSTEPNIJ UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []

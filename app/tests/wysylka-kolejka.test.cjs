@@ -29,3 +29,13 @@ test('pamięć działa: raport naprawdę jest w kolejce po enqueue', async()=>{
   assert.equal(idb.stores.queue.get(rec.id).status,'wait');
   assert.equal(idb.stores.queue.get(rec.id).acct,'a@gmail.com');
 });
+test('Udostępnij: raport „shared” nie jest do wysłania, ale czeka na potwierdzenie (audyt 19/11 nr 17, uwaga Codex #158)', async()=>{
+  const idb=fakeIDB(),S=load(idb);
+  await S.enqueue({type:'ppm',code:'A',status:'shared'});
+  await S.enqueue({type:'ppm',code:'B',status:'sent'});
+  await S.refresh().catch(()=>{});
+  assert.equal(S.count(),0,'nic do automatycznej wysyłki');
+  assert.equal(S.toConfirm(),1,'jeden raport do potwierdzenia – pasek nie może pokazać „Wszystko wysłane”');
+  await S.enqueue({type:'ppm',code:'C'}); await S.refresh().catch(()=>{});
+  assert.equal(S.count(),1); assert.equal(S.toConfirm(),1);
+});

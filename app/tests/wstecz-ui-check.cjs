@@ -171,6 +171,18 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
       if (s.hash !== '#settings') { await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#settings'); }); await pg.reload(); await wait(1500); }
     }
     s = await arrow(); check(s.view === 'v-home', '8: po wszystkich klockach ‹ z Ustawień → ekran główny, jest ' + s.view + s.hash);
+    // 9. otwarty <dialog> (Klucze, Power trace) zamyka się pierwszy, ekran pod spodem zostaje (audyt 19/11/2026 nr 35)
+    for (const [route, dlg] of [['keys', 'keysPhotoDialog'], ['powertrace', 'ptPhotoDialog'], ['powertrace', 'ptMarkerDialog']]) {
+      await pg.evaluate(r => { history.replaceState({ n: 0 }, '', '#home'); location.hash = '#' + r; }, route); await wait(1200);
+      const otw = await pg.evaluate(id => { const d = document.getElementById(id); if (!d) return false; d.showModal(); return d.open; }, dlg);
+      check(otw, '9: ' + dlg + ' jest na ekranie ' + route);
+      const przed = await where();
+      s = await back(800);
+      const zamk = await pg.evaluate(id => !(document.getElementById(id) || {}).open, dlg);
+      check(zamk, '9: Wstecz zamyka ' + dlg);
+      check(s.hash === przed.hash && s.view === przed.view, '9: ekran pod ' + dlg + ' zostaje (' + przed.view + przed.hash + '), jest ' + s.view + s.hash);
+      s = await back(); check(s.hash !== przed.hash || s.view !== przed.view, '9: następny Wstecz idzie poziom wyżej z ' + route + ', jest ' + s.view + s.hash);
+    }
     check(!errors.length, 'błędy strony: ' + errors.join(' | '));
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
