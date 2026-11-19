@@ -106,9 +106,13 @@ function analyse(www, opts) {
     starty.forEach((m, i) => {
       const kawalek = bez.slice(m.index, i + 1 < starty.length ? starty[i + 1].index : bez.length);
       const e = [...ids.values()].find(x => x.pudelko === m[1] && !x.id.includes('/'));
-      for (const b of kawalek.matchAll(/<button\b[^>]*\bclass=(["'])(?:(?!\1).)*\bback\b(?:(?!\1).)*\1[^>]*>/g)) {
-        const go = (b[0].match(/\bdata-go=["']([^"']*)["']/) || [])[1];
+      for (const b of znaczniki(kawalek)) {
+        if (b.nazwa !== 'button' || !/\bclass=["'][^"']*\bback\b/.test(b.tag)) continue;
+        const go = (b.tag.match(/\bdata-go=["']([^"']*)["']/) || [])[1];
+        const nav = (b.tag.match(/\bdata-nav=["']([^"']*)["']/) || [])[1];
         if (e && go !== undefined && go !== e.rodzic) add(`EKRANY|strzalka|${m[1]}|${go}`, 'EKRANY', `index.html #${m[1]}: strzałka ‹ prowadzi do „${go}”, a rodzic ${e.id} w ekrany.json to „${e.rodzic}”.`);
+        // nowy znacznik (R26): strzałka zawsze data-nav="up" – cel bierze się z rodzica w mapie
+        if (nav !== undefined && nav !== 'up') add(`EKRANY|strzalka|${m[1]}|${nav}`, 'EKRANY', `index.html #${m[1]}: strzałka ‹ ma data-nav="${nav}", a ma być data-nav="up" (cel = rodzic z ekrany.json).`);
       }
     });
   }
@@ -166,11 +170,8 @@ function analyse(www, opts) {
   // ---------- ZNACZNIK: klikalne elementy (R26) ----------
   for (const [f, c] of kod) {
     let brak = 0;
-    // znacznik do zamykającego „>”, z pominięciem „>” w wartości atrybutu (="…", ='…') i w ${…} szablonu JS
-    const ATR = String.raw`(?:=\s*"[^"<]*"|=\s*'[^'<]*'|\$\{[^}]*\}|[^>])*`;
-    for (const m of c.matchAll(new RegExp(String.raw`<(?:button|a|[a-z]+(?=${ATR}\brole=\\?["']button))\b${ATR}>`, 'gi'))) {
-      const tag = m[0];
-      if (!/^<(button|a)\b/i.test(tag) && !/\brole=\\?["']button/i.test(tag)) continue;
+    for (const { nazwa, tag } of znaczniki(c)) {
+      if (nazwa !== 'button' && nazwa !== 'a' && !/\brole=\\?["']button/i.test(tag)) continue;
       if (/^<a\b/i.test(tag) && !/\bhref\s*=/.test(tag)) continue; // <a> bez href to nie link
       const n = ZNACZNIKI.filter(z => new RegExp('\\b' + z + '\\s*=').test(tag)).length;
       if (n !== 1) brak++;
@@ -210,6 +211,27 @@ function funkcjeZ(c) {
     const at = m.index + m[1].length, przed = c.slice(Math.max(0, at - 12), at);
     if (/\bfunction\s*\*?\s*$/.test(przed) || /[\w$.]\s*$/.test(c.slice(Math.max(0, at - 1), at))) continue; // wywołanie albo już policzona function
     dodaj(c.indexOf('(', at), nazwa);
+  }
+  return out;
+}
+// znaczniki HTML (także w napisach JS): od „<nazwa” do zamykającego „>”, z pominięciem „>” w wartości atrybutu
+// (="…", ='…', bez „<” w środku) i w ${…} szablonu JS; jeden przebieg w przód, bez cofania
+function znaczniki(c) {
+  const out = [], re = /<([a-z][\w-]*)\b/gi;
+  let m;
+  while ((m = re.exec(c))) {
+    let k = re.lastIndex;
+    while (k < c.length && c[k] !== '>') {
+      if (c[k] === '=') {
+        let j = k + 1; while (c[j] === ' ' || c[j] === '\t' || c[j] === '\n' || c[j] === '\r') j++;
+        const q = c[j];
+        if (q === '"' || q === "'") { const e = c.indexOf(q, j + 1), lt = c.indexOf('<', j + 1); if (e > 0 && (lt < 0 || lt > e)) { k = e + 1; continue; } }
+      } else if (c[k] === '$' && c[k + 1] === '{') { const e = c.indexOf('}', k); if (e > 0) { k = e + 1; continue; } }
+      k++;
+    }
+    const nazwa = m[1].toLowerCase(), tag = c.slice(m.index, k + 1);
+    out.push({ nazwa, tag });
+    if (nazwa === 'button' || nazwa === 'a' || /\brole=\\?["']button/i.test(tag)) re.lastIndex = k + 1;
   }
   return out;
 }

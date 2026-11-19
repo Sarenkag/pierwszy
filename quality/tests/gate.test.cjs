@@ -96,6 +96,15 @@ test('Zasady EKRANY: id sekcji i strzałka ‹ w apostrofach czytane tak samo ja
   assert.equal(g1(www(html('settings'), { 'moduly/ekrany/ekrany.json': m }), [], zb).code, 0);
   zasadaFail(g1(www(html('home'), { 'moduly/ekrany/ekrany.json': m }), [], zb), /EKRANY\|strzalka\|v-questions\|home/);
 });
+test('Zasady EKRANY: strzałka ‹ z nowym znacznikiem musi mieć data-nav="up"; zwykły znacznik z wieloma atrybutami sprawdza się szybko', () => {
+  const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
+  const html = nav => '<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-nav="' + nav + '">‹</button></div></section>';
+  zasadaFail(g1(www(html('missing'), { 'moduly/ekrany/ekrany.json': m })), /EKRANY\|strzalka\|v-questions\|missing/);
+  assert.equal(g1(www(html('up'), { 'moduly/ekrany/ekrany.json': m })).code, 0);
+  const atr = Array.from({ length: 200 }, (_, i) => `data-x${i}="x"`).join(' ');
+  const t0 = Date.now(), r = g1(www('', { 'b.js': `x.innerHTML = '<div ${atr}></div>';` }));
+  assert.equal(r.code, 0, r.out); assert.ok(Date.now() - t0 < 3000, 'G1 ' + (Date.now() - t0) + ' ms');
+});
 test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
