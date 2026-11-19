@@ -1025,6 +1025,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): okienko → strzałka ‹ ekranu; ekran bez strzałki → lista, z której przyszedłem
   if (window.OESTWstecz) OESTWstecz.ustaw({ pytaj: OESTPrzycisk.confirm, glowny: function () { return false; }, gora: function () { if (!queueing) leave(backUrl()); return true; } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
+  // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
+  $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });
 
   // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
   function doneToday(t) { var d = load("done", {}), day = d[isoDay(new Date())] || {}; return day[t.id] || {}; }
