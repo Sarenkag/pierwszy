@@ -1091,7 +1091,7 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "KOPIA|funkcja|951fad04bb|iso@home.js+iso@moduly/pasek-dni/pasek-dni.js",
+      "id": "KOPIA|funkcja|951fad04bb|home.js+moduly/pasek-dni/pasek-dni.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: iso@home.js, iso@moduly/pasek-dni/pasek-dni.js.",
       "punkt": "R25",
@@ -1099,7 +1099,7 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "KOPIA|funkcja|f15739c20c|who@moduly/raporty/raporty.js+who@moduly/zdjecia/zdjecia.js",
+      "id": "KOPIA|funkcja|f15739c20c|moduly/raporty/raporty.js+moduly/zdjecia/zdjecia.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: who@moduly/raporty/raporty.js, who@moduly/zdjecia/zdjecia.js.",
       "punkt": "R25",

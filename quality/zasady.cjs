@@ -156,7 +156,8 @@ function analyse(www, opts) {
     const plikiF = [...new Set(lista.map(x => x.f))];
     if (plikiF.length < 2) continue;
     const opis = lista.map(x => x.nazwa + '@' + x.f).sort();
-    add(`KOPIA|funkcja|${h.slice(0, 10)}|${opis.join('+')}`, 'KOPIA', `Ta sama funkcja w ${plikiF.length} plikach: ${opis.join(', ')}.`, { punkt: 'R25', usuwa: 'P7/P8' });
+    // id = treść (hash bez nazwy) + pliki; nazwy tylko w opisie, więc zmiana nazwy nie tworzy nowego wyjątku
+    add(`KOPIA|funkcja|${h.slice(0, 10)}|${plikiF.sort().join('+')}`, 'KOPIA', `Ta sama funkcja w ${plikiF.length} plikach: ${opis.join(', ')}.`, { punkt: 'R25', usuwa: 'P7/P8' });
   }
   const tresci = new Map();
   for (const f of all) { const h = crypto.createHash('sha1').update(src.get(f)).digest('hex'); if (!tresci.has(h)) tresci.set(h, []); tresci.get(h).push(f); }

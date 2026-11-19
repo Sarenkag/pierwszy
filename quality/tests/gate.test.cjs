@@ -131,7 +131,10 @@ test('Zasady JM: klucz oest.* i baza w dwóch plikach, Wstecz Androida zarejestr
 });
 test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa identyczne pliki → FAIL; krótka funkcja → PASS', () => {
   const fn = 'function dzien(d){ var x = new Date(d); var y = x.getFullYear(); var m = x.getMonth() + 1; var dd = x.getDate(); return (dd < 10 ? "0" : "") + dd + "/" + (m < 10 ? "0" : "") + m + "/" + y; }';
-  zasadaFail(g1(www('', { 'b.js': fn, 'c.js': '// inna\n' + fn.replace('function dzien', 'function data') })), /KOPIA\|funkcja\|[0-9a-f]{10}\|data@c\.js\+dzien@b\.js/);
+  zasadaFail(g1(www('', { 'b.js': fn, 'c.js': '// inna\n' + fn.replace('function dzien', 'function data') })), /Ta sama funkcja w 2 plikach: data@c\.js, dzien@b\.js\. \[KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js\]/);
+  // zmiana nazwy zastanej kopii nie tworzy nowego wyjątku (id = treść + pliki)
+  const id = JSON.parse(fs.readFileSync(path.join((() => { const d = www('', { 'b.js': fn, 'c.js': fn.replace('function dzien', 'function data') }); g1(d); return d; })(), 'out.json'), 'utf8')).zasady.fresh[0].id;
+  assert.equal(g1(www('', { 'b.js': fn.replace('function dzien', 'function dzien2'), 'c.js': fn.replace('function dzien', 'function inna') }), [], [id]).code, 0);
   zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'c.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+c\.js/);
   assert.equal(g1(www('', { 'b.js': 'function f(a){ return a + 1; }', 'c.js': 'function g(a){ return a + 1; } var c = 2;' })).code, 0);
 });
