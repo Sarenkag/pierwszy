@@ -348,6 +348,11 @@
       "file": "app/tests/nowosci-ui-check.cjs",
       "passMarker": "NOWOSCI UI PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/udostepnij-ui-check.cjs",
+      "passMarker": "UDOSTEPNIJ UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []
