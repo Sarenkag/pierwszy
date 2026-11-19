@@ -93,7 +93,7 @@ await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction
 assert.equal(await page.locator('#vtSave').count(),0,'po zapisie pliku stary podgląd nie wraca');
 // zapamiętany login i hasło (Grzegorz 10/11/2026): wpisuje raz, zmienia sam; hasło zagwiazdkowane, „Pokaż”; odrzucone hasło → prośba o nowe
 await page.evaluate(()=>{const V=window.Capacitor.Plugins.Vantify;window.__login=null;window.__bad=false;const info=()=>({saved:!!window.__login,user:window.__login?window.__login.user:'',bad:!!window.__login&&window.__bad});
-  V.loginInfo=async()=>info();V.saveLogin=async o=>{window.__login={user:o.user,pass:o.pass};window.__bad=false;return info();};V.showLogin=async()=>({user:window.__login?.user||'',pass:window.__login?.pass||''});V.clearLogin=async()=>{window.__login=null;return info();};
+  V.loginInfo=async()=>info();V.saveLogin=async o=>{window.__login={user:o.user,pass:o.pass};window.__bad=false;return info();};V.showLogin=async o=>{window.__shown=(window.__shown||[]).concat([o&&o.lang]);return {ok:!!window.__login};};V.clearLogin=async()=>{window.__login=null;return info();};
   location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtUser').waitFor();
 await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));
 await page.locator('#vtLoginSave').click();assert.match(await page.locator('#vtLoginMsg').textContent(),/Wpisz login i hasło/);
@@ -101,8 +101,14 @@ await page.locator('#vtUser').fill('greg@example.com');await page.locator('#vtPa
 await page.waitForFunction(()=>/Zapisane\. Apka zaloguje się sama/.test(document.getElementById('vtLoginMsg')?.textContent||''));
 assert.deepEqual(await page.evaluate(()=>window.__login),{user:'greg@example.com',pass:'Haslo1'});
 assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value,p.placeholder,document.getElementById('vtUser').value];}),['password','','••••••••','greg@example.com'],'hasło zagwiazdkowane, login widoczny');
-await page.locator('#vtLoginShow').click();await page.waitForFunction(()=>document.getElementById('vtPass').type==='text');assert.equal(await page.locator('#vtPass').inputValue(),'Haslo1','„Pokaż” odsłania hasło');
-await page.locator('#vtLoginShow').click();assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value];}),['password',''],'„Ukryj” chowa');
+// „Pokaż” przy zapisanym haśle: hasło pokazuje okienko Androida, ekran apki go nie dostaje (ustalenie #39, Grzegorz 19/11/2026)
+await page.locator('#vtLoginShow').click();await page.waitForFunction(()=>(window.__shown||[]).length===1);
+assert.deepEqual(await page.evaluate(()=>window.__shown),['pl'],'„Pokaż” prosi Androida o okienko, w języku apki');
+assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value];}),['password',''],'hasło nie trafia do pola na ekranie');
+// wpisane (jeszcze niezapisane) hasło: „Pokaż”/„Ukryj” działa w polu jak dotąd
+await page.locator('#vtPass').fill('Wpisane1');await page.locator('#vtLoginShow').click();assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value];}),['text','Wpisane1'],'„Pokaż” odsłania wpisane');
+await page.locator('#vtLoginShow').click();assert.deepEqual(await page.evaluate(()=>{const p=document.getElementById('vtPass');return [p.type,p.value];}),['password','Wpisane1'],'„Ukryj” chowa');
+await page.locator('#vtPass').fill('');
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_LOGIN_PL.png'),fullPage:true});
 // zmiana hasła bez pomocy: wpisz nowe, zapisz
 await page.locator('#vtPass').fill('Haslo2');await page.locator('#vtLoginSave').click();await page.waitForFunction(()=>window.__login.pass==='Haslo2');

@@ -23,7 +23,10 @@ function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait 
     }
   }
   const w = { XMLHttpRequest: XHR, location: { hash }, __oestSyncWait: wait, __oestLoginWait: 3000, OESTVantifySync: { result: j => results.push(JSON.parse(j)) } };
-  if (login) w.__oestLogin = login;
+  // most Androida (VantifyPlugin.Sync.Bridge): hasLogin bez hasła; fillLogin → Android RAZ woła window.__oestFill(login, hasło)
+  let fills = 0;
+  w.OESTVantifySync.hasLogin = () => !!login;
+  w.OESTVantifySync.fillLogin = () => { fills++; if (login && fills === 1) timers.push(() => w.__oestFill && w.__oestFill(login.u, login.p)); };
   if (dom) Object.assign(w, dom);
   let now = 0;
   const ctx = vm.createContext({ window: w, Date: { now: () => now }, setTimeout: (f, ms) => timers.push(f), Promise, JSON, Array, Number, String, Error, isNaN });
@@ -31,7 +34,7 @@ function world({ total = 97, per = 30, hash = '#/user/jobs', status = 200, wait 
   // strona Vantify robi swoje wywołania już po wstrzyknięciu skryptu
   function spa(u) { const x = new w.XMLHttpRequest(); x.open('GET', u); x.setRequestHeader('Authorization', 'Bearer T'); x.send(); }
   async function run(n = 200, step = 300) { for (let i = 0; i < n && timers.length; i++) { const f = timers.shift(); now += step; f(); await new Promise(r => setImmediate(r)); } }
-  return { w, calls, results, spa, run };
+  return { w, calls, results, spa, run, fills: () => fills };
 }
 test('zalogowany: przechwyca token i adres listy, pobiera wszystkie 4 strony, oddaje 97 zleceń bez danych osób', async () => {
   const s = world();
@@ -103,6 +106,9 @@ test('wygasłe logowanie + zapisany login: wpisuje login i hasło, loguje się r
   assert.strictEqual(f.clicks(), 1, 'jedno logowanie');
   assert.strictEqual(s.results.length, 1); assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].count, 97);
   assert.doesNotMatch(JSON.stringify(s.results), /Tajne|greg@/, 'hasło i login nie wracają do apki');
+  assert.strictEqual(s.fills(), 1, 'jedna prośba do Androida o wpisanie');
+  assert.ok(!('__oestLogin' in s.w), 'hasło nie jest zmienną strony (ustalenie #41)');
+  assert.doesNotMatch(JSON.stringify(s.w), /Tajne|greg@/, 'login i hasło nie zostają w oknie strony');
 });
 function postLogin(sref) { return () => { const x = new sref.s.w.XMLHttpRequest(); x.open('POST', API + '/auth'); x.send('{}'); }; }
 test('zapisane hasło odrzucone (Vantify: 401) → login/bad po jednej próbie, bez drugiego logowania', async () => {
@@ -236,7 +242,7 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /@PluginMethod public void sync\(PluginCall call\)/);
   assert.match(j, /asset\("public\/vantify-sync\.js"\)/);
   assert.match(j, /explore \? "window\.__oestMode='explore';" \+ asset\("public\/vantify-rejestr\.js"\)/, 'Zbadaj automatycznie: ten sam zapis bez danych osób');
-  assert.match(j, /private void inject\(\) \{ if \(web != null && VantifyActivity\.vantify\(host\)\)/);
+  assert.match(j, /private void inject\(\) \{ VantifyWeb\.inject\(web, host, VantifyLogin\.script\(a\) \+ script\); \}/); // host sprawdza VantifyWeb (S1, #42)
   assert.match(j, /public synchronized void result\(String json\) \{\s*if \(!VantifyActivity\.vantify\(host\) \|\| json == null\) return;/);
   assert.match(j, /public synchronized void part\(String c\) \{ if \(!VantifyActivity\.vantify\(host\)/, 'części wyniku tylko od strony Vantify');
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);

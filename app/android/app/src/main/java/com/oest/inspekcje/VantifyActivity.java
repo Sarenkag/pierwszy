@@ -214,7 +214,7 @@ public class VantifyActivity extends Activity {
         pick.onReceiveValue(got); pick = null; // zawsze odpowiedź (także Anuluj) – inaczej pole przestaje reagować
     }
 
-    private void inject() { if (vantify(host) && !rejestr.isEmpty()) web.evaluateJavascript(rejestr + "\n" + akcje, null); }
+    private void inject() { if (!rejestr.isEmpty()) VantifyWeb.inject(web, host, rejestr + "\n" + akcje); }
 
     private void onFile(String text, String name) {
         if (!jobExport(text)) { info.setText(pl ? "Pobrany plik to nie eksport Job: " + name : "The downloaded file is not a Job export: " + name); return; }
