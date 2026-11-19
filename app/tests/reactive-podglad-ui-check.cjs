@@ -74,19 +74,29 @@ function fakePhone() {
     { const v = await pg.locator('[data-rx-field=reportText]').inputValue().catch(() => ''); check(/EN Usunięcie rośliny/.test(v) || v === '', 'pole „Raport (EN)” po polsku: ' + v); }
     // ---------- 1. inne ekrany: nic ze zlecenia nie zostaje (Ustawienia) ----------
     await pg.locator('#rx-before img').first().click(); await ask().locator('img.rx-photo-full').waitFor(); await back(); await gone();
-    const jobHash = await pg.evaluate(() => location.hash);
+    let jobHash = await pg.evaluate(() => location.hash);
     await back(); await pg.locator('[data-rx=new]').waitFor();
     await pg.evaluate(() => { location.hash = '#settings'; }); await pg.waitForFunction(() => document.querySelector('#v-settings:not([hidden])'));
     { const l = await leaked(); check(l.body === 0 && l.imgs.length === 0, 'Ustawienia: zdjęcie/obraz z innego ekranu pod kafelkami ' + JSON.stringify(l)); }
     // ---------- 4. wysyłka: pola raportu (Word/PDF) po angielsku, bez powtórzeń ----------
-    await pg.evaluate(h => { location.hash = h; }, jobHash); await pg.locator('[data-rx-field=title]').waitFor();
+    const seed = (extra, first = true) => pg.evaluate(async ([x, first]) => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).at(-1), id = 'old-audio-1';
+      await r.saveReactiveDraft({ ...d, ...x, audioMediaIds: [id] }, first ? [{ id, kind: 'audio', blob: new Blob([new Uint8Array(64)], { type: 'audio/wav' }), name: 'Audio.wav', mime: 'audio/wav', size: 64 }] : []); }, [extra, first]);
+    const reopen = async () => { await pg.goto(B + '/#home'); await pg.goto(B + '/' + jobHash); await pg.locator('[data-rx-field=title]').waitFor(); };
+    // starsze nagranie z gotowym polskim tekstem zostaje w raporcie, po angielsku (przegląd Codex #153)
+    await seed({ voiceTexts: { 'old-audio-1': 'stara notatka głosowa' }, voicePl: { 'old-audio-1': true } }); await reopen();
     await pg.evaluate(() => { const R = window.OESTReactiveReport; R.build = async f => { window.__sent = f; throw Error('STOP_TEST'); }; });
     await pg.locator('[data-rx=send]').click(); await pg.locator('[data-rx=send-now]').waitFor(); await pg.locator('[data-rx=send-now]').click();
     await pg.waitForFunction(() => window.__sent, null, { timeout: 15000 });
     { const f = await pg.evaluate(() => window.__sent);
       check(/^EN /.test(f.title), 'wysłany raport: tytuł nie po angielsku: ' + f.title);
       check((f.details.match(/EN Poproszono o usunięcie kwiatu/gi) || []).length === 1 && !/^\s*Poproszono/im.test(f.details), 'wysłany raport: notatki po polsku albo powtórzone: ' + f.details); }
-  } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e).toString().split('\n').filter(l => /podglad-ui-check|Timeout/.test(l)).join(' / ')); }
+    { const f = await pg.evaluate(() => window.__sent); check(/EN stara notatka głosowa/.test(f.details), 'wysłany raport: zgubione albo nieprzetłumaczone starsze nagranie: ' + f.details); }
+    // świadomie wyczyszczony raport zostaje pusty w podglądzie (przegląd Codex #153)
+    await back(); check(await onCard(), 'Wstecz z podglądu wysyłki wyszedł ze zlecenia');
+    await row('finish'); await pg.locator('[data-rx-field=reportText]').fill(''); await pg.waitForTimeout(300);
+    await pg.locator('[data-rx=sum-view]').click(); await pg.locator('.rr-page').waitFor();
+    { const t = await pg.locator('.rr-page').innerText(); check(!/Poproszono|stara notatka/i.test(t), 'wyczyszczony raport wrócił z tekstem automatycznym: ' + t); }
+  } catch (e) { fails.push('wyjątek: ' + String(e && e.stack || e).split('\n').filter((l, i) => i < 2 || /podglad-ui-check/.test(l)).join(' / ')); }
   finally { if (browser) await browser.close(); server.close(); }
   if (errors.length) fails.push('błędy strony: ' + errors.join(' | '));
   if (fails.length) { console.error('REACTIVE PODGLAD UI FAIL\n- ' + fails.join('\n- ')); process.exitCode = 1; }
