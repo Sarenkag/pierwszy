@@ -353,6 +353,11 @@
       "file": "app/tests/menu-wyjscie-ui-check.cjs",
       "passMarker": "MENU WYJSCIE UI PASS",
       "timeoutSec": 300
+    },
+    {
+      "file": "app/tests/udostepnij-ui-check.cjs",
+      "passMarker": "UDOSTEPNIJ UI PASS",
+      "timeoutSec": 600
     }
   ],
   "allowedSkips": []
