@@ -123,6 +123,20 @@ test('Ratchet: nowy wpis w baseline → FAIL; usunięcie wpisu → PASS', () => 
   write(d, { 'quality/baselines/architecture.json': JSON.stringify({ entries: [{ id: 'X' }] }) }); g('commit', '-qam', 'pr');
   assert.equal(ratchet(d).code, 0);
 });
+test('Ratchet R23: zmieniony test z mniejszą liczbą sprawdzeń (usunięte albo zakomentowane) → FAIL; tyle samo albo więcej, razem ze zmianą apki → PASS', () => {
+  const baza = "assert.equal(a, 1);\nassert.match(b, /x/);\ncheck(c, 'c');\n";
+  for (const [nowy, kod] of [
+    ["assert.equal(a, 1);\ncheck(c, 'c');\n", 1],
+    ["assert.equal(a, 1);\n// assert.match(b, /x/);\ncheck(c, 'c');\n", 1],
+    ["assert.equal(a, 2);\nassert.match(b, /y/);\ncheck(c, 'c');\n", 0],
+    [baza + "assert.ok(d);\n", 0]
+  ]) {
+    const { d, g } = repo(M, []);
+    write(d, { 'app/tests/a.test.cjs': baza }); g('add', '-A'); g('commit', '-qm', 'base2'); g('branch', '-f', 'main', 'HEAD');
+    write(d, { 'app/tests/a.test.cjs': nowy, 'app/www/app.js': 'x = 1;' }); g('add', '-A'); g('commit', '-qm', 'pr');
+    const r = ratchet(d); assert.equal(r.code, kod, r.out); if (kod) assert.match(r.out, /mniej sprawdzeń niż na main \(3 → 2\)/);
+  }
+});
 test('Ratchet: usunięcie pliku testu z app/tests → FAIL', () => {
   const { d, g } = repo(M, []); g('rm', '-q', 'app/tests/a.test.cjs'); g('commit', '-qm', 'pr');
   const r = ratchet(d); assert.equal(r.code, 1); assert.match(r.out, /Usunięto\/przeniesiono plik testu/);

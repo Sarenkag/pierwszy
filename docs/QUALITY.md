@@ -8,7 +8,7 @@
 - **QG-011 — brak fałszywych sukcesów:** PASS, FAIL, SKIPPED i NOT RUN są rozróżniane; wymagane nieoczekiwane SKIPPED i NOT RUN blokują. Wszystkie wyjątki jawnie raportowane.
 - **QG-012 — regresja całego przepływu:** testuj nie tylko dotknięty moduł, ale jego konsumentów i krytyczne scenariusze aplikacji.
 - **QG-013 — test po każdym błędzie:** zgłoszony błąd dostaje odtwarzający go test, który przed naprawą nie przechodzi i po naprawie przechodzi, o ile jest automatyzowalny. Jeśli nie, zapisz ręczny przypadek i jego dowód.
-- **QG-014 — ochrona kryteriów:** AI nie może usuwać scenariuszy, pomniejszać zbioru inspekcji, zwiększać limitów, aktualizować wzorca screenshotu ani zmieniać reguł CI jedynie po to, by uzyskać PASS. Zmiana testów czy quality baseline wymaga jawnej, niezależnej autoryzacji właściciela.
+- **QG-014 — ochrona kryteriów:** AI nie może usuwać scenariuszy, pomniejszać zbioru inspekcji, zwiększać limitów, aktualizować wzorca screenshotu ani zmieniać reguł CI jedynie po to, by uzyskać PASS. Zmiana testów czy quality baseline wymaga jawnej, niezależnej autoryzacji właściciela. `quality/check-ratchet.cjs` daje FAIL, gdy zmieniony test (`app/tests/`, `quality/tests/`) ma mniej sprawdzeń (`assert…(`, `check(`, `fails.push(` itd., bez komentarzy) niż na gałęzi bazowej (R23, decyzja właściciela 19/11/2026); test i apka mogą zmieniać się w jednym PR.
 - **QG-015 — dowód:** do wyniku dołącz SHA kodu, wersje narzędzi, wykonane testy i ich liczność, scenariusze, wynik, czas, screenshoty/artefakty, znane niezweryfikowane obszary.
 
 ## Aktualny stan — ustalenia z audytu 06/11/2026
