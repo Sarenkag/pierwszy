@@ -31,7 +31,7 @@
   }
   function loadAll() { return tx("readonly", function (s) { return s.getAll(); }).then(function (a) { items = a || []; return items; }); }
   function put(it) { return tx("readwrite", function (s) { s.put(it); }); }
-  function pending() { var me = ((account() || {}).email || "").toLowerCase(); return items.filter(function (q) { return q.status !== "sent" && (!q.acct || q.acct.toLowerCase() === me); }); }
+  function pending() { var me = ((account() || {}).email || "").toLowerCase(); return items.filter(function (q) { return q.status !== "sent" && q.status !== "shared" && (!q.acct || q.acct.toLowerCase() === me); }); }
 
   // ---------- warunki ----------
   function cfg() { try { return JSON.parse(root.localStorage.getItem("insp.cfg") || "{}"); } catch (e) { return {}; } }
@@ -322,5 +322,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, syncReports: syncReports, update: update };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, reachable: reachable, syncReports: syncReports, update: update };
 })(window);
