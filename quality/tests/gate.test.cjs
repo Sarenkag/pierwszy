@@ -12,15 +12,29 @@ const write = (root, files) => { for (const [f, c] of Object.entries(files)) { f
 function www(extraIndex = '', extraFiles = {}) {
   const d = tmp();
   write(d, {
-    'index.html': `<script src="moduly/a/a.js"></script><script src="app.js"></script>${extraIndex}`,
+    'index.html': `<section class="view" id="v-home"></section><script src="moduly/a/a.js"></script><script src="app.js"></script>${extraIndex}`,
     'inspekcje/index.html': `<script src="../moduly/a/a.js"></script>`,
     'moduly/a/a.js': `(function(w){ w.OESTA = { x: 1 }; })(window);`,
     'app.js': `(function(w){ w.OESTApp = { go(){ return w.OESTA.x; } }; })(window); // tekst "OESTNic" w napisie to nie użycie`,
+    // zasady (quality/zasady.cjs): mapa ekranów, jedyna rejestracja Wstecz Androida
+    'moduly/ekrany/ekrany.json': JSON.stringify({ ekrany: [{ id: 'home', rodzic: null, pudelko: 'v-home', pl: 'Główny', en: 'Home' }] }),
+    'moduly/wstecz/wstecz.js': `(function(w){ function wstecz(){} if (w.App) w.App.addListener('backButton', function () { wstecz(); }); })(window);`,
     ...extraFiles
   });
   return d;
 }
-const g1 = (d, baseline) => { const b = path.join(d, 'baseline.json'); fs.writeFileSync(b, JSON.stringify({ entries: (baseline || []).map(id => ({ id })) })); return run('check-architecture.cjs', ['--www', d, '--baseline', b, '--json', path.join(d, 'out.json')]); };
+// rejestr „jedno miejsce” próbki: historia tylko w moduly/wstecz; lista zastanych zasad osobno (zbaseline)
+const REJESTR = { rzeczy: [
+  { rzecz: 'historia', opis: 'historia', wzory: ['\\bhistory\\s*\\.\\s*(?:pushState|replaceState|back|go)\\s*\\(', '["\']popstate["\']'], wlasciciele: ['moduly/wstecz/wstecz.js'] },
+  { rzecz: 'okno-przegladarki', opis: 'window.open', wzory: ['\\b(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\s*\\(', '\\b(?:window|w|g|self|globalThis)\\s*\\[\\s*["\']open["\']\\s*\\]'], wlasciciele: [] }
+], kluczeWlasciciele: {} };
+const g1 = (d, baseline, zbaseline, rejestr) => {
+  const b = path.join(d, 'baseline.json'), zb = path.join(d, 'zasady.json'), rj = path.join(d, 'rejestr.json');
+  fs.writeFileSync(b, JSON.stringify({ entries: (baseline || []).map(id => ({ id })) }));
+  fs.writeFileSync(zb, JSON.stringify({ entries: (zbaseline || []).map(id => ({ id })) }));
+  fs.writeFileSync(rj, typeof rejestr === 'string' ? rejestr : JSON.stringify(rejestr || REJESTR));
+  return run('check-architecture.cjs', ['--www', d, '--baseline', b, '--baseline-zasady', zb, '--rejestr', rj, '--json', path.join(d, 'out.json')]);
+};
 
 test('G1: czysty układ = PASS, napisy i komentarze nie liczą się jako użycie', () => {
   const r = g1(www()); assert.equal(r.code, 0, r.out); assert.match(r.out, /G1 PASS/);
@@ -53,6 +67,70 @@ function project(manifest, files) {
 }
 const gate = (d, part) => { const out = path.join(d, 'r.json'); const r = run('run-gate.cjs', ['--root', d, '--part', part, '--out', out]); return { ...r, json: JSON.parse(fs.readFileSync(out, 'utf8')) }; };
 const statusOf = (j, f) => j.results.find(r => r.id === f).status;
+
+// ---------- G1: zasady architektury (docs/ZASADY.md, quality/zasady.cjs) – próbki z celowym błędem (R24) ----------
+const mapa = ekrany => JSON.stringify({ ekrany });
+const DOM = { id: 'home', rodzic: null, pudelko: 'v-home', pl: 'Główny', en: 'Home' };
+const zasadaFail = (r, re) => { assert.equal(r.code, 1, r.out); assert.match(r.out, re); assert.match(r.out, /G1 FAIL/); };
+test('Zasady: literówka w rodzicu („hme”) → EKRANY zly-rodzic → FAIL', () => {
+  const d = www('<section class="view" id="v-cal"></section>', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'cal', rodzic: 'hme', pudelko: 'v-cal', pl: 'K', en: 'C' }]) });
+  zasadaFail(g1(d), /EKRANY\|zly-rodzic\|cal\|hme/);
+});
+test('Zasady: przecinek za dużo w ekrany.json → EKRANY zly-json → FAIL (nie przechodzi po cichu)', () => {
+  const d = www('', { 'moduly/ekrany/ekrany.json': '{ "ekrany": [ { "id": "home", "rodzic": null, "pudelko": "v-home", "pl": "G", "en": "H" }, ] }' });
+  zasadaFail(g1(d), /EKRANY\|zly-json/);
+});
+test('Zasady: brak pliku mapy, sekcja bez wpisu, wpis bez sekcji, „up” jako ekran, pętla rodziców → FAIL', () => {
+  const brak = www(); fs.rmSync(path.join(brak, 'moduly/ekrany/ekrany.json'));
+  zasadaFail(g1(brak), /EKRANY\|brak-pliku/);
+  zasadaFail(g1(www('<section class="view" id="v-keys"></section>')), /EKRANY\|sekcja-bez-wpisu\|v-keys/);
+  zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'keys', rodzic: 'home', pudelko: 'v-keys', pl: 'K', en: 'K' }]) })), /EKRANY\|wpis-bez-sekcji\|v-keys/);
+  zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'up', rodzic: 'home', pudelko: 'v-home', pl: 'x', en: 'x' }]) })), /EKRANY\|up\|up/);
+  zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'a', rodzic: 'b', pudelko: 'v-home', pl: 'a', en: 'a' }, { id: 'b', rodzic: 'a', pudelko: 'v-home', pl: 'b', en: 'b' }]) })), /EKRANY\|petla\|a/);
+  zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'x', rodzic: 'home', pudelko: 'v-home', pl: 'x' }]) })), /EKRANY\|brak-pola\|x\|en/);
+});
+test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
+  const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
+  const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
+  zasadaFail(g1(zla, [], ['ZNACZNIK|brak|index.html|1', 'ZNACZNIK|stary|index.html|data-go|1']), /EKRANY\|strzalka\|v-questions\|home/);
+  const dobra = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="settings">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
+  const r = g1(dobra, [], ['ZNACZNIK|brak|index.html|1', 'ZNACZNIK|stary|index.html|data-go|1']); assert.equal(r.code, 0, r.out);
+});
+test('Zasady JM: historia poza właścicielem, window.open i window["open"] (także w apostrofach) → FAIL; w komentarzu → PASS', () => {
+  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.pushState({}, "", "#x"); return w.OESTA.x; } }; })(window);' })), /JM\|historia\|app\.js\|1/);
+  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ w.open('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\|1/);
+  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ window['open']('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\|1/);
+  assert.equal(g1(www('', { 'app.js': '(function(w){ /* history.pushState({}) */ w.OESTApp = { go(){ return w.OESTA.x; } }; })(window); // w.open(x)' })).code, 0);
+});
+test('Zasady JM: jedno nowe trafienie przy zastanych = nowe id → FAIL; mniej trafień = wpis nieaktualny → FAIL', () => {
+  const dwa = www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); history.back(); return w.OESTA.x; } }; })(window);' });
+  assert.equal(g1(dwa, [], ['JM|historia|app.js|2']).code, 0);
+  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); history.back(); history.back(); return w.OESTA.x; } }; })(window);' }), [], ['JM|historia|app.js|2']), /JM\|historia\|app\.js\|3/);
+  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.back(); return w.OESTA.x; } }; })(window);' }), [], ['JM|historia|app.js|2']), /lista zastanych nieaktualna::JM\|historia\|app\.js\|2/);
+});
+test('Zasady JM: klucz oest.* i baza w dwóch plikach, Wstecz Androida zarejestrowany dwa razy albo wcale, brak właściciela z rejestru → FAIL', () => {
+  zasadaFail(g1(www('', { 'b.js': 'localStorage.getItem("oest.lang");', 'c.js': "localStorage.setItem('oest.lang','pl');" })), /JM\|klucz\|oest\.lang\|b\.js/);
+  zasadaFail(g1(www('', { 'b.js': 'indexedDB.open("oest-x", 1);', 'c.js': "indexedDB.open('oest-x', 2);" })), /JM\|baza\|oest-x\|c\.js/);
+  zasadaFail(g1(www('', { 'b.js': "App.addListener('backButton', function () { wstecz(); });" })), /JM\|backButton\|b\.js\+moduly\/wstecz\/wstecz\.js/);
+  const bez = www(); fs.writeFileSync(path.join(bez, 'moduly/wstecz/wstecz.js'), '(function(w){ })(window);');
+  zasadaFail(g1(bez), /JM\|backButton\|brak/);
+  zasadaFail(g1(www('', { 'moduly/wstecz/wstecz.js': "(function(w){ function wstecz(){} w.App.addListener('backButton', function () { wsteczz(); }); })(window);" })), /JM\|backButton\|moduly\/wstecz\/wstecz\.js/);
+  const rj = { rzeczy: [{ rzecz: 'x', opis: 'x', wzory: ['zzz'], wlasciciele: ['moduly/nie-ma/nie-ma.js'] }] };
+  zasadaFail(g1(www(), [], [], rj), /JM\|brak-wlasciciela\|x\|moduly\/nie-ma\/nie-ma\.js/);
+  zasadaFail(g1(www(), [], [], '{ "rzeczy": [ ], }'), /Nie da się odczytać rejestru/);
+});
+test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa identyczne pliki → FAIL; krótka funkcja → PASS', () => {
+  const fn = 'function dzien(d){ var x = new Date(d); var y = x.getFullYear(); var m = x.getMonth() + 1; var dd = x.getDate(); return (dd < 10 ? "0" : "") + dd + "/" + (m < 10 ? "0" : "") + m + "/" + y; }';
+  zasadaFail(g1(www('', { 'b.js': fn, 'c.js': '// inna\n' + fn.replace('function dzien', 'function data') })), /KOPIA\|funkcja\|[0-9a-f]{10}\|data@c\.js\+dzien@b\.js/);
+  zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'c.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+c\.js/);
+  assert.equal(g1(www('', { 'b.js': 'function f(a){ return a + 1; }', 'c.js': 'function g(a){ return a + 1; } var c = 2;' })).code, 0);
+});
+test('Zasady ZNACZNIK: przycisk bez znacznika, z dwoma znacznikami, stary data-go → FAIL; jeden znacznik → PASS', () => {
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button type=\"button\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\|1/);
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\" data-akcja=\"zapisz\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\|1/);
+  zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<a href=\"#\" data-go=\"cal\" data-nav=\"cal\">A</a>';" })), /ZNACZNIK\|stary\|b\.js\|data-go\|1/);
+  assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\">A</button><a href=\"#\" data-akcja=\"x\">B</a><div role=\"button\" data-okno=\"y\"></div>';" })).code, 0);
+});
 
 test('Runner Node: PASS, FAIL, SKIPPED (test.skip/todo) i NOT RUN (brak pliku) są rozróżniane; tylko same PASS = sukces', () => {
   const d = project({ node: [{ file: 'app/tests/ok.test.cjs' }, { file: 'app/tests/zly.test.cjs' }, { file: 'app/tests/skip.test.cjs' }, { file: 'app/tests/brak.test.cjs' }], browser: [], allowedSkips: [] }, {
