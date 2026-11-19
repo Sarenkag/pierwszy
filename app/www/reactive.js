@@ -175,7 +175,7 @@
   function vtCtx(){return {get draft(){return draft;},L,message,render:()=>{render();renderEvidence();},english:vtEnglish,jobSheet,review:vtReview,
     persist:async()=>{const saved=await save();if(/^reactive\/(new|draft)\//.test(route)){route='reactive/job/'+saved.id;history.replaceState(history.state,'','#'+route);}}};}
   /* tłumaczenia zapamiętane na sesję (podgląd i wysyłka nie tłumaczą tego samego drugi raz) */const trCache=new Map();
-  async function vtEnglish(what,extra,probe){const N=w.OESTNotatki,tr=t=>{if(!t||!N?.english)return Promise.resolve(t||'');if(!trCache.has(t))trCache.set(t,N.english(t,'').then(e=>e||t,()=>{trCache.delete(t);return t;}));return trCache.get(t);};
+  async function vtEnglish(what,extra,probe){const N=w.OESTNotatki,tr=t=>{if(!t||!N?.english)return Promise.resolve(t||'');if(!trCache.has(t))/* tłumacz niedostępny albo rzuca od razu = zostaje tekst oryginalny, wysyłka się nie wywraca */trCache.set(t,Promise.resolve().then(()=>N.english(t,'')).then(e=>e||t,()=>{trCache.delete(t);return t;}));return trCache.get(t);};
     if(what!=='start'&&what!=='end')return tr(String(what||'').trim());
     const scope=what==='start'?ntScope():ntEnd(),list=scope&&N?.list?await N.list(scope).catch(()=>[]):[],ex=String(extra||'').trim();
     if(probe)return list.length?'1':'';
