@@ -74,8 +74,23 @@ for (const [st, a, b] of changes) {
   if (/^app\/tests\//.test(a) && (st === 'D' || st.startsWith('R'))) errors.push(`Usunięto/przeniesiono plik testu: ${a}${b ? ' → ' + b : ''}`);
 }
 // R23: zmieniony test nie może mieć mniej sprawdzeń niż na gałęzi bazowej (apka i test mogą zmieniać się w jednym PR)
-const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\bfails\.push\(|\bthrow\s+new\s+Error\s*\(/g;
-const bezKomentarzy = t => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\bfails\.push\(|\bthrow\s+(?:new\s+)?[A-Za-z]*Error\s*\(/g;
+// komentarze usuwane jednym przebiegiem z kontekstem: napisy, literały RegExp i komentarze rozpoznawane w kolejności,
+// więc „/*” w komentarzu // albo w napisie nie zaczyna bloku
+function bezKomentarzy(t) {
+  let out = '', k = 0;
+  const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
+  while (k < t.length) {
+    const ch = t[k];
+    if (ch === '/' && t[k + 1] === '/') { const e = t.indexOf('\n', k); k = e < 0 ? t.length : e; continue; }
+    if (ch === '/' && t[k + 1] === '*') { const e = t.indexOf('*/', k + 2); out += ' '; k = e < 0 ? t.length : e + 2; continue; }
+    let e = k;
+    if (ch === '"' || ch === "'" || ch === '`') { e++; while (e < t.length && t[e] !== ch) e += t[e] === '\\' ? 2 : 1; }
+    else if (ch === '/' && regexp(k)) { let w = false; e++; while (e < t.length && t[e] !== '\n' && (w || t[e] !== '/')) { if (t[e] === '\\') e++; else if (t[e] === '[') w = true; else if (t[e] === ']') w = false; e++; } }
+    out += t.slice(k, e + 1); k = e + 1;
+  }
+  return out;
+}
 const sprawdzenia = t => (bezKomentarzy(t).match(SPRAWDZENIE) || []).length;
 for (const [st, a, b] of changes) {
   const now = b || a;

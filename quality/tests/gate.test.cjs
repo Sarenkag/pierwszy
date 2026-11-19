@@ -124,12 +124,15 @@ test('Ratchet: nowy wpis w baseline → FAIL; usunięcie wpisu → PASS', () => 
   assert.equal(ratchet(d).code, 0);
 });
 test('Ratchet R23: zmieniony test z mniejszą liczbą sprawdzeń (usunięte albo zakomentowane) → FAIL; tyle samo albo więcej, razem ze zmianą apki → PASS', () => {
-  const baza = "assert.equal(a, 1);\nassert.match(b, /x/);\ncheck(c, 'c');\n";
+  const baza = "// typ image/* dozwolony\nconst t = 'a/*b';\nassert.equal(a, 1);\nassert.match(b, /x/);\nif (!c) throw Error('c');\n";
   for (const [nowy, kod] of [
-    ["assert.equal(a, 1);\ncheck(c, 'c');\n", 1],
-    ["assert.equal(a, 1);\n// assert.match(b, /x/);\ncheck(c, 'c');\n", 1],
-    ["assert.equal(a, 2);\nassert.match(b, /y/);\ncheck(c, 'c');\n", 0],
-    [baza + "assert.ok(d);\n", 0]
+    ["assert.equal(a, 1);\nif (!c) throw Error('c');\n", 1],
+    ["assert.equal(a, 1);\n// assert.match(b, /x/);\nif (!c) throw Error('c');\n", 1],
+    ["assert.equal(a, 1);\nassert.match(b, /x/);\n", 1],
+    ["assert.equal(a, 2);\nassert.match(b, /y/);\nif (!c) throw new TypeError('c');\n", 0],
+    [baza + "assert.ok(d);\n", 0],
+    // „/*” w komentarzu // i w napisie nie zaczyna bloku: dopisany komentarz blokowy nie zmienia liczby
+    [baza + "/* nowy komentarz */\n", 0]
   ]) {
     const { d, g } = repo(M, []);
     write(d, { 'app/tests/a.test.cjs': baza }); g('add', '-A'); g('commit', '-qm', 'base2'); g('branch', '-f', 'main', 'HEAD');
