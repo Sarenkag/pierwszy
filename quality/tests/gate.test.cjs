@@ -127,7 +127,7 @@ test('Runner: pominięta inspekcja w raport-ui-check = SKIPPED, także gdy test 
     'app/www/ppm.js': "// EFA-INS-099 usunięte z listy\nwindow.OEST_PPM = { tasks: [ { id: 'EFA-INS-001' }, { id: 'EFA-INS-002' }, { id: 'EFA-INS-003' }, { id: 'db-X' }, { id: 's-y' } ] };",
     'app/tests/raport-ui-check.cjs': "console.log('raport-ui-check: 1 inspekcji, każda ma Word i PDF: EFA-INS-001 | pominięte (wymagają odpowiedzi): EFA-INS-002')"
   });
-  const r = gate(d, 'browser'), row = r.json.results[0];
+  const r = gate(d, 'browser', fakePw(d)), row = r.json.results[0];
   assert.equal(row.status, 'SKIPPED'); assert.deepEqual(row.scenarios.missing, ['EFA-INS-002', 'EFA-INS-003']); assert.deepEqual(row.scenarios.silent, ['EFA-INS-003']); assert.equal(row.scenarios.expected, 3, 'tylko EFA-INS z listy zadań, bez komentarzy');
   assert.equal(r.code, 1);
 });
@@ -272,7 +272,7 @@ function g2project() {
   const m = { node: [], allowedSkips: [], browser: ['a', 'b', 'c'].map(x => ({ file: `app/tests/${x}-ui-check.cjs`, passMarker: `${x} PASS` })).concat([{ file: 'app/tests/czas-ui-check.cjs', passMarker: 'czas PASS', osobno: true }]) };
   return project(m, { 'app/www/inspekcje/index.html': '', 'app/www/ppm.js': '', 'app/tests/a-ui-check.cjs': slow('a', 700), 'app/tests/b-ui-check.cjs': slow('b', 700), 'app/tests/c-ui-check.cjs': "process.exit(3)", 'app/tests/czas-ui-check.cjs': slow('czas', 300) });
 }
-const g2run = (d, args) => { const out = path.join(d, 'r-' + Date.now() + '.json'), LOG = path.join(d, 'log.txt'); fs.writeFileSync(LOG, ''); const p = spawnSync(process.execPath, [path.join(Q, 'run-gate.cjs'), '--root', d, '--part', 'browser', '--out', out, ...args], { encoding: 'utf8', env: { ...process.env, LOG } }); return { code: p.status, json: JSON.parse(fs.readFileSync(out, 'utf8')), log: fs.readFileSync(LOG, 'utf8').trim().split('\n').map(l => l.split(' ')).map(([e, t, ms]) => ({ e, t, ms: +ms })) }; };
+const g2run = (d, args) => { const out = path.join(d, 'r-' + Date.now() + '.json'), LOG = path.join(d, 'log.txt'); fs.writeFileSync(LOG, ''); const p = spawnSync(process.execPath, [path.join(Q, 'run-gate.cjs'), '--root', d, '--part', 'browser', '--out', out, ...args], { encoding: 'utf8', env: { ...process.env, ...fakePw(d), LOG } }); return { code: p.status, json: JSON.parse(fs.readFileSync(out, 'utf8')), log: fs.readFileSync(LOG, 'utf8').trim().split('\n').map(l => l.split(' ')).map(([e, t, ms]) => ({ e, t, ms: +ms })) }; };
 test('G2 naraz: wspólne testy idą jednocześnie, test „osobno” startuje dopiero po ich końcu; FAIL nadal = FAIL, kolejność wyników jak na liście', () => {
   const d = g2project(), r = g2run(d, []);
   const at = (e, t) => r.log.find(x => x.e === e && x.t === t).ms;
