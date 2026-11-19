@@ -27,8 +27,7 @@ let js = "// Zlecenia PPM z Vantify (eksport Job " + p.date + "): numer zlecenia
 if (freqFile) {
   const tk = {};
   for (const x of E.parseCsv(fs.readFileSync(freqFile, "utf8"))) {
-    const n = x.taskName, m = /^Distribution Boards \((.+)\)$/.exec(n);
-    const i = match(n) || (m && (match(m[1]) || match(m[1].replace("DB-TB-", ""))));
+    const n = x.taskName, i = match(n); // rozdzielnice „Distribution Boards (…)” dopasowuje sam moduł
     if (i) (tk[i] = tk[i] || []).push({ f: x.frequency, no: x.frequencyId, name: n });
   }
   js += ", tasks: {\n" + Object.keys(tk).sort().map(k => '  "' + k + '": [' + tk[k].map(j => '{ f: "' + j.f + '", no: "' + j.no + '", name: ' + JSON.stringify(j.name) + " }").join(", ") + "]").join(",\n") + "\n}";

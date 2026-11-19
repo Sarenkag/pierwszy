@@ -67,3 +67,22 @@ test('fromApi: lista zleceń z API → ten sam plan co eksport; termin = dzień 
   assert.doesNotMatch(JSON.stringify(fromApi), /Kowalski|acknowledged/);
   assert.deepStrictEqual(E.fromApi(null, '2026-11-10'), []);
 });
+// 19/11/2026 (Grzegorz: „brakuje inspekcji co są na dziś i widać je w Vantify”): zlecenia rozdzielnic „Distribution Boards (…)”
+// były pomijane jako „bez karty”. Wszystkie nazwy zadań Vantify (vantify-plan.js → tasks) muszą trafić do swojej karty,
+// a zlecenie z terminem na dziś – do terminu karty na dziś (ppm.js), dokładnie jak w Vantify.
+test('Pobierz z Vantify: każde zadanie PPM z Vantify ma kartę; rozdzielnica na dziś = termin dziś', () => {
+  const w = { localStorage: { getItem: () => null, setItem() {} } };
+  const g = { window: w, localStorage: w.localStorage };
+  const vm = require('vm'), ctx = vm.createContext(g);
+  for (const f of ['ppm.js', 'vantify-plan.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
+  const P = w.OEST_PPM, V = w.OEST_VANTIFY, m = E.matcher(P.tasks.map(t => [t.id, t.name]));
+  const d = new Date(), day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let n = 0; const api = [];
+  for (const id of Object.keys(V.tasks)) for (const t of V.tasks[id]) api.push({ id: 4000000 + (++n), type: 'planned', summary: t.name, status: 'acknowledged', completionDueAt: day + 'T12:00:00Z', frequency: t.f, _card: id });
+  const p = E.plan(E.fromApi(api, day), { match: m });
+  assert.deepStrictEqual(p.missing, []);
+  for (const j of api) assert.ok((p.jobs[j._card] || []).some(x => x.no === String(j.id) && x.due === day), j.summary);
+  V.jobs = p.jobs; V.cards = p.cards;
+  assert.strictEqual(P.iso(P.due(P.byId('db-LL-14'))), day);
+  assert.strictEqual(P.iso(P.due(P.byId('db-MSDB-TB-01'))), day);
+});
