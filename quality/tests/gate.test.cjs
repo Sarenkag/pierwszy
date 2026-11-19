@@ -4,7 +4,7 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path'), { spawnSync, execFileSync } = require('node:child_process');
 const Q = path.resolve(__dirname, '..');
-const run = (script, args, cwd) => { const p = spawnSync(process.execPath, [path.join(Q, script), ...args], { cwd: cwd || Q, encoding: 'utf8' }); return { code: p.status, out: (p.stdout || '') + (p.stderr || '') }; };
+const run = (script, args, cwd, env) => { const p = spawnSync(process.execPath, [path.join(Q, script), ...args], { cwd: cwd || Q, encoding: 'utf8', env: env ? { ...process.env, ...env } : process.env }); return { code: p.status, out: (p.stdout || '') + (p.stderr || '') }; };
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'oest-qg-'));
 const write = (root, files) => { for (const [f, c] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true }); fs.writeFileSync(path.join(root, f), c); } };
 
@@ -51,7 +51,7 @@ test('G1: naruszenie z baseline przechodzi, a wpis baseline, który już nie wys
 function project(manifest, files) {
   const d = tmp(); write(d, { 'quality/required-tests.json': JSON.stringify(manifest), ...files }); fs.mkdirSync(path.join(d, 'app/tests'), { recursive: true }); return d;
 }
-const gate = (d, part) => { const out = path.join(d, 'r.json'); const r = run('run-gate.cjs', ['--root', d, '--part', part, '--out', out]); return { ...r, json: JSON.parse(fs.readFileSync(out, 'utf8')) }; };
+const gate = (d, part, env) => { const out = path.join(d, 'r.json'); const r = run('run-gate.cjs', ['--root', d, '--part', part, '--out', out], undefined, env); return { ...r, json: JSON.parse(fs.readFileSync(out, 'utf8')) }; };
 const statusOf = (j, f) => j.results.find(r => r.id === f).status;
 
 test('Runner Node: PASS, FAIL, SKIPPED (test.skip/todo) i NOT RUN (brak pliku) są rozróżniane; tylko same PASS = sukces', () => {
@@ -73,12 +73,48 @@ test('Runner Node: wszystkie PASS = kod 0', () => {
   const d = project({ node: [{ file: 'app/tests/ok.test.cjs' }], browser: [], allowedSkips: [] }, { 'app/tests/ok.test.cjs': "require('node:test')('a',()=>{});" });
   assert.equal(gate(d, 'node').code, 0);
 });
+// udawany Playwright do testów bramki: launch() daje przeglądarkę, której strona może zgłosić błąd w konsoli (page.blad())
+function fakePw(d, { launchFail = false } = {}) {
+  const f = path.join(d, 'fake-pw.cjs');
+  fs.writeFileSync(f, `
+    function page(){ const h = {}; const p = { on(n, cb){ (h[n] = h[n] || []).push(cb); }, url: () => 'http://127.0.0.1:9/index.html', context: () => c,
+      blad(t){ (h.console || []).forEach(cb => cb({ type: () => 'error', text: () => t, location: () => ({ url: 'http://127.0.0.1:9/app.js', lineNumber: 7 }) })); },
+      wyjatek(t){ (h.pageerror || []).forEach(cb => cb(new Error(t))); },
+      siec(u){ (h.console || []).forEach(cb => cb({ type: () => 'error', text: () => 'Failed to load resource: net::ERR_FAILED', location: () => ({ url: u, lineNumber: 0 }) })); } };
+      return p; }
+    const c = { pages: () => [], on(){}, route: async () => {}, newPage: async () => page() };
+    module.exports = { chromium: { launch: async () => { ${launchFail ? "throw new Error('Executable doesn\\'t exist at /x/chrome');" : ''} return { newContext: async () => c, newPage: async () => page(), close: async () => {} }; } } };`);
+  return { OEST_PLAYWRIGHT_PATH: f };
+}
+test('Runner przeglądarkowy: sprawdzenie wstępne – brak Playwright albo przeglądarki = jeden jasny powód NOT RUN w każdym teście (#37)', () => {
+  const m = { node: [], browser: [{ file: 'app/tests/a-ui-check.cjs', passMarker: 'A PASS' }], allowedSkips: [] };
+  const d = project(m, { 'app/tests/a-ui-check.cjs': "console.log('A PASS')", 'app/www/inspekcje/index.html': '', 'app/www/ppm.js': '' });
+  let r = gate(d, 'browser', { OEST_PLAYWRIGHT_PATH: path.join(d, 'nie-ma-playwright.cjs') });
+  assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'NOT RUN'); assert.match(r.json.results[0].detail, /Sprawdzenie wstępne: nie zainstalowano Playwright/); assert.equal(r.code, 1);
+  r = gate(d, 'browser', fakePw(d, { launchFail: true }));
+  assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'NOT RUN'); assert.match(r.json.results[0].detail, /przeglądarka się nie uruchamia \(Executable doesn't exist/);
+});
+test('Runner przeglądarkowy: błąd w konsoli strony albo nieobsłużony wyjątek = FAIL testu, mimo „PASS” w wyniku (#33)', () => {
+  const m = { node: [], browser: [{ file: 'app/tests/a-ui-check.cjs', passMarker: 'A PASS' }, { file: 'app/tests/b-ui-check.cjs', passMarker: 'B PASS' }, { file: 'app/tests/c-ui-check.cjs', passMarker: 'C PASS' }, { file: 'app/tests/d-ui-check.cjs', passMarker: 'D PASS' }], allowedSkips: [] };
+  const t = (marker, act) => `const pw=require(process.env.OEST_PLAYWRIGHT_PATH);(async()=>{const b=await pw.chromium.launch();const p=await b.newPage();${act};console.log('${marker}');})();`;
+  const d = project(m, { 'app/www/inspekcje/index.html': '', 'app/www/ppm.js': '',
+    'app/tests/a-ui-check.cjs': t('A PASS', "p.blad('TypeError: x is undefined')"),
+    'app/tests/b-ui-check.cjs': t('B PASS', "p.wyjatek('Boom')"),
+    'app/tests/c-ui-check.cjs': t('C PASS', "p.siec('https://api.open-meteo.com/v1/forecast')"),
+    'app/tests/d-ui-check.cjs': t('D PASS', "p.siec('http://127.0.0.1:9/brak.js')") });
+  const r = gate(d, 'browser', fakePw(d));
+  assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'FAIL'); assert.match(r.json.results.find(x => x.id.endsWith('a-ui-check.cjs')).detail, /KONSOLA FAIL: 1 błędów[\s\S]*TypeError: x is undefined/);
+  assert.equal(statusOf(r.json, 'app/tests/b-ui-check.cjs'), 'FAIL');
+  assert.equal(statusOf(r.json, 'app/tests/c-ui-check.cjs'), 'PASS', 'zablokowany internet (testy bez sieci) to nie błąd apki');
+  assert.equal(statusOf(r.json, 'app/tests/d-ui-check.cjs'), 'FAIL', 'brak pliku z serwera testu to błąd');
+});
 test('Runner przeglądarkowy: kod 0 bez potwierdzenia PASS = NOT RUN; brak zbudowanej strony = NOT RUN', () => {
   const m = { node: [], browser: [{ file: 'app/tests/a-ui-check.cjs', passMarker: 'A PASS' }, { file: 'app/tests/b-ui-check.cjs', passMarker: 'B PASS' }], allowedSkips: [] };
   const d = project(m, { 'app/tests/a-ui-check.cjs': "console.log('A PASS')", 'app/tests/b-ui-check.cjs': "/* wyszedł wcześnie */" });
-  let r = gate(d, 'browser'); assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'NOT RUN'); // brak app/www
+  const pw = fakePw(d);
+  let r = gate(d, 'browser', pw); assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'NOT RUN'); // brak app/www
   write(d, { 'app/www/inspekcje/index.html': '', 'app/www/ppm.js': '' });
-  r = gate(d, 'browser');
+  r = gate(d, 'browser', pw);
   assert.equal(statusOf(r.json, 'app/tests/a-ui-check.cjs'), 'PASS');
   assert.equal(statusOf(r.json, 'app/tests/b-ui-check.cjs'), 'NOT RUN');
   assert.equal(r.code, 1);
