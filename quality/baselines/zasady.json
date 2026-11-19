@@ -1091,6 +1091,24 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
+      "id": "KOPIA|funkcja|2fe5edea8f|home.js+inspekcje/flush.js+moduly/kafelek/kafelek.js+moduly/klocek/klocek.js+moduly/ladowanie/ladowanie.js+moduly/naglowek/naglowek.js+moduly/pasek-dni/pasek-dni.js+moduly/przelacznik/przelacznik.js+moduly/raporty/przegladarka.js+moduly/wysylka/wysylka.js+moduly/znacznik/znacznik.js+vantify-import.js",
+      "rule": "KOPIA",
+      "detail": "Ta sama funkcja w 12 plikach: esc@home.js, esc@moduly/kafelek/kafelek.js, esc@moduly/klocek/klocek.js, esc@moduly/ladowanie/ladowanie.js, esc@moduly/naglowek/naglowek.js, esc@moduly/pasek-dni/pasek-dni.js, esc@moduly/przelacznik/przelacznik.js, esc@moduly/raporty/przegladarka.js, esc@moduly/wysylka/wysylka.js, esc@moduly/znacznik/znacznik.js, esc@vantify-import.js, x@inspekcje/flush.js.",
+      "maks": 12,
+      "punkt": "R25",
+      "usuwa": "P7/P8",
+      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
+    },
+    {
+      "id": "KOPIA|funkcja|59854484bb|moduly/notatki/notatki.js+zdjecia-ui.js",
+      "rule": "KOPIA",
+      "detail": "Ta sama funkcja w 2 plikach: esc@moduly/notatki/notatki.js, esc@zdjecia-ui.js.",
+      "maks": 2,
+      "punkt": "R25",
+      "usuwa": "P7/P8",
+      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
+    },
+    {
       "id": "KOPIA|funkcja|951fad04bb|home.js+moduly/pasek-dni/pasek-dni.js",
       "rule": "KOPIA",
       "detail": "Ta sama funkcja w 2 plikach: iso@home.js, iso@moduly/pasek-dni/pasek-dni.js.",

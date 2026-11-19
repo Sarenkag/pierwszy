@@ -105,6 +105,9 @@ test('Zasady EKRANY: strzałka ‹ z nowym znacznikiem musi mieć data-nav="up";
   const t0 = Date.now(), r = g1(www('', { 'b.js': `x.innerHTML = '<div ${atr}></div>';` }));
   assert.equal(r.code, 0, r.out); assert.ok(Date.now() - t0 < 3000, 'G1 ' + (Date.now() - t0) + ' ms');
 });
+test('Zasady EKRANY: dwie sekcje .view z tym samym id → FAIL', () => {
+  zasadaFail(g1(www('<section class="view" id="v-home"></section>')), /EKRANY\|sekcja-podwojna\|v-home/);
+});
 test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
@@ -157,6 +160,9 @@ test('Zasady KOPIA: ta sama funkcja (≥40 tokenów) w dwóch plikach i dwa iden
   zasadaFail(g1(www('', { 'b.js': 'const A = { f: (d) => ' + ciało + ' };', 'c.js': 'var g = (d) => ' + ciało + ';' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
   zasadaFail(g1(www('', { 'b.js': 'const A = { data(d) ' + ciało + ' };', 'c.js': 'class B { dzien(d) ' + ciało + ' }' })), /KOPIA\|funkcja\|[0-9a-f]{10}\|b\.js\+c\.js/);
   assert.equal(g1(www('', { 'b.js': 'if (a) { b(); }', 'c.js': 'while (a) { b(); }' })).code, 0);
+  // „}” w RegExp nie kończy funkcji: wspólny początek, różne zakończenia → nie kopia
+  const pocz = 'var a = String(t); var b = a.length; var c = a.slice(0, 3); var d = a.slice(3); var e = b + c.length + d.length; var f = a.replace(/\\}/g, "");';
+  assert.equal(g1(www('', { 'b.js': 'function sum(t) { ' + pocz + ' return e + f.length + 1; }', 'c.js': 'function clean(t) { ' + pocz + ' return f.trim().toUpperCase(); }' })).code, 0);
   // trzecia kopia w pliku już objętym wyjątkiem → więcej niż „maks” → FAIL
   const kop = n => www('', { 'b.js': Array.from({ length: n }, (_, i) => 'function f' + i + '(d) ' + ciało).join('\n'), 'c.js': 'function g(d) ' + ciało });
   const kid = JSON.parse(fs.readFileSync(path.join((() => { const d = kop(1); g1(d); return d; })(), 'out.json'), 'utf8')).zasady.fresh[0].id;
@@ -168,6 +174,9 @@ test('Zasady ZNACZNIK: przycisk bez znacznika, z dwoma znacznikami, stary data-g
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button type=\"button\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\" data-akcja=\"zapisz\">A</button>';" })), /ZNACZNIK\|brak\|b\.js\]/);
   zasadaFail(g1(www('', { 'b.js': "x.innerHTML = '<a href=\"#\" data-go=\"cal\" data-nav=\"cal\">A</a>';" })), /ZNACZNIK\|stary\|b\.js\|data-go\]/);
+  // role=button w każdej postaci (spacje wokół =, bez cudzysłowów) też musi mieć znacznik
+  for (const r of ['role = "button"', 'role=button', "role='button'"]) zasadaFail(g1(www('', { 'b.js': `x.innerHTML = '<div ${r}>A</div>';` })), /ZNACZNIK\|brak\|b\.js\]/);
+  assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<div role=buttons>A</div>';" })).code, 0);
   // „>” w wartości atrybutu i w ${…} nie kończy znacznika
   assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button title=\"A > B\" data-akcja=\"porownaj\">A</button>'; y = `<button ${a > 1 ? 'x' : 'y'} data-nav=\"cal\">B</button>`;" })).code, 0);
   assert.equal(g1(www('', { 'b.js': "x.innerHTML = '<button data-nav=\"cal\">A</button><a href=\"#\" data-akcja=\"x\">B</a><div role=\"button\" data-okno=\"y\"></div>';" })).code, 0);
@@ -347,7 +356,7 @@ test('Ratchet: mapa wpływu może tylko poszerzać testy – zawężenie strony 
 test('Podsumowanie: analiza wpływu to tylko informacja – „POMINIĘTY (wpływ)” i rozbieżność mapy nie zmieniają wyniku bramki', () => {
   const d = tmp(), ok = { status: 'PASS' };
   const res = (extra) => { write(d, {
-    'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [] }),
+    'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [], zasady: { total: 0, byRule: {}, fresh: [], stale: [] } }),
     'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
     'browser.json': JSON.stringify({ results: [{ id: 'app/tests/x-ui-check.cjs', status: 'PASS', seconds: 40, wczytane: ['index.html', 'nowy.js'] }, ...extra] }),
     'wplyw.json': JSON.stringify({ tryb: 'tylko-raport', status: 'OK', base: 'abc', pelna: false, powodyPelnej: [], zmiany: [{ plik: 'docs/a.md', klasa: 'dokumentacja', powod: 'nie trafia do apki' }], wybrane: [], pominiete: [{ test: 'app/tests/x-ui-check.cjs', powod: 'zmiana nie dotyczy stron apki' }], zaleznosci: { 'app/tests/x-ui-check.cjs': ['index.html'] } })
@@ -378,9 +387,21 @@ test('G2 w częściach: --grupa dzieli testy bez zgubienia żadnego; brak częś
   assert.deepEqual(w.json.results.map(x => path.basename(x.id)), ['a-ui-check.cjs', 'b-ui-check.cjs', 'c-ui-check.cjs']);
   assert.deepEqual(c.json.results.map(x => path.basename(x.id)), ['czas-ui-check.cjs']);
   const s = tmp(), ok = { status: 'PASS' }, m = path.join(d, 'quality/required-tests.json');
-  write(s, { 'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [] }), 'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
+  write(s, { 'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': JSON.stringify({ ...ok, total: 0, baseline: 0, fresh: [], stale: [], zasady: { total: 0, byRule: {}, fresh: [], stale: [] } }), 'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }),
     'browser-wspolne.json': JSON.stringify({ results: w.json.results.filter(x => x.status === 'PASS') }) });
   let r = run('summarize.cjs', [s, m]); assert.equal(r.code, 1); assert.match(r.out, /czas-ui-check\.cjs \| ⚠️ NOT RUN/); assert.match(r.out, /c-ui-check\.cjs \| ⚠️ NOT RUN/);
   write(s, { 'browser-wspolne.json': JSON.stringify({ results: w.json.results.map(x => ({ ...x, status: 'PASS' })) }), 'browser-czas-ui-check.cjs.json': JSON.stringify(c.json) });
-  r = run('summarize.cjs', [s, m]); assert.equal(r.code, 0, r.out); assert.match(r.out, /PASS 7 · FAIL 0 · SKIPPED 0 · NOT RUN 0/);
+  r = run('summarize.cjs', [s, m]); assert.equal(r.code, 0, r.out); assert.match(r.out, /PASS 8 · FAIL 0 · SKIPPED 0 · NOT RUN 0/);
+});
+
+test('Podsumowanie: nowe naruszenie zasad (np. EKRANY) jest w raporcie z id i liczbami, wiersz zasad = FAIL', () => {
+  const d = www('<section class="view" id="v-home"></section>'), r = g1(d);
+  assert.equal(r.code, 1, r.out);
+  const s = tmp(), ok = { status: 'PASS' }, m = path.join(tmp(), 'required-tests.json');
+  fs.writeFileSync(m, JSON.stringify({ node: [], browser: [], allowedSkips: [] }));
+  write(s, { 'lang.json': JSON.stringify({ ...ok, detail: '' }), 'node.json': JSON.stringify({ results: [] }), 'architecture.json': fs.readFileSync(path.join(d, 'out.json'), 'utf8'), 'ratchet.json': JSON.stringify({ ...ok, errors: [], warnings: [], notes: [] }), 'browser.json': JSON.stringify({ results: [] }) });
+  const o = run('summarize.cjs', [s, m]);
+  assert.equal(o.code, 1, o.out);
+  assert.match(o.out, /Zasady R1–R26 \(EKRANY, JM, KOPIA, ZNACZNIK\) \| ❌ FAIL \| naruszeń 1 \{"EKRANY":1\}, nowe 1, nieaktualne wpisy 0: .*\[EKRANY\\\|sekcja-podwojna\\\|v-home\]/);
+  assert.match(o.out, /Zależności modułów i kolejność skryptów \| ✅ PASS/);
 });

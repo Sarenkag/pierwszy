@@ -98,6 +98,7 @@ function analyse(www, opts) {
     const index = src.get('index.html') || '';
     const sekcje = [...index.replace(/<!--[\s\S]*?-->/g, ' ').matchAll(/<section\b[^>]*\bid=["'](v-[\w-]+)["'][^>]*>/g)].map(m => m[1]);
     const pudelka = new Set([...ids.values()].map(e => e.pudelko));
+    for (const s of new Set(sekcje.filter((x, i) => sekcje.indexOf(x) !== i))) add('EKRANY|sekcja-podwojna|' + s, 'EKRANY', `index.html: sekcja #${s} występuje ${sekcje.filter(x => x === s).length}× (apka pokazałaby je naraz).`);
     for (const s of sekcje) if (!pudelka.has(s)) add('EKRANY|sekcja-bez-wpisu|' + s, 'EKRANY', `index.html: sekcja #${s} nie ma wpisu w ekrany.json.`);
     for (const p of pudelka) if (!sekcje.includes(p)) add('EKRANY|wpis-bez-sekcji|' + p, 'EKRANY', `ekrany.json: pudełko #${p} nie istnieje w index.html.`);
     // strzałka ‹ wpisana w sekcję index.html: data-go = rodzic ekranu tej sekcji (ekran z id równym nazwie sekcji)
@@ -171,7 +172,7 @@ function analyse(www, opts) {
   for (const [f, c] of kod) {
     let brak = 0;
     for (const { nazwa, tag } of znaczniki(c)) {
-      if (nazwa !== 'button' && nazwa !== 'a' && !/\brole=\\?["']button/i.test(tag)) continue;
+      if (nazwa !== 'button' && nazwa !== 'a' && !ROLA_PRZYCISK.test(tag)) continue;
       if (/^<a\b/i.test(tag) && !/\bhref\s*=/.test(tag)) continue; // <a> bez href to nie link
       const n = ZNACZNIKI.filter(z => new RegExp('\\b' + z + '\\s*=').test(tag)).length;
       if (n !== 1) brak++;
@@ -216,6 +217,8 @@ function funkcjeZ(c) {
 }
 // znaczniki HTML (także w napisach JS): od „<nazwa” do zamykającego „>”, z pominięciem „>” w wartości atrybutu
 // (="…", ='…', bez „<” w środku) i w ${…} szablonu JS; jeden przebieg w przód, bez cofania
+// role=button w każdej poprawnej postaci: spacje wokół „=”, w cudzysłowach, apostrofach (także \" w napisach JS) albo bez nich
+const ROLA_PRZYCISK = /\brole\s*=\s*\\?["']?button(?![\w-])/i;
 function znaczniki(c) {
   const out = [], re = /<([a-z][\w-]*)\b/gi;
   let m;
@@ -231,18 +234,34 @@ function znaczniki(c) {
     }
     const nazwa = m[1].toLowerCase(), tag = c.slice(m.index, k + 1);
     out.push({ nazwa, tag });
-    if (nazwa === 'button' || nazwa === 'a' || /\brole=\\?["']button/i.test(tag)) re.lastIndex = k + 1;
+    if (nazwa === 'button' || nazwa === 'a' || ROLA_PRZYCISK.test(tag)) re.lastIndex = k + 1;
   }
   return out;
 }
+// pasująca „}” do „{” na pozycji i; pomija napisy, komentarze i literały RegExp (z klasami znaków i ucieczkami)
 function klamra(c, i) {
   let d = 0;
   for (let k = i; k < c.length; k++) {
     const ch = c[k];
     if (ch === '"' || ch === "'" || ch === '`') { k++; while (k < c.length && c[k] !== ch) k += c[k] === '\\' ? 2 : 1; continue; }
+    if (ch === '/' && c[k + 1] === '/') { const e = c.indexOf('\n', k); if (e < 0) return -1; k = e; continue; }
+    if (ch === '/' && c[k + 1] === '*') { const e = c.indexOf('*/', k + 2); if (e < 0) return -1; k = e + 1; continue; }
+    if (ch === '/' && poczatekRegExp(c, k)) {
+      let w = false; k++;
+      while (k < c.length && c[k] !== '\n' && (w || c[k] !== '/')) { if (c[k] === '\\') k++; else if (c[k] === '[') w = true; else if (c[k] === ']') w = false; k++; }
+      continue;
+    }
     if (ch === '{') d++; else if (ch === '}' && --d === 0) return k;
   }
   return -1;
+}
+// „/” zaczyna RegExp, gdy przed nim (pomijając spacje) jest operator, nawias otwierający, przecinek albo słowo return/typeof/case
+function poczatekRegExp(c, k) {
+  let j = k - 1; while (j >= 0 && /\s/.test(c[j])) j--;
+  if (j < 0) return true;
+  if ('(,=:[!&|?{};+-*%<>~^'.includes(c[j])) return true;
+  const slowo = c.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/);
+  return !!slowo && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(slowo[1]);
 }
 
 module.exports = { analyse, bezKomentarzy, MIN_TOKENOW };
