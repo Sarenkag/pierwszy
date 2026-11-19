@@ -71,6 +71,8 @@ function fakePhone() {
     await back();
     check(await onCard(), 'Wstecz z podglądu wyszedł ze zlecenia (ma wrócić do zlecenia)');
     check(await pg.locator('.rr-page').count() === 0, 'po Wstecz podgląd dalej na ekranie');
+    // tekst automatyczny powstaje od razu, a tłumaczenie EN dochodzi asynchronicznie (fillEnReport) – czekamy na wynik (audyt 19/11/2026 nr 111: test niestabilny pod obciążeniem CI), warunek bez zmian
+    await pg.waitForFunction(() => { const el = document.querySelector('[data-rx-field=reportText]'); return !el || el.value === '' || /EN Usunięcie rośliny/.test(el.value); }, null, { timeout: 8000 }).catch(() => {});
     { const v = await pg.locator('[data-rx-field=reportText]').inputValue().catch(() => ''); check(/EN Usunięcie rośliny/.test(v) || v === '', 'pole „Raport (EN)” po polsku: ' + v); }
     // ---------- 1. inne ekrany: nic ze zlecenia nie zostaje (Ustawienia) ----------
     await pg.locator('#rx-before img').first().click(); await ask().locator('img.rx-photo-full').waitFor(); await back(); await gone();
