@@ -348,6 +348,11 @@
       "file": "app/tests/nowosci-ui-check.cjs",
       "passMarker": "NOWOSCI UI PASS",
       "timeoutSec": 600
+    },
+    {
+      "file": "app/tests/wstecz-ladowanie-ui-check.cjs",
+      "passMarker": "WSTECZ LADOWANIE UI PASS",
+      "timeoutSec": 300
     }
   ],
   "allowedSkips": []
