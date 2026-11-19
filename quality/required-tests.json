@@ -352,6 +352,8 @@
     {
       "file": "app/tests/zapis-bez-bazy-ui-check.cjs",
       "passMarker": "ZAPIS BEZ BAZY UI PASS",
+      "file": "app/tests/wstecz-ladowanie-ui-check.cjs",
+      "passMarker": "WSTECZ LADOWANIE UI PASS",
       "timeoutSec": 300
     },
     {
