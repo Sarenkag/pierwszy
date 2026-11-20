@@ -80,9 +80,9 @@ for (const [st, a, b] of changes) {
   if (/^app\/tests\//.test(a) && (st === 'D' || st.startsWith('R'))) errors.push(`Usunięto/przeniesiono plik testu: ${a}${b ? ' → ' + b : ''}`);
 }
 // R23: zmieniony test nie może mieć mniej sprawdzeń niż na gałęzi bazowej (apka i test mogą zmieniać się w jednym PR)
-const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\bfails\.push\(|\bthrow\s+(?:new\s+)?[A-Za-z]*Error\s*\(/g;
-// komentarze usuwane jednym przebiegiem z kontekstem: napisy, literały RegExp i komentarze rozpoznawane w kolejności,
-// więc „/*” w komentarzu // albo w napisie nie zaczyna bloku
+const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\b(?:fails|errors|errs|bad|zle|bledy|problemy)\.push\(|\bthrow\s+(?:new\s+)?[A-Za-z]*Error\s*\(/g;
+// sam kod wykonywalny: jeden przebieg z kontekstem usuwa komentarze i treść napisów oraz literałów RegExp
+// (z szablonów `…` zostają tylko wyrażenia ${…}), więc „assert(” w napisie albo w komentarzu się nie liczy
 function bezKomentarzy(t) {
   let out = '', k = 0;
   const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
@@ -90,10 +90,18 @@ function bezKomentarzy(t) {
     const ch = t[k];
     if (ch === '/' && t[k + 1] === '/') { const e = t.indexOf('\n', k); k = e < 0 ? t.length : e; continue; }
     if (ch === '/' && t[k + 1] === '*') { const e = t.indexOf('*/', k + 2); out += ' '; k = e < 0 ? t.length : e + 2; continue; }
-    let e = k;
-    if (ch === '"' || ch === "'" || ch === '`') { e++; while (e < t.length && t[e] !== ch) e += t[e] === '\\' ? 2 : 1; }
-    else if (ch === '/' && regexp(k)) { let w = false; e++; while (e < t.length && t[e] !== '\n' && (w || t[e] !== '/')) { if (t[e] === '\\') e++; else if (t[e] === '[') w = true; else if (t[e] === ']') w = false; e++; } }
-    out += t.slice(k, e + 1); k = e + 1;
+    if (ch === '"' || ch === "'") { let e = k + 1; while (e < t.length && t[e] !== ch && t[e] !== '\n') e += t[e] === '\\' ? 2 : 1; out += ch + ch; k = e + 1; continue; }
+    if (ch === '`') {
+      let e = k + 1; out += '`';
+      while (e < t.length && t[e] !== '`') {
+        if (t[e] === '\\') { e += 2; continue; }
+        if (t[e] === '$' && t[e + 1] === '{') { let d = 1, f = e + 2; while (f < t.length && d) { if (t[f] === '{') d++; else if (t[f] === '}') d--; f++; } out += ' ' + bezKomentarzy(t.slice(e + 2, f - 1)) + ' '; e = f; continue; }
+        e++;
+      }
+      out += '`'; k = e + 1; continue;
+    }
+    if (ch === '/' && regexp(k)) { let w = false, e = k + 1; while (e < t.length && t[e] !== '\n' && (w || t[e] !== '/')) { if (t[e] === '\\') e++; else if (t[e] === '[') w = true; else if (t[e] === ']') w = false; e++; } out += '/ /'; k = e + 1; continue; }
+    out += ch; k++;
   }
   return out;
 }
