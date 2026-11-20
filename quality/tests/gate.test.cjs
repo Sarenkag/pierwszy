@@ -299,7 +299,10 @@ test('Ratchet R23: zmieniony test z mniejszą liczbą sprawdzeń (usunięte albo
     [baza + "/* nowy komentarz */\n", 0],
     // sprawdzenie przeniesione do napisu albo zastąpione wpisem do tablicy błędów
     ["assert.equal(a, 1);\nconsole.log('assert.match(b, /x/)');\nif (!c) throw Error('c');\n", 1],
-    ["assert.equal(a, 1);\nconsole.log(`x ${ok(b)} y`);\nif (!c) bad.push('c');\n", 0]
+    ["assert.equal(a, 1);\nconsole.log(`x ${ok(b)} y`);\nif (!c) bad.push('c');\n", 0],
+    // klamra w napisie wewnątrz ${…} nie kończy wyrażenia (przegląd Codex #157): reszta pliku dalej się liczy
+    ["console.log(`${'{'}`);\n" + baza, 0],
+    ["console.log(`${`n${'}'}`}`);\n" + baza.replace("assert.match(b, /x/);\n", ""), 1]
   ]) {
     const { d, g } = repo(M, []);
     write(d, { 'app/tests/a.test.cjs': baza }); g('add', '-A'); g('commit', '-qm', 'base2'); g('branch', '-f', 'main', 'HEAD');

@@ -83,8 +83,11 @@ for (const [st, a, b] of changes) {
 const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\b(?:fails|errors|errs|bad|zle|bledy|problemy)\.push\(|\bthrow\s+(?:new\s+)?[A-Za-z]*Error\s*\(/g;
 // sam kod wykonywalny: jeden przebieg z kontekstem usuwa komentarze i treść napisów oraz literałów RegExp
 // (z szablonów `…` zostają tylko wyrażenia ${…}), więc „assert(” w napisie albo w komentarzu się nie liczy
-function bezKomentarzy(t) {
-  let out = '', k = 0;
+function bezKomentarzy(t) { return skan(t, 0, false).out; }
+// skan od pozycji k; wDolarze = wnętrze ${…} szablonu: kończy na „}” na zerowej głębokości (klamry w napisach, komentarzach
+// i zagnieżdżonych szablonach się nie liczą); zwraca kod wykonywalny i pozycję tej „}”
+function skan(t, k, wDolarze) {
+  let out = '', d = 0;
   const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
   while (k < t.length) {
     const ch = t[k];
@@ -95,15 +98,17 @@ function bezKomentarzy(t) {
       let e = k + 1; out += '`';
       while (e < t.length && t[e] !== '`') {
         if (t[e] === '\\') { e += 2; continue; }
-        if (t[e] === '$' && t[e + 1] === '{') { let d = 1, f = e + 2; while (f < t.length && d) { if (t[f] === '{') d++; else if (t[f] === '}') d--; f++; } out += ' ' + bezKomentarzy(t.slice(e + 2, f - 1)) + ' '; e = f; continue; }
+        if (t[e] === '$' && t[e + 1] === '{') { const r = skan(t, e + 2, true); out += ' ' + r.out + ' '; e = r.end + 1; continue; }
         e++;
       }
       out += '`'; k = e + 1; continue;
     }
     if (ch === '/' && regexp(k)) { let w = false, e = k + 1; while (e < t.length && t[e] !== '\n' && (w || t[e] !== '/')) { if (t[e] === '\\') e++; else if (t[e] === '[') w = true; else if (t[e] === ']') w = false; e++; } out += '/ /'; k = e + 1; continue; }
+    if (wDolarze && ch === '{') d++;
+    if (wDolarze && ch === '}') { if (!d) return { out, end: k }; d--; }
     out += ch; k++;
   }
-  return out;
+  return { out, end: t.length };
 }
 const sprawdzenia = t => (bezKomentarzy(t).match(SPRAWDZENIE) || []).length;
 for (const [st, a, b] of changes) {
