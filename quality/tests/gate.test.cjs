@@ -72,6 +72,21 @@ const statusOf = (j, f) => j.results.find(r => r.id === f).status;
 const mapa = ekrany => JSON.stringify({ ekrany });
 const DOM = { id: 'home', rodzic: null, pudelko: 'v-home', pl: 'Główny', en: 'Home' };
 const zasadaFail = (r, re) => { assert.equal(r.code, 1, r.out); assert.match(r.out, re); assert.match(r.out, /G1 FAIL/); };
+test('Zasady LOGIKA (R27): nowa funkcja wpisana w <script> strony → FAIL; ta sama w module, w komentarzu albo w napisie → PASS', () => {
+  zasadaFail(g1(www('<script>function policz(a) { return a + 1; }</script>')), /LOGIKA\|index\.html/);
+  zasadaFail(g1(www('<script>var licz = function (a) { return a; };</script>')), /LOGIKA\|index\.html/);
+  zasadaFail(g1(www('<script>window.ok = (a) => a;</script>')), /LOGIKA\|index\.html/);
+  assert.equal(g1(www('<script src="moduly/b/b.js"></script>', { 'moduly/b/b.js': '(function(w){ function policz(a) { return a + 1; } w.OESTB = { policz }; })(window);' })).code, 0);
+  assert.equal(g1(www('<script>// function stara(a) {}\n/* var x = function () {}; */ OESTA.x;</script>')).code, 0);
+  assert.equal(g1(www('<script>var s = "function napis(a) {}";</script>')).code, 0);
+});
+test('Zasady LOGIKA: lista zastanych w quality/baselines/logika.json – więcej funkcji niż „maks” → FAIL, tyle samo → PASS, mniej → FAIL z prośbą o obniżenie', () => {
+  const html = n => '<script>' + Array.from({ length: n }, (_, i) => 'function f' + i + '() {}').join('\n') + '</script>';
+  const zLogika = (d, maks) => { fs.writeFileSync(path.join(d, 'logika.json'), JSON.stringify({ entries: [{ id: 'LOGIKA|index.html', maks }] })); return d; };
+  assert.equal(g1(zLogika(www(html(2)), 2)).code, 0);
+  zasadaFail(g1(zLogika(www(html(3)), 2)), /LOGIKA\|index\.html/);
+  zasadaFail(g1(zLogika(www(html(1)), 2)), /LOGIKA\|index\.html/);
+});
 test('Zasady: literówka w rodzicu („hme”) → EKRANY zly-rodzic → FAIL', () => {
   const d = www('<section class="view" id="v-cal"></section>', { 'moduly/ekrany/ekrany.json': mapa([DOM, { id: 'cal', rodzic: 'hme', pudelko: 'v-cal', pl: 'K', en: 'C' }]) });
   zasadaFail(g1(d), /EKRANY\|zly-rodzic\|cal\|hme/);

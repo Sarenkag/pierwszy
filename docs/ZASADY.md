@@ -36,6 +36,7 @@ Ten plik obowiązuje razem z `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN-S
 | R24 | Każdy strażnik ma próbkę z celowym błędem (literówka w id, przecinek, brak elementu, zły rodzic). Build pada, jeśli strażnik jej nie złapie. | `quality/tests/gate.test.cjs` |
 | R25 | Jedna rzecz = jedno miejsce (sprawdza JM). Jeden sprawdzacz architektury (JM wbudowany w istniejący `check-architecture.cjs`) i jeden format listy naruszeń (istniejące `quality/baselines/*.json`). | `quality/check-architecture.cjs` |
 | R26 | Jedno słownictwo znaczników: `data-nav="<ekran>"`, `data-nav="up"`, `data-okno="<okienko>"`, `data-akcja="<nazwa>"`. Stare `data-go`, `data-href`, `data-open`, `data-hnews`, `data-rx`, `data-key-action`, `data-pt-action`, `data-qq` znikają. | `moduly/ekrany` |
+| R27 | Logika tylko w modułach (`moduly/` albo plik obok strony, np. `inspekcje/flush.js`), jedna funkcja = jeden moduł, moduły rozmawiają przez swój interfejs, strona tylko je łączy. Liczba nazwanych funkcji zapisanych w `<script>` stron `index.html` i `inspekcje/index.html` może tylko maleć (lista zastanych `quality/baselines/logika.json`). To **nie** jest limit długości pliku. **Decyzja 20/11/2026** (plan-modulow-karty.md, karta M0). | `quality/zasady.cjs` (LOGIKA) |
 
 ## Jak to jest pilnowane (od P0-1)
 

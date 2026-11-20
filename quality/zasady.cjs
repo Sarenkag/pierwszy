@@ -9,6 +9,7 @@
 //   KOPIA   – ta sama funkcja (min. 40 tokenów, R25/JM-2) w dwóch plikach; dwa identyczne pliki (JM-3).
 //   ZNACZNIK – klikalny element (button, a, role=button) bez dokładnie jednego znacznika data-nav / data-okno / data-akcja,
 //             stare znaczniki data-go, data-href, data-open, data-hnews, data-rx, data-key-action, data-pt-action, data-qq (R26).
+//   LOGIKA  – nazwane funkcje w <script> stron index.html i inspekcje/index.html (R27): logika tylko w modułach; liczba może tylko maleć.
 // Identyfikator naruszenia nie ma numerów linii ani liczby trafień (np. JM|historia|keys.js); liczba trafień jest w polu „liczba”.
 // Na liście zastanych wpis ma „maks” = dzisiejsza liczba: więcej trafień → FAIL, mniej → FAIL z prośbą o obniżenie „maks”
 // (lista może tylko maleć; check-ratchet.cjs blokuje podniesienie „maks”).
@@ -180,7 +181,23 @@ function analyse(www, opts) {
     if (brak) add(`ZNACZNIK|brak|${f}`, 'ZNACZNIK', `${f}: ${brak} klikalnych elementów bez dokładnie jednego znacznika ${ZNACZNIKI.join('/')}.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: brak });
     for (const s of STARE) { const n = (c.match(new RegExp('\\b' + s + '\\b(?!-)', 'g')) || []).length; if (n) add(`ZNACZNIK|stary|${f}|${s}`, 'ZNACZNIK', `${f}: stary znacznik ${s} ${n}×.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: n }); }
   }
+
+  // ---------- LOGIKA (R27): logika tylko w modułach, strona tylko łączy moduły ----------
+  // liczy nazwane funkcje w <script> bez src strony; to NIE jest limit długości pliku – nowa funkcja w stronie = FAIL
+  for (const f of STRONY) {
+    if (!src.has(f)) continue;
+    const n = funkcjeStrony(src.get(f));
+    if (n) add(`LOGIKA|${f}`, 'LOGIKA', `${f}: ${n} funkcji zapisanych w <script> strony zamiast w module (moduly/ albo plik obok strony).`, { punkt: 'R27', usuwa: 'K01–K16', liczba: n });
+  }
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+// R27: nazwane funkcje w skryptach wpisanych w stronę – „function nazwa(”, „nazwa = function”, „nazwa = (…) =>”, „nazwa = x =>”;
+// komentarze i treść napisów się nie liczą
+function funkcjeStrony(html) {
+  const kod = zHtml(html).kod.replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/g, '""');
+  return (kod.match(/\bfunction\s*\*?\s*[A-Za-z_$][\w$]*\s*\(/g) || []).length
+    + (kod.match(/\b[A-Za-z_$][\w$]*\s*=\s*(?:async\s+)?(?:function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g) || []).length;
 }
 
 // funkcje z kodu: „function nazwa(…) {…}”, „nazwa = function(…) {…}”, strzałkowe „(…) => {…}” / „x => {…}”
@@ -264,4 +281,4 @@ function poczatekRegExp(c, k) {
   return !!slowo && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(slowo[1]);
 }
 
-module.exports = { analyse, bezKomentarzy, MIN_TOKENOW };
+module.exports = { analyse, bezKomentarzy, funkcjeStrony, MIN_TOKENOW };
