@@ -573,6 +573,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
   var xmlPath = "word/document.xml";
   var xml = out.file(xmlPath).asText();
   xml = tabsToColumns(xml);
+  xml = boxGlyphFont(xml);
 
   var pw = /<w:pgSz[^>]*w:w="(\d+)"/.exec(xml);
   var ph = /<w:pgSz[^>]*w:h="(\d+)"/.exec(xml);
@@ -754,6 +755,20 @@ function tabsToColumns(xml) {
     flush();
     if (/<\/w:tbl>$/.test(out[out.length - 1])) out.push("<w:p>" + pPr + "</w:p>"); // komórka musi kończyć się akapitem
     return out.join("");
+  });
+}
+// Kratki ☑/☒ w Wordzie: Calibri nie ma tych znaków, więc Word pokazywał pusty kwadracik/pytajnik (Grzegorz 20/11/2026).
+// Kratka = symbol Worda z czcionki Wingdings 2 (F052 ☑, F054 ☒) – tak jak „Wstaw symbol” w Wordzie; jest w każdym Office
+// (Windows, Mac, Android, przeglądarka), a LibreOffice zamienia ją na swoją czcionkę symboli. Reszta tekstu bez zmian.
+function boxGlyphFont(xml) {
+  if (!/[\u2611\u2612]/.test(xml)) return xml;
+  var SYM = { "\u2611": "F052", "\u2612": "F054" };
+  return xml.replace(/<w:r(\s[^>]*)?>(<w:rPr>(?:(?!<\/w:rPr>)[\s\S])*<\/w:rPr>)?<w:t(\s[^>]*)?>([^<]*[\u2611\u2612][^<]*)<\/w:t><\/w:r>/g, function (m, ra, rpr, ta, txt) {
+    rpr = rpr || "";
+    var symPr = rpr.replace(/<w:rFonts[^>]*\/>/, "");
+    return txt.split(/([\u2611\u2612])/).filter(Boolean).map(function (t) {
+      return "<w:r" + (ra || "") + ">" + (SYM[t] ? symPr + '<w:sym w:font="Wingdings 2" w:char="' + SYM[t] + '"/>' : rpr + '<w:t xml:space="preserve">' + t + "</w:t>") + "</w:r>";
+    }).join("");
   });
 }
 // Tekst i logo z nagłówka/stopki szablonu (do PDF)
