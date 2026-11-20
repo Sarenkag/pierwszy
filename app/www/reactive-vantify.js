@@ -197,9 +197,9 @@
     /* zapis na karcie: nowe adresy na pozycjach wysłanych zdjęć, widoczne = to, co Vantify pokazał w odczycie */
     const keep = async (sent, seen) => { sent.forEach((h, k) => { if (h) hrefs[idx[k]] = h; }); x.draft.vantify = { ...x.draft.vantify, photos: { ...p, hrefs, seen } }; await x.persist(); x.render(); };
     const done = () => x.message(photosMissing(x.draft) ? L('Vantify nadal nie pokazuje wszystkich zdjęć przed (', 'Vantify still does not show all before photos (') + x.draft.vantify.photos.seen.length + '/' + hrefs.length + L('). Stuknij „⚠ Vantify”, żeby spróbować znowu.', '). Tap “⚠ Vantify” to try again.') : L('✓ Wszystkie zdjęcia przed są przy zleceniu.', '✓ All before photos are on the job.'));
-    const W = await wzory(P);
-    if (!W.attach) {
-      await ask({ title: 'Vantify #' + v.id, text: L('Pierwszy raz: dodaj zdjęcie w oknie Vantify (Files → Add) – przy Upload apka poda brakujące zdjęcie. Apka zapamięta, jak to zrobiłeś, a następne dośle sama.', 'First time: add the photo in the Vantify window (Files → Add) – at Upload the app offers the missing photo. The app remembers how you did it and sends the next ones by itself.'), alert: true });
+    /* okno Vantify tylko wtedy, gdy Vantify odrzucił dodanie pliku wzorem wbudowanym z zapisu 18/11 (Grzegorz 20/11/2026: bez nauki w oknie) */
+    const inWindow = async r0 => {
+      await ask({ title: 'Vantify #' + v.id, text: L('Vantify nie przyjął zdjęcia wysłanego z apki (', 'Vantify did not accept the photo sent from the app (') + (r0.msg || r0.code || '') + L('). Dodaj je w oknie Vantify (Files → Add) – przy Upload apka poda brakujące zdjęcie. Apka zapamięta, jak to zrobiłeś.', '). Add it in the Vantify window (Files → Add) – at Upload the app offers the missing photo. The app remembers how you did it.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + v.id + '/files/add', fileB64: files[0].b64, fileName: files[0].name }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
       /* zdarzenie z okna: „numer|adres dodanego pliku”; bez adresu nie wiadomo, co dodano – karta bez zmian */
       const ev = (r?.events || []).filter(e => e.op === 'attach' && Number(String(e.id).split('|')[0]) === Number(v.id)).pop(), href = ev ? String(ev.id).split('|').slice(1).join('|') : '';
@@ -211,10 +211,10 @@
       await keep([], ok2 ? j2.seenHrefs : seen0);
       if (!ok2) return x.message(j2 && !j2.error ? L('Dodane w oknie, ale nie udało się odczytać plików przy zleceniu. Stuknij „⚠ Vantify”, żeby sprawdzić.', 'Added in the window, but the files on the job could not be read. Tap “⚠ Vantify” to check.') : why(j2?.error ? { code: j2.error } : st, L));
       return done();
-    }
+    };
     x.message(L('Dosyłam zdjęcia do Vantify…', 'Sending the photos to Vantify…'));
     const r = await act(P, { op: 'attach', id: v.id, files, known: seen0 });
-    if (r.status === 'nowzor') return x.message(L('Brak wzoru dodawania pliku – spróbuj jeszcze raz.', 'No file-adding pattern – try again.'));
+    if (r.status === 'nowzor') return inWindow(r);
     /* błąd w trakcie: zdjęcia już dodane zostają zapisane na swoich pozycjach, żeby następna próba ich nie dublowała */
     const sent = Array.isArray(r.sent) ? r.sent : [];
     if (r.status !== 'ok') { if (sent.length) await keep(sent, seen0); return x.message(why(r, L)); }
@@ -245,19 +245,20 @@
     x.message(L('Tworzę Job Sheet (PDF)…', 'Creating the Job Sheet (PDF)…'));
     const sheet = await x.jobSheet(), day = sheet.date.toLocaleDateString('en-GB');
     if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + L(' oraz plik ', ' with the file ') + sheet.name + '.', ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
-    const b64 = await w.OESTVoice.base64(new Blob([sheet.pdf], { type: 'application/pdf' })), W = await wzory(P);
-    /* zamknięcie w oknie Vantify: pierwszy raz (brak wzoru) albo gdy zlecenie wymaga innego typu dokumentu (przegląd Codex #146) */
-    const inWindow = async other => {
-      await ask({ title: 'Close Vantify', text: other ? L('To zlecenie wymaga innego typu dokumentu niż zwykły Job Sheet. Zamknij je w oknie Vantify i wybierz typ przy Upload – apka poda Job Sheet.', 'This job needs a different document type than the usual Job Sheet. Close it in the Vantify window and pick the type at Upload – the app offers the Job Sheet.') : L('Pierwszy raz: zamknij zlecenie w oknie Vantify, jak zwykle (Commence, potem Complete). Przy Upload apka sama poda Job Sheet. Apka zapamięta, jak to zrobiłeś, a następne zamknie sama.', 'First time: close the job in the Vantify window as usual (Commence, then Complete). At Upload the app offers the Job Sheet. The app remembers how you did it and closes the next ones by itself.'), alert: true });
+    const b64 = await w.OESTVoice.base64(new Blob([sheet.pdf], { type: 'application/pdf' }));
+    /* zamknięcie w oknie Vantify tylko, gdy zlecenie wymaga innego typu dokumentu (przegląd Codex #146) albo Vantify odrzucił
+       zamknięcie wzorem wbudowanym z zapisu 18/11 (Grzegorz 20/11/2026: bez nauki w oknie) */
+    const inWindow = async r0 => {
+      const other = r0.why === 'doctype', started = r0.op === 'complete';
+      await ask({ title: 'Close Vantify', text: other ? L('To zlecenie wymaga innego typu dokumentu niż zwykły Job Sheet. Zamknij je w oknie Vantify i wybierz typ przy Upload – apka poda Job Sheet.', 'This job needs a different document type than the usual Job Sheet. Close it in the Vantify window and pick the type at Upload – the app offers the Job Sheet.') : L('Vantify nie przyjął ', 'Vantify did not accept ') + (r0.op === 'commence' ? 'Commence' : 'Complete') + L(' z apki (', ' from the app (') + (r0.msg || r0.code || '') + ')' + (started ? L('; Commence już przeszło', '; Commence already went through') : '') + L('. Dokończ w oknie Vantify – przy Upload apka poda Job Sheet. Apka zapamięta, jak to zrobiłeś.', '. Finish in the Vantify window – at Upload the app offers the Job Sheet. The app remembers how you did it.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + d.vantify.id + '/status', fileB64: b64, fileName: sheet.name }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
       const done = (r?.events || []).some(e => e.op === 'complete' && Number(e.id) === Number(d.vantify.id));
       return done ? check(x) : x.message(L('Nie widzę zamknięcia w Vantify. Zlecenie zostaje otwarte.', 'I do not see the job closed in Vantify. It stays open.'));
     };
-    if (!W.commence || !W.complete) return inWindow();
     x.message(L('Zamykam w Vantify…', 'Closing in Vantify…'));
     const r = await act(P, { op: 'close', id: d.vantify.id, summary: d.vantify.summary || '', onSite: sheet.start.toISOString(), done: sheet.date.toISOString(), file: { b64, name: sheet.name, title: sheet.title, type: 'application/pdf' } });
     if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(L('Zlecenie w Vantify różni się od karty (', 'The job in Vantify differs from the card (') + r.why + L('). Nic nie wysłałem.', '). Nothing was sent.')); }
-    if (r.status === 'nowzor') return inWindow(r.why === 'doctype');
+    if (r.status === 'nowzor') return inWindow(r);
     if (r.status !== 'ok') return x.message(why(r, L));
     /* plik zapamiętany na karcie: bez potwierdzenia pliku karta pokazuje „⚠ Brak pliku”, stuknięcie sprawdza znowu (przegląd Codex #146) */
     await update(x, r.job || { status: d.vantify.status }, { fileSeen: !!r.fileSeen, sheetTitle: sheet.title });

@@ -144,11 +144,47 @@ test('założenie: zdjęcie nie dotarło przy zleceniu → wynik mówi ile wida�
   assert.strictEqual(t.results[0].status, 'error'); assert.strictEqual(t.results[0].step, 'upload');
   assert.ok(!t.calls.some(c => /jobs\/reactive$/.test(c.u)), 'bez zdjęcia w Vantify nie zakłada zlecenia');
 });
-test('bez wzoru: nic nie wysyła, mówi czego brakuje', async () => {
+test('bez wzoru założenia: nic nie wysyła, mówi czego brakuje (create uczy się raz z okna – zapis 18/11 ukrył wartości)', async () => {
   const s = world({ op: 'create', nonce: 'n2', summary: 'a', description: 'b' }, {}, {}); await s.run();
   assert.deepStrictEqual(s.results, [{ status: 'nowzor', op: 'create' }]); assert.strictEqual(s.calls.length, 0);
-  const t = world({ op: 'close', nonce: 'n3', id: 1 }, { commence: WZ.commence }, {}); await t.run();
-  assert.deepStrictEqual(t.results, [{ status: 'nowzor', op: 'complete' }]); assert.strictEqual(t.calls.length, 0);
+});
+// ---------- wzory wbudowane z zapisu „Zbadaj” 18/11/2026 (Grzegorz 20/11/2026: zamykanie i zdjęcia bez nauki w oknie) ----------
+test('wzory wbudowane: kształt jak w zapisie 18/11 (Commence, Complete z Job Sheet = typ 1, Files → Add = typ 3)', () => {
+  const d = new Date(Date.UTC(2026, 10, 20, 15, 0));
+  assert.deepStrictEqual(A.commence(A.built('commence'), { date: d }), { _links: {}, files: { links: [] }, onSiteDate: A.fmt(d, '2026-11-05T15:54:17+00:00') });
+  const c = A.complete(A.built('complete', { visibility: 'Vis' }), { date: d, files: [{ href: '/files/9', title: 'REACTIVE Shelves 20112026' }] });
+  assert.deepStrictEqual(Object.keys(c).sort(), ['_links', 'assets', 'completionDate', 'escalationFiles', 'files']);
+  assert.deepStrictEqual(c.files[0]._links, { file: { href: '/files/9' }, documentType: { href: '/documenttypes/1' } });
+  assert.strictEqual(c.files[0].title, 'REACTIVE Shelves 20112026'); assert.strictEqual(c.files[0].visibility, 'Vis'); assert.ok(!JSON.stringify(c).includes('_built') && !JSON.stringify(c).includes('_date'));
+  const a = A.attach(A.built('attach', {}), { title: 'Before photo 1', href: '/files/5', date: d });
+  assert.deepStrictEqual(a._links, { file: { href: '/files/5' }, documentType: { href: '/documenttypes/3' } }); assert.ok(!('visibility' in a), 'bez znanej widoczności pole pominięte');
+  for (const k of ['tags', 'id', 'isContract', 'documentDate', 'expiresAt', 'isStatutory', 'userTags', 'notifyExpiry', 'isJobFile', 'description', 'applicableTo']) assert.ok(k in a, 'Files → Add bez pola ' + k);
+});
+test('zamknięcie bez nauczonego wzoru: Commence + Complete z wzoru wbudowanego, Job Sheet typu wymaganego przez zlecenie, widoczność z pliku przy zleceniu', async () => {
+  const jobs = { 3070050: { id: 3070050, status: 'acknowledged', is_final_status: false, summary: 'Shelves', _links: { commence: {}, files: { href: '/sites/6324/jobs/3070050/files' } }, requiredDocumentTypes: { count: 1, documentTypes: [{ id: 1, _links: { self: { href: '/documenttypes/1' } } }] }, files: [{ visibility: 'VisFromJob', _links: { file: { href: '/files/400' } } }] } };
+  const s = world({ op: 'close', nonce: 'b1', id: 3070050, summary: 'Shelves', onSite: '2026-11-20T09:00:00Z', done: '2026-11-20T10:00:00Z', file: { b64: PDF, name: 'REACTIVE Shelves 20112026.pdf', title: 'REACTIVE Shelves 20112026', type: 'application/pdf' } }, { create: WZ.create }, jobs); await s.run();
+  const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
+  assert.deepStrictEqual(seq, ['GET /sites/6324/jobs/3070050', 'GET /sites/6324/jobs/3070050/files', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/3070050/workflow/operation/commence', 'POST /sites/6324/jobs/3070050/workflow/operation/complete', 'GET /sites/6324/jobs/3070050', 'GET /sites/6324/jobs/3070050/files']);
+  const cm = JSON.parse(s.calls[4].body); assert.deepStrictEqual(Object.keys(cm).sort(), ['_links', 'files', 'onSiteDate']); assert.match(cm.onSiteDate, /^2026-11-20T09:00:00\+00:00$/);
+  const cp = JSON.parse(s.calls[5].body); assert.match(cp.completionDate, /^2026-11-20T10:00:00\+00:00$/);
+  assert.deepStrictEqual(cp.files[0]._links, { file: { href: '/files/999' }, documentType: { href: '/documenttypes/1' } }); assert.strictEqual(cp.files[0].visibility, 'VisFromJob');
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].closed, true);
+});
+test('zamknięcie wzorem wbudowanym: Vantify odrzuca (4xx) → „nowzor” z krokiem (okno Vantify), kilka wymaganych typów → okno bez wysyłki; 5xx/sieć = zwykły błąd', async () => {
+  const base = () => ({ 9: { id: 9, status: 'acknowledged', summary: 'A', _links: { commence: {}, files: { href: '/sites/6324/jobs/9/files' } } } });
+  const a = { op: 'close', id: 9, summary: 'A', file: { b64: PDF, name: 'a.pdf', title: 'REACTIVE A', type: 'application/pdf' } };
+  const reject = (s, re, st) => { const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (re.test(this.u)) { s.calls.push({ m: this.m, u: this.u, body: b }); this.status = st; this.responseText = JSON.stringify({ message: 'Invalid field' }); setImmediate(() => this.onload()); return; } return send.call(this, b); }; };
+  const s = world({ ...a, nonce: 'r1' }, {}, base()); reject(s, /complete$/, 422); await s.run();
+  assert.deepStrictEqual(s.results[0], { status: 'nowzor', op: 'complete', built: true, code: 'http422', msg: 'Invalid field' }); assert.ok(s.calls.some(c => /commence$/.test(c.u)), 'Commence przeszło przed odrzuceniem Complete');
+  const t = world({ ...a, nonce: 'r2' }, {}, base()); reject(t, /commence$/, 400); await t.run();
+  assert.strictEqual(t.results[0].status, 'nowzor'); assert.strictEqual(t.results[0].op, 'commence'); assert.ok(!t.calls.some(c => /complete$/.test(c.u)));
+  const u = world({ ...a, nonce: 'r3' }, {}, base()); reject(u, /complete$/, 500); await u.run();
+  assert.strictEqual(u.results[0].status, 'error'); assert.strictEqual(u.results[0].step, 'complete');
+  const v = world({ ...a, nonce: 'r4' }, { complete: WZ.complete, commence: WZ.commence }, base()); reject(v, /complete$/, 422); await v.run();
+  assert.strictEqual(v.results[0].status, 'error', 'nauczony wzór odrzucony = zwykły błąd, nie okno');
+  const two = base(); two[9].requiredDocumentTypes = { count: 2, documentTypes: [{ id: 1 }, { id: 4 }] };
+  const w2 = world({ ...a, nonce: 'r5' }, {}, two); await w2.run();
+  assert.deepStrictEqual(w2.results[0], { status: 'nowzor', op: 'complete', why: 'doctype' }); assert.ok(w2.calls.every(c => c.m === 'GET'));
 });
 test('zamknięcie zatwierdzonego: odczyt → plik → Commence → Complete z plikiem → odczyt: zamknięte, plik przy zleceniu', async () => {
   const jobs = { 3066755: { id: 3066755, status: 'acknowledged', is_final_status: false, summary: 'Coat hooks', _links: { commence: {} } } };
@@ -253,10 +289,16 @@ test('sprawdzenie statusu z adresami zdjęć: mówi, które widać przy zleceniu
   const t = world({ op: 'status', nonce: 's2', ids: [3070002] }, WZ, JOB()); await t.run();
   assert.ok(!('seenHrefs' in t.results[0].jobs[0])); assert.ok(!t.calls.some(c => /\/files$/.test(c.u)), 'bez adresów nie czyta listy plików');
 });
-test('dosłanie: bez wzoru nic nie wysyła; z wzorem plik → Files → Add do tego numeru → odczyt', async () => {
+test('dosłanie: bez nauczonego wzoru wzór wbudowany (typ 3, widoczność z pliku przy zleceniu); odrzucony → okno; z wzorem plik → Files → Add → odczyt', async () => {
   const f = [{ b64: JPG, name: 'Before-photo-2.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
-  const n = world({ op: 'attach', nonce: 'a0', id: 3070002, files: f, known: ['/files/500'] }, WZ, JOB()); await n.run();
-  assert.deepStrictEqual(n.results[0], { status: 'nowzor', op: 'attach' }); assert.ok(!n.calls.some(c => c.m === 'POST'));
+  const jb = JOB(); jb[3070002].files[0].visibility = 'VisFromJob';
+  const n = world({ op: 'attach', nonce: 'a0', id: 3070002, files: f, known: ['/files/500'] }, WZ, jb); await n.run();
+  const nb = JSON.parse(n.calls.find(c => c.m === 'POST' && /jobs\/3070002\/files$/.test(c.u)).body);
+  assert.deepStrictEqual(nb._links, { file: { href: '/files/999' }, documentType: { href: '/documenttypes/3' } }); assert.strictEqual(nb.visibility, 'VisFromJob'); assert.strictEqual(nb.title, 'Before photo 2');
+  assert.deepStrictEqual(n.results[0], { status: 'ok', sent: ['/files/999'], seenHrefs: ['/files/500', '/files/999'] });
+  const r = world({ op: 'attach', nonce: 'a0r', id: 3070002, files: f, known: ['/files/500'] }, WZ, JOB());
+  const XHR = r.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (this.m === 'POST' && /jobs\/3070002\/files$/.test(this.u)) { this.status = 422; this.responseText = '{}'; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await r.run(); assert.deepStrictEqual(r.results[0], { status: 'nowzor', op: 'attach', built: true, code: 'http422', msg: '' });
   const s = world({ op: 'attach', nonce: 'a1', id: 3070002, files: f, known: ['/files/500'] }, { ...WZ, attach: A.wzor('attach', ATTACH) }, JOB()); await s.run();
   const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
   assert.deepStrictEqual(seq, ['GET /sites/6324/jobs/3070002', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files']);
