@@ -42,5 +42,7 @@ open(os.path.join(app, "lok.gradle"), "w").write(f"""android {{
 }}
 """)
 s = os.path.join(app, "src/main/res/values/strings.xml")
-open(s, "w").write(open(s).read().replace('<string name="app_name">OEST</string>', '<string name="app_name">OEST próba LO</string>'))
+t = open(s, encoding="utf-8").read()  # najpierw odczyt, potem zapis (open(..., "w") od razu czyści plik)
+assert '<string name="app_name">OEST</string>' in t, "brak app_name"
+open(s, "w", encoding="utf-8").write(t.replace('<string name="app_name">OEST</string>', '<string name="app_name">OEST próba LO</string>'))
 print("lok.gradle gotowy")
