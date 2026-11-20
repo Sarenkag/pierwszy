@@ -1,8 +1,9 @@
 // Przyciski Vantify na karcie Reactive (Grzegorz 18/11/2026 „Tak”, PROD-038): założenie zlecenia, Commence + Complete z Job Sheet,
 // odczyt statusu. Wszystko w ukrytym oknie Vantify (VantifyPlugin.action) z zalogowaniem Grzegorza; token zostaje w oknie.
-// Skąd wiemy, co wysłać: zapis „Zbadaj” 18/11/2026 ukrywa wartości pól, więc apka uczy się od Grzegorza – gdy raz założy
-// (albo zamknie) zlecenie w oknie Vantify w apce, „wzór” tego zapytania zostaje w telefonie (bez Summary, Description, dat
-// i plików; te apka wstawia sama). Kolejne zlecenia apka wysyła z tym wzorem.
+// Skąd wiemy, co wysłać: zapis „Zbadaj” 18/11/2026. Commence, Complete z plikiem i Files → Add są w apce wbudowane z tego zapisu
+// (Grzegorz 20/11/2026: „całe badanie jest zapisane” – bez nauki w oknie). Założenie (create) potrzebuje wartości, które zapis
+// ukrył (kontakt, grupa, wykonawca), więc uczy się raz z okna Vantify; „Send update” nie ma w zapisie – też raz z okna.
+// Wzór nauczony w oknie (bez Summary, Description, dat i plików) ma pierwszeństwo przed wbudowanym.
 // Przebieg zamknięcia (twardy warunek Grzegorza 10/11/2026, PROD-035): świeży odczyt i porównanie z kartą → różnica = stop;
 // Commence (gdy trzeba) → plik Job Sheet → Complete → ponowny odczyt: status zamknięty i plik przy zleceniu.
 // Statusy Vantify z zapisu 18/11: approval_pending → acknowledged (_links.commence) → commenced (_links.complete) → completed (final).
@@ -44,6 +45,22 @@
     // wiadomość do zlecenia („Send update”, Grzegorz 20/11/2026): wzór bez treści; bez pola body nie wiadomo, gdzie wstawić tekst
     if (kind === "update") { if (typeof b.body !== "string") return null; delete b.body; }
     return b;
+  }
+  // ---------- wzory wbudowane z zapisu „Zbadaj” 18/11/2026 ----------
+  // Commence: {_links:{}, files:{links:[]}, onSiteDate} (job 3056375, 204). Complete: {_links:{}, escalationFiles, assets, completionDate,
+  // files:[{_links:{file, documentType}, tags, id, title, visibility, documentDate, expiresAt, notifyExpiry, isStatutory, userTags, description}]} (204).
+  // Files → Add: {_links:{file, documentType}, tags, id, title, visibility, isContract, documentDate, expiresAt, isStatutory, userTags,
+  // notifyExpiry, isJobFile, description, applicableTo} (job 3066755, 201, typ dokumentu id 3). Job Sheet = wymagany typ zlecenia (id 1).
+  // Zapis dat jak w odpowiedziach Vantify; „visibility” brana z pliku już przy zleceniu (zapis jej nie pokazał), bez pliku – pominięta.
+  var SAMPLE = "2026-11-05T15:54:17+00:00", JOB_SHEET = "/documenttypes/1", PHOTO = "/documenttypes/3";
+  function built(kind, o) {
+    o = o || {};
+    var file = { tags: { tags: [] }, id: null, expiresAt: null, notifyExpiry: false, isStatutory: false, userTags: [] };
+    if (o.visibility) file.visibility = o.visibility;
+    if (kind === "commence") return { _links: {}, files: { links: [] }, _date: SAMPLE, _built: 1 };
+    if (kind === "complete") { file._links = { file: { href: "" }, documentType: { href: o.docType || JOB_SHEET } }; return { _links: {}, escalationFiles: { links: [] }, assets: {}, files: [], _date: SAMPLE, _file: file, _built: 1 }; }
+    if (kind === "attach") { file._links = { file: { href: "" }, documentType: { href: PHOTO } }; file.isContract = null; file.isJobFile = false; file.applicableTo = []; file._date = SAMPLE; file._built = 1; return file; }
+    return null;
   }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   // data w tym samym zapisie co próbka ze strony Vantify (ISO z „Z” albo z przesunięciem strefy, z sekundami lub bez)
@@ -96,7 +113,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief };
+  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -166,6 +183,14 @@
       if (!ml || !text) return Promise.resolve(null);
       return req("GET", ml).then(function (r) { var m = r && (r.messages || (r._embedded && r._embedded.messages)); m = Array.isArray(m) ? m : m && Array.isArray(m.items) ? m.items : m ? [m] : []; return m.some(function (x) { return x && String(x.body || "").trim() === String(text).trim(); }); }, function (e) { if (e && e.code === "login") throw e; return null; });
     }
+    // „visibility” pliku jak u plików już przy zleceniu (wzór wbudowany); brak plików albo błąd odczytu = pole pominięte
+    function visOf(j) {
+      var fl = j && j._links && j._links.files && j._links.files.href;
+      if (!fl) return Promise.resolve("");
+      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; for (var i = 0; i < list.length; i++) if (list[i] && typeof list[i].visibility === "string" && list[i].visibility) return list[i].visibility; return ""; }, function (e) { if (e && e.code === "login") throw e; return ""; });
+    }
+    // wzór wbudowany odrzucony przez Vantify (4xx) = „nowzor”: apka otwiera okno Vantify i uczy się z niego (nic nie zgaduje dalej)
+    function rejected(e) { return e && /^http4\d\d$/.test(e.code || "") && e.code !== "http401"; }
     // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
     function upload(f) {
       var bin = g.atob(f.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
@@ -220,17 +245,18 @@
     }
     // dosłanie zdjęć przed do istniejącego zlecenia (przegląd Codex #166): wysyłka pliku → Files → Add → odczyt, co widać
     if (a.op === "attach") {
-      if (!W.attach) return end({ status: "nowzor", op: "attach" });
-      var put = [], now = new Date();
+      var put = [], now = new Date(), Wa = W.attach;
       step = "read";
       return job(a.id).then(function (j) {
         if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
+        return Wa ? null : visOf(j).then(function (v) { Wa = built("attach", { visibility: v }); });
+      }).then(function () {
         step = "upload";
-        return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { step = "attach"; return req("POST", "/sites/" + site + "/jobs/" + a.id + "/files", attach(W.attach, { title: f.title, href: u.href, date: now })).then(function () { put.push(u.href); step = "upload"; }); }); }); }, Promise.resolve());
+        return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { step = "attach"; return req("POST", "/sites/" + site + "/jobs/" + a.id + "/files", attach(Wa, { title: f.title, href: u.href, date: now })).then(function () { put.push(u.href); step = "upload"; }); }); }); }, Promise.resolve());
       }).then(function () {
         step = "check";
         return job(a.id).then(function (j) { return seenOf(j, (a.known || []).concat(put)); }).then(function (l) { end({ status: "ok", sent: put, seenHrefs: l }); });
-      }).catch(function (e) { if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
+      }).catch(function (e) { if (!put.length && Wa && Wa._built && step === "attach" && rejected(e)) return end({ status: "nowzor", op: "attach", built: true, code: e.code, msg: e.msg || "" }); if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
     }
     // „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie nadal czeka na zatwierdzenie i ma tę samą nazwę co karta;
     // wiadomość → ponowny odczyt, czy jest przy zleceniu
@@ -246,29 +272,40 @@
       }).catch(function (e) { if (e && e.stop) return; fail(e); });
     }
     if (a.op === "close") {
-      if (!W.commence || !W.complete) return end({ status: "nowzor", op: !W.commence ? "commence" : "complete" });
-      var j0, href, d0 = new Date(a.onSite || Date.now()), d1 = new Date(a.done || Date.now());
+      var j0, href, d0 = new Date(a.onSite || Date.now()), d1 = new Date(a.done || Date.now()), Wc = W.commence || built("commence"), Wp = W.complete;
       step = "read";
       return job(a.id).then(function (j) {
-        j0 = j; var dt = W.complete._file && W.complete._file._links && W.complete._file._links.documentType && W.complete._file._links.documentType.href, why = check(j, { id: a.id, summary: a.summary, docType: dt });
+        // bez nauczonego wzoru Complete: typ dokumentu = ten, którego zlecenie wymaga (Reactive: Job Sheet); kilka różnych = nie zgadywać, okno
+        var need = docTypes(j);
+        if (!Wp && need.length > 1) { end({ status: "nowzor", op: "complete", why: "doctype" }); throw { stop: 1 }; }
+        var dt = Wp ? Wp._file && Wp._file._links && Wp._file._links.documentType && Wp._file._links.documentType.href : need[0] || JOB_SHEET, why = check(j, { id: a.id, summary: a.summary, docType: dt });
+        j0 = j;
         if (why === "doctype") { end({ status: "nowzor", op: "complete", why: why }); throw { stop: 1 }; }
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
         if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
+        return Wp ? null : visOf(j).then(function (v) { Wp = built("complete", { docType: dt, visibility: v }); });
+      }).then(function () {
         step = "upload";
         return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) { href = u.href; });
       }).then(function () {
         if (!j0._links.commence) return null;
         step = "commence";
-        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/commence", commence(W.commence, { date: d0 }));
+        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/commence", commence(Wc, { date: d0 }));
       }).then(function () {
         step = "complete";
-        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/complete", complete(W.complete, { date: d1, files: [{ href: href, title: a.file.title }] }));
+        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/complete", complete(Wp, { date: d1, files: [{ href: href, title: a.file.title }] }));
       }).then(function () {
         step = "verify";
         return job(a.id).then(function (j) {
           return hasFile(j, a.file.title, href).then(function (s) { end({ status: "ok", job: brief(j), closed: !!(j && j.is_final_status), fileSeen: s }); });
         });
-      }).catch(function (e) { if (e && e.stop) return; fail(e); });
+      }).catch(function (e) {
+        if (e && e.stop) return;
+        // wzór wbudowany odrzucony przy Commence/Complete → okno Vantify (krok i kod w wyniku; Commence mogło już przejść)
+        var usedBuilt = step === "commence" ? Wc._built : step === "complete" ? Wp && Wp._built : 0;
+        if (usedBuilt && rejected(e)) return end({ status: "nowzor", op: step, built: true, code: e.code, msg: e.msg || "" });
+        fail(e);
+      });
     }
     end({ status: "error", code: "op" });
   };
