@@ -12,6 +12,8 @@ PID=$(adb shell pidof $PKG | tr -d '\r')
 echo "PID=$PID"
 adb forward tcp:9222 localabstract:webview_devtools_remote_$PID
 node scripts/lo-emulator-cdp.cjs | tee lo-emu/wynik.txt
+command -v pdftotext >/dev/null || sudo apt-get install -y -qq poppler-utils >/dev/null
+for f in lo-emu/*.pdf; do [ -f "$f" ] && { echo "===== $f (tekst) ====="; pdftotext -layout "$f" - 2>/dev/null | head -80; }; done
 sleep 5
 echo "Proces po próbie: $(adb shell pidof $PKG | tr -d '\r')"
 adb logcat -d > lo-emu/logcat.txt

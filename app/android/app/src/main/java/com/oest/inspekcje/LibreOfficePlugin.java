@@ -1,5 +1,6 @@
 package com.oest.inspekcje;
 
+import android.content.res.AssetManager;
 import android.util.Base64;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -34,6 +35,7 @@ public class LibreOfficePlugin extends Plugin {
             try {
                 long t0 = System.currentTimeMillis();
                 if (office == null) {
+                    unpackAssets(); // pliki startowe silnika (program/*.rdb, fonts.conf, czcionki) – inaczej UNO pada przy starcie
                     LibreOfficeKit.putenv("SAL_LOG=+WARN+INFO"); // jak w ich apce: ostrzeżenia silnika w logcat (diagnoza)
                     LibreOfficeKit.init(getActivity());
                     ByteBuffer h = LibreOfficeKit.getLibreOfficeKitHandle();
@@ -64,6 +66,33 @@ public class LibreOfficePlugin extends Plugin {
                 call.reject("LOK: " + e);
             }
         });
+    }
+
+    // Tak jak w ich apce (LibreOfficeMainActivity.copyFromAssets): assets/unpack/** → dataDir, raz na wersję apki.
+    // Bez tego silnik nie znajduje program/udkapi.rdb i kończy się DeploymentException (awaria na Pixelu 20/11/2026).
+    private void unpackAssets() throws Exception {
+        File data = new File(getContext().getApplicationInfo().dataDir);
+        long ver = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).lastUpdateTime;
+        File mark = new File(data, "lok-unpacked-" + ver);
+        if (mark.exists()) return;
+        copyAsset(getContext().getAssets(), "unpack", data);
+        if (!new File(data, "program/udkapi.rdb").exists()) throw new IllegalStateException("brak program/udkapi.rdb po rozpakowaniu");
+        mark.createNewFile();
+    }
+
+    private static void copyAsset(AssetManager am, String path, File dst) throws Exception {
+        String[] kids = am.list(path);
+        if (kids == null || kids.length == 0) { // plik
+            File parent = dst.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs()) throw new IllegalStateException("mkdir " + parent);
+            try (InputStream i = am.open(path); FileOutputStream o = new FileOutputStream(dst)) {
+                byte[] b = new byte[65536]; int n;
+                while ((n = i.read(b)) > 0) o.write(b, 0, n);
+            }
+            return;
+        }
+        if (!dst.exists() && !dst.mkdirs()) throw new IllegalStateException("mkdir " + dst);
+        for (String k : kids) copyAsset(am, path + "/" + k, new File(dst, k));
     }
 
     private static byte[] read(File f) throws Exception {
