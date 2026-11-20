@@ -419,8 +419,8 @@
     {
       "id": "JM|historia|powertrace.js",
       "rule": "JM",
-      "detail": "powertrace.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 2× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 2,
+      "detail": "powertrace.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
+      "maks": 1,
       "punkt": "#5/#12",
       "usuwa": "N1–N4",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

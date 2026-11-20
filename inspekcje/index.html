@@ -3272,8 +3272,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
         q.status === "shared" ? '<span class="st">'+T('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
       return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + kb(q.docx.length + q.pdf.length) +
         (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-ok="' + esc(q.id) + '">'+T('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
-          ' · <button class="btn" type="button" data-again="' + esc(q.id) + '">'+T('Wyślij ponownie', 'Send again')+'</button>' : "") +
+        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+T('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
+          ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+T('Wyślij ponownie', 'Send again')+'</button>' : "") +
         (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+T('Usuń', 'Delete')+'</button>' : "") +
         "</small></div>" + st + "</div>";
     }).join("") : '<p class="hint">'+T('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
