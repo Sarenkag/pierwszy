@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Próba LibreOffice</title> <!-- i18n-ok: strona próby LibreOffice, PL/EN w jednym napisie -->
+<style>
+  body { margin: 0; padding: 16px; background: #0d1117; color: #e6edf3; font: 16px/1.4 system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { color: #9aa4ae; margin: 0 0 14px; font-size: 14px; }
+  button { display: block; width: 100%; margin: 0 0 10px; padding: 14px; border-radius: 12px; border: 1px solid #2f81f7; background: #161b22; color: #e6edf3; font-size: 16px; text-align: left; }
+  .w { font-size: 13px; color: #9aa4ae; margin-top: 4px; white-space: pre-wrap; }
+  .ok { color: #3fb950; } .err { color: #f85149; }
+  a { color: #58a6ff; }
+</style>
+</head>
+<body>
+<!-- PRÓBA LibreOfficeKit (Grzegorz 20/11/2026): PDF z tego samego Worda silnikiem LibreOffice w telefonie, bez internetu.
+     Osobna apka „OEST próba LO”; nic nie wysyła. Mierzy czas i oddaje PDF do obejrzenia (przycisk Udostępnij → np. Dysk). -->
+<a href="index.html" data-nav="index">‹ Wstecz / Back</a> <!-- i18n-ok: strona próby LibreOffice, PL/EN w jednym napisie -->
+<h1>Próba: PDF z Worda (LibreOffice) / Word to PDF trial</h1> <!-- i18n-ok: strona próby LibreOffice, PL/EN w jednym napisie -->
+<p>Kliknij raport. Apka zrobi PDF z tego samego Worda i pokaże czas. Potem otwórz PDF i porównaj z Wordem. / Tap a report to make a PDF from the same Word file.</p> <!-- i18n-ok: strona próby LibreOffice, PL/EN w jednym napisie -->
+<div id="list"></div>
+<script>
+  var S = [
+    ["plant.docx", "Weekly Plant Status (EFA-INS-021)"],
+    ["flushing-tb.docx", "Weekly Flushing TB – QHS, poziomo / landscape"],
+    ["temp-tb.docx", "Water Temperature Checks TB (EFA-INS-024)"],
+    ["basic-el.docx", "Emergency Lighting TA – nowy wzór basic / new basic"], // i18n-ok: próba LibreOffice, PL/EN w jednym napisie
+    ["reactive.docx", "Reactive – Door handle"]
+  ];
+  var LO = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LibreOffice, SH = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.ReportShare;
+  function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i += 32768) s += String.fromCharCode.apply(null, b.subarray(i, i + 32768)); return btoa(s); }
+  function pages(p) { var t = atob(p), m = t.match(/\/Type\s*\/Page(?![s\w])/g); return m ? m.length : 0; }
+  S.forEach(function (x) {
+    var b = document.createElement("button"), w = document.createElement("div");
+    b.textContent = x[1]; w.className = "w"; b.appendChild(w);
+    b.onclick = function () {
+      if (!LO) { w.className = "w err"; w.textContent = "Brak silnika w tej wersji apki / No engine in this build"; return; } // i18n-ok: próba LibreOffice, PL/EN w jednym napisie
+      w.className = "w"; w.textContent = "Robię PDF… / Converting…"; // i18n-ok: próba LibreOffice, PL/EN w jednym napisie
+      var t0 = Date.now();
+      fetch("proba-lo/" + x[0]).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+        return LO.toPdf({ docx: b64(buf) });
+      }).then(function (r) {
+        w.className = "w ok"; // i18n-ok: próba LibreOffice, PL/EN w jednym napisie
+        w.textContent = "PDF: " + pages(r.pdf) + " str. / pages, " + Math.round(r.bytes / 1024) + " KB\nKonwersja / conversion: " + r.ms + " ms" +
+          (r.initMs >= 0 ? ", start silnika / engine start: " + r.initMs + " ms" : "") + "\nRazem / total: " + (Date.now() - t0) + " ms";
+        if (SH) SH.share({ subject: x[0].replace(".docx", ".pdf"), body: "", files: [{ name: x[0].replace(".docx", ".pdf"), data: r.pdf }] });
+      }).catch(function (e) { w.className = "w err"; w.textContent = "Błąd / Error: " + (e && e.message || e); }); // i18n-ok: próba LibreOffice, PL/EN w jednym napisie
+    };
+    document.getElementById("list").appendChild(b);
+  });
+</script>
+</body>
+</html>

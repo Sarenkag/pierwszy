@@ -751,5 +751,8 @@ input[type=text], input[type=email], input[type=date], select {
 })();
 </script>
 <script>if (window.OESTSender) OESTSender.init(); // pasek wysyłki raportów na dole, wysyła kolejkę z inspekcji w tle</script>
+<!-- PRÓBA LibreOfficeKit (gałąź proba-lo-pixel, nie do main): wejście do strony próby, widoczne tylko gdy apka ma silnik -->
+<a id="probaLo" href="proba-lo.html" data-nav="proba-lo" hidden style="position:fixed;left:12px;top:12px;z-index:9999;padding:8px 12px;border-radius:10px;background:#2f81f7;color:#fff;font:600 13px system-ui;text-decoration:none">Próba PDF z Worda / Word→PDF trial</a> <!-- i18n-ok: próba LibreOffice, PL/EN w jednym napisie -->
+<script>if (window.Capacitor && Capacitor.isPluginAvailable && Capacitor.isPluginAvailable("LibreOffice")) document.getElementById("probaLo").hidden = false;</script>
 </body>
 </html>

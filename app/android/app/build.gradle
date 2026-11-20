@@ -81,3 +81,7 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// PRÓBA LibreOfficeKit (20/11/2026): plik lok.gradle tworzy tylko CI na gałęzi proba-lo-* (osobna apka „OEST próba LO”,
+// silnik z oficjalnego LibreOffice Viewer z F-Droid). Zwykła budowa go nie ma i nic się nie zmienia.
+if (file('lok.gradle').exists()) apply from: 'lok.gradle'
