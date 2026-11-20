@@ -209,3 +209,16 @@ test('okno Vantify w apce: udane zapytanie strony → wzór bez tekstów i numer
   assert.ok(!JSON.stringify(got).includes('Coat hooks') && !JSON.stringify(got).includes('LED'), 'do telefonu bez Summary/Description/opisów plików');
   assert.strictEqual(got[1][0], 'complete'); assert.strictEqual(got[1][2], '3066755');
 });
+test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaju, dni z terminu, wybrany idzie w zleceniu', () => {
+  const list = [
+    { name: 'P5', active: true, entityType: 'entity_reactive', completePeriod: { period: 432000 }, completePeriodDisplayValue: '5 days', _links: { self: { href: 'https://savillsuk-api.cafm.vantify.com/priorities/5' } } },
+    { name: 'P8', active: true, entityType: 'entity_reactive', completePeriod: { period: 15552000 }, completePeriodDisplayValue: '180 days', _links: { self: { href: '/priorities/137' } } },
+    { name: 'Quote', active: true, entityType: 'entity_quote', completePeriod: { period: 86400 }, _links: { self: { href: '/priorities/6' } } },
+    { name: 'Old', active: false, entityType: 'entity_reactive', _links: { self: { href: '/priorities/9' } } }];
+  const p = A.priorities(list, 'entity_reactive');
+  assert.deepStrictEqual(p.map(x => [x.name, x.days, x.label]), [['P5', 5, '5 days'], ['P8', 180, '180 days']]);
+  const rel = A.create(A.wzor('create', CREATE), { summary: 's', description: 'd', priority: 'https://savillsuk-api.cafm.vantify.com/priorities/137' });
+  assert.strictEqual(rel._links.priority.href, /^https?:/.test(CREATE._links.priority.href) ? 'https://savillsuk-api.cafm.vantify.com/priorities/137' : '/priorities/137', 'adres w tym samym zapisie co we wzorze');
+  const keep = A.create(A.wzor('create', CREATE), { summary: 's', description: 'd' });
+  assert.deepStrictEqual(keep._links.priority, CREATE._links.priority, 'bez wyboru zostaje priorytet ze wzoru');
+});

@@ -49,15 +49,21 @@
     /* kreator opisu (PROD-039): Summary i opis zlecenia z wyborów (już po angielsku), info na start dopisane pod spodem */
     const sum = ks ? K.summary(ks) : await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
     const desc = [ks ? K.request(ks) : '', body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');
+    /* priorytet do wyboru (Grzegorz 20/11/2026: dłuższy termin niż P5, żeby zlecenie nie było zaległe, zanim Josh zatwierdzi);
+       lista z Vantify tego samego rodzaju co priorytet ze wzoru, domyślnie ostatnio wybrany. Pierwszy raz (bez wzoru) – wybór w oknie Vantify */
+    const W = await wzory(P), pr = W.create ? await prioList(P, x) : null, last = x.lastPriority ? x.lastPriority() : '';
+    const pick = pr && pr.list.length ? (pr.list.find(p => p.href === last) || pr.list.find(p => p.href === pr.current) || pr.list[0]).href : '';
+    /* zdjęcia przed zebrane przed oknem i przed zapisem „zakładam”: brak zdjęcia = błąd, karta zostaje bez zmian (przegląd Codex #166) */
+    const files = x.photos ? await x.photos('before') : [];
     const node = document.createElement('div');
     /* zdjęcia przed idą razem z opisem (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis, Job Sheet po wykonaniu”) */
-    const nBefore = (d.beforeMediaIds || []).length;
-    node.innerHTML = '<label class="field"><span>Summary</span><input class="rx-vt-sum" maxlength="250" value="' + esc(sum) + '"></label><label class="field"><span>Description</span><textarea class="rx-vt-desc rx-info-t" rows="6">' + esc(desc) + '</textarea></label><p class="rx-sub rx-vt-photos">' + esc(L('Zdjęcia przed: ', 'Before photos: ') + nBefore) + '</p>';
+    const nBefore = files.length;
+    node.innerHTML = '<label class="field"><span>Summary</span><input class="rx-vt-sum" maxlength="250" value="' + esc(sum) + '"></label><label class="field"><span>Description</span><textarea class="rx-vt-desc rx-info-t" rows="6">' + esc(desc) + '</textarea></label>' + (pick ? '<label class="field"><span>' + esc(L('Priorytet', 'Priority')) + '</span><select class="rx-vt-prio">' + pr.list.map(p => '<option value="' + esc(p.href) + '"' + (p.href === pick ? ' selected' : '') + '>' + esc(p.name + (p.label ? ' – ' + p.label : p.days ? ' – ' + p.days + L(' dni', ' days') : '')) + '</option>').join('') + '</select></label>' : '') + '<p class="rx-sub rx-vt-photos">' + esc(nBefore ? L('Zdjęcia przed: ', 'Before photos: ') + nBefore : L('Brak zdjęć', 'No photos')) + '</p>';
     x.message('');
     if (!await ask({ title: 'Open Vantify', node, ok: L('Załóż zlecenie', 'Create the job'), cancel: L('Wróć', 'Back') })) return;
     const summary = node.querySelector('.rx-vt-sum').value.trim(), description = node.querySelector('.rx-vt-desc').value.trim();
+    const prioEl = node.querySelector('.rx-vt-prio'), priority = prioEl ? prioEl.value : '', prioName = prioEl ? prioEl.selectedOptions[0]?.textContent || '' : '';
     if (!summary || !description) return x.message(L('Summary i Description nie mogą być puste.', 'Summary and Description cannot be empty.'));
-    const W = await wzory(P);
     if (!W.create) {
       await ask({ title: 'Open Vantify', text: L('Pierwszy raz: załóż zlecenie w oknie Vantify, jak zwykle. Summary i Description są gotowe do skopiowania (przyciski u góry), zdjęcie przed dodaj przy Upload. Apka zapamięta ustawienia i numer zlecenia, a następne założy sama.', 'First time: create the job in the Vantify window as usual. Summary and Description are ready to copy (buttons at the top); add the before photo at Upload. The app remembers the settings and the job number and creates the next ones by itself.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/add//site', summary, description }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
@@ -67,14 +73,12 @@
       const id = Number(ev.id), st = await act(P, { op: 'status', ids: [id] }), j = st.status === 'ok' ? (st.jobs || [])[0] : null;
       return saved(x, { id, status: j && !j.error && j.status || 'approval_pending', summary: j && !j.error ? j.summary || '' : '' });
     }
-    /* zdjęcia przed zebrane przed zapisem „zakładam”: brak zdjęcia = błąd, karta zostaje bez zmian (przegląd Codex #166) */
-    const files = x.photos ? await x.photos('before') : [];
     /* zapis „zakładam” przed wysłaniem: przy braku odpowiedzi karta pamięta, że zlecenie mogło powstać (przegląd Codex #146) */
     x.draft.vantify = { pending: true, summary, at: new Date().toISOString() }; await x.persist(); x.render();
     x.message(L('Zakładam zlecenie w Vantify…', 'Creating the job in Vantify…'));
-    const r = await act(P, { op: 'create', summary, description, files });
+    const r = await act(P, { op: 'create', summary, description, files, ...(priority ? { priority } : {}) });
     if (r.status === 'ok' && r.id) {
-      await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary });
+      await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}) });
       /* zdjęcia sprawdzone przy zleceniu po założeniu – gdy czegoś nie widać, karta mówi wprost */
       if (files.length && (r.photosSeen || 0) < files.length) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + (r.photosSeen || 0) + L(' z ', ' of ') + files.length + L(' zdjęć przed – dodaj brakujące w Vantify.', ' before photos – add the missing ones in Vantify.'));
       return;
@@ -84,6 +88,16 @@
     /* pewne „nie założono”: brak wzoru, wygasłe logowanie, zajęte okno albo odmowa Vantify (HTTP 4xx) – wtedy karta wraca do „Open Vantify” */
     if (r.status === 'nowzor' || r.status === 'login' || r.code === 'VANTIFY_BUSY' || /^http4\d\d$/.test(r.code || '')) { delete x.draft.vantify; await x.persist(); x.render(); }
     x.message(why(r, L));
+  }
+  /* lista priorytetów z Vantify raz na sesję apki; błąd = bez wyboru (zostaje priorytet ze wzoru), z krótką informacją */
+  let prioCache = null;
+  async function prioList(P, x) {
+    if (prioCache) return prioCache;
+    x.message(x.L('Pobieram priorytety z Vantify…', 'Getting priorities from Vantify…'));
+    const r = await act(P, { op: 'priorities' });
+    x.message(r.status === 'ok' ? '' : x.L('Nie udało się pobrać priorytetów – zostaje ostatni używany w Vantify.', 'Could not get the priorities – the one last used in Vantify stays.'));
+    if (r.status !== 'ok' || !Array.isArray(r.list)) return null;
+    return (prioCache = { current: r.current, list: r.list });
   }
   async function saved(x, v) {
     x.draft.vantify = { ...v, at: new Date().toISOString() };
