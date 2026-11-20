@@ -18,6 +18,8 @@ for it in z.infolist():
         continue
     if it.filename.startswith("lib/arm64-v8a/") and it.filename.endswith(".so"):
         dst = os.path.join(jni, "arm64-v8a", os.path.basename(it.filename)); n_lib += 1; size["lib"] += it.file_size
+    elif it.filename.startswith("assets/dexopt/"):
+        continue  # profil startu ich apki (narzędzie budowania), nie silnik – nasza apka ma własny
     elif it.filename.startswith("assets/"):
         dst = os.path.join(ass, it.filename[len("assets/"):]); n_ass += 1; size["assets"] += it.file_size
         if it.compress_type == zipfile.ZIP_STORED:
