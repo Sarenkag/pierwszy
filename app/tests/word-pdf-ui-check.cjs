@@ -18,6 +18,18 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
 const { inspections } = require('./ppm-lista.cjs'), { wordPdfDiff } = require('./raport-tresc.cjs');
 const BASELINE = path.resolve(__dirname, '../../quality/baselines/word-pdf.json');
+// Numer zlecenia Vantify (Grzegorz 20/11/2026): na końcu nazwy KAŻDEGO pliku raportu, a w raporcie na wzorze Engineers Report
+// (basic, Plant, Reactive) w polu „ID:” – i w Wordzie, i w PDF. Wzory firmy QHS bez pola ID: numer tylko w nazwie.
+const nrZlecenia = id => '9' + String(id.replace(/\D/g, '')).padStart(6, '0');
+const nrBledy = [], nrRaporty = { wNazwie: 0, wPoluId: 0 };
+function sprawdzNr(id, nr, nazwy, d) {
+  for (const n of nazwy) { if (!n.replace(/\.(docx|pdf)$/, '').replace(/ - basic$/, '').endsWith(' ' + nr)) nrBledy.push(id + ': nazwa pliku bez numeru zlecenia ' + nr + ' na końcu: ' + n); else nrRaporty.wNazwie++; }
+  if (!/(^|\n)Engineer:/.test(d.tekstWord)) return; // wzór Engineers Report (wiersz Engineer:), nie kartka QHS
+  const zId = s => new RegExp('ID:\\s*' + nr).test(s.replace(/\s+/g, ' '));
+  if (!zId(d.tekstWord)) nrBledy.push(id + ': Word (Engineers Report) bez „ID: ' + nr + '”');
+  if (!zId(d.tekstPdf)) nrBledy.push(id + ': PDF (Engineers Report) bez „ID: ' + nr + '”');
+  if (zId(d.tekstWord) && zId(d.tekstPdf)) nrRaporty.wPoluId++;
+}
 const server = http.createServer((req, res) => {
   const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
   if (!p.startsWith(root + path.sep) && p !== root) { res.writeHead(403).end(); return; }
@@ -54,6 +66,9 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
       const zle = m => { bad.push(id + ': ' + m + (errs.length ? ' (błędy strony: ' + errs.join(' | ') + ')' : '')); };
       try {
         await pg.goto(url + '/inspekcje/index.html#ppm=' + id); await pg.waitForLoadState('networkidle');
+        // numer zlecenia Vantify (Grzegorz 20/11/2026): karta dostaje zlecenie na dziś z ustalonym numerem – ma trafić do pola ID i do nazwy plików
+        const nr = nrZlecenia(id);
+        await pg.evaluate(([id, nr]) => { const n = new Date(), p = x => String(x).padStart(2, '0'), V = window.OEST_VANTIFY; V.jobs[id] = [{ no: nr, due: n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate()), f: '1W' }]; }, [id, nr]);
         await pg.locator('#toQueue').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
         if (!(await pg.locator('#toQueue').isVisible().catch(() => false))) return zle('brak formularza z przyciskiem Wyślij');
         const vis = s => pg.locator(s).first().isVisible().catch(() => false), idle = () => pg.waitForLoadState('networkidle');
@@ -88,6 +103,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         if (process.env.OEST_WORD_PDF_OUT) { fs.mkdirSync(process.env.OEST_WORD_PDF_OUT, { recursive: true }); for (const f of files) fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, id + ' ' + f.name), buf(f)); }
         // każde dodane zdjęcie (po wymiarach) musi być i w Wordzie, i w PDF – brak w obu nie jest „zgodnością”
         for (const z of zdj) { const wym = FOTO[z].join('x'); if (!d.zdjeciaWord.includes(wym) || !d.zdjeciaPdf.includes(wym)) zle('zdjęcie „' + z + '” (' + wym + ') nie trafiło do ' + [!d.zdjeciaWord.includes(wym) && 'Worda', !d.zdjeciaPdf.includes(wym) && 'PDF'].filter(Boolean).join(' ani do ')); }
+        sprawdzNr(id, nr, files.map(f => f.name), d);
         const w = { pliki: files.map(f => f.name), slowa: d.slowa, zdjecia: d.zdjecia, dodaneZdjecia: zdj, roznica: podpis(d) };
         if (zKomentarzem) { const k = s => s.replace(/\s+/g, ' ').includes(KOMENTARZ); w.komentarz = { word: k(d.tekstWord), pdf: k(d.tekstPdf) }; }
         if (!d.slowa.word && !d.slowa.pdf && !d.zdjecia.word) zle('raport bez treści i bez zdjęć – nie ma czego porównać');
@@ -106,7 +122,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         await pg.goto(url + '/index.html#home'); await pg.waitForFunction(() => window.OESTReactiveReport && window.OESTReactiveCore);
         const out = await pg.evaluate(async ([FOTO, KOMENTARZ]) => {
           const img = ([w, h], kolor) => new Promise(r => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = kolor; x.fillRect(0, 0, w, h); c.toBlob(r, 'image/jpeg', 0.8); });
-          const draft = { title: 'Door handle detached', building: 'Tower B', level: '5', room: 'Kitchen', note: KOMENTARZ, status: 'open', requestedBy: 'General requests', beforeMediaIds: ['a'], afterMediaIds: ['b'] };
+          const draft = { title: 'Door handle detached', building: 'Tower B', level: '5', room: 'Kitchen', note: KOMENTARZ, status: 'open', requestedBy: 'General requests', beforeMediaIds: ['a'], afterMediaIds: ['b'], vantify: { id: 3123456, status: 'approval_pending' } };
           draft.reportText = window.OESTReactiveCore.details(draft);
           const fields = window.OESTReactiveCore.report(draft, { first: 'Greg', last: 'Sarna', formSignature: 'G. Sarna' });
           const r = await window.OESTReactiveReport.build(fields, [{ blob: await img(FOTO.przed, '#888'), phase: 'before' }, { blob: await img(FOTO.po, '#444'), phase: 'after' }]);
@@ -116,6 +132,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         const d = wordPdfDiff([Buffer.from(out.docx, 'base64')], [Buffer.from(out.pdf, 'base64')]);
         if (process.env.OEST_WORD_PDF_OUT) { fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, 'REACTIVE ' + out.name + '.docx'), Buffer.from(out.docx, 'base64')); fs.writeFileSync(path.join(process.env.OEST_WORD_PDF_OUT, 'REACTIVE ' + out.name + '.pdf'), Buffer.from(out.pdf, 'base64')); }
         const k = s => s.replace(/\s+/g, ' ').includes(KOMENTARZ);
+        sprawdzNr('REACTIVE', '3123456', [out.name + '.docx', out.name + '.pdf'], d);
         for (const z of ['przed', 'po']) { const wym = FOTO[z].join('x'); if (!d.zdjeciaWord.includes(wym) || !d.zdjeciaPdf.includes(wym)) bad.push('REACTIVE: zdjęcie „' + z + '” (' + wym + ') nie trafiło do obu plików'); }
         wyniki.REACTIVE = { pliki: [out.name + '.docx', out.name + '.pdf'], slowa: d.slowa, zdjecia: d.zdjecia, dodaneZdjecia: ['przed', 'po'], roznica: podpis(d), komentarz: { word: k(d.tekstWord), pdf: k(d.tekstPdf) } };
         if (errs.length) bad.push('REACTIVE: błędy strony: ' + errs.join(' | '));
@@ -139,6 +156,9 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
     znane.push(key);
   }
   for (const k of known.keys()) { const id = k.split('|')[1]; if (!ids.includes(id) && id !== 'REACTIVE') bad.push(k + ': wpis listy znanych różnic dla raportu, którego nie ma na liście PPM – usuń go'); }
+  bad.push(...nrBledy);
+  if (!nrRaporty.wPoluId) bad.push('żaden raport nie ma numeru zlecenia w polu ID – sprawdzenie numeru niczego nie sprawdziło');
+  console.log('Numer zlecenia Vantify: w nazwie ' + nrRaporty.wNazwie + ' plików, w polu ID (Word i PDF) ' + nrRaporty.wPoluId + ' raportów, błędów ' + nrBledy.length);
   if (process.env.OEST_WORD_PDF_JSON) fs.writeFileSync(process.env.OEST_WORD_PDF_JSON, JSON.stringify({ wyniki, bledy: bad }, null, 1));
   const zgodne = Object.keys(wyniki).filter(id => pusta(wyniki[id].roznica) && !(wyniki[id].komentarz && !(wyniki[id].komentarz.word && wyniki[id].komentarz.pdf)));
   console.log('Word = PDF: ' + Object.keys(wyniki).length + ' raportów sprawdzonych, identycznych ' + zgodne.length + ', ze znaną różnicą (quality/baselines/word-pdf.json) ' + znane.length + ': ' + (znane.join(', ') || '—'));
@@ -146,5 +166,5 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
   if (bad.length) { console.log('Znane różnice (' + znane.length + '): ' + znane.join(', ')); console.log('WORD PDF UI FAIL (' + bad.length + '):\n- ' + bad.join('\n- ')); process.exitCode = 1; }
   else for (const k of znane) { const e = known.get(k); console.log('  ZNANA RÓŻNICA ' + k + ': ' + (e.roznica ? krotko(e.roznica) : e.detail)); }
   if (bad.length) return;
-  console.log('WORD PDF UI PASS: ' + ids.length + ' inspekcji z listy PPM + Reactive, każda para Word/PDF porównana słowo po słowie, kratki ☑/☒, nagłówek/stopka, zdjęcia i komentarz.');
+  console.log('WORD PDF UI PASS: ' + ids.length + ' inspekcji z listy PPM + Reactive, każda para Word/PDF porównana słowo po słowie, kratki ☑/☒, nagłówek/stopka, zdjęcia, komentarz i numer zlecenia Vantify (pole ID i nazwa pliku).');
 })().catch(e => { console.error(e); process.exitCode = 1; });
