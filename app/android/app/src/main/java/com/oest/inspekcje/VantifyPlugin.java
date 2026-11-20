@@ -47,7 +47,7 @@ public class VantifyPlugin extends Plugin {
         String b64 = call.getString("fileB64", ""), name = call.getString("fileName", "");
         File sheets = new File(VantifyActivity.dirOf(getContext()), "jobsheet");
         if (sheets.exists()) for (File f : sheets.listFiles()) f.delete();
-        if (!b64.isEmpty() && name.matches("[^/\\\\]{1,180}\\.pdf")) {
+        if (!b64.isEmpty() && name.matches("[^/\\\\]{1,180}\\.(pdf|jpg|jpeg|png)")) {
             try { sheets.mkdirs(); File f = new File(sheets, name); try (FileOutputStream o = new FileOutputStream(f)) { o.write(android.util.Base64.decode(b64, android.util.Base64.DEFAULT)); } i.putExtra("file", f.getAbsolutePath()); }
             catch (Exception e) { call.reject("VANTIFY_FILE"); return; }
         }
@@ -67,10 +67,10 @@ public class VantifyPlugin extends Plugin {
             Sync.current = new Sync(a, call, "action", "window.__oestAction=" + payload + ";window.__oestWzory=" + wz + ";"); Sync.current.limit = Sync.actionLimit(act); Sync.current.start();
         });
     }
-    // które wzory już są w telefonie (bez treści): {create, commence, complete}
+    // które wzory już są w telefonie (bez treści): {create, commence, complete, attach}
     @PluginMethod public void wzory(PluginCall call) {
         JSONObject w = Wzory.load(getContext()); JSObject o = new JSObject();
-        for (String k : new String[] { "create", "commence", "complete" }) o.put(k, w.has(k));
+        for (String k : new String[] { "create", "commence", "complete", "attach" }) o.put(k, w.has(k));
         call.resolve(o);
     }
 

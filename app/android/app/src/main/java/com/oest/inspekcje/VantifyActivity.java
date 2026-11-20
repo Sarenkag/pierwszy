@@ -104,7 +104,7 @@ public class VantifyActivity extends Activity {
         String sum = getIntent().getStringExtra("summary"), desc = getIntent().getStringExtra("description");
         if (sum != null && !sum.isEmpty()) { bar.addView(copy(pl ? "Kopiuj Summary" : "Copy Summary", "Summary", sum), 0); info.setText(pl ? "Wklej Summary i Description po angielsku" : "Paste the English Summary and Description"); }
         if (desc != null && !desc.isEmpty()) bar.addView(copy(pl ? "Kopiuj Description" : "Copy Description", "Description", desc), sum != null && !sum.isEmpty() ? 1 : 0);
-        if (sheet != null) info.setText(pl ? "Przy Upload apka poda Job Sheet: " + sheet.getName() : "At Upload the app offers the Job Sheet: " + sheet.getName());
+        if (sheet != null) info.setText(pl ? "Przy Upload apka poda plik: " + sheet.getName() : "At Upload the app offers the file: " + sheet.getName());
         web.addJavascriptInterface(new Bridge(), "OESTVantifyBridge");
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
@@ -153,7 +153,7 @@ public class VantifyActivity extends Activity {
             }).start();
         });
         String hash = getIntent().getStringExtra("hash");
-        web.loadUrl(START + (hash != null && hash.matches("#/user/jobs(/[0-9]+/status|/add//site)?") ? hash : ""));
+        web.loadUrl(START + (hash != null && hash.matches("#/user/jobs(/[0-9]+/status|/[0-9]+/files/add|/add//site)?") ? hash : ""));
     }
 
     private Button copy(String label, String what, String text) {
@@ -171,7 +171,7 @@ public class VantifyActivity extends Activity {
         boolean many = p.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE;
         String[] types = mimes(p.getAcceptTypes());
         android.app.AlertDialog d = new android.app.AlertDialog.Builder(this)
-            .setTitle(pl ? "Job Sheet z apki" : "Job Sheet from the app").setMessage(sheet.getName())
+            .setTitle(sheet.getName().toLowerCase().endsWith(".pdf") ? (pl ? "Job Sheet z apki" : "Job Sheet from the app") : (pl ? "Zdjęcie z apki" : "Photo from the app")).setMessage(sheet.getName())
             .setPositiveButton(pl ? "Dołącz" : "Attach", (x, w) -> {
                 Uri u = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", sheet);
                 add("upload-picked", "sheet", ""); if (pick != null) { pick.onReceiveValue(new Uri[] { u }); pick = null; }
@@ -237,7 +237,7 @@ public class VantifyActivity extends Activity {
         }
         // udane założenie / Commence / Complete w tym oknie: wzór zapytania (bez tekstów) do telefonu, numer zlecenia do karty
         @JavascriptInterface public void wzor(String kind, String tpl, String id) {
-            if (!vantify(host) || kind == null || !kind.matches("create|commence|complete") || tpl == null || tpl.length() > 200000) return;
+            if (!vantify(host) || kind == null || !kind.matches("create|commence|complete|attach") || tpl == null || tpl.length() > 200000) return;
             if (!tpl.isEmpty()) VantifyPlugin.Wzory.save(VantifyActivity.this, kind, tpl);
             synchronized (VantifyActivity.this) { try { events.put(new JSONObject().put("op", kind).put("id", id == null ? "" : id).put("t", System.currentTimeMillis())); } catch (Exception e) {} }
             runOnUiThread(() -> info.setText(pl ? "Zapisane w apce: " + kind + (id == null || id.isEmpty() ? "" : " #" + id) : "Saved in the app: " + kind + (id == null || id.isEmpty() ? "" : " #" + id)));
