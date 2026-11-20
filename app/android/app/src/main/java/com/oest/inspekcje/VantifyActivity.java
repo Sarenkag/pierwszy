@@ -104,6 +104,8 @@ public class VantifyActivity extends Activity {
         String sum = getIntent().getStringExtra("summary"), desc = getIntent().getStringExtra("description");
         if (sum != null && !sum.isEmpty()) { bar.addView(copy(pl ? "Kopiuj Summary" : "Copy Summary", "Summary", sum), 0); info.setText(pl ? "Wklej Summary i Description po angielsku" : "Paste the English Summary and Description"); }
         if (desc != null && !desc.isEmpty()) bar.addView(copy(pl ? "Kopiuj Description" : "Copy Description", "Description", desc), sum != null && !sum.isEmpty() ? 1 : 0);
+        String txt = getIntent().getStringExtra("text");
+        if (txt != null && !txt.isEmpty()) { bar.addView(copy(pl ? "Kopiuj tekst" : "Copy text", "Update", txt), 0); info.setText(pl ? "Dodaj wiadomość do zlecenia i wklej tekst" : "Add a message to the job and paste the text"); }
         if (sheet != null) info.setText(pl ? "Przy Upload apka poda plik: " + sheet.getName() : "At Upload the app offers the file: " + sheet.getName());
         web.addJavascriptInterface(new Bridge(), "OESTVantifyBridge");
         web.setWebViewClient(new WebViewClient() {
@@ -237,7 +239,7 @@ public class VantifyActivity extends Activity {
         }
         // udane założenie / Commence / Complete w tym oknie: wzór zapytania (bez tekstów) do telefonu, numer zlecenia do karty
         @JavascriptInterface public void wzor(String kind, String tpl, String id) {
-            if (!vantify(host) || kind == null || !kind.matches("create|commence|complete|attach") || tpl == null || tpl.length() > 200000) return;
+            if (!vantify(host) || kind == null || !kind.matches("create|commence|complete|attach|update") || tpl == null || tpl.length() > 200000) return;
             if (!tpl.isEmpty()) VantifyPlugin.Wzory.save(VantifyActivity.this, kind, tpl);
             synchronized (VantifyActivity.this) { try { events.put(new JSONObject().put("op", kind).put("id", id == null ? "" : id).put("t", System.currentTimeMillis())); } catch (Exception e) {} }
             runOnUiThread(() -> info.setText(pl ? "Zapisane w apce: " + kind + (id == null || id.isEmpty() ? "" : " #" + id) : "Saved in the app: " + kind + (id == null || id.isEmpty() ? "" : " #" + id)));

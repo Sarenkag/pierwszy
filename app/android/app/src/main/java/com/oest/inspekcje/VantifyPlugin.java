@@ -43,6 +43,7 @@ public class VantifyPlugin extends Plugin {
         i.putExtra("hash", call.getString("hash", ""));
         i.putExtra("summary", call.getString("summary", ""));
         i.putExtra("description", call.getString("description", ""));
+        i.putExtra("text", call.getString("text", "")); // „Send update” (Grzegorz 20/11/2026): tekst wiadomości do skopiowania
         new File(VantifyActivity.dirOf(getContext()), "events.json").delete();
         String b64 = call.getString("fileB64", ""), name = call.getString("fileName", "");
         File sheets = new File(VantifyActivity.dirOf(getContext()), "jobsheet");
@@ -67,10 +68,10 @@ public class VantifyPlugin extends Plugin {
             Sync.current = new Sync(a, call, "action", "window.__oestAction=" + payload + ";window.__oestWzory=" + wz + ";"); Sync.current.limit = Sync.actionLimit(act); Sync.current.start();
         });
     }
-    // które wzory już są w telefonie (bez treści): {create, commence, complete, attach}
+    // które wzory już są w telefonie (bez treści): {create, commence, complete, attach, update}
     @PluginMethod public void wzory(PluginCall call) {
         JSONObject w = Wzory.load(getContext()); JSObject o = new JSObject();
-        for (String k : new String[] { "create", "commence", "complete", "attach" }) o.put(k, w.has(k));
+        for (String k : new String[] { "create", "commence", "complete", "attach", "update" }) o.put(k, w.has(k));
         call.resolve(o);
     }
 
