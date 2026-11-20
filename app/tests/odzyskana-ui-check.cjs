@@ -56,6 +56,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(q.snap && q.snap.needs && q.snap.needs.q === true, 'zapis z ustawieniami pytań inspekcji (' + JSON.stringify(q.snap && q.snap.needs) + ')');
     check(q.card && q.card.name && q.card.loc === 'TB/L13' && q.card.freq, 'opis klocka: nazwa, lokalizacja, częstotliwość (' + JSON.stringify(q.card) + ')');
     check(q.ppm === ID && !q.key, 'zwykła inspekcja: klocek PPM i raport po nazwie jak dotąd');
+    check('job' in q, 'Wyślij zapisuje numer zlecenia Vantify w kolejce (job=' + JSON.stringify(q.job) + ')');
     check(q.at === q.created, 'Wyślij zapisuje czas przygotowania wersji (spóźniony mail nie nadpisze nowszego Update)');
     const name = q.name;
     // archiwum jak po wysłaniu maila (moduł wysyłki: archive) – ten sam zapis i opis
@@ -63,7 +64,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     await pg.evaluate(async ({ q }) => {
       const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>' + q.subject + '</w:t></w:r></w:p></w:body></w:document>');
       await window.OESTRaporty.save({ key: q.name, at: Date.parse('2026-11-06T10:00:00'), name: q.name, docx: z.generate({ type: 'uint8array' }), pdf: new Uint8Array(20), folder: q.rpt,
-        meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: Date.parse('2026-11-06T10:00:00'), card: q.card }, snap: q.snap });
+        meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: Date.parse('2026-11-06T10:00:00'), card: q.card, job: '7712345' }, snap: q.snap });
     }, { q });
     const lsBefore = await ppmLs();
 
@@ -106,6 +107,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(r1 && !r1.snap.states.includes('fail'), 'zapis inspekcji w raporcie = poprawiona wersja');
     check(r1 && r1.meta.sentAt === Date.parse('2026-11-06T10:00:00'), 'data wysłania bez zmian');
     const docTxt = await pg.evaluate(async id => new PizZip((await window.OESTRaporty.get(id)).docx).file('word/document.xml').asText(), r1.id); // Word czytany w stronie (bez przenoszenia bajtów do testu)
+    check(docTxt.includes('7712345'), 'Word odzyskanej: ID = numer zlecenia z archiwum (7712345), nie z bieżącej karty');
     check(docTxt.includes('(Updated ' + TODAY + ')'), 'Word: data z dopiskiem „(Updated ' + TODAY + ')”');
     check(!/Updated/.test(JSON.stringify(draft)), 'kontrola: zwykły szkic nie miał dopisku');
     const all1 = await kv();

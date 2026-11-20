@@ -2505,6 +2505,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // numer zlecenia Vantify dla tej inspekcji (Grzegorz 20/11/2026: „ID” we wzorze i w nazwie pliku). Termin zlecenia = ten sam,
   // który dostaje etap przy wysyłce (PPM.due), a dla już zakończonej – zapisany okres; karta bez zlecenia Vantify → puste pole.
   function jobNo() {
+    // odzyskana inspekcja: numer zlecenia z jej raportu w archiwum, nie z bieżącego terminu karty (przegląd Codex #169)
+    if (REC) return (REC.meta && REC.meta.job) || "";
     var t = cur.ppm; if (!t || !PPM || !PPM.jobFor) return "";
     var st = PPM.stage && PPM.stage(t), dd = PPM.due(t);
     var day = st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent") ? st.period : dd ? isoDay(dd) : "";
@@ -3103,6 +3105,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
     };
+    it.job = d["job number"] || ""; // numer zlecenia Vantify zapisany przy raporcie (odzyskanie zachowuje numer, przegląd Codex #169)
     it.at = it.created; // czas przygotowania tej wersji: spóźniony mail z kolejki nie nadpisze nowszego Update (uwaga Codex #101)
     if (from.mode === "one") it.snap = archiveSnap(); // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
     var tp = from.ppm; if (tp && PPM) it.card = { name: PPM.short ? PPM.short(tp).name : tp.name, loc: PPM.loc ? PPM.loc(tp).code : "", freq: (tp.freq || [])[0] || "" }; // opis klocka odzyskanej (moduł raportów nie czyta listy PPM)

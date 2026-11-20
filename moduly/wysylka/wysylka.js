@@ -113,7 +113,7 @@
     var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
     if (!R || !docx || it.noArchive) return Promise.resolve(true); // noArchive: ponowne wysłanie z przeglądarki raportów (raport już jest w archiwum). Bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
     var rep = { key: it.key || it.name, at: it.at || it.sentAt || it.created || Date.now(), /* it.at: chwila „Update” (nowsza wersja niż wysłana) */ name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
-      meta: { ppm: it.ppm || it.ppmRef || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now(), card: it.card || null }, // card: opis klocka odzyskanej (nazwa, lokalizacja, częstotliwość) od apki; ppmRef: odzyskana inspekcja (bez zmiany klocka PPM)
+      meta: { ppm: it.ppm || it.ppmRef || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now(), card: it.card || null, job: it.job || "" }, // card: opis klocka odzyskanej (nazwa, lokalizacja, częstotliwość) od apki; ppmRef: odzyskana inspekcja (bez zmiany klocka PPM)
       snap: it.snap || null }; // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
     var p = archived.then(function () { return R.save(rep); }).then(function () { return true; }, function () { return false; });
     archived = p;
