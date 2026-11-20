@@ -21,6 +21,6 @@ test('okno Vantify: nauka tylko z vantify.com i trzech rodzajów, dozwolone ekra
   assert.match(A, /hash\.matches\("#\/user\/jobs\(\/\[0-9\]\+\/status\|\/add\/\/site\)\?"\)/);
   assert.match(A, /FileProvider\.getUriForFile\(this, getPackageName\(\) \+ "\.fileprovider", sheet\)/);
   assert.match(A, /setOnCancelListener\(x -> \{ if \(pick != null\) \{ pick\.onReceiveValue\(null\); pick = null; \} \}\)/, 'anulowanie zawsze odpowiada stronie');
-  assert.match(A, /evaluateJavascript\(rejestr \+ "\\n" \+ akcje, null\)/);
+  assert.match(A, /VantifyWeb\.inject\(web, host, rejestr \+ "\\n" \+ akcje\)/); // jedno miejsce wstrzykiwania, tylko *.vantify.com (S1, #42)
   assert.match(P, /name\.matches\("\[\^\/\\\\\\\\\]\{1,180\}\\\\\.pdf"\)/, 'nazwa Job Sheet bez ścieżek, tylko .pdf');
 });

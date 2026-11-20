@@ -109,10 +109,23 @@ public class VantifyPlugin extends Plugin {
         try { VantifyLogin.save(getContext(), u.trim(), p); call.resolve(info()); } catch (Exception e) { call.reject("VANTIFY_LOGIN_SAVE"); }
     }
     @PluginMethod public void loginInfo(PluginCall call) { call.resolve(info()); }
-    // „Pokaż” przy zagwiazdkowanym haśle (Grzegorz 10/11/2026) – tylko na jego dotknięcie
+    // „Pokaż” przy zagwiazdkowanym haśle (Grzegorz 10/11/2026) – tylko na jego dotknięcie.
+    // Hasło pokazuje okienko Androida; ekran apki (JS) nigdy go nie dostaje (ustalenie #39, Grzegorz 19/11/2026).
+    // Wynik: tylko {ok} – true, gdy okienko pokazało zapisane hasło.
     @PluginMethod public void showLogin(PluginCall call) {
+        Activity a = getActivity();
         String[] l = VantifyLogin.load(getContext());
-        JSObject o = new JSObject(); o.put("user", l != null ? l[0] : ""); o.put("pass", l != null ? l[1] : ""); call.resolve(o);
+        JSObject o = new JSObject(); o.put("ok", l != null && a != null);
+        if (l == null || a == null) { call.resolve(o); return; }
+        boolean pl = !"en".equals(call.getString("lang", "pl"));
+        a.runOnUiThread(() -> {
+            android.app.AlertDialog d = new android.app.AlertDialog.Builder(a)
+                .setTitle(pl ? "Zapisane hasło Vantify" : "Saved Vantify password")
+                .setMessage(l[1]).setPositiveButton("OK", null).create();
+            d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE); // bez zrzutów ekranu i podglądu w ostatnich apkach
+            d.show();
+            call.resolve(o);
+        });
     }
     @PluginMethod public void clearLogin(PluginCall call) { VantifyLogin.clear(getContext()); call.resolve(info()); }
     private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
@@ -163,11 +176,26 @@ public class VantifyPlugin extends Plugin {
                 if ("__parts__".equals(json)) { String all = partsBad ? "{\"status\":\"error\",\"code\":\"too-big\"}" : parts.toString(); parts.setLength(0); h.post(() -> finish(all)); return; }
                 if (json.length() < 4000000) h.post(() -> finish(json));
             }
+            // czy jest zapisany login, którym okno może się zalogować (bez hasła)
+            @JavascriptInterface public boolean hasLogin() { return VantifyLogin.load(a) != null && !VantifyLogin.bad(a); }
+            // formularz logowania gotowy: Android sam wpisuje login i hasło (ustalenia #39 i #41, 19/11/2026)
+            @JavascriptInterface public void fillLogin() { h.post(Sync.this::fill); }
         }
 
-        // login i hasło tylko dla strony Vantify, tylko w tym ukrytym oknie
+        // Login i hasło nie są zmienną strony (dawniej window.__oestLogin). Wpisanie RAZ na okno, tylko gdy strona,
+        // która jest teraz otwarta (web.getUrl, sprawdzane w wątku okna), to Vantify. Hasło żyje tylko w tym jednym wywołaniu.
         private long loginVer = -1; // wersja loginu i hasła podanych oknu (VantifyLogin.ver)
-        private void inject() { if (web != null && VantifyActivity.vantify(host)) { if (loginVer < 0) loginVer = VantifyLogin.ver(a); web.evaluateJavascript(VantifyLogin.script(a) + script, null); } }
+        private boolean filled;
+        private void fill() {
+            if (filled || finished || web == null) return;
+            String u = web.getUrl();
+            if (u == null || !VantifyActivity.vantify(Uri.parse(u).getHost()) || VantifyLogin.bad(a)) return;
+            String[] l = VantifyLogin.load(a);
+            if (l == null) return;
+            filled = true; loginVer = VantifyLogin.ver(a);
+            web.evaluateJavascript(VantifyLogin.fill(l), null);
+        }
+        private void inject() { VantifyWeb.inject(web, host, VantifyLogin.script(a) + script); }
 
         private void finish(String json) {
             if (finished) return;

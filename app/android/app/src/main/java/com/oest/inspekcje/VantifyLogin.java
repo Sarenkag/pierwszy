@@ -67,11 +67,15 @@ final class VantifyLogin {
         return o;
     }
 
-    // skrypt dla ukrytego okna Vantify: login i hasło jako bezpieczne literały JS (JSONObject.quote)
+    // skrypt dla ukrytego okna Vantify: tylko znacznik „odrzucone”, NIGDY login ani hasło (ustalenie #41, 19/11/2026)
     static String script(Context c) {
         if (bad(c)) return "window.__oestLoginBad=1;"; // bez hasła; okno zgłasza „bad”, apka prosi o aktualne hasło
-        String[] l = load(c);
-        if (l == null) return "";
-        return "window.__oestLogin={u:" + JSONObject.quote(l[0]) + ",p:" + JSONObject.quote(l[1]) + "};";
+        return "";
+    }
+
+    // jednorazowe wpisanie w formularz: login i hasło jako argumenty jednego wywołania (bezpieczne literały JS, JSONObject.quote),
+    // bez zapisu w zmiennej strony; funkcję __oestFill wystawia vantify-sync.js
+    static String fill(String[] l) {
+        return "(function(f){if(typeof f==='function')f(" + JSONObject.quote(l[0]) + "," + JSONObject.quote(l[1]) + ")})(window.__oestFill);";
     }
 }
