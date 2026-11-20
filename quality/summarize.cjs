@@ -27,7 +27,10 @@ const part = (data, kind) => {
 };
 rows.push({ gate: 'G0', id: 'PL/EN (scripts/check-lang.js)', status: lang ? lang.status : 'NOT RUN', detail: lang ? lang.detail : 'Brak wyniku kontroli języka.' });
 part(node, 'node');
-rows.push({ gate: 'G1', id: 'Zależności modułów i kolejność skryptów', status: g1 ? g1.status : 'NOT RUN', detail: g1 ? `naruszeń ${g1.total} (baseline ${g1.baseline}), nowe ${g1.fresh.length}, nieaktualne wpisy ${g1.stale.length}` + (g1.fresh.length ? ': ' + g1.fresh.map(v => v.detail).join('; ') : '') + (g1.stale.length ? ' | do usunięcia z baseline: ' + g1.stale.join('; ') : '') : 'Brak wyniku G1.' });
+rows.push({ gate: 'G1', id: 'Zależności modułów i kolejność skryptów', status: !g1 ? 'NOT RUN' : g1.zasady ? (g1.fresh.length || g1.stale.length ? 'FAIL' : 'PASS') : g1.status, detail: g1 ? `naruszeń ${g1.total} (baseline ${g1.baseline}), nowe ${g1.fresh.length}, nieaktualne wpisy ${g1.stale.length}` + (g1.fresh.length ? ': ' + g1.fresh.map(v => v.detail).join('; ') : '') + (g1.stale.length ? ' | do usunięcia z baseline: ' + g1.stale.join('; ') : '') : 'Brak wyniku G1.' });
+// zasady R1–R26 (quality/zasady.cjs w check-architecture): osobny wiersz z pełnymi liczbami i nowymi naruszeniami
+const z = g1 && g1.zasady;
+if (g1) rows.push({ gate: 'G1', id: 'Zasady R1–R26 (EKRANY, JM, KOPIA, ZNACZNIK)', status: !z ? 'NOT RUN' : (z.fresh.length || z.stale.length ? 'FAIL' : 'PASS'), detail: !z ? 'Brak wyniku kontroli zasad.' : `naruszeń ${z.total} ${JSON.stringify(z.byRule)}, nowe ${z.fresh.length}, nieaktualne wpisy ${z.stale.length}` + (z.fresh.length ? ': ' + z.fresh.map(v => v.detail + ' [' + v.id + ']').join('; ') : '') + (z.stale.length ? ' | do poprawy na liście zastanych: ' + z.stale.join('; ') : '') });
 rows.push({ gate: 'G1', id: 'Ochrona kryteriów (lista testów, baseline)', status: ratchet ? ratchet.status : 'NOT RUN', detail: ratchet ? [...ratchet.errors, ...ratchet.warnings.map(w => 'Ostrzeżenie: ' + w), ...ratchet.notes].join(' | ') : 'Brak wyniku kontroli.' });
 part(browser, 'browser');
 

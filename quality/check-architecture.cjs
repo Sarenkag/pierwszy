@@ -9,6 +9,8 @@
 //   DUPLICATE_DEFINITION – to samo globalne API tworzone w więcej niż jednym pliku
 //   MODULE_DEPENDS_ON_APP – plik z moduly/ zależy od API zdefiniowanego w kodzie samej apki
 //   CYCLE                – cykl zależności między plikami jednej strony
+// Do tego zasady architektury z docs/ZASADY.md (quality/zasady.cjs, jeden sprawdzacz – R25): EKRANY, JM, KOPIA, ZNACZNIK.
+//   Rejestr właścicieli: quality/jedno-miejsce.json; zastane naruszenia zasad: quality/baselines/zasady.json (tylko maleje).
 // Zastane naruszenia są w quality/baselines/architecture.json. Nowe naruszenie = FAIL.
 // Wpis w baseline, który już nie występuje = FAIL (baseline może tylko maleć – usuń wpis w tym samym PR).
 // Użycie: node quality/check-architecture.cjs [--www app/www] [--baseline quality/baselines/architecture.json] [--json out.json] [--write-baseline]
@@ -19,6 +21,9 @@ const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const WWW = path.resolve(ROOT, arg('--www', 'app/www'));
 const BASELINE = path.resolve(ROOT, arg('--baseline', 'quality/baselines/architecture.json'));
 const JSON_OUT = arg('--json', '');
+const BASELINE_Z = path.resolve(ROOT, arg('--baseline-zasady', 'quality/baselines/zasady.json'));
+const REJESTR = path.resolve(ROOT, arg('--rejestr', 'quality/jedno-miejsce.json'));
+const zasady = require('./zasady.cjs');
 const PAGES = ['index.html', 'inspekcje/index.html'];
 // biblioteki raportu: nazwa pliku → tworzone API i wzorzec użycia
 const LIBS = {
@@ -142,6 +147,14 @@ function cycles(edges) {
 function main() {
   if (!fs.existsSync(path.join(WWW, 'inspekcje', 'index.html'))) { console.error('G1 NOT RUN: brak ' + rel(path.join(WWW, 'inspekcje')) + ' – najpierw `npm run copy-web` w app/.'); process.exit(2); }
   const { violations, pages, notLoaded } = analyse();
+  let zv;
+  try { zv = zasady.analyse(WWW, { rejestr: JSON.parse(fs.readFileSync(REJESTR, 'utf8')) }); }
+  catch (e) { console.error('::error title=G1 zasady::Nie da się odczytać rejestru ' + path.relative(ROOT, REJESTR) + ': ' + e.message); process.exitCode = 1; console.log('G1 FAIL'); return; }
+  if (process.argv.includes('--write-baseline-zasady')) {
+    const entries = zv.map(v => ({ id: v.id, rule: v.rule, detail: v.detail, ...(v.liczba ? { maks: v.liczba } : {}), punkt: v.punkt || '', usuwa: v.usuwa || '', reason: 'Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury).' }));
+    fs.writeFileSync(BASELINE_Z, JSON.stringify({ schema: 'oest.quality.baseline', version: 1, rule: 'zasady', note: 'Zastane naruszenia zasad architektury (docs/ZASADY.md). Lista może tylko maleć: wpis usuwa PR wskazany w „usuwa”. „maks” = dzisiejsza liczba trafień: więcej = FAIL, mniej = obniż „maks” w tym samym PR (check-ratchet blokuje podniesienie). Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).', entries }, null, 2) + '\n');
+    console.log('Zapisano baseline zasad: ' + entries.length + ' wpisów'); return;
+  }
   if (process.argv.includes('--write-baseline')) {
     const entries = violations.map(v => ({ id: v.id, rule: v.rule, detail: v.detail, reason: 'Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.', owner: 'Grzegorz' }));
     fs.writeFileSync(BASELINE, JSON.stringify({ schema: 'oest.quality.baseline', version: 1, rule: 'architecture', note: 'Lista może tylko maleć. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).', entries }, null, 2) + '\n');
@@ -157,8 +170,24 @@ function main() {
   if (notLoaded.length) console.log('Informacyjnie – pliki niełądowane przez żadną stronę (ARCH-002, nie błąd): ' + notLoaded.join(', '));
   for (const v of fresh) console.log('::error title=G1 nowe naruszenie (' + v.rule + ')::' + v.detail);
   for (const id of stale) console.log('::error title=G1 baseline nieaktualny::' + id + ' już nie występuje – usuń wpis z quality/baselines/architecture.json (baseline może tylko maleć).');
-  const status = fresh.length || stale.length ? 'FAIL' : 'PASS';
-  if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages }, null, 2));
+  // zasady architektury: ta sama logika listy zastanych (tylko maleje)
+  const zEntries = fs.existsSync(BASELINE_Z) ? JSON.parse(fs.readFileSync(BASELINE_Z, 'utf8')).entries : [];
+  const zBase = zEntries.map(e => e.id), zMaks = new Map(zEntries.map(e => [e.id, e.maks]));
+  const zNow = new Set(zv.map(v => v.id)), zBaseSet = new Set(zBase);
+  const zFresh = zv.filter(v => !zBaseSet.has(v.id)), zStale = zBase.filter(id => !zNow.has(id));
+  // liczba trafień zastanego naruszenia: więcej niż „maks” = nowe trafienie (FAIL); mniej = obniż „maks” (lista tylko maleje)
+  for (const v of zv) {
+    if (!zBaseSet.has(v.id) || !v.liczba) continue;
+    const m = zMaks.get(v.id);
+    if (typeof m !== 'number' || v.liczba > m) zFresh.push({ ...v, detail: v.detail + ` Na liście zastanych: maks ${m}.` });
+    else if (v.liczba < m) zStale.push(`${v.id}: trafień ${v.liczba}, a na liście maks ${m} – obniż „maks” do ${v.liczba}`);
+  }
+  const zByRule = {}; for (const v of zv) zByRule[v.rule] = (zByRule[v.rule] || 0) + 1;
+  console.log('Zasady (ZASADY.md): naruszenia ' + zv.length + ' ' + JSON.stringify(zByRule) + ' | zastane: ' + (zv.length - zFresh.length) + ' | NOWE: ' + zFresh.length + ' | nieaktualne wpisy: ' + zStale.length);
+  for (const v of zFresh) console.log('::error title=G1 zasada (' + v.rule + ')::' + v.detail + ' [' + v.id + ']');
+  for (const id of zStale) console.log('::error title=G1 lista zastanych nieaktualna::' + (id.includes(' – obniż') ? id : id + ' już nie występuje – usuń wpis z quality/baselines/zasady.json (lista może tylko maleć).'));
+  const status = fresh.length || stale.length || zFresh.length || zStale.length ? 'FAIL' : 'PASS';
+  if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages, zasady: { total: zv.length, byRule: zByRule, fresh: zFresh, stale: zStale } }, null, 2));
   console.log('G1 ' + status);
   process.exitCode = status === 'PASS' ? 0 : 1;
 }
