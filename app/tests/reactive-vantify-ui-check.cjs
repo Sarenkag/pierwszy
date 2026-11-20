@@ -20,7 +20,7 @@ function fakePhone() {
   const V = {
     wzory: async () => ({ ...window.__vt.wzory }),
     action: async o => { if (o.action.op === 'priorities') { window.__vt.prioCalls = (window.__vt.prioCalls || 0) + 1; return window.__vt.prio || { status: 'error', code: 'brak' }; } window.__vt.calls.push(JSON.parse(JSON.stringify(o.action))); const n = window.__vt.next.shift(); return typeof n === 'function' ? n(o.action) : n || { status: 'error', code: 'brak' }; },
-    open: async o => { window.__vt.calls.push({ op: 'window', ...o }); return window.__vt.open || { events: [] }; }
+    open: async o => { window.__vt.calls.push({ op: 'window', ...o }); return typeof window.__vt.open === 'function' ? window.__vt.open(o) : window.__vt.open || { events: [] }; }
   };
   const plugins = { Vantify: V, Translate: { plToEn: async ({ text }) => ({ text: 'EN ' + text }) } };
   window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
@@ -333,6 +333,25 @@ function fakePhone() {
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, update: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony' }] }, { status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony', messageSeen: true }] }); });
     await pg.locator('[data-rx=vt-update]').click(); await msg(/✓ Update jest przy zleceniu Vantify #3070035/);
     { const k = await calls(); check(k.length === 2 && k[1].messageText === OWN && !k.some(c => c.op === 'update'), 'Send update po zgubionej odpowiedzi: druga wysyłka albo zły tekst ' + JSON.stringify(k)); }
+    // pierwszy raz: apka zamknięta, zanim okno Vantify wróciło → próba i tekst już na karcie, po ponownym otwarciu ⚠
+    await mk('Update okno zamknięte', 3070036);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.open = () => new Promise(r => { window.__vt.release = r; }); window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070036, status: 'approval_pending', final: false, summary: 'EN Update okno zamknięte' }] }, { status: 'ok', jobs: [{ id: 3070036, status: 'approval_pending', final: false, summary: 'EN Update okno zamknięte', messageSeen: true }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('[data-a=ok]').click();
+    await ask().locator('[data-a=ok]').waitFor(); await ask().locator('[data-a=ok]').click();
+    await pg.waitForFunction(() => window.__vt.calls.some(c => c.op === 'window'));
+    // okno Vantify jeszcze otwarte (apka mogłaby zostać zamknięta) → próba i tekst muszą już być zapisane
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070036);
+      check(j.reactive.vantify.updateSentAt && j.reactive.vantify.updateText === TXT && !j.reactive.vantify.updateAt, 'Send update okno: próba nie zapisana przed oknem Vantify ' + JSON.stringify(j.reactive.vantify)); }
+    await pg.evaluate(() => window.__vt.release({ events: [{ op: 'update', id: '3070036', t: 1 }] })); await msg(/✓ Update wysłany do Vantify #3070036/);
+    await pg.evaluate(() => { window.__vt.open = null; });
+    // pierwszy raz: okno zamknięte bez wysłania (brak zdarzenia, odczyt: brak wiadomości) → stan wraca, nic nie udaje
+    await mk('Update okno puste', 3070037);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.open = { events: [] }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070037, status: 'approval_pending', final: false, summary: 'EN Update okno puste' }] }, { status: 'ok', jobs: [{ id: 3070037, status: 'approval_pending', final: false, summary: 'EN Update okno puste', messageSeen: false }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('[data-a=ok]').click();
+    await ask().locator('[data-a=ok]').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/Nie widzę wysłanej wiadomości w Vantify\. Update nie wysłany/);
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070037);
+      check(!j.reactive.vantify.updateSentAt && !j.reactive.vantify.updateAt && await pg.locator('[data-rx=vt-update]').textContent() === 'Send update', 'Send update okno bez wysłania: został ślad próby ' + JSON.stringify(j.reactive.vantify)); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();

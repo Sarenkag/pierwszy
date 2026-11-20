@@ -129,16 +129,19 @@
       x.draft.vantify = seen ? { ...rest, updateAt: now, updateSentAt: now, updateText: text } : { ...rest, updateSentAt: now, updateText: text }; await x.persist(); x.render();
       x.message(seen ? L('✓ Update wysłany do Vantify #', '✓ Update sent to Vantify #') + v.id + '.' : L('Update wysłany do Vantify #', 'Update sent to Vantify #') + v.id + L(', ale nie widzę go przy zleceniu. Stuknij „⚠ Update niepotwierdzony”, żeby sprawdzić ponownie.', ', but I do not see it on the job. Tap “⚠ Update unconfirmed” to check again.'));
     };
+    /* próba zapisana na karcie PRZED wysyłką i przed oknem Vantify (DATA-002): zgubiona odpowiedź albo zamknięta apka = „⚠ niepotwierdzony”, następne stuknięcie najpierw sprawdza wiadomości */
+    const prev = x.draft.vantify, { updateAt: _u, ...rest } = prev, back = async () => { x.draft.vantify = { ...x.draft.vantify, updateAt: prev.updateAt, updateSentAt: prev.updateSentAt, updateText: prev.updateText }; await x.persist(); x.render(); };
+    const mark = async () => { x.draft.vantify = { ...rest, updateSentAt: new Date().toISOString(), updateText: text }; await x.persist(); x.render(); };
     if (!W.update) {
       await ask({ title: 'Send update', text: L('Pierwszy raz: dodaj wiadomość do zlecenia w oknie Vantify, jak zwykle. Tekst jest gotowy do skopiowania (przycisk u góry). Apka zapamięta, jak to zrobiłeś, a następne wyśle sama.', 'First time: add a message to the job in the Vantify window as usual. The text is ready to copy (button at the top). The app remembers how you did it and sends the next ones by itself.'), alert: true });
-      let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + v.id + '/status', text }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
-      if (!(r?.events || []).some(e => e.op === 'update' && Number(e.id) === Number(v.id))) return x.message(L('Nie widzę wysłanej wiadomości w Vantify. Update nie wysłany.', 'I do not see a sent message in Vantify. Update not sent.'));
-      const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
-      return done(!!(j2 && !j2.error && j2.messageSeen === true));
+      await mark();
+      let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + v.id + '/status', text }); } catch (e) { await back(); return x.message(why({ code: e?.code || e?.message }, L)); }
+      const sent = (r?.events || []).some(e => e.op === 'update' && Number(e.id) === Number(v.id));
+      const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null, seen = !!(j2 && !j2.error && j2.messageSeen === true);
+      if (!sent && !seen) { if (j2 && !j2.error && j2.messageSeen === false) await back(); return x.message(L('Nie widzę wysłanej wiadomości w Vantify. Update nie wysłany.', 'I do not see a sent message in Vantify. Update not sent.')); }
+      return done(seen);
     }
-    /* próba zapisana na karcie PRZED wysyłką (DATA-002): zgubiona odpowiedź albo zamknięta apka = „⚠ niepotwierdzony”, następne stuknięcie najpierw sprawdza wiadomości */
-    const prev = x.draft.vantify, { updateAt: _u, ...rest } = prev, back = async () => { x.draft.vantify = { ...x.draft.vantify, updateAt: prev.updateAt, updateSentAt: prev.updateSentAt, updateText: prev.updateText }; await x.persist(); x.render(); };
-    x.draft.vantify = { ...rest, updateSentAt: new Date().toISOString(), updateText: text }; await x.persist(); x.render();
+    await mark();
     x.message(L('Wysyłam update do Vantify…', 'Sending the update to Vantify…'));
     const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '' });
     if (r.status === 'differs' || r.status === 'nowzor') await back();
