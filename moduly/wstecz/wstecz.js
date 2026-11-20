@@ -3,7 +3,7 @@
  * Zasada (Grzegorz 08/11/2026): „back powinien cofać max o poziom wyżej lub spuszczać dane okienko”.
  * Wcześniej Android cofał się po całej historii przeglądania (nawet 15 naciśnięć do ekranu głównego,
  * po wyjściu z inspekcji Wstecz otwierał ją z powrotem). Teraz Wstecz telefonu, po kolei:
- *   1. zamyka okienko na wierzchu (podgląd zdjęcia, edytor, pytanie, okienko z ekranu głównego),
+ *   1. zamyka okienko na wierzchu (podgląd zdjęcia, edytor, pytanie, okienko z ekranu głównego, otwarty <dialog>),
  *   2. robi dokładnie to samo co strzałka ‹ na widocznym ekranie (jeden poziom wyżej),
  *   3. na ekranie głównym: okienko „Chcesz wyjść z aplikacji?” (Tak / Nie), jak każde inne pytanie w apce.
  *
@@ -16,7 +16,7 @@
 (function (w) {
   'use strict';
   if (w.OESTWstecz) return;
-  var okna = [], strona = {}, pytam = false;
+  var okna = [], strona = {}, pytam = false, gotowa = false; // gotowa = strona podała ustaw() (do tego czasu trwa ładowanie)
   function T(pl, en) { try { return localStorage.getItem('oest.lang') === 'en' ? en : pl; } catch (e) { return pl; } }
   function widoczna(el) { return !!el && !el.hidden && el.offsetParent !== null; }
   // strzałka ‹ na widocznym ekranie (górny pasek .top .back)
@@ -30,8 +30,14 @@
     if (App && App.exitApp) App.exitApp();
   }
   function wstecz() {
+    // 0. strona jeszcze się ładuje (skrypt jest pierwszy w <head>, nr 41): Wstecz nic nie robi – ani historia, ani wyjście z apki
+    if (!gotowa) return 'ladowanie';
     // 1. okienko bez historii (aparat) – zamknij najwyższe
     if (okna.length) { var z = okna[okna.length - 1]; try { z(); } catch (e) {} return 'okno'; }
+    // 1a. otwarty <dialog> (Klucze, Power trace: zdjęcie, znacznik) – zamknij najwyższy, ekran zostaje (audyt 19/11/2026 nr 35:
+    //     wcześniej Wstecz zmieniał ekran pod spodem, a modalny dialog zostawał i blokował apkę)
+    var dl = document.querySelectorAll('dialog[open]');
+    if (dl.length) { try { dl[dl.length - 1].close(); } catch (e) {} return 'okno'; }
     // 1b. okienko z wpisem historii (OESTOverlay, OESTPytaj) – zamyka je cofnięcie tego wpisu
     if (history.state && history.state.overlay) { history.back(); return 'okno'; }
     // 2. jeden poziom wyżej
@@ -59,7 +65,7 @@
   w.OESTWstecz = {
     nakladki: nakladki,
     okno: function (zamknij) { okna.push(zamknij); return function () { var i = okna.indexOf(zamknij); if (i >= 0) okna.splice(i, 1); }; },
-    ustaw: function (o) { strona = o || {}; },
+    ustaw: function (o) { strona = o || {}; gotowa = true; },
     wstecz: wstecz
   };
   // telefon: własna obsługa Wstecz wyłącza domyślne cofanie Androida po historii WebView

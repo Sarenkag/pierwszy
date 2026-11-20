@@ -31,7 +31,9 @@
   }
   function loadAll() { return tx("readonly", function (s) { return s.getAll(); }).then(function (a) { items = a || []; return items; }); }
   function put(it) { return tx("readwrite", function (s) { s.put(it); }); }
-  function pending() { var me = ((account() || {}).email || "").toLowerCase(); return items.filter(function (q) { return q.status !== "sent" && (!q.acct || q.acct.toLowerCase() === me); }); }
+  function mine(q) { var me = ((account() || {}).email || "").toLowerCase(); return !q.acct || q.acct.toLowerCase() === me; }
+  function pending() { return items.filter(function (q) { return q.status !== "sent" && q.status !== "shared" && mine(q); }); }
+  function unconfirmed() { return items.filter(function (q) { return q.status === "shared" && mine(q); }); } // przekazane przez Udostępnij, czekają na „Potwierdzam, wysłane”
 
   // ---------- warunki ----------
   function cfg() { try { return JSON.parse(root.localStorage.getItem("insp.cfg") || "{}"); } catch (e) { return {}; } }
@@ -280,6 +282,7 @@
       txt = pos ? T("Wysyłam raport ", "Sending report ") + (pos.n > 1 ? pos.i + "/" + pos.n + " " : "") + "· " + pos.code + "…" : T("Łączę z Gmailem…", "Connecting to Gmail…");
       more = "<small>" + T("Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.", "You can keep working. Do not close the app until the bar shows “Sent”.") + "</small>" + qb;
     } else if (flash) { cls = "ok"; txt = flash; prog = 1; more = qb; }
+    else if (!n && unconfirmed().length) { cls = "wait"; txt = T("Do potwierdzenia: ", "To confirm: ") + unconfirmed().length; more = "<small>" + T("Przekazane przez Udostępnij – potwierdź w kolejce, czy mail wyszedł.", "Handed over via Share – confirm in the queue whether the email went out.") + "</small>" + qb; }
     else if (!n) { cls = "ok"; txt = T("Wszystko wysłane", "All sent"); more = qb; }
     else if (err || loginErr) {
       cls = "err"; txt = T("Nie wysłano: ", "Not sent: ") + (err ? err.err : loginErr);
@@ -322,5 +325,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, syncReports: syncReports, update: update };
+  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, reachable: reachable, syncReports: syncReports, update: update };
 })(window);
