@@ -48,3 +48,14 @@ t = open(s, encoding="utf-8").read()  # najpierw odczyt, potem zapis (open(..., 
 assert '<string name="app_name">OEST</string>' in t, "brak app_name"
 open(s, "w", encoding="utf-8").write(t.replace('<string name="app_name">OEST</string>', '<string name="app_name">OEST próba LO</string>'))
 print("lok.gradle gotowy")
+# Przycisk próby (Grzegorz 20/11/2026: nie widział go w lewym górnym rogu – chował się pod paskiem stanu). Tylko w tej
+# apce próbnej: duży pomarańczowy przycisk na dole, zawsze widoczny, i pomarańczowy pasek „PRÓBA” na górze, żeby nie
+# pomylić jej ze zwykłą OEST. Zmieniamy skopiowaną stronę w APK (assets/public), nie app/www – zwykła apka bez zmian.
+p = os.path.join(app, "src/main/assets/public/index.html")
+t = open(p, encoding="utf-8").read()
+old = ' hidden style="position:fixed;left:12px;top:12px;z-index:9999;padding:8px 12px;border-radius:10px;background:#2f81f7;color:#fff;font:600 13px system-ui;text-decoration:none">'
+assert old in t, "brak przycisku probaLo w index.html"
+t = t.replace(old, ' style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 70px);z-index:9999;padding:16px 24px;border-radius:14px;background:#f0883e;color:#000;font:700 18px system-ui;text-decoration:none;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.6)">')
+t = t.replace("</body>", '<div style="position:fixed;left:0;right:0;top:0;height:6px;background:#f0883e;z-index:9999;pointer-events:none"></div>\n</body>', 1)
+open(p, "w", encoding="utf-8").write(t)
+print("przycisk próby widoczny")
