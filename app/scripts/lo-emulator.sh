@@ -17,5 +17,7 @@ echo "Proces po próbie: $(adb shell pidof $PKG | tr -d '\r')"
 adb logcat -d > lo-emu/logcat.txt
 echo "===== LOGCAT (awaria / LibreOffice) ====="
 grep -nE "FATAL|DEBUG +:|libc +:|backtrace|#[0-9]{2} pc|LibreOfficeKit|LOK|lo-native|AndroidRuntime|Abort|SIGSEGV|SIGABRT|UnsatisfiedLink|JNI DETECTED|LibreOffice" lo-emu/logcat.txt | head -300
-adb exec-out run-as $PKG ls -la files cache cache/lok 2>&1 | head -40
+echo "===== LOGCAT procesu apki od startu silnika ====="
+awk '/Initializing LibreOfficeKit/{f=1} f' lo-emu/logcat.txt | grep -E " $PID +[0-9]+ " | grep -v "Capacitor" | head -400
+adb exec-out run-as $PKG ls -laR . 2>&1 | grep -v "^$" | head -120
 exit 0

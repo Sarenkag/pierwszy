@@ -32,6 +32,8 @@ for it in z.infolist():
         f.write(z.read(it))
 print("biblioteki:", n_lib, "plików,", size["lib"] // 1048576, "MB | pliki silnika:", n_ass, "plików,", size["assets"] // 1048576, "MB")
 print("bez kompresji (jak w ich APK):", sorted(stored))
+print("pliki silnika:", " ".join(sorted(i.filename[7:] for i in z.infolist() if i.filename.startswith("assets/") and not i.is_dir() and not i.filename.startswith("assets/dexopt/"))))
+print("inne pliki ich APK (bez res/ i lib/):", " ".join(sorted(i.filename for i in z.infolist() if not i.filename.startswith(("assets/", "res/", "lib/")))))
 for clash in ("public", "capacitor.config.json", "capacitor.plugins.json"):
     if os.path.exists(os.path.join(ass, clash)):
         sys.exit("Konflikt z plikami Capacitor: " + clash)

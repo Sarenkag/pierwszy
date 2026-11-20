@@ -34,6 +34,7 @@ public class LibreOfficePlugin extends Plugin {
             try {
                 long t0 = System.currentTimeMillis();
                 if (office == null) {
+                    LibreOfficeKit.putenv("SAL_LOG=+WARN+INFO"); // jak w ich apce: ostrzeżenia silnika w logcat (diagnoza)
                     LibreOfficeKit.init(getActivity());
                     ByteBuffer h = LibreOfficeKit.getLibreOfficeKitHandle();
                     if (h == null) throw new IllegalStateException("LibreOfficeKit nie wystartował");
