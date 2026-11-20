@@ -320,6 +320,19 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-update]').click(); await msg(/✓ Update jest przy zleceniu Vantify #3070034/);
     { const k = await calls(), j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070034);
       check(k.length === 2 && !k.some(c => c.op === 'update') && j.reactive.vantify.updateAt && /✓ Update wysłany/.test(await pg.locator('[data-rx=vt-update]').textContent()), 'Send update potwierdzenie po ponownym sprawdzeniu: ' + JSON.stringify({ k: k.map(c => c.op), v: j.reactive.vantify })); }
+    // zgubiona odpowiedź na wysyłkę: próba i własny tekst zapisane PRZED wysyłką, po ponownym otwarciu ⚠, stuknięcie najpierw sprawdza (bez drugiej wysyłki)
+    await mk('Update zgubiony', 3070035);
+    const OWN = 'Works completed. Please approve so the job can be closed. Door fixed.';
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, update: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony' }] }, { status: 'error', code: 'timeout' }); });
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('.rx-vt-upd-t').fill(OWN); await ask().locator('[data-a=ok]').click();
+    await msg(/Brak odpowiedzi z Vantify/);
+    { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070035).id; await pg.goto(B + '/#reactive/job/' + id); await pg.reload(); await pg.locator('[data-rx=vt-update]').waitFor(); }
+    check(await pg.locator('[data-rx=vt-update]').textContent() === '⚠ Update niepotwierdzony', 'Send update zgubiona odpowiedź: po ponownym otwarciu brak ⚠');
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070035);
+      check(j && !j.reactive.vantify.updateAt && j.reactive.vantify.updateSentAt && j.reactive.vantify.updateText === OWN, 'Send update zgubiona odpowiedź: próba/tekst nie zapisane przed wysyłką ' + JSON.stringify(j && j.reactive.vantify)); }
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, update: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony' }] }, { status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony', messageSeen: true }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await msg(/✓ Update jest przy zleceniu Vantify #3070035/);
+    { const k = await calls(); check(k.length === 2 && k[1].messageText === OWN && !k.some(c => c.op === 'update'), 'Send update po zgubionej odpowiedzi: druga wysyłka albo zły tekst ' + JSON.stringify(k)); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();

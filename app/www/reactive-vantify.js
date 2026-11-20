@@ -119,7 +119,7 @@
       if (!await ask({ title: 'Send update #' + v.id, text: L('Nie widzę wysłanego update przy zleceniu w Vantify. Wysłać ponownie?', 'I do not see the sent update on the job in Vantify. Send it again?'), ok: L('Wyślij ponownie', 'Send again'), cancel: L('Wróć', 'Back') })) return;
     }
     const node = document.createElement('div');
-    node.innerHTML = '<label class="field"><span>' + esc(L('Wiadomość do zlecenia', 'Message to the job')) + '</span><textarea class="rx-vt-upd-t rx-info-t" rows="3">' + esc(UPDATE_TEXT) + '</textarea></label>';
+    node.innerHTML = '<label class="field"><span>' + esc(L('Wiadomość do zlecenia', 'Message to the job')) + '</span><textarea class="rx-vt-upd-t rx-info-t" rows="3">' + esc(v.updateText || UPDATE_TEXT) + '</textarea></label>';
     x.message('');
     if (!await ask({ title: 'Send update #' + v.id, node, ok: L('Wyślij update', 'Send update'), cancel: L('Wróć', 'Back') })) return;
     const text = node.querySelector('.rx-vt-upd-t').value.trim();
@@ -136,11 +136,15 @@
       const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
       return done(!!(j2 && !j2.error && j2.messageSeen === true));
     }
+    /* próba zapisana na karcie PRZED wysyłką (DATA-002): zgubiona odpowiedź albo zamknięta apka = „⚠ niepotwierdzony”, następne stuknięcie najpierw sprawdza wiadomości */
+    const prev = x.draft.vantify, { updateAt: _u, ...rest } = prev, back = async () => { x.draft.vantify = { ...x.draft.vantify, updateAt: prev.updateAt, updateSentAt: prev.updateSentAt, updateText: prev.updateText }; await x.persist(); x.render(); };
+    x.draft.vantify = { ...rest, updateSentAt: new Date().toISOString(), updateText: text }; await x.persist(); x.render();
     x.message(L('Wysyłam update do Vantify…', 'Sending the update to Vantify…'));
     const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '' });
+    if (r.status === 'differs' || r.status === 'nowzor') await back();
     if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(r.why === 'summary' ? L('W Vantify zlecenie ma inną nazwę. Nic nie wysłałem.', 'In Vantify the job has a different name. Nothing was sent.') : 'Vantify #' + v.id + ': ' + label(r.job || {}, L) + L('. Update nie wysłany.', '. Update not sent.')); }
     if (r.status === 'nowzor') return x.message(L('Brak wzoru wiadomości – spróbuj jeszcze raz.', 'No message pattern – try again.'));
-    if (r.status !== 'ok') return x.message(why(r, L));
+    if (r.status !== 'ok') return x.message(why(r, L) + L(' Stuknij „⚠ Update niepotwierdzony”, żeby sprawdzić, czy doszedł.', ' Tap “⚠ Update unconfirmed” to check whether it arrived.'));
     return done(r.seen === true);
   }
   /* lista priorytetów z Vantify raz na sesję apki; błąd = bez wyboru (zostaje priorytet ze wzoru), z krótką informacją */
