@@ -796,8 +796,10 @@ function makeName(pattern, data, when) {
     GG: pad(when.getHours()), mm: pad(when.getMinutes()),
     kod: clean(data.urzadzenie).toLowerCase(),
     obiekt: clean(data.obiekt), urzadzenie: clean(data.urzadzenie), lokalizacja: clean(data.lokalizacja),
-    rodzaj: clean(data.rodzaj), nr: clean(data.nr)
+    rodzaj: clean(data.rodzaj), nr: clean(data.nr), zlecenie: clean(data["job number"])
   };
+  // numer zlecenia Vantify (Grzegorz 20/11/2026): na końcu nazwy, także przy własnym wzorze bez {zlecenie}; bez numeru – nazwa jak dotąd
+  if (map.zlecenie && pattern.indexOf("{zlecenie}") < 0) pattern += " {zlecenie}";
   var name = pattern.replace(/\{(\w+)\}/g, function (m, k) { return map[k] != null ? map[k] : ""; });
   name = name.replace(/[\/\\:*?"<>|]/g, "-").replace(/ +/g, " ").replace(/_+/g, "_").replace(/-+/g, "-").replace(/^[ _-]+|[ _-]+$/g, "");
   return name || "raport";
@@ -2409,7 +2411,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (!v) return n;
     var p = v.split("-"); return new Date(+p[0], +p[1] - 1, +p[2], n.getHours(), n.getMinutes());
   }
-  function formData() {
+  function formData() { var d = formData0(); if (d && d["job number"] == null) d["job number"] = jobNo(); return d; } // każdy rodzaj raportu (także QHS-031) ma nr zlecenia w nazwie pliku
+  function formData0() {
     var w = reportDate(), pts = [];
     if (cur.mode === "sum") return batchData(w);
     if (cur.type.temp) return tempData(w);
@@ -2496,7 +2499,18 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     d.site = d.site || "One Eastside Tower"; d.date = d.data; d.engineer = d.inspektor; d.title = d.tytul; d.condition = d.stan_ogolny;
     var m = /\((TA|TB|P)(?:,\s*([^)]+))?\)/.exec(d.urzadzenie || ""); // np. „ATS (TB, L13)”, „Weekly Flushing (P)”
     d.building = BUILDING[d.wieza] || (m && BUILDING[m[1]]) || (d.wieza === "One Eastside" ? "" : d.wieza) || "";
-    d.level = d.pietro || (m && m[2]) || ""; d.details = d.opis; d.quote = d.quote || "No"; return d;
+    d.level = d.pietro || (m && m[2]) || ""; d.details = d.opis; d.quote = d.quote || "No";
+    if (d["job number"] == null) d["job number"] = jobNo(); return d;
+  }
+  // numer zlecenia Vantify dla tej inspekcji (Grzegorz 20/11/2026: „ID” we wzorze i w nazwie pliku). Termin zlecenia = ten sam,
+  // który dostaje etap przy wysyłce (PPM.due), a dla już zakończonej – zapisany okres; karta bez zlecenia Vantify → puste pole.
+  function jobNo() {
+    // odzyskana inspekcja: numer zlecenia z jej raportu w archiwum, nie z bieżącego terminu karty (przegląd Codex #169)
+    if (REC) return (REC.meta && REC.meta.job) || "";
+    var t = cur.ppm; if (!t || !PPM || !PPM.jobFor) return "";
+    var st = PPM.stage && PPM.stage(t), dd = PPM.due(t);
+    var day = st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent") ? st.period : dd ? isoDay(dd) : "";
+    var j = day ? PPM.jobFor(t, day) : null; return j && j.no ? String(j.no) : "";
   }
 
   // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
@@ -2612,11 +2626,14 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     // Site / Date / Engineer od y; zwraca y pod wierszami
     function rows(d, y) {
       var c1 = 24.7; pdf.setLineWidth(0.4); pdf.setTextColor(0, 0, 0);
-      [["Site:", d.site, true], ["Date:", d.data], ["Engineer:", d.inspektor]].forEach(function (r) {
-        var h = 10; pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(r[0], L, y + h / 2 + 1.6, c1);
+      // nowy wzór basic (Grzegorz 20/11/2026): Date | ID (nr zlecenia Vantify), Engineer | Location – kolumny jak w Wordzie
+      var mid = L + W * 3930 / 8996, c3 = W * 2533 / 8996, where = [d.building, d.level].filter(Boolean).join(" ");
+      [["Site:", d.site, true], ["Date:", d.data, false, "ID:", d["job number"]], ["Engineer:", d.inspektor, false, "Location:", where]].forEach(function (r) {
+        var h = 10, yy = y + h / 2 + 1.6; pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(r[0], L, yy, c1);
         pdf.setFont("DV", r[2] ? "bold" : "normal"); pdf.setFontSize(12);
-        if (r[2]) pdf.text(String(r[1] || "").toUpperCase(), L + c1 + (W - c1) / 2, y + h / 2 + 1.6, { align: "center" });
-        else pdf.text(r[1] || "", L + c1 + 1.5, y + h / 2 + 1.6);
+        if (r[2]) pdf.text(String(r[1] || "").toUpperCase(), L + c1 + (W - c1) / 2, yy, { align: "center" });
+        else pdf.text(r[1] || "", L + c1 + 1.5, yy);
+        if (r[3]) { lab(r[3], mid, yy, c3); pdf.setFont("DV", "normal"); pdf.setFontSize(12); pdf.line(mid + c3, y, mid + c3, y + h); pdf.text(String(r[4] || ""), mid + c3 + 1.5, yy); }
         y += h;
       });
       return y;
@@ -2644,8 +2661,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var tl = pdf.splitTextToSize(d.tytul || "", W - 6); pdf.text(tl, L + W / 2, ty, { align: "center" }); ty += tl.length * 5.5 + 3;
     pdf.setFont("DV", "normal");
     pdf.text("Overall Condition: " + (d.stan_ogolny || ""), L + 1.5, ty);
-    var where = [d.building, d.level].filter(Boolean).join(" ");
-    if (where || !d.plant) pdf.text("Location: " + where, L + W - 1.5, ty, { align: "right" }); // wzór OEST-basic: pole zawsze, także puste (plant roomy mają Location przy pomieszczeniach)
+    // Location jest w nagłówku (nowy wzór basic 20/11/2026), nie w wierszu Overall Condition
     ty += 8; pdf.setFontSize(10.5);
     function cpCell(c, x, yy, b) {
       var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
@@ -3043,11 +3059,11 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var foot = '<div class="foot">' + esc(i.footerText || "") + "</div>";
     var html = head() + "<table>" +
       '<tr><td class="k">Site</td><td>' + esc(d.site) + "</td></tr>" +
-      '<tr><td class="k">Date</td><td>' + esc(d.data) + "</td></tr>" +
-      '<tr><td class="k">Engineer</td><td>' + esc(d.inspektor) + "</td></tr>" +
+      // nowy wzór basic (20/11/2026): ID = nr zlecenia Vantify obok daty, Location obok inżyniera – jak w Wordzie i PDF
+      '<tr><td class="k">Date</td><td>' + esc(d.data) + '<span style="float:right"><b>ID:</b> ' + esc(d["job number"] || "") + "</span></td></tr>" +
+      '<tr><td class="k">Engineer</td><td>' + esc(d.inspektor) + '<span style="float:right"><b>Location:</b> ' + esc([d.building, d.level].filter(Boolean).join(" ")) + "</span></td></tr>" +
       '<tr><td colspan="2" class="big"><p style="text-align:center"><b>' + esc(d.tytul) + "</b></p>" +
-      '<p style="display:flex;justify-content:space-between;gap:8px"><span>Overall Condition: ' + esc(d.stan_ogolny) + "</span><span>" +
-      ([d.building, d.level].filter(Boolean).length ? "Location: " + esc([d.building, d.level].filter(Boolean).join(" ")) : "") + "</span></p>" +
+      "<p>Overall Condition: " + esc(d.stan_ogolny) + "</p>" +
       '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
         return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:2.2">' + esc(c) + "</span>"; }).join("");
       }).join("\n") + "</div>" +
@@ -3089,6 +3105,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       files: r.files || null, toList: (function () { var n = needsNow(); return n ? recipientsFor(n).list : null; })(), // ⚙ ustawienia wysyłki: pliki i adresaci
       status: "wait", err: ""
     };
+    it.job = d["job number"] || ""; // numer zlecenia Vantify zapisany przy raporcie (odzyskanie zachowuje numer, przegląd Codex #169)
     it.at = it.created; // czas przygotowania tej wersji: spóźniony mail z kolejki nie nadpisze nowszego Update (uwaga Codex #101)
     if (from.mode === "one") it.snap = archiveSnap(); // dane inspekcji do „Odzyskaj do edycji” (etap 2c)
     var tp = from.ppm; if (tp && PPM) it.card = { name: PPM.short ? PPM.short(tp).name : tp.name, loc: PPM.loc ? PPM.loc(tp).code : "", freq: (tp.freq || [])[0] || "" }; // opis klocka odzyskanej (moduł raportów nie czyta listy PPM)
