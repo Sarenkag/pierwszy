@@ -127,27 +127,37 @@
     if (!left) return x.message(head + L(', wszystkie zdjęcia przed są przy zleceniu.', ', all before photos are on the job.'));
     if (!await ask({ title: 'Vantify #' + v.id, text: L('Przy zleceniu widzę ', 'On the job I see ') + (p.seen || []).length + L(' z ', ' of ') + p.hrefs.length + L(' zdjęć przed. Dosłać brakujące (', ' before photos. Send the missing ones (') + left + L(')?', ')?'), ok: L('Dołącz zdjęcia', 'Attach photos'), cancel: L('Wróć', 'Back') })) return x.message(head);
     const all = x.photos ? await x.photos('before') : [];
-    /* te same zdjęcia na karcie co przy zakładaniu: brakujące po kolei; zmieniona liczba zdjęć – wszystkie obecne (nie zgadywać, które to) */
-    const files = all.length === p.hrefs.length ? all.filter((f, i) => !(p.seen || []).includes(p.hrefs[i])) : all;
+    /* adres pliku na tej samej pozycji co zdjęcie na karcie (przegląd Codex #167): brakujące zastępowane na swoich miejscach.
+       Zmieniona liczba zdjęć na karcie = nie zgadywać, które to – wysyłane wszystkie obecne, lista adresów od nowa */
+    const same = all.length === p.hrefs.length, seen0 = p.seen || [];
+    const idx = same ? p.hrefs.map((h, i) => i).filter(i => !seen0.includes(p.hrefs[i])) : all.map((f, i) => i);
+    const files = idx.map(i => all[i]), hrefs = same ? p.hrefs.slice() : all.map(() => '');
     if (!files.length) return x.message(L('Na karcie nie ma zdjęć przed do wysłania.', 'There are no before photos on the card to send.'));
+    /* zapis na karcie: nowe adresy na pozycjach wysłanych zdjęć, widoczne = to, co Vantify pokazał w odczycie */
+    const keep = async (sent, seen) => { sent.forEach((h, k) => { if (h) hrefs[idx[k]] = h; }); x.draft.vantify = { ...x.draft.vantify, photos: { hrefs, seen } }; await x.persist(); x.render(); };
+    const done = () => x.message(photosMissing(x.draft) ? L('Vantify nadal nie pokazuje wszystkich zdjęć przed (', 'Vantify still does not show all before photos (') + x.draft.vantify.photos.seen.length + '/' + hrefs.length + L('). Stuknij „⚠ Vantify”, żeby spróbować znowu.', '). Tap “⚠ Vantify” to try again.') : L('✓ Wszystkie zdjęcia przed są przy zleceniu.', '✓ All before photos are on the job.'));
     const W = await wzory(P);
     if (!W.attach) {
       await ask({ title: 'Vantify #' + v.id, text: L('Pierwszy raz: dodaj zdjęcie w oknie Vantify (Files → Add) – przy Upload apka poda brakujące zdjęcie. Apka zapamięta, jak to zrobiłeś, a następne dośle sama.', 'First time: add the photo in the Vantify window (Files → Add) – at Upload the app offers the missing photo. The app remembers how you did it and sends the next ones by itself.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + v.id + '/files/add', fileB64: files[0].b64, fileName: files[0].name }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
-      if (!(r?.events || []).some(e => e.op === 'attach' && Number(e.id) === Number(v.id))) return x.message(L('Nie widzę dodanego zdjęcia w Vantify. Karta nadal pokazuje brak.', 'I do not see an added photo in Vantify. The card still shows it missing.'));
-      /* zdjęcie dodane w oknie ma nowy adres pliku – na karcie liczy się jako jedno brakujące mniej */
-      const seen = (p.seen || []).slice(), gone = p.hrefs.find(h => !seen.includes(h)); if (gone) seen.push(gone);
-      x.draft.vantify = { ...x.draft.vantify, photos: { ...p, seen } }; await x.persist(); x.render();
-      return x.message(photosMissing(x.draft) ? L('Dodane. Stuknij „⚠ Vantify”, żeby apka dosłała resztę.', 'Added. Tap “⚠ Vantify” so the app sends the rest.') : L('✓ Wszystkie zdjęcia przed są przy zleceniu.', '✓ All before photos are on the job.'));
+      /* zdarzenie z okna: „numer|adres dodanego pliku”; bez adresu nie wiadomo, co dodano – karta bez zmian */
+      const ev = (r?.events || []).filter(e => e.op === 'attach' && Number(String(e.id).split('|')[0]) === Number(v.id)).pop(), href = ev ? String(ev.id).split('|').slice(1).join('|') : '';
+      if (!href) return x.message(L('Nie widzę dodanego zdjęcia w Vantify. Karta nadal pokazuje brak.', 'I do not see an added photo in Vantify. The card still shows it missing.'));
+      /* potwierdzenie odczytem listy plików przy zleceniu, nie samą odpowiedzią na dodanie */
+      hrefs[idx[0]] = href;
+      const st = await act(P, { op: 'status', ids: [v.id], fileHrefs: hrefs.filter(Boolean) }), j2 = st.status === 'ok' ? (st.jobs || [])[0] : null;
+      await keep([], j2 && !j2.error && Array.isArray(j2.seenHrefs) ? j2.seenHrefs : seen0);
+      if (!j2 || j2.error) return x.message(why(j2?.error ? { code: j2.error } : st, L));
+      return done();
     }
     x.message(L('Dosyłam zdjęcia do Vantify…', 'Sending the photos to Vantify…'));
-    const r = await act(P, { op: 'attach', id: v.id, files, known: p.seen || [] });
+    const r = await act(P, { op: 'attach', id: v.id, files, known: seen0 });
     if (r.status === 'nowzor') return x.message(L('Brak wzoru dodawania pliku – spróbuj jeszcze raz.', 'No file-adding pattern – try again.'));
-    if (r.status !== 'ok') return x.message(why(r, L));
-    /* nowe adresy zamiast brakujących; widoczne = to, co Vantify pokazuje po dosłaniu */
-    const sent = Array.isArray(r.sent) ? r.sent : [], hrefs = (p.seen || []).concat(sent), seenNow = Array.isArray(r.seenHrefs) ? r.seenHrefs : [];
-    x.draft.vantify = { ...x.draft.vantify, photos: { hrefs, seen: seenNow } }; await x.persist(); x.render();
-    x.message(photosMissing(x.draft) ? L('Vantify nadal nie pokazuje wszystkich zdjęć przed (', 'Vantify still does not show all before photos (') + seenNow.length + '/' + x.draft.vantify.photos.hrefs.length + L('). Stuknij „⚠ Vantify”, żeby spróbować znowu.', '). Tap “⚠ Vantify” to try again.') : L('✓ Wszystkie zdjęcia przed są przy zleceniu.', '✓ All before photos are on the job.'));
+    /* błąd w trakcie: zdjęcia już dodane zostają zapisane na swoich pozycjach, żeby następna próba ich nie dublowała */
+    const sent = Array.isArray(r.sent) ? r.sent : [];
+    if (r.status !== 'ok') { if (sent.length) await keep(sent, seen0); return x.message(why(r, L)); }
+    await keep(sent, Array.isArray(r.seenHrefs) ? r.seenHrefs : []);
+    return done();
   }
   function label(j, L) { return j.final ? L('zamknięte', 'closed') : j.status === 'approval_pending' ? L('czeka na zatwierdzenie', 'awaiting approval') : j.status === 'acknowledged' ? L('zatwierdzone – można zamknąć', 'approved – ready to close') : j.status === 'commenced' ? L('rozpoczęte', 'commenced') : j.status; }
   async function update(x, j, extra) { const v = x.draft.vantify; if (v.status === j.status && !!v.final === !!j.final && !extra) return; x.draft.vantify = { ...v, status: j.status, final: !!j.final, ...(j.final && !v.closedAt ? { closedAt: new Date().toISOString() } : {}), ...(extra || {}) }; await x.persist(); x.render(); }

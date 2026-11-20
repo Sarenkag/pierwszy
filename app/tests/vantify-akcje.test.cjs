@@ -11,6 +11,7 @@ const CREATE = { _links: { sitecontactsiterelationship: { href: '/siterelationsh
   files: { links: [{ href: '/files/1', title: 'x' }] }, optedInJobRequisites: { links: [] }, siteContact: { notifyOnCreate: false, notifyOnComplete: false }, contactTenant: { notifyOnCreate: false, notifyOnComplete: false },
   siteContactSameAsReporter: true, skipRequestApprovalNotification: false, notifyOnCreate: true, notifyOnComplete: true, isOnNextPlannedVisit: false, isByPlannedDate: false, assets: { asset: null, subasset: null },
   requiredDocumentTypes: { links: [{ href: '/documenttypes/1' }] }, summary: 'Coat hooks behind reception', description: 'Request to provide coat hooks', noRequisiteRequired: true };
+const ATTACH = { _links: { file: { href: '/files/2793327' }, documentType: { href: '/documenttypes/3' } }, tags: { tags: [] }, id: null, title: 'Leak photo', visibility: 'partnership', isContract: null, documentDate: '2026-11-05T15:54:17+00:00', expiresAt: null, isStatutory: false, userTags: [], notifyExpiry: false, isJobFile: true, description: 'sink', applicableTo: [] };
 const COMMENCE = { _links: {}, files: { links: [] }, onSiteDate: '2026-11-18T14:59:00+00:00' };
 const COMPLETE = { _links: {}, escalationFiles: { links: [] }, assets: {}, completionDate: '2026-11-18T15:39:00+00:00',
   files: [{ formFile: {}, tags: { tags: [] }, id: null, title: 'REACTIVE LED', visibility: 'partnership', documentDate: '2026-11-18T15:39:00+00:00', expiresAt: null, notifyExpiry: false, isStatutory: false, userTags: [], advancedClosed: true, _links: { file: { href: '/files/2793300' }, documentType: { href: '/documenttypes/1' } }, description: 'LED strip' },
@@ -211,6 +212,9 @@ test('okno Vantify w apce: udane zapytanie strony → wzór bez tekstów i numer
   assert.strictEqual(got.length, 2); assert.strictEqual(got[0][0], 'create'); assert.strictEqual(got[0][2], '3066755');
   assert.ok(!JSON.stringify(got).includes('Coat hooks') && !JSON.stringify(got).includes('LED'), 'do telefonu bez Summary/Description/opisów plików');
   assert.strictEqual(got[1][0], 'complete'); assert.strictEqual(got[1][2], '3066755');
+  // dodanie pliku w oknie: numer zlecenia i adres dodanego pliku, żeby apka potwierdziła go odczytem (przegląd Codex #167)
+  const f = new w.XMLHttpRequest(); f.open('POST', API + '/sites/6324/jobs/3066755/files'); f.send(JSON.stringify(ATTACH)); f.status = 201; listeners.pop()();
+  assert.strictEqual(got[2][0], 'attach'); assert.strictEqual(got[2][2], '3066755|/files/2793327'); assert.ok(!JSON.stringify(got[2][1]).includes('Leak'));
 });
 test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaju, dni z terminu, wybrany idzie w zleceniu', () => {
   const list = [
@@ -228,7 +232,6 @@ test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaj
 
 // ---------- dosłanie zdjęć przed do istniejącego zlecenia (przegląd Codex #166) ----------
 // kształt z zapisu „Zbadaj” 18/11: POST /sites/6324/jobs/3066755/files {_links:{file, documentType}, title, visibility, documentDate, …}
-const ATTACH = { _links: { file: { href: '/files/2793327' }, documentType: { href: '/documenttypes/3' } }, tags: { tags: [] }, id: null, title: 'Leak photo', visibility: 'partnership', isContract: null, documentDate: '2026-11-05T15:54:17+00:00', expiresAt: null, isStatutory: false, userTags: [], notifyExpiry: false, isJobFile: true, description: 'sink', applicableTo: [] };
 test('wzór dodania pliku: bez tytułu, opisu, daty i pliku; typ dokumentu i widoczność zostają; zapytanie z nowym plikiem', () => {
   const t = A.wzor('attach', ATTACH);
   assert.ok(!('title' in t) && !('description' in t) && !('documentDate' in t) && !('id' in t));
@@ -263,4 +266,12 @@ test('dosłanie: Vantify przyjął, ale pliku nie widać → wynik bez niego; in
   assert.deepStrictEqual(s.results[0], { status: 'ok', sent: ['/files/999'], seenHrefs: ['/files/500'] });
   const t = world({ op: 'attach', nonce: 'a3', id: 1, files: f }, W2, JOB()); await t.run();
   assert.strictEqual(t.results[0].status, 'error'); assert.ok(!t.calls.some(c => c.m === 'POST'));
+});
+test('dosłanie przerwane w połowie: wynik mówi, które pliki już dodano (bez dublowania przy następnej próbie)', async () => {
+  const f = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'c.jpg', title: 'Before photo 3', type: 'image/jpeg' }];
+  const s = world({ op: 'attach', nonce: 'a4', id: 3070002, files: f, known: ['/files/500'] }, { ...WZ, attach: A.wzor('attach', ATTACH) }, JOB());
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send; let n = 0;
+  XHR.prototype.send = function (b) { if (/storage\.googleapis/.test(this.u) && ++n === 2) { this.status = 500; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'error'); assert.deepStrictEqual(s.results[0].sent, ['/files/999']);
 });

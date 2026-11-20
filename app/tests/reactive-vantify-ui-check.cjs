@@ -206,15 +206,23 @@ function fakePhone() {
     { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070010).id; await pg.goto(B + '/#reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor(); }
     check(/⚠ Vantify #3070010 · zdjęcia 0\/1/.test(await pg.locator('.rx-vt-row').textContent()), 'po ponownym otwarciu karta zapomniała o brakującym zdjęciu');
     // pierwszy raz (bez wzoru): sprawdzenie z adresem zdjęcia → „Dołącz zdjęcia” → okno Vantify Files → Add ze zdjęciem przy Upload
-    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070010, status: 'approval_pending', final: false, summary: 'EN Kran w kuchni', seenHrefs: [] }] }); window.__vt.open = { events: [{ op: 'attach', id: '3070010', t: 1 }] }; });
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070010, status: 'approval_pending', final: false, summary: 'EN Kran w kuchni', seenHrefs: [] }] }); window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070010, status: 'approval_pending', final: false, summary: 'EN Kran w kuchni', seenHrefs: ['/files/21'] }] }); window.__vt.open = { events: [{ op: 'attach', id: '3070010|/files/21', t: 1 }] }; });
     await pg.locator('.rx-vt-row [data-rx=vt-check]').first().click(); await ask().waitFor();
     check(/widzę 0 z 1 zdjęć przed/.test(await ask().textContent()), 'ponowne sprawdzenie: brak pytania o dosłanie');
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
     check(/Pierwszy raz/.test(await ask().textContent()), 'dosłanie pierwszy raz: brak wyjaśnienia');
     await ask().locator('[data-a=ok]').click();
     await msg(/Wszystkie zdjęcia przed są przy zleceniu/);
-    { const k = await calls(); check(k.length === 2 && k[0].op === 'status' && JSON.stringify(k[0].fileHrefs) === '["/files/11"]' && k[1].op === 'window' && k[1].hash === '#/user/jobs/3070010/files/add' && /^Before-photo-1\.(jpg|png)$/.test(k[1].fileName) && k[1].fileB64.length > 100, 'dosłanie w oknie: złe zapytanie ' + JSON.stringify(k.map(c => ({ ...c, fileB64: c.fileB64 && c.fileB64.length })))); }
+    { const k = await calls(); check(k.length === 3 && k[0].op === 'status' && JSON.stringify(k[0].fileHrefs) === '["/files/11"]' && k[2].op === 'status' && JSON.stringify(k[2].fileHrefs) === '["/files/21"]' && k[1].op === 'window' && k[1].hash === '#/user/jobs/3070010/files/add' && /^Before-photo-1\.(jpg|png)$/.test(k[1].fileName) && k[1].fileB64.length > 100, 'dosłanie w oknie: złe zapytanie ' + JSON.stringify(k.map(c => ({ ...c, fileB64: c.fileB64 && c.fileB64.length })))); }
     check(/✓ Vantify #3070010/.test(await pg.locator('.rx-vt-row').textContent()), 'po dosłaniu karta nadal „⚠”');
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070010); check(JSON.stringify(j.reactive.vantify.photos) === JSON.stringify({ hrefs: ['/files/21'], seen: ['/files/21'] }), 'dosłanie w oknie: adres dodanego pliku nie zapisany ' + JSON.stringify(j.reactive.vantify.photos)); }
+    // okno potwierdziło dodanie, ale odczyt nie widzi pliku → karta dalej „⚠” (bez fikcyjnego kompletu, przegląd Codex #167)
+    await pg.evaluate(async () => { const R = OESTReactiveUI.repository, j = (await R.get()).jobs.find(x => x.reactive?.vantify?.id === 3070010); await R.saveReactive({ ...j.reactive, vantify: { ...j.reactive.vantify, photos: { hrefs: ['/files/11'], seen: [] } } }); });
+    { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070010).id; await pg.goto(B + '/#reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor(); }
+    await pg.evaluate(() => { const st = { status: 'ok', jobs: [{ id: 3070010, status: 'approval_pending', final: false, summary: 'EN Kran w kuchni', seenHrefs: [] }] }; window.__vt.next.push(st, st); window.__vt.open = { events: [{ op: 'attach', id: '3070010|/files/22', t: 1 }] }; });
+    await pg.locator('.rx-vt-row [data-rx=vt-check]').first().click(); await ask().waitFor(); await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/nadal nie pokazuje wszystkich zdjęć przed \(0\/1\)/);
+    check(/⚠ Vantify #3070010/.test(await pg.locator('.rx-vt-row').textContent()), 'okno potwierdziło, odczyt nie widzi pliku, a karta pokazuje komplet');
     // z wzorem: apka dosyła sama, do tego samego numeru, tylko brakujące
     await pg.goto(B + '/#reactive'); await job('Kran w łazience');
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.open = null; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070011, job: { id: 3070011, status: 'approval_pending', summary: 'EN Kran w łazience' }, photos: 1, photosSeen: 0, hrefs: ['/files/12'], seenHrefs: [] }); });
@@ -225,6 +233,19 @@ function fakePhone() {
     await msg(/Wszystkie zdjęcia przed są przy zleceniu/);
     { const k = await calls(); check(k.length === 2 && k[1].op === 'attach' && k[1].id === 3070011 && (k[1].files || []).length === 1 && k[1].files[0].title === 'Before photo 1' && JSON.stringify(k[1].known) === '[]', 'dosłanie z wzorem: złe zapytanie ' + JSON.stringify(k.map(c => ({ ...c, files: (c.files || []).map(f => f.title) })))); }
     { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070011); check(j && JSON.stringify(j.reactive.vantify.photos) === JSON.stringify({ hrefs: ['/files/13'], seen: ['/files/13'] }) && /✓ Vantify #3070011/.test(await pg.locator('.rx-vt-row').textContent()), 'dosłanie z wzorem: karta nie zapisała wyniku ' + JSON.stringify(j && j.reactive.vantify)); }
+    // dwa zdjęcia, brakuje pierwszego; dosłane, ale dalej niewidoczne → następna próba znowu wysyła pierwsze, nie drugie (przegląd Codex #167)
+    await pg.goto(B + '/#reactive'); await job('Dwa zdjecia');
+    await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070012, job: { id: 3070012, status: 'approval_pending', summary: 'EN Dwa zdjecia' }, photos: 2, photosSeen: 1, hrefs: ['/files/31', '/files/32'], seenHrefs: ['/files/32'] }); });
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await pg.waitForFunction(() => /⚠ Vantify #3070012 · zdjęcia 1\/2/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
+    for (const n of [33, 34]) {
+      await pg.evaluate(n => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070012, status: 'approval_pending', final: false, summary: 'EN Dwa zdjecia', seenHrefs: ['/files/32'] }] }, { status: 'ok', sent: ['/files/' + n], seenHrefs: ['/files/32'] }); }, n);
+      await pg.locator('.rx-vt-row [data-rx=vt-check]').first().click(); await ask().waitFor(); await ask().locator('[data-a=ok]').click();
+      await msg(/nadal nie pokazuje wszystkich zdjęć przed \(1\/2\)/);
+      const k = await calls(); check(k[1]?.op === 'attach' && (k[1].files || []).map(f => f.title).join() === 'Before photo 1', 'dosłanie ' + n + ': poszło nie to zdjęcie ' + JSON.stringify((k[1]?.files || []).map(f => f.title)));
+      const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070012); check(JSON.stringify(j.reactive.vantify.photos.hrefs) === JSON.stringify(['/files/' + n, '/files/32']), 'dosłanie ' + n + ': adres nie na pozycji zdjęcia ' + JSON.stringify(j.reactive.vantify.photos));
+    }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();

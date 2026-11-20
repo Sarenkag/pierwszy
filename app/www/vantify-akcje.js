@@ -112,6 +112,8 @@
           var t = wzor(kind, JSON.parse(body)), id = null;
           if (kind === "create") { try { id = JSON.parse(x.responseText).id; } catch (e) {} }
           else id = Number((/\/jobs\/(\d+)\//.exec(x.__oestUrl) || [])[1]) || null;
+          // dodanie pliku: do karty idzie też adres dodanego pliku („numer|adres”), żeby apka potwierdziła go odczytem (przegląd Codex #167)
+          if (kind === "attach" && id) { var fb = JSON.parse(body), fh = fb && fb._links && fb._links.file && fb._links.file.href; id = fh ? id + "|" + fh : null; }
           B.wzor(kind, t ? JSON.stringify(t) : "", String(id || ""));
         } catch (e) {}
       });
@@ -216,7 +218,7 @@
       }).then(function () {
         step = "check";
         return job(a.id).then(function (j) { return seenOf(j, (a.known || []).concat(put)); }).then(function (l) { end({ status: "ok", sent: put, seenHrefs: l }); });
-      }).catch(fail);
+      }).catch(function (e) { if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
     }
     if (a.op === "close") {
       if (!W.commence || !W.complete) return end({ status: "nowzor", op: !W.commence ? "commence" : "complete" });
