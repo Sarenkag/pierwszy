@@ -2978,7 +2978,9 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       return OESTWordPdf.zWorda(r.docx).then(function (pdf) {
         if (!pdf) return r;
         glowne.forEach(function (f) { f.bytes = pdf; });
-        r.pdf = pdf; r.zWorda = true;
+        // r.pdf = pełny PDF do archiwum (ponowna wysyłka z Raportów): podmieniamy go tylko, gdy Word ma wszystkie zdjęcia (uwaga Codex #173).
+        if (r.wordPelny) r.pdf = pdf;
+        r.zWorda = true;
         return r;
       });
     });
@@ -3040,7 +3042,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       var pdf = buildPdf(d, pics, info), sel = pick(pics);
       var docx = fillDocx(PizZip, docxtemplater, tpl, scopeForWord(tpl, d), n.one ? sel : []).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
       var logoUrl = info.logo ? URL.createObjectURL(new Blob([info.logo], { type: info.logoType === "PNG" ? "image/png" : "image/jpeg" })) : "";
-      return done({ name: name, data: d, docx: docx, pdf: pdf, pics: pics, info: info, logoUrl: logoUrl }, { pdf: function (s2) { return buildPdf(d, s2, info); }, docx: docx });
+      return done({ name: name, data: d, docx: docx, pdf: pdf, pics: pics, info: info, logoUrl: logoUrl, wordPelny: !!n.one && sel.length === pics.length }, { pdf: function (s2) { return buildPdf(d, s2, info); }, docx: docx });
     });
   }
 
