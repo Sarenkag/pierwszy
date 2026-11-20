@@ -270,7 +270,8 @@ function fakePhone() {
     const mk = async (title, id) => { await pg.goto(B + '/#reactive'); await job(title, false);
       await pg.evaluate(([id, t]) => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id, job: { id, status: 'approval_pending', summary: 'EN ' + t }, photos: 0, photosSeen: 0 }); }, [id, title]);
       await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
-      await pg.waitForFunction(id => new RegExp('Vantify #' + id).test(document.querySelector('.rx-vt-row')?.textContent || ''), id); };
+      await pg.waitForFunction(id => new RegExp('Vantify #' + id).test(document.querySelector('.rx-vt-row')?.textContent || ''), id);
+      await pg.waitForFunction(() => !document.querySelector('.oest-ask')); };
     await mk('Update zatwierdzone', 3070030);
     { const u = await pg.locator('[data-rx=vt-update]').boundingBox(), r = await pg.locator('.rx-vt-row').first().boundingBox();
       check(u && r && Math.abs(u.width - r.width) < 4 && (await pg.locator('[data-rx=vt-update]').textContent()) === 'Send update', 'Send update: brak przycisku albo nie na całą szerokość'); }
@@ -296,6 +297,29 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('[data-a=ok]').click();
     await msg(/✓ Update wysłany do Vantify #3070032/);
     { const k = await calls(); check(k.length === 2 && k[1].op === 'update' && k[1].id === 3070032 && k[1].text === TXT && k[1].summary === 'EN Update sam', 'Send update z wzorem: złe zapytanie ' + JSON.stringify(k)); }
+    // inna nazwa w Vantify także przy pierwszym wysłaniu (bez wzoru) → nic nie wysyła, okno Vantify się nie otwiera
+    await mk('Update nazwa', 3070033);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070033, status: 'approval_pending', final: false, summary: 'EN Zmieniona nazwa' }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await msg(/inną nazwę: „EN Zmieniona nazwa”\. Nic nie wysłałem/);
+    { const k = await calls(); check(k.length === 1 && k[0].op === 'status' && await pg.locator('.oest-ask').count() === 0, 'Send update przy innej nazwie: coś wysłane ' + JSON.stringify(k.map(c => c.op))); }
+    // wysłany, ale niepotwierdzony odczytem → bez ✓, „⚠ Update niepotwierdzony”; stuknięcie sprawdza ponownie i dopiero wtedy ✓
+    await mk('Update niepewny', 3070034);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, update: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070034, status: 'approval_pending', final: false, summary: 'EN Update niepewny' }] }, { status: 'ok', job: { id: 3070034, status: 'approval_pending' }, seen: false }); });
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/nie widzę go przy zleceniu/);
+    { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070034), t = await pg.locator('[data-rx=vt-update]').textContent();
+      check(j && !j.reactive.vantify.updateAt && j.reactive.vantify.updateSentAt && t === '⚠ Update niepotwierdzony', 'Send update niepotwierdzony: pokazuje ✓ albo zapisany jako potwierdzony ' + JSON.stringify({ t, v: j && j.reactive.vantify })); }
+    // ponowne sprawdzenie: nadal brak → pyta o ponowne wysłanie (Wróć = nic nie wysyła)
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070034, status: 'approval_pending', final: false, summary: 'EN Update niepewny' }] }, { status: 'ok', jobs: [{ id: 3070034, status: 'approval_pending', final: false, summary: 'EN Update niepewny', messageSeen: false }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('[data-a=no]').waitFor();
+    check(/Wysłać ponownie/.test(await ask().textContent()), 'Send update niepotwierdzony: brak pytania o ponowne wysłanie'); await ask().locator('[data-a=no]').click();
+    { const k = await calls(); check(k.length === 2 && k[1].messageText === TXT && !k.some(c => c.op === 'update'), 'Send update ponowne sprawdzenie: złe zapytania ' + JSON.stringify(k)); }
+    await pg.waitForFunction(() => !document.querySelector('.oest-ask'));
+    // ponowne sprawdzenie: jest → ✓ bez ponownej wysyłki
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070034, status: 'approval_pending', final: false, summary: 'EN Update niepewny' }] }, { status: 'ok', jobs: [{ id: 3070034, status: 'approval_pending', final: false, summary: 'EN Update niepewny', messageSeen: true }] }); });
+    await pg.locator('[data-rx=vt-update]').click(); await msg(/✓ Update jest przy zleceniu Vantify #3070034/);
+    { const k = await calls(), j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070034);
+      check(k.length === 2 && !k.some(c => c.op === 'update') && j.reactive.vantify.updateAt && /✓ Update wysłany/.test(await pg.locator('[data-rx=vt-update]').textContent()), 'Send update potwierdzenie po ponownym sprawdzeniu: ' + JSON.stringify({ k: k.map(c => c.op), v: j.reactive.vantify })); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();
