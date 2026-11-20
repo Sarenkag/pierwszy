@@ -49,7 +49,18 @@
     return iso.replace(/\.\d+Z$/, "+00:00");
   }
   function strip(t) { var b = clone(t); Object.keys(b).forEach(function (k) { if (k.charAt(0) === "_" && k !== "_links") delete b[k]; }); return b; }
-  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: [] }; return b; }
+  // zdjęcia przed przy zakładaniu (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis, Job Sheet po wykonaniu”) – pozycja jak w zapisie „Zbadaj” 18/11:
+  // {_links:{file, resource}, title, filename, type, href}; file/resource z odpowiedzi POST /files
+  function link(f) { return { _links: { file: f.file || { href: f.href }, resource: f.resource || {} }, title: f.title, filename: f.name, type: f.type, href: f.href }; }
+  // priorytet wybrany przy zakładaniu (Grzegorz 20/11/2026: dłuższy termin niż P5); bez wyboru zostaje ten ze wzoru
+  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: (o.files || []).map(link) }; if (o.priority) { var was = t._links && t._links.priority && t._links.priority.href || ""; b._links = b._links || {}; b._links.priority = { href: /^https?:/.test(was) ? String(o.priority) : path(o.priority) }; } return b; }
+  // lista priorytetów tego samego rodzaju co priorytet ze wzoru: {href, name, days, label}; dni = termin wykonania
+  function hrefOf(x) { var h = x && x._links && x._links.self && (x._links.self.href || x._links.self); return typeof h === "string" ? h : ""; }
+  function path(h) { return String(h || "").replace(/^https?:\/\/[^/]+/, ""); }
+  function priorities(list, entityType) {
+    return (Array.isArray(list) ? list : []).filter(function (p) { return p && p.active !== false && (!entityType || p.entityType === entityType) && hrefOf(p); })
+      .map(function (p) { var sec = p.completePeriod && Number(p.completePeriod.period) || 0; return { href: hrefOf(p), name: String(p.name || ""), days: Math.round(sec / 86400 * 10) / 10, label: String(p.completePeriodDisplayValue || "") }; });
+  }
   function commence(t, o) { var b = strip(t); b.onSiteDate = fmt(o.date, t._date); b.files = { links: [] }; return b; }
   function complete(t, o) {
     var b = strip(t);
@@ -74,7 +85,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, fmt: fmt, create: create, commence: commence, complete: complete, check: check, brief: brief };
+  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, check: check, brief: brief };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -128,6 +139,17 @@
       if (!fl || (!title && !href)) return Promise.resolve(false);
       return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; return list.some(function (f) { return f && (href && f._links && f._links.file && f._links.file.href === href || title && f.title === title); }); }, function () { return false; });
     }
+    // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
+    function upload(f) {
+      var bin = g.atob(f.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
+      var blob = new g.Blob([u8], { type: f.type });
+      return req("POST", "/files", { title: f.title, filename: f.name, type: blob.type, size: blob.size }).then(function (r) {
+        var href = r && r._links && r._links.file && r._links.file.href, remote = r && r._links && r._links.remote && r._links.remote.href, pol = r && r.policy;
+        if (!href || !remote || !pol) throw { code: "upload-shape" };
+        var fd = new g.FormData(); Object.keys(pol).forEach(function (k) { fd.append(k, pol[k]); }); fd.append("file", blob, f.name);
+        return req("POST", remote, null, fd).then(function () { return { href: href, file: r._links.file, resource: r._links.resource || {} }; });
+      });
+    }
     function fail(e) { end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step }); }
     var step = a.op || "";
     // to samo zadanie wysłane drugi raz (np. strona przeładowała się w trakcie) nie zakłada drugiego zlecenia
@@ -137,13 +159,36 @@
       return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); if (!a.fileTitle) return got.push(b); return hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
         .then(function () { end({ status: "ok", jobs: got }); }, fail);
     }
+    if (a.op === "priorities") {
+      var cur = W.create && W.create._links && W.create._links.priority && W.create._links.priority.href;
+      if (!cur) return end({ status: "nowzor", op: "create" });
+      step = "priorities";
+      var items = function (r) { return (r && (r.priorities || (r._embedded && r._embedded.priorities))) || []; };
+      return req("GET", path(cur)).then(function (p) {
+        var et = p && p.entityType || "";
+        return req("GET", "/priorities?active=true&order=name&limit=100" + (et ? "&entityTypes=" + encodeURIComponent(et) : "")).then(function (r) {
+          var list = priorities(items(r), et);
+          if (!list.some(function (x) { return path(x.href) === path(cur); })) list.unshift({ href: cur, name: String(p && p.name || ""), days: priorities([p], "")[0] ? priorities([p], "")[0].days : 0, label: String(p && p.completePeriodDisplayValue || "") });
+          end({ status: "ok", current: cur, list: list });
+        });
+      }).catch(fail);
+    }
     if (a.op === "create") {
       if (!W.create) return end({ status: "nowzor", op: "create" });
-      step = "create";
-      return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, a)).then(function (r) {
+      // najpierw pliki (zdjęcia przed), dopiero potem zlecenie: błąd przy plikach = zlecenie na pewno nie powstało (step "upload")
+      var sent = [];
+      step = "upload";
+      return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { sent.push({ href: u.href, file: u.file, resource: u.resource, title: f.title, name: f.name, type: f.type || "image/jpeg" }); }); }); }, Promise.resolve()).then(function () {
+        step = "create";
+        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent, priority: a.priority }));
+      }).then(function (r) {
         var id = r && r.id; if (!id) return end({ status: "error", code: "noid" });
         step = "check";
-        return job(id).then(function (j) { end({ status: "ok", id: id, job: brief(j) }); }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" } }); });
+        // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
+        return job(id).then(function (j) {
+          return sent.reduce(function (p, f) { return p.then(function (n) { return hasFile(j, "", f.href).then(function (s) { return n + (s ? 1 : 0); }, function () { return n; }); }); }, Promise.resolve(0))
+            .then(function (seen) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: seen }); });
+        }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0 }); });
       }).catch(fail);
     }
     if (a.op === "close") {
@@ -156,15 +201,7 @@
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
         if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
         step = "upload";
-        var bin = g.atob(a.file.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
-        var blob = new g.Blob([u8], { type: a.file.type || "application/pdf" });
-        return req("POST", "/files", { title: a.file.title, filename: a.file.name, type: blob.type, size: blob.size }).then(function (r) {
-          href = r && r._links && r._links.file && r._links.file.href;
-          var remote = r && r._links && r._links.remote && r._links.remote.href, pol = r && r.policy;
-          if (!href || !remote || !pol) throw { code: "upload-shape" };
-          var fd = new g.FormData(); Object.keys(pol).forEach(function (k) { fd.append(k, pol[k]); }); fd.append("file", blob, a.file.name);
-          return req("POST", remote, null, fd);
-        });
+        return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) { href = u.href; });
       }).then(function () {
         if (!j0._links.commence) return null;
         step = "commence";

@@ -246,7 +246,8 @@ test('VantifyPlugin.sync: tylko *.vantify.com, tylko https, limit czasu, okno us
   assert.match(j, /public synchronized void result\(String json\) \{\s*if \(!VantifyActivity\.vantify\(host\) \|\| json == null\) return;/);
   assert.match(j, /public synchronized void part\(String c\) \{ if \(!VantifyActivity\.vantify\(host\)/, 'części wyniku tylko od strony Vantify');
   assert.match(j, /shouldOverrideUrlLoading[^\n]*"https"\.equals/);
-  assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : action \? TIMEOUT_ACTION : TIMEOUT\)/); // przycisk Vantify (PROD-038): własny limit 3 min
+  assert.match(j, /postDelayed\(\(\) -> finish\("\{\\"status\\":\\"timeout\\"\}"\), explore \? TIMEOUT_EXPLORE : action \? limit : TIMEOUT\)/); // przycisk Vantify (PROD-038): własny limit 3 min (+60 s na zdjęcie, max 15 min – #166)
+  assert.match(j, /long limit = TIMEOUT_ACTION;/, 'bez zdjęć zostaje 3 min');
   assert.match(j, /removeView\(web\); web\.destroy\(\)/);
   // Zbadaj: ekran nie gaśnie w trakcie (uśpiony telefon wstrzymuje okno), po wyniku zwykłe wygaszanie
   assert.match(j, /if \(explore\) a\.getWindow\(\)\.addFlags\(WindowManager\.LayoutParams\.FLAG_KEEP_SCREEN_ON\)/);

@@ -84,8 +84,8 @@ function world(action, wz, jobs) {
       let st = 200, res = {};
       if (this.m === 'GET' && /^\/sites\/6324\/jobs\/\d+$/.test(p)) { const j = jobs[id]; if (!j) st = 404; else res = j; }
       else if (this.m === 'GET' && /\/files$/.test(p)) res = { files: (jobs[id].files || []) };
-      else if (p === '/sites/6324/jobs/reactive') { st = 201; res = { id: 3070002, status: 'approval_pending' }; jobs[3070002] = { id: 3070002, status: 'approval_pending', summary: JSON.parse(b).summary, _links: {} }; }
-      else if (p === '/files') { st = 201; res = { policy: { key: 'k', bucket: 'b', GoogleAccessId: 'g', policy: 'p', signature: 's', 'Content-Disposition': 'c', success_action_redirect: 'r' }, _links: { remote: { href: 'https://storage.googleapis.com/savillsuk.elogbooks.net' }, file: { href: '/files/999' } } }; }
+      else if (p === '/sites/6324/jobs/reactive') { st = 201; res = { id: 3070002, status: 'approval_pending' }; const body = JSON.parse(b); jobs[3070002] = { id: 3070002, status: 'approval_pending', summary: body.summary, _links: { files: { href: '/sites/6324/jobs/3070002/files' } }, files: (body.files.links || []).slice(0, world.keep == null ? 99 : world.keep).map(l => ({ _links: { file: { href: l.href } } })) }; }
+      else if (p === '/files') { st = 201; const nf = 999 + calls.filter(c => c.u.replace(API, '') === '/files').length - 1; res = { policy: { key: 'k', bucket: 'b', GoogleAccessId: 'g', policy: 'p', signature: 's', 'Content-Disposition': 'c', success_action_redirect: 'r' }, _links: { remote: { href: 'https://storage.googleapis.com/savillsuk.elogbooks.net' }, file: { href: '/files/' + nf }, resource: { href: '/files/' + nf + '/resource', title: 't', type: 'image/jpeg' } } }; }
       else if (this.u.startsWith('https://storage.googleapis.com/')) { st = 200; res = null; }
       else if (/operation\/commence$/.test(p)) { st = 204; jobs[id].status = 'commenced'; jobs[id]._links = { complete: {}, files: { href: '/sites/6324/jobs/' + id + '/files' } }; res = null; }
       else if (/operation\/complete$/.test(p)) { st = 204; Object.assign(jobs[id], { status: 'completed', is_final_status: true }); jobs[id].files = [{ _links: { file: { href: '/files/999' } } }]; res = null; }
@@ -106,12 +106,35 @@ const PDF = Buffer.from('%PDF-1.4 job sheet').toString('base64');
 test('założenie: jedno POST z wzorem i tekstem, potem odczyt; drugi raz to samo zadanie nic nie wysyła', async () => {
   const s = world({ op: 'create', site: 6324, nonce: 'n1', summary: 'Coat hooks on office door', description: 'Hooks' }, WZ, {});
   await s.run();
-  assert.deepStrictEqual(s.results, [{ status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Coat hooks on office door' } }]);
+  assert.deepStrictEqual(s.results, [{ status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Coat hooks on office door' }, photos: 0, photosSeen: 0 }]);
   const post = s.calls.filter(c => c.m === 'POST');
   assert.strictEqual(post.length, 1); assert.strictEqual(post[0].h.Authorization, 'Bearer T');
   const b = JSON.parse(post[0].body); assert.strictEqual(b.summary, 'Coat hooks on office door'); assert.deepStrictEqual(b._links, CREATE._links); assert.deepStrictEqual(b.files, { links: [] });
   s.w.__oestAkcja(API, 'Bearer T', r => s.results.push(JSON.parse(JSON.stringify(r)))); await new Promise(r => setImmediate(r));
   assert.deepStrictEqual(s.results[1], { status: 'error', code: 'repeat' }); assert.strictEqual(s.calls.filter(c => c.m === 'POST').length, 1, 'przeładowanie strony nie zakłada drugiego zlecenia');
+});
+const JPG = Buffer.from('jpegdata').toString('base64');
+test('założenie ze zdjęciami przed: najpierw pliki, potem zlecenie z linkami; zdjęcia sprawdzone przy zleceniu (Grzegorz 20/11/2026)', async () => {
+  const files = [{ b64: JPG, name: 'Before-photo-1.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'Before-photo-2.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
+  const s = world({ op: 'create', nonce: 'p1', summary: 'Door handle', description: 'Loose handle', files }, WZ, {}); await s.run();
+  const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
+  assert.deepStrictEqual(seq, ['POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/reactive', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002/files']);
+  assert.deepStrictEqual(JSON.parse(s.calls[0].body), { title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', size: 8 });
+  const b = JSON.parse(s.calls[4].body);
+  assert.strictEqual(b.files.links.length, 2);
+  assert.deepStrictEqual(b.files.links[0], { _links: { file: { href: '/files/999' }, resource: { href: '/files/999/resource', title: 't', type: 'image/jpeg' } }, title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', href: '/files/999' });
+  assert.strictEqual(b.files.links[1].href, '/files/1000');
+  assert.deepStrictEqual(s.results[0], { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Door handle' }, photos: 2, photosSeen: 2 });
+});
+test('założenie: zdjęcie nie dotarło przy zleceniu → wynik mówi ile widać; błąd wysyłki zdjęcia → zlecenie nie zakładane', async () => {
+  const files = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'b.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
+  world.keep = 1; const s = world({ op: 'create', nonce: 'p2', summary: 'x', description: 'y', files }, WZ, {}); await s.run(); world.keep = null;
+  assert.strictEqual(s.results[0].photos, 2); assert.strictEqual(s.results[0].photosSeen, 1);
+  const t = world({ op: 'create', nonce: 'p3', summary: 'x', description: 'y', files: [{ b64: JPG, name: 'a.jpg', title: 'A', type: 'image/jpeg' }] }, WZ, {});
+  const XHR = t.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (/storage\.googleapis/.test(this.u)) { this.status = 500; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await t.run();
+  assert.strictEqual(t.results[0].status, 'error'); assert.strictEqual(t.results[0].step, 'upload');
+  assert.ok(!t.calls.some(c => /jobs\/reactive$/.test(c.u)), 'bez zdjęcia w Vantify nie zakłada zlecenia');
 });
 test('bez wzoru: nic nie wysyła, mówi czego brakuje', async () => {
   const s = world({ op: 'create', nonce: 'n2', summary: 'a', description: 'b' }, {}, {}); await s.run();
@@ -185,4 +208,17 @@ test('okno Vantify w apce: udane zapytanie strony → wzór bez tekstów i numer
   assert.strictEqual(got.length, 2); assert.strictEqual(got[0][0], 'create'); assert.strictEqual(got[0][2], '3066755');
   assert.ok(!JSON.stringify(got).includes('Coat hooks') && !JSON.stringify(got).includes('LED'), 'do telefonu bez Summary/Description/opisów plików');
   assert.strictEqual(got[1][0], 'complete'); assert.strictEqual(got[1][2], '3066755');
+});
+test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaju, dni z terminu, wybrany idzie w zleceniu', () => {
+  const list = [
+    { name: 'P5', active: true, entityType: 'entity_reactive', completePeriod: { period: 432000 }, completePeriodDisplayValue: '5 days', _links: { self: { href: 'https://savillsuk-api.cafm.vantify.com/priorities/5' } } },
+    { name: 'P8', active: true, entityType: 'entity_reactive', completePeriod: { period: 15552000 }, completePeriodDisplayValue: '180 days', _links: { self: { href: '/priorities/137' } } },
+    { name: 'Quote', active: true, entityType: 'entity_quote', completePeriod: { period: 86400 }, _links: { self: { href: '/priorities/6' } } },
+    { name: 'Old', active: false, entityType: 'entity_reactive', _links: { self: { href: '/priorities/9' } } }];
+  const p = A.priorities(list, 'entity_reactive');
+  assert.deepStrictEqual(p.map(x => [x.name, x.days, x.label]), [['P5', 5, '5 days'], ['P8', 180, '180 days']]);
+  const rel = A.create(A.wzor('create', CREATE), { summary: 's', description: 'd', priority: 'https://savillsuk-api.cafm.vantify.com/priorities/137' });
+  assert.strictEqual(rel._links.priority.href, /^https?:/.test(CREATE._links.priority.href) ? 'https://savillsuk-api.cafm.vantify.com/priorities/137' : '/priorities/137', 'adres w tym samym zapisie co we wzorze');
+  const keep = A.create(A.wzor('create', CREATE), { summary: 's', description: 'd' });
+  assert.deepStrictEqual(keep._links.priority, CREATE._links.priority, 'bez wyboru zostaje priorytet ze wzoru');
 });
