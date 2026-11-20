@@ -49,7 +49,10 @@
     return iso.replace(/\.\d+Z$/, "+00:00");
   }
   function strip(t) { var b = clone(t); Object.keys(b).forEach(function (k) { if (k.charAt(0) === "_" && k !== "_links") delete b[k]; }); return b; }
-  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: [] }; return b; }
+  // zdjęcia przed przy zakładaniu (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis, Job Sheet po wykonaniu”) – pozycja jak w zapisie „Zbadaj” 18/11:
+  // {_links:{file, resource}, title, filename, type, href}; file/resource z odpowiedzi POST /files
+  function link(f) { return { _links: { file: f.file || { href: f.href }, resource: f.resource || {} }, title: f.title, filename: f.name, type: f.type, href: f.href }; }
+  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: (o.files || []).map(link) }; return b; }
   function commence(t, o) { var b = strip(t); b.onSiteDate = fmt(o.date, t._date); b.files = { links: [] }; return b; }
   function complete(t, o) {
     var b = strip(t);
@@ -128,6 +131,17 @@
       if (!fl || (!title && !href)) return Promise.resolve(false);
       return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; return list.some(function (f) { return f && (href && f._links && f._links.file && f._links.file.href === href || title && f.title === title); }); }, function () { return false; });
     }
+    // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
+    function upload(f) {
+      var bin = g.atob(f.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
+      var blob = new g.Blob([u8], { type: f.type });
+      return req("POST", "/files", { title: f.title, filename: f.name, type: blob.type, size: blob.size }).then(function (r) {
+        var href = r && r._links && r._links.file && r._links.file.href, remote = r && r._links && r._links.remote && r._links.remote.href, pol = r && r.policy;
+        if (!href || !remote || !pol) throw { code: "upload-shape" };
+        var fd = new g.FormData(); Object.keys(pol).forEach(function (k) { fd.append(k, pol[k]); }); fd.append("file", blob, f.name);
+        return req("POST", remote, null, fd).then(function () { return { href: href, file: r._links.file, resource: r._links.resource || {} }; });
+      });
+    }
     function fail(e) { end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step }); }
     var step = a.op || "";
     // to samo zadanie wysłane drugi raz (np. strona przeładowała się w trakcie) nie zakłada drugiego zlecenia
@@ -139,11 +153,20 @@
     }
     if (a.op === "create") {
       if (!W.create) return end({ status: "nowzor", op: "create" });
-      step = "create";
-      return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, a)).then(function (r) {
+      // najpierw pliki (zdjęcia przed), dopiero potem zlecenie: błąd przy plikach = zlecenie na pewno nie powstało (step "upload")
+      var sent = [];
+      step = "upload";
+      return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { sent.push({ href: u.href, file: u.file, resource: u.resource, title: f.title, name: f.name, type: f.type || "image/jpeg" }); }); }); }, Promise.resolve()).then(function () {
+        step = "create";
+        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent }));
+      }).then(function (r) {
         var id = r && r.id; if (!id) return end({ status: "error", code: "noid" });
         step = "check";
-        return job(id).then(function (j) { end({ status: "ok", id: id, job: brief(j) }); }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" } }); });
+        // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
+        return job(id).then(function (j) {
+          return sent.reduce(function (p, f) { return p.then(function (n) { return hasFile(j, "", f.href).then(function (s) { return n + (s ? 1 : 0); }, function () { return n; }); }); }, Promise.resolve(0))
+            .then(function (seen) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: seen }); });
+        }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0 }); });
       }).catch(fail);
     }
     if (a.op === "close") {
@@ -156,15 +179,7 @@
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
         if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
         step = "upload";
-        var bin = g.atob(a.file.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
-        var blob = new g.Blob([u8], { type: a.file.type || "application/pdf" });
-        return req("POST", "/files", { title: a.file.title, filename: a.file.name, type: blob.type, size: blob.size }).then(function (r) {
-          href = r && r._links && r._links.file && r._links.file.href;
-          var remote = r && r._links && r._links.remote && r._links.remote.href, pol = r && r.policy;
-          if (!href || !remote || !pol) throw { code: "upload-shape" };
-          var fd = new g.FormData(); Object.keys(pol).forEach(function (k) { fd.append(k, pol[k]); }); fd.append("file", blob, a.file.name);
-          return req("POST", remote, null, fd);
-        });
+        return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) { href = u.href; });
       }).then(function () {
         if (!j0._links.commence) return null;
         step = "commence";

@@ -92,7 +92,7 @@ function fakePhone() {
       check(await pg.locator('[data-rx=vt-close].go').count() === 1, 'zakończone w apce: Close Vantify niedostępny po zatwierdzeniu'); }
     // ---------- 3. Open z wzorem: apka zakłada sama ----------
     await pg.locator('[data-rx=back]').first().click().catch(() => {}); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
-    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' } }); });
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' }, photos: 1, photosSeen: 1 }); });
     await job('Wieszaki w kuchni');
     // 3a. brak odpowiedzi: karta pamięta „mogło powstać” (przegląd Codex #146)
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
@@ -108,11 +108,15 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('[data-a=ok]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await msg(/Vantify nie przyjął: Invalid/);
     { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && !j.reactive.vantify, 'odmowa 4xx: karta dalej „niepewna”'); }
-    // 3d. zakładanie udane
-    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    // 3d. zakładanie udane – ze zdjęciem przed (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis”), bez Job Sheet
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
+    check(/Zdjęcia przed: 1/.test(await ask().locator('.rx-vt-photos').textContent()), 'okno Open Vantify nie mówi o zdjęciu przed');
+    await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => /✓ Vantify #3070002/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
+    await msg(/Założone w Vantify #3070002\. Czeka na zatwierdzenie/);
     { const k = await calls(); check(k.length === 3 && k.every(c => c.op === 'create') && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
     { const k = await calls(); check(new Set(k.map(c => c.nonce)).size === 3, 'ponowne zakładanie z tym samym nonce'); }
+    { const k = await calls(), f = k[2].files || []; check(f.length === 1 && /^image\//.test(f[0].type) && f[0].title === 'Before photo 1' && /^Before-photo-1\.(jpg|png)$/.test(f[0].name) && f[0].b64.length > 100 && !k.some(c => c.file), 'zakładanie: zdjęcie przed nie poszło (albo poszedł PDF) ' + JSON.stringify(f.map(x => ({ ...x, b64: x.b64 && x.b64.length })))); }
     { const k = await calls(); check(k.length === 3 && k[0].op === 'create' && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
     // ---------- 4. Close: braki → Wróć ----------
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, commence: true, complete: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }); });

@@ -50,14 +50,16 @@
     const sum = ks ? K.summary(ks) : await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
     const desc = [ks ? K.request(ks) : '', body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');
     const node = document.createElement('div');
-    node.innerHTML = '<label class="field"><span>Summary</span><input class="rx-vt-sum" maxlength="250" value="' + esc(sum) + '"></label><label class="field"><span>Description</span><textarea class="rx-vt-desc rx-info-t" rows="6">' + esc(desc) + '</textarea></label>';
+    /* zdjęcia przed idą razem z opisem (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis, Job Sheet po wykonaniu”) */
+    const nBefore = (d.beforeMediaIds || []).length;
+    node.innerHTML = '<label class="field"><span>Summary</span><input class="rx-vt-sum" maxlength="250" value="' + esc(sum) + '"></label><label class="field"><span>Description</span><textarea class="rx-vt-desc rx-info-t" rows="6">' + esc(desc) + '</textarea></label><p class="rx-sub rx-vt-photos">' + esc(L('Zdjęcia przed: ', 'Before photos: ') + nBefore) + '</p>';
     x.message('');
     if (!await ask({ title: 'Open Vantify', node, ok: L('Załóż zlecenie', 'Create the job'), cancel: L('Wróć', 'Back') })) return;
     const summary = node.querySelector('.rx-vt-sum').value.trim(), description = node.querySelector('.rx-vt-desc').value.trim();
     if (!summary || !description) return x.message(L('Summary i Description nie mogą być puste.', 'Summary and Description cannot be empty.'));
     const W = await wzory(P);
     if (!W.create) {
-      await ask({ title: 'Open Vantify', text: L('Pierwszy raz: załóż zlecenie w oknie Vantify, jak zwykle. Summary i Description są gotowe do skopiowania (przyciski u góry). Apka zapamięta ustawienia i numer zlecenia, a następne założy sama.', 'First time: create the job in the Vantify window as usual. Summary and Description are ready to copy (buttons at the top). The app remembers the settings and the job number and creates the next ones by itself.'), alert: true });
+      await ask({ title: 'Open Vantify', text: L('Pierwszy raz: załóż zlecenie w oknie Vantify, jak zwykle. Summary i Description są gotowe do skopiowania (przyciski u góry), zdjęcie przed dodaj przy Upload. Apka zapamięta ustawienia i numer zlecenia, a następne założy sama.', 'First time: create the job in the Vantify window as usual. Summary and Description are ready to copy (buttons at the top); add the before photo at Upload. The app remembers the settings and the job number and creates the next ones by itself.'), alert: true });
       let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/add//site', summary, description }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
       const ev = (r?.events || []).filter(e => e.op === 'create' && e.id).pop();
       if (!ev) return x.message(L('Nie widzę nowego zlecenia w Vantify. Jeśli je założyłeś, wpisz numer w ⋮ albo spróbuj jeszcze raz.', 'I do not see a new job in Vantify. If you created it, try again.'));
@@ -68,8 +70,16 @@
     /* zapis „zakładam” przed wysłaniem: przy braku odpowiedzi karta pamięta, że zlecenie mogło powstać (przegląd Codex #146) */
     x.draft.vantify = { pending: true, summary, at: new Date().toISOString() }; await x.persist(); x.render();
     x.message(L('Zakładam zlecenie w Vantify…', 'Creating the job in Vantify…'));
-    const r = await act(P, { op: 'create', summary, description });
-    if (r.status === 'ok' && r.id) return saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary });
+    const files = x.photos ? await x.photos('before') : [];
+    const r = await act(P, { op: 'create', summary, description, files });
+    if (r.status === 'ok' && r.id) {
+      await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary });
+      /* zdjęcia sprawdzone przy zleceniu po założeniu – gdy czegoś nie widać, karta mówi wprost */
+      if (files.length && (r.photosSeen || 0) < files.length) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + (r.photosSeen || 0) + L(' z ', ' of ') + files.length + L(' zdjęć przed – dodaj brakujące w Vantify.', ' before photos – add the missing ones in Vantify.'));
+      return;
+    }
+    /* błąd przy wysyłce zdjęć (przed zakładaniem) = zlecenie na pewno nie powstało */
+    if (r.step === 'upload') { delete x.draft.vantify; await x.persist(); x.render(); }
     /* pewne „nie założono”: brak wzoru, wygasłe logowanie, zajęte okno albo odmowa Vantify (HTTP 4xx) – wtedy karta wraca do „Open Vantify” */
     if (r.status === 'nowzor' || r.status === 'login' || r.code === 'VANTIFY_BUSY' || /^http4\d\d$/.test(r.code || '')) { delete x.draft.vantify; await x.persist(); x.render(); }
     x.message(why(r, L));
