@@ -55,6 +55,18 @@ function runNode() {
   }
 }
 
+// Czy środowisko ma to, czego potrzebują testy przeglądarkowe: Playwright (ten sam require co w teście, ta sama ścieżka
+// i katalog) oraz przeglądarkę, którą da się uruchomić. Zwraca opis braku albo pusty napis.
+function przedTestami(env) {
+  const mod = env.OEST_PLAYWRIGHT_PATH || 'playwright';
+  const kod = `const pw=require(${JSON.stringify(mod)});pw.chromium.launch(process.env.OEST_BROWSER_PATH?{executablePath:process.env.OEST_BROWSER_PATH}:{}).then(b=>b.close()).then(()=>process.exit(0),e=>{console.error('BROWSER: '+String(e.message||e).split('\\n')[0]);process.exit(3);});`;
+  const p = spawnSync(process.execPath, ['-e', kod], { cwd: APP, env, encoding: 'utf8', timeout: 120000 });
+  const out = (p.stdout || '') + (p.stderr || '');
+  if (/Cannot find module/.test(out)) return `nie zainstalowano Playwright („${mod}”). Zainstaluj go (npm i playwright) albo ustaw OEST_PLAYWRIGHT_PATH.`;
+  if (p.status === 3) return 'Playwright jest, ale przeglądarka się nie uruchamia (' + (out.match(/BROWSER: (.*)/) || [, ''])[1] + '). Ustaw OEST_BROWSER_PATH albo zainstaluj Chromium.';
+  if (p.status !== 0) return 'nie udało się sprawdzić Playwright: ' + tail(out, 3);
+  return '';
+}
 function browserEnv() {
   const env = { ...process.env };
   if (!env.OEST_BROWSER_PATH) for (const c of ['google-chrome', 'chromium-browser', 'chromium']) { const w = spawnSync('sh', ['-c', 'command -v ' + c], { encoding: 'utf8' }); if (w.status === 0 && w.stdout.trim()) { env.OEST_BROWSER_PATH = w.stdout.trim(); break; } }
@@ -82,12 +94,20 @@ async function runBrowser() {
     for (const t of tests) record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Brak zbudowanej strony app/www/inspekcje (npm run copy-web nie został wykonany).' });
     return;
   }
+  // sprawdzenie wstępne (P0-2, punkt #37): jedno jasne „nie zainstalowane” zamiast osobnego, dziwnego błędu w każdym teście
+  const braki = przedTestami(env);
+  if (braki) {
+    console.error('::error title=Sprawdzenie wstępne::' + braki);
+    for (const t of tests) record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Sprawdzenie wstępne: ' + braki });
+    return;
+  }
   const one = async t => {
     const abs = path.join(ROOT, t.file), t0 = Date.now();
     if (!fs.existsSync(abs)) { record({ id: t.file, kind: 'browser', status: 'NOT RUN', seconds: 0, detail: 'Plik testu nie istnieje (usunięty lub przeniesiony).' }); return; }
+    // konsola.cjs: każdy błąd w konsoli strony = FAIL testu (P0-2, #33), testy bez internetu
     // ślad wczytanych plików dla analizy wpływu (quality/wplyw-slad.cjs) – tylko zapis, test działa tak samo
     const slad = SLAD ? path.join(SLAD, path.basename(t.file) + '.json') : '';
-    const p = await spawnAsync(process.execPath, [...(slad ? ['-r', path.join(__dirname, 'wplyw-slad.cjs')] : []), abs], { cwd: APP, env: slad ? { ...env, OEST_WPLYW_PLIK: slad, OEST_WPLYW_WWW: path.join(APP, 'www') } : env, timeout: (t.timeoutSec || 900) * 1000 });
+    const p = await spawnAsync(process.execPath, ['-r', path.join(__dirname, 'konsola.cjs'), ...(slad ? ['-r', path.join(__dirname, 'wplyw-slad.cjs')] : []), abs], { cwd: APP, env: slad ? { ...env, OEST_WPLYW_PLIK: slad, OEST_WPLYW_WWW: path.join(APP, 'www') } : env, timeout: (t.timeoutSec || 900) * 1000 });
     let wczytane; if (slad) try { wczytane = JSON.parse(fs.readFileSync(slad, 'utf8')); } catch {}
     const out = (p.stdout || '') + (p.stderr || ''), seconds = +((Date.now() - t0) / 1000).toFixed(1);
     let status, detail = '', scenarios;
