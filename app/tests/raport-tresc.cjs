@@ -73,7 +73,7 @@ function docxParts(buf) {
   const zip = new PizZip(buf), files = Object.keys(zip.files);
   const text = f => zip.file(f).asText().split('</w:p>').map(p => [...p.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)].map(r => {
     const rp = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(r[1]), caps = !!(rp && /<w:caps\/>|<w:caps w:val="(?:true|1|on)"\/>/.test(rp[1]));
-    return [...r[1].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br\/>/g)].map(m => m[1] !== undefined ? (caps ? unxml(m[1]).toUpperCase() : unxml(m[1])) : ' ').join('');
+    return [...r[1].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br\/>|<w:sym w:font="Wingdings 2" w:char="(F052|F054)"\/>/g)].map(m => m[1] !== undefined ? (caps ? unxml(m[1]).toUpperCase() : unxml(m[1])) : m[2] ? (m[2] === 'F052' ? '\u2611' : '\u2612') : ' ').join(''); // kratka jako symbol Worda (Wingdings 2) = ☑/☒
   }).join('')).join('\n');
   if (!files.includes('word/document.xml')) throw Error('DOCX bez word/document.xml');
   // zdjęcia w treści (nie w nagłówku): wymiary obrazów wstawionych w word/document.xml

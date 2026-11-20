@@ -22,6 +22,19 @@ const BASELINE = path.resolve(__dirname, '../../quality/baselines/word-pdf.json'
 // (basic, Plant, Reactive) w polu „ID:” – i w Wordzie, i w PDF. Wzory firmy QHS bez pola ID: numer tylko w nazwie.
 const nrZlecenia = id => '9' + String(id.replace(/\D/g, '')).padStart(6, '0');
 const nrBledy = [], nrRaporty = { wNazwie: 0, wPoluId: 0 };
+// Word (Grzegorz 20/11/2026): kratki ☑/☒ jako symbol Worda z Wingdings 2 (Calibri ich nie ma – Word pokazywał
+// pusty kwadracik), a „Location:” pomieszczeń Plant wyrównane do lewej w stałej kolumnie (PROD-041).
+function ukladWord(words, zle) {
+  const PizZip = require('pizzip');
+  for (const w of words) {
+    const x = new PizZip(w).file('word/document.xml').asText(), runs = x.match(/<w:r[ >][\s\S]*?<\/w:r>/g) || [];
+    const bezCzcionki = runs.filter(r => /[\u2611\u2612]/.test(r)).length;
+    if (bezCzcionki) zle('Word: ' + bezCzcionki + ' kratek ☑/☒ jako zwykły znak w tekście (Calibri go nie ma – pusty kwadracik); ma być symbol Wingdings 2');
+    const zleLoc = (x.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []).filter(p => /^Location: \S/.test((p.match(/<w:t[^>]*>[^<]*/g) || []).map(t => t.replace(/<w:t[^>]*>/, '')).join('')) && /<w:jc w:val="(right|end|center)"/.test(p)).length;
+    if (zleLoc) zle('Word: ' + zleLoc + ' akapitów „Location:” pomieszczeń nie jest wyrównanych do lewej');
+  }
+}
+
 function sprawdzNr(id, nr, nazwy, d) {
   for (const n of nazwy) { if (!n.replace(/\.(docx|pdf)$/, '').replace(/ - basic$/, '').endsWith(' ' + nr)) nrBledy.push(id + ': nazwa pliku bez numeru zlecenia ' + nr + ' na końcu: ' + n); else nrRaporty.wNazwie++; }
   if (!/(^|\n)Engineer:/.test(d.tekstWord)) return; // wzór Engineers Report (wiersz Engineer:), nie kartka QHS
@@ -104,6 +117,7 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         // każde dodane zdjęcie (po wymiarach) musi być i w Wordzie, i w PDF – brak w obu nie jest „zgodnością”
         for (const z of zdj) { const wym = FOTO[z].join('x'); if (!d.zdjeciaWord.includes(wym) || !d.zdjeciaPdf.includes(wym)) zle('zdjęcie „' + z + '” (' + wym + ') nie trafiło do ' + [!d.zdjeciaWord.includes(wym) && 'Worda', !d.zdjeciaPdf.includes(wym) && 'PDF'].filter(Boolean).join(' ani do ')); }
         sprawdzNr(id, nr, files.map(f => f.name), d);
+        ukladWord(word.map(buf), zle);
         const w = { pliki: files.map(f => f.name), slowa: d.slowa, zdjecia: d.zdjecia, dodaneZdjecia: zdj, roznica: podpis(d) };
         if (zKomentarzem) { const k = s => s.replace(/\s+/g, ' ').includes(KOMENTARZ); w.komentarz = { word: k(d.tekstWord), pdf: k(d.tekstPdf) }; }
         if (!d.slowa.word && !d.slowa.pdf && !d.zdjecia.word) zle('raport bez treści i bez zdjęć – nie ma czego porównać');
