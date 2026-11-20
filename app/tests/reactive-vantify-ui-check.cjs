@@ -45,12 +45,12 @@ function fakePhone() {
     await pg.goto(B + '/#reactive');
     const png = await pg.evaluate(() => { const c = document.createElement('canvas'); c.width = 320; c.height = 240; const x = c.getContext('2d'); x.fillStyle = '#987'; x.fillRect(0, 0, 320, 240); return c.toDataURL('image/png').split(',')[1]; });
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
-    async function job(title) {
+    async function job(title, withPhoto = true) {
       await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
       await pg.locator('[data-rx-field=title]').fill(title); await saved();
       await row('where'); await pg.locator('[data-rx=building][data-value="Tower B"]').click(); await pg.locator('[data-rx-field=level]').selectOption('5'); await pg.locator('[data-rx-field=room]').fill('Office door');
       await row('start'); await pg.locator('[data-rx-field=note]').fill('Proszę o 10 haczyków na drzwiach biura.'); await saved();
-      await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-before img'));
+      if (withPhoto) { await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-before img')); }
     }
     // ---------- 1. nowe zadanie: dwa przyciski Vantify, ta sama wielkość ----------
     await job('Haczyki na drzwiach biura');
@@ -181,6 +181,14 @@ function fakePhone() {
     await msg(/Brakuje zdjęcia/);
     check((await calls()).length === 0, 'brak zdjęcia przed: mimo to coś wysłane do Vantify');
     check(await pg.locator('[data-rx=vt-open]:not(.rx-vt-off)').count() === 1, 'brak zdjęcia przed: karta w stanie „zakładam”');
+    // ---------- 7c. bez zdjęcia też zakłada (Grzegorz 20/11/2026: „przy otwieraniu Reactive nie będzie wymagane dodawanie zdjęcia”) ----------
+    await pg.goto(B + '/#reactive'); await job('Bez zdjecia', false);
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id: 3070009, job: { id: 3070009, status: 'approval_pending', summary: 'EN Bez zdjecia' }, photos: 0, photosSeen: 0 }); });
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
+    check(/Zdjęcia przed: 0/.test(await ask().locator('.rx-vt-photos').textContent()), 'bez zdjęcia: okno nie mówi „0”');
+    await ask().locator('[data-a=ok]').click();
+    await msg(/Założone w Vantify #3070009\. Czeka na zatwierdzenie/);
+    { const k = await calls(); check(k.length === 1 && k[0].op === 'create' && Array.isArray(k[0].files) && k[0].files.length === 0, 'bez zdjęcia: zlecenie nie założone albo złe zapytanie ' + JSON.stringify(k)); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();
