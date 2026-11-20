@@ -202,8 +202,8 @@
   function loginUi(box) {
     var V = plugin("Vantify"), u = box.querySelector("#vtUser"), pw = box.querySelector("#vtPass"), sh = box.querySelector("#vtLoginShow");
     var keep = draftLogin; draftLogin = null;
-    function remember() { draftLogin = { u: u.value, p: pw.dataset.shown ? "" : pw.value, show: pw.type === "text" && !pw.dataset.shown }; }
-    u.oninput = pw.oninput = function () { delete pw.dataset.shown; remember(); };
+    function remember() { draftLogin = { u: u.value, p: pw.value, show: pw.type === "text" }; }
+    u.oninput = pw.oninput = remember;
     function m(t) { var e = box.querySelector("#vtLoginMsg"); if (e) e.textContent = t; }
     function state(r) {
       r = r || {};
@@ -220,9 +220,10 @@
       V.saveLogin({ user: u.value.trim(), pass: pw.value }).then(state).catch(function () { m(L("Nie udało się zapisać. Spróbuj jeszcze raz.", "Could not save. Try again.")); });
     };
     sh.onclick = function () {
-      if (pw.type === "text") { pw.type = "password"; if (pw.dataset.shown) { pw.value = ""; delete pw.dataset.shown; } sh.textContent = L("Pokaż", "Show"); if (draftLogin) remember(); return; }
+      if (pw.type === "text") { pw.type = "password"; sh.textContent = L("Pokaż", "Show"); if (draftLogin) remember(); return; }
       if (pw.value) { pw.type = "text"; sh.textContent = L("Ukryj", "Hide"); remember(); return; }
-      V.showLogin().then(function (r) { if (!r || !r.pass) { m(L("Nie ma zapisanego hasła.", "No saved password.")); return; } pw.value = r.pass; pw.dataset.shown = "1"; pw.type = "text"; sh.textContent = L("Ukryj", "Hide"); }).catch(function () {});
+      // zapisane hasło pokazuje okienko Androida; ekran apki go nie dostaje (ustalenie #39, Grzegorz 19/11/2026)
+      V.showLogin({ lang: L("pl", "en") }).then(function (r) { if (!r || !r.ok) m(L("Nie ma zapisanego hasła.", "No saved password.")); }).catch(function () {});
     };
     box.querySelector("#vtLoginClear").onclick = function () { V.clearLogin().then(function (r) { u.value = ""; state(r); }).catch(function () {}); };
   }

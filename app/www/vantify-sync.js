@@ -7,8 +7,9 @@
 //  2. pobieramy wszystkie strony tej listy (TYLKO odczyt, GET) i oddajemy do apki: numer, typ, nazwa zadania,
 //     status, terminy, częstotliwość. Bez danych osób, bez tokenu.
 // Wynik przez most OESTVantifySync.result(json): {status:"ok", count, jobs} | {status:"login", code?} | {status:"error", code}.
-// Logowanie wygasło, a w Ustawieniach są zapisane login i hasło (VantifyLogin wstawia je jako window.__oestLogin):
-// skrypt wpisuje je w formularz logowania Vantify i loguje się RAZ. Vantify odrzucił (400/401/403/422) → {status:"login", code:"bad"};
+// Logowanie wygasło, a w Ustawieniach są zapisane login i hasło (most OESTVantifySync.hasLogin()): gdy formularz logowania
+// jest gotowy, skrypt prosi Androida (OESTVantifySync.fillLogin()), a Android RAZ woła window.__oestFill(login, hasło)
+// – hasło nie jest zmienną strony (ustalenia #39, #41, 19/11/2026). Skrypt wpisuje je w formularz i loguje się RAZ. Vantify odrzucił (400/401/403/422) → {status:"login", code:"bad"};
 // brak odpowiedzi → {status:"error", code:"login-timeout"} (bez blokady zapisanego hasła).
 (function (g) {
   if (g.__oestVantifySync) return;
@@ -102,12 +103,18 @@
     if (d && d.set) d.set.call(el, v); else el.value = v;
     ["input", "change", "blur"].forEach(function (n) { el.dispatchEvent(new g.Event(n, { bubbles: true })); });
   }
-  function login(c) {
+  // pola formularza logowania albo null, gdy formularz jeszcze się nie wyrysował
+  function form() {
     var d = g.document, pw = d.querySelector("input[type=password]");
-    if (!pw) return false; // formularz jeszcze się nie wyrysował
-    var form = pw.form || d, fields = [].slice.call(form.querySelectorAll("input")), at = fields.indexOf(pw), user = null;
+    if (!pw) return null;
+    var f = pw.form || d, fields = [].slice.call(f.querySelectorAll("input")), at = fields.indexOf(pw), user = null;
     for (var i = at - 1; i >= 0 && !user; i--) if (/^(text|email|)$/i.test(fields[i].getAttribute("type") || "")) user = fields[i];
-    if (!user) return false;
+    return user ? { f: f, pw: pw, user: user } : null;
+  }
+  // woła tylko Android (VantifyLogin.fill), raz, z loginem i hasłem jako argumentami
+  g.__oestFill = function (u, p) { var x = form(); if (x) login(x, { u: u, p: p }); };
+  function login(x, c) {
+    var pw = x.pw, user = x.user, form = x.f;
     type(user, c.u); type(pw, c.p);
     armed = true; // od teraz zapytanie POST do API to logowanie (jego odpowiedź mówi, czy hasło przyjęte)
     var btn = form.querySelector("button[type=submit],input[type=submit]") || form.querySelector("button");
@@ -203,9 +210,9 @@
     var h = String(g.location.hash || "");
     if (/^#\/login/.test(h)) {
       if (g.__oestLoginBad) return out({ status: "login", code: "bad" }); // zapisane hasło już odrzucone: nie próbuj, poproś o nowe
-      var c = g.__oestLogin;
-      if (!c || !c.u || !c.p) return out({ status: "login" });
-      if (!tried) { if (login(c)) { tried = true; triedAt = Date.now() || 1; try { g.sessionStorage.setItem("oestVantifyTried", String(triedAt)); } catch (e) {} } else if (Date.now() - t0 > WAIT) return out({ status: "login" }); }
+      var B = g.OESTVantifySync;
+      if (!B || !B.hasLogin || !B.hasLogin()) return out({ status: "login" });
+      if (!tried) { if (form()) { B.fillLogin(); tried = true; triedAt = Date.now() || 1; try { g.sessionStorage.setItem("oestVantifyTried", String(triedAt)); } catch (e) {} } else if (Date.now() - t0 > WAIT) return out({ status: "login" }); }
       else if (/^(400|401|403|422)$/.test(String(loginSt))) return out({ status: "login", code: "bad" }); // Vantify odrzucił hasło: jedna próba
       // bez odpowiedzi odrzucenia (brak sieci, wolna odpowiedź): błąd, NIE „złe hasło” – następnym razem apka spróbuje znów
       else if (Date.now() - triedAt > LOGIN_WAIT) return out({ status: "error", code: "login-timeout" });

@@ -3,7 +3,7 @@
 // Porównuje stan PR z gałęzią bazową (domyślnie origin/main) i daje FAIL, gdy:
 //   - z quality/required-tests.json zniknął obowiązkowy test, jego passMarker/scenarios albo wydłużono timeoutSec,
 //   - dodano wyjątek do allowedSkips,
-//   - przybyło wpisów w quality/baselines/*.json (baseline może tylko maleć),
+//   - przybyło wpisów w quality/baselines/*.json albo wzrósł ich licznik „maks” (baseline może tylko maleć),
 //   - usunięto lub przeniesiono plik testu w app/tests/,
 //   - zmieniony test (app/tests/, quality/tests/) ma mniej sprawdzeń niż na gałęzi bazowej (R23, decyzja właściciela 19/11/2026),
 //   - mapa wpływu (quality/wplyw.json) zawęża zakres testów albo zmienia tryb „tylko-raport”.
@@ -51,6 +51,12 @@ for (const f of fs.existsSync(baseDir) ? fs.readdirSync(baseDir).filter(f => f.e
   const was = new Set(JSON.parse(b).entries.map(e => e.id));
   const added = now.filter(id => !was.has(id)), removed = [...was].filter(id => !now.includes(id));
   for (const id of added) errors.push(`${rel}: nowy wyjątek ${id} (baseline może tylko maleć)`);
+  // wpis z licznikiem trafień („maks”, quality/baselines/zasady.json): licznik może tylko maleć
+  const wasMaks = new Map(JSON.parse(b).entries.map(e => [e.id, e.maks]));
+  for (const e of JSON.parse(fs.readFileSync(path.join(baseDir, f), 'utf8')).entries) {
+    const m0 = wasMaks.get(e.id);
+    if (typeof m0 === 'number' && (typeof e.maks !== 'number' || e.maks > m0)) errors.push(`${rel}: ${e.id} – podniesiono „maks” z ${m0} na ${e.maks} (baseline może tylko maleć)`);
+  }
   if (removed.length) notes.push(`${rel}: usunięto ${removed.length} wpisów – baseline maleje (dobrze).`);
 }
 
