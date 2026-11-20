@@ -81,3 +81,7 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// Silnik PDF z Worda (LibreOfficeKit, Grzegorz 20/11/2026): lok.gradle tworzy CI (app/scripts/libreoffice-silnik.py) przy każdej
+// budowie APK. Lokalnie bez tego pliku apka buduje się bez silnika, a PDF robi stary rysownik (moduly/word-pdf: zWorda → null).
+if (file('lok.gradle').exists()) apply from: 'lok.gradle'

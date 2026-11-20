@@ -2968,7 +2968,22 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
   // scalone w jeden dokument albo osobne pliki, PDF / Word. r.pdf = pełny PDF (podgląd, kopia w telefonie do odtworzenia inspekcji),
   // r.files = to, co faktycznie idzie mailem.
+  // PDF z TEGO SAMEGO Worda (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”): gdy w apce jest silnik LibreOffice, PDF raportu
+  // to Word przepuszczony przez silnik (moduly/word-pdf → zWorda), a nie osobny rysunek. Bez silnika (przeglądarka, testy)
+  // albo gdy silnik zawiedzie – zostaje PDF z rysownika jak dotąd. Flushing (formularz + basic form w jednym PDF) na razie bez zmian.
   function buildAll(opt) {
+    return buildAllRysowane(opt).then(function (r) {
+      if (!r || !window.OESTWordPdf || !OESTWordPdf.dostepny() || (r.data && r.data.flush) || !r.docx || !r.docx.length) return r;
+      var glowne = (r.files || []).filter(function (f) { return /\.pdf$/.test(f.name) && (f.name === r.name + ".pdf" || f.name === r.name + " - report.pdf"); });
+      return OESTWordPdf.zWorda(r.docx).then(function (pdf) {
+        if (!pdf) return r;
+        glowne.forEach(function (f) { f.bytes = pdf; });
+        r.pdf = pdf; r.zWorda = true;
+        return r;
+      });
+    });
+  }
+  function buildAllRysowane(opt) {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
     if (opt && opt.word) n = Object.assign({}, n, { xw: true }); // Update: Word do archiwum i na Dysk zawsze, niezależnie od ⚙ maila (uwaga Codex #101)
     var PDF = "application/pdf", small = !!(cur.type.folder && !cur.type.flush); // inspekcja z kartki (Fire Test itp.)

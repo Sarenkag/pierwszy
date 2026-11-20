@@ -1,2 +1,5 @@
 /build/*
 !/build/.npmkeep
+lok.gradle
+lok-jni/
+lok-assets/

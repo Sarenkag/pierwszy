@@ -195,6 +195,23 @@
     return new Uint8Array(out.output("arraybuffer"));
   }
 
-  var api = { pdf: pdf };
+  // PDF z TEGO SAMEGO Worda przez silnik LibreOffice w telefonie (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”; bez internetu).
+  // Jedyne miejsce w JS, które woła wtyczkę LibreOffice (LibreOfficePlugin.java). zWorda(docxBytes) → Promise<Uint8Array | null>:
+  // null = silnika nie ma (przeglądarka, testy) albo zawiódł – wtedy wołający zostawia PDF z rysownika (pdf() wyżej / stare).
+  function dostepny() {
+    var C = root.Capacitor;
+    return !!(C && C.isPluginAvailable && C.isPluginAvailable("LibreOffice") && C.Plugins && C.Plugins.LibreOffice);
+  }
+  function b64(bytes) { var s = ""; for (var i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); return root.btoa(s); }
+  function zB64(t) { var s = root.atob(t), out = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
+  function zWorda(docxBytes) {
+    if (!dostepny() || !docxBytes || !docxBytes.length) return Promise.resolve(null);
+    return root.Capacitor.Plugins.LibreOffice.toPdf({ docx: b64(docxBytes) }).then(function (r) {
+      var pdfBytes = r && r.pdf ? zB64(r.pdf) : null;
+      return pdfBytes && pdfBytes.length ? pdfBytes : null;
+    }, function (e) { if (root.console) root.console.warn("LibreOffice PDF: " + (e && e.message || e)); return null; });
+  }
+
+  var api = { pdf: pdf, zWorda: zWorda, dostepny: dostepny };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTWordPdf = api;
 })(typeof window !== "undefined" ? window : globalThis);
