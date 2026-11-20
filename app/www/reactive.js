@@ -239,7 +239,7 @@
     case 'complete':run(async()=>{const saved=await save();busy=false;navigate('reactive/complete/'+saved.id);});return;
     case 'action':collect();if(draft.reportEdited&&!await w.OESTPytaj(L('Zastąpić ręcznie poprawiony raport tekstem z klocków?','Replace the hand-edited report with the text from the blocks?')))return;{const a=T.actions.find(x=>x.id===b.dataset.id);if(a?.closes){draft.pendingActionId=a.id;}else{draft.pendingActionId='';draft=C.finish(draft,a.id);}}draft.reportText='';draft.reportEdited=false;persist(false);render();renderEvidence();return;
     case 'close':if(draft&&!draft.pendingActionId){collect();openRow='finish';persist(false);render();renderEvidence();message(L('Wybierz, co zrobiłeś.','Choose what you did.'));return;}collect();try{C.validate(draft);}catch(e){message(e.message);return;}persist(false);run(()=>openSummary('close'));return;
-    case 'vt-open':case 'vt-close':case 'vt-check':{const V=w.OESTReactiveVantify;if(!V)return;collect();if(action!=='vt-check'){try{C.validate(draft);}catch(e){message(e.message);return;}}run(()=>V[action.slice(3)](vtCtx()));return;}
+    case 'vt-open':case 'vt-close':case 'vt-check':case 'vt-update':{const V=w.OESTReactiveVantify;if(!V)return;collect();if(action!=='vt-check'){try{C.validate(draft);}catch(e){message(e.message);return;}}run(()=>V[action.slice(3)](vtCtx()));return;}
     case 'send':collect();try{C.validate(draft);}catch(e){message(e.message);return;}persist(false);run(()=>openSummary('send'));return;
     case 'preview-back':if(!reviewEnd(false)){preview=false;reviewView=null;sumClear();render();renderEvidence();}return;
     case 'sum-view':collect();run(()=>openSummary('view'));return;

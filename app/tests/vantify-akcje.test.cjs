@@ -26,6 +26,8 @@ test('rozpoznaje tylko zapytania zapisu do API Vantify (założenie, Commence, C
   assert.strictEqual(A.op('POST', API + '/files'), '');
   assert.strictEqual(A.op('POST', API + '/sites/6324/jobs/3066755/files'), 'attach');
   assert.strictEqual(A.op('GET', API + '/sites/6324/jobs/3066755/files'), '');
+  assert.strictEqual(A.op('POST', API + '/sites/6324/jobs/3066755/messages'), 'update');
+  assert.strictEqual(A.op('GET', API + '/sites/6324/jobs/3066755/messages'), '');
 });
 test('wzór bez tekstów, dat i plików tego zlecenia; reszta (firma, priorytet, grupa, kontakt) zostaje', () => {
   const c = A.wzor('create', CREATE);
@@ -90,6 +92,8 @@ function world(action, wz, jobs) {
       else if (p === '/sites/6324/jobs/reactive') { st = 201; res = { id: 3070002, status: 'approval_pending' }; const body = JSON.parse(b); jobs[3070002] = { id: 3070002, status: 'approval_pending', summary: body.summary, _links: { files: { href: '/sites/6324/jobs/3070002/files' } }, files: (body.files.links || []).slice(0, world.keep == null ? 99 : world.keep).map(l => ({ _links: { file: { href: l.href } } })) }; }
       else if (p === '/files') { st = 201; const nf = 999 + calls.filter(c => c.u.replace(API, '') === '/files').length - 1; res = { policy: { key: 'k', bucket: 'b', GoogleAccessId: 'g', policy: 'p', signature: 's', 'Content-Disposition': 'c', success_action_redirect: 'r' }, _links: { remote: { href: 'https://storage.googleapis.com/savillsuk.elogbooks.net' }, file: { href: '/files/' + nf }, resource: { href: '/files/' + nf + '/resource', title: 't', type: 'image/jpeg' } } }; }
       else if (this.u.startsWith('https://storage.googleapis.com/')) { st = 200; res = null; }
+      else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/messages$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].messages = (jobs[id].messages || []).concat(world.dropMsg ? [] : [{ body: body.body }]); res = { id: 7 }; }
+      else if (this.m === 'GET' && /\/messages$/.test(p)) res = { messages: jobs[id].messages || [] };
       else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/files$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].files = (jobs[id].files || []).concat(world.drop ? [] : [{ _links: { file: { href: body._links.file.href } } }]); res = { id: 1 }; }
       else if (/operation\/commence$/.test(p)) { st = 204; jobs[id].status = 'commenced'; jobs[id]._links = { complete: {}, files: { href: '/sites/6324/jobs/' + id + '/files' } }; res = null; }
       else if (/operation\/complete$/.test(p)) { st = 204; Object.assign(jobs[id], { status: 'completed', is_final_status: true }); jobs[id].files = [{ _links: { file: { href: '/files/999' } } }]; res = null; }
@@ -289,4 +293,37 @@ test('po założeniu wygasłe logowanie przy odczycie plików: numer zlecenia wr
   XHR.prototype.send = function (b) { if (this.m === 'GET' && /\/files$/.test(this.u)) { this.status = 401; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
   await s.run();
   assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].id, 3070002); assert.strictEqual(s.results[0].seenHrefs, null); assert.deepStrictEqual(s.results[0].hrefs, ['/files/999']);
+});
+
+// ---------- „Send update” (Grzegorz 20/11/2026): wiadomość do zlecenia, tylko gdy czeka na zatwierdzenie ----------
+const MSG = { body: 'Some secret text', visibility: 0, notify: true, _links: { recipients: [] } };
+const TXT = 'Works completed. Please approve so the job can be closed.';
+const UJ = (status = 'approval_pending', final = false) => ({ 3070020: { id: 3070020, status, is_final_status: final, summary: 'Tap leak', _links: { messages: { href: '/sites/6324/jobs/3070020/messages' } }, messages: [] } });
+test('wzór wiadomości: bez treści, reszta zostaje; bez pola body = brak wzoru; zapytanie z tekstem', () => {
+  const t = A.wzor('update', MSG);
+  assert.ok(!('body' in t)); assert.strictEqual(t.notify, true); assert.strictEqual(JSON.stringify(t).includes('secret'), false);
+  assert.strictEqual(A.wzor('update', { text: 'x' }), null);
+  assert.deepStrictEqual(A.message(t, { text: ' ' + TXT + ' ' }), { visibility: 0, notify: true, _links: { recipients: [] }, body: TXT });
+});
+test('Send update: bez wzoru nic nie wysyła; czeka na zatwierdzenie → wiadomość i potwierdzenie odczytem', async () => {
+  const n = world({ op: 'update', nonce: 'u0', id: 3070020, text: TXT }, WZ, UJ()); await n.run();
+  assert.deepStrictEqual(n.results[0], { status: 'nowzor', op: 'update' }); assert.ok(!n.calls.some(c => c.m === 'POST'));
+  const s = world({ op: 'update', nonce: 'u1', id: 3070020, text: TXT, summary: 'Tap leak' }, { ...WZ, update: A.wzor('update', MSG) }, UJ()); await s.run();
+  assert.deepStrictEqual(s.calls.map(c => c.m + ' ' + c.u.replace(API, '')), ['GET /sites/6324/jobs/3070020', 'POST /sites/6324/jobs/3070020/messages', 'GET /sites/6324/jobs/3070020/messages']);
+  assert.strictEqual(JSON.parse(s.calls[1].body).body, TXT);
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].seen, true);
+  world.dropMsg = true; const t = world({ op: 'update', nonce: 'u2', id: 3070020, text: TXT }, { ...WZ, update: A.wzor('update', MSG) }, UJ()); await t.run(); world.dropMsg = false;
+  assert.strictEqual(t.results[0].status, 'ok'); assert.strictEqual(t.results[0].seen, false, 'wiadomości nie widać = nie udaje sukcesu');
+});
+test('Send update: już zatwierdzone, zamknięte albo inna nazwa → nic nie wysyła (Grzegorz: „sprawdzić, czy nie zostało już approve”)', async () => {
+  const W2 = { ...WZ, update: A.wzor('update', MSG) };
+  for (const [jobs, why, sum] of [[UJ('acknowledged'), 'approved'], [UJ('completed', true), 'final'], [UJ(), 'summary', 'Other']]) {
+    const s = world({ op: 'update', nonce: 'u-' + why, id: 3070020, text: TXT, summary: sum || '' }, W2, jobs); await s.run();
+    assert.strictEqual(s.results[0].status, 'differs'); assert.strictEqual(s.results[0].why, why); assert.ok(!s.calls.some(c => c.m === 'POST'), why + ': coś wysłane');
+  }
+});
+test('sprawdzenie statusu z tekstem wiadomości: mówi, czy jest przy zleceniu', async () => {
+  const jobs = UJ(); jobs[3070020].messages = [{ body: TXT }];
+  const s = world({ op: 'status', nonce: 'u5', ids: [3070020], messageText: TXT }, WZ, jobs); await s.run();
+  assert.strictEqual(s.results[0].jobs[0].messageSeen, true);
 });

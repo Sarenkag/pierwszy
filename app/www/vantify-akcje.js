@@ -8,7 +8,7 @@
 // Statusy Vantify z zapisu 18/11: approval_pending → acknowledged (_links.commence) → commenced (_links.complete) → completed (final).
 // W testach (node) eksportuje czyste funkcje przez module.exports.
 (function (g) {
-  var OPS = { create: /\/sites\/\d+\/jobs\/reactive$/, commence: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/commence$/, complete: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/complete$/, attach: /\/sites\/\d+\/jobs\/\d+\/files$/ };
+  var OPS = { create: /\/sites\/\d+\/jobs\/reactive$/, commence: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/commence$/, complete: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/complete$/, attach: /\/sites\/\d+\/jobs\/\d+\/files$/, update: /\/sites\/\d+\/jobs\/\d+\/messages$/ };
   var API = /^https:\/\/[a-z0-9-]+-api\.cafm\.vantify\.com\//i;
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function op(m, u) {
@@ -41,6 +41,8 @@
       b._date = typeof b.documentDate === "string" ? b.documentDate : "";
       delete b.id; delete b.title; delete b.description; delete b.documentDate; b._links.file = { href: "" };
     }
+    // wiadomość do zlecenia („Send update”, Grzegorz 20/11/2026): wzór bez treści; bez pola body nie wiadomo, gdzie wstawić tekst
+    if (kind === "update") { if (typeof b.body !== "string") return null; delete b.body; }
     return b;
   }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
@@ -76,6 +78,7 @@
   }
   // dosłanie zdjęcia przed do już założonego zlecenia (przegląd Codex #166): ten sam wzór, tytuł i adres pliku z wysyłki
   function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(o.date, t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
+  function message(t, o) { var b = strip(t); b.body = String(o.text || "").trim(); return b; }
   // świeży odczyt przed zamknięciem: to samo zlecenie, otwarte, zatwierdzone, ta sama nazwa co na karcie
   function check(job, exp) {
     if (!job || Number(job.id) !== Number(exp.id)) return "other";
@@ -93,7 +96,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, check: check, brief: brief };
+  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -157,6 +160,12 @@
       if (!fl) return Promise.resolve(null);
       return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || [], have = list.map(function (f) { return f && f._links && f._links.file && f._links.file.href; }); return hrefs.filter(function (h) { return have.indexOf(h) >= 0; }); }, function (e) { if (e && e.code === "login") throw e; return null; });
     }
+    // czy wiadomość o tej treści jest przy zleceniu (potwierdzenie „Send update”); nieudany odczyt = null
+    function hasMessage(j, text) {
+      var ml = j && j._links && j._links.messages && j._links.messages.href;
+      if (!ml || !text) return Promise.resolve(null);
+      return req("GET", ml).then(function (r) { var m = r && (r.messages || (r._embedded && r._embedded.messages)); m = Array.isArray(m) ? m : m && Array.isArray(m.items) ? m.items : m ? [m] : []; return m.some(function (x) { return x && String(x.body || "").trim() === String(text).trim(); }); }, function (e) { if (e && e.code === "login") throw e; return null; });
+    }
     // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
     function upload(f) {
       var bin = g.atob(f.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
@@ -174,7 +183,7 @@
     try { if (a.nonce && g.sessionStorage.getItem("oestAkcja:" + a.nonce)) return end({ status: "error", code: "repeat" }); if (a.nonce) g.sessionStorage.setItem("oestAkcja:" + a.nonce, "1"); } catch (e) {}
     if (a.op === "status") {
       var ids = (a.ids || []).slice(0, 20), got = [];
-      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); return (a.fileTitle ? hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; }) : Promise.resolve()).then(function () { return a.fileHrefs ? seenOf(j, a.fileHrefs).then(function (l) { b.seenHrefs = l; }) : null; }).then(function () { got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
+      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); return (a.fileTitle ? hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; }) : Promise.resolve()).then(function () { return a.fileHrefs ? seenOf(j, a.fileHrefs).then(function (l) { b.seenHrefs = l; }) : null; }).then(function () { return a.messageText ? hasMessage(j, a.messageText).then(function (s) { b.messageSeen = s; }) : null; }).then(function () { got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
         .then(function () { end({ status: "ok", jobs: got }); }, fail);
     }
     if (a.op === "priorities") {
@@ -222,6 +231,19 @@
         step = "check";
         return job(a.id).then(function (j) { return seenOf(j, (a.known || []).concat(put)); }).then(function (l) { end({ status: "ok", sent: put, seenHrefs: l }); });
       }).catch(function (e) { if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
+    }
+    // „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie nadal czeka na zatwierdzenie i ma tę samą nazwę co karta;
+    // wiadomość → ponowny odczyt, czy jest przy zleceniu
+    if (a.op === "update") {
+      if (!W.update) return end({ status: "nowzor", op: "update" });
+      step = "read";
+      return job(a.id).then(function (j) {
+        if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
+        if (j.is_final_status || j.status !== "approval_pending") { end({ status: "differs", why: j.is_final_status ? "final" : "approved", job: brief(j) }); throw { stop: 1 }; }
+        if (a.summary && String(j.summary || "").trim() !== String(a.summary).trim()) { end({ status: "differs", why: "summary", job: brief(j) }); throw { stop: 1 }; }
+        step = "update";
+        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/messages", message(W.update, { text: a.text })).then(function () { step = "check"; return hasMessage(j, a.text).catch(function () { return null; }); }).then(function (s) { end({ status: "ok", job: brief(j), seen: s }); });
+      }).catch(function (e) { if (e && e.stop) return; fail(e); });
     }
     if (a.op === "close") {
       if (!W.commence || !W.complete) return end({ status: "nowzor", op: !W.commence ? "commence" : "complete" });

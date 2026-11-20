@@ -101,6 +101,7 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .panel .rx-chips{justify-content:flex-start}
 #v-reactive .rx-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #v-reactive .rx-row>.btn{min-height:52px;margin:4px 0}
+#v-reactive .rx-vt-upd{grid-template-columns:1fr} /* „Send update” na całą szerokość pod Open/Close Vantify (Grzegorz 20/11/2026) */
 /* przyciski Vantify (PROD-038): stan bez nowych kolorów – zielona obwódka „✓”, przygaszony „czeka” */
 #v-reactive .rx-vt-done{border-color:var(--ok)!important;color:var(--ok)!important}
 #v-reactive .rx-vt-off{opacity:.6}

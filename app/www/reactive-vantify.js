@@ -26,7 +26,9 @@
     const s = state(d), v = d?.vantify || {}, b = (label, act, cls) => '<button type="button" class="btn rx-vt' + (cls ? ' ' + cls : '') + '" data-rx="' + act + '">' + esc(label) + '</button>';
     const open = s === 'none' || s === 'pending' ? b('Open Vantify', 'vt-open', s === 'pending' ? 'rx-vt-off' : '') : photosMissing(d) ? b('⚠ Vantify #' + v.id + ' · ' + L('zdjęcia ', 'photos ') + (v.photos.seen || []).length + '/' + v.photos.hrefs.length, 'vt-check', 'rx-vt-off') : b('✓ Vantify #' + v.id, 'vt-check', 'rx-vt-done');
     const close = s === 'none' || s === 'pending' ? b('Close Vantify', 'vt-close', 'rx-vt-off') : s === 'approval' ? b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'rx-vt-off') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'rx-vt-done') : s === 'nofile' ? b(L('⚠ Brak pliku w Vantify', '⚠ No file in Vantify'), 'vt-check', 'rx-vt-off') : b('Close Vantify', 'vt-close', 'go');
-    return '<div class="rx-row rx-vt-row">' + open + close + '</div>';
+    /* klocek 2 „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie czeka na zatwierdzenie; ręcznie, nie przy każdym Reactive */
+    const upd = s === 'approval' ? '<div class="rx-row rx-vt-upd">' + b(v.updateAt ? L('✓ Update wysłany', '✓ Update sent') : 'Send update', 'vt-update', v.updateAt ? 'rx-vt-done' : '') + '</div>' : '';
+    return '<div class="rx-row rx-vt-row">' + open + close + '</div>' + upd;
   }
   function why(r, L) {
     const c = r?.code || r?.status || '';
@@ -92,6 +94,43 @@
     /* pewne „nie założono”: brak wzoru, wygasłe logowanie, zajęte okno albo odmowa Vantify (HTTP 4xx) – wtedy karta wraca do „Open Vantify” */
     if (r.status === 'nowzor' || r.status === 'login' || r.code === 'VANTIFY_BUSY' || /^http4\d\d$/.test(r.code || '')) { delete x.draft.vantify; await x.persist(); x.render(); }
     x.message(why(r, L));
+  }
+  /* „Send update” (Grzegorz 20/11/2026): tekst dokładnie jak ustalił, bez daty, do poprawy przed wysłaniem.
+     Najpierw świeży odczyt: zatwierdzone albo zamknięte = nic nie wysyła i mówi o tym. Pierwszy raz (brak wzoru): okno Vantify
+     z tekstem do skopiowania, apka uczy się, następne wysyła sama. Potwierdzenie = wiadomość widoczna przy zleceniu. */
+  const UPDATE_TEXT = 'Works completed. Please approve so the job can be closed.';
+  async function sendUpdate(x) {
+    const { draft: d, L } = x, P = plugin(), v = d.vantify;
+    if (!v?.id) return x.message(L('Najpierw Open Vantify.', 'Open Vantify first.'));
+    if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
+    x.message(L('Sprawdzam w Vantify…', 'Checking Vantify…'));
+    const st = await act(P, { op: 'status', ids: [v.id] }), j = st.status === 'ok' ? (st.jobs || [])[0] : null;
+    if (!j || j.error) return x.message(why(j?.error ? { code: j.error } : st, L));
+    await update(x, j);
+    if (j.final || j.status !== 'approval_pending') return x.message('Vantify #' + v.id + ': ' + label(j, L) + L('. Update nie wysłany.', '. Update not sent.'));
+    const node = document.createElement('div');
+    node.innerHTML = '<label class="field"><span>' + esc(L('Wiadomość do zlecenia', 'Message to the job')) + '</span><textarea class="rx-vt-upd-t rx-info-t" rows="3">' + esc(UPDATE_TEXT) + '</textarea></label>';
+    x.message('');
+    if (!await ask({ title: 'Send update #' + v.id, node, ok: L('Wyślij update', 'Send update'), cancel: L('Wróć', 'Back') })) return;
+    const text = node.querySelector('.rx-vt-upd-t').value.trim();
+    if (!text) return x.message(L('Wiadomość nie może być pusta.', 'The message cannot be empty.'));
+    const W = await wzory(P), done = async seen => {
+      x.draft.vantify = { ...x.draft.vantify, updateAt: new Date().toISOString(), updateText: text }; await x.persist(); x.render();
+      x.message(seen ? L('✓ Update wysłany do Vantify #', '✓ Update sent to Vantify #') + v.id + '.' : L('Update wysłany do Vantify #', 'Update sent to Vantify #') + v.id + L(', ale nie widzę go przy zleceniu – sprawdź w Vantify.', ', but I do not see it on the job – check in Vantify.'));
+    };
+    if (!W.update) {
+      await ask({ title: 'Send update', text: L('Pierwszy raz: dodaj wiadomość do zlecenia w oknie Vantify, jak zwykle. Tekst jest gotowy do skopiowania (przycisk u góry). Apka zapamięta, jak to zrobiłeś, a następne wyśle sama.', 'First time: add a message to the job in the Vantify window as usual. The text is ready to copy (button at the top). The app remembers how you did it and sends the next ones by itself.'), alert: true });
+      let r; try { r = await P.open({ lang: L('pl', 'en'), hash: '#/user/jobs/' + v.id + '/status', text }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
+      if (!(r?.events || []).some(e => e.op === 'update' && Number(e.id) === Number(v.id))) return x.message(L('Nie widzę wysłanej wiadomości w Vantify. Update nie wysłany.', 'I do not see a sent message in Vantify. Update not sent.'));
+      const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
+      return done(!!(j2 && j2.messageSeen));
+    }
+    x.message(L('Wysyłam update do Vantify…', 'Sending the update to Vantify…'));
+    const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '' });
+    if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(r.why === 'summary' ? L('W Vantify zlecenie ma inną nazwę. Nic nie wysłałem.', 'In Vantify the job has a different name. Nothing was sent.') : 'Vantify #' + v.id + ': ' + label(r.job || {}, L) + L('. Update nie wysłany.', '. Update not sent.')); }
+    if (r.status === 'nowzor') return x.message(L('Brak wzoru wiadomości – spróbuj jeszcze raz.', 'No message pattern – try again.'));
+    if (r.status !== 'ok') return x.message(why(r, L));
+    return done(r.seen === true);
   }
   /* lista priorytetów z Vantify raz na sesję apki; błąd = bez wyboru (zostaje priorytet ze wzoru), z krótką informacją */
   let prioCache = null;
@@ -209,5 +248,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { html, open, close, check, state, photosMissing, clampDay, ymd };
+  w.OESTReactiveVantify = { html, open, close, check, update: sendUpdate, state, photosMissing, clampDay, ymd, UPDATE_TEXT };
 })(window);
