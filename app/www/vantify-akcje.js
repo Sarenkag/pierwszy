@@ -149,11 +149,13 @@
       if (!fl || (!title && !href)) return Promise.resolve(false);
       return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; return list.some(function (f) { return f && (href && f._links && f._links.file && f._links.file.href === href || title && f.title === title); }); }, function () { return false; });
     }
-    // które z wysłanych plików (po adresie) widać przy zleceniu – jeden odczyt listy plików
+    // które z wysłanych plików (po adresie) widać przy zleceniu – jeden odczyt listy plików;
+    // nieudany odczyt = null („nie wiadomo”), nie pusta lista – inaczej apka dosłałaby zdjęcia, które już są (przegląd Codex #167)
     function seenOf(j, hrefs) {
+      if (!hrefs || !hrefs.length) return Promise.resolve([]);
       var fl = j && j._links && j._links.files && j._links.files.href;
-      if (!fl || !hrefs || !hrefs.length) return Promise.resolve([]);
-      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || [], have = list.map(function (f) { return f && f._links && f._links.file && f._links.file.href; }); return hrefs.filter(function (h) { return have.indexOf(h) >= 0; }); }, function () { return []; });
+      if (!fl) return Promise.resolve(null);
+      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || [], have = list.map(function (f) { return f && f._links && f._links.file && f._links.file.href; }); return hrefs.filter(function (h) { return have.indexOf(h) >= 0; }); }, function (e) { if (e && e.code === "login") throw e; return null; });
     }
     // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
     function upload(f) {
@@ -202,7 +204,7 @@
         step = "check";
         // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
         return job(id).then(function (j) {
-          return seenOf(j, hrefs).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l.length, hrefs: hrefs, seenHrefs: l }); });
+          return seenOf(j, hrefs).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
         }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0, hrefs: hrefs, seenHrefs: [] }); });
       }).catch(fail);
     }

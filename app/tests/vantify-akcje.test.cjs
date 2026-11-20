@@ -275,3 +275,10 @@ test('dosłanie przerwane w połowie: wynik mówi, które pliki już dodano (bez
   await s.run();
   assert.strictEqual(s.results[0].status, 'error'); assert.deepStrictEqual(s.results[0].sent, ['/files/999']);
 });
+test('odczyt listy plików nieudany (503): status mówi „nie wiadomo” (null), nie „brak wszystkich” (przegląd Codex #167)', async () => {
+  const s = world({ op: 'status', nonce: 's9', ids: [3070002], fileHrefs: ['/files/500'] }, WZ, JOB());
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send;
+  XHR.prototype.send = function (b) { if (this.m === 'GET' && /\/files$/.test(this.u)) { this.status = 503; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].jobs[0].seenHrefs, null);
+});

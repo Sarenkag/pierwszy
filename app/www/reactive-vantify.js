@@ -5,7 +5,7 @@
      info na koniec) → Wróć / Zamknij mimo to; Job Sheet (tylko PDF, data zdjęcia) → „Tak” → Commence (gdy trzeba) + Complete z plikiem
      → ponowny odczyt; „✓ Zamknięte w Vantify” dopiero, gdy Vantify potwierdzi zamknięcie (PROD-035).
    Pierwszy raz (brak wzoru w telefonie): okno Vantify w apce z tekstem do wklejenia / Job Sheet do pola Upload; apka uczy się z tego.
-   Stan na karcie: draft.vantify = {id, status, summary, at, closedAt, photos:{hrefs, seen}}. Ekran reactive.js daje ctx: draft, L, persist, render, message,
+   Stan na karcie: draft.vantify = {id, status, summary, at, closedAt, photos:{hrefs, seen, ids}}. Ekran reactive.js daje ctx: draft, L, persist, render, message,
    english(scope, extra), jobSheet(date). Bez Capacitora (komputer, testy) przyciski mówią, że to działa w telefonie. */
 (function (w) {
   'use strict';
@@ -81,7 +81,8 @@
     const r = await act(P, { op: 'create', summary, description, files, ...(priority ? { priority } : {}) });
     if (r.status === 'ok' && r.id) {
       /* zdjęcia sprawdzone przy zleceniu po założeniu; wynik zostaje na karcie – brak = „⚠”, stuknięcie sprawdza znowu i dosyła (przegląd Codex #166) */
-      const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [] } : null;
+      /* adres pliku powiązany z identyfikatorem zdjęcia na karcie (ids), nie z pozycją na liście (przegląd Codex #167) */
+      const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [], ids: files.map(f => f.id) } : null;
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}), ...(photos ? { photos } : {}) });
       if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', ' before photos. Tap “⚠ Vantify” to check again and send the missing ones.'));
       return;
@@ -117,6 +118,8 @@
     const r = await act(P, { op: 'status', ids: [v.id], ...(nofile ? { fileTitle: v.sheetTitle } : {}), ...(miss ? { fileHrefs: v.photos.hrefs } : {}) }), j = r.status === 'ok' ? (r.jobs || [])[0] : null;
     if (!j || j.error) return x.message(why(j?.error ? { code: j.error } : r, L));
     await update(x, j, nofile || miss ? { ...(nofile ? { fileSeen: !!j.fileSeen } : {}), ...(miss ? { photos: { ...v.photos, seen: Array.isArray(j.seenHrefs) ? j.seenHrefs : v.photos.seen || [] } } : {}) } : null);
+    /* lista plików nieodczytana = nie wiadomo, co jest – bez dosyłania (żeby nie dublować zdjęć), poprzedni stan zostaje */
+    if (miss && !Array.isArray(j.seenHrefs)) return x.message('Vantify #' + v.id + ': ' + label(j, L) + L('. Nie udało się odczytać plików przy zleceniu – spróbuj później. Nic nie wysłałem.', '. Could not read the files on the job – try later. Nothing was sent.'));
     if (miss) return photosAgain(x, P, j);
     x.message('Vantify #' + v.id + ': ' + label(j, L) + (nofile ? (j.fileSeen ? L(', Job Sheet jest przy zleceniu.', ', the Job Sheet is on the job.') : L(', ale nadal nie widzę Job Sheet przy zleceniu – dodaj go w Vantify.', ', but I still do not see the Job Sheet on the job – add it in Vantify.')) : ''));
   }
@@ -127,14 +130,15 @@
     if (!left) return x.message(head + L(', wszystkie zdjęcia przed są przy zleceniu.', ', all before photos are on the job.'));
     if (!await ask({ title: 'Vantify #' + v.id, text: L('Przy zleceniu widzę ', 'On the job I see ') + (p.seen || []).length + L(' z ', ' of ') + p.hrefs.length + L(' zdjęć przed. Dosłać brakujące (', ' before photos. Send the missing ones (') + left + L(')?', ')?'), ok: L('Dołącz zdjęcia', 'Attach photos'), cancel: L('Wróć', 'Back') })) return x.message(head);
     const all = x.photos ? await x.photos('before') : [];
-    /* adres pliku na tej samej pozycji co zdjęcie na karcie (przegląd Codex #167): brakujące zastępowane na swoich miejscach.
-       Zmieniona liczba zdjęć na karcie = nie zgadywać, które to – wysyłane wszystkie obecne, lista adresów od nowa */
-    const same = all.length === p.hrefs.length, seen0 = p.seen || [];
-    const idx = same ? p.hrefs.map((h, i) => i).filter(i => !seen0.includes(p.hrefs[i])) : all.map((f, i) => i);
-    const files = idx.map(i => all[i]), hrefs = same ? p.hrefs.slice() : all.map(() => '');
-    if (!files.length) return x.message(L('Na karcie nie ma zdjęć przed do wysłania.', 'There are no before photos on the card to send.'));
+    /* brakujące zdjęcie = to samo zdjęcie z karty (po identyfikatorze), adres zastępowany na swojej pozycji (przegląd Codex #167);
+       zdjęcie usunięte z karty nie jest zastępowane innym – karta mówi, że go nie ma */
+    const seen0 = p.seen || [], ids = Array.isArray(p.ids) && p.ids.length === p.hrefs.length ? p.ids : null;
+    const want = p.hrefs.map((h, i) => i).filter(i => !seen0.includes(p.hrefs[i])).map(i => ({ i, f: ids ? all.find(f => f.id === ids[i]) : null }));
+    const use = want.filter(w => w.f), idx = use.map(w => w.i), files = use.map(w => w.f), hrefs = p.hrefs.slice(), lost = want.length - use.length;
+    if (!files.length) return x.message(L('Brakujących zdjęć przed nie ma już na karcie – nie mam czego dosłać.', 'The missing before photos are no longer on the card – nothing to send.'));
+    if (lost) x.message(L('Brakujących zdjęć nie ma już na karcie: ', 'Missing photos no longer on the card: ') + lost + L('. Dosyłam pozostałe.', '. Sending the rest.'));
     /* zapis na karcie: nowe adresy na pozycjach wysłanych zdjęć, widoczne = to, co Vantify pokazał w odczycie */
-    const keep = async (sent, seen) => { sent.forEach((h, k) => { if (h) hrefs[idx[k]] = h; }); x.draft.vantify = { ...x.draft.vantify, photos: { hrefs, seen } }; await x.persist(); x.render(); };
+    const keep = async (sent, seen) => { sent.forEach((h, k) => { if (h) hrefs[idx[k]] = h; }); x.draft.vantify = { ...x.draft.vantify, photos: { ...p, hrefs, seen } }; await x.persist(); x.render(); };
     const done = () => x.message(photosMissing(x.draft) ? L('Vantify nadal nie pokazuje wszystkich zdjęć przed (', 'Vantify still does not show all before photos (') + x.draft.vantify.photos.seen.length + '/' + hrefs.length + L('). Stuknij „⚠ Vantify”, żeby spróbować znowu.', '). Tap “⚠ Vantify” to try again.') : L('✓ Wszystkie zdjęcia przed są przy zleceniu.', '✓ All before photos are on the job.'));
     const W = await wzory(P);
     if (!W.attach) {
@@ -146,8 +150,9 @@
       /* potwierdzenie odczytem listy plików przy zleceniu, nie samą odpowiedzią na dodanie */
       hrefs[idx[0]] = href;
       const st = await act(P, { op: 'status', ids: [v.id], fileHrefs: hrefs.filter(Boolean) }), j2 = st.status === 'ok' ? (st.jobs || [])[0] : null;
-      await keep([], j2 && !j2.error && Array.isArray(j2.seenHrefs) ? j2.seenHrefs : seen0);
-      if (!j2 || j2.error) return x.message(why(j2?.error ? { code: j2.error } : st, L));
+      const ok2 = j2 && !j2.error && Array.isArray(j2.seenHrefs);
+      await keep([], ok2 ? j2.seenHrefs : seen0);
+      if (!ok2) return x.message(j2 && !j2.error ? L('Dodane w oknie, ale nie udało się odczytać plików przy zleceniu. Stuknij „⚠ Vantify”, żeby sprawdzić.', 'Added in the window, but the files on the job could not be read. Tap “⚠ Vantify” to check.') : why(j2?.error ? { code: j2.error } : st, L));
       return done();
     }
     x.message(L('Dosyłam zdjęcia do Vantify…', 'Sending the photos to Vantify…'));
@@ -156,7 +161,8 @@
     /* błąd w trakcie: zdjęcia już dodane zostają zapisane na swoich pozycjach, żeby następna próba ich nie dublowała */
     const sent = Array.isArray(r.sent) ? r.sent : [];
     if (r.status !== 'ok') { if (sent.length) await keep(sent, seen0); return x.message(why(r, L)); }
-    await keep(sent, Array.isArray(r.seenHrefs) ? r.seenHrefs : []);
+    if (!Array.isArray(r.seenHrefs)) { await keep(sent, seen0); return x.message(L('Dosłane, ale nie udało się odczytać plików przy zleceniu. Stuknij „⚠ Vantify”, żeby sprawdzić.', 'Sent, but the files on the job could not be read. Tap “⚠ Vantify” to check.')); }
+    await keep(sent, r.seenHrefs);
     return done();
   }
   function label(j, L) { return j.final ? L('zamknięte', 'closed') : j.status === 'approval_pending' ? L('czeka na zatwierdzenie', 'awaiting approval') : j.status === 'acknowledged' ? L('zatwierdzone – można zamknąć', 'approved – ready to close') : j.status === 'commenced' ? L('rozpoczęte', 'commenced') : j.status; }
