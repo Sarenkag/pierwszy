@@ -10,6 +10,11 @@ test('VantifyPlugin.action: jedno zadanie naraz, wzory z telefonu, skrypt akcji 
   assert.match(P, /if \(action \|\| !m\.equals\(mode\)\) \{ c\.reject\("VANTIFY_BUSY"\)/, 'odczyt listy nie dołącza do zadania przycisku');
   assert.match(P, /action \? "window\.__oestMode='action';" \+ pre \+ asset\("public\/vantify-akcje\.js"\) : ""\) \+ asset\("public\/vantify-sync\.js"\)/);
   assert.match(P, /TIMEOUT_ACTION = 180000/);
+  // zakładanie ze zdjęciami przed: +60 s na zdjęcie, najwyżej 15 min (przegląd Codex #166)
+  assert.match(P, /PER_FILE = 60000, MAX_ACTION = 900000/);
+  assert.match(P, /return Math\.min\(MAX_ACTION, TIMEOUT_ACTION \+ PER_FILE \* n\)/);
+  assert.match(P, /Sync\.current\.limit = Sync\.actionLimit\(act\); Sync\.current\.start\(\);/, 'limit ustawiony przed startem okna');
+  assert.match(P, /action \? limit : TIMEOUT\)/);
 });
 test('wzory: noBackupFilesDir, zapis atomowy, do JS tylko informacja które są', () => {
   assert.match(P, /new File\(c\.getNoBackupFilesDir\(\), "vantify-wzory\.json"\)/);

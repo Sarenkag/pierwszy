@@ -64,7 +64,7 @@ public class VantifyPlugin extends Plugin {
         String wz = Wzory.load(getContext()).toString(), payload = act.toString();
         a.runOnUiThread(() -> {
             if (Sync.current != null) { call.reject("VANTIFY_BUSY"); return; }
-            Sync.current = new Sync(a, call, "action", "window.__oestAction=" + payload + ";window.__oestWzory=" + wz + ";"); Sync.current.start();
+            Sync.current = new Sync(a, call, "action", "window.__oestAction=" + payload + ";window.__oestWzory=" + wz + ";"); Sync.current.limit = Sync.actionLimit(act); Sync.current.start();
         });
     }
     // które wzory już są w telefonie (bez treści): {create, commence, complete}
@@ -131,7 +131,10 @@ public class VantifyPlugin extends Plugin {
     private JSObject info() { try { return JSObject.fromJSONObject(VantifyLogin.info(getContext())); } catch (Exception e) { return new JSObject(); } }
 
     static final class Sync {
-        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 600000, TIMEOUT_ACTION = 180000;
+        static final long TIMEOUT = 60000, TIMEOUT_EXPLORE = 600000, TIMEOUT_ACTION = 180000, PER_FILE = 60000, MAX_ACTION = 900000;
+        // zakładanie ze zdjęciami przed (20/11/2026): każde zdjęcie to 2 zapytania – czas rośnie z liczbą zdjęć, najwyżej 15 min (przegląd Codex #166)
+        static long actionLimit(JSObject act) { org.json.JSONArray f = act.optJSONArray("files"); int n = f == null ? 0 : f.length(); return Math.min(MAX_ACTION, TIMEOUT_ACTION + PER_FILE * n); }
+        long limit = TIMEOUT_ACTION;
         private String asset(String p) throws Exception {
             try (InputStream in = a.getAssets().open(p)) { ByteArrayOutputStream o = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n; while ((n = in.read(b)) > 0) o.write(b, 0, n); return new String(o.toByteArray(), StandardCharsets.UTF_8); }
         }
@@ -162,7 +165,7 @@ public class VantifyPlugin extends Plugin {
             ((ViewGroup) a.getWindow().getDecorView()).addView(web, new FrameLayout.LayoutParams(1, 1));
             // Zbadaj trwa minuty: ekran nie gaśnie, bo uśpiony telefon wstrzymuje okno (Zbadaj 11/11: 20 min przerwy po 150 odczytach)
             if (explore) a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : action ? TIMEOUT_ACTION : TIMEOUT);
+            h.postDelayed(() -> finish("{\"status\":\"timeout\"}"), explore ? TIMEOUT_EXPLORE : action ? limit : TIMEOUT);
             web.loadUrl(VantifyActivity.START + "#/user/jobs");
         }
 

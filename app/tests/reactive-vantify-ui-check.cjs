@@ -173,6 +173,14 @@ function fakePhone() {
     // (sprawdzone na module: wynik bez closed nie zmienia stanu na zamknięte)
     const notClosed = await pg.evaluate(() => OESTReactiveVantify.state({ vantify: { id: 1, status: 'commenced' } }));
     check(notClosed === 'open', 'stan „commenced” uznany za zamknięty');
+    // ---------- 7b. zdjęcie przed z karty zniknęło (np. wyczyszczone) → nie zakłada bez niego (przegląd Codex #166) ----------
+    await pg.goto(B + '/#reactive'); await job('Brak zdjęcia');
+    await pg.evaluate(() => new Promise((res, rej) => { const r = indexedDB.open('oest-handover'); r.onsuccess = () => { const tx = r.result.transaction('media', 'readwrite'); tx.objectStore('media').clear(); tx.oncomplete = () => { r.result.close(); res(); }; tx.onerror = () => rej(tx.error); }; }));
+    await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; });
+    await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await msg(/Brakuje zdjęcia/);
+    check((await calls()).length === 0, 'brak zdjęcia przed: mimo to coś wysłane do Vantify');
+    check(await pg.locator('[data-rx=vt-open]:not(.rx-vt-off)').count() === 1, 'brak zdjęcia przed: karta w stanie „zakładam”');
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();

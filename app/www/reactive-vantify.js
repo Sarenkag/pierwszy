@@ -67,10 +67,11 @@
       const id = Number(ev.id), st = await act(P, { op: 'status', ids: [id] }), j = st.status === 'ok' ? (st.jobs || [])[0] : null;
       return saved(x, { id, status: j && !j.error && j.status || 'approval_pending', summary: j && !j.error ? j.summary || '' : '' });
     }
+    /* zdjęcia przed zebrane przed zapisem „zakładam”: brak zdjęcia = błąd, karta zostaje bez zmian (przegląd Codex #166) */
+    const files = x.photos ? await x.photos('before') : [];
     /* zapis „zakładam” przed wysłaniem: przy braku odpowiedzi karta pamięta, że zlecenie mogło powstać (przegląd Codex #146) */
     x.draft.vantify = { pending: true, summary, at: new Date().toISOString() }; await x.persist(); x.render();
     x.message(L('Zakładam zlecenie w Vantify…', 'Creating the job in Vantify…'));
-    const files = x.photos ? await x.photos('before') : [];
     const r = await act(P, { op: 'create', summary, description, files });
     if (r.status === 'ok' && r.id) {
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary });
