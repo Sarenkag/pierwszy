@@ -11,18 +11,21 @@ const CREATE = { _links: { sitecontactsiterelationship: { href: '/siterelationsh
   files: { links: [{ href: '/files/1', title: 'x' }] }, optedInJobRequisites: { links: [] }, siteContact: { notifyOnCreate: false, notifyOnComplete: false }, contactTenant: { notifyOnCreate: false, notifyOnComplete: false },
   siteContactSameAsReporter: true, skipRequestApprovalNotification: false, notifyOnCreate: true, notifyOnComplete: true, isOnNextPlannedVisit: false, isByPlannedDate: false, assets: { asset: null, subasset: null },
   requiredDocumentTypes: { links: [{ href: '/documenttypes/1' }] }, summary: 'Coat hooks behind reception', description: 'Request to provide coat hooks', noRequisiteRequired: true };
+const ATTACH = { _links: { file: { href: '/files/2793327' }, documentType: { href: '/documenttypes/3' } }, tags: { tags: [] }, id: null, title: 'Leak photo', visibility: 'partnership', isContract: null, documentDate: '2026-11-05T15:54:17+00:00', expiresAt: null, isStatutory: false, userTags: [], notifyExpiry: false, isJobFile: true, description: 'sink', applicableTo: [] };
 const COMMENCE = { _links: {}, files: { links: [] }, onSiteDate: '2026-11-18T14:59:00+00:00' };
 const COMPLETE = { _links: {}, escalationFiles: { links: [] }, assets: {}, completionDate: '2026-11-18T15:39:00+00:00',
   files: [{ formFile: {}, tags: { tags: [] }, id: null, title: 'REACTIVE LED', visibility: 'partnership', documentDate: '2026-11-18T15:39:00+00:00', expiresAt: null, notifyExpiry: false, isStatutory: false, userTags: [], advancedClosed: true, _links: { file: { href: '/files/2793300' }, documentType: { href: '/documenttypes/1' } }, description: 'LED strip' },
     { formFile: {}, title: 'photo', _links: { file: { href: '/files/2793301' }, documentType: { href: '/documenttypes/3' } } }] };
 
-test('rozpoznaje tylko trzy zapytania zapisu do API Vantify', () => {
+test('rozpoznaje tylko zapytania zapisu do API Vantify (założenie, Commence, Complete, plik do zlecenia)', () => {
   assert.strictEqual(A.op('POST', API + '/sites/6324/jobs/reactive'), 'create');
   assert.strictEqual(A.op('post', API + '/sites/6324/jobs/3056375/workflow/operation/commence'), 'commence');
   assert.strictEqual(A.op('POST', API + '/sites/6324/jobs/3056375/workflow/operation/complete?x=1'), 'complete');
   assert.strictEqual(A.op('GET', API + '/sites/6324/jobs/reactive'), '');
   assert.strictEqual(A.op('POST', 'https://evil.example/sites/6324/jobs/reactive'), '');
   assert.strictEqual(A.op('POST', API + '/files'), '');
+  assert.strictEqual(A.op('POST', API + '/sites/6324/jobs/3066755/files'), 'attach');
+  assert.strictEqual(A.op('GET', API + '/sites/6324/jobs/3066755/files'), '');
 });
 test('wzór bez tekstów, dat i plików tego zlecenia; reszta (firma, priorytet, grupa, kontakt) zostaje', () => {
   const c = A.wzor('create', CREATE);
@@ -87,6 +90,7 @@ function world(action, wz, jobs) {
       else if (p === '/sites/6324/jobs/reactive') { st = 201; res = { id: 3070002, status: 'approval_pending' }; const body = JSON.parse(b); jobs[3070002] = { id: 3070002, status: 'approval_pending', summary: body.summary, _links: { files: { href: '/sites/6324/jobs/3070002/files' } }, files: (body.files.links || []).slice(0, world.keep == null ? 99 : world.keep).map(l => ({ _links: { file: { href: l.href } } })) }; }
       else if (p === '/files') { st = 201; const nf = 999 + calls.filter(c => c.u.replace(API, '') === '/files').length - 1; res = { policy: { key: 'k', bucket: 'b', GoogleAccessId: 'g', policy: 'p', signature: 's', 'Content-Disposition': 'c', success_action_redirect: 'r' }, _links: { remote: { href: 'https://storage.googleapis.com/savillsuk.elogbooks.net' }, file: { href: '/files/' + nf }, resource: { href: '/files/' + nf + '/resource', title: 't', type: 'image/jpeg' } } }; }
       else if (this.u.startsWith('https://storage.googleapis.com/')) { st = 200; res = null; }
+      else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/files$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].files = (jobs[id].files || []).concat(world.drop ? [] : [{ _links: { file: { href: body._links.file.href } } }]); res = { id: 1 }; }
       else if (/operation\/commence$/.test(p)) { st = 204; jobs[id].status = 'commenced'; jobs[id]._links = { complete: {}, files: { href: '/sites/6324/jobs/' + id + '/files' } }; res = null; }
       else if (/operation\/complete$/.test(p)) { st = 204; Object.assign(jobs[id], { status: 'completed', is_final_status: true }); jobs[id].files = [{ _links: { file: { href: '/files/999' } } }]; res = null; }
       else st = 404;
@@ -106,7 +110,7 @@ const PDF = Buffer.from('%PDF-1.4 job sheet').toString('base64');
 test('założenie: jedno POST z wzorem i tekstem, potem odczyt; drugi raz to samo zadanie nic nie wysyła', async () => {
   const s = world({ op: 'create', site: 6324, nonce: 'n1', summary: 'Coat hooks on office door', description: 'Hooks' }, WZ, {});
   await s.run();
-  assert.deepStrictEqual(s.results, [{ status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Coat hooks on office door' }, photos: 0, photosSeen: 0 }]);
+  assert.deepStrictEqual(s.results, [{ status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Coat hooks on office door' }, photos: 0, photosSeen: 0, hrefs: [], seenHrefs: [] }]);
   const post = s.calls.filter(c => c.m === 'POST');
   assert.strictEqual(post.length, 1); assert.strictEqual(post[0].h.Authorization, 'Bearer T');
   const b = JSON.parse(post[0].body); assert.strictEqual(b.summary, 'Coat hooks on office door'); assert.deepStrictEqual(b._links, CREATE._links); assert.deepStrictEqual(b.files, { links: [] });
@@ -118,18 +122,18 @@ test('założenie ze zdjęciami przed: najpierw pliki, potem zlecenie z linkami;
   const files = [{ b64: JPG, name: 'Before-photo-1.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'Before-photo-2.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
   const s = world({ op: 'create', nonce: 'p1', summary: 'Door handle', description: 'Loose handle', files }, WZ, {}); await s.run();
   const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
-  assert.deepStrictEqual(seq, ['POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/reactive', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002/files']);
+  assert.deepStrictEqual(seq, ['POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/reactive', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files']);
   assert.deepStrictEqual(JSON.parse(s.calls[0].body), { title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', size: 8 });
   const b = JSON.parse(s.calls[4].body);
   assert.strictEqual(b.files.links.length, 2);
   assert.deepStrictEqual(b.files.links[0], { _links: { file: { href: '/files/999' }, resource: { href: '/files/999/resource', title: 't', type: 'image/jpeg' } }, title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', href: '/files/999' });
   assert.strictEqual(b.files.links[1].href, '/files/1000');
-  assert.deepStrictEqual(s.results[0], { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Door handle' }, photos: 2, photosSeen: 2 });
+  assert.deepStrictEqual(s.results[0], { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Door handle' }, photos: 2, photosSeen: 2, hrefs: ['/files/999', '/files/1000'], seenHrefs: ['/files/999', '/files/1000'] });
 });
 test('założenie: zdjęcie nie dotarło przy zleceniu → wynik mówi ile widać; błąd wysyłki zdjęcia → zlecenie nie zakładane', async () => {
   const files = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'b.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
   world.keep = 1; const s = world({ op: 'create', nonce: 'p2', summary: 'x', description: 'y', files }, WZ, {}); await s.run(); world.keep = null;
-  assert.strictEqual(s.results[0].photos, 2); assert.strictEqual(s.results[0].photosSeen, 1);
+  assert.strictEqual(s.results[0].photos, 2); assert.strictEqual(s.results[0].photosSeen, 1); assert.deepStrictEqual(s.results[0].seenHrefs, ['/files/999'], 'karta wie, którego zdjęcia brakuje');
   const t = world({ op: 'create', nonce: 'p3', summary: 'x', description: 'y', files: [{ b64: JPG, name: 'a.jpg', title: 'A', type: 'image/jpeg' }] }, WZ, {});
   const XHR = t.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (/storage\.googleapis/.test(this.u)) { this.status = 500; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
   await t.run();
@@ -208,6 +212,9 @@ test('okno Vantify w apce: udane zapytanie strony → wzór bez tekstów i numer
   assert.strictEqual(got.length, 2); assert.strictEqual(got[0][0], 'create'); assert.strictEqual(got[0][2], '3066755');
   assert.ok(!JSON.stringify(got).includes('Coat hooks') && !JSON.stringify(got).includes('LED'), 'do telefonu bez Summary/Description/opisów plików');
   assert.strictEqual(got[1][0], 'complete'); assert.strictEqual(got[1][2], '3066755');
+  // dodanie pliku w oknie: numer zlecenia i adres dodanego pliku, żeby apka potwierdziła go odczytem (przegląd Codex #167)
+  const f = new w.XMLHttpRequest(); f.open('POST', API + '/sites/6324/jobs/3066755/files'); f.send(JSON.stringify(ATTACH)); f.status = 201; listeners.pop()();
+  assert.strictEqual(got[2][0], 'attach'); assert.strictEqual(got[2][2], '3066755|/files/2793327'); assert.ok(!JSON.stringify(got[2][1]).includes('Leak'));
 });
 test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaju, dni z terminu, wybrany idzie w zleceniu', () => {
   const list = [
@@ -221,4 +228,65 @@ test('priorytet przy zakładaniu (Grzegorz 20/11/2026): lista tego samego rodzaj
   assert.strictEqual(rel._links.priority.href, /^https?:/.test(CREATE._links.priority.href) ? 'https://savillsuk-api.cafm.vantify.com/priorities/137' : '/priorities/137', 'adres w tym samym zapisie co we wzorze');
   const keep = A.create(A.wzor('create', CREATE), { summary: 's', description: 'd' });
   assert.deepStrictEqual(keep._links.priority, CREATE._links.priority, 'bez wyboru zostaje priorytet ze wzoru');
+});
+
+// ---------- dosłanie zdjęć przed do istniejącego zlecenia (przegląd Codex #166) ----------
+// kształt z zapisu „Zbadaj” 18/11: POST /sites/6324/jobs/3066755/files {_links:{file, documentType}, title, visibility, documentDate, …}
+test('wzór dodania pliku: bez tytułu, opisu, daty i pliku; typ dokumentu i widoczność zostają; zapytanie z nowym plikiem', () => {
+  const t = A.wzor('attach', ATTACH);
+  assert.ok(!('title' in t) && !('description' in t) && !('documentDate' in t) && !('id' in t));
+  assert.strictEqual(t._links.file.href, ''); assert.strictEqual(t._links.documentType.href, '/documenttypes/3'); assert.strictEqual(t.visibility, 'partnership'); assert.strictEqual(t._date, ATTACH.documentDate);
+  assert.strictEqual(JSON.stringify(t).includes('Leak') || JSON.stringify(t).includes('sink'), false);
+  assert.strictEqual(A.wzor('attach', { title: 'x' }), null, 'bez _links nie wiadomo, jak dodać plik');
+  const b = A.attach(t, { title: 'Before photo 2', href: '/files/1200', date: new Date(Date.UTC(2026, 10, 20, 10, 0)) });
+  assert.strictEqual(b.title, 'Before photo 2'); assert.strictEqual(b._links.file.href, '/files/1200'); assert.strictEqual(b._links.documentType.href, '/documenttypes/3');
+  assert.match(b.documentDate, /^2026-11-20T/); assert.ok(!('_date' in b)); assert.strictEqual(t._links.file.href, '', 'wzór nie zmieniony');
+});
+const JOB = () => ({ 3070002: { id: 3070002, status: 'approval_pending', summary: 'Door handle', _links: { files: { href: '/sites/6324/jobs/3070002/files' } }, files: [{ _links: { file: { href: '/files/500' } } }] } });
+test('sprawdzenie statusu z adresami zdjęć: mówi, które widać przy zleceniu', async () => {
+  const s = world({ op: 'status', nonce: 's1', ids: [3070002], fileHrefs: ['/files/500', '/files/1000'] }, WZ, JOB()); await s.run();
+  assert.strictEqual(s.results[0].status, 'ok'); assert.deepStrictEqual(s.results[0].jobs[0].seenHrefs, ['/files/500']);
+  const t = world({ op: 'status', nonce: 's2', ids: [3070002] }, WZ, JOB()); await t.run();
+  assert.ok(!('seenHrefs' in t.results[0].jobs[0])); assert.ok(!t.calls.some(c => /\/files$/.test(c.u)), 'bez adresów nie czyta listy plików');
+});
+test('dosłanie: bez wzoru nic nie wysyła; z wzorem plik → Files → Add do tego numeru → odczyt', async () => {
+  const f = [{ b64: JPG, name: 'Before-photo-2.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
+  const n = world({ op: 'attach', nonce: 'a0', id: 3070002, files: f, known: ['/files/500'] }, WZ, JOB()); await n.run();
+  assert.deepStrictEqual(n.results[0], { status: 'nowzor', op: 'attach' }); assert.ok(!n.calls.some(c => c.m === 'POST'));
+  const s = world({ op: 'attach', nonce: 'a1', id: 3070002, files: f, known: ['/files/500'] }, { ...WZ, attach: A.wzor('attach', ATTACH) }, JOB()); await s.run();
+  const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
+  assert.deepStrictEqual(seq, ['GET /sites/6324/jobs/3070002', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files']);
+  const b = JSON.parse(s.calls[3].body); assert.strictEqual(b.title, 'Before photo 2'); assert.strictEqual(b._links.file.href, '/files/999'); assert.strictEqual(b._links.documentType.href, '/documenttypes/3');
+  assert.deepStrictEqual(s.results[0], { status: 'ok', sent: ['/files/999'], seenHrefs: ['/files/500', '/files/999'] });
+});
+test('dosłanie: Vantify przyjął, ale pliku nie widać → wynik bez niego; inny numer zlecenia → nic nie wysyła', async () => {
+  const f = [{ b64: JPG, name: 'x.jpg', title: 'Before photo 2', type: 'image/jpeg' }], W2 = { ...WZ, attach: A.wzor('attach', ATTACH) };
+  const jobs = JOB();
+  world.drop = true; const s = world({ op: 'attach', nonce: 'a2', id: 3070002, files: f, known: ['/files/500'] }, W2, jobs); await s.run(); world.drop = false;
+  assert.deepStrictEqual(s.results[0], { status: 'ok', sent: ['/files/999'], seenHrefs: ['/files/500'] });
+  const t = world({ op: 'attach', nonce: 'a3', id: 1, files: f }, W2, JOB()); await t.run();
+  assert.strictEqual(t.results[0].status, 'error'); assert.ok(!t.calls.some(c => c.m === 'POST'));
+});
+test('dosłanie przerwane w połowie: wynik mówi, które pliki już dodano (bez dublowania przy następnej próbie)', async () => {
+  const f = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'c.jpg', title: 'Before photo 3', type: 'image/jpeg' }];
+  const s = world({ op: 'attach', nonce: 'a4', id: 3070002, files: f, known: ['/files/500'] }, { ...WZ, attach: A.wzor('attach', ATTACH) }, JOB());
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send; let n = 0;
+  XHR.prototype.send = function (b) { if (/storage\.googleapis/.test(this.u) && ++n === 2) { this.status = 500; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'error'); assert.deepStrictEqual(s.results[0].sent, ['/files/999']);
+});
+test('odczyt listy plików nieudany (503): status mówi „nie wiadomo” (null), nie „brak wszystkich” (przegląd Codex #167)', async () => {
+  const s = world({ op: 'status', nonce: 's9', ids: [3070002], fileHrefs: ['/files/500'] }, WZ, JOB());
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send;
+  XHR.prototype.send = function (b) { if (this.m === 'GET' && /\/files$/.test(this.u)) { this.status = 503; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].jobs[0].seenHrefs, null);
+});
+test('po założeniu wygasłe logowanie przy odczycie plików: numer zlecenia wraca, zdjęcia „nie wiadomo” (przegląd Codex #167)', async () => {
+  const files = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }];
+  const s = world({ op: 'create', nonce: 'p9', summary: 'x', description: 'y', files }, WZ, {});
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send;
+  XHR.prototype.send = function (b) { if (this.m === 'GET' && /\/files$/.test(this.u)) { this.status = 401; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].id, 3070002); assert.strictEqual(s.results[0].seenHrefs, null); assert.deepStrictEqual(s.results[0].hrefs, ['/files/999']);
 });

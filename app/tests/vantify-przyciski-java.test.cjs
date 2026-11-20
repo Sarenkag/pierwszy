@@ -21,11 +21,12 @@ test('wzory: noBackupFilesDir, zapis atomowy, do JS tylko informacja które są'
   assert.match(P, /getFD\(\)\.sync\(\); \}\s*if \(!tmp\.renameTo\(file\(c\)\)\)/);
   assert.match(P, /o\.put\(k, w\.has\(k\)\)/, 'wzory() oddaje tylko true/false');
 });
-test('okno Vantify: nauka tylko z vantify.com i trzech rodzajów, dozwolone ekrany startowe, Job Sheet przez FileProvider', () => {
-  assert.match(A, /public void wzor\(String kind, String tpl, String id\) \{\s*if \(!vantify\(host\) \|\| kind == null \|\| !kind\.matches\("create\|commence\|complete"\)/);
-  assert.match(A, /hash\.matches\("#\/user\/jobs\(\/\[0-9\]\+\/status\|\/add\/\/site\)\?"\)/);
+test('okno Vantify: nauka tylko z vantify.com i czterech rodzajów (z dodaniem pliku), dozwolone ekrany startowe, Job Sheet / zdjęcie przez FileProvider', () => {
+  assert.match(A, /public void wzor\(String kind, String tpl, String id\) \{\s*if \(!vantify\(host\) \|\| kind == null \|\| !kind\.matches\("create\|commence\|complete\|attach"\)/);
+  assert.match(A, /hash\.matches\("#\/user\/jobs\(\/\[0-9\]\+\/status\|\/\[0-9\]\+\/files\/add\|\/add\/\/site\)\?"\)/);
   assert.match(A, /FileProvider\.getUriForFile\(this, getPackageName\(\) \+ "\.fileprovider", sheet\)/);
   assert.match(A, /setOnCancelListener\(x -> \{ if \(pick != null\) \{ pick\.onReceiveValue\(null\); pick = null; \} \}\)/, 'anulowanie zawsze odpowiada stronie');
   assert.match(A, /VantifyWeb\.inject\(web, host, rejestr \+ "\\n" \+ akcje\)/); // jedno miejsce wstrzykiwania, tylko *.vantify.com (S1, #42)
-  assert.match(P, /name\.matches\("\[\^\/\\\\\\\\\]\{1,180\}\\\\\.pdf"\)/, 'nazwa Job Sheet bez ścieżek, tylko .pdf');
+  assert.match(P, /name\.matches\("\[\^\/\\\\\\\\\]\{1,180\}\\\\\.\(pdf\|jpg\|jpeg\|png\)"\)/, 'nazwa pliku bez ścieżek, tylko Job Sheet .pdf albo zdjęcie');
+  assert.match(P, /new String\[\] \{ "create", "commence", "complete", "attach" \}/, 'wzory() mówi też o wzorze dodania pliku');
 });

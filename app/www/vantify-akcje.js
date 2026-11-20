@@ -8,7 +8,7 @@
 // Statusy Vantify z zapisu 18/11: approval_pending → acknowledged (_links.commence) → commenced (_links.complete) → completed (final).
 // W testach (node) eksportuje czyste funkcje przez module.exports.
 (function (g) {
-  var OPS = { create: /\/sites\/\d+\/jobs\/reactive$/, commence: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/commence$/, complete: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/complete$/ };
+  var OPS = { create: /\/sites\/\d+\/jobs\/reactive$/, commence: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/commence$/, complete: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/complete$/, attach: /\/sites\/\d+\/jobs\/\d+\/files$/ };
   var API = /^https:\/\/[a-z0-9-]+-api\.cafm\.vantify\.com\//i;
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function op(m, u) {
@@ -34,6 +34,12 @@
       if (one(js)) f = js; else if (!one(f)) return null;
       var it = f[0]; delete it.id; delete it.title; delete it.description; delete it.documentDate; delete it.formFile; it._links.file = { href: "" };
       b._file = it; b.files = [];
+    }
+    // dodanie pliku do istniejącego zlecenia (Files → Add, zapis „Zbadaj” 18/11): bez tytułu, opisu i pliku; próbka daty zostaje
+    if (kind === "attach") {
+      if (!b._links || typeof b._links !== "object") return null;
+      b._date = typeof b.documentDate === "string" ? b.documentDate : "";
+      delete b.id; delete b.title; delete b.description; delete b.documentDate; b._links.file = { href: "" };
     }
     return b;
   }
@@ -68,6 +74,8 @@
     b.files = (o.files || []).map(function (f) { var it = clone(t._file); it.title = f.title; it.description = ""; it.documentDate = fmt(o.date, t._date); it._links.file = { href: f.href }; return it; });
     return b;
   }
+  // dosłanie zdjęcia przed do już założonego zlecenia (przegląd Codex #166): ten sam wzór, tytuł i adres pliku z wysyłki
+  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(o.date, t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
   // świeży odczyt przed zamknięciem: to samo zlecenie, otwarte, zatwierdzone, ta sama nazwa co na karcie
   function check(job, exp) {
     if (!job || Number(job.id) !== Number(exp.id)) return "other";
@@ -85,7 +93,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, check: check, brief: brief };
+  var api = { op: op, wzor: wzor, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, check: check, brief: brief };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -104,6 +112,8 @@
           var t = wzor(kind, JSON.parse(body)), id = null;
           if (kind === "create") { try { id = JSON.parse(x.responseText).id; } catch (e) {} }
           else id = Number((/\/jobs\/(\d+)\//.exec(x.__oestUrl) || [])[1]) || null;
+          // dodanie pliku: do karty idzie też adres dodanego pliku („numer|adres”), żeby apka potwierdziła go odczytem (przegląd Codex #167)
+          if (kind === "attach" && id) { var fb = JSON.parse(body), fh = fb && fb._links && fb._links.file && fb._links.file.href; id = fh ? id + "|" + fh : null; }
           B.wzor(kind, t ? JSON.stringify(t) : "", String(id || ""));
         } catch (e) {}
       });
@@ -139,6 +149,14 @@
       if (!fl || (!title && !href)) return Promise.resolve(false);
       return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; return list.some(function (f) { return f && (href && f._links && f._links.file && f._links.file.href === href || title && f.title === title); }); }, function () { return false; });
     }
+    // które z wysłanych plików (po adresie) widać przy zleceniu – jeden odczyt listy plików;
+    // nieudany odczyt = null („nie wiadomo”), nie pusta lista – inaczej apka dosłałaby zdjęcia, które już są (przegląd Codex #167)
+    function seenOf(j, hrefs) {
+      if (!hrefs || !hrefs.length) return Promise.resolve([]);
+      var fl = j && j._links && j._links.files && j._links.files.href;
+      if (!fl) return Promise.resolve(null);
+      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || [], have = list.map(function (f) { return f && f._links && f._links.file && f._links.file.href; }); return hrefs.filter(function (h) { return have.indexOf(h) >= 0; }); }, function (e) { if (e && e.code === "login") throw e; return null; });
+    }
     // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
     function upload(f) {
       var bin = g.atob(f.b64), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
@@ -156,7 +174,7 @@
     try { if (a.nonce && g.sessionStorage.getItem("oestAkcja:" + a.nonce)) return end({ status: "error", code: "repeat" }); if (a.nonce) g.sessionStorage.setItem("oestAkcja:" + a.nonce, "1"); } catch (e) {}
     if (a.op === "status") {
       var ids = (a.ids || []).slice(0, 20), got = [];
-      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); if (!a.fileTitle) return got.push(b); return hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
+      return ids.reduce(function (p, id) { return p.then(function () { return job(id).then(function (j) { var b = brief(j); return (a.fileTitle ? hasFile(j, a.fileTitle).then(function (s) { b.fileSeen = s; }) : Promise.resolve()).then(function () { return a.fileHrefs ? seenOf(j, a.fileHrefs).then(function (l) { b.seenHrefs = l; }) : null; }).then(function () { got.push(b); }); }, function (e) { if (e.code === "login") throw e; got.push({ id: id, error: e.code }); }); }); }, Promise.resolve())
         .then(function () { end({ status: "ok", jobs: got }); }, fail);
     }
     if (a.op === "priorities") {
@@ -182,14 +200,28 @@
         step = "create";
         return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent, priority: a.priority }));
       }).then(function (r) {
-        var id = r && r.id; if (!id) return end({ status: "error", code: "noid" });
+        var id = r && r.id, hrefs = sent.map(function (f) { return f.href; }); if (!id) return end({ status: "error", code: "noid" });
         step = "check";
         // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
         return job(id).then(function (j) {
-          return sent.reduce(function (p, f) { return p.then(function (n) { return hasFile(j, "", f.href).then(function (s) { return n + (s ? 1 : 0); }, function () { return n; }); }); }, Promise.resolve(0))
-            .then(function (seen) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: seen }); });
-        }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0 }); });
+          // po założeniu każdy błąd sprawdzenia (też wygasłe logowanie) = „nie wiadomo”, numer zlecenia zawsze wraca (przegląd Codex #167)
+          return seenOf(j, hrefs).catch(function () { return null; }).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
+        }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0, hrefs: hrefs, seenHrefs: [] }); });
       }).catch(fail);
+    }
+    // dosłanie zdjęć przed do istniejącego zlecenia (przegląd Codex #166): wysyłka pliku → Files → Add → odczyt, co widać
+    if (a.op === "attach") {
+      if (!W.attach) return end({ status: "nowzor", op: "attach" });
+      var put = [], now = new Date();
+      step = "read";
+      return job(a.id).then(function (j) {
+        if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
+        step = "upload";
+        return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { step = "attach"; return req("POST", "/sites/" + site + "/jobs/" + a.id + "/files", attach(W.attach, { title: f.title, href: u.href, date: now })).then(function () { put.push(u.href); step = "upload"; }); }); }); }, Promise.resolve());
+      }).then(function () {
+        step = "check";
+        return job(a.id).then(function (j) { return seenOf(j, (a.known || []).concat(put)); }).then(function (l) { end({ status: "ok", sent: put, seenHrefs: l }); });
+      }).catch(function (e) { if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
     }
     if (a.op === "close") {
       if (!W.commence || !W.complete) return end({ status: "nowzor", op: !W.commence ? "commence" : "complete" });
