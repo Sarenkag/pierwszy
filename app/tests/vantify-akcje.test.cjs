@@ -282,3 +282,11 @@ test('odczyt listy plików nieudany (503): status mówi „nie wiadomo” (null)
   await s.run();
   assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].jobs[0].seenHrefs, null);
 });
+test('po założeniu wygasłe logowanie przy odczycie plików: numer zlecenia wraca, zdjęcia „nie wiadomo” (przegląd Codex #167)', async () => {
+  const files = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }];
+  const s = world({ op: 'create', nonce: 'p9', summary: 'x', description: 'y', files }, WZ, {});
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send;
+  XHR.prototype.send = function (b) { if (this.m === 'GET' && /\/files$/.test(this.u)) { this.status = 401; this.responseText = ''; setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].id, 3070002); assert.strictEqual(s.results[0].seenHrefs, null); assert.deepStrictEqual(s.results[0].hrefs, ['/files/999']);
+});

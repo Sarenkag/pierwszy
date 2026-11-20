@@ -204,7 +204,8 @@
         step = "check";
         // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
         return job(id).then(function (j) {
-          return seenOf(j, hrefs).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
+          // po założeniu każdy błąd sprawdzenia (też wygasłe logowanie) = „nie wiadomo”, numer zlecenia zawsze wraca (przegląd Codex #167)
+          return seenOf(j, hrefs).catch(function () { return null; }).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
         }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0, hrefs: hrefs, seenHrefs: [] }); });
       }).catch(fail);
     }
