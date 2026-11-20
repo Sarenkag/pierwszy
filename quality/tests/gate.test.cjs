@@ -287,6 +287,29 @@ test('Ratchet: nowy wpis w baseline → FAIL; usunięcie wpisu → PASS', () => 
   write(d, { 'quality/baselines/architecture.json': JSON.stringify({ entries: [{ id: 'X' }] }) }); g('commit', '-qam', 'pr');
   assert.equal(ratchet(d).code, 0);
 });
+test('Ratchet R23: zmieniony test z mniejszą liczbą sprawdzeń (usunięte albo zakomentowane) → FAIL; tyle samo albo więcej, razem ze zmianą apki → PASS', () => {
+  const baza = "// typ image/* dozwolony\nconst t = 'a/*b';\nassert.equal(a, 1);\nassert.match(b, /x/);\nif (!c) throw Error('c');\n";
+  for (const [nowy, kod] of [
+    ["assert.equal(a, 1);\nif (!c) throw Error('c');\n", 1],
+    ["assert.equal(a, 1);\n// assert.match(b, /x/);\nif (!c) throw Error('c');\n", 1],
+    ["assert.equal(a, 1);\nassert.match(b, /x/);\n", 1],
+    ["assert.equal(a, 2);\nassert.match(b, /y/);\nif (!c) throw new TypeError('c');\n", 0],
+    [baza + "assert.ok(d);\n", 0],
+    // „/*” w komentarzu // i w napisie nie zaczyna bloku: dopisany komentarz blokowy nie zmienia liczby
+    [baza + "/* nowy komentarz */\n", 0],
+    // sprawdzenie przeniesione do napisu albo zastąpione wpisem do tablicy błędów
+    ["assert.equal(a, 1);\nconsole.log('assert.match(b, /x/)');\nif (!c) throw Error('c');\n", 1],
+    ["assert.equal(a, 1);\nconsole.log(`x ${ok(b)} y`);\nif (!c) bad.push('c');\n", 0],
+    // klamra w napisie wewnątrz ${…} nie kończy wyrażenia (przegląd Codex #157): reszta pliku dalej się liczy
+    ["console.log(`${'{'}`);\n" + baza, 0],
+    ["console.log(`${`n${'}'}`}`);\n" + baza.replace("assert.match(b, /x/);\n", ""), 1]
+  ]) {
+    const { d, g } = repo(M, []);
+    write(d, { 'app/tests/a.test.cjs': baza }); g('add', '-A'); g('commit', '-qm', 'base2'); g('branch', '-f', 'main', 'HEAD');
+    write(d, { 'app/tests/a.test.cjs': nowy, 'app/www/app.js': 'x = 1;' }); g('add', '-A'); g('commit', '-qm', 'pr');
+    const r = ratchet(d); assert.equal(r.code, kod, r.out); if (kod) assert.match(r.out, /mniej sprawdzeń niż na main \(3 → 2\)/);
+  }
+});
 test('Ratchet: licznik „maks” wpisu zasad może tylko maleć – obniżenie → PASS; podniesienie albo usunięcie licznika → FAIL', () => {
   for (const [nowy, kod] of [[1, 0], [3, 1], [undefined, 1]]) {
     const { d, g } = repo(M, []);

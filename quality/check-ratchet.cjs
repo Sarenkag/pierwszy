@@ -5,6 +5,7 @@
 //   - dodano wyjątek do allowedSkips,
 //   - przybyło wpisów w quality/baselines/*.json albo wzrósł ich licznik „maks” (baseline może tylko maleć),
 //   - usunięto lub przeniesiono plik testu w app/tests/,
+//   - zmieniony test (app/tests/, quality/tests/) ma mniej sprawdzeń niż na gałęzi bazowej (R23, decyzja właściciela 19/11/2026),
 //   - mapa wpływu (quality/wplyw.json) zawęża zakres testów albo zmienia tryb „tylko-raport”.
 // Zmiany w plikach testów, workflow, quality/ i dokumentach kontraktu są wypisywane jako ostrzeżenie do przeglądu właściciela
 // (skrypt nie umie ocenić, czy zmiana asercji osłabia test – to luka opisana w raporcie).
@@ -77,6 +78,47 @@ let changes = [];
 try { changes = git('diff', '--name-status', '-M', `${BASE}...HEAD`).trim().split('\n').filter(Boolean).map(l => l.split('\t')); } catch (e) { warnings.push('Nie udało się porównać zmian z bazą: ' + e.message.split('\n')[0]); }
 for (const [st, a, b] of changes) {
   if (/^app\/tests\//.test(a) && (st === 'D' || st.startsWith('R'))) errors.push(`Usunięto/przeniesiono plik testu: ${a}${b ? ' → ' + b : ''}`);
+}
+// R23: zmieniony test nie może mieć mniej sprawdzeń niż na gałęzi bazowej (apka i test mogą zmieniać się w jednym PR)
+const SPRAWDZENIE = /\b(?:assert(?:\.[a-zA-Z]+)?|expect|check|zasadaFail|fail|ok)\s*\(|\b(?:fails|errors|errs|bad|zle|bledy|problemy)\.push\(|\bthrow\s+(?:new\s+)?[A-Za-z]*Error\s*\(/g;
+// sam kod wykonywalny: jeden przebieg z kontekstem usuwa komentarze i treść napisów oraz literałów RegExp
+// (z szablonów `…` zostają tylko wyrażenia ${…}), więc „assert(” w napisie albo w komentarzu się nie liczy
+function bezKomentarzy(t) { return skan(t, 0, false).out; }
+// skan od pozycji k; wDolarze = wnętrze ${…} szablonu: kończy na „}” na zerowej głębokości (klamry w napisach, komentarzach
+// i zagnieżdżonych szablonach się nie liczą); zwraca kod wykonywalny i pozycję tej „}”
+function skan(t, k, wDolarze) {
+  let out = '', d = 0;
+  const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
+  while (k < t.length) {
+    const ch = t[k];
+    if (ch === '/' && t[k + 1] === '/') { const e = t.indexOf('\n', k); k = e < 0 ? t.length : e; continue; }
+    if (ch === '/' && t[k + 1] === '*') { const e = t.indexOf('*/', k + 2); out += ' '; k = e < 0 ? t.length : e + 2; continue; }
+    if (ch === '"' || ch === "'") { let e = k + 1; while (e < t.length && t[e] !== ch && t[e] !== '\n') e += t[e] === '\\' ? 2 : 1; out += ch + ch; k = e + 1; continue; }
+    if (ch === '`') {
+      let e = k + 1; out += '`';
+      while (e < t.length && t[e] !== '`') {
+        if (t[e] === '\\') { e += 2; continue; }
+        if (t[e] === '$' && t[e + 1] === '{') { const r = skan(t, e + 2, true); out += ' ' + r.out + ' '; e = r.end + 1; continue; }
+        e++;
+      }
+      out += '`'; k = e + 1; continue;
+    }
+    if (ch === '/' && regexp(k)) { let w = false, e = k + 1; while (e < t.length && t[e] !== '\n' && (w || t[e] !== '/')) { if (t[e] === '\\') e++; else if (t[e] === '[') w = true; else if (t[e] === ']') w = false; e++; } out += '/ /'; k = e + 1; continue; }
+    if (wDolarze && ch === '{') d++;
+    if (wDolarze && ch === '}') { if (!d) return { out, end: k }; d--; }
+    out += ch; k++;
+  }
+  return { out, end: t.length };
+}
+const sprawdzenia = t => (bezKomentarzy(t).match(SPRAWDZENIE) || []).length;
+for (const [st, a, b] of changes) {
+  const now = b || a;
+  if (!(st === 'M' || st.startsWith('R')) || !/^(app|quality)\/tests\/.+\.c?js$/.test(now)) continue;
+  const was = atBase(a), path_ = path.join(ROOT, now);
+  if (was === null || !fs.existsSync(path_)) continue;
+  const n0 = sprawdzenia(was), n1 = sprawdzenia(fs.readFileSync(path_, 'utf8'));
+  if (n1 < n0) errors.push(`${now}: mniej sprawdzeń niż na ${BASE} (${n0} → ${n1}) – test osłabiony (R23)`);
+  else if (n1 !== n0) notes.push(`${now}: sprawdzeń ${n0} → ${n1}`);
 }
 const protectedRe = /^(app\/tests\/|\.github\/workflows\/|quality\/|docs\/QUALITY\.md$|AGENTS\.md$|CLAUDE\.md$)/;
 const touched = changes.map(c => c[c.length - 1]).filter(f => protectedRe.test(f));
