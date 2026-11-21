@@ -37,6 +37,14 @@ function zbudujBaze(sha) {
   const jest = sciezki.filter(p => sa.includes(p) || sa.includes(p.split('/')[0]) && git('ls-tree', '--name-only', sha, '--', p));
   execFileSync('sh', ['-c', 'git archive "$0" -- "$@" | tar -x -C "' + dir + '"', sha, ...jest], { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'] });
   fs.symlinkSync(path.join(REPO, 'app/node_modules'), path.join(dir, 'app/node_modules'), 'dir');
+  // biblioteka, której ta gałąź już nie ma (np. jspdf po usunięciu rysownika PDF): doinstalowana do osobnego katalogu bazy, w wersji z bazy
+  const bazaPkg = JSON.parse(git('show', sha + ':app/package.json')), nasze = JSON.parse(fs.readFileSync(path.join(REPO, 'app/package.json'), 'utf8'));
+  const brak = Object.entries(bazaPkg.dependencies || {}).filter(([n]) => !(nasze.dependencies || {})[n] && !(nasze.devDependencies || {})[n]);
+  if (brak.length) {
+    const dod = path.join(dir, 'dodatkowe'); fs.mkdirSync(dod);
+    execFileSync('npm', ['install', '--no-save', '--no-audit', '--no-fund', '--prefix', dod, ...brak.map(([n, v]) => n + '@' + v)], { stdio: ['ignore', 'ignore', 'pipe'] });
+    process.env.NODE_PATH = [path.join(dod, 'node_modules'), process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
+  }
   execFileSync(process.execPath, [path.join(dir, 'app/scripts/copy-web.js')], { cwd: path.join(dir, 'app'), stdio: ['ignore', 'ignore', 'pipe'] });
   return { dir, www: path.join(dir, 'app/www') };
 }

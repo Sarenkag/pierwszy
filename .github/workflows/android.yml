@@ -78,6 +78,8 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           npm test
+          # PDF raportu = LibreOffice z Worda; testy konwertują prawdziwym LibreOffice (app/tests/przegladarka.cjs)
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-opensymbol
           npm i --no-save playwright-core@1.48.2
           OEST_PLAYWRIGHT_PATH=playwright-core OEST_BROWSER_PATH="$(command -v google-chrome || command -v chromium-browser || command -v chromium)" node tests/raport-ui-check.cjs
           # ZASADA Grzegorza (05/11/2026): każdy plik raportu poniżej 1 MB – prawdziwy Flushing TB z 20 różnymi zdjęciami

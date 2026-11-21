@@ -1,7 +1,7 @@
 // Plan audytu 19/11/2026, punkt 1.5 (ustalenie nr 9): czcionka raportu sprawdzana WEDŁUG PRZEBIEGU, a nie „wszystko Calibri”.
 // Zasada (Grzegorz 20/11/2026, zmiana D2): tekst raportu Calibri, kratki ☑/☒ czcionką Wingdings 2; PDF = ten sam Word (PROD-023),
 // więc każdy napis w PDF ma czcionkę tego przebiegu Worda, z którego pochodzi (albo jej odpowiednik metryczny, np. Carlito za Calibri).
-// Test wypełnia KAŻDĄ inspekcję EFA-INS z listy PPM jak użytkownik i klika Wyślij (raporty-kolejka.cjs, bez silnika – PDF jak w przeglądarce),
+// Test wypełnia KAŻDĄ inspekcję EFA-INS z listy PPM jak użytkownik i klika Wyślij (raporty-kolejka.cjs; PDF robi prawdziwy LibreOffice – przegladarka.cjs),
 // do tego raport Reactive. Dla każdego Worda z kolejki:
 //  - word:<id>:<plik>:<część>:<czcionka> – przebieg z tekstem nie w Calibri / kratka nie w Wingdings 2 („brak” = Word nie podaje czcionki);
 // dla każdego PDF, który ma obok Word o tej samej nazwie (czcionka z /BaseFont przez operator Tf, docxRunFonts/pdfRunFonts w raport-tresc.cjs):
@@ -11,7 +11,7 @@
 // nowa = FAIL, z listy, której już nie ma = FAIL (usuń wpis), raport, którego nie da się sprawdzić = FAIL;
 // „maks” = liczba trafień wpisu (przebiegi Worda / napisy PDF): więcej = FAIL (rozlanie), mniej = FAIL do czasu obniżenia „maks”.
 // Word: znaki ASCII czcionką w:ascii, pozostałe (np. „—”, „ł”) czcionką w:hAnsi – każdy zakres sprawdzany osobno.
-// NIE sprawdza: PDF z prawdziwego silnika LibreOffice na Pixelu (tam czcionki zależą od czcionek w APK – sprawdzenie na telefonie).
+// NIE sprawdza: PDF z silnika LibreOffice na Pixelu (tam czcionki zależą od czcionek w APK – sprawdzenie na telefonie); tutaj LibreOffice z komputera testów.
 const fs = require('node:fs'), path = require('node:path');
 const { zbierz } = require('./raporty-kolejka.cjs');
 const { docxRunFonts, pdfRunFonts, flat } = require('./raport-tresc.cjs');
@@ -34,8 +34,9 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
   for (const { id, pliki, errs } of raporty) {
     const buf = f => Buffer.from(f.data, 'base64'), wordy = pliki.filter(f => f.name.endsWith('.docx'));
     sp(wordy.length > 0, id + ': w raporcie nie ma Worda (' + pliki.map(f => f.name).join(', ') + ')');
+    const przebiegi = new Map(wordy.map(w => [w.name, docxRunFonts(buf(w))]));
     for (const w of wordy) {
-      const runs = docxRunFonts(buf(w)), cz = czesc(w.name);
+      const cz = czesc(w.name); let runs = przebiegi.get(w.name);
       if (!runs.length) { bezTekstu.push(id + ':' + cz); continue; }
       // Word: tekst Calibri, kratki Wingdings 2 (D2)
       for (const r of runs) {
@@ -46,6 +47,8 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
       }
       // PDF o tej samej nazwie: każdy napis czcionką swojego przebiegu w Wordzie
       const p = pliki.find(f => f.name === w.name.slice(0, -5) + '.pdf'); if (!p) continue;
+      // PDF powstaje z tego Worda i z Wordów „<nazwa> - …docx” sklejonych za nim (Flushing: formularz firmy + basic form) – napis PDF ma odpowiednik w którymkolwiek z nich
+      runs = wordy.filter(x => x.name === w.name || x.name.startsWith(w.name.slice(0, -5) + ' - ')).flatMap(x => przebiegi.get(x.name));
       const pr = pdfRunFonts(buf(p));
       if (!sp(pr.length > 0, id + ': „' + p.name + '” bez żadnego napisu z czcionką (Tf), a Word ma tekst')) continue;
       const zle = new Set(), wszystkie = [...new Set(runs.filter(r => !r.sym && !KRATKA.test(r.text)).map(r => r.font || 'brak'))];
@@ -54,7 +57,7 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
         const fonty = rr => [...new Set(rr.map(r => r.font || 'brak'))];
         let grupy;
         if (KRATKA.test(t.text)) grupy = [fonty(runs.filter(r => r.sym || KRATKA.test(r.text)))];
-        else { const ft = flat(t.text), pas = r => { const fr = flat(r.text); return !r.sym && fr.length > 0 && (fr.length > 1 && ft.length > 1 ? fr.includes(ft) || ft.includes(fr) : fr === ft); };
+        else { const ft = flat(t.text), pas = r => { const fr = flat(r.text).toUpperCase(), fu = ft.toUpperCase(); return !r.sym && fr.length > 0 && (fr.length > 1 && fu.length > 1 ? fr.includes(fu) || fu.includes(fr) : fr === fu || (fu.length === 1 && (fr.endsWith(fu) || (!/[\p{L}\p{N}]/u.test(fu) && fr.includes(fu))))); }; // wielkie litery: Word <w:caps/>; jeden znak = koniec słowa przełamanego w wąskiej komórce („COMPLETE”/„D”) albo znak rozdzielający odsunięty spacjami („LEVEL 49   ·   5/5”)
           grupy = ['ascii', 'hAnsi'].filter(z => (z === 'ascii' ? /[\u0000-\u007f]/ : /[^\u0000-\u007f]/).test(t.text.replace(/\s+/g, ''))).map(z => fonty(runs.filter(r => r.zakres === z && pas(r)))); }
         // napis PDF bez odpowiednika w żadnym przebiegu Worda: nie da się go sprawdzić – osobny wpis (nie przyjmujemy dowolnej czcionki dokumentu)
         grupy = grupy.filter(g => g.length);
