@@ -158,4 +158,74 @@ function wordPdfDiff(wordBufs, pdfBufs) {
   };
 }
 
-module.exports = { docxHighlighted, docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat, flat, docxParts, pdfParts, wordPdfDiff, imgSize };
+// ---------- Czcionka według przebiegu (plan audytu 1.5, ustalenie nr 9) ----------
+// Word: czcionka KAŻDEGO przebiegu z tekstem (dokument, nagłówki, stopki), tak jak ją wybiera Word: rFonts przebiegu → styl znakowy →
+// styl akapitu → domyślny styl akapitu → docDefaults; czcionka motywu (asciiTheme) z word/theme. <w:sym> = czcionka symbolu.
+// Wynik: [{ part, text, font }] – font null, gdy dokument nie podaje żadnej czcionki (Word wtedy dobiera ją sam).
+function docxRunFonts(buf) {
+  const zip = new PizZip(buf), xml = f => zip.file(f) ? zip.file(f).asText() : '';
+  const theme = xml('word/theme/theme1.xml'), themeFont = t => { const blk = /^major/.test(t) ? /<a:majorFont>([\s\S]*?)<\/a:majorFont>/.exec(theme) : /<a:minorFont>([\s\S]*?)<\/a:minorFont>/.exec(theme); const m = blk && /<a:latin typeface="([^"]*)"/.exec(blk[1]); return m ? m[1] : null; };
+  // k = 'ascii' (znaki do U+007F) albo 'hAnsi' (pozostałe znaki łacińskie, np. „—”, „ł”) – Word dobiera czcionkę osobno dla każdego zakresu
+  const rf = (rpr, k) => { const m = rpr && /<w:rFonts\b([^>]*)\/?>/.exec(rpr); if (!m) return null; const a = new RegExp('w:' + k + '="([^"]+)"').exec(m[1]), t = new RegExp('w:' + k + 'Theme="([^"]+)"').exec(m[1]); return t ? themeFont(t[1]) : a ? unxml(a[1]) : null; };
+  const styles = xml('word/styles.xml'), byId = new Map();
+  for (const m of styles.matchAll(/<w:style\b([^>]*)>([\s\S]*?)<\/w:style>/g)) { const id = /w:styleId="([^"]+)"/.exec(m[1]); if (id) byId.set(id[1], { attrs: m[1], body: m[2] }); }
+  const styleFont = (id, k, seen = new Set()) => { const st = id && byId.get(id); if (!st || seen.has(id)) return null; seen.add(id); const r = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(st.body), f = rf(r && r[1], k); if (f) return f; const b = /<w:basedOn w:val="([^"]+)"/.exec(st.body); return b ? styleFont(b[1], k, seen) : null; };
+  const defPara = [...byId.entries()].find(([, v]) => /w:type="paragraph"/.test(v.attrs) && /w:default="(?:1|true)"/.test(v.attrs));
+  const dd = /<w:rPrDefault>\s*<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(styles), docDefault = k => rf(dd && dd[1], k);
+  const parts = Object.keys(zip.files).filter(f => /^word\/(document|header\d*|footer\d*)\.xml$/.test(f)).sort(), out = [];
+  for (const part of parts) for (const p of xml(part).split('</w:p>')) {
+    const pp = /<w:pPr>([\s\S]*?)<\/w:pPr>/.exec(p), ps = pp && /<w:pStyle w:val="([^"]+)"/.exec(pp[1]);
+    const paraFont = k => (ps && styleFont(ps[1], k)) || (defPara && styleFont(defPara[0], k)) || docDefault(k);
+    for (const r of p.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)) {
+      const rp = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(r[1]), rs = rp && /<w:rStyle w:val="([^"]+)"/.exec(rp[1]);
+      const fontK = k => rf(rp && rp[1], k) || (rs && styleFont(rs[1], k)) || paraFont(k) || null;
+      const sym = [...r[1].matchAll(/<w:sym\b[^>]*w:font="([^"]+)"[^>]*\/>/g)];
+      for (const m of sym) out.push({ part: part.slice(5, -4), text: /w:char="F052"/.test(m[0]) ? '☑' : /w:char="F054"/.test(m[0]) ? '☒' : '(symbol)', font: unxml(m[1]), sym: true });
+      const text = [...r[1].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map(m => unxml(m[1])).join('');
+      // znaki ASCII czcionką w:ascii, pozostałe czcionką w:hAnsi – osobne wpisy, gdy przebieg ma oba rodzaje
+      const asc = text.replace(/[^\u0000-\u007f]/g, ''), hi = text.replace(/[\u0000-\u007f]/g, '');
+      if (asc.trim()) out.push({ part: part.slice(5, -4), text, font: fontK('ascii'), zakres: 'ascii' });
+      if (hi.trim()) out.push({ part: part.slice(5, -4), text, font: fontK('hAnsi'), zakres: 'hAnsi' });
+    }
+  }
+  return out;
+}
+// PDF: czcionka KAŻDEGO napisu (Tj/TJ) z operatora Tf w strumieniu strony → /BaseFont (bez prefiksu podzbioru „ABCDEF+”).
+// Tekst czcionek osadzonych (Type0) tłumaczony przez ToUnicode tej czcionki. Wynik: [{ text, font }].
+function pdfRunFonts(buf) {
+  if (buf.toString('latin1', 0, 5) !== '%PDF-') throw Error('To nie jest PDF');
+  const s = buf.toString('latin1'), obj = new Map();
+  for (const m of s.matchAll(/(?:^|[\r\n\s])(\d+)\s+0\s+obj\b([\s\S]*?)endobj/g)) {
+    const body = m[2], i = body.indexOf('stream'); let stream = null;
+    if (i >= 0) { let a = i + 6; if (body[a] === '\r') a++; if (body[a] === '\n') a++; const b = body.lastIndexOf('endstream'); const raw = Buffer.from(body.slice(a, b < 0 ? body.length : b), 'latin1'); try { stream = zlib.inflateSync(raw).toString('latin1'); } catch { stream = raw.toString('latin1'); } }
+    obj.set(m[1], { dict: i >= 0 ? body.slice(0, i) : body, stream });
+  }
+  const u = h => String.fromCodePoint(...(h.match(/.{4}/g) || []).map(x => parseInt(x, 16)));
+  const cmapOf = n => { const o = obj.get(n), c = new Map(); if (!o || !o.stream) return c;
+    for (const blk of o.stream.matchAll(/beginbfchar([\s\S]*?)endbfchar/g)) for (const m of blk[1].matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) c.set(m[1].toLowerCase(), u(m[2]));
+    for (const blk of o.stream.matchAll(/beginbfrange([\s\S]*?)endbfrange/g)) for (const m of blk[1].matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) { const a = parseInt(m[1], 16), b = parseInt(m[2], 16), cc = parseInt(m[3], 16), w = m[1].length; for (let k = a; k <= b && k - a < 65536; k++) c.set(k.toString(16).padStart(w, '0'), String.fromCodePoint(cc + k - a)); }
+    return c; };
+  // zasób czcionki (/F1) → { name: BaseFont, cmap }
+  const fonts = new Map();
+  for (const d of s.matchAll(/\/Font\s*<<([^>]*)>>/g)) for (const m of d[1].matchAll(/\/([^\s/]+)\s+(\d+)\s+0\s+R/g)) {
+    const o = obj.get(m[2]); if (!o) continue;
+    const bf = /\/BaseFont\s*\/([^\s/<>[\]()]+)/.exec(o.dict), tu = /\/ToUnicode\s+(\d+)\s+0\s+R/.exec(o.dict);
+    fonts.set(m[1], { name: bf ? bf[1].replace(/^[A-Z]{6}\+/, '').replace(/#20/g, ' ') : '?', cmap: tu ? cmapOf(tu[1]) : new Map() });
+  }
+  const lit = t => t.replace(/\\([nrtbf()\\]|[0-7]{1,3})/g, (_, c) => /^[0-7]+$/.test(c) ? String.fromCharCode(parseInt(c, 8)) : ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f' }[c] || c));
+  const out = [];
+  for (const [, o] of obj) {
+    const x = o.stream; if (!x || /begincmap/.test(x) || !/\bTf\b/.test(x)) continue;
+    let cur = null, name = null, m;
+    const hex = h => { h = h.replace(/\s+/g, '').toLowerCase(); const c = cur && cur.cmap; if (c && c.size) { const w = [...c.keys()][0].length; return (h.match(new RegExp('.{' + w + '}', 'g')) || []).map(g => c.get(g) ?? '').join(''); } let t = ''; for (let k = 0; k + 1 < h.length; k += 2) t += String.fromCharCode(parseInt(h.slice(k, k + 2), 16)); return t; };
+    const re = /\[((?:\((?:\\.|[^\\)])*\)|<[0-9A-Fa-f\s]*>|[^\]])*)\]\s*TJ|\(((?:\\.|[^\\)])*)\)\s*(?:Tj|'|")|<([0-9A-Fa-f\s]+)>\s*Tj|\/([^\s/<>[\]()]+)|\bTf\b/g;
+    while ((m = re.exec(x))) {
+      if (m[4] !== undefined) { name = m[4]; continue; }
+      if (m[0] === 'Tf') { cur = fonts.get(name) || { name: '?' + name, cmap: new Map() }; continue; }
+      const t = m[1] !== undefined ? [...m[1].matchAll(/\(((?:\\.|[^\\)])*)\)|<([0-9A-Fa-f\s]+)>/g)].map(y => y[2] !== undefined ? hex(y[2]) : lit(y[1])).join('') : m[2] !== undefined ? lit(m[2]) : hex(m[3]);
+      if (t.trim()) out.push({ text: t, font: cur ? cur.name : null });
+    }
+  }
+  return out;
+}
+module.exports = { docxRunFonts, pdfRunFonts, docxHighlighted, docxText, docxImages, pdfText, pdfPages, pdfImages, includesFlat, flat, docxParts, pdfParts, wordPdfDiff, imgSize };
