@@ -363,6 +363,11 @@
       "timeoutSec": 300
     },
     {
+      "file": "app/tests/zrzuty-ui-check.cjs",
+      "passMarker": "ZRZUTY UI PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/menu-wyjscie-ui-check.cjs",
       "passMarker": "MENU WYJSCIE UI PASS",
       "timeoutSec": 300
