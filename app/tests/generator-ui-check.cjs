@@ -72,7 +72,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
       for (const [n, T] of [['PDF', P], ['Word', W]]) {
         check(POINTS.every(p => includesFlat(T, p)), n + ': wszystkie 14 punktów');
         check(includesFlat(T, 'Fuel level (% / litres) – 29% / 229 l') && includesFlat(T, 'L1 voltage (V) – 251') && includesFlat(T, 'Engine speed (RPM) – 1500') && includesFlat(T, 'Frequency (Hz) – 50'), n + ': odczyty przy punktach');
-        check(includesFlat(T, 'GENERATOR 1 – SERIAL 667449') && !/GENERATOR 2/.test(T), n + ': jeden blok generatora, bez powtórzenia (Grzegorz 17:16)');
+        check(includesFlat(T, 'GENERATOR 1 – SERIAL 667449 · 5KJDD585ASB · VISUAL CHECK') && includesFlat(T, 'START-UP TEST (OFF-LOAD)') && !/GENERATOR 2/.test(T), n + ': dwie grupy (Visual check, Start-up test), jeden generator');
         check(includesFlat(T, STMT), n + ': zdanie pod grupami');
         check(includesFlat(T, 'Generator Checks – Weekly'), n + ': tytuł Generator Checks – Weekly');
       }
