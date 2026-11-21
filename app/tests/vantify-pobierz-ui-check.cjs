@@ -22,7 +22,7 @@ await page.locator('#vtPull').click();await page.waitForFunction(()=>/działa w 
 // lista z Vantify = plan wbudowany bez 3000623 (zamknięte) + nowe 3060001 (AOV TA, 25/12) + jedno Reactive (pomijane)
 const api=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,r=[];for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])if(j.no!=='3000623')r.push({id:Number(j.no),type:'planned',summary:P.byId(id).name,status:'acknowledged',completionDueAt:j.due+'T23:59:59+00:00',frequency:j.f});
   r.push({id:3060001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2026-12-25T23:59:59+00:00',frequency:'1W'});r.push({id:3003949,type:'reactive',summary:'Leak',status:'extension_pending',completionDueAt:'2026-10-30T18:00:00+00:00'});return r;});
-await page.evaluate(jobs=>{window.__calls={sync:0,open:0};window.__seq=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__calls.sync++;return window.__seq.length?window.__seq.shift():{status:'ok',count:jobs.length,jobs};},open:async()=>{window.__calls.open++;return {log:[]};}}}};window.__jobs=jobs;},api);
+await page.evaluate(jobs=>{window.__calls={sync:0,open:0};window.__seq=[];window.Capacitor={isNativePlatform:()=>true,isPluginAvailable:n=>!!(window.Capacitor.Plugins||{})[n],Plugins:{Vantify:{sync:async()=>{window.__calls.sync++;return window.__seq.length?window.__seq.shift():{status:'ok',count:jobs.length,jobs};},open:async()=>{window.__calls.open++;return {log:[]};}}}};window.__jobs=jobs;},api);
 await page.locator('#vtPull').click();await page.locator('#vtSave').waitFor();
 const pv=await page.locator('#vtPreview').textContent();
 assert.match(pv,/Vantify, stan na \d\d\/\d\d\/\d{4} · \d+ zleceń/,'podgląd z Vantify, nie z eksportu');assert.match(pv,/Nowe zlecenia: 1/);assert.match(pv,/25\/12\/2026 · AOV Operation Test \(TA\) · 3060001/);
@@ -149,7 +149,7 @@ await page.locator('#vtExplore').click();await page.waitForFunction(()=>{const t
 assert.doesNotMatch(await page.locator('#vtMsg').textContent(),/Gotowe/);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('oest.vantify.zapis')).entries.length),2);
 // strona inspekcji nie sprawdza Vantify sama (tylko główne okno apki)
 await page.goto(url+'/inspekcje/index.html');await page.waitForFunction(()=>window.OEST_PPM&&window.OEST_VANTIFY);
-await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__n=0;window.Capacitor={isNativePlatform:()=>true,isPluginAvailable:n=>!!(window.Capacitor.Plugins||{})[n],Plugins:{Vantify:{sync:async()=>{window.__n++;return {status:'login'};}}}};document.dispatchEvent(new Event('visibilitychange'));});
 await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>window.__n),0);
 // EN, bez przewijania w bok
 await page.goto(url+'/#settings/vantify');await page.locator('#vtPull').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
