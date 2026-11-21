@@ -1,0 +1,48 @@
+{
+ "schema": "oest.quality.baseline",
+ "version": 1,
+ "rule": "pdf-z-docx",
+ "note": "Raporty, w których PDF NIE powstaje z tych samych bajtów wysyłanego Worda (app/tests/pdf-z-docx-ui-check.cjs, plan audytu 1.4, ustalenie nr 8). Lista może tylko maleć: każdy PR Fazy 4 (4.5a–e) zdejmuje swoje wpisy, 4.6 (usunięcie rysowników) dopiero przy pustej liście. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014). Stan 21/11/2026.",
+ "entries": [
+  {
+   "id": "rysownik:EFA-INS-003:raport",
+   "reason": "AOV Operation Test (TA): lista przycisków (flush/points) – buildAll pomija silnik dla r.data.flush"
+  },
+  {
+   "id": "rysownik:EFA-INS-004:raport",
+   "reason": "Weekly Flushing (TA): Flushing – buildFlushPdf (#173: Flushing na razie rysowany)"
+  },
+  {
+   "id": "rysownik:EFA-INS-006:raport",
+   "reason": "Weekly Fire Alarm Test (TA): inspekcja z kartki – PDF z rysownika, nie z wysyłanego Worda"
+  },
+  {
+   "id": "rysownik:EFA-INS-008:raport",
+   "reason": "Weekly Spa Checks: lista potwierdzeń (flush/checks) – buildAll pomija silnik dla r.data.flush"
+  },
+  {
+   "id": "rysownik:EFA-INS-009:raport",
+   "reason": "Daily Spa Pool Sampling: PDF z rysownika, nie z wysyłanego Worda"
+  },
+  {
+   "id": "rysownik:EFA-INS-012:raport",
+   "reason": "Weekly Flushing of Seldom Used Outlets (P): Flushing – buildFlushPdf"
+  },
+  {
+   "id": "rysownik:EFA-INS-013:raport",
+   "reason": "Weekly Fire Alarm Test (P): inspekcja z kartki – PDF z rysownika"
+  },
+  {
+   "id": "rysownik:EFA-INS-019:raport",
+   "reason": "AOV Operation Test (TB): lista przycisków (flush/points) – jak 003"
+  },
+  {
+   "id": "rysownik:EFA-INS-025:raport",
+   "reason": "Weekly Fire Alarm Test (TB): inspekcja z kartki – PDF z rysownika"
+  },
+  {
+   "id": "rysownik:EFA-INS-026:raport",
+   "reason": "Weekly Flushing (TB): Flushing – buildFlushPdf"
+  }
+ ]
+}
