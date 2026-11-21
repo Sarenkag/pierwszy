@@ -43,6 +43,12 @@ function fakePhone() {
     const saved = () => pg.waitForFunction(() => document.querySelector('#rxMessage')?.textContent.includes('Szkic zapisany'));
     const row = id => pg.locator('[data-rx=row][data-id=' + id + ']').click();
     const calls = () => pg.evaluate(() => window.__vt.calls);
+    // wynik zakładania w okienku Ionic (ion-alert), które zostaje do zamknięcia (Grzegorz 21/11/2026): tytuł i treść, potem OK
+    const wyn = async (tytul, tresc) => { const a = pg.locator('ion-alert'); await a.locator('.alert-head').waitFor({ timeout: 15000 });
+      const h = (await a.locator('.alert-title').textContent()).trim(), m = (await a.locator('.alert-message').textContent()).trim();
+      check(tytul.test(h) && tresc.test(m), 'okienko wyniku zakładania: ' + JSON.stringify({ h, m }));
+      await pg.waitForTimeout(300); check(await a.count() === 1, 'okienko wyniku zamknęło się samo');
+      await a.locator('button').click(); await a.waitFor({ state: 'detached' }); };
     const jobs = () => pg.evaluate(() => OESTReactiveUI.repository.get().then(d => d.jobs));
     const photo = path.join(require('node:os').tmpdir(), 'rx-vt-' + process.pid + '.png');
     await idz(pg, 'reactive');
@@ -101,6 +107,7 @@ function fakePhone() {
     await job('Wieszaki w kuchni');
     // 3a. brak odpowiedzi: karta pamięta „mogło powstać” (przegląd Codex #146)
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/^Nie wiem, czy założone$/, /Brak odpowiedzi z Vantify.*mogło powstać/);
     await msg(/Brak odpowiedzi z Vantify/);
     { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && j.reactive.vantify && j.reactive.vantify.pending === true && !j.reactive.vantify.id && j.reactive.vantify.summary === 'EN Wieszaki w kuchni', 'brak odpowiedzi: karta nie pamięta niepewnego zakładania ' + JSON.stringify(j && j.reactive.vantify)); }
     check(await pg.locator('[data-rx=vt-open].rx-vt-off').count() === 1, 'niepewne zakładanie: Open Vantify bez wyszarzenia');
@@ -111,6 +118,7 @@ function fakePhone() {
     check((await calls()).length === 1, 'Wróć przy niepewnym zakładaniu coś wysłało');
     // 3c. „Załóż mimo to” → Vantify odmówił (HTTP 4xx) = pewnie nie założone → karta wraca do zwykłego „Open Vantify”
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('[data-a=ok]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/^NIE założone w Vantify$/, /Vantify nie przyjął: Invalid/);
     await msg(/Vantify nie przyjął: Invalid/);
     { const j = (await jobs()).find(x => x.reactive?.title === 'Wieszaki w kuchni'); check(j && !j.reactive.vantify, 'odmowa 4xx: karta dalej „niepewna”'); }
     // 3d. zakładanie udane – ze zdjęciem przed (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis”), bez Job Sheet
@@ -120,6 +128,7 @@ function fakePhone() {
     await ask().locator('.rx-vt-prio').selectOption('/priorities/137');
     if (SHOTS) { await pg.waitForTimeout(900); await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podsumowanie.png') }); }
     await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070002/, /Zlecenie #3070002: „EN Wieszaki w kuchni”\. Status: czeka na zatwierdzenie \(Pending Approval\)\. Zdjęcia przed przy zleceniu: 1\/1\./);
     await pg.waitForFunction(() => /✓ Vantify #3070002/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     await msg(/Założone w Vantify #3070002\. Czeka na zatwierdzenie/);
     { const k = await calls(); check(k.length === 3 && k.every(c => c.op === 'create') && k[0].summary === 'EN Wieszaki w kuchni' && /EN Proszę/.test(k[0].description) && !('file' in k[0]), 'zakładanie: złe zapytanie ' + JSON.stringify(k)); }
@@ -199,12 +208,14 @@ function fakePhone() {
     check(/^Brak zdjęć$/.test((await ask().locator('.rx-vt-photos').textContent()).trim()), 'bez zdjęcia: okno nie mówi „Brak zdjęć”');
     check(await ask().locator('.rx-vt-prio').inputValue() === '/priorities/137', 'priorytet: nie pamięta ostatnio wybranego');
     await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070009/, /^(?!.*Zdjęcia).*Pending Approval/);
     await msg(/Założone w Vantify #3070009\. Czeka na zatwierdzenie/);
     { const k = await calls(); check(k.length === 1 && k[0].op === 'create' && Array.isArray(k[0].files) && k[0].files.length === 0, 'bez zdjęcia: zlecenie nie założone albo złe zapytanie ' + JSON.stringify(k)); }
     // ---------- 7d. zdjęcie przed nie dotarło do zlecenia: karta pamięta „⚠” (też po ponownym otwarciu), stuknięcie sprawdza i dosyła (przegląd Codex #166) ----------
     await idz(pg, 'reactive'); await job('Kran w kuchni');
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id: 3070010, job: { id: 3070010, status: 'approval_pending', summary: 'EN Kran w kuchni' }, photos: 1, photosSeen: 0, hrefs: ['/files/11'], seenHrefs: [] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070010/, /Zdjęcia przed przy zleceniu: 0\/1/);
     await msg(/widzę tylko 0 z 1 zdjęć przed/);
     { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070010); check(j && JSON.stringify({ hrefs: j.reactive.vantify.photos.hrefs, seen: j.reactive.vantify.photos.seen }) === JSON.stringify({ hrefs: ['/files/11'], seen: [] }) && j.reactive.vantify.photos.ids.length === 1 && j.reactive.vantify.photos.ids[0] === j.reactive.beforeMediaIds[0], 'brak zdjęcia przy zleceniu nie zapisany na karcie ' + JSON.stringify(j && j.reactive.vantify)); }
     { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070010).id; await idz(pg, 'reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor(); }
@@ -231,6 +242,7 @@ function fakePhone() {
     await idz(pg, 'reactive'); await job('Kran w łazience');
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.open = null; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070011, job: { id: 3070011, status: 'approval_pending', summary: 'EN Kran w łazience' }, photos: 1, photosSeen: 0, hrefs: ['/files/12'], seenHrefs: [] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070011/, /Zdjęcia przed przy zleceniu: 0\/1/);
     await pg.waitForFunction(() => /⚠ Vantify #3070011/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070011, status: 'approval_pending', final: false, summary: 'EN Kran w łazience', seenHrefs: [] }] }, { status: 'ok', sent: ['/files/13'], seenHrefs: ['/files/13'] }); });
     await pg.locator('.rx-vt-row [data-rx=vt-check]').first().click(); await ask().waitFor(); await ask().locator('[data-a=ok]').click();
@@ -242,6 +254,7 @@ function fakePhone() {
     await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070012, job: { id: 3070012, status: 'approval_pending', summary: 'EN Dwa zdjecia' }, photos: 2, photosSeen: 1, hrefs: ['/files/31', '/files/32'], seenHrefs: ['/files/32'] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070012/, /Zdjęcia przed przy zleceniu: 1\/2.*Stuknij/);
     await pg.waitForFunction(() => /⚠ Vantify #3070012 · zdjęcia 1\/2/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     for (const n of [33, 34]) {
       await pg.evaluate(n => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070012, status: 'approval_pending', final: false, summary: 'EN Dwa zdjecia', seenHrefs: ['/files/32'] }] }, { status: 'ok', sent: ['/files/' + n], seenHrefs: ['/files/32'] }); }, n);
@@ -255,6 +268,7 @@ function fakePhone() {
     await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070013, job: { id: 3070013, status: 'approval_pending', summary: 'EN Zmienione zdjecia' }, photos: 2, photosSeen: 1, hrefs: ['/files/41', '/files/42'], seenHrefs: ['/files/41'] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+    await wyn(/Założone w Vantify #3070013/, /Zdjęcia przed przy zleceniu: 1\/2/);
     await pg.waitForFunction(() => /⚠ Vantify #3070013 · zdjęcia 1\/2/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     const idsAB = await pg.evaluate(async () => { const R = OESTReactiveUI.repository, j = (await R.get()).jobs.find(x => x.reactive?.vantify?.id === 3070013); await R.saveReactive({ ...j.reactive, beforeMediaIds: [j.reactive.beforeMediaIds[1]] }); return j.reactive.vantify.photos.ids; });
     { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070013).id; await idz(pg, 'reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor(); }
@@ -274,6 +288,7 @@ function fakePhone() {
     const mk = async (title, id) => { await idz(pg, 'reactive'); await job(title, false);
       await pg.evaluate(([id, t]) => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id, job: { id, status: 'approval_pending', summary: 'EN ' + t }, photos: 0, photosSeen: 0 }); }, [id, title]);
       await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
+      await wyn(new RegExp('Założone w Vantify #' + id), new RegExp('#' + id + '.*Pending Approval'));
       await pg.waitForFunction(id => new RegExp('Vantify #' + id).test(document.querySelector('.rx-vt-row')?.textContent || ''), id);
       await pg.waitForFunction(() => !document.querySelector('.oest-ask')); };
     await mk('Update zatwierdzone', 3070030);

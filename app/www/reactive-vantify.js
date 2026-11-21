@@ -39,6 +39,9 @@
     if (c === 'timeout' || c === 'net' || c === 'repeat') return L('Brak odpowiedzi z Vantify. Sprawdź w Vantify, czy zlecenie nie zmieniło się, zanim spróbujesz znowu.', 'No answer from Vantify. Check in Vantify whether the job changed before you try again.');
     return L('Vantify nie przyjął: ', 'Vantify did not accept it: ') + (r?.msg || c) + (r?.step ? ' (' + r.step + ')' : '');
   }
+  /* wynik zakładania w okienku Ionic, które zostaje do zamknięcia (Grzegorz 21/11/2026: „nie ma jak w apce sprawdzić, czy poszło”);
+     okienko ze szkieletu (moduly/szkielet, OESTOkna.komunikat = ion-alert), bez własnego HTML. Pasek na dole mówi to samo. */
+  const wynik = (tytul, tresc) => w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
   async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
   async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
 
@@ -88,14 +91,20 @@
       /* adres pliku powiązany z identyfikatorem zdjęcia na karcie (ids), nie z pozycją na liście (przegląd Codex #167) */
       const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [], ids: files.map(f => f.id) } : null;
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}), ...(photos ? { photos } : {}) });
+      const miss = photos ? photosMissing(x.draft) : 0;
+      const ph = !photos ? '' : miss ? L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.seen.length + '/' + photos.hrefs.length + (r.photoError ? L(' – Vantify: ', ' – Vantify: ') + r.photoError : '') + L('. Stuknij „⚠ Vantify”, żeby dosłać brakujące.', '. Tap “⚠ Vantify” to send the missing ones.') : L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.hrefs.length + '/' + photos.hrefs.length + '.';
+      const done = wynik(L('Założone w Vantify #', 'Created in Vantify #') + r.id, L('Zlecenie #', 'Job #') + r.id + ': „' + (r.job?.summary || summary) + L('”. Status: czeka na zatwierdzenie (Pending Approval).', '”. Status: awaiting approval (Pending Approval).') + ph);
       if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed', ' before photos') + (r.photoError ? L(' (Vantify: ', ' (Vantify: ') + r.photoError + ')' : '') + L('. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', '. Tap “⚠ Vantify” to check again and send the missing ones.'));
-      return;
+      return done;
     }
     /* błąd przy wysyłce zdjęć (przed zakładaniem) = zlecenie na pewno nie powstało */
     if (r.step === 'upload') { delete x.draft.vantify; await x.persist(); x.render(); }
     /* pewne „nie założono”: brak wzoru, wygasłe logowanie, zajęte okno albo odmowa Vantify (HTTP 4xx) – wtedy karta wraca do „Open Vantify” */
-    if (r.status === 'nowzor' || r.status === 'login' || r.code === 'VANTIFY_BUSY' || /^http4\d\d$/.test(r.code || '')) { delete x.draft.vantify; await x.persist(); x.render(); }
+    const sure = r.step === 'upload' || r.status === 'nowzor' || r.status === 'login' || r.code === 'VANTIFY_BUSY' || /^http4\d\d$/.test(r.code || '');
+    if (sure) { delete x.draft.vantify; await x.persist(); x.render(); }
     x.message(why(r, L));
+    /* pewne „nie założono” = NIE założone; brak odpowiedzi = nie wiadomo (zasada: nigdy nie udawać wysyłki) */
+    return wynik(sure ? L('NIE założone w Vantify', 'NOT created in Vantify') : L('Nie wiem, czy założone', 'Not sure if created'), sure ? why(r, L) : why(r, L) + L(' Zlecenie mogło powstać – sprawdź listę zleceń w Vantify, zanim spróbujesz znowu.', ' The job may exist – check the job list in Vantify before you try again.'));
   }
   /* „Send update” (Grzegorz 20/11/2026): tekst dokładnie jak ustalił, bez daty, do poprawy przed wysłaniem.
      Najpierw świeży odczyt: zatwierdzone albo zamknięte = nic nie wysyła i mówi o tym. Pierwszy raz (brak wzoru): okno Vantify
