@@ -64,6 +64,11 @@ jobs:
           npm ci
           npm run sync
 
+      # Silnik PDF z Worda (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”): gotowy silnik z oficjalnego LibreOffice Viewer
+      # (F-Droid, MPL-2.0, sprawdzony sha256) dokładany do każdej APK. Bez niego PDF robi stary rysownik (moduly/word-pdf).
+      - name: Silnik PDF z Worda (LibreOffice)
+        run: python3 scripts/libreoffice-silnik.py android/app
+
       # ZASADA Grzegorza (04/11/2026): każdy raport w dwóch identycznych wersjach, Word i PDF. Bez tego APK się nie zbuduje.
       # Na PR te same testy (npm test = G0, raport-ui-check i raport-rozmiar-ui-check = G2) wykonuje wymagany check
       # „Quality Gate” (quality-gate.yml, każdy PR bez filtra ścieżek), a bez niego PR nie wejdzie do main (ruleset).

@@ -1,0 +1,75 @@
+# PDF z Worda (LibreOfficeKit, Grzegorz 20/11/2026): sprawdzenie na prawdziwym Androidzie przed wydaniem.
+# Buduje wersję debug OEST z silnikiem, uruchamia ją na emulatorze Androida (x86_64 z tłumaczeniem ARM, silnik jest arm64),
+# w stronie inspekcji wypełnia wzory firmy (Plant, basic) i robi z nich PDF silnikiem; wypisuje strony, czasy i logcat awarii.
+# Nic nie wydaje. Uruchamia się przy zmianach silnika/adaptera i ręcznie.
+name: PDF z Worda – emulator
+
+on:
+  pull_request:
+    paths: ["moduly/word-pdf/**", "app/scripts/libreoffice-silnik.py", "app/scripts/pdf-z-worda-emulator*", "app/android/app/src/main/java/**", ".github/workflows/pdf-z-worda-emulator.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Android SDK 36
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - name: Strona apki
+        run: |
+          npm ci
+          npm run sync
+      - name: Silnik PDF z Worda (LibreOffice)
+        run: python3 scripts/libreoffice-silnik.py android/app
+      - name: Symbole JNI silnika
+        run: |
+          NM=$(ls "$ANDROID_HOME"/ndk/*/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm | tail -1)
+          "$NM" -D --defined-only android/app/lok-jni/arm64-v8a/liblo-native-code.so | grep -E "Java_|JNI_OnLoad" | head -60 || true
+      - name: Budowa debug
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          ls -la app/build/outputs/apk/debug/
+      - name: KVM
+        working-directory: .
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulator – PDF z Worda
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          ram-size: 4096M
+          disk-size: 6000M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          working-directory: app
+          script: bash scripts/pdf-z-worda-emulator.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pdf-z-worda-emulator-logi
+          path: |
+            app/lo-emu/
+          if-no-files-found: ignore

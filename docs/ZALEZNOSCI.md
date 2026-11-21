@@ -21,6 +21,7 @@ Wpisy zastane, sprzed rejestru (stan main 20/11/2026). Kolumna „Gdzie używana
 | `docxtemplater` | 3.71.0 | MIT | tak (`www/inspekcje/lib`) | `inspekcje/index.html` | zastana |
 | `pizzip` | 3.3.0 | MIT lub GPL-3.0 | tak (`www/inspekcje/lib`) | `moduly/raporty`, `moduly/word-pdf`, `inspekcje/index.html` | zastana |
 | `jspdf` | 4.2.1 | MIT | tak (`www/inspekcje/lib`) | `moduly/word-pdf`, `moduly/czcionka-pdf`, `inspekcje/index.html`, `app/www/index.html` | zastana |
+| LibreOfficeKit – silnik z oficjalnego LibreOffice Viewer (F-Droid, `org.documentfoundation.libreoffice_135.apk`, sha256 sprawdzany) + powiązania `org.libreoffice.kit` (bez zmian) | 26.2.7.3 | MPL-2.0 | tak (silnik w telefonie, bez sieci; +~79 MB APK) | adapter `moduly/word-pdf` (`zWorda`) → `LibreOfficePlugin.java`; silnik dokłada CI `app/scripts/libreoffice-silnik.py` | Grzegorz 20/11/2026, karta „Tak, LibreOfficeKit” (PDF z Worda); 23:42 „zrobienie update'u oryginalnej apki” |
 
 ## Narzędzia budowania, testów i CI (nie trafiają do APK)
 

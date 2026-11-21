@@ -25,6 +25,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(ModelPlugin.class);
         registerPlugin(VantifyPlugin.class); // Vantify w apce: logowanie na stronie Vantify, pobrany eksport do wczytania (10/11/2026)
         registerPlugin(GoogleTokenPlugin.class); // ciche odnowienie pozwoleń Google (Gmail, Dysk) bez okna
+        registerPlugin(LibreOfficePlugin.class); // PDF z Worda przez LibreOfficeKit w telefonie (20/11/2026)
         super.onCreate(savedInstanceState);
         // Każda strona (menu → inspekcje → menu) ładuje się od nowa: prosimy system o ponowne podanie wysokości pasków,
         // żeby przyciski na dole nie chowały się pod paskiem nawigacji telefonu (test w terenie 03/11/2026).
