@@ -520,7 +520,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
     if (t && !(t.open && !t.dev)) { document.documentElement.classList.add("wy-wczytanie"); document.getElementById("v-form").hidden = false; } } catch (e) {} })();</script>
 <script src="../config.js"></script>
 <script src="../settings-google.js"></script>
-<script src="../moduly/czcionka-pdf/czcionka-pdf.js"></script>
 <script src="../moduly/word-pdf/word-pdf.js"></script>
 <script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
@@ -537,7 +536,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/wzory/wzory.js"></script>
 <script src="flush.js"></script>
 <script src="rodzaje.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script>
 // Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
@@ -625,7 +623,7 @@ function fillDocx(PizZip, Docxtemplater, templateBytes, data, photos) {
     var pW = num(/<w:pgSz[^>]*w:w="(\d+)"/, 11906) - num(/<w:pgMar[^>]*w:left="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:right="(\d+)"/, 1134);
     var pH = num(/<w:pgSz[^>]*w:h="(\d+)"/, 16838) - num(/<w:pgMar[^>]*w:top="(\d+)"/, 1134) - num(/<w:pgMar[^>]*w:bottom="(\d+)"/, 1134);
     var availW = pW, out = [], usableH = pH - 1500, P0 = '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>';
-    // zdjęcia kartek formularza: każde na całą stronę (jak w PDF, addFull), potem zwykłe zdjęcia w siatce
+    // zdjęcia kartek formularza: każde na całą stronę, potem zwykłe zdjęcia w siatce
     var all = photos.map(function (p, i) { return { p: p, i: i }; }), grid = all.filter(function (x) { return !x.p.sheet; });
     all.filter(function (x) { return x.p.sheet; }).forEach(function (x) { out.push("<w:p>" + P0 + drawing(x.p, x.i, usableH * 635, availW * 635) + "</w:p>"); });
     photoPages(grid).forEach(function (pg) {
@@ -2504,182 +2502,10 @@ function makeName(pattern, data, when) {
   ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
   $("s-wifi").addEventListener("change", function () { if (gm()) { OESTSender.render(); if (cfg.auto) OESTSender.run(); } }); // wyłączone czekanie od razu puszcza kolejkę
   fillSettings();
-  // ---------- PDF w układzie raportu ----------
-  // basic form Smart (wzór OEST-basic): nagłówek z logo, stopka, wiersze Site/Date/Engineer — jedno miejsce dla wszystkich raportów PDF
-  function basicKit(pdf, info) {
-    var L = 25.4, W = 158.7;
-    var title = (info.headerText || "Engineers Report").split("\n").pop();
-    function header() {
-      var y = 12.7;
-      if (info.logo) {
-        try {
-          var pr = pdf.getImageProperties(info.logo), lh = 13, lw = lh * pr.width / pr.height;
-          if (lw > 60) { lw = 60; lh = lw * pr.height / pr.width; }
-          pdf.addImage(info.logo, info.logoType, (210 - lw) / 2, y, lw, lh); y += lh + 2;
-        } catch (e) {}
-      }
-      pdf.setFont("DV", "bold"); pdf.setFontSize(15); pdf.setTextColor(0, 0, 0);
-      pdf.text(title, 105, y + 5, { align: "center" });
-      return y + 14;
-    }
-    function footer() {
-      var lines = (info.footerText || "").split("\n").filter(Boolean);
-      pdf.setDrawColor(0); pdf.setLineWidth(0.3); pdf.line(L, 280, L + W, 280);
-      pdf.setFont("DV", "bold"); pdf.setFontSize(6.5); pdf.setTextColor(0, 0, 0);
-      lines.forEach(function (s, i) { pdf.text(s, L + 0, 283.5 + i * 3); });
-    }
-    function lab(t, x, yy, w) { pdf.setFont("DV", "bold"); pdf.setFontSize(10.5); pdf.text(t, x + w - 1.5, yy, { align: "right" }); }
-    // Site / Date / Engineer od y; zwraca y pod wierszami
-    function rows(d, y) {
-      var c1 = 24.7; pdf.setLineWidth(0.4); pdf.setTextColor(0, 0, 0);
-      // nowy wzór basic (Grzegorz 20/11/2026): Date | ID (nr zlecenia Vantify), Engineer | Location – kolumny jak w Wordzie
-      var mid = L + W * 3930 / 8996, c3 = W * 2533 / 8996, where = [d.building, d.level].filter(Boolean).join(" ");
-      [["Site:", d.site, true], ["Date:", d.data, false, "ID:", d["job number"]], ["Engineer:", d.inspektor, false, "Location:", where]].forEach(function (r) {
-        var h = 10, yy = y + h / 2 + 1.6; pdf.rect(L, y, c1, h); pdf.rect(L + c1, y, W - c1, h); lab(r[0], L, yy, c1);
-        pdf.setFont("DV", r[2] ? "bold" : "normal"); pdf.setFontSize(12);
-        if (r[2]) pdf.text(String(r[1] || "").toUpperCase(), L + c1 + (W - c1) / 2, yy, { align: "center" });
-        else pdf.text(r[1] || "", L + c1 + 1.5, yy);
-        if (r[3]) { lab(r[3], mid, yy, c3); pdf.setFont("DV", "normal"); pdf.setFontSize(12); pdf.line(mid + c3, y, mid + c3, y + h); pdf.text(String(r[4] || ""), mid + c3 + 1.5, yy); }
-        y += h;
-      });
-      return y;
-    }
-    return { L: L, W: W, header: header, footer: footer, lab: lab, rows: rows };
-  }
-  function newPdf(landscape) {
-    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4", orientation: landscape ? "l" : "p" });
-    OESTCzcionkaPdf.dodaj(pdf); // DejaVu „DV” (normal/bold) – moduly/czcionka-pdf
-    return pdf;
-  }
-  // into: istniejący PDF (np. po formularzu Flushing) — basic form dokładany od nowej strony pionowej
-  function buildPdf(d, pics, info, into) {
-    var pdf = into || newPdf(); if (into) pdf.addPage("a4", "p");
-    var K = basicKit(pdf, info), L = K.L, W = K.W, header = K.header, footer = K.footer, lab = K.lab;
-    // układ jak wzór OEST-basic: Site/Date/Engineer, tytuł, Overall Condition + Location, opis, Works/Quote/Signed
-    var y = K.rows(d, header()), F = 12;
-    var top = y, ty = y + 6, lh = 5;
-    function room(h) {
-      if (ty + h <= 266) return;
-      pdf.rect(L, top, W, ty - top + 1); footer();
-      pdf.addPage("a4", "p"); top = header(); pdf.setLineWidth(0.4); pdf.setFont("DV", "normal"); pdf.setFontSize(10.5); ty = top + 6;
-    }
-    pdf.setFont("DV", "bold"); pdf.setFontSize(F);
-    var tl = pdf.splitTextToSize(d.tytul || "", W - 6); pdf.text(tl, L + W / 2, ty, { align: "center" }); ty += tl.length * 5.5 + 3;
-    pdf.setFont("DV", "normal");
-    if (!d.flushStrefy) pdf.text("Overall Condition: " + (d.stan_ogolny || ""), L + 1.5, ty); // Flushing ze strefami: bez Overall Condition, jak wzór flush-basic-*
-    // Location jest w nagłówku (nowy wzór basic 20/11/2026), nie w wierszu Overall Condition
-    ty += d.flushStrefy ? 0 : 8; pdf.setFontSize(10.5);
-    if (d.flushStrefy) { ty = OESTFlush.rysujStrefy(pdf, d.flushStrefy, L, ty - 4, W, function (yy, h) { ty = yy; room(h); return ty; }); pdf.setFontSize(10.5); }
-    function cpCell(c, x, yy, b) {
-      var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
-      if (!box) { pdf.text(c, x, yy); return; }
-      var k = b / 3.2, by = yy - b + 0.4 * k; pdf.setLineWidth(0.25); pdf.rect(x, by, b, b);
-      pdf.setLineWidth(0.45);
-      if (m === "\u2611") pdf.lines([[0.9 * k, 1.0 * k], [1.6 * k, -2.0 * k]], x + 0.6 * k, by + 1.6 * k);
-      else { pdf.line(x + 0.6 * k, by + 0.6 * k, x + b - 0.6 * k, by + b - 0.6 * k); pdf.line(x + b - 0.6 * k, by + 0.6 * k, x + 0.6 * k, by + b - 0.6 * k); }
-      pdf.setLineWidth(0.4); pdf.text(c.slice(1).trim(), x + b + 1.5, yy);
-    }
-    if (d.plant) { // plant roomy jak w Wordzie: nazwa pogrubiona | lokalizacja, 4 kratki w wierszu, przerywana linia między pomieszczeniami
-      d.plant.forEach(function (r) {
-        var nr = Math.ceil(r.cells.length / 4); room(7 + nr * 5.2 + 3);
-        ty += 1; pdf.setFontSize(11.5); pdf.setFont("DV", "bold"); pdf.text(r.name, L + 1.5, ty);
-        pdf.setFont("DV", "normal"); pdf.text("Location: " + r.loc, L + W - 1.5, ty, { align: "right" }); ty += 6;
-        pdf.setFontSize(9.5);
-        for (var k = 0; k < r.cells.length; k += 4) { r.cells.slice(k, k + 4).forEach(function (c, j) { cpCell(c, L + 1.5 + j * (W - 3) / 4, ty, 3.2); }); ty += 5.2; }
-        ty -= 1.5; pdf.setLineDashPattern([1, 1], 0); pdf.setLineWidth(0.2); pdf.line(L, ty, L + W, ty); pdf.setLineDashPattern([], 0); pdf.setLineWidth(0.4); ty += 4.5;
-      });
-      pdf.setFontSize(10);
-      d.plantEnd.forEach(function (t, i) {
-        var ls = pdf.splitTextToSize(t, W - 4); room(ls.length * 4.6 + 1);
-        if (i === 0 && t === "Issues found:") pdf.setFont("DV", "bold");
-        pdf.text(ls, L + 1.5, ty); pdf.setFont("DV", "normal"); ty += ls.length * 4.6 + 1;
-      });
-      pdf.setFontSize(10.5);
-    }
-    var cpN = d.plant ? 0 : (d.details || "").split("\n").filter(function (p) { return p.indexOf("\t") >= 0; }).length; // liczba checkpointów (wielkość wierszy)
-    (d.plant ? [] : (d.details || "").split("\n")).forEach(function (p) {
-      if (p.indexOf("\t") >= 0) { // checkpointy: font PDF nie ma ☑/☒, więc kratka rysowana
-        var cs = p.split("\t");
-        if (cs.length > 2) { // plant roomy: siatka 3 kratek w wierszu
-          room(lh * 2); cs.forEach(function (c, k) { cpCell(c, L + 1.5 + k * (W - 4) / 3, ty, 3.2); }); ty += lh * 2; return; }
-        // jedno miejsce: kratka z hasłem (pogrubione) | zdanie, łamane w swojej kolumnie
-        var few = cpN <= 6, fs = few ? 10.5 : 9.5, gap = few ? 4.5 : 2.6;
-        pdf.setFontSize(fs); var cx = L + 60, sl = pdf.splitTextToSize(cs[1] || "", L + W - 2 - cx), h = Math.max(1, sl.length) * (fs * 0.43) + gap;
-        room(h); pdf.setFontSize(few ? 11.5 : 10.5); pdf.setFont("DV", "bold"); cpCell(cs[0], L + 1.5, ty + 0.4, few ? 4.3 : 3.8); pdf.setFont("DV", "normal");
-        pdf.setFontSize(fs); pdf.text(sl, cx, ty + 0.4); pdf.setFontSize(10.5);
-        pdf.setDrawColor(208); pdf.setLineWidth(0.2); pdf.line(L + 1.5, ty + h - 3.0, L + W - 1.5, ty + h - 3.0); pdf.setDrawColor(0); pdf.setLineWidth(0.4);
-        ty += h; return; } // checkpointy
-      var ls = p ? pdf.splitTextToSize(p, W - 4) : [""];
-      for (var q = 0; q < ls.length; q += 30) { var part = ls.slice(q, q + 30); room(part.length * lh); pdf.text(part, L + 1.5, ty); ty += part.length * lh; } // długi akapit (np. notatka kranu) dzielony między strony
-    });
-    if (d.zakres) { pdf.setFontSize(8.5); var zl = pdf.splitTextToSize(d.zakres, W - 4); room(zl.length * 4 + 1); pdf.text(zl, L + 1.5, ty + 1); ty += zl.length * 4 + 1; pdf.setFontSize(10.5); }
-    room(7 + 7 + 18 + 4); // Works Complete + Quote + Signed zawsze razem
-    var cellBottom = Math.max(ty + 2, Math.min(top + 140, 266 - 32));
-    pdf.rect(L, top, W, cellBottom - top); y = cellBottom;
-    var c2 = 41.6;
-    [["Works Complete:", d.data], ["Quote Required:", d.quote || ""]].forEach(function (r) {
-      pdf.rect(L, y, c2, 7); pdf.rect(L + c2, y, W - c2, 7); lab(r[0], L, y + 5, c2); pdf.setFont("DV", "normal"); pdf.text(r[1], L + c2 + 1.5, y + 5); y += 7;
-    });
-    pdf.rect(L, y, W, 18); pdf.setFont("DV", "bold"); pdf.text("Signed:", L + 1.5, y + 9.5); pdf.text(d.inspektor || "", L + 22, y + 9.5); y += 18;
-    footer();
-    addFull(pdf, pics.filter(function (p) { return p.sheet; })); // zdjęcia formularza: strona po stronie, zaraz po raporcie (Grzegorz 04/11)
-    pics = pics.filter(function (p) { return !p.sheet; });
-    photoPages(pics).forEach(function (pg) { // przy pytaniach do 12 na stronę, ogólne po 2 (pół strony), jak w Wordzie
-      var chunk = pg.items, g = pg.g, gap = 3;
-      pdf.addPage("a4", "p"); var top2 = header(), areaH = 274 - top2;
-      var cw = (W - gap * (g.cols - 1)) / g.cols, chh = (areaH - gap * (g.rows - 1)) / g.rows;
-      chunk.forEach(function (p, k) {
-        var col = k % g.cols, row = Math.floor(k / g.cols), iw = cw, ih = iw * p.height / p.width;
-        if (ih > chh) { ih = chh; iw = ih * p.width / p.height; }
-        var capH = p.caption ? 4.5 : 0; if (capH && ih > chh - capH) { ih = chh - capH; iw = ih * p.width / p.height; }
-        var iy = top2 + row * (chh + gap) + (chh - ih - capH) / 2;
-        pdf.addImage(p.bytes, "JPEG", L + col * (cw + gap) + (cw - iw) / 2, iy, iw, ih);
-        if (capH) { pdf.setFont("DV", "normal"); pdf.setFontSize(8); pdf.text(pdf.splitTextToSize(String(p.caption), cw)[0] || "", L + col * (cw + gap) + cw / 2, iy + ih + 3.5, { align: "center" }); } // zdjęcie przy kranie/punkcie: podpis jego nazwą, jak w Wordzie
-      });
-      footer();
-    });
-    return into ? pdf : new Uint8Array(pdf.output("arraybuffer"));
-  }
-
-  // PDF z samych zdjęć: każde zdjęcie na osobnej stronie A4, jak najwięcej miejsca, bez nagłówka
-  // jedno zdjęcie = jedna strona A4, jak najwięcej miejsca (zdjęcia formularza, zdjęcia ogólne). Wspólne dla wszystkich raportów.
-  // zdjęcia ogólne: dwa na stronę A4, każde na pół strony (Grzegorz 05/11)
-  function addHalf(pdf, pics, first) {
-    var M = 8, PW = 210 - 2 * M, HH = (297 - 3 * M) / 2;
-    pics.forEach(function (p, i) {
-      if (i % 2 === 0 && (i || !first)) pdf.addPage("a4", "p");
-      var iw = PW, ih = iw * p.height / p.width;
-      if (ih > HH) { ih = HH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", (210 - iw) / 2, M + (i % 2) * (HH + M) + (HH - ih) / 2, iw, ih);
-    });
-  }
-  // land: poziome zdjęcie formularza na poziomej stronie (inspekcje z kartki, Grzegorz 12/11/2026); pierwsza strona
-  // dokumentu ma już właściwą orientację (buildPhotoPdf)
-  function addFull(pdf, pics, first, land) {
-    var M = 6;
-    pics.forEach(function (p, i) {
-      var l = !!land && p.width > p.height, W = l ? 297 : 210, H = l ? 210 : 297, PW = W - 2 * M, PH = H - 2 * M;
-      if (i || !first) pdf.addPage("a4", l ? "l" : "p");
-      var iw = PW, ih = iw * p.height / p.width;
-      if (ih > PH) { ih = PH; iw = ih * p.width / p.height; }
-      pdf.addImage(p.bytes, "JPEG", (W - iw) / 2, (H - ih) / 2, iw, ih);
-    });
-  }
   // małe zdjęcia (inspekcje z kartki, np. Fire Test – Grzegorz 12/11/2026): 4 w rzędzie, rząd wyśrodkowany, od górnego
   // marginesu, 3 rzędy na stronę; ten sam układ w Wordzie (photoDocx)
   var SMALL = { cols: 4, rows: 3, M: 6, gap: 3 };
-  function addSmall(pdf, pics, first) {
-    var cw = (210 - 2 * SMALL.M - (SMALL.cols - 1) * SMALL.gap) / SMALL.cols, ch = cw * 4 / 3, y = SMALL.M;
-    for (var a = 0; a < pics.length; a += SMALL.cols) {
-      var row = pics.slice(a, a + SMALL.cols), r = a / SMALL.cols;
-      if (r % SMALL.rows === 0) { if (a || !first) pdf.addPage("a4", "p"); y = SMALL.M; }
-      var sz = row.map(function (p) { var iw = cw, ih = iw * p.height / p.width; if (ih > ch) { ih = ch; iw = ih * p.width / p.height; } return [iw, ih]; });
-      var tw = sz.reduce(function (t, z) { return t + z[0]; }, 0) + (row.length - 1) * SMALL.gap, x = (210 - tw) / 2, rh = 0;
-      row.forEach(function (p, k) { pdf.addImage(p.bytes, "JPEG", x, y, sz[k][0], sz[k][1]); x += sz[k][0] + SMALL.gap; rh = Math.max(rh, sz[k][1]); });
-      y += rh + SMALL.gap;
-    }
-  }
-  // Word z samych zdjęć (zdjęcia formularza wypełnionego ręcznie): jedno zdjęcie = jedna strona A4, jak buildPhotoPdf —
+  // Word z samych zdjęć (zdjęcia formularza wypełnionego ręcznie): jedno zdjęcie = jedna strona A4 —
   // ten sam formularz w Wordzie i w PDF-ie (Grzegorz 04/11)
   var PHOTO_DOCX = null;
   function photoDocx(pics, small) {
@@ -2697,7 +2523,7 @@ function makeName(pattern, data, when) {
     out.file("word/document.xml", x);
     return out.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
-  // Word inspekcji z kartki (small): ten sam układ co buildPhotoPdf(…, true) – formularz strona po stronie (poziomy na
+  // Word inspekcji z kartki (small): formularz strona po stronie (poziomy na
   // poziomej stronie: każda kartka to osobna sekcja), potem małe zdjęcia po 4 w wyśrodkowanym rzędzie, 3 rzędy na stronę
   function smallDocxBody(x, pics) {
     var TW = 56.7, EMU = 635, pg = { w: 11906, h: 16838 }, M = SMALL.M * TW;
@@ -2724,21 +2550,12 @@ function makeName(pattern, data, when) {
     body = body.replace(/§LAST§[LP]$/, "");
     return x.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>" + body + fin + "</w:body>");
   }
-  // small: inspekcja z kartki (Fire Test itp.) – formularz najpierw, poziomy na poziomej stronie, zdjęcia małe (addSmall)
-  function buildPhotoPdf(pics, small) {
-    var sh = pics.filter(function (p) { return p.sheet; }), gen = pics.filter(function (p) { return !p.sheet; });
-    var pdf = new window.jspdf.jsPDF({ compress: true, unit: "mm", format: "a4", orientation: small && sh[0] && sh[0].width > sh[0].height ? "l" : "p" });
-    addFull(pdf, sh, true, small);
-    if (small) addSmall(pdf, gen, !sh.length); else addHalf(pdf, gen, !sh.length); // formularz na całą stronę, ogólne na pół strony
-    return new Uint8Array(pdf.output("arraybuffer"));
-  }
   function fillFlushDocx(f) {
     var zip = new PizZip(OESTWzory.bajty("flush"));
     zip.file("word/document.xml", OESTFlush.fill(zip.file("word/document.xml").asText(), f));
     zip.file("word/header1.xml", OESTFlush.header(zip.file("word/header1.xml").asText(), f.building));
     return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
   }
-  // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
   var basicRaz = new WeakMap(); // raz na zestaw zdjęć danego raportu: PDF z silnika powstaje z TYCH SAMYCH bajtów basic form, które idą mailem (zip Worda ma datę zapisu)
@@ -2757,8 +2574,8 @@ function makeName(pattern, data, when) {
     dd.details = dd.opis = [(f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), ""]
       .concat([].concat.apply([], f.taps.map(function (t, i) { return (heads[i] ? ["", heads[i] + ":"] : []).concat([t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : "")]); })))
       .concat(["", sum + "."]).join("\n");
-    // Flushing ze strefami (Grzegorz 21/11/2026): wzór flush-basic-* – strefy, kratki i stałe zdanie zamiast listy w {details}; PDF rysuje te same strefy
-    if (f.strefy && f.wzorBasic) { Object.assign(dd, OESTFlush.basicPola(f)); dd.details = dd.opis = ""; dd.flushStrefy = f; }
+    // Flushing ze strefami (Grzegorz 21/11/2026): wzór flush-basic-* – strefy, kratki i stałe zdanie zamiast listy w {details}
+    if (f.strefy && f.wzorBasic) { Object.assign(dd, OESTFlush.basicPola(f)); dd.details = dd.opis = ""; }
     var ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })).map(function (p) {
       return p.tap != null && f.taps[p.tap] ? Object.assign({}, p, { caption: f.taps[p.tap].name }) : p;
     });
@@ -2773,182 +2590,97 @@ function makeName(pattern, data, when) {
     if (!yes) return "No call points tested (all N/A)";
     return (na ? yes + " of " + f.taps.length + " call points tested – AOVs opened and reset correctly (" + na + " N/A, not tested)" : "All call points tested – AOVs opened and reset correctly");
   }
-  // Wzory firmy wczytane raz: logo Smart z formularza Flushing i nagłówek/stopka basic form (OEST-basic)
-  var flushLogo = null, basicInfoC = null;
-  function flushLogoImg() { if (!flushLogo) { var z = new PizZip(OESTWzory.bajty("flush")), f = z.file("word/media/image1.png"); flushLogo = f ? f.asUint8Array() : new Uint8Array(0); } return flushLogo; }
-  function basicInfo() { return basicInfoC || (basicInfoC = templateInfo(PizZip, OESTWzory.bajty("basic"))); }
-  // Pełny formularz Weekly Taps/Shower Flushing Record w PDF — ten sam układ co Word (moduly/wzory/flush.docx), poziomo, 5 tygodni,
-  // wypełniony tylko wybrany tydzień (Grzegorz 04/11: „w PDF-ie jedna wersja, w docu druga” → obie takie same)
-  function flushForm(pdf, d) {
-    var f = d.flush, GREEN = [146, 208, 80], tower = String(f.building || "").length === 1;
-    var title = "WEEKLY TAPS/SHOWER FLUSHING RECORD " + (tower ? "TOWER " + f.building : String(f.building || "").toUpperCase());
-    var p2 = function (n) { return (n < 10 ? "0" : "") + n; };
-    var dateTxt = f.noDate || !f.date ? "" : p2(f.date.getDate()) + "." + p2(f.date.getMonth() + 1) + "." + f.date.getFullYear();
-    var X0 = 10, XO = 69.6, WK = 30.8, XN = XO + 5 * WK, XT = XN + 26.4, XE = 285, RH = 6.5, BOT = 186;
-    function top(first) {
-      var logo = flushLogoImg();
-      if (logo.length) try { var pr = pdf.getImageProperties(logo), lh = 13, lw = lh * pr.width / pr.height; pdf.addImage(logo, "PNG", 263 - lw, 8, lw, lh); } catch (e) {}
-      pdf.setTextColor(0, 0, 0); pdf.setFont("DV", "bold"); pdf.setFontSize(13); pdf.text(title, X0, 27);
-      if (first) { pdf.setFont("DV", "normal"); pdf.setFontSize(6.5); pdf.text("Circle / highlight sampling year and month as applicable", X0, 31); }
-      pdf.setDrawColor(0); pdf.setLineWidth(0.25); pdf.setFont("DV", "normal"); pdf.setFontSize(7);
-      pdf.rect(34, 190, 57, 5.5); pdf.rect(91, 190, 57, 5.5); pdf.rect(148, 190, 57, 5.5); pdf.rect(205, 190, 57, 5.5);
-      pdf.text("Document Ref: QHS - 032", 36, 193.8); pdf.text("Original Issue Date:     01.07.2019", 93, 193.8); pdf.text("Review frequency: Annual", 150, 193.8); pdf.text("Current Version:   02", 207, 193.8);
-    }
-    function cell(x, y, w, h, fill) { if (fill) { pdf.setFillColor(fill[0], fill[1], fill[2]); pdf.rect(x, y, w, h, "FD"); } else pdf.rect(x, y, w, h); }
-    function mid(t, x, y, w, h, size, bold, font) { pdf.setFont(font || "times", bold ? "bold" : "normal"); pdf.setFontSize(size); var ls = pdf.splitTextToSize(t, w - 1); pdf.text(ls, x + w / 2, y + h / 2 - (ls.length - 1) * size * 0.18 + size * 0.12, { align: "center" }); }
-    function head(y) { // nagłówek tabeli: OUTLET | WEEK RECORD (5 tygodni × COMPLETED Y/N, DATE) | NAME | NOTES
-      pdf.setLineWidth(0.25);
-      cell(X0, y, XO - X0, 21); mid("OUTLET IDENTIFICATION", X0, y, XO - X0, 21, 7, true);
-      cell(XO, y, XN - XO, 6); mid("WEEK RECORD", XO, y, XN - XO, 6, 7, true);
-      ["1ST", "2ND", "3RD", "4TH", "5TH"].forEach(function (n, i) {
-        var x = XO + i * WK; cell(x, y + 6, WK, 6); mid(n + " WK IN MONTH", x, y + 6, WK, 6, 6.5);
-        cell(x, y + 12, WK / 2, 9); mid("COMPLETED Y/N", x, y + 12, WK / 2, 9, 5.5); cell(x + WK / 2, y + 12, WK / 2, 9); mid("DATE", x + WK / 2, y + 12, WK / 2, 9, 5.5);
-      });
-      cell(XN, y, XT - XN, 21); mid("NAME", XN, y, XT - XN, 21, 7); cell(XT, y, XE - XT, 21); mid("NOTES", XT, y, XE - XT, 21, 7);
-      return y + 21;
-    }
-    top(true);
-    // rok i miesiąc: zaznaczone na zielono jak w Wordzie
-    var YW = 37.6, YL = 54.5, yy = 33.5; pdf.setLineWidth(0.25);
-    cell(X0, yy, YL, 5.2); mid("YEAR", X0, yy, YL, 5.2, 6.5, true, "DV"); cell(X0, yy + 5.2, YL, 10.4); mid("MONTH", X0, yy + 5.2, YL, 10.4, 6.5, true, "DV");
-    for (var i = 0; i < 6; i++) {
-      var x = X0 + YL + i * YW;
-      cell(x, yy, YW, 5.2, i === 0 ? GREEN : null); mid(String(f.year + i), x, yy, YW, 5.2, 6.5, false, "DV");
-      cell(x, yy + 5.2, YW, 5.2, f.month === i ? GREEN : null); mid(OESTFlush.MONTHS[i], x, yy + 5.2, YW, 5.2, 6.5, false, "DV");
-      cell(x, yy + 10.4, YW, 5.2, f.month === i + 6 ? GREEN : null); mid(OESTFlush.MONTHS[i + 6], x, yy + 10.4, YW, 5.2, 6.5, false, "DV");
-    }
-    pdf.setLineWidth(0.6); pdf.rect(X0, yy, YL + 6 * YW, 15.6); pdf.setLineWidth(0.25);
-    var y = head(53), wx = XO + (f.week - 1) * WK;
-    f.taps.forEach(function (t) {
-      var note = t.note ? pdf.setFont("times", "normal").setFontSize(7).splitTextToSize(t.note, XE - XT - 2) : [];
-      if (note.length > 32) note = note.slice(0, 31).concat(["… (full note in the basic form)"]); // wiersz zawsze mieści się na stronie; cała notatka jest w basic form
-      var h = Math.max(RH, note.length * 2.8 + 1.5);
-      if (y + h > BOT) { pdf.addPage("a4", "l"); top(false); y = head(30); }
-      cell(X0, y, XO - X0, h); pdf.setFont("times", "bold"); pdf.setFontSize(10.5); pdf.text(pdf.splitTextToSize(t.name, XO - X0 - 1)[0], X0 + 0.8, y + h / 2 + 1.4);
-      for (var k = 0; k < 10; k++) cell(XO + k * WK / 2, y, WK / 2, h);
-      cell(XN, y, XT - XN, h); cell(XT, y, XE - XT, h);
-      mid(OESTFlush.LABEL[t.state] || "", wx, y, WK / 2, h, 7.5);
-      if (t.state !== "na") mid(dateTxt, wx + WK / 2, y, WK / 2, h, 7.5);
-      mid(f.name || "", XN, y, XT - XN, h, 7);
-      if (note.length) { pdf.setFont("times", "normal"); pdf.setFontSize(7); pdf.text(note, XT + 1, y + 3); }
-      y += h;
-    });
-    if (y + 12 > BOT) { pdf.addPage("a4", "l"); top(false); y = 30; }
-    pdf.setFont("DV", "bold"); pdf.setFontSize(7.5);
-    pdf.text(pdf.splitTextToSize("IF THERE ARE ANY ISSUES WITH ASSETS/WATER SYSTEM, THIS MUST BE RECORDED ON THE FAULT AND REMEDIAL ACTIONS LOG WITH DETAILS OF ACTIONS TAKEN TO RECTIFY THE FAULT", 250), 148.5, y + 6, { align: "center" });
-  }
-  // o.table === false: sam plik zdjęć (zdjęcia formularza → przy kranach z nazwą → ogólne).
-  // Raport: Flushing = formularz firmy + basic form, AOV = basic form; zdjęcia w gridzie basic form, podpisane kranem/punktem.
-  // (OESTFlush.fromPdf czyta tylko stare PDF-y z listą w kolumnach 110/135 mm — nowe inspekcje i tak nie znikają po Wyślij.)
-  function buildFlushPdf(d, pics, o) {
-    o = o || {};
-    var f = d.flush, page1 = o.table !== false, full = page1 && !f.points, pdf = newPdf(full);
-    var L = 15;
-    var sp = pics.filter(function (p) { return p.sheet; }), tp = pics.filter(function (p) { return p.tap != null; }), fp = pics.filter(function (p) { return p.tap == null && !p.sheet; });
-    if (page1) { // Flushing: formularz firmy (jak Word) + basic form; AOV i inne listy punktów: sam basic form. Zawsze jak w Wordzie.
-      var b = flushBasic(d, pics);
-      if (!full) return buildPdf(b.d, b.pics, basicInfo());
-      flushForm(pdf, d); buildPdf(b.d, b.pics, basicInfo(), pdf);
-      return new Uint8Array(pdf.output("arraybuffer"));
-    }
-    addFull(pdf, sp, !page1); if (sp.length) page1 = true;
-    if (tp.length) {
-      var COLS = 3, W = 58, GAP = 5, H = 58, x0 = (210 - COLS * W - (COLS - 1) * GAP) / 2;
-      tp.forEach(function (p, i) {
-        var k = i % 12; if (!k) { if (page1 || i) pdf.addPage("a4", "p"); page1 = true; pdf.setFont("DV", "bold"); pdf.setFontSize(11); pdf.text(f.title + " – photos", L, 14); pdf.setFont("DV", "normal"); pdf.setFontSize(9); }
-        var cx = x0 + (k % COLS) * (W + GAP), cy = 20 + Math.floor(k / COLS) * (H + 10);
-        var iw = W, ih = iw * p.height / p.width; if (ih > H) { ih = H; iw = ih * p.width / p.height; }
-        pdf.addImage(p.bytes, "JPEG", cx + (W - iw) / 2, cy + (H - ih) / 2, iw, ih);
-        pdf.text(pdf.splitTextToSize(f.taps[p.tap] ? f.taps[p.tap].name : "", W)[0] || "", cx + W / 2, cy + H + 4.5, { align: "center" });
-      });
-    }
-    addHalf(pdf, fp, !page1);
-    return new Uint8Array(pdf.output("arraybuffer"));
-  }
   // Raport wg ustawień wysyłki (⚙, Grzegorz 04/11): co wysłać (zdjęcia formularza / nasz raport / zdjęcia ogólne / zdjęcia do pytań),
-  // scalone w jeden dokument albo osobne pliki, PDF / Word. r.pdf = pełny PDF (podgląd, kopia w telefonie do odtworzenia inspekcji),
-  // r.files = to, co faktycznie idzie mailem.
-  // PDF z TEGO SAMEGO Worda (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”): gdy w apce jest silnik LibreOffice, PDF raportu
-  // to Word przepuszczony przez silnik (moduly/word-pdf → zWorda), a nie osobny rysunek. Bez silnika (przeglądarka, testy)
-  // albo gdy silnik zawiedzie – zostaje PDF z rysownika jak dotąd. Flushing i listy punktów (Generator, AOV, Spa – Grzegorz 21/11/2026):
-  // PDF z tych samych Wordów, które idą mailem (formularz firmy + basic form), sklejony w jeden plik (zWordow).
+  // scalone w jeden dokument albo osobne pliki, PDF / Word. r.files = to, co faktycznie idzie mailem; r.pdf = pełny PDF do archiwum.
+  // PDF TYLKO z Worda przez silnik LibreOffice (Grzegorz 20/11 i 21/11/2026: „mamy profesjonalny sprzęt” – własny rysownik PDF usunięty).
+  // Każdy plik PDF niesie listę Wordów (z), z których powstaje (Flushing: formularz firmy + basic form, sklejone – moduly/word-pdf → zWordow).
+  // Bez silnika albo gdy zawiedzie: PDF-a nie ma i apka tego nie udaje – idzie Word (r.bezPdf, komunikat w podglądzie).
   function buildAll(opt) {
     // wzory Word z modułu Wzory: przed każdym raportem (po błędzie przy starcie – ponowna próba); błąd idzie do zwykłej obsługi (uwaga Codex #186)
-    return OESTWzory.wczytaj().then(function () { return buildAllRysowane(opt); }).then(function (r) {
-      // r.wordDocs: Wordy, z których ma powstać PDF (Flushing / listy punktów / raport ze zdjęć kartki); inaczej r.docx
-      var wiele = !!(r && r.wordDocs);
-      if (!r || !window.OESTWordPdf || !OESTWordPdf.dostepny() || (!wiele && (!r.docx || !r.docx.length))) return r;
-      var glowne = (r.files || []).filter(function (f) { return /\.pdf$/.test(f.name) && (f.name === r.name + ".pdf" || f.name === r.name + " - report.pdf"); });
-      return (wiele ? OESTWordPdf.zWordow(r.wordDocs) : OESTWordPdf.zWorda(r.docx)).then(function (pdf) {
-        if (!pdf) return r;
-        glowne.forEach(function (f) { f.bytes = pdf; });
-        // r.pdf = pełny PDF do archiwum (ponowna wysyłka z Raportów): podmieniamy go tylko, gdy Word ma wszystkie zdjęcia (uwaga Codex #173).
-        if (r.wordPelny) r.pdf = pdf;
-        r.zWorda = true;
+    return OESTWzory.wczytaj().then(function () { return buildAllWordy(opt); }).then(function (r) {
+      var pdfy = r.files.filter(function (f) { return f.z; }), silnik = !!(window.OESTWordPdf && OESTWordPdf.dostepny());
+      return pdfy.reduce(function (p, f) {
+        return p.then(function () { return silnik ? OESTWordPdf.zWordow(f.z) : null; }).then(function (b) { f.bytes = b; });
+      }, Promise.resolve()).then(function () {
+        // archiwum: pełny PDF (wszystkie zdjęcia) – ten sam co mailowy, gdy mail ma wszystkie zdjęcia; inaczej osobno z pełnych Wordów
+        var glowny = pdfy.filter(function (f) { return f.name === r.name + ".pdf" || f.name === r.name + " - report.pdf"; })[0];
+        return r.wordPelny && glowny ? glowny.bytes : silnik && r.archiwum ? OESTWordPdf.zWordow(r.archiwum) : null;
+      }).then(function (arch) {
+        r.pdf = arch || new Uint8Array(0);
+        var bez = pdfy.filter(function (f) { return !f.bytes; });
+        r.bezPdf = bez.length > 0;
+        // PDF nie powstał: zamiast niego jego Wordy (jeśli jeszcze nie idą), żeby raport nie zginął
+        bez.forEach(function (f) {
+          var baza = f.name.slice(0, -4), i = r.files.indexOf(f);
+          var zast = f.z.filter(function (d) { return d && d.length; }).map(function (d, k) { return { name: baza + (k ? " - basic" : "") + ".docx", mime: MIME_DOCX, bytes: d }; })
+            .filter(function (w) { return !r.files.some(function (g) { return g.name === w.name; }); });
+          r.files.splice.apply(r.files, [i, 1].concat(zast));
+        });
+        r.files.forEach(function (f) { delete f.z; });
         return r;
       });
     });
   }
-  function buildAllRysowane(opt) {
+  function buildAllWordy(opt) {
     var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
     if (opt && opt.word) n = Object.assign({}, n, { xw: true }); // Update: Word do archiwum i na Dysk zawsze, niezależnie od ⚙ maila (uwaga Codex #101)
-    var PDF = "application/pdf", small = !!(cur.type.folder && !cur.type.flush); // inspekcja z kartki (Fire Test itp.)
-    function file(suffix, mime, bytes) { return { name: name + suffix + (mime === PDF ? ".pdf" : ".docx"), mime: mime, bytes: bytes }; }
+    var small = !!(cur.type.folder && !cur.type.flush); // inspekcja z kartki (Fire Test itp.)
+    function file(suffix, bytes) { return { name: name + suffix + ".docx", mime: MIME_DOCX, bytes: bytes }; }
+    function pdfZ(suffix, docs) { return { name: name + suffix + ".pdf", mime: "application/pdf", z: docs }; }
     function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
-    function done(r, form) { // form: { pdf: fn(pics) → bajty raportu (z wybranymi zdjęciami), docx: bajty Worda | null }
+    // Word samych zdjęć: przy kranach / punktach podpisane ich nazwą; formularz (kartka) pierwszy
+    function zdjecia(pics) {
+      var F = d.flush || cur.type.flush, ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; }));
+      if (F) ph = ph.map(function (p) { var t = p.tap != null && F.taps[p.tap]; return t ? Object.assign({}, p, { caption: t.name != null ? t.name : String(t) }) : p; });
+      return photoDocx(ph, small);
+    }
+    function done(r, form) { // form: { docs: fn(pics) → Wordy raportu z tymi zdjęciami (z nich PDF), docx: Word firmy | pusty, basic: fn(pics) | brak }
       var sel = pick(r.pics), files = [], sh = sel.filter(function (p) { return p.sheet; }), rest = sel.filter(function (p) { return !p.sheet; });
-      var wantForm = !!form, word = n.xw && form && ((form.docx && form.docx.length) || form.basic), main = form && form.docx && form.docx.length;
+      var word = n.xw && form && ((form.docx && form.docx.length) || form.basic), main = form && form.docx && form.docx.length;
+      r.archiwum = form ? form.docs(r.pics) : r.pics.length ? [zdjecia(r.pics)] : null;
       if (n.one) { // jeden dokument: raport → zdjęcia formularza → zdjęcia (Word nie scala zdjęć: idzie obok, gdy zaznaczony)
-        if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); if (wantForm && form.word) r.wordDocs = [form.docx, form.basic(sel)]; }
-        else if (sel.length) files.push(file(" - photos", PDF, photosPdf(sel)));
-        if (!form && n.xw && sel.length) { var fw = photoDocx(sh.concat(rest), small); files.push(file("", MIME_DOCX, fw)); r.wordDocs = [fw]; } // sam formularz ze zdjęć: ten sam w Wordzie, PDF z niego
-        if (word && main) files.push(file("", MIME_DOCX, form.docx));
-        if (word && form.basic) files.push(file(main ? " - basic" : "", MIME_DOCX, form.basic(sel))); // Flushing: basic form Smart z listą kranów i zdjęciami
+        var fw = !form && sel.length ? zdjecia(sel) : null; // sam formularz ze zdjęć: ten sam Word i PDF z niego
+        if (n.xp || !word) { var docs = form ? form.docs(sel) : fw ? [fw] : null; if (docs) files.push(pdfZ("", docs)); }
+        else if (sel.length) files.push(pdfZ(" - photos", [zdjecia(sel)]));
+        if (fw && n.xw) files.push(file("", fw));
+        if (word && main) files.push(file("", form.docx));
+        if (word && form.basic) files.push(file(main ? " - basic" : "", form.basic(sel))); // Flushing: basic form Smart z listą kranów i zdjęciami
       } else {
-        if (wantForm && n.xp) { files.push(file(" - report", PDF, form.pdf([]))); if (form.word) r.wordDocs = [form.docx, form.basic([])]; }
-        if (word && main) files.push(file(" - report", MIME_DOCX, form.docx));
-        if (word && form.basic) files.push(file(main ? " - basic" : " - report", MIME_DOCX, form.basic([])));
-        if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh, small)));
-        if (sh.length && n.xw) files.push(file(" - form", MIME_DOCX, photoDocx(sh, small)));
-        if (rest.length) files.push(file(" - photos", PDF, photosPdf(rest)));
+        if (form && n.xp) files.push(pdfZ(" - report", form.docs([])));
+        if (word && main) files.push(file(" - report", form.docx));
+        if (word && form.basic) files.push(file(main ? " - basic" : " - report", form.basic([])));
+        if (sh.length) { var fsh = photoDocx(sh, small); files.push(pdfZ(" - form", [fsh])); if (n.xw) files.push(file(" - form", fsh)); }
+        if (rest.length) files.push(pdfZ(" - photos", [zdjecia(rest)]));
       }
       r.files = files; return r;
     }
-    // plik zdjęć: przy kranach / punktach z ich nazwą (także bez formularza elektronicznego), reszta strona po stronie
-    function photosPdf(pics) {
-      var F = d.flush || (cur.type.flush && { title: cur.type.flush.title, taps: cur.type.flush.taps.map(function (x) { return { name: x && x.name != null ? x.name : String(x) }; }) });
-      return F ? buildFlushPdf({ flush: F }, pics, { table: false }) : buildPhotoPdf(pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })), small);
-    }
     function fin(ph) { return finalPhoto(small && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { small: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
-      // PDF rysowany z tego samego wypełnionego formularza firmy (QHS-031) – Word = PDF (moduly/word-pdf)
-      var docx = fillTempDocx(d), pdf = OESTWordPdf.pdf(docx, { PizZip: PizZip, jsPDF: window.jspdf.jsPDF, czcionka: OESTCzcionkaPdf });
-      return { name: name, data: d, docx: docx, pdf: pdf, pics: [], info: {}, logoUrl: "", files: [n.xp || !n.xw ? file("", PDF, pdf) : null, n.xw ? file("", MIME_DOCX, docx) : null].filter(Boolean) };
+      // formularz firmy QHS-031: Word, PDF z niego
+      var docx = fillTempDocx(d);
+      return { name: name, data: d, docx: docx, pics: [], info: {}, logoUrl: "", wordPelny: true, archiwum: [docx], files: [n.xp || !n.xw ? pdfZ("", [docx]) : null, n.xw ? file("", docx) : null].filter(Boolean) };
     });
     if (cur.type.folder) {
       // Flushing / AOV / zdjęcia kartki: wszystkie zdjęcia z oznaczeniem (kran / formularz / ogólne)
       return mapLimit(photos, 3, fin).then(function (pics) {
         // formularz (zdjęcia z przycisku „Formularz”) zawsze pierwszy, zdjęcia za nim – niezależnie od kolejności robienia (Grzegorz 12/11/2026)
         if (small) pics = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; }));
-        if (!d.flush) {
-          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics, small), pics: pics, info: {}, logoUrl: "", wordPelny: !!n.one && pick(pics).length === pics.length };
-          return done(r0, null);
-        }
+        var pelny = !!n.one && pick(pics).length === pics.length;
+        if (!d.flush) return done({ name: name, data: d, docx: new Uint8Array(0), pics: pics, info: {}, logoUrl: "", wordPelny: pelny }, null);
         d.stan_ogolny = d.stan = d.flush.points ? pointsSummary(d.flush) : OESTFlush.summary(d.flush);
         d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
-        var docx = d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush);
-        var r = { name: name, data: d, docx: docx, pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
-        r.wordPelny = !!n.one && pick(pics).length === pics.length;
-        // word: PDF tego raportu z silnika = formularz firmy (jeśli jest) + basic form z tymi samymi zdjęciami
-        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx, basic: function (sel) { return flushBasicDocx(d, sel); }, word: true });
+        var docx = d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush), basic = function (sel) { return flushBasicDocx(d, sel); };
+        // PDF = formularz firmy (jeśli jest) + basic form z tymi samymi zdjęciami
+        return done({ name: name, data: d, docx: docx, pics: pics, info: {}, logoUrl: "", wordPelny: pelny }, { docx: docx, basic: basic, docs: function (sel) { return [docx, basic(sel)]; } });
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
     return mapLimit(photos, 3, fin).then(function (pics) {
-      var pdf = buildPdf(d, pics, info), sel = pick(pics);
-      var docx = fillDocx(PizZip, docxtemplater, tpl, scopeForWord(tpl, d), n.one ? sel : []).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+      var sel = pick(pics), fill = function (s2) { return fillDocx(PizZip, docxtemplater, tpl, scopeForWord(tpl, d), s2).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); };
+      var docx = fill(n.one ? sel : []);
       var logoUrl = info.logo ? URL.createObjectURL(new Blob([info.logo], { type: info.logoType === "PNG" ? "image/png" : "image/jpeg" })) : "";
-      return done({ name: name, data: d, docx: docx, pdf: pdf, pics: pics, info: info, logoUrl: logoUrl, wordPelny: !!n.one && sel.length === pics.length }, { pdf: function (s2) { return buildPdf(d, s2, info); }, docx: docx });
+      // PDF z tego samego Worda co mail (te same zdjęcia); archiwum z pełnego Worda tylko, gdy mail nie ma wszystkich zdjęć
+      return done({ name: name, data: d, docx: docx, pics: pics, info: info, logoUrl: logoUrl, wordPelny: !!n.one && sel.length === pics.length }, { docx: docx, docs: function (s2) { return [s2 === pics ? (n.one && sel.length === pics.length ? docx : fill(pics)) : docx]; } });
     });
   }
 
@@ -2960,7 +2692,10 @@ function makeName(pattern, data, when) {
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
-      r.from = from; built = r; renderPreview(); show("preview");
+      r.from = from; built = r; renderPreview();
+      // PDF nie powstał (brak silnika LibreOffice): pokazujemy wprost, co naprawdę pójdzie – nic nie udajemy
+      if (r.bezPdf) $("fname").innerHTML = r.files.map(function (f) { return esc(f.name); }).join("<br>") + "<br><b>" + esc(gErr(new Error("REPORT_PDF_MISSING"))) + "</b>";
+      show("preview");
     }).catch(function (e) {
       $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
     }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });

@@ -15,7 +15,7 @@
 // Ekran 412×915 jak Pixel 8 Pro. Wynik z przeglądarki NIE zastępuje sprawdzenia na telefonie.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/pl-en-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const { tasks } = require('./ppm-lista.cjs');
 const server = http.createServer((req, res) => {
   const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));

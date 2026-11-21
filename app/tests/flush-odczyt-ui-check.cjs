@@ -10,7 +10,7 @@
 // lista może tylko maleć: nowy przypadek = FAIL, przypadek z listy, który już działa = FAIL (usuń wpis).
 // Naprawa to plan audytu 4.1 (dane inspekcji jako JSON w kolejce, odczyt nie zależy od wyglądu PDF).
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const BASELINE = path.resolve(__dirname, '../../quality/baselines/flush-odczyt.json');
 const INSPEKCJE = ['EFA-INS-004', 'EFA-INS-026', 'EFA-INS-012']; // Weekly Flushing TA, TB, Pavilion
 const NOTATKA = 'Valve stiff, reported', TYDZIEN = 3, ZLY = 1, ZDJ = [0, 2, 4]; // Pavilion ma 2 krany: zdjęcia tylko przy istniejących

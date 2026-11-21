@@ -3,7 +3,7 @@
 // więc jedno powielone zdjęcie zaniżałoby wynik), 3 zdjęcia ogólne na „Duże”, kartka formularza. Buduje raport przez Wyślij
 // i mierzy gotowe pliki w kolejce. Uruchamiany w CI przed budową APK.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 let askText = '';
 const LIMIT = 1024 * 1024, GENERAL = +(process.env.OEST_GENERAL || 3);
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));

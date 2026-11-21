@@ -28,7 +28,7 @@ const readQueue = () => { const b64 = u => { let s = ''; for (let i = 0; i < u.l
 const jpeg = (pg, [w, h], kolor) => pg.evaluate(([w, h, kolor]) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = kolor; x.fillRect(0, 0, w, h); return c.toDataURL('image/jpeg', 0.8).split(',')[1]; }, [w, h, kolor]).then(b => ({ name: 'foto-' + w + '.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(b, 'base64') }));
 
 async function zbierz({ wtyczka = false } = {}) {
-  const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+  const { chromium } = require('./przegladarka.cjs');
   const server = http.createServer((req, res) => {
     const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
     if (!p.startsWith(root + path.sep) && p !== root) { res.writeHead(403).end(); return; }

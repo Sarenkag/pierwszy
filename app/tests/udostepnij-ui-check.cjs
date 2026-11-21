@@ -11,7 +11,7 @@
 // NIE sprawdza (Pixel 8 Pro): prawdziwego okna Androida i Gmaila.
 // Uruchomienie: node app/tests/udostepnij-ui-check.cjs (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.docx': 'application/octet-stream' };
 const server = http.createServer((req, res) => {

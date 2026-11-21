@@ -6,7 +6,7 @@
 // PL i EN: okienko z tymi samymi elementami, zrzuty do OEST_SHOTS (opcjonalnie).
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/notatki-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www'), SHOTS = process.env.OEST_SHOTS || '';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

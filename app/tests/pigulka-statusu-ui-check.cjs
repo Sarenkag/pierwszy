@@ -3,7 +3,7 @@
 // Sprawdza w Chrome (412×915 jak Pixel 8 Pro) każdy tryb w PL i EN: wymiary, zaokrąglenie, cień, czcionka, napis mieści się, kolory trybów.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/pigulka-statusu-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

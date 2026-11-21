@@ -6,7 +6,7 @@
 // Szybkość (Grzegorz 07/11/2026): 4 przypadki idą naraz, każdy w osobnym kontekście przeglądarki (osobne dane), kroki i czekania bez zmian.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/nie-rozpoczeta-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
