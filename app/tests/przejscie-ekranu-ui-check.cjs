@@ -153,7 +153,11 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     await p.goto(url + '/index.html?z9#home'); await klatki(); // świeża strona: sama zmiana ekranu bez historii
     R.bezHistorii = await p.evaluate(async () => {
       window.__anim = []; const a = document.getElementById('v-home'), b = document.getElementById('v-cal');
-      a.hidden = true; b.hidden = false; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      a.hidden = true; b.hidden = false;
+      // start animacji (opacity/transform) potwierdza kompozytor – na obciążonej maszynie CI zdarzenie animationstart przychodzi później niż po 2 klatkach;
+      // czekamy na nie najwyżej 1 s, potem jeszcze 3 klatki, żeby złapać ewentualną drugą animację (warunek „dokładnie jedna Poświata” bez zmian)
+      const t0 = performance.now(); while (!window.__anim.length && performance.now() - t0 < 1000) await new Promise(r => requestAnimationFrame(r));
+      for (let i = 0; i < 3; i++) await new Promise(r => requestAnimationFrame(r));
       return window.__anim.slice();
     });
     check(R.bezHistorii.length === 1 && R.bezHistorii[0] === efekt + '@v-cal', `Z9: zmiana ekranu bez historii po wczytaniu: ${R.bezHistorii} (oczekiwana ${efekt})`);
