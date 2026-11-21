@@ -15,6 +15,7 @@
 // (lista może tylko maleć; check-ratchet.cjs blokuje podniesienie „maks”).
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
+const { kodWykonywalny } = require('./kod.cjs');
 
 // Skrypty, które apka wstrzykuje do stron Vantify (działają na vantify.com, nie w apce) i pliki danych (wzory raportów, biblioteki).
 const OBCA_STRONA = new Set(['vantify-sync.js', 'vantify-rejestr.js', 'vantify-akcje.js']);
@@ -42,10 +43,14 @@ function bezKomentarzy(src) {
   }
   return out;
 }
+// treść skryptów wpisanych w stronę (bez <script src>)
+function skryptyStrony(html) {
+  return [...html.replace(/<!--[\s\S]*?-->/g, ' ').matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join('\n;\n');
+}
 // komentarze HTML i skrypty: z HTML bierzemy znaczniki (bez <!-- -->) i treść skryptów wpisanych w stronę
 function zHtml(html) {
   const bez = html.replace(/<!--[\s\S]*?-->/g, ' ');
-  const skrypty = [...bez.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join('\n;\n');
+  const skrypty = skryptyStrony(bez);
   const znaczniki = bez.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ');
   return { kod: bezKomentarzy(skrypty), znaczniki };
 }
@@ -195,7 +200,7 @@ function analyse(www, opts) {
 // R27: nazwane funkcje w skryptach wpisanych w stronę – „function nazwa(”, „nazwa = function”, „nazwa = (…) =>”, „nazwa = x =>”;
 // komentarze i treść napisów się nie liczą
 function funkcjeStrony(html) {
-  const kod = zHtml(html).kod.replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/g, '""');
+  const kod = kodWykonywalny(skryptyStrony(html)); // bez komentarzy, treści napisów i RegExp; z szablonów zostaje kod ${…}
   // jedna funkcja = jedna pozycja: „var p = function p()” liczy się raz (pozycja słowa function)
   const poz = new Set();
   for (const m of kod.matchAll(/\bfunction\s*\*?\s*[A-Za-z_$][\w$]*\s*\(/g)) poz.add(m.index);

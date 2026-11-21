@@ -78,6 +78,8 @@ test('Zasady LOGIKA (R27): nowa funkcja wpisana w <script> strony → FAIL; ta s
   zasadaFail(g1(www('<script>window.ok = (a) => a;</script>')), /LOGIKA\|index\.html/);
   zasadaFail(g1(www('<script>var policz = (x = Number(1)) => x;</script>')), /LOGIKA\|index\.html/);
   assert.equal(require('../zasady.cjs').funkcjeStrony('<script>var policz = function policz() {};</script>'), 1);
+  assert.equal(require('../zasady.cjs').funkcjeStrony('<script>var opis = `${(window.policz = x => x)(1)}`;</script>'), 1);
+  assert.equal(require('../zasady.cjs').funkcjeStrony('<script>var wzor = /function policz()/;</script>'), 0);
   assert.equal(require('../zasady.cjs').funkcjeStrony('<script>var p = (x = Number(1)) => x; if (a == (b)) {} var q = async () => 1;</script>'), 2);
   assert.equal(g1(www('<script src="moduly/b/b.js"></script>', { 'moduly/b/b.js': '(function(w){ function policz(a) { return a + 1; } w.OESTB = { policz }; })(window);' })).code, 0);
   assert.equal(g1(www('<script>// function stara(a) {}\n/* var x = function () {}; */ OESTA.x;</script>')).code, 0);
