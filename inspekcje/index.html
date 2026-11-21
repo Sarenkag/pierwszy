@@ -468,6 +468,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 
     <div class="sendrow" data-m="one sum"><button class="go" type="button" id="toQueue" data-en="Send">Wyślij</button><button class="go" type="button" id="recUpdate" hidden>Update</button><button class="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
     <p class="hint" id="sendHint" data-m="one"></p>
+    <button class="btn wide" type="button" id="vtBtn" data-akcja="vantify" hidden></button><!-- „Open Vantify” z klocka (vantify: true w ppm.js) -->
+    <p class="hint" id="vtHint" hidden></p>
     <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
     <button class="go" type="button" id="restoreIns" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</button>
     <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
@@ -533,6 +535,8 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/model/model.js"></script>
 <script src="../moduly/notatki/glos.js"></script>
 <script src="../moduly/notatki/notatki.js"></script>
+<script src="../reactive-vantify.js"></script><!-- „Open Vantify” z klocka (Weekly Generator Check): ta sama ścieżka co Reactive -->
+<script src="vantify-klocek.js"></script>
 <script src="../moduly/wzory/wzory.js"></script>
 <script src="flush.js"></script>
 <script src="rodzaje.js"></script>
@@ -2248,7 +2252,7 @@ function makeName(pattern, data, when) {
     if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
   }
-  function updateFormHint() { updateFormHint0(); syncFinish(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
+  function updateFormHint() { updateFormHint0(); syncFinish(); OESTVantifyKlocek.render(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
   // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport
   function syncFinish() {
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
@@ -2700,6 +2704,9 @@ function makeName(pattern, data, when) {
       $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
     }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });
   });
+  // „Open Vantify” z klocka (inspekcje/vantify-klocek.js): stan strony podany jednym odczytem, raport budowany tym samym buildAll co wysyłka
+  OESTVantifyKlocek.init({ $: $, T: T, zbuduj: buildAll, dzien: NZ.dzienIso, blad: buildErr, stan: function () {
+    return { typ: cur.type, tryb: cur.mode, ppm: cur.ppm, data: reportDate(), raport: cur.type && cur.type.flush ? flushReport(reportDate()) : null, blokada: $("toQueue").disabled, zajete: queueing }; } });
   function buildErr(e) { if (e && /^[A-Z][A-Z0-9_]{3,}$/.test(e.message || "")) return gErr(e); /* kod aplikacji (np. STORAGE_WRITE) → tekst z moduly/bledy (uwaga Codex #164) */ return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
     var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();

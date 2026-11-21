@@ -20,4 +20,6 @@ Ten plik jest **punktem wejścia**, nie konkurencyjną kopią zasad. Claude musi
 
 **Tryb A:** omawianie nie pozwala nawet na edycję plików na gałęzi. **Automatyczny merge:** wstrzymany do czasu technicznego wymuszenia G0–G2, chyba że właściciel wyraźnie zaakceptuje dany PR.
 
+**Prośba właściciela = specyfikacja (AI-010):** robisz dokładnie to, o co prosi; odejście od prośby zgłaszasz przed pracą.
+
 **Nie próbuj „ulepszać” produktu poza zleceniem.** Wskazuj sugestie oddzielnie; wykonuj dopiero po poleceniu.

@@ -87,7 +87,8 @@ window.OEST_PPM = {
       // Punkty 1:1 z kartki Smart „GENERATOR CHECKS – WEEKLY” (Document Ref: TP-025, zdjęcie Grzegorza 21/11/2026): 2 generatory, w każdym
       // Fuel level (zapis %), Oil / Coolant / Water level i Leaks (wzrokowo), Control panel – available to start in AUTO; Acceptable Y/N = Yes/No.
       // Do tego napięcie L1, L2, L3 (V) dla każdego generatora (Grzegorz 21/11/2026 16:37) i częstotliwość Hz (16:37); potwierdzenie rozruchu, silnik pracuje równo i stabilnie (16:37); na końcu powrót do AUTO i zabezpieczenie (16:38); obroty RPM, paliwo w % i litrach (16:38); na samym końcu „Generator tested off-load”, bez czasu pracy (16:42).
-      GEN: { points: true, ui: "checks", raport: true, title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
+      // vantify: true = w podglądzie przycisk „Open Vantify” – zlecenie tą samą ścieżką co Reactive (Grzegorz 21/11/2026 16:31: „założyć zlecenie przez Vantify… zdjęcie formularza, nasz basic form i zdjęcia”).
+      GEN: { points: true, ui: "checks", raport: true, vantify: true, title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
         hint: ["Zrób zdjęcie wypełnionej kartki („Formularz”), zaznacz punkty (domyślnie Yes) i wpisz odczyty: paliwo w % i litrach, napięcia L1–L3 w V, częstotliwość w Hz, obroty RPM. Do raportu idzie nasz formularz, zdjęcia i zdjęcie kartki.",
           "Take a photo of the filled-in paper form (“Form”), mark the checks (Yes by default) and type the readings: fuel in % and litres, L1–L3 voltage in V, frequency in Hz, engine RPM. The report gets our form, the photos and the form photo."],
         summary: ["All generator checks acceptable – generator returned to AUTO", "check(s) not acceptable – record on the Generator Fault & Remedial Actions Log"],
