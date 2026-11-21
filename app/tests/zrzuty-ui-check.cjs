@@ -12,7 +12,7 @@
 // NIE sprawdza wyglądu na prawdziwym Pixelu (czcionka systemowa Androida) – to telefon.
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), { execFileSync } = require('node:child_process');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const { REPO, MAPA, serwer, KONTO, zasiej, szkic, adres } = require('./ekrany-dane.cjs');
 const ZMIANY = path.join(REPO, 'quality/zrzuty-zmiany.json');
 const OUT = path.resolve(process.env.OEST_ZRZUTY_OUT || path.join(REPO, 'quality-results/zrzuty'));

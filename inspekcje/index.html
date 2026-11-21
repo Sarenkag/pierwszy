@@ -2692,7 +2692,10 @@ function makeName(pattern, data, when) {
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
-      r.from = from; built = r; renderPreview(); show("preview");
+      r.from = from; built = r; renderPreview();
+      // PDF nie powstał (brak silnika LibreOffice): pokazujemy wprost, co naprawdę pójdzie – nic nie udajemy
+      if (r.bezPdf) $("fname").innerHTML = r.files.map(function (f) { return esc(f.name); }).join("<br>") + "<br><b>" + esc(gErr(new Error("REPORT_PDF_MISSING"))) + "</b>";
+      show("preview");
     }).catch(function (e) {
       $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
     }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });

@@ -1,19 +1,14 @@
-# moduly/word-pdf – PDF z wypełnionego Worda (08/11/2026)
+# moduly/word-pdf – PDF z wypełnionego Worda silnikiem LibreOffice (21/11/2026)
 
-**Kontrakt:** `OESTWordPdf.pdf(docxBytes, { PizZip, jsPDF, czcionka, skala? })` → `Uint8Array` (PDF).
-- `czcionka` – obiekt z `dodaj(pdf)` rejestrujący czcionkę `DV` (`moduly/czcionka-pdf`),
-- `skala` – mnożnik wielkości czcionki (domyślnie 0,88: DejaVu jest szerszy od Times/Calibri, wiersze łamią się wtedy jak w Wordzie).
+**Kontrakt:**
+- `OESTWordPdf.dostepny()` → `true`, gdy w apce jest silnik LibreOffice (wtyczka Capacitor `LibreOffice`, `app/android/.../LibreOfficePlugin.java`, silnik dokłada CI: `app/scripts/libreoffice-silnik.py`).
+- `OESTWordPdf.zWorda(docxBytes)` → `Promise<Uint8Array | null>` – PDF z tego samego Worda.
+- `OESTWordPdf.zWordow([docx, …], PDFLib?)` → `Promise<Uint8Array | null>` – każdy Word przez silnik, strony sklejone biblioteką pdf-lib (Flushing: formularz firmy + basic form w jednym PDF).
 
-**PDF z silnika LibreOffice (20/11/2026):** `OESTWordPdf.zWorda(docxBytes)` → `Promise<Uint8Array | null>` – PDF z tego samego Worda przez LibreOfficeKit w telefonie (wtyczka `LibreOffice`, `app/android/.../LibreOfficePlugin.java`, silnik dokłada CI: `app/scripts/libreoffice-silnik.py`). `null`, gdy silnika nie ma (przeglądarka, testy) albo zawiódł – wtedy zostaje PDF z rysownika. `OESTWordPdf.dostepny()` – czy silnik jest w apce. To jedyne miejsce w JS, które woła wtyczkę (adapter R22).
+`null` = PDF nie powstał (brak silnika: przeglądarka, testy bez atrapy; albo błąd silnika). Wywołujący wysyła wtedy sam Word i mówi to wprost. Własnego rysownika PDF nie ma (Grzegorz 21/11/2026: „mamy profesjonalny sprzęt”). To jedyne miejsce w JS, które woła wtyczkę (adapter R22).
 
-**Po co:** zasada „każdy raport w dwóch identycznych wersjach Word i PDF”. Dla formularza firmy (np. QHS-031 Temperature Log Record) PDF jest rysowany z TEGO SAMEGO wypełnionego Worda, więc treść jest identyczna z założenia, a układ to układ formularza.
+**Konsumenci:** `inspekcje/index.html` (`buildAll`: każdy PDF raportu inspekcji), `app/www/reactive-report.js` (Reactive, Job Sheet).
 
-**Co obsługuje:** strona i marginesy z `sectPr` (także poziomo), nagłówek i stopka (tekst, tabela, logo), akapity (wyrównanie, tabulatory, pogrubienie, wielkość, WIELKIE LITERY, zakreślenie), tabele (siatka, `gridSpan`, `vMerge`, obramowania pojedyncze/podwójne/kropkowane, wysokość wierszy, wyrównanie w pionie), łamanie stron między wierszami tabeli.
+**Zależności:** wtyczka `LibreOffice`, pdf-lib 1.17.1 (`window.PDFLib`, `docs/ZALEZNOSCI.md`). Brak zależności od OEST.
 
-**Czego nie obsługuje:** pływające obrazy z pozycją bezwzględną, pola tekstowe (text box), kolumny, cieniowanie komórek, przypisy. Nowy wzór Word trzeba sprawdzić testem Word = PDF.
-
-**Konsumenci:** `inspekcje/index.html` – raport temperatur TB (EFA-INS-024) przez `pdf()`; wszystkie raporty inspekcji z Wordem (`zWorda`, przed wysyłką); `app/www/reactive-report.js` – Reactive (`zWorda`).
-
-**Zależności:** `DOMParser` (przeglądarka / WebView), PizZip, jsPDF, `moduly/czcionka-pdf`. Brak zależności od OEST.
-
-**Testy:** `app/tests/word-pdf-ui-check.cjs`, `app/tests/raport-ui-check.cjs` (pomiary w kolejności tabeli w Wordzie i w PDF).
+**Testy:** `app/tests/pdf-z-docx-ui-check.cjs` (każdy PDF z tych samych bajtów wysyłanego Worda, atrapa silnika), workflow „PDF z Worda – emulator” (prawdziwy silnik na Androidzie).

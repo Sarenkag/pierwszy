@@ -7,7 +7,7 @@
 //  - odpowiedź „Zostaw tak”: raport zostaje duży (bez cichego zmniejszania).
 // Test czeka na stan (raport w kolejce), nie mierzy czasu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const LIMIT = 1024 * 1024, PHOTOS = 4;
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {

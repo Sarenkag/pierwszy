@@ -4,7 +4,7 @@
 // → Wyślij → PDF i Word z listą 28 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
 // Uruchomienie: node app/tests/generator-ui-check.cjs (po npm run copy-web); OEST_SHOTS=katalog → zrzuty ekranu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const { docxText, docxImages, pdfText, pdfImages, includesFlat } = require('./raport-tresc.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };

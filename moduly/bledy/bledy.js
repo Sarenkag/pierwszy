@@ -93,7 +93,7 @@
     AI_NUMBERS_CHANGED: ['Model AI zmienił liczby – sprawdź tekst.', 'The AI model changed numbers – check the text.'],
     // raporty / zlecenia
     REPORT_TEMPLATE_MISSING: ['Brak wzoru raportu dla tej inspekcji.', 'No report template for this inspection.'],
-    REPORT_PDF_MISSING: ['PDF nie powstał: w tej apce nie ma silnika LibreOffice. Zaktualizuj OEST.', 'PDF was not created: this app has no LibreOffice engine. Update OEST.'],
+    REPORT_PDF_MISSING: ['PDF nie powstał (brak albo błąd silnika LibreOffice) – idzie sam Word.', 'PDF was not created (LibreOffice engine missing or failed) – sending Word only.'],
     FLUSH_TPL: ['Wzór raportu Flushing jest uszkodzony.', 'The Flushing report template is damaged.'],
     JOB_MISSING: ['Nie znaleziono zlecenia.', 'Job not found.'],
     JOB_STATUS: ['Nieprawidłowy status zlecenia.', 'Invalid job status.'],

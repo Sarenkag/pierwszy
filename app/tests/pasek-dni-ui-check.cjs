@@ -3,7 +3,7 @@
 // Scenariusz Grzegorza: dziś 07/11/2026, grafik zapisany w profilu: od 02/11/2026, 4 on / 4 off, 08:00–20:00, początek cyklu 02/11/2026.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/pasek-dni-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

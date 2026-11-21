@@ -32,7 +32,6 @@ const PAGES = ['index.html', 'inspekcje/index.html'];
 const LIBS = {
   'pizzip.min.js': { name: 'PizZip', use: /\bPizZip\b/ },
   'docxtemplater.min.js': { name: 'docxtemplater', use: /\bnew\s+(?:window\.)?docxtemplater\b|\bwindow\.docxtemplater\b/i },
-  'jspdf.umd.min.js': { name: 'jspdf', use: /\bjspdf\.jsPDF\b|\bwindow\.jspdf\b/ },
   // szkielet Ionic + Vue (moduly/szkielet, paczka Vite): tworzy API dla reszty apki; z apki czyta dopiero w działaniu (nie przy ładowaniu)
   'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna'], use: /(?!)/ }
 };

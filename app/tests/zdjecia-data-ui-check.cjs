@@ -9,7 +9,7 @@
 //  4. stamp:false (poprawione zdjęcie, które już ma datę) = bez drugiego napisu.
 // Zrzuty (OEST_SCREENSHOTS): zdjęcie z datą, ustawienia PL i EN. Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const SRC = 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-1.jpg')).toString('base64');
 const server = http.createServer((req, res) => {
   const name = decodeURIComponent(req.url.split('?')[0]); let p = path.resolve(root, '.' + name);

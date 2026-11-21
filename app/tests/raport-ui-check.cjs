@@ -8,7 +8,7 @@
 // raport z PDF i Word w kolejce). Limit dla raportu zostaje taki jak był: 3,5 s od „Wyślij”, inaczej FAIL jak dotąd.
 // Inspekcje idą po kilka naraz (OEST_RAPORT_NARAZ, domyślnie 3), każda w osobnym kontekście przeglądarki = osobne dane, jak dotąd.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const { inspections, tasks } = require('./ppm-lista.cjs'), { docxText, docxHighlighted, docxImages, pdfText, pdfPages, pdfImages, includesFlat } = require('./raport-tresc.cjs');
 const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 const server = http.createServer((req, res) => {

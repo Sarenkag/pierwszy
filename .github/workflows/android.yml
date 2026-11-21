@@ -65,7 +65,7 @@ jobs:
           npm run sync
 
       # Silnik PDF z Worda (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”): gotowy silnik z oficjalnego LibreOffice Viewer
-      # (F-Droid, MPL-2.0, sprawdzony sha256) dokładany do każdej APK. Bez niego PDF robi stary rysownik (moduly/word-pdf).
+      # (F-Droid, MPL-2.0, sprawdzony sha256) dokładany do każdej APK. Bez niego PDF nie powstaje (idzie sam Word) – rysownika PDF nie ma.
       - name: Silnik PDF z Worda (LibreOffice)
         run: python3 scripts/libreoffice-silnik.py android/app
 

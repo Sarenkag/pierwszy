@@ -9,7 +9,7 @@
 //  4. raport: zdjęcia zmniejszane raz – drugie Wyślij tej samej inspekcji nie dekoduje ich ponownie; Word i PDF w kolejce poniżej 1 MB.
 // Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const LIMIT = 1024 * 1024, GENERAL = 7, PODGLAD_MS = 600; // podgląd po zdjęciu w teście trwa 600 ms (człowiek zwykle patrzy dłużej)
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {
