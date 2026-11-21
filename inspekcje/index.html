@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- Wstecz telefonu: nasłuch backButton jako pierwszy skrypt (audyt 19/11/2026 nr 41) – bez niego Android w czasie ładowania cofa po historii -->
-<script src="../moduly/wstecz/wstecz.js"></script>
+<script src="../moduly/szkielet/lib/szkielet.js"></script><!-- Wstecz Androida i okienka: szkielet Ionic (moduly/szkielet), strona bez ramy -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title data-en="Field inspection">Inspekcja w terenie</title>
 <!-- PWA (działa tylko z GitHub Pages; w trybie Apps Script te linki są ignorowane) -->
@@ -931,8 +931,9 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
-  // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): okienko → strzałka ‹ ekranu; ekran bez strzałki → lista, z której przyszedłem
-  if (window.OESTWstecz) OESTWstecz.ustaw({ pytaj: OESTPrzycisk.confirm, glowny: function () { return false; }, gora: function () { if (!queueing) leave(backUrl()); return true; } });
+  // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko i strzałkę ‹ widocznego ekranu obsługuje szkielet;
+  // ekran bez strzałki → lista, z której przyszedłem. Strona inspekcji do przeniesienia na ramę (licznik bramki „Poza Ionic/Vue”).
+  OESTEkrany.strona({ up: function () { if (!queueing) leave(backUrl()); } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
   // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
   $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });

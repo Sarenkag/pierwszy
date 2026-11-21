@@ -14,12 +14,17 @@
 //   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
 //   OESTOkna.open(zamknij) → zwolnij               okienko na wierzchu: Wstecz woła zamknij(); okienko po zamknięciu woła zwolnij()
 //   OESTOkna.ile() / .zamknijGorne() / .zamknijWszystkie()
-import { createApp, h, reactive } from 'vue';
+import { createApp, h, reactive, markRaw } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { IonicVue } from '@ionic/vue';
 import '@ionic/vue/css/core.css';
+import '@ionic/vue/css/structure.css';
+import '@ionic/vue/css/padding.css';
+import '@ionic/vue/css/display.css';
+import '@ionic/vue/css/palettes/dark.always.css'; // apka jest ciemna (motyw „Szkło i poświata”): ciemna paleta Ionic
 import mapa from '../../ekrany/ekrany.json';
 import Rama from './Rama.vue';
+import { EKRANY_VUE } from './ekrany/index.js';
 import './szkielet.css';
 
 const w = window, d = document;
@@ -59,7 +64,8 @@ function rodzic(t) {
 }
 
 // ---------- stan ramy ----------
-const stan = reactive({ trasa: '', glowny: true, meta: {}, nad: '', tytul: '', akcje: [], jezyk: false, jezykFn: null, wersja: 0 });
+// komponent: ekran przeniesiony na Ionic + Vue (moduly/szkielet/src/ekrany); null = ekran jeszcze w starym kodzie (.wrap, licznik bramki)
+const stan = reactive({ trasa: '', glowny: true, meta: {}, nad: '', tytul: '', akcje: [], jezyk: false, jezykFn: null, wersja: 0, komponent: null });
 let naEkran = null, czeka = null, pytam = false, tryb = '', stronaUp = null, scrollEl = null;
 const straze = [];
 function straz(t) { const s = straze.filter(x => t === x.p || t.indexOf(x.p + '/') === 0).sort((a, b) => b.p.length - a.p.length)[0]; return s && s.fn; }
@@ -75,6 +81,8 @@ function wykonaj(cel, o) {
   router.replace('/' + cel);
   const r = dopasuj(cel);
   stan.trasa = cel; stan.meta = r.meta; stan.glowny = !r.meta.rodzic; naglowekDomyslny();
+  const k = EKRANY_VUE[r.meta.id]; stan.komponent = k ? markRaw(k) : null;
+  const wrap = d.querySelector('.wrap'); if (wrap) wrap.hidden = !!k; // ekran na Vue: stary kod schowany
   try { history.replaceState(null, '', '#' + cel); } catch (e) {}
   d.dispatchEvent(new CustomEvent('oest:ekran', { detail: { trasa: cel, wstecz: !!(o && o.wstecz) } }));
   if (naEkran) naEkran(cel);
@@ -82,6 +90,11 @@ function wykonaj(cel, o) {
 }
 function go(cel) { cel = czysta(cel); if (cel === 'up') return up(); czeka = null; return wykonaj(cel, {}); }
 function up() {
+  // ekran jeszcze w starym kodzie (licznik bramki „Poza Ionic/Vue”): jego własna strzałka ‹ zna stany wewnętrzne
+  // (podgląd, kreator, niezapisane zmiany) – Wstecz robi to samo co ona. Ekran na Vue nie ma starej strzałki.
+  const stara = !stan.komponent && [...d.querySelectorAll('.view:not([hidden]) .top .back:not(.rx-gear)')]
+    .find(b => b.offsetParent !== null && (tryb === 'strona' || b.getAttribute('data-nav') !== 'up'));
+  if (stara) { stara.click(); return; }
   if (tryb === 'strona') { if (stronaUp) stronaUp(); return; }
   const t = stan.trasa, s = straz(t), p = rodzic(t);
   if (s) {
@@ -134,7 +147,7 @@ w.addEventListener('oest:lang', () => { if (!tryb) return; const t = stan.tytul,
 function montuj(zRama) {
   const host = d.createElement('div'); host.id = 'oest-szkielet';
   d.body.insertBefore(host, d.body.firstChild);
-  const app = createApp({ render: () => h(Rama, { stan, rama: zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T }) });
+  const app = createApp({ render: () => h(Rama, { stan, strona: !zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T }) });
   app.use(IonicVue, { mode: 'md', hardwareBackButton: true, animated: true, swipeBackEnabled: false });
   app.use(router);
   app.mount(host);
@@ -148,6 +161,7 @@ const OESTEkrany = {
   },
   strona(o) { if (tryb) return; tryb = 'strona'; stronaUp = o && o.up; montuj(false); },
   go, up, ponow, trasa: () => stan.trasa,
+  jestVue: t => !!EKRANY_VUE[dopasuj(t).meta.id],
   zamien(cel) { cel = czysta(cel); router.replace('/' + cel); stan.trasa = cel; try { history.replaceState(null, '', '#' + cel); } catch (e) {} },
   straz(p, fn) { straze.push({ p: czysta(p), fn }); },
   rodzic,

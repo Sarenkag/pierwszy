@@ -1,4 +1,30 @@
-/* Powłoka Ionic OEST: treść apki w ion-content (kolory z theme.css). Wygląd wspólnego paska ekranu – po ustaleniu z Grzegorzem. */
-ion-app { background: var(--bg); }
-.oest-rama-tresc { --background: var(--bg); --color: var(--ink); }
-.oest-rama-tresc .wrap { min-height: 100%; }
+/* Rama OEST na standardzie Ionic (md). Motyw Grzegorza („Szkło i poświata”, app/www/theme.css) wchodzi TYLKO przez zmienne Ionic.
+   Ustawienia całej apki (21/11/2026): bez rozciągania przy przewijaniu na każdym ekranie, pasek telefonu edge-to-edge. */
+:root:root {
+  --ion-font-family: var(--font-body);
+  --ion-background-color: var(--bg);
+  --ion-background-color-rgb: 10, 14, 31;
+  --ion-text-color: var(--ink);
+  --ion-text-color-rgb: 238, 241, 255;
+  --ion-border-color: var(--line);
+  --ion-item-background: transparent;
+  --ion-card-background: var(--panel);
+  --ion-toolbar-background: #0e1228;
+  --ion-toolbar-color: var(--ink);
+  --ion-color-primary: #7c84ff;
+  --ion-color-primary-rgb: 124, 132, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #6d74e0;
+  --ion-color-primary-tint: #8990ff;
+  --ion-safe-area-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --ion-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+}
+/* tło apki (gradient z moduly/wyglad) widać pod treścią i pod paskiem telefonu */
+ion-content { --background: transparent; }
+ion-content::part(scroll) { overscroll-behavior: none; } /* bez rozciągania na każdym ekranie (Grzegorz 21/11/2026) */
+.oest-pas { /* pas pod godziną nad ekranem jeszcze w starym kodzie (do zera licznika) */
+  height: var(--ion-safe-area-top); background: var(--ion-toolbar-background); }
+.oest-inicjaly { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--grad); color: #fff; font-weight: 700; }
+.oest-rowne ion-card { height: calc(100% - 20px); }
+.oest-rowne ion-card::part(native) { height: 100%; align-items: flex-start; } /* reguła Grzegorza: przyciski w grupie równe – karty w wierszu siatki tej samej wysokości */

@@ -192,8 +192,8 @@
   var lastBox = null;
   function goVantify(what) {
     goAfter = what;
-    if (location.hash === "#settings/vantify" && lastBox && lastBox.isConnected) { pending = null; draw(lastBox); }
-    else location.hash = "#settings/vantify";
+    if (w.OESTEkrany.trasa() === "settings/vantify" && lastBox && lastBox.isConnected) { pending = null; draw(lastBox); }
+    else w.OESTEkrany.go("settings/vantify");
   }
   // Zapamiętany login i hasło (Grzegorz 10/11/2026): wpisujesz raz, zmieniasz, kiedy chcesz; hasło zagwiazdkowane, „Pokaż” je odsłania.
   // Zapis i szyfrowanie w telefonie (VantifyPlugin.saveLogin → Keystore). Ukryte okno Vantify loguje się nimi samo, najwyżej raz.
@@ -281,7 +281,7 @@
     }
   }
   w.addEventListener("oest:vantify-ui", function (e) { draw(e.detail); });
-  w.addEventListener("hashchange", function () { if (!/vantify/.test(location.hash)) { pending = null; draftLogin = null; } });
+  w.document.addEventListener("oest:ekran", function (e) { if (!/vantify/.test(e.detail.trasa)) { pending = null; draftLogin = null; } });
   w.OESTVantifyImport = { preview: preview, apiPreview: apiPreview, save: save, info: info, draw: draw,
     // dla vantify-auto.js: pobranie, stan sprawdzania, podgląd odłożony do Ustawienia → Vantify
     sync: sync, today: today, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); },

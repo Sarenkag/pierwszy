@@ -38,8 +38,8 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
 .wrap {
-  max-width: 560px; margin: 0 auto; min-height: 100vh;
-  padding: max(14px, var(--oest-gora,env(safe-area-inset-top,0px))) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  max-width: 560px; margin: 0 auto; min-height: 100%; /* w ramie Ionic (moduly/szkielet): odstęp od paska telefonu daje rama */
+  padding: 14px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
   display: flex; flex-direction: column; gap: 14px;
 }
 [hidden] { display: none !important; }
@@ -251,6 +251,7 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-reactive" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
+<script src="moduly/szkielet/lib/szkielet.js"></script><!-- szkielet Ionic + Vue: rama, nawigacja, Wstecz, okienka (moduly/szkielet) -->
 <script src="moduly/bledy/bledy.js"></script>
 <script src="teksty.js"></script>
 <script src="moduly/podmien/podmien.js"></script>
@@ -346,6 +347,8 @@ input[type=text], input[type=email], input[type=date], select {
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
   var renderedRoute = "";
   function render(v) {
+    // ekran przeniesiony na Ionic + Vue rysuje rama (moduly/szkielet) – stary kod tylko się chowa
+    if (account() && window.OESTEkrany.jestVue(v)) { document.querySelectorAll(".view").forEach(function (s) { s.hidden = true; }); renderedRoute = v; return; }
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
     var reactiveRoute = v === "reactive" || v.indexOf("reactive/") === 0 ? v : null;
@@ -371,77 +374,17 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "ppm") renderPpm();
     if (v === "cal") renderCal();
     renderedRoute = reactiveRoute && v === "reactive" ? reactiveRoute : powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
-    window.scrollTo(0, 0);
+    window.OESTEkrany.naGore();
   }
-  function depth() { return (history.state && history.state.n) || 0; }
-  // strzałka ‹ (i Wstecz telefonu, który ją klika): ekran sam idzie do rodzica; tu tylko znacznik „w górę” dla animacji powrotu
-  var upClick = false;
-  function show(v) {
-    if (location.hash === "#" + v) { render(v); return; }
-    history.pushState({ n: depth() + 1, up: upClick ? 1 : 0 }, "", "#" + v);
-    render(v);
-  }
-  window.OESTSettingsUI.setNavigate(show);
-  window.OESTHandover.setNavigate(show);
-  window.OESTKeys.setNavigate(show);
-  window.OESTPowerTrace.setNavigate(show);
-  window.OESTQuestionsUI.setNavigate(show);
-  window.OESTReactiveUI.setNavigate(show);
-  if (window.OESTZdjeciaUI) window.OESTZdjeciaUI.setNavigate(show);
-  // Strzałka ‹ = ZAWSZE jeden poziom wyżej (Grzegorz 08/11 i 18/11/2026: „na każdej stronie”), nigdy po historii:
-  // history.back() krążył Ustawienia ↔ Vantify, gdy na ekran weszło się z okienka albo linku. Rodzica wybiera sam ekran
-  // (Ustawienia → ekran główny, Ustawienia/Vantify → Ustawienia, Klucze/edycja → Klucze …); niezapisane zmiany pilnuje jego canLeave.
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".top .back")) return;
-    upClick = true; setTimeout(function () { upClick = false; }, 0);
-  }, true);
-  // okna na wierzchu (np. podgląd zdjęcia) dokładają wpis historii; Wstecz telefonu najpierw zamyka okno (Grzegorz 03/11)
-  window.OESTOverlay = window.OESTWstecz.nakladki; window.OESTOverlay.on = true; // stos okien: moduly/wstecz
-  // Wstecz telefonu (moduly/wstecz, Grzegorz 08/11): zamyka okienko albo cofa o jeden poziom (jak strzałka ‹); na ekranie głównym pyta o wyjście
-  window.OESTWstecz.ustaw({
-    pytaj: window.OESTPrzycisk.confirm,
-    glowny: function () { return renderedRoute === "home" || renderedRoute === "start"; },
-    gora: function () { history.replaceState({ n: 0 }, "", "#home"); render("home"); return true; } // ekran bez strzałki ‹ → ekran główny
-  });
-  window.addEventListener("popstate", function () {
-    if (window.OESTOverlay.stack.length) { var c = window.OESTOverlay.stack.pop(); try { c(); } catch (e) {} return; }
-    if (renderedRoute.indexOf("reactive") === 0 && !window.OESTReactiveUI.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    // Ustawienia: Wstecz telefonu pyta o niezapisane zmiany tak samo jak strzałka ‹ (04/11)
-    if ((renderedRoute === "settings" || renderedRoute.indexOf("settings/") === 0) && !window.OESTSettingsUI.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    if (renderedRoute === "questions" && !window.OESTQuestionsUI.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    if (renderedRoute.indexOf("powertrace") === 0 && !window.OESTPowerTrace.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    if (renderedRoute.indexOf("keys") === 0 && !window.OESTKeys.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    if (renderedRoute.indexOf("handover") === 0 && !window.OESTHandover.canLeave()) {
-      history.pushState({ n: depth() + 1 }, "", "#" + renderedRoute);
-      return;
-    }
-    render(location.hash.slice(1));
-  });
-  // Strzałka ‹ na stałych ekranach: zawsze do rodzica z data-go (nie po historii)
-  document.querySelectorAll(".back[data-go]").forEach(function (b) {
-    b.addEventListener("click", function (e) { e.stopImmediatePropagation(); show(b.dataset.go); }, true);
-  });
-  document.querySelectorAll("[data-go]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (b.dataset.title) $("soonTitle").textContent = b.dataset.title;
-      show(b.dataset.go);
-    });
-  });
+  // Nawigacja i Wstecz: JEDEN moduł – moduly/szkielet (Ionic + Vue, Grzegorz 21/11/2026). Tu tylko: co narysować dla trasy
+  // i kto pilnuje niezapisanych zmian przy wyjściu w górę (canLeave ekranu). Historia przeglądarki nie jest stanem.
+  function show(v) { window.OESTEkrany.go(v); }
+  [window.OESTSettingsUI, window.OESTHandover, window.OESTKeys, window.OESTPowerTrace, window.OESTQuestionsUI, window.OESTReactiveUI, window.OESTZdjeciaUI]
+    .forEach(function (m) { if (m && m.setNavigate) m.setNavigate(show); });
+  [["reactive", window.OESTReactiveUI], ["settings", window.OESTSettingsUI], ["profile", window.OESTSettingsUI], ["appset", window.OESTSettingsUI], ["questions", window.OESTQuestionsUI],
+   ["powertrace", window.OESTPowerTrace], ["keys", window.OESTKeys], ["handover", window.OESTHandover]]
+    .forEach(function (x) { if (x[1] && x[1].canLeave) window.OESTEkrany.straz(x[0], function () { return x[1].canLeave(); }); });
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-nav][data-title]"); if (b && $("soonTitle")) $("soonTitle").textContent = b.dataset.title; }, true);
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
   function T(pl, en) { return uiLang() === "en" ? en : pl; }
   function uiLang() { try { return localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
@@ -450,18 +393,18 @@ input[type=text], input[type=email], input[type=date], select {
   applyLang();
   // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
   function goInsp(url) {
-    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#home", day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.scrollY })); } catch (e) {}
-    location.href = url;
+    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: "#" + window.OESTEkrany.trasa(), day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.OESTEkrany.przewiniecie() })); } catch (e) {}
+    window.OESTEkrany.otworzStrone(url);
   }
   function restoreBack() {
     var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); sessionStorage.removeItem("oest.back"); } catch (e) {}
-    if (!b || b.h !== (location.hash || "#home")) return;
+    if (!b || b.h !== "#" + window.OESTEkrany.trasa()) return;
     ppmDay = b.day || ""; calSel = b.cs || ""; if (b.cm) calMonth = new Date(b.cm);
-    liveRefresh(); setTimeout(function () { window.scrollTo(0, b.y || 0); }, 0);
+    liveRefresh(); setTimeout(function () { window.OESTEkrany.przewin(b.y || 0); }, 0);
   }
-  document.querySelectorAll("[data-href]").forEach(function (b) { b.addEventListener("click", function () { if (/^inspekcje\//.test(b.dataset.href)) goInsp(b.dataset.href); else location.href = b.dataset.href; }); });
+  document.querySelectorAll("[data-href]").forEach(function (b) { b.addEventListener("click", function () { if (/^inspekcje\//.test(b.dataset.href)) goInsp(b.dataset.href); else window.OESTEkrany.otworzStrone(b.dataset.href); }); });
   document.querySelectorAll("[data-open]").forEach(function (b) {
-    b.addEventListener("click", function () { location.href = b.dataset.open + "/index.html"; });
+    b.addEventListener("click", function () { window.OESTEkrany.otworzStrone(b.dataset.open + "/index.html"); });
   });
 
   // ---------- konto (logowanie raz; potem apka otwiera się bez sieci) ----------
@@ -482,7 +425,7 @@ input[type=text], input[type=email], input[type=date], select {
       if (!p.email) throw new Error(T("Google nie zwrócił adresu e-mail.", "Google did not return an email address."));
       setAccount({ provider: "google", id: p.id || "", email: p.email, name: p.name || "", first: p.givenName || "", last: p.familyName || "", pic: p.imageUrl || "", t: Date.now() });
       seedProfile();
-      history.replaceState({ n: 0 }, "", "#home"); render("home");
+      window.OESTEkrany.go("home");
     }).catch(function (e) {
       $("authErr").textContent = window.OESTBledy ? OESTBledy.text(e) : (e && e.message) || String(e); $("authErr").hidden = false;
       $("skipBtn").hidden = false; // gdy Google zawiedzie, zawsze da się wejść bez logowania (praca nie może stanąć)
@@ -491,14 +434,14 @@ input[type=text], input[type=email], input[type=date], select {
   // Tymczasowe wejście, dopóki nie ma identyfikatora Google (żeby dało się sprawdzić resztę apki)
   $("skipBtn").addEventListener("click", function () {
     setAccount({ provider: "local", id: "", email: "", name: "", t: Date.now() });
-    history.replaceState({ n: 0 }, "", "#home"); render("home");
+    window.OESTEkrany.go("home");
   });
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
     window.OESTGoogle.disconnect();
     localStorage.removeItem("oest.account");
-    history.replaceState({ n: 0 }, "", "#start"); render("start");
+    window.OESTEkrany.go("start");
   });
   function renderAccount() {
     var a = account() || {};
@@ -735,19 +678,10 @@ input[type=text], input[type=email], input[type=date], select {
   if (account()) {
     try { seedProfile(); } catch (e) { $("authErr").textContent = T("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message); $("authErr").hidden = false; }
   }
+  // start: ekran z adresu (powrót z inspekcji, odzyskana z Raportów…); bez konta – logowanie. Wstecz = rodzic z mapy ekranów.
   var start = (location.hash || "").slice(1);
-  if (account() && (!start || start === "start")) history.replaceState({ n: 0 }, "", "#home");
-  if (!account()) history.replaceState({ n: 0 }, "", "#start");
-  // wejście prosto na ekran w głębi (powrót z inspekcji, odzyskanej z Raportów…): historia = droga od ekranu głównego,
-  // więc strzałka ‹ i Wstecz telefonu idą o jeden poziom wyżej, np. Raporty → Ustawienia → ekran główny (Grzegorz 08/11)
-  (function () {
-    var r = (location.hash || "").slice(1);
-    if (!account() || !r || r === "home" || r === "start" || (history.state && history.state.n)) return;
-    var top = r.split("/")[0], chain = ["home", top]; if (r !== top) chain.push(r);
-    history.replaceState({ n: 0 }, "", "#home");
-    for (var i = 1; i < chain.length; i++) history.pushState({ n: i }, "", "#" + chain[i]);
-  })();
-  render(location.hash.slice(1));
+  if (!account()) start = "start"; else if (!start || start === "start") start = "home";
+  window.OESTEkrany.start({ naEkran: render, trasa: start });
   restoreBack();
 })();
 </script>

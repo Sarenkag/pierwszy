@@ -1,11 +1,9 @@
 /* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”). Logika: home.js */
-/* Ekran główny mieści się w całości na telefonie i się nie przewija (Grzegorz 07/11):
-   odstęp od czarnego paska daje już .wrap (--oest-gora) – tu bez drugiego odstępu (było ~1 cm pustego miejsca),
-   ekran ma dokładnie wysokość okna, dolny zapas 48 px → 12 px; kafelki bez zmian (moduly/kafelek).
-   Gdyby treść kiedyś się nie zmieściła (np. bardzo duża czcionka systemu), przewija się zamiast ucinać kafelki. */
-.wrap:has(>#v-home:not([hidden])){height:100vh;height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:none;padding-bottom:max(12px,env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
-/* w apce na dole stoi pasek wysyłki (moduly/wysylka, body.oest-sbar-on dokłada pod nim miejsce) – ekran główny kończy się nad nim */
-body.oest-sbar-on .wrap:has(>#v-home:not([hidden])){height:calc(100vh - var(--oest-sbar-h,0px));height:calc(100dvh - var(--oest-sbar-h,0px));padding-bottom:8px}
+/* Ekran główny mieści się w całości na telefonie i się nie przewija (Grzegorz 07/11): ma dokładnie wysokość pola treści ramy
+   (moduly/szkielet – nad dolnym paskiem, pod paskiem telefonu); gdyby treść się nie zmieściła, przewija ją rama. */
+.wrap:has(>#v-home:not([hidden])){height:100%;min-height:0;padding-bottom:8px}
+/* ekran główny i logowanie stoją bez nagłówka ramy: odstęp od paska telefonu (edge-to-edge, tło apki pod godziną) */
+.wrap:has(>#v-home:not([hidden])),.wrap:has(>#v-start:not([hidden])){padding-top:max(14px,var(--oest-gora))}
 #v-home{flex:1;min-height:0}
 .hm-head{display:flex;align-items:center;gap:10px;padding:6px 0 2px}
 .hm-logo{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:.8rem;letter-spacing:.05em;color:#fff;background:linear-gradient(135deg,#5b7cff,#a35bff);box-shadow:0 6px 18px rgba(120,90,255,.45)}

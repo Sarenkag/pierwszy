@@ -185,8 +185,8 @@
         }
         cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', function () { if (drag) return end(); cur = null; draw(); });
         function realShapes() { return shapes.filter(function (s) { return s.t !== 'crop-mark' && s.t !== 'move'; }); }
-        // Wstecz telefonu (moduly/wstecz) = zamknij edytor bez zmian, wraca do podglądu zdjęcia
-        var zwolnij = root.OESTWstecz ? root.OESTWstecz.okno(function () { close(null); }) : function () {};
+        // Wstecz telefonu (stos okienek moduly/szkielet) = zamknij edytor bez zmian, wraca do podglądu zdjęcia
+        var zwolnij = root.OESTOkna ? root.OESTOkna.open(function () { close(null); }) : function () {};
         function close(r) { zwolnij(); window.removeEventListener('resize', fit); box.remove(); if (bmp.close) bmp.close(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('button'); if (!b) return;
@@ -252,8 +252,8 @@
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';
         var img = box.querySelector('img'), msg = box.querySelector('.oest-review-msg'), busy = false;
         function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; if (opts && typeof opts.prepare === 'function') try { opts.prepare(cur); } catch (_) {} }
-        // Wstecz telefonu (moduly/wstecz) = zamknij podgląd bez dodania zdjęcia, zostajesz w tej samej inspekcji
-        var zwolnij = root.OESTWstecz ? root.OESTWstecz.okno(function () { if (!busy) close({ cancel: true }); }) : function () {};
+        // Wstecz telefonu (stos okienek moduly/szkielet) = zamknij podgląd bez dodania zdjęcia, zostajesz w tej samej inspekcji
+        var zwolnij = root.OESTOkna ? root.OESTOkna.open(function () { if (!busy) close({ cancel: true }); }) : function () {};
         function close(r) { zwolnij(); if (url) URL.revokeObjectURL(url); box.remove(); done(r); }
         box.addEventListener('click', function (e) {
           var b = e.target.closest('[data-r]'); if (!b || busy) return;

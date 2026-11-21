@@ -3,17 +3,136 @@
   "version": 1,
   "note": "Rejestr „jedna rzecz = jedno miejsce” (docs/ZASADY.md R25, test JM-1). Każda rzecz ma właściciela (plik w zbudowanej paczce app/www); każde trafienie wzoru poza właścicielem to naruszenie. Pusta lista właścicieli = rzecz zakazana wszędzie. Wzory to wyrażenia regularne JS na kodzie bez komentarzy (napisy zostają). Zmiana właściciela tylko razem z PR, który przenosi rzecz (plan: kolumna „usuwa”).",
   "rzeczy": [
-    { "rzecz": "historia", "opis": "zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate", "wzory": ["\\bhistory\\s*\\.\\s*(?:pushState|replaceState|back|go|forward)\\s*\\(", "\\bhistory\\s*\\[\\s*[\"'](?:pushState|replaceState|back|go|forward)[\"']\\s*\\]", "[\"']popstate[\"']", "\\bonpopstate\\b"], "wlasciciele": ["index.html", "moduly/wstecz/wstecz.js"], "punkt": "#5/#12", "usuwa": "N1–N4" },
-    { "rzecz": "adres", "opis": "zmiana adresu strony (location.hash=, location.assign/replace)", "wzory": ["\\blocation\\s*\\.\\s*hash\\s*=(?!=)", "\\blocation\\s*\\.\\s*(?:assign|replace)\\s*\\(", "\\blocation\\s*\\.\\s*href\\s*=(?!=)"], "wlasciciele": ["index.html"], "punkt": "#9", "usuwa": "N3" },
-    { "rzecz": "okno-przegladarki", "opis": "window.open (w WebView to ta sama strona)", "wzory": ["\\b(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\s*\\(", "\\b(?:window|w|g|self|globalThis)\\s*\\[\\s*[\"']open[\"']\\s*\\]", "=\\s*(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\b(?!\\s*\\()"], "wlasciciele": [], "punkt": "#1", "usuwa": "—" },
-    { "rzecz": "okna-systemowe", "opis": "systemowe okna alert/confirm/prompt albo <dialog>.showModal", "wzory": ["(?<![\\w$.])(?:(?:window|w|g|self)\\s*\\.\\s*)?(?:alert|confirm|prompt)\\s*\\(", "\\.\\s*showModal\\s*\\("], "wlasciciele": [], "punkt": "D17/#15", "usuwa": "O2" },
-    { "rzecz": "doklejanie-do-body", "opis": "doklejanie elementów prosto do <body> (okienka poza modułem)", "wzory": ["\\bdocument\\s*\\.\\s*body\\s*\\.\\s*(?:append|appendChild|prepend|insertBefore|insertAdjacentHTML|insertAdjacentElement)\\s*\\("], "wlasciciele": ["moduly/przycisk/przycisk.js"], "punkt": "#18", "usuwa": "O2" },
-    { "rzecz": "strzalka-po-klasie", "opis": "szukanie strzałki ‹ po klasie stylu „.top .back”", "wzory": ["\\.top\\s+\\.back\\b"], "wlasciciele": [], "punkt": "#6", "usuwa": "N2" },
-    { "rzecz": "esc", "opis": "własna kopia funkcji esc (zamiana znaków HTML)", "wzory": ["\\bfunction\\s+esc\\w*\\s*\\(", "\\besc\\w*\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)"], "wlasciciele": [], "punkt": "#50/D23", "usuwa": "U1" },
-    { "rzecz": "pad", "opis": "własna kopia funkcji pad (zera z przodu w dacie)", "wzory": ["\\bfunction\\s+pad\\d?\\s*\\(", "\\bpad\\d?\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)"], "wlasciciele": ["moduly/narzedzia/narzedzia.js"], "punkt": "D24", "usuwa": "U1" },
-    { "rzecz": "tlumaczenie-T", "opis": "własna kopia funkcji T() zamiast OESTT", "wzory": ["\\bfunction\\s+T\\s*\\(", "\\bT\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>)"], "wlasciciele": [], "punkt": "D20", "usuwa": "U2" },
-    { "rzecz": "logowanie-google", "opis": "logowanie Google (SocialLogin) poza OESTGoogle", "wzory": ["\\bSocialLogin\\b"], "wlasciciele": ["settings-google.js"], "punkt": "D1", "usuwa": "D-2" },
-    { "rzecz": "naglowek", "opis": "własny nagłówek ekranu (class=\"top\") poza modułem nagłówka", "wzory": ["class=\\\\?[\"']top[\"'\\\\ ]"], "wlasciciele": ["moduly/naglowek/naglowek.js"], "punkt": "D11", "usuwa": "C1" }
+    {
+      "rzecz": "historia",
+      "opis": "zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – historię i adres prowadzi tylko szkielet Ionic (moduly/szkielet, paczka lib)",
+      "wzory": [
+        "\\bhistory\\s*\\.\\s*(?:pushState|replaceState|back|go|forward)\\s*\\(",
+        "\\bhistory\\s*\\[\\s*[\"'](?:pushState|replaceState|back|go|forward)[\"']\\s*\\]",
+        "[\"']popstate[\"']",
+        "\\bonpopstate\\b",
+        "[\"']hashchange[\"']"
+      ],
+      "wlasciciele": [],
+      "punkt": "#5/#12",
+      "usuwa": "N1–N4"
+    },
+    {
+      "rzecz": "adres",
+      "opis": "zmiana adresu strony (location.hash=, location.assign/replace) – historię i adres prowadzi tylko szkielet Ionic (moduly/szkielet, paczka lib)",
+      "wzory": [
+        "\\blocation\\s*\\.\\s*hash\\s*=(?!=)",
+        "\\blocation\\s*\\.\\s*(?:assign|replace)\\s*\\(",
+        "\\blocation\\s*\\.\\s*href\\s*=(?!=)"
+      ],
+      "wlasciciele": [],
+      "punkt": "#9",
+      "usuwa": "N3"
+    },
+    {
+      "rzecz": "okno-przegladarki",
+      "opis": "window.open (w WebView to ta sama strona)",
+      "wzory": [
+        "\\b(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\s*\\(",
+        "\\b(?:window|w|g|self|globalThis)\\s*\\[\\s*[\"']open[\"']\\s*\\]",
+        "=\\s*(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\b(?!\\s*\\()"
+      ],
+      "wlasciciele": [],
+      "punkt": "#1",
+      "usuwa": "—"
+    },
+    {
+      "rzecz": "okna-systemowe",
+      "opis": "systemowe okna alert/confirm/prompt albo <dialog>.showModal",
+      "wzory": [
+        "(?<![\\w$.])(?:(?:window|w|g|self)\\s*\\.\\s*)?(?:alert|confirm|prompt)\\s*\\(",
+        "\\.\\s*showModal\\s*\\("
+      ],
+      "wlasciciele": [],
+      "punkt": "D17/#15",
+      "usuwa": "O2"
+    },
+    {
+      "rzecz": "doklejanie-do-body",
+      "opis": "doklejanie elementów prosto do <body> (okienka poza modułem)",
+      "wzory": [
+        "\\bdocument\\s*\\.\\s*body\\s*\\.\\s*(?:append|appendChild|prepend|insertBefore|insertAdjacentHTML|insertAdjacentElement)\\s*\\("
+      ],
+      "wlasciciele": [
+        "moduly/przycisk/przycisk.js"
+      ],
+      "punkt": "#18",
+      "usuwa": "O2"
+    },
+    {
+      "rzecz": "strzalka-po-klasie",
+      "opis": "szukanie strzałki ‹ po klasie stylu „.top .back”",
+      "wzory": [
+        "\\.top\\s+\\.back\\b"
+      ],
+      "wlasciciele": [],
+      "punkt": "#6",
+      "usuwa": "N2"
+    },
+    {
+      "rzecz": "esc",
+      "opis": "własna kopia funkcji esc (zamiana znaków HTML)",
+      "wzory": [
+        "\\bfunction\\s+esc\\w*\\s*\\(",
+        "\\besc\\w*\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)"
+      ],
+      "wlasciciele": [],
+      "punkt": "#50/D23",
+      "usuwa": "U1"
+    },
+    {
+      "rzecz": "pad",
+      "opis": "własna kopia funkcji pad (zera z przodu w dacie)",
+      "wzory": [
+        "\\bfunction\\s+pad\\d?\\s*\\(",
+        "\\bpad\\d?\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "D24",
+      "usuwa": "U1"
+    },
+    {
+      "rzecz": "tlumaczenie-T",
+      "opis": "własna kopia funkcji T() zamiast OESTT",
+      "wzory": [
+        "\\bfunction\\s+T\\s*\\(",
+        "\\bT\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>)"
+      ],
+      "wlasciciele": [],
+      "punkt": "D20",
+      "usuwa": "U2"
+    },
+    {
+      "rzecz": "logowanie-google",
+      "opis": "logowanie Google (SocialLogin) poza OESTGoogle",
+      "wzory": [
+        "\\bSocialLogin\\b"
+      ],
+      "wlasciciele": [
+        "settings-google.js"
+      ],
+      "punkt": "D1",
+      "usuwa": "D-2"
+    },
+    {
+      "rzecz": "naglowek",
+      "opis": "własny nagłówek ekranu (class=\"top\") poza modułem nagłówka",
+      "wzory": [
+        "class=\\\\?[\"']top[\"'\\\\ ]"
+      ],
+      "wlasciciele": [
+        "moduly/naglowek/naglowek.js"
+      ],
+      "punkt": "D11",
+      "usuwa": "C1"
+    }
   ],
   "kluczeWlasciciele": {
     "oest.lang": "moduly/bledy/bledy.js"
