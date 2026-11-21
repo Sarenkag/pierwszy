@@ -245,6 +245,11 @@
       "timeoutSec": 300
     },
     {
+      "file": "app/tests/aktualizacja-dzwonek-ui-check.cjs",
+      "passMarker": "AKTUALIZACJA UI PASS",
+      "timeoutSec": 900
+    },
+    {
       "file": "app/tests/edytor-zdjec-ui-check.cjs",
       "passMarker": "EDYTOR ZDJEC UI PASS",
       "timeoutSec": 900

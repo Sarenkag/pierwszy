@@ -241,7 +241,7 @@
     ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid var(--line,rgba(255,255,255,.12));opacity:.85}" +
     // lampka sieci: moduly/znacznik (ten sam wzór co na ekranie głównym)
     "@keyframes oest-spin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
-    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}body.oest-sbar-on #updBanner{bottom:calc(var(--oest-sbar-h) + 8px)!important}";
+    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}";
   var el = null;
   function mount() {
     if (el || !doc.body) return;

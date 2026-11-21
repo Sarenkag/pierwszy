@@ -131,6 +131,9 @@
     var q = w.OESTSender && w.OESTSender.count ? w.OESTSender.count() : 0;
     if (q) out.push({ ic: "mail", go: "queue", b: X("wysylka-raportow"), s: X("raporty-w-kolejce-n", { n: q }) });
     if (photo.pending) out.push({ ic: "drive", go: "drive", b: X("zdjecia-na-dysk"), s: X("czeka-na-wyslanie", { n: photo.pending }) });
+    // nowa wersja apki (stan i pobieranie w update.js): zwykły wpis, nic nie zasłania ekranu; „Później” chowa go do następnej wersji
+    var u = w.OESTUpdate && w.OESTUpdate.note ? w.OESTUpdate.note() : null;
+    if (u) out.push({ ic: "upd", go: "update", b: X("nowa-wersja"), s: en() ? u.en : u.pl, later: !u.busy });
     return out;
   }
   function badge() {
@@ -144,7 +147,8 @@
     insp: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3"/>',
     rx: '<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 16.5v.5"/>',
     mail: '<rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>',
-    drive: '<path d="M8.5 4h7l6 10.5-3.5 6h-12L2.5 14.5z"/><path d="M8.5 4l6 10.5M2.5 14.5h12"/>'
+    drive: '<path d="M8.5 4h7l6 10.5-3.5 6h-12L2.5 14.5z"/><path d="M8.5 4l6 10.5M2.5 14.5h12"/>',
+    upd: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>'
   };
   function svg(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS[k] + "</svg>"; }
 
@@ -172,7 +176,8 @@
   function fillBell() {
     var list = notes(), h = head("🔔 " + X("powiadomienia"));
     h += list.length ? list.map(function (n) {
-      return '<button class="hm-nt" type="button" data-hgo="' + n.go + '"><span class="hm-ni">' + svg(n.ic) + "</span><span><b>" + esc(n.b) + "</b><small>" + esc(n.s) + '</small></span><span class="hm-ar">›</span></button>';
+      var row = '<button class="hm-nt" type="button" data-hgo="' + n.go + '"><span class="hm-ni">' + svg(n.ic) + "</span><span><b>" + esc(n.b) + "</b><small>" + esc(n.s) + '</small></span><span class="hm-ar">›</span></button>';
+      return n.later ? '<div class="hm-ntw">' + row + '<button class="hm-later" type="button" data-akcja="pozniej" data-hlater>' + X("pozniej") + "</button></div>" : row;
     }).join("") : '<p class="hm-note">' + X("nic-nowego") + "</p>";
     body(h);
   }
@@ -250,6 +255,7 @@
       if (target === "queue") { if (w.OESTSender && w.OESTSender.expand) w.OESTSender.expand(); return; }
       if (target === "drive") { openPop("drive", $("hmDrive")); return; }
       if (target === "insp") { deps.openDay(iso(today())); return; }
+      if (target === "update") { if (w.OESTUpdate) w.OESTUpdate.install(); return; }
       deps.show(target);
     };
     var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O && O.stack.length) {
@@ -291,10 +297,12 @@
     $("hmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (b) deps.openDay(b.dataset.day); });
     $("hmPop").addEventListener("click", function (e) {
       if (e.target.closest("[data-hx]") || !e.target.closest(".hm-card")) { closePop(); return; }
+      if (e.target.closest("[data-hlater]")) { if (w.OESTUpdate) w.OESTUpdate.postpone(); return; }
       var g = e.target.closest("[data-hgo]"); if (g) { goFromPop(g.dataset.hgo); return; }
       var op = e.target.closest("[data-hop]"); if (op) driveOp(op.dataset.hop, op);
     });
     w.addEventListener("oest:lang", relang);
+    w.addEventListener("oest:update", function () { if (deps) badge(); });
     // powrót do apki (np. następnego dnia): odśwież datę, pasek dni i liczniki, także bez sieci
     function resume() { if (!$("v-home").hidden && !d.hidden && !popKind) render(); }
     ["pageshow", "focus"].forEach(function (ev) { w.addEventListener(ev, resume); });

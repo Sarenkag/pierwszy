@@ -251,6 +251,16 @@
       "id": "nowosci-kariera",
       "pl": "Wszystkie oferty na stronie kariery Smart",
       "en": "All openings on the Smart careers page"
+    },
+    {
+      "id": "nowa-wersja",
+      "pl": "Nowa wersja apki",
+      "en": "New app version"
+    },
+    {
+      "id": "pozniej",
+      "pl": "Później",
+      "en": "Later"
     }
   ]
 }
