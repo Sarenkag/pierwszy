@@ -7,7 +7,7 @@ function kodWykonywalny(t) { return skan(t, 0, false).out; }
 // i zagnieżdżonych szablonach się nie liczą); zwraca kod wykonywalny i pozycję tej „}”
 function skan(t, k, wDolarze) {
   let out = '', d = 0;
-  const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0 || '(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
+  const regexp = i => { let j = i - 1; while (j >= 0 && /\s/.test(t[j])) j--; if (j < 0) return true; if ((t[j] === '+' || t[j] === '-') && t[j - 1] === t[j]) return false; /* „x++ / 2”: dzielenie */ if ('(,=:[!&|?{};+-*%<>~^'.includes(t[j])) return true; const w = t.slice(Math.max(0, j - 10), j + 1).match(/([\w$]+)$/); return !!w && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(w[1]); };
   while (k < t.length) {
     const ch = t[k];
     if (ch === '/' && t[k + 1] === '/') { const e = t.indexOf('\n', k); k = e < 0 ? t.length : e; continue; }
