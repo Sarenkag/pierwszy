@@ -54,9 +54,11 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
         const fonty = rr => [...new Set(rr.map(r => r.font || 'brak'))];
         let grupy;
         if (KRATKA.test(t.text)) grupy = [fonty(runs.filter(r => r.sym || KRATKA.test(r.text)))];
-        else { const ft = flat(t.text), pas = r => !r.sym && flat(r.text).length > 1 && (flat(r.text).includes(ft) || ft.includes(flat(r.text)));
+        else { const ft = flat(t.text), pas = r => { const fr = flat(r.text); return !r.sym && fr.length > 0 && (fr.length > 1 && ft.length > 1 ? fr.includes(ft) || ft.includes(fr) : fr === ft); };
           grupy = ['ascii', 'hAnsi'].filter(z => (z === 'ascii' ? /[\u0000-\u007f]/ : /[^\u0000-\u007f]/).test(t.text.replace(/\s+/g, ''))).map(z => fonty(runs.filter(r => r.zakres === z && pas(r)))); }
-        grupy = grupy.filter(g => g.length); if (!grupy.length) grupy = [wszystkie];
+        // napis PDF bez odpowiednika w żadnym przebiegu Worda: nie da się go sprawdzić – osobny wpis (nie przyjmujemy dowolnej czcionki dokumentu)
+        grupy = grupy.filter(g => g.length);
+        if (!grupy.length) { sprawdzen++; dodaj('pdf:' + id + ':' + cz + ':niedopasowany:' + t.font, id + ': „' + p.name + '” napis „' + t.text.slice(0, 40) + '” (' + t.font + ') bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić'); continue; }
         const zleG = grupy.filter(g => !g.some(f => rodzina(f) === rodzina(t.font)));
         sprawdzen++; if (!zleG.length) continue;
         for (const ocz of zleG) for (const f of ocz) { zle.add(f); dodaj('pdf:' + id + ':' + cz + ':' + f + '→' + t.font, id + ': „' + p.name + '” napis „' + t.text.slice(0, 40) + '” czcionką ' + t.font + ', w Wordzie ' + ocz.join(' / ')); }

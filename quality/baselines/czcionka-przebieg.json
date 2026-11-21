@@ -5,38 +5,23 @@
   "note": "Plan audytu 19/11/2026 punkt 1.5 (ustalenie nr 9): czcionka raportu według przebiegu. Zasada D2 (20/11/2026): tekst Calibri, kratki Wingdings 2; napis w PDF czcionką swojego przebiegu w Wordzie (albo odpowiednikiem metrycznym). Rozbieżności zastane 21/11/2026, naprawa w fazie 4 planu (PDF z Worda, czcionki w raportach). Lista może tylko maleć; dopisanie wpisu tylko za zgodą właściciela (QG-014). „maks” = dzisiejsza liczba trafień (przebiegi Worda / napisy PDF): więcej = FAIL (rozlanie na nowe miejsca), mniej = obniż „maks” w tym samym PR (check-ratchet blokuje podniesienie).",
   "entries": [
     {
-      "id": "word:EFA-INS-002:raport:footer:Arial",
-      "maks": 6,
-      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.docx” tekst „Ref: Eng Report” czcionką Arial"
-    },
-    {
-      "id": "pdf:EFA-INS-002:raport:Calibri→DV",
-      "maks": 38,
-      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
-    },
-    {
-      "id": "pdf:EFA-INS-002:raport:Arial→DV",
-      "maks": 5,
-      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
-    },
-    {
-      "id": "pdf:EFA-INS-002:raport:brak:Wingdings 2",
-      "maks": 1,
-      "reason": "EFA-INS-002: w „Water Temperature Checks TA 21112026 3029047.pdf” żaden napis nie jest czcionką Wingdings 2 z Worda"
-    },
-    {
       "id": "word:EFA-INS-001:raport:footer:Arial",
       "maks": 6,
       "reason": "EFA-INS-001: „Emergency Lighting Test TA 21112026.docx” tekst „Ref: Eng Report” czcionką Arial"
     },
     {
       "id": "pdf:EFA-INS-001:raport:Calibri→DV",
-      "maks": 37,
+      "maks": 36,
       "reason": "EFA-INS-001: „Emergency Lighting Test TA 21112026.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-001:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-001: „Emergency Lighting Test TA 21112026.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-001:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-001: „Emergency Lighting Test TA 21112026.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -45,18 +30,48 @@
       "reason": "EFA-INS-001: w „Emergency Lighting Test TA 21112026.pdf” żaden napis nie jest czcionką Wingdings 2 z Worda"
     },
     {
+      "id": "word:EFA-INS-002:raport:footer:Arial",
+      "maks": 6,
+      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.docx” tekst „Ref: Eng Report” czcionką Arial"
+    },
+    {
+      "id": "pdf:EFA-INS-002:raport:Calibri→DV",
+      "maks": 37,
+      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
+    },
+    {
+      "id": "pdf:EFA-INS-002:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
+      "id": "pdf:EFA-INS-002:raport:Arial→DV",
+      "maks": 4,
+      "reason": "EFA-INS-002: „Water Temperature Checks TA 21112026 3029047.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
+    },
+    {
+      "id": "pdf:EFA-INS-002:raport:brak:Wingdings 2",
+      "maks": 1,
+      "reason": "EFA-INS-002: w „Water Temperature Checks TA 21112026 3029047.pdf” żaden napis nie jest czcionką Wingdings 2 z Worda"
+    },
+    {
       "id": "word:EFA-INS-005:raport:footer:Arial",
       "maks": 6,
       "reason": "EFA-INS-005: „Weekly Sprinkler Testing 21112026 3000621.docx” tekst „Ref: Eng Report” czcionką Arial"
     },
     {
       "id": "pdf:EFA-INS-005:raport:Calibri→DV",
-      "maks": 37,
+      "maks": 36,
       "reason": "EFA-INS-005: „Weekly Sprinkler Testing 21112026 3000621.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-005:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-005: „Weekly Sprinkler Testing 21112026 3000621.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-005:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-005: „Weekly Sprinkler Testing 21112026 3000621.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -71,13 +86,18 @@
     },
     {
       "id": "pdf:EFA-INS-004:raport:Times New Roman→DV",
-      "maks": 39,
+      "maks": 21,
       "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-004:raport:Calibri→DV",
-      "maks": 52,
+      "maks": 34,
       "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
+    },
+    {
+      "id": "pdf:EFA-INS-004:raport:niedopasowany:DV",
+      "maks": 18,
+      "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
       "id": "word:EFA-INS-004:basic:footer:Arial",
@@ -91,12 +111,17 @@
     },
     {
       "id": "pdf:EFA-INS-007:raport:Calibri→DV",
-      "maks": 37,
+      "maks": 36,
       "reason": "EFA-INS-007: „Water Feature Checks 21112026 3000619.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-007:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-007: „Water Feature Checks 21112026 3000619.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-007:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-007: „Water Feature Checks 21112026 3000619.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -111,12 +136,17 @@
     },
     {
       "id": "pdf:EFA-INS-008:raport:Calibri→DV",
-      "maks": 32,
+      "maks": 31,
       "reason": "EFA-INS-008: „Weekly Spa Checks 21112026 3000618.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-008:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-008: „Weekly Spa Checks 21112026 3000618.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-008:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-008: „Weekly Spa Checks 21112026 3000618.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -126,12 +156,17 @@
     },
     {
       "id": "pdf:EFA-INS-010:raport:Calibri→DV",
-      "maks": 38,
+      "maks": 37,
       "reason": "EFA-INS-010: „Monthly Tap Temperature Check P 21112026 3029037.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-010:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-010: „Monthly Tap Temperature Check P 21112026 3029037.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-010:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-010: „Monthly Tap Temperature Check P 21112026 3029037.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -146,12 +181,17 @@
     },
     {
       "id": "pdf:EFA-INS-011:raport:Calibri→DV",
-      "maks": 37,
+      "maks": 36,
       "reason": "EFA-INS-011: „Monthly Emergency Lighting Test P 21112026.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-011:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-011: „Monthly Emergency Lighting Test P 21112026.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-011:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-011: „Monthly Emergency Lighting Test P 21112026.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -166,13 +206,18 @@
     },
     {
       "id": "pdf:EFA-INS-012:raport:Times New Roman→DV",
-      "maks": 29,
+      "maks": 11,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD PAVIL” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-012:raport:Calibri→DV",
-      "maks": 51,
+      "maks": 33,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD PAVIL” czcionką DV, w Wordzie Times New Roman / Calibri"
+    },
+    {
+      "id": "pdf:EFA-INS-012:raport:niedopasowany:DV",
+      "maks": 18,
+      "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
       "id": "word:EFA-INS-012:basic:footer:Arial",
@@ -186,12 +231,17 @@
     },
     {
       "id": "pdf:EFA-INS-014:raport:Calibri→DV",
-      "maks": 36,
+      "maks": 35,
       "reason": "EFA-INS-014: „Automatic Transfer Switches TB L13 21112026 3029033.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-014:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-014: „Automatic Transfer Switches TB L13 21112026 3029033.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-014:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-014: „Automatic Transfer Switches TB L13 21112026 3029033.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -206,12 +256,17 @@
     },
     {
       "id": "pdf:EFA-INS-015:raport:Calibri→DV",
-      "maks": 36,
+      "maks": 35,
       "reason": "EFA-INS-015: „Automatic Transfer Switches TB L12 21112026 3029032.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-015:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-015: „Automatic Transfer Switches TB L12 21112026 3029032.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-015:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-015: „Automatic Transfer Switches TB L12 21112026 3029032.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -226,12 +281,17 @@
     },
     {
       "id": "pdf:EFA-INS-016:raport:Calibri→DV",
-      "maks": 36,
+      "maks": 35,
       "reason": "EFA-INS-016: „Automatic Transfer Switches TB UG 21112026 3029031.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-016:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-016: „Automatic Transfer Switches TB UG 21112026 3029031.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-016:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-016: „Automatic Transfer Switches TB UG 21112026 3029031.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -246,12 +306,17 @@
     },
     {
       "id": "pdf:EFA-INS-017:raport:Calibri→DV",
-      "maks": 36,
+      "maks": 35,
       "reason": "EFA-INS-017: „Automatic Transfer Switches TB R2 21112026 3029030.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-017:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-017: „Automatic Transfer Switches TB R2 21112026 3029030.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-017:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-017: „Automatic Transfer Switches TB R2 21112026 3029030.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -266,12 +331,17 @@
     },
     {
       "id": "pdf:EFA-INS-018:raport:Calibri→DV",
-      "maks": 36,
+      "maks": 35,
       "reason": "EFA-INS-018: „Automatic Transfer Switches TA R1 21112026 3029029.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-018:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-018: „Automatic Transfer Switches TA R1 21112026 3029029.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-018:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-018: „Automatic Transfer Switches TA R1 21112026 3029029.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -286,12 +356,17 @@
     },
     {
       "id": "pdf:EFA-INS-019:raport:Calibri→DV",
-      "maks": 32,
+      "maks": 31,
       "reason": "EFA-INS-019: „AOV Operation Test TB 21112026 3000614.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-019:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-019: „AOV Operation Test TB 21112026 3000614.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-019:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-019: „AOV Operation Test TB 21112026 3000614.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -301,12 +376,17 @@
     },
     {
       "id": "pdf:EFA-INS-020:raport:Calibri→DV",
-      "maks": 92,
+      "maks": 91,
       "reason": "EFA-INS-020: „Monthly Plant Room Inspections 21112026 3029027.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-020:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-020: „Monthly Plant Room Inspections 21112026 3029027.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-020:raport:Arial→DV",
-      "maks": 7,
+      "maks": 6,
       "reason": "EFA-INS-020: „Monthly Plant Room Inspections 21112026 3029027.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -321,12 +401,17 @@
     },
     {
       "id": "pdf:EFA-INS-021:raport:Calibri→DV",
-      "maks": 78,
+      "maks": 77,
       "reason": "EFA-INS-021: „Weekly Plant Status Checks 21112026 3000613.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-021:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-021: „Weekly Plant Status Checks 21112026 3000613.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-021:raport:Arial→DV",
-      "maks": 7,
+      "maks": 6,
       "reason": "EFA-INS-021: „Weekly Plant Status Checks 21112026 3000613.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -341,12 +426,17 @@
     },
     {
       "id": "pdf:EFA-INS-022:raport:Calibri→DV",
-      "maks": 40,
+      "maks": 39,
       "reason": "EFA-INS-022: „Monthly Lighting Checks 21112026 3029025.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-022:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-022: „Monthly Lighting Checks 21112026 3029025.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-022:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-022: „Monthly Lighting Checks 21112026 3029025.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -361,12 +451,17 @@
     },
     {
       "id": "pdf:EFA-INS-023:raport:Calibri→DV",
-      "maks": 37,
+      "maks": 36,
       "reason": "EFA-INS-023: „Monthly Meter Readings 21112026 3029024.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-023:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-023: „Monthly Meter Readings 21112026 3029024.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-023:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-023: „Monthly Meter Readings 21112026 3029024.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
@@ -390,44 +485,54 @@
       "reason": "EFA-INS-024: „Water Temperature Checks TB 21112026 3029023.pdf” napis „2026” czcionką DV, w Wordzie Calibri / Times New Roman"
     },
     {
-      "id": "word:EFA-INS-026:raport:document:Times New Roman",
-      "maks": 115,
-      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.docx” tekst „O” czcionką Times New Roman"
-    },
-    {
-      "id": "pdf:EFA-INS-026:raport:Times New Roman→DV",
-      "maks": 48,
-      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
-    },
-    {
-      "id": "pdf:EFA-INS-026:raport:Calibri→DV",
-      "maks": 57,
-      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
-    },
-    {
-      "id": "word:EFA-INS-026:basic:footer:Arial",
-      "maks": 6,
-      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611 - basic.docx” tekst „Ref: Eng Report” czcionką Arial"
-    },
-    {
       "id": "word:EFA-INS-027:raport:footer:Arial",
       "maks": 6,
       "reason": "EFA-INS-027: „Emergency Lighting Test TB 21112026 3043095.docx” tekst „Ref: Eng Report” czcionką Arial"
     },
     {
       "id": "pdf:EFA-INS-027:raport:Calibri→DV",
-      "maks": 38,
+      "maks": 37,
       "reason": "EFA-INS-027: „Emergency Lighting Test TB 21112026 3043095.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
+      "id": "pdf:EFA-INS-027:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "EFA-INS-027: „Emergency Lighting Test TB 21112026 3043095.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
       "id": "pdf:EFA-INS-027:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
       "reason": "EFA-INS-027: „Emergency Lighting Test TB 21112026 3043095.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Arial"
     },
     {
       "id": "pdf:EFA-INS-027:raport:brak:Wingdings 2",
       "maks": 1,
       "reason": "EFA-INS-027: w „Emergency Lighting Test TB 21112026 3043095.pdf” żaden napis nie jest czcionką Wingdings 2 z Worda"
+    },
+    {
+      "id": "word:EFA-INS-026:raport:document:Times New Roman",
+      "maks": 115,
+      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.docx” tekst „O” czcionką Times New Roman"
+    },
+    {
+      "id": "pdf:EFA-INS-026:raport:Times New Roman→DV",
+      "maks": 30,
+      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
+    },
+    {
+      "id": "pdf:EFA-INS-026:raport:Calibri→DV",
+      "maks": 39,
+      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
+    },
+    {
+      "id": "pdf:EFA-INS-026:raport:niedopasowany:DV",
+      "maks": 18,
+      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
+    },
+    {
+      "id": "word:EFA-INS-026:basic:footer:Arial",
+      "maks": 6,
+      "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611 - basic.docx” tekst „Ref: Eng Report” czcionką Arial"
     },
     {
       "id": "word:REACTIVE:raport:document:Times New Roman",
@@ -441,17 +546,22 @@
     },
     {
       "id": "pdf:REACTIVE:raport:Calibri→DV",
-      "maks": 20,
+      "maks": 19,
       "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
-      "id": "pdf:REACTIVE:raport:Times New Roman→DV",
-      "maks": 7,
-      "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Times New Roman / Arial"
+      "id": "pdf:REACTIVE:raport:niedopasowany:DV",
+      "maks": 1,
+      "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „ONE EASTSIDE TOWER” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
       "id": "pdf:REACTIVE:raport:Arial→DV",
-      "maks": 5,
+      "maks": 4,
+      "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Times New Roman / Arial"
+    },
+    {
+      "id": "pdf:REACTIVE:raport:Times New Roman→DV",
+      "maks": 6,
       "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Times New Roman / Arial"
     }
   ]
