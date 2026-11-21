@@ -32,7 +32,7 @@ function baza() {
 }
 // wersja bazowa zbudowana jak w apce: pliki z gita + copy-web.js (biblioteki z app/node_modules tej gałęzi)
 function zbudujBaze(sha) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'oest-zrzuty-')), sciezki = ['inspekcje', 'moduly', 'app/www', 'app/scripts', 'app/teksty'];
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'oest-zrzuty-')), sciezki = ['inspekcje', 'moduly', 'app/www', 'app/scripts', 'app/teksty', 'app/vite.szkielet.config.mjs'];
   const sa = git('ls-tree', '--name-only', sha, '--', 'inspekcje', 'moduly', 'app').split('\n');
   const jest = sciezki.filter(p => sa.includes(p) || sa.includes(p.split('/')[0]) && git('ls-tree', '--name-only', sha, '--', p));
   execFileSync('sh', ['-c', 'git archive "$0" -- "$@" | tar -x -C "' + dir + '"', sha, ...jest], { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'] });
