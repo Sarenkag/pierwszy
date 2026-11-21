@@ -1,7 +1,7 @@
 // Weekly Generator Check (Grzegorz 21/11/2026): własna inspekcja OEST, nie ma jej w Vantify – stały klocek uruchamiany ręcznie.
-// Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (28 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), domyślnie Yes) w basic form.
+// Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), domyślnie Yes) w basic form.
 // Scenariusz: gen-weekly → lista włączona od razu → bez kartki przycisk prosi o zdjęcie formularza → kartka + 1 zdjęcie + odczyt paliwa w 📝
-// → Wyślij → PDF i Word z listą 28 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
+// → Wyślij → PDF i Word z listą jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
 // Uruchomienie: node app/tests/generator-ui-check.cjs (po npm run copy-web); OEST_SHOTS=katalog → zrzuty ekranu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
@@ -14,8 +14,8 @@ const server = http.createServer((req, res) => {
   fs.readFile(p, (e, b) => { if (e) { res.writeHead(404).end(); return; } res.setHeader('Content-Type', TYPES[path.extname(p)] || 'application/octet-stream'); res.end(b); });
 });
 const ID = 'gen-weekly', SHOTS = process.env.OEST_SHOTS || '';
-const POINTS = ['Fuel level (% / litres) (G1)', 'Oil level (G1)', 'Coolant level (G1)', 'Water level (G1)', 'No leaks (G1)', 'Control panel – available to start in AUTO (G1)', 'Start-up carried out – engine running smoothly and stable (G1)', 'L1 voltage (V) (G1)', 'L2 voltage (V) (G1)', 'L3 voltage (V) (G1)', 'Frequency (Hz) (G1)', 'Engine speed (RPM) (G1)', 'Generator returned to AUTO, all secured (G1)', 'Generator tested off-load (G1)', 'Fuel level (% / litres) (G2)', 'Oil level (G2)', 'Coolant level (G2)', 'Water level (G2)', 'No leaks (G2)', 'Control panel – available to start in AUTO (G2)', 'Start-up carried out – engine running smoothly and stable (G2)', 'L1 voltage (V) (G2)', 'L2 voltage (V) (G2)', 'L3 voltage (V) (G2)', 'Frequency (Hz) (G2)', 'Engine speed (RPM) (G2)', 'Generator returned to AUTO, all secured (G2)', 'Generator tested off-load (G2)'];
-const OK = 'All generator checks acceptable – generators available to start in AUTO', STMT = 'All checks acceptable. Generators available to start in AUTO.';
+const POINTS = ['Fuel level (% / litres)', 'Oil level', 'Coolant level', 'Water level', 'No leaks', 'Control panel – available to start in AUTO', 'Start-up carried out – engine running smoothly and stable', 'L1 voltage (V)', 'L2 voltage (V)', 'L3 voltage (V)', 'Frequency (Hz)', 'Engine speed (RPM)'];
+const OK = 'All generator checks acceptable – generator returned to AUTO', STMT = 'All checks acceptable, generator running smoothly. Everything secured and area left clean. Generator returned to AUTO.';
 const fails = []; let passed = 0;
 const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
@@ -40,13 +40,13 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
       send: document.getElementById('toQueue').textContent.trim(), shCam: !!document.getElementById('shCamIn') }));
     await shot('1-start');
     check(s0.on, 'nasz formularz (lista) włączony od razu');
-    check(JSON.stringify(s0.rows) === JSON.stringify(POINTS.map(p => p.replace(/ \(G\d\)$/, ''))), 'punkty jak w propozycji (' + JSON.stringify(s0.rows) + ')');
+    check(JSON.stringify(s0.rows) === JSON.stringify(POINTS.map(p => p)), 'punkty jak w propozycji (' + JSON.stringify(s0.rows) + ')');
     check(s0.yes === POINTS.length, 'wszystkie punkty domyślnie Yes (' + s0.yes + ')');
     check(/kartki/.test(s0.hint) && !/Spa|klap|call point/i.test(s0.hint), 'podpowiedź dla generatora (' + s0.hint + ')');
     const odcz = await pg.evaluate(() => [...document.querySelectorAll('#flList input.fl-note')].map(e => +e.getAttribute('data-fln')));
-    const dom = await pg.evaluate(() => [7, 8, 9, 10, 11, 21, 22, 23, 24, 25].map(i => document.querySelector('#flList input[data-fln="' + i + '"]').value));
-    check(JSON.stringify(dom) === JSON.stringify(['250', '250', '250', '50', '1500', '250', '250', '250', '50', '1500']), 'L1–L3 250 V, 50 Hz, 1500 RPM wpisane od razu (' + dom + ')');
-    check(JSON.stringify(odcz) === JSON.stringify([0, 7, 8, 9, 10, 11, 14, 21, 22, 23, 24, 25]), 'pola odczytów (paliwo, L1–L3, Hz, RPM) otwarte od razu (' + odcz + ')');
+    const dom = await pg.evaluate(() => [7, 8, 9, 10, 11].map(i => document.querySelector('#flList input[data-fln="' + i + '"]').value));
+    check(JSON.stringify(dom) === JSON.stringify(['250', '250', '250', '50', '1500']), 'L1–L3 250 V, 50 Hz, 1500 RPM wpisane od razu (' + dom + ')');
+    check(JSON.stringify(odcz) === JSON.stringify([0, 7, 8, 9, 10, 11]), 'pola odczytów (paliwo, L1–L3, Hz, RPM) otwarte od razu (' + odcz + ')');
     check(s0.shCam, 'przycisk „Formularz” jest');
     const nd = await pg.evaluate(id => { const P = window.OEST_PPM; return P && P.needs ? P.needs(P.byId(id)) : null; }, ID);
     check(!!nd && nd.f === true && nd.q === true, 'zdjęcie formularza wymagane (jak AOV) i nasz raport włączony od razu (' + JSON.stringify(nd) + ')');
@@ -70,9 +70,9 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     if (pdfF && docF) {
       const P = pdfText(Buffer.from(pdfF.data, 'base64')), W = docxText(Buffer.from(docF.data, 'base64'));
       for (const [n, T] of [['PDF', P], ['Word', W]]) {
-        check(POINTS.every(p => includesFlat(T, p.replace(/ \(G\d\)$/, ''))) && !/\(G[12]\)/.test(T), n + ': wszystkie punkty w grupach, bez dopisku (G1)/(G2)');
+        check(POINTS.every(p => includesFlat(T, p)), n + ': wszystkie 12 punktów');
         check(includesFlat(T, 'Fuel level (% / litres) – 29% / 229 l') && includesFlat(T, 'L1 voltage (V) – 251') && includesFlat(T, 'Engine speed (RPM) – 1500') && includesFlat(T, 'Frequency (Hz) – 50'), n + ': odczyty przy punktach');
-        check(includesFlat(T, 'GENERATOR 1 – SERIAL 667449') && includesFlat(T, 'GENERATOR 2'), n + ': grupy generatorów');
+        check(includesFlat(T, 'Generator – Serial 667449 · Make / Model 5KJDD585ASB') && includesFlat(T, 'VISUAL CHECK') && includesFlat(T, 'OFF-LOAD TEST') && !/GENERATOR [12]/.test(T), n + ': linia generatora nad dwiema grupami (Visual check, Off-load test), jeden generator bez numeru');
         check(includesFlat(T, STMT), n + ': zdanie pod grupami');
         check(includesFlat(T, 'Generator Checks – Weekly'), n + ': tytuł Generator Checks – Weekly');
       }
@@ -81,10 +81,11 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
       if (SHOTS) { fs.writeFileSync(path.join(SHOTS, 'raport.pdf'), Buffer.from(pdfF.data, 'base64')); fs.writeFileSync(path.join(SHOTS, 'raport.docx'), Buffer.from(docF.data, 'base64')); }
     }
     check(!errors.length, 'błędy strony: ' + errors.join(' | '));
+
   } catch (e) { fails.push('przerwane: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   console.log('generator-ui-check: ' + passed + ' OK, ' + fails.length + ' błędów');
   fails.forEach(f => console.log('  ✗ ' + f));
-  if (!fails.length) console.log('GENERATOR PASS: Generator Checks – Weekly (TP-025) – kartka wymagana, 28 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), odczyt w notatce, raport Word i PDF');
+  if (!fails.length) console.log('GENERATOR PASS: Generator Checks – Weekly (TP-025) – kartka wymagana, jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), odczyt w notatce, raport Word i PDF');
   process.exit(fails.length ? 1 : 0);
 })();

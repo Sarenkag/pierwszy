@@ -174,6 +174,9 @@
       else { pdf.line(bx + 0.7, by + 0.7, bx + b - 0.7, by + b - 0.7); pdf.line(bx + b - 0.7, by + 0.7, bx + 0.7, by + b - 0.7); }
       pdf.setDrawColor(0); pdf.setLineWidth(0.4);
     }
+    if (f.podtytul) { // jedna linia nad grupami (np. który generator) – tak samo w Wordzie (flush-basic-wzory.py)
+      at(7); var ty = y; d(1, function () { pdf.setFont("DV", "bold"); pdf.setFontSize(10); pdf.text(f.podtytul, X + Wd / 2, ty + 5, { align: "center" }); pdf.setFont("DV", "normal"); }); y += 6;
+    }
     (f.strefy || []).forEach(function (z, k) {
       var nr = Math.ceil(z[1].length / 2); at(gap + HH + RH * Math.min(nr, 2)); y += gap;
       var hy = y, ht = z[0].toUpperCase() + "   \u00b7   " + p["zone" + (k + 1)];
