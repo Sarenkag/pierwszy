@@ -113,6 +113,16 @@ jobs:
             cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/OEST-${APP_VERSION_CODE}-test.apk"
           fi
 
+      # Plan audytu 1.8 (ustalenie nr 83): APK podpisany tym samym kluczem co dotąd (odcisk w quality/klucz-podpisu.json).
+      # Inny klucz = aktualizacja się nie zainstaluje (odinstalowanie = utrata danych w telefonie) i logowanie Google nie działa.
+      # Błąd zatrzymuje job, więc taki APK nie trafia do artefaktu ani do Releases.
+      - name: Odcisk klucza podpisu
+        if: steps.key.outputs.signed == 'true'
+        run: |
+          APK="$RUNNER_TEMP/OEST-${APP_VERSION_CODE}.apk"
+          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "$APK"
+          node ../quality/klucz-podpisu.cjs "$APK"
+
       - uses: actions/upload-artifact@v4
         with:
           name: OEST-apk-${{ github.run_number }}

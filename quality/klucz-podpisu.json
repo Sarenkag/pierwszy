@@ -1,0 +1,7 @@
+{
+ "schema": "oest.quality.klucz-podpisu",
+ "version": 1,
+ "note": "Plan audytu 19/11/2026 punkt 1.8 (ustalenie nr 83): odcisk certyfikatu klucza podpisu APK (publiczny, nie tajny). Ten sam klucz = aktualizacje bez odinstalowania i bez utraty danych w telefonie; SHA-1 jest wpisany w Google Cloud (logowanie Google, app/README.md). Odczytane z wydania OEST 681 (21/11/2026). Zmiana tylko za wyraźną zgodą właściciela.",
+ "sha256": "47:FB:FF:40:F7:BD:C8:2C:30:CA:F3:D9:A9:70:16:51:6D:2E:6D:2E:1E:4D:EF:B4:08:BC:7A:16:2F:AB:7D:6D",
+ "sha1": "8C:E7:78:57:39:CE:C6:D4:2A:B4:64:6D:1F:A9:F8:72:B0:3F:A9:D5"
+}
