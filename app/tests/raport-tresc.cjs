@@ -31,7 +31,9 @@ function pdfCzytaj(buf) {
   if (czytane.has(buf)) return czytane.get(buf);
   const r = require('node:child_process').spawnSync(process.execPath, [require('node:path').join(__dirname, 'pdf-czytaj.mjs')], { input: buf, maxBuffer: 1 << 28 });
   if (r.status !== 0) throw Error('pdf.js nie przeczytał PDF: ' + String(r.stderr).slice(0, 400));
-  const out = JSON.parse(r.stdout.toString('utf8')); czytane.set(buf, out); return out;
+  const out = JSON.parse(r.stdout.toString('utf8'));
+  if (!Array.isArray(out.pages) || !out.pages.length) throw Error('PDF bez żadnej strony (pdf.js)');
+  czytane.set(buf, out); return out;
 }
 function pdfText(buf) { return pdfCzytaj(buf).pages.flatMap(p => p.lines).join('\n'); }
 // Liczba stron i obrazów w PDF.
