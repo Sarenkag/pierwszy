@@ -42,6 +42,7 @@
     "app/tests/czyszczenie-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/formularz-ptaszek-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/spa-checks-ui-check.cjs": ["index.html", "inspekcje/index.html"],
+    "app/tests/generator-ui-check.cjs": ["index.html", "inspekcje/index.html"],
     "app/tests/moduly-zasady-ui-check.cjs": ["inspekcje/index.html"]
   },
   "zasobyDynamiczne": {

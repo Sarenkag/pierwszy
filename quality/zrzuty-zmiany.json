@@ -2,5 +2,10 @@
   "schema": "oest.quality.zrzuty-zmiany",
   "version": 1,
   "note": "Plan audytu 19/11/2026 punkt 1.6: ekrany, których wygląd ZMIENIA bieżący PR (zrzuty-ui-check.cjs porównuje piksel w piksel z main). Wpis tylko za zgodą właściciela na zmianę wyglądu tego ekranu (DESIGN-SYSTEM.md: żadnego samowolnego przeprojektowania). Po scaleniu następny PR musi wpisy usunąć – lista dotyczy tylko jednej zmiany.",
-  "entries": []
+  "entries": [
+    {
+      "id": "ppm",
+      "reason": "Grzegorz 21/11/2026 (wątek „Dodać inspekcję Weekly generator check”): nowy klocek Generator Checks – Weekly na liście PPM; reszta ekranu bez zmian."
+    }
+  ]
 }

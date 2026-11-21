@@ -27,7 +27,7 @@
   });
   ["y0", "y1", "y2", "y3", "y4", "y5"].forEach(function (k, i) { SLOWNIK[k] = { opis: ["Flushing: rok " + (i + 1) + " (kod skryptu)", "Flushing: year " + (i + 1) + " (script code)"], stare: true }; });
   // basic form Weekly Flushing (Grzegorz 21/11/2026): kran nr i z listy kranów (ppm.js) i strefa nr k
-  for (var i = 1; i <= 20; i++) {
+  for (var i = 1; i <= 28; i++) { // 28: najdłuższa lista – Generator Checks 28 punktów
     SLOWNIK["ok" + i] = ["Flushing basic: ☑ kran " + i + " przepłukany", "Flushing basic: ☑ outlet " + i + " flushed"];
     SLOWNIK["no" + i] = ["Flushing basic: ☒ kran " + i + " nie przepłukany", "Flushing basic: ☒ outlet " + i + " not flushed"];
     SLOWNIK["na" + i] = ["Flushing basic: N/A kran " + i, "Flushing basic: N/A outlet " + i];
@@ -53,6 +53,8 @@
     "flush-basic-ta": { plik: "flush-basic-ta.docx", nazwa: "Weekly Flushing Tower A – basic form", pola: flushPola(12, 3) },
     "flush-basic-tb": { plik: "flush-basic-tb.docx", nazwa: "Weekly Flushing Tower B – basic form", pola: flushPola(16, 4) },
     "flush-basic-p": { plik: "flush-basic-p.docx", nazwa: "Weekly Flushing Pavilion – basic form", pola: flushPola(2, 1) },
+    // Weekly Generator Check (Grzegorz 21/11/2026): ramka basic + grupy w stylu Flushing (kartka TP-025: 2 generatory × 14 punktów)
+    "gen-basic": { plik: "gen-basic.docx", nazwa: "Generator Checks – Weekly (TP-025) – basic form", pola: flushPola(28, 2) },
     "temp-tb": { plik: "temp-tb.docx", nazwa: "Monthly Tap Temperature Check TB (QHS-031)", pola: ["temp", "name", "data"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();

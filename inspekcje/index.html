@@ -1179,7 +1179,7 @@ function makeName(pattern, data, when) {
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
-    fl = { on: false, week: 0, open: {}, names: ((cur.type.flush || {}).taps || []).map(String), taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
+    fl = OESTFlush.start(cur.type.flush || {}); renderFlush();
   }
   // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
@@ -1394,13 +1394,13 @@ function makeName(pattern, data, when) {
   function renderFlush() {
     var F = cur.type && cur.type.flush;
     if (!F) { $("flList").innerHTML = ""; return; }
-    if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, names: F.taps.map(String), taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
+    if (fl.taps.length !== F.taps.length) fl = OESTFlush.start(F);
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
-    if (F.ui === "checks") { // lista potwierdzeń (Weekly Spa Checks): bez kartki, bez przycisków AOV
+    if (F.ui === "checks") { // lista potwierdzeń (Weekly Spa Checks, Weekly Generator Check): bez przycisków AOV; podpowiedź z konfiguracji typu
       $("flOnL").textContent = T("Lista sprawdzeń (z apki)", "Check list (in the app)");
-      $("flHint").textContent = T("Zaznacz, co potwierdzasz (domyślnie Yes). Do raportu idzie lista i zdjęcia z plant roomów. Zdjęcie kartki nie jest wymagane – przycisk „Formularz” zostaje na zaś.", "Mark what you confirm (Yes by default). The report gets the list and the plant room photos. A form photo is not required – the “Form” button stays just in case.");
+      $("flHint").textContent = F.hint ? T(F.hint[0], F.hint[1]) : T("Zaznacz, co potwierdzasz (domyślnie Yes). Do raportu idzie lista i zdjęcia z plant roomów. Zdjęcie kartki nie jest wymagane – przycisk „Formularz” zostaje na zaś.", "Mark what you confirm (Yes by default). The report gets the list and the plant room photos. A form photo is not required – the “Form” button stays just in case.");
     } else {
     $("flOnL").textContent = F.points ? T("Lista przycisków (sprawdzenie z apki)", "Call point list (check in the app)") : T("Formularz elektroniczny", "Electronic form");
     $("flHint").textContent = F.points ? T("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia kartki. Włączony: w raporcie jest też tabela przycisków (Yes = klapy otworzyły się z tego przycisku i zamknęły po resecie) i zdjęcia przy przyciskach.", "“Our report” in ⚙ next to Send off: only photos of the paper form go to the report. On: the report also has a call point table (Yes = vents opened from this call point and closed after reset) and photos per call point.") :
@@ -1409,12 +1409,12 @@ function makeName(pattern, data, when) {
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
     $("flList").innerHTML = F.taps.map(function (name, i) {
-      var t = fl.taps[i], pics = tapPhotos(i), open = fl.open[i] || t.note;
-      return (heads[i] ? '<div class="fl-grp">' + esc(heads[i]) + "</div>" : "") + '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(name) + '</div><div class="seg">' +
+      var t = fl.taps[i], pics = tapPhotos(i), odczyt = (F.odczyty || []).indexOf(name) >= 0, open = fl.open[i] || t.note || odczyt;
+      return (heads[i] ? '<div class="fl-grp">' + esc(heads[i]) + "</div>" : "") + '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(F.etykieta ? name.replace(new RegExp(F.etykieta), "") : name) + '</div><div class="seg">' +
         [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]].map(function (o) { return '<button type="button" data-fl="' + i + '" data-s="' + o[0] + '" class="' + o[2] + (t.state === o[0] ? " on" : "") + '">' + o[1] + "</button>"; }).join("") +
         '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="' + T('Zdjęcie: ', 'Photo: ') + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
         '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="' + T('Notatka: ', 'Note: ') + esc(name) + '">📝</button></div>' +
-        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="'+T('Notatka (trafi do kolumny NOTES)', 'Note (goes to the NOTES column)')+'">' : "") +
+        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="' + (odczyt ? T('Odczyt', 'Reading') : T('Notatka (trafi do kolumny NOTES)', 'Note (goes to the NOTES column)')) + '"' + (odczyt ? ' inputmode="decimal"' : "") + '>' : "") +
         (pics.length ? '<div class="fl-pics">' + pics.map(function (p) { return '<span><img alt="" src="' + p.url + '"><button type="button" data-fldel="' + photos.indexOf(p) + '" aria-label="'+T('Usuń zdjęcie', 'Delete photo')+'">×</button></span>'; }).join("") + "</div>" : "") + "</div>";
     }).join("");
   }
@@ -1437,7 +1437,7 @@ function makeName(pattern, data, when) {
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
-    return { points: !!F.points, ui: F.ui || "", col: F.col, groups: F.groups || null, strefy: F.strefy || null, wzorBasic: F.wzorBasic || "", building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
+    return { points: !!F.points, ui: F.ui || "", summary: F.summary || null, statement: F.statement || null, etykieta: F.etykieta || "", col: F.col, groups: F.groups || null, strefy: F.strefy || null, wzorBasic: F.wzorBasic || "", building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
@@ -2758,8 +2758,8 @@ function makeName(pattern, data, when) {
     return { d: dd, pics: ph };
   }
   function pointsSummary(f) {
-    if (f.ui === "checks") { var bad = f.taps.filter(function (t) { return t.state === "no"; }).length; // Weekly Spa Checks
-      return bad ? bad + " check(s) not satisfactory – record in the Fault and Remedial Actions Log" : "Spa checked – all items satisfactory, no issues observed"; }
+    if (f.ui === "checks") { var bad = f.taps.filter(function (t) { return t.state === "no"; }).length, sm = f.summary || []; // Spa, Generator: tekst z konfiguracji typu
+      return bad ? bad + " " + (sm[1] || "check(s) not satisfactory – record in the Fault and Remedial Actions Log") : (sm[0] || "Spa checked – all items satisfactory, no issues observed"); }
     var no = f.taps.filter(function (t) { return t.state === "no"; }).length, na = f.taps.filter(function (t) { return t.state === "na"; }).length;
     var yes = f.taps.length - no - na;
     if (no) return no + " call point(s) failed – AOVs did not operate correctly; record in the Fault and Remedial Actions Log";

@@ -153,7 +153,8 @@
       var idx = z[1].map(function (nm) { for (var i = 0; i < f.taps.length; i++) if (f.taps[i].name === nm) return i; throw Error("FLUSH_ZONE"); });
       o["zone" + (k + 1)] = idx.filter(function (i) { return f.taps[i].state === "yes"; }).length + "/" + idx.length;
     });
-    o.statement = all ? STATEMENT.all : STATEMENT.part;
+    var st = f.statement || [STATEMENT.all, STATEMENT.part]; // zdanie z konfiguracji typu (Generator), domyślnie Flushing
+    o.statement = all ? st[0] : st[1];
     return o;
   }
   // PDF basic form: te same strefy co Word (nagłówek strefy, 2 krany w wierszu, kratka / N/A, zdanie w szarej ramce).
@@ -182,7 +183,7 @@
       for (var r = 0; r < nr; r++) {
         pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
         var cells = [0, 1].map(function (c) { var nm = z[1][r * 2 + c], t = nm == null ? null : f.taps.filter(function (q) { return q.name === nm; })[0];
-          return t ? { t: t, ls: pdf.splitTextToSize(nm + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
+          return t ? { t: t, ls: pdf.splitTextToSize((f.etykieta ? nm.replace(new RegExp(f.etykieta), "") : nm) + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
         // notatka łamie się w komórce jak w Wordzie; bardzo długa – w partiach po 30 linii na kolejnych stronach (jak {details})
         var nl = Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; }));
         for (var j = 0; j * 30 < nl; j++) {
@@ -219,6 +220,8 @@
   // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
   // mapaKranow: stary indeks kranu → nowy indeks albo null (kranu już nie ma na liście); null, gdy szkicu nie da się przenieść.
   // Zdjęcia usuniętych kranów stają się zwykłymi zdjęciami (widoczne i usuwalne w edytorze), nie giną i nie wiszą bez podpisu.
+  // nowa lista: wszystko Yes; domyslne (Generator) = wartość wpisana od razu, do poprawy (Grzegorz 21/11/2026)
+  function start(F) { var t = F.taps || []; return { on: false, week: 0, open: {}, names: t.map(String), taps: t.map(function (nm) { return { state: "yes", note: (F.domyslne && F.domyslne[nm]) || "" }; }) }; }
   function mapaKranow(dfl, names) {
     if (!dfl || !dfl.taps || !names) return null;
     var old = dfl.names;
@@ -234,6 +237,6 @@
     out.taps = taps; out.names = names.map(String); out.open = {};
     return out;
   }
-  var api = { fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
+  var api = { start: start, fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);
