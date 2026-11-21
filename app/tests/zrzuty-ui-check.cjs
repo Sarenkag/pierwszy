@@ -17,6 +17,8 @@ const { REPO, MAPA, serwer, KONTO, zasiej, szkic, adres } = require('./ekrany-da
 const ZMIANY = path.join(REPO, 'quality/zrzuty-zmiany.json');
 const OUT = path.resolve(process.env.OEST_ZRZUTY_OUT || path.join(REPO, 'quality-results/zrzuty'));
 const ZRZUTY_INSPEKCJE = ['EFA-INS-001', 'EFA-INS-004', 'EFA-INS-008', 'EFA-INS-021', 'EFA-INS-024'];
+// tożsamość otwartego formularza: tytuł na górze ekranu = nazwa zadania z listy PPM (ppm.js)
+const CZYJE = id => `(() => { const t = window.OEST_PPM && OEST_PPM.byId(${JSON.stringify(id)}); return !!t && document.body.innerText.trim().split('\\n')[0].trim() === t.name; })()`;
 const CZAS = '2026-11-21T10:00:00Z';
 const git = (...a) => execFileSync('git', a, { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
@@ -51,15 +53,17 @@ async function zrzuty(browser, www, errs) {
     await pg.clock.setFixedTime(new Date(CZAS));
     await pg.goto(B + '/index.html#home'); await pg.waitForLoadState('networkidle');
     const ids = await zasiej(pg); ids.draft = await szkic(pg, B, ids.leaf);
-    const strzal = async (nazwa, url) => {
-      await pg.goto(url); await pg.waitForLoadState('networkidle'); await pg.evaluate(() => document.fonts.ready); await pg.mouse.move(0, 0);
+    // nowy = pełne załadowanie dokumentu: inspekcje/index.html otwiera formularz tylko przy starcie (openPpm), bez obsługi hashchange
+    const strzal = async (nazwa, url, nowy = false, czyje = null) => {
+      await pg.goto(url); if (nowy) await pg.reload(); await pg.waitForLoadState('networkidle'); await pg.evaluate(() => document.fonts.ready); await pg.mouse.move(0, 0);
       // jak toHaveScreenshot w Playwright: zrzut dopiero, gdy 2 kolejne są identyczne (ekran skończył się rysować); inaczej zostaje ostatni
       let a = null;
       for (let i = 0; i < 20; i++) { await pg.waitForTimeout(150); const b = await pg.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }); if (a && a.equals(b)) break; a = b; }
+      if (czyje && !(await pg.evaluate(czyje))) errs.push(nazwa + ': na ekranie nie ten formularz (zrzut nie przedstawia ' + nazwa + ')');
       out[nazwa] = a;
     };
     for (const e of MAPA) { if (e.id === 'start') continue; await strzal(e.id, B + '/index.html#' + adres(e.id, ids)); }
-    for (const id of ZRZUTY_INSPEKCJE) await strzal('inspekcja:' + id, B + '/inspekcje/index.html#ppm=' + id);
+    for (const id of ZRZUTY_INSPEKCJE) await strzal('inspekcja:' + id, B + '/inspekcje/index.html#ppm=' + id, true, CZYJE(id));
     // ekran startowy (bez konta) na końcu: czysty profil tej samej wersji
     await pg.evaluate(() => localStorage.removeItem('oest.account'));
     await ctx.addInitScript(() => localStorage.removeItem('oest.account'));
