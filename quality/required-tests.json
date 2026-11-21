@@ -358,6 +358,21 @@
       "timeoutSec": 300
     },
     {
+      "file": "app/tests/pdf-z-docx-ui-check.cjs",
+      "passMarker": "PDF Z DOCX UI PASS",
+      "timeoutSec": 300
+    },
+    {
+      "file": "app/tests/czcionka-przebieg-ui-check.cjs",
+      "passMarker": "CZCIONKA PRZEBIEG UI PASS",
+      "timeoutSec": 300
+    },
+    {
+      "file": "app/tests/wstecz-tabela-ui-check.cjs",
+      "passMarker": "WSTECZ TABELA UI PASS",
+      "timeoutSec": 300
+    },
+    {
       "file": "app/tests/flush-odczyt-ui-check.cjs",
       "passMarker": "FLUSH ODCZYT UI PASS",
       "timeoutSec": 300
