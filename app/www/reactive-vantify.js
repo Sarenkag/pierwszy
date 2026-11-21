@@ -88,7 +88,7 @@
       /* adres pliku powiązany z identyfikatorem zdjęcia na karcie (ids), nie z pozycją na liście (przegląd Codex #167) */
       const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [], ids: files.map(f => f.id) } : null;
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}), ...(photos ? { photos } : {}) });
-      if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', ' before photos. Tap “⚠ Vantify” to check again and send the missing ones.'));
+      if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed', ' before photos') + (r.photoError ? L(' (Vantify: ', ' (Vantify: ') + r.photoError + ')' : '') + L('. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', '. Tap “⚠ Vantify” to check again and send the missing ones.'));
       return;
     }
     /* błąd przy wysyłce zdjęć (przed zakładaniem) = zlecenie na pewno nie powstało */

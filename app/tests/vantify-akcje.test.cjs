@@ -94,7 +94,7 @@ function world(action, wz, jobs) {
       else if (this.u.startsWith('https://storage.googleapis.com/')) { st = 200; res = null; }
       else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/messages$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].messages = (jobs[id].messages || []).concat(world.dropMsg ? [] : [{ body: body.body }]); res = { id: 7 }; }
       else if (this.m === 'GET' && /\/messages$/.test(p)) res = { messages: jobs[id].messages || [] };
-      else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/files$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].files = (jobs[id].files || []).concat(world.drop ? [] : [{ _links: { file: { href: body._links.file.href } } }]); res = { id: 1 }; }
+      else if (this.m === 'POST' && /^\/sites\/6324\/jobs\/\d+\/files$/.test(p)) { st = 201; const body = JSON.parse(b); jobs[id].files = (jobs[id].files || []).concat(world.drop === true || world.drop === body._links.file.href ? [] : [{ _links: { file: { href: body._links.file.href } } }]); res = { id: 1 }; }
       else if (/operation\/commence$/.test(p)) { st = 204; jobs[id].status = 'commenced'; jobs[id]._links = { complete: {}, files: { href: '/sites/6324/jobs/' + id + '/files' } }; res = null; }
       else if (/operation\/complete$/.test(p)) { st = 204; Object.assign(jobs[id], { status: 'completed', is_final_status: true }); jobs[id].files = [{ _links: { file: { href: '/files/999' } } }]; res = null; }
       else st = 404;
@@ -122,22 +122,23 @@ test('założenie: jedno POST z wzorem i tekstem, potem odczyt; drugi raz to sam
   assert.deepStrictEqual(s.results[1], { status: 'error', code: 'repeat' }); assert.strictEqual(s.calls.filter(c => c.m === 'POST').length, 1, 'przeładowanie strony nie zakłada drugiego zlecenia');
 });
 const JPG = Buffer.from('jpegdata').toString('base64');
-test('założenie ze zdjęciami przed: najpierw pliki, zlecenie z PIERWSZYM zdjęciem (jak zapis 18/11), reszta przez Files → Add; zdjęcia sprawdzone przy zleceniu (Grzegorz 20–21/11/2026)', async () => {
+test('założenie ze zdjęciami przed: najpierw pliki, zlecenie BEZ linków do zdjęć („File resource could not be found”, 21/11/2026), potem każde zdjęcie przez Files → Add; zdjęcia sprawdzone przy zleceniu', async () => {
   const files = [{ b64: JPG, name: 'Before-photo-1.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'Before-photo-2.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
   const s = world({ op: 'create', nonce: 'p1', summary: 'Door handle', description: 'Loose handle', files }, WZ, {}); await s.run();
   const seq = s.calls.map(c => c.m + ' ' + c.u.replace(API, '').replace('https://storage.googleapis.com', 'STORAGE'));
-  assert.deepStrictEqual(seq, ['POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/reactive', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files', 'POST /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files']);
-  { const at = JSON.parse(s.calls[7].body); assert.deepStrictEqual(at._links, { file: { href: '/files/1000' }, documentType: { href: '/documenttypes/3' } }); assert.strictEqual(at.title, 'Before photo 2'); }
+  assert.deepStrictEqual(seq, ['POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /files', 'POST STORAGE/savillsuk.elogbooks.net', 'POST /sites/6324/jobs/reactive', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files', 'POST /sites/6324/jobs/3070002/files', 'POST /sites/6324/jobs/3070002/files', 'GET /sites/6324/jobs/3070002', 'GET /sites/6324/jobs/3070002/files']);
+  { const at = JSON.parse(s.calls[7].body); assert.deepStrictEqual(at._links, { file: { href: '/files/999' }, documentType: { href: '/documenttypes/3' } }); assert.strictEqual(at.title, 'Before photo 1'); }
+  { const at = JSON.parse(s.calls[8].body); assert.deepStrictEqual(at._links, { file: { href: '/files/1000' }, documentType: { href: '/documenttypes/3' } }); assert.strictEqual(at.title, 'Before photo 2'); }
   assert.deepStrictEqual(JSON.parse(s.calls[0].body), { title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', size: 8 });
   const b = JSON.parse(s.calls[4].body);
-  assert.strictEqual(b.files.links.length, 1, 'przy zakładaniu tylko jedno zdjęcie (3 naraz = http400, 21/11/2026)');
-  assert.deepStrictEqual(b.files.links[0], { _links: { file: { href: '/files/999' }, resource: { href: '/files/999/resource', title: 't', type: 'image/jpeg' } }, title: 'Before photo 1', filename: 'Before-photo-1.jpg', type: 'image/jpeg', href: '/files/999' });
-  assert.ok(!b.files.links.some(l => l.href === '/files/1000'), 'drugie zdjęcie nie w zakładaniu');
+  assert.deepStrictEqual(b.files, { links: [] }, 'zakładanie bez linków do zdjęć (Vantify: files[links][0]: File resource could not be found)');
+  assert.strictEqual(b.summary, 'Door handle'); assert.strictEqual(b.description, 'Loose handle');
+  assert.ok(!('photoError' in s.results[0]), 'bez odmowy bez photoError');
   assert.deepStrictEqual(s.results[0], { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', final: false, summary: 'Door handle' }, photos: 2, photosSeen: 2, hrefs: ['/files/999', '/files/1000'], seenHrefs: ['/files/999', '/files/1000'] });
 });
 test('założenie: zdjęcie nie dotarło przy zleceniu → wynik mówi ile widać; błąd wysyłki zdjęcia → zlecenie nie zakładane', async () => {
   const files = [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }, { b64: JPG, name: 'b.jpg', title: 'Before photo 2', type: 'image/jpeg' }];
-  world.drop = true; const s = world({ op: 'create', nonce: 'p2', summary: 'x', description: 'y', files }, WZ, {}); await s.run(); world.drop = false;
+  world.drop = '/files/1000'; const s = world({ op: 'create', nonce: 'p2', summary: 'x', description: 'y', files }, WZ, {}); await s.run(); world.drop = false;
   assert.strictEqual(s.results[0].status, 'ok', 'dosłanie drugiego zdjęcia nie cofa założenia');
   assert.strictEqual(s.results[0].photos, 2); assert.strictEqual(s.results[0].photosSeen, 1); assert.deepStrictEqual(s.results[0].seenHrefs, ['/files/999'], 'karta wie, którego zdjęcia brakuje');
   const t = world({ op: 'create', nonce: 'p3', summary: 'x', description: 'y', files: [{ b64: JPG, name: 'a.jpg', title: 'A', type: 'image/jpeg' }] }, WZ, {});
@@ -385,4 +386,20 @@ test('zakładanie odrzucone 400: powód z odpowiedzi Vantify trafia do wyniku (k
   const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (/jobs\/reactive$/.test(this.u)) { this.status = 400; this.responseText = JSON.stringify([{ property_path: 'priority', message: 'Priority not allowed' }]); setImmediate(() => this.onload()); return; } return send.call(this, b); };
   await s.run();
   assert.deepStrictEqual(s.results[0], { status: 'error', code: 'http400', msg: 'priority: Priority not allowed', step: 'create' });
+});
+test('zakładanie: Vantify odrzuca zdjęcie → zlecenie i tak założone, numer wraca, powód w photoError, karta wie, czego brak', async () => {
+  const s = world({ op: 'create', nonce: 'pe', summary: 'Door', description: 'Door', files: [{ b64: JPG, name: 'a.jpg', title: 'Before photo 1', type: 'image/jpeg' }] }, WZ, {});
+  const XHR = s.w.XMLHttpRequest, send = XHR.prototype.send; XHR.prototype.send = function (b) { if (this.m === 'POST' && /jobs\/3070002\/files$/.test(this.u)) { s.calls.push({ m: this.m, u: this.u, body: b }); this.status = 400; this.responseText = JSON.stringify({ code: 400, message: 'Validation Failed', errors: { children: { file: { errors: ['File resource could not be found.'] } } } }); setImmediate(() => this.onload()); return; } return send.call(this, b); };
+  await s.run();
+  const r = s.results[0];
+  assert.strictEqual(r.status, 'ok'); assert.strictEqual(r.id, 3070002); assert.strictEqual(r.photos, 1); assert.strictEqual(r.photosSeen, 0);
+  assert.strictEqual(r.photoError, 'Validation Failed; file: File resource could not be found.');
+  assert.strictEqual(s.calls.filter(c => /jobs\/reactive$/.test(c.u)).length, 1, 'jedno zakładanie');
+});
+test('zakładanie bez zdjęć: żadnej wysyłki plików, files.links puste (zdjęcie nie jest wymagane, Grzegorz 21/11/2026)', async () => {
+  const s = world({ op: 'create', nonce: 'np', summary: 'Door', description: 'Door', files: [] }, WZ, {}); await s.run();
+  assert.ok(!s.calls.some(c => /\/files$/.test(c.u) && c.m === 'POST'), 'bez zdjęć nic nie wysyła do /files');
+  assert.ok(!s.calls.some(c => /storage\.googleapis/.test(c.u)));
+  assert.deepStrictEqual(JSON.parse(s.calls.find(c => /jobs\/reactive$/.test(c.u)).body).files, { links: [] });
+  assert.strictEqual(s.results[0].status, 'ok'); assert.strictEqual(s.results[0].photos, 0);
 });
