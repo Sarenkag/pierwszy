@@ -53,7 +53,7 @@ function klucze(obj) {
 
 // ---------- strona natywna ----------
 function natywne() {
-  const wt = new Map(), main = czytaj('app/android/app/src/main/java/com/oest/inspekcje/MainActivity.java');
+  const wt = new Map(), main = bezNapisow(czytaj('app/android/app/src/main/java/com/oest/inspekcje/MainActivity.java')); // bez komentarzy: zakomentowana rejestracja = brak rejestracji
   for (const p of pliki('app/android/app/src/main/java', /\.(java|kt)$/)) {
     const s = czytaj(p), nm = /@CapacitorPlugin\s*\(\s*name\s*=\s*"([^"]+)"/.exec(s); if (!nm) continue;
     const klasa = (/class\s+(\w+)/.exec(s) || [])[1];
@@ -109,6 +109,12 @@ function wywolania(wt) {
       const n = m[1] || m[2], i = m.index + m[0].length - (m[1] ? 1 : 0), t = s[i] === '{' || s[i] === '(' ? blok(s, i) : s.slice(i, s.indexOf('\n', i) < 0 ? undefined : s.indexOf('\n', i));
       const w = [...new Set(wtyczkiW(t))]; if (w.length === 1 && /return|=>/.test(m[0] + t.slice(0, 400))) dodaj(n, w[0]);
     }
+    // fabryka z nazwą w parametrze: function plugin(name) { … Plugins[name] … registerPlugin(name) } → x = plugin("Vantify")
+    for (const m of s.matchAll(/function\s+(\w+)\s*\(\s*(\w+)\s*\)\s*\{/g)) {
+      const t = blok(s, m.index + m[0].length - 1);
+      if (!new RegExp('Plugins\\[\\s*' + m[2] + '\\s*\\]|registerPlugin\\(\\s*' + m[2] + '\\s*\\)').test(t)) continue;
+      for (const c of s.matchAll(new RegExp('\\b(\\w+)\\s*=(?!=)\\s*' + m[1] + '\\(\\s*[\'"](\\w+)[\'"]\\s*\\)', 'g'))) dodaj(c[1], c[2], c.index);
+    }
     // zmienna = funkcjaZWtyczką()  (np. var p = api(); p.check())
     for (const m of s.matchAll(/\b(\w+)\s*=(?!=)\s*(\w+)\(\)/g)) for (const w of uchwytW(m[2], m.index)) dodaj(m[1], w, m.index);
     const wolanie = (w, met, i) => { const j = s.slice(i).search(/\S/) + i, par = s[j] === '{' ? klucze(blok(s, j)).map(k => k.klucz) : null; out.push({ plik: p, wtyczki: w, metoda: met, par }); };
@@ -125,7 +131,7 @@ function atrapy(wt) {
     if (/wtyczki-kontrakt/.test(p)) continue;
     const s = czytaj(p), obiekt = (i) => { const j = s.slice(i).search(/\S/) + i; return s[j] === '{' ? blok(s, j) : null; };
     const zmienna = n => { const m = new RegExp('\\b' + n + '\\s*=\\s*(?=\\{)').exec(s); return m ? blok(s, m.index + m[0].length) : null; };
-    const dodaj = (w, o) => { if (!o) return; for (const k of klucze(o)) { const r = /^\s*:\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>\s*\(\s*(\{)|return\s*(\{)/.exec(k.tresc); out.push({ plik: p, wtyczka: w, metoda: k.klucz, zwrot: r ? klucze(blok(k.tresc, r.index + r[0].length - 1)).map(x => x.klucz) : [] }); } };
+    const dodaj = (w, o) => { if (!o) return; for (const k of klucze(o)) { const r = /^\s*:\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>\s*(?:\(|Promise\.resolve\()\s*(\{)|return\s*(?:Promise\.resolve\(\s*)?(\{)/.exec(k.tresc); out.push({ plik: p, wtyczka: w, metoda: k.klucz, zwrot: r ? klucze(blok(k.tresc, r.index + r[0].length - 1)).map(x => x.klucz) : [] }); } };
     // obiekt przypisany do nazwy wtyczki: Nazwa: {…} / .Nazwa = {…} / Nazwa: zmienna / .Nazwa = zmienna
     const kod = bezNapisow(s);
     for (const m of kod.matchAll(/(?:\b|\.)([A-Z]\w*)\s*(?::|=(?!=))\s*(?=[{\w])/g)) {
