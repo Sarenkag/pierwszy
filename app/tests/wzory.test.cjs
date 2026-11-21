@@ -44,6 +44,15 @@ test('wczytaj: pobiera każdy plik raz, błąd sieci = REPORT_TEMPLATE_MISSING',
   assert.equal(wolane.length, 4);
   assert.ok(W.bajty('plant').length > 1000);
 });
+test('wczytaj po błędzie sieci: odrzuca REPORT_TEMPLATE_MISSING, a następne wywołanie pobiera od nowa (inspekcje wołają je przed każdym raportem)', async () => {
+  delete require.cache[require.resolve(path.join(DIR, 'wzory.js'))]; require(path.join(DIR, 'wzory.js'));
+  const W2 = globalThis.OESTWzory; let siec = false, wolane = 0;
+  globalThis.fetch = async u => { wolane++; if (!siec) return { ok: false }; return { ok: true, arrayBuffer: async () => fs.readFileSync(path.join(DIR, u)).buffer.slice(0) }; };
+  await assert.rejects(W2.wczytaj(), /REPORT_TEMPLATE_MISSING/);
+  assert.throws(() => W2.bajty('basic'), /REPORT_TEMPLATE_MISSING/);
+  siec = true; await W2.wczytaj();
+  assert.ok(W2.bajty('basic').length > 1000); assert.ok(wolane > 4);
+});
 test('LEGENDA.md (plik tekstowy dla Grzegorza) zgadza się ze słownikiem apki', () => {
   const { legenda, PLIK } = require('../scripts/wzory-legenda.cjs');
   assert.equal(fs.readFileSync(PLIK, 'utf8'), legenda(), 'node app/scripts/wzory-legenda.cjs');

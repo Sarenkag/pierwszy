@@ -2858,7 +2858,8 @@ function makeName(pattern, data, when) {
   // to Word przepuszczony przez silnik (moduly/word-pdf → zWorda), a nie osobny rysunek. Bez silnika (przeglądarka, testy)
   // albo gdy silnik zawiedzie – zostaje PDF z rysownika jak dotąd. Flushing (formularz + basic form w jednym PDF) na razie bez zmian.
   function buildAll(opt) {
-    return buildAllRysowane(opt).then(function (r) {
+    // wzory Word z modułu Wzory: przed każdym raportem (po błędzie przy starcie – ponowna próba); błąd idzie do zwykłej obsługi (uwaga Codex #186)
+    return OESTWzory.wczytaj().then(function () { return buildAllRysowane(opt); }).then(function (r) {
       if (!r || !window.OESTWordPdf || !OESTWordPdf.dostepny() || (r.data && r.data.flush) || !r.docx || !r.docx.length) return r;
       var glowne = (r.files || []).filter(function (f) { return /\.pdf$/.test(f.name) && (f.name === r.name + ".pdf" || f.name === r.name + " - report.pdf"); });
       return OESTWordPdf.zWorda(r.docx).then(function (pdf) {
