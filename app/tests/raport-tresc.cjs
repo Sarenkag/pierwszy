@@ -85,14 +85,14 @@ function wordPdfDiff(wordBufs, pdfBufs) {
   const pLines = [];
   for (const lines of P.flatMap(p => p.pages)) { const L = lines.map(l => words(l).join(' ')).filter(Boolean); for (let i = 0; i < L.length; i++) { const k = [4, 3, 2].find(k => i + k <= L.length && hf.has(L.slice(i, i + k).join(' '))) || 1; pLines.push(L.slice(i, i + k).join(' ')); i += k - 1; } }
   const bag = a => a.reduce((m, t) => m.set(t, (m.get(t) || 0) + 1), new Map());
-  const rep = W.flatMap(w => words(w.powtarzane)), wb = bag(W.flatMap(w => words(w.body)).concat(rep)), pb = bag(pLines.filter(l => !hf.has(l)).flatMap(l => l.split(' ')));
+  // słowo przełamane w wąskiej komórce bez łącznika (LibreOffice: „COMPLETE” / „D”): dwa sąsiednie kawałki PDF sklejone, gdy razem dają słowo Worda,
+  // a któregoś kawałka jako osobnego słowa w Wordzie nie ma (także w wierszach nagłówka tabeli powtórzonych na kolejnej stronie)
+  const wSlowa = new Set(W.flatMap(w => words(w.body).concat(words(w.powtarzane))));
+  const sklej = seq => { const o = []; for (let i = 0; i < seq.length; i++) { const a = seq[i], b = seq[i + 1]; if (b !== undefined && wSlowa.has(a + b) && (!wSlowa.has(a) || !wSlowa.has(b))) { o.push(a + b); i++; } else o.push(a); } return o; };
+  const rep = W.flatMap(w => words(w.powtarzane)), wb = bag(W.flatMap(w => words(w.body)).concat(rep)), pb = bag(sklej(pLines.filter(l => !hf.has(l)).flatMap(l => l.split(' '))));
   const only = (a, b) => [...a].flatMap(([t, n]) => Array(Math.max(0, n - (b.get(t) || 0))).fill(t));
   // nadwyżka w PDF, która jest dokładnie N kopiami powtarzanych wierszy nagłówka tabeli (kolejne strony), nie jest różnicą
-  let tylkoPdf = only(pb, wb), tylkoWord = only(wb, pb);
-  // słowo przełamane w wąskiej komórce bez łącznika (LibreOffice: „COMPLETE” / „D”) = dwa sąsiednie kawałki w PDF, razem dokładnie to słowo Worda
-  { const seq = pLines.filter(l => !hf.has(l)).flatMap(l => l.split(' ')), zW = bag(tylkoWord), zP = bag(tylkoPdf), wez = (m, t) => m.set(t, m.get(t) - 1);
-    for (let i = 0; i + 1 < seq.length; i++) { const a = seq[i], b = seq[i + 1], t = a + b; if (zW.get(t) > 0 && zP.get(a) > 0 && zP.get(b) > (a === b ? 1 : 0)) { wez(zW, t); wez(zP, a); wez(zP, b); i++; } }
-    const rozwin = m => [...m].flatMap(([t, n]) => Array(Math.max(0, n)).fill(t)); tylkoWord = rozwin(zW); tylkoPdf = rozwin(zP); }
+  let tylkoPdf = only(pb, wb); const tylkoWord = only(wb, pb);
   if (rep.length && tylkoPdf.length && tylkoPdf.length % rep.length === 0) { const n = tylkoPdf.length / rep.length, rb = bag(rep), xb = bag(tylkoPdf); if ([...xb].every(([t, c]) => (rb.get(t) || 0) * n === c) && [...rb].every(([t, c]) => xb.get(t) === c * n)) tylkoPdf = []; }
   // logo i grafika nagłówka (obrazy z nagłówka Worda) nie są zdjęciami inspekcji – w PDF są na każdej stronie
   const logo = new Set(W.flatMap(w => w.logo)), wym = d => d.split('x').map(Number), pLogo = d => logo.has(d) || [...logo].some(l => { const [a, b] = wym(l), [c, e] = wym(d); return c <= a && e <= b && Math.abs(a / b - c / e) < 0.01 * a / b; }) /* LibreOffice zmniejsza duże logo nagłówka (300 dpi) – te same proporcje */, pSet = new Set(pLines), wph = bag(W.flatMap(w => w.photos).filter(d => !logo.has(d))), pph = bag(P.flatMap(p => p.photos).filter(d => !pLogo(d)));
