@@ -3329,8 +3329,8 @@ function makeName(pattern, data, when) {
   var wprost = !!REC_ID || !!(PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || ""));
   if (!wprost) show(APP && location.hash === "#queue" ? "queue" : "home"); // z apki prosto do kolejki (bez przekierowania z ekranu startowego)
   renderTranslate();
+  OESTWzory.wczytaj().catch(function () {}); // wzory Word (moduly/wzory) wczytywane w tle – start ekranu na nie nie czeka; buildAll() czeka przed raportem
   Promise.all([
-    OESTWzory.wczytaj().catch(function () {}), // wzory Word raportów (moduly/wzory) – raz przy starcie
     kvGet("tpl").then(function (t) { if (t && t.bytes && !serverTpl) { serverTpl = t; tplState(); } }).catch(function () {}),
     qAll().then(function (all) {
       var old = Date.now() - 3 * 864e5; // wysłane starsze niż 3 dni sprzątam
