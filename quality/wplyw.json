@@ -46,6 +46,10 @@
   },
   "zasobyDynamiczne": {
     "templates/OEST-basic.docx": ["index.html"],
+    "moduly/wzory/basic.docx": ["index.html", "inspekcje/index.html"],
+    "moduly/wzory/plant.docx": ["index.html", "inspekcje/index.html"],
+    "moduly/wzory/flush.docx": ["index.html", "inspekcje/index.html"],
+    "moduly/wzory/temp-tb.docx": ["index.html", "inspekcje/index.html"],
     "inspekcje/sw.js": ["inspekcje/index.html"],
     "inspekcje/icon-512.png": ["inspekcje/index.html"]
   },

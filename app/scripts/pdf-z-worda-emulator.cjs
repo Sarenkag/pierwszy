@@ -19,9 +19,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log("strona:", await val("location.href", 10000));
   console.log("silnik dostępny:", await val("!!(window.OESTWordPdf && OESTWordPdf.dostepny())", 10000));
   let ok = 0;
-  for (const [nazwa, tpl] of [["plant", "TPL_PLANT"], ["basic", "OEST_BASIC_TPL"], ["flush", "TPL_FLUSH"], ["temp-tb", "TPL_TEMP_TB"]]) {
+  for (const nazwa of ["plant", "basic", "flush", "temp-tb"]) {
     const t0 = Date.now();
-    const v = await val(`(function(){var s=atob(window.${tpl}),b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i);
+    const v = await val(`(function(){var b=OESTWzory.bajty("${nazwa}");
       var docx=fillDocx(PizZip,docxtemplater,b,{},[]).generate({type:"uint8array"});
       return OESTWordPdf.zWorda(docx).then(function(p){if(!p)return {ok:0};var s2="";for(var i=0;i<p.length;i+=32768)s2+=String.fromCharCode.apply(null,p.subarray(i,i+32768));return {ok:1,b64:btoa(s2)};});})()`);
     if (!v || !v.ok) { console.log(nazwa, "BŁĄD / brak PDF", JSON.stringify(v).slice(0, 500)); continue; }

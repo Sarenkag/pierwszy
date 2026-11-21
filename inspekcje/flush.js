@@ -1,4 +1,4 @@
-// Weekly Flushing (TA / TB / P): wypełnianie wspólnego wzoru Word (tpl-flush.js) — czyste funkcje, bez DOM.
+// Weekly Flushing (TA / TB / P): wypełnianie wspólnego wzoru Word (moduly/wzory/flush.docx) — czyste funkcje, bez DOM.
 // Tydzień miesiąca wybiera inżynier (apka nie liczy go z daty, Grzegorz 02/11/2026).
 (function (root) {
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

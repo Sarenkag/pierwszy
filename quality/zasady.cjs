@@ -135,6 +135,10 @@ function analyse(www, opts) {
       if (n) add(`JM|${r.rzecz}|${f}`, 'JM', `${f}: ${r.opis} – ${n}× poza właścicielem (${(r.wlasciciele || []).join(', ') || 'zakazane'}).`, { punkt: r.punkt, usuwa: r.usuwa, liczba: n });
     }
   }
+  // wzory Word: plik .docx tylko w moduly/wzory (R25, moduł Wzory 21/11/2026) – druga kopia wzoru gdziekolwiek indziej to naruszenie
+  const docx = [], szukaj = d => { for (const e of fs.readdirSync(path.join(www, d), { withFileTypes: true })) { const r = d ? d + '/' + e.name : e.name; if (e.isDirectory()) { if (e.name !== 'node_modules') szukaj(r); } else if (/\.docx$/i.test(e.name)) docx.push(r); } };
+  szukaj('');
+  for (const f of docx) if (!f.startsWith('moduly/wzory/')) add(`JM|wzor-plik|${f}`, 'JM', `${f}: plik wzoru Word poza moduly/wzory (jedno miejsce na wzory).`, { punkt: 'R25', usuwa: 'wzory' });
   // klucze „oest.*” i bazy IndexedDB: każdy w jednym pliku (R8, R9)
   const klucze = new Map(), bazy = new Map();
   for (const [f, c] of kod) {

@@ -47,8 +47,8 @@ window.OEST_PPM = {
     // 024: wzór firmy (docx) z polami {temp} — kolejność pól jak w tabeli wzoru. Tylko temperatury, bez domyślnych wartości.
     // kind: hot / cold / tmv — progi z wzoru: Hot > 50°C, Cold < 20°C, TMV mixed 38–43°C.
     // plant roomy (01/11/2026, Grzegorz): 7 stałych pomieszczeń, w każdym siatka checkpointów, wzór firmy TPL_PLANT
-    plantW: { rooms: true, title: "Weekly Plant Status Checks", tpl: "TPL_PLANT" },
-    plantM: { rooms: true, monthly: true, title: "Monthly Plant Room Inspections", tpl: "TPL_PLANT" },
+    plantW: { rooms: true, title: "Weekly Plant Status Checks", wzor: "plant" },
+    plantM: { rooms: true, monthly: true, title: "Monthly Plant Room Inspections", wzor: "plant" },
     plantRooms: [
       { key: "spa_pump", name: "Spa pump plant room", loc: "TB LG" },
       { key: "spa_filtration", name: "Spa filtration plant room", loc: "TB UG", extra: ["Chemicals stored safely"] },
@@ -59,7 +59,7 @@ window.OEST_PPM = {
       { key: "mechanical", name: "Mechanical plant room", loc: "TB External access" } ],
     plantCps: ["Secure", "Clean", "Access", "Lighting", "No leaks", "Panel secure"],
     plantCpsMonthly: ["No active alarms", "Emergency lighting"],
-    // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (inspekcje/tpl-flush.js)
+    // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (moduly/wzory/flush.docx)
     flush: {
       TA: { title: "Weekly Taps/Shower Flushing Record Tower A", building: "A", taps: ["Disable Toilet LG", "Toilet LG", "Kitchen next to Pantree", "Bin Store", "Kitchen UL",
         "Bar Area Level 49", "Private Dining", "Toilet Level 49", "Disable Toilet Level 49", "Meeting Area Level 49", "Disable Toilet/Shower UG", "Roof Level"] },
@@ -76,7 +76,7 @@ window.OEST_PPM = {
       "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
         groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
         taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },
-    tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", tpl: "TPL_TEMP_TB", slots: [
+    tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", wzor: "temp-tb", slots: [
       ["Roof", "cold"], ["Spa Chemical Room", "hot"], ["Spa Chemical Room", "cold"], ["Bin Area", "cold"],
       ["Spa Hall Tap", "hot"], ["Spa Hall Tap", "cold"], ["Massage Hall", "cold"], ["Massage Room", "hot"], ["Massage Room", "cold"],
       ["Hairdresser Room", "hot"], ["Hairdresser Room", "cold"], ["Disabled Toilet LG", "tmv"], ["Fitness 1", "cold"],
