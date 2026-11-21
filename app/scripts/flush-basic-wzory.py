@@ -1,5 +1,5 @@
 # Wzory basic form Weekly Flushing (Grzegorz 21/11/2026, wątek „Pokazać nowe układy środka Flushing”, wariant „grupy stref”):
-# ramka = moduly/wzory/basic.docx bez zmian (od góry do {title} i od „Works Complete” do końca), środek = strefy z ppm.js (forms.flush.*.strefy)
+# ramka = moduly/wzory/basic.docx (jedna, apka wkłada w nią środek przy raporcie), ten skrypt robi TYLKO pliki środków: strefy z ppm.js (forms.flush.*.strefy)
 # + stałe zdanie {statement}. Wiersz „Overall Condition” należy do środka i w Flushingu go nie ma (reguła ramki 21/11/2026).
 # Nawiasy kranu i (numer na liście taps w ppm.js, od 1): {ok i} ☑ zielony, {no i} ☒ czerwony, {na i} N/A szary, {note i} „ – notatka”; {zone k} = „7/7”.
 # Uruchom: python3 app/scripts/flush-basic-wzory.py   (potrzebne: node, python-docx)
@@ -15,7 +15,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 WZORY = os.path.join(ROOT, "moduly", "wzory")
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 TEAL, GRAY, LINE = "1F4E5F", "F2F2F2", "B0B7BB"
-PLIKI = {"TA": "flush-basic-ta.docx", "TB": "flush-basic-tb.docx", "P": "flush-basic-p.docx", "GEN": "gen-basic.docx"}  # GEN: Weekly Generator Check (21/11/2026)
+PLIKI = {"TA": "flush-ta-srodek.docx", "TB": "flush-tb-srodek.docx", "P": "flush-p-srodek.docx", "GEN": "gen-srodek.docx"}  # GEN: Weekly Generator Check (21/11/2026)
 
 def ppm():
     js = "global.window={};require(process.argv[1]);process.stdout.write(JSON.stringify(window.OEST_PPM.forms.flush))"
@@ -46,15 +46,15 @@ def spacer():
     sp.set(qn("w:after"), "0"); sp.set(qn("w:line"), "120"); sp.set(qn("w:lineRule"), "exact"); pp.append(sp); p.append(pp); return p
 
 def build(f, out):
-    d = Document(os.path.join(WZORY, "basic.docx")); rows = d.tables[0].rows
-    cond, det = rows[4]._tr, rows[5]._tr          # Overall Condition | {details}
-    cond.getparent().remove(cond)
-    trpr = det.find(W + "trPr")
-    if trpr is not None:
-        for h in trpr.findall(W + "trHeight"): trpr.remove(h)
-    tc = det.find(W + "tc")
-    for ch in list(tc):
-        if ch.tag != W + "tcPr": tc.remove(ch)
+    # plik SAMEGO środka (Grzegorz 21/11/2026 17:33): ramki tu nie ma – apka wkłada środek w aktualny basic.docx (OESTWzory.bajty).
+    # Dokument startuje z basic.docx tylko po style i stronę; ciało = sam środek, bez nagłówka i stopki.
+    d = Document(os.path.join(WZORY, "basic.docx")); body = d.element.body; sect = body.find(W + "sectPr")
+    for ch in list(body):
+        if ch is not sect: body.remove(ch)
+    for h in sect.findall(W + "headerReference") + sect.findall(W + "footerReference"): sect.remove(h)
+    class Kom:  # dokłada elementy przed sectPr
+        def append(self, el): sect.addprevious(el)
+    tc = Kom()
     taps = f["taps"]
     if f.get("podtytul"):  # jedna linia nad grupami (np. który generator) – tak samo w PDF (OESTFlush.rysujStrefy)
         p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER

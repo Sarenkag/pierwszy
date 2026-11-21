@@ -8,17 +8,17 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 
 | Nawias | Co wstawia apka | In English | Używają |
 |---|---|---|---|
-| `{site}` | obiekt | site | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{date}` | data inspekcji dd/mm/rrrr | inspection date dd/mm/yyyy | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{job number}` | nr zlecenia Vantify | Vantify job number | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{engineer}` | inżynier | engineer | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{building}` | budynek | building | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{level}` | piętro | level | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{title}` | rodzaj inspekcji | inspection type | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
+| `{site}` | obiekt | site | basic, plant |
+| `{date}` | data inspekcji dd/mm/rrrr | inspection date dd/mm/yyyy | basic, plant |
+| `{job number}` | nr zlecenia Vantify | Vantify job number | basic, plant |
+| `{engineer}` | inżynier | engineer | basic, plant |
+| `{building}` | budynek | building | basic, plant |
+| `{level}` | piętro | level | basic, plant |
+| `{title}` | rodzaj inspekcji | inspection type | basic, plant |
 | `{condition}` | stan ogólny | overall condition | basic, plant |
 | `{details}` | opis i ustalenia | details and findings | basic |
-| `{quote}` | wycena tak/nie | quote yes/no | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{%photos}` | zdjęcia (siatka) | photos (grid) | basic, plant, flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
+| `{quote}` | wycena tak/nie | quote yes/no | basic, plant |
+| `{%photos}` | zdjęcia (siatka) | photos (grid) | basic, plant |
 | `{a}` | Plant: kolumna a | Plant: column a | plant |
 | `{b}` | Plant: kolumna b | Plant: column b | plant |
 | `{c}` | Plant: kolumna c | Plant: column c | plant |
@@ -155,8 +155,8 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 - **OEST basic Engineers Report** (`basic`, plik `basic.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{condition}` `{details}` `{quote}` `{%photos}`
 - **Plant Rooms Weekly / Monthly** (`plant`, plik `plant.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{condition}` `{quote}` `{%photos}` `{a}` `{b}` `{c}` `{d}` `{.}` `{comms}` `{mechanical}` `{primary_switch}` `{secondary_switch}` `{spa_filtration}` `{spa_pump}` `{sprinkler}` `{comms_notes}` `{mechanical_notes}` `{primary_switch_notes}` `{secondary_switch_notes}` `{spa_filtration_notes}` `{spa_pump_notes}` `{sprinkler_notes}`
 - **Weekly Taps/Shower Flushing Record (TA / TB / P)** (`flush`, plik `flush.docx`): `{o}` `{bld}` `{twr}` `{y0}` `{y1}` `{y2}` `{y3}` `{y4}` `{y5}` `{c1}` `{c2}` `{c3}` `{c4}` `{c5}` `{c6}` `{c7}` `{c8}` `{c9}` `{c10}` `{c11}` `{c12}`
-- **Weekly Flushing Tower A – basic form** (`flush-basic-ta`, plik `flush-basic-ta.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}` `{zone3}`
-- **Weekly Flushing Tower B – basic form** (`flush-basic-tb`, plik `flush-basic-tb.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{ok15}` `{no15}` `{na15}` `{note15}` `{ok16}` `{no16}` `{na16}` `{note16}` `{zone1}` `{zone2}` `{zone3}` `{zone4}`
-- **Weekly Flushing Pavilion – basic form** (`flush-basic-p`, plik `flush-basic-p.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
-- **Generator Checks – Weekly (TP-025) – basic form** (`gen-basic`, plik `gen-basic.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
+- **Weekly Flushing Tower A – basic form middle** (`flush-basic-ta`, plik `flush-ta-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}` `{zone3}`
+- **Weekly Flushing Tower B – basic form middle** (`flush-basic-tb`, plik `flush-tb-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{ok15}` `{no15}` `{na15}` `{note15}` `{ok16}` `{no16}` `{na16}` `{note16}` `{zone1}` `{zone2}` `{zone3}` `{zone4}`
+- **Weekly Flushing Pavilion – basic form middle** (`flush-basic-p`, plik `flush-p-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
+- **Generator Checks – Weekly – basic form middle** (`gen-basic`, plik `gen-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
 - **Monthly Tap Temperature Check TB (QHS-031)** (`temp-tb`, plik `temp-tb.docx`): `{temp}` `{name}` `{data}`

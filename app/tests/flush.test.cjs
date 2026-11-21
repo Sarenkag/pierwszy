@@ -37,17 +37,20 @@ test('fromPdf: exact outlet name wins over a prefix; ambiguous short caption is 
   assert.deepEqual(F.fromPdf(pdf, b).photos.map(p => p.tap), [2, 4]);
 });
 
-// 21/11/2026: basic form Flushing ze strefami (moduly/wzory/flush-basic-*.docx) – Grzegorz: grupy stref, TB bez apartamentów, stałe zdanie
+// 21/11/2026: basic form Flushing ze strefami (moduly/wzory: ramka basic.docx + flush-*-srodek.docx) – Grzegorz: grupy stref, TB bez apartamentów, stałe zdanie
 const Docxtemplater=require('docxtemplater'),fs2=require('node:fs'),path2=require('node:path');
+// wzór basic Flushing = ramka basic.docx + plik środka, składane przez moduł Wzory (Grzegorz 21/11/2026 17:33) – test bierze bajty z modułu jak apka
+const WZ=path2.join(__dirname,'../../moduly/wzory');globalThis.PizZip=PizZip;if(globalThis.window)globalThis.window.PizZip=PizZip;require(path2.join(WZ,'wzory.js'));const OW=(globalThis.window||globalThis).OESTWzory;
+for(const w of OW.lista())OW.ustaw(w.id,fs2.readFileSync(path2.join(WZ,w.plik)));
 const ALL='All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
 const PART='Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
 function basic(k,states={},notes={}){const f=P.forms.flush[k],taps=f.taps.map((n,i)=>({name:n,state:states[i]||'yes',note:notes[i]||''}));
-  const z=new PizZip(fs2.readFileSync(path2.join(__dirname,'../../moduly/wzory',f.wzorBasic+'.docx')));const dt=new Docxtemplater(z,{paragraphLoop:true,linebreaks:true,nullGetter:()=>''});
+  const z=new PizZip(OW.bajty(f.wzorBasic));const dt=new Docxtemplater(z,{paragraphLoop:true,linebreaks:true,nullGetter:()=>''});
   dt.render(Object.assign({title:f.title,date:'21/11/2026'},F.basicPola({taps,strefy:f.strefy})));return dt.getZip().file('word/document.xml').asText();}
 test('strefy: każdy kran dokładnie w jednej strefie, TB bez apartamentów, każdy budynek ma swój wzór basic',()=>{
   for(const k of ['TA','TB','P']){const f=P.forms.flush[k],w=[].concat(...f.strefy.map(z=>z[1]));
     assert.deepEqual([...w].sort(),[...f.taps].sort(),k);assert.equal(new Set(w).size,w.length,k);
-    assert.ok(fs2.existsSync(path2.join(__dirname,'../../moduly/wzory',f.wzorBasic+'.docx')),f.wzorBasic);}
+    assert.ok(OW.bajty(f.wzorBasic).length>1000,f.wzorBasic);}
   assert.ok(!P.forms.flush.TB.taps.some(t=>/Apartment/.test(t)));});
 test('basic Flushing: wszystkie Yes → ☑ przy każdym kranie, strefa „n/n”, zdanie ALL, bez Overall Condition i bez nawiasów',()=>{
   const x=basic('TB'),t=text(x);assert.doesNotMatch(t,/[{}]/);assert.equal((t.match(/☑/g)||[]).length,16);assert.doesNotMatch(t,/☒|N\/A|Overall Condition/);
