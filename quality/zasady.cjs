@@ -196,8 +196,21 @@ function analyse(www, opts) {
 // komentarze i treść napisów się nie liczą
 function funkcjeStrony(html) {
   const kod = zHtml(html).kod.replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/g, '""');
-  return (kod.match(/\bfunction\s*\*?\s*[A-Za-z_$][\w$]*\s*\(/g) || []).length
-    + (kod.match(/\b[A-Za-z_$][\w$]*\s*=\s*(?:async\s+)?(?:function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g) || []).length;
+  // jedna funkcja = jedna pozycja: „var p = function p()” liczy się raz (pozycja słowa function)
+  const poz = new Set();
+  for (const m of kod.matchAll(/\bfunction\s*\*?\s*[A-Za-z_$][\w$]*\s*\(/g)) poz.add(m.index);
+  const fn = /function\b/y, krotka = /[A-Za-z_$][\w$]*\s*=>/y, strzalka = /\s*=>/y;
+  for (const m of kod.matchAll(/\b[A-Za-z_$][\w$]*\s*=(?![=>])\s*(?:async\s+)?/g)) {
+    const i = m.index + m[0].length;
+    fn.lastIndex = krotka.lastIndex = i;
+    if (fn.test(kod) || krotka.test(kod)) { poz.add(i); continue; }
+    if (kod[i] !== '(') continue;
+    let g = 0, j = i;                       // parametry z zagnieżdżonymi nawiasami: „(x = Number(1)) =>”
+    for (; j < kod.length; j++) { if (kod[j] === '(') g++; else if (kod[j] === ')' && --g === 0) break; }
+    strzalka.lastIndex = j + 1;
+    if (j < kod.length && strzalka.test(kod)) poz.add(i);
+  }
+  return poz.size;
 }
 
 // funkcje z kodu: „function nazwa(…) {…}”, „nazwa = function(…) {…}”, strzałkowe „(…) => {…}” / „x => {…}”
