@@ -321,6 +321,11 @@
       "timeoutSec": 600
     },
     {
+      "file": "app/tests/generator-ui-check.cjs",
+      "passMarker": "GENERATOR PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/moduly-zasady-ui-check.cjs",
       "passMarker": "MODULY ZASADY UI PASS",
       "timeoutSec": 600

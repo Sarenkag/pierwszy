@@ -39,13 +39,17 @@ function load() {
   for (const f of ['vantify-plan.js', 'ppm.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
   return ctx.window;
 }
+// Własne inspekcje OEST spoza Vantify (zatwierdzone przez Grzegorza): Weekly Generator Check 21/11/2026.
+const WLASNE = ['gen-weekly'];
 test('78 zadań PPM z Vantify: każde ma kartę w apce, żadna karta nie jest spoza listy', () => {
   const P = load().OEST_PPM, names = Object.keys(VANTIFY_78), ids = new Set(P.tasks.map(t => t.id));
   assert.strictEqual(names.length, 78);
   for (const n of names) assert.ok(ids.has(VANTIFY_78[n]), 'brak karty dla: ' + n + ' → ' + VANTIFY_78[n]);
   const used = new Set(Object.values(VANTIFY_78));
-  for (const id of ids) assert.ok(used.has(id), 'karta spoza listy 78: ' + id);
-  assert.strictEqual(P.tasks.length, 70); // 78 zadań − 8 zadań Sub zebranych w karty z innym zadaniem
+  for (const id of WLASNE) used.add(id);
+  for (const id of ids) assert.ok(used.has(id), 'karta spoza listy 78 i spoza własnych OEST: ' + id);
+  for (const id of WLASNE) assert.ok(ids.has(id), 'brak własnej karty: ' + id);
+  assert.strictEqual(P.tasks.length, 70 + WLASNE.length); // 78 zadań − 8 zadań Sub zebranych w karty z innym zadaniem + własne OEST
   assert.strictEqual(ids.size, P.tasks.length); // bez powtórzonych id
 });
 test('przywrócone 5 in-house: grupa, częstotliwość jak w Vantify, bez zleceń i bez terminu na czystym telefonie', () => {

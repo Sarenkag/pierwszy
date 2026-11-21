@@ -81,6 +81,24 @@ window.OEST_PPM = {
       SPA: { points: true, ui: "checks", sheet: false, title: "Weekly Spa Checks", building: "B", col: "Confirmed",
         taps: ["Spa inspected (spa pool and plunge pool)", "Spa regularly supervised", "Water samples taken regularly", "Spa plant rooms clean and tidy",
           "Pumps operating correctly", "Filters operating correctly", "Readings within normal range", "Water clear", "No issues observed"] },
+      // Weekly Generator Check (Grzegorz 21/11/2026): własna inspekcja OEST, nie ma jej w Vantify – stały klocek uruchamiany ręcznie.
+      // Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard), dowolne zdjęcia i nasz formularz (lista punktów) w basic form.
+      // raport: true = „Nasz raport” włączony od razu, a zdjęcie formularza zostaje wymagane.
+      // Punkty 1:1 z kartki Smart „GENERATOR CHECKS – WEEKLY” (Document Ref: TP-025, zdjęcie Grzegorza 21/11/2026): 2 generatory, w każdym
+      // Fuel level (zapis %), Oil / Coolant / Water level i Leaks (wzrokowo), Control panel – available to start in AUTO; Acceptable Y/N = Yes/No.
+      // Do tego napięcie L1, L2, L3 (V) dla każdego generatora (Grzegorz 21/11/2026 16:37) i częstotliwość Hz (16:37); potwierdzenie rozruchu, silnik pracuje równo i stabilnie (16:37); na końcu powrót do AUTO i zabezpieczenie (16:38); obroty RPM, paliwo w % i litrach (16:38).
+      GEN: { points: true, ui: "checks", raport: true, title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
+        hint: ["Zrób zdjęcie wypełnionej kartki („Formularz”), zaznacz punkty (domyślnie Yes) i wpisz odczyty: paliwo w % i litrach, napięcia L1–L3 w V, częstotliwość w Hz, obroty RPM. Do raportu idzie nasz formularz, zdjęcia i zdjęcie kartki.",
+          "Take a photo of the filled-in paper form (“Form”), mark the checks (Yes by default) and type the readings: fuel in % and litres, L1–L3 voltage in V, frequency in Hz, engine RPM. The report gets our form, the photos and the form photo."],
+        summary: ["All generator checks acceptable – generators available to start in AUTO", "check(s) not acceptable – record on the Generator Fault & Remedial Actions Log"],
+        statement: ["All checks acceptable. Generators available to start in AUTO.",
+          "Faults / failures identified must be recorded on the Generator Fault & Remedial Actions Log with details of follow up actions taken to rectify."],
+        groups: [{ name: "Generator 1 – Serial 667449 · 5KJDD585ASB", n: 13 }, { name: "Generator 2", n: 13 }],
+        // środek basic form w stylu Flushing (Grzegorz 21/11/2026: „w tym samym stylu co najnowszy Flushing”): grupa na generator, 2 punkty w wierszu
+        strefy: [["Generator 1 – Serial 667449 · 5KJDD585ASB", ["Fuel level (% / litres) (G1)", "Oil level (G1)", "Coolant level (G1)", "Water level (G1)", "No leaks (G1)", "Control panel – available to start in AUTO (G1)", "Start-up carried out – engine running smoothly and stable (G1)", "L1 voltage (V) (G1)", "L2 voltage (V) (G1)", "L3 voltage (V) (G1)", "Frequency (Hz) (G1)", "Engine speed (RPM) (G1)", "Generator returned to AUTO, all secured (G1)"]], ["Generator 2", ["Fuel level (% / litres) (G2)", "Oil level (G2)", "Coolant level (G2)", "Water level (G2)", "No leaks (G2)", "Control panel – available to start in AUTO (G2)", "Start-up carried out – engine running smoothly and stable (G2)", "L1 voltage (V) (G2)", "L2 voltage (V) (G2)", "L3 voltage (V) (G2)", "Frequency (Hz) (G2)", "Engine speed (RPM) (G2)", "Generator returned to AUTO, all secured (G2)"]]],
+        etykieta: " \\(G\\d\\)$", // w raporcie i na ekranie bez „(G1)” – generator jest w nagłówku grupy (pełne nazwy muszą być różne)
+        odczyty: ["Fuel level (% / litres) (G1)", "L1 voltage (V) (G1)", "L2 voltage (V) (G1)", "L3 voltage (V) (G1)", "Frequency (Hz) (G1)", "Engine speed (RPM) (G1)", "Fuel level (% / litres) (G2)", "L1 voltage (V) (G2)", "L2 voltage (V) (G2)", "L3 voltage (V) (G2)", "Frequency (Hz) (G2)", "Engine speed (RPM) (G2)"], // pole na liczbę otwarte od razu pod punktem
+        taps: ["Fuel level (% / litres) (G1)", "Oil level (G1)", "Coolant level (G1)", "Water level (G1)", "No leaks (G1)", "Control panel – available to start in AUTO (G1)", "Start-up carried out – engine running smoothly and stable (G1)", "L1 voltage (V) (G1)", "L2 voltage (V) (G1)", "L3 voltage (V) (G1)", "Frequency (Hz) (G1)", "Engine speed (RPM) (G1)", "Generator returned to AUTO, all secured (G1)", "Fuel level (% / litres) (G2)", "Oil level (G2)", "Coolant level (G2)", "Water level (G2)", "No leaks (G2)", "Control panel – available to start in AUTO (G2)", "Start-up carried out – engine running smoothly and stable (G2)", "L1 voltage (V) (G2)", "L2 voltage (V) (G2)", "L3 voltage (V) (G2)", "Frequency (Hz) (G2)", "Engine speed (RPM) (G2)", "Generator returned to AUTO, all secured (G2)"] },
       "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
         groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
         taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },
@@ -149,6 +167,8 @@ window.OEST_PPM = {
     // 5 zadań in-house z listy 78 PPM (Vantify ppm.csv), które wypadły 31/10/2026 przy przejściu na katalog EFA-INS
     // (nie mają otwartych zleceń w eksporcie Job). Przywrócone za zgodą Grzegorza 09/11/2026 – te same id co przed 31/10.
     // Bez zleceń w vantify-plan.js: bez terminu, dopóki nie przyjdzie zlecenie z Vantify albo Grzegorz nie ustawi go w Update.
+    // własne inspekcje OEST (nie ma ich w Vantify): bez zleceń i bez terminu, uruchamiane ręcznie
+    { id: "gen-weekly", form: "folder", flush: "GEN", group: "elec", name: "Generator Checks – Weekly", freq: ["1W"] },
     { id: "shower", group: "water", name: "Showerhead Clean & De-scale", freq: ["3M"] },
     { id: "ahu", group: "mech", name: "Air Handling Units", freq: ["6M", "12M"] },
     { id: "efans", group: "mech", name: "Extract Fans", where: "Tower B", freq: ["6M"] },
@@ -398,7 +418,7 @@ window.OEST_PPM = {
   P.needsDefault = function (t) {
     var folder = t.form === "folder", pts = !!t.flush, F = pts && P.forms && P.forms.flush ? P.forms.flush[t.flush] : null, noSheet = !!(F && F.sheet === false);
     // noSheet (Spa): lista z apki włączona od razu, zdjęcie formularza niewymagane
-    return { q: (!folder && !t.cfg) || noSheet, p: true, t: pts, f: folder && !noSheet, sp: false, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
+    return { q: (!folder && !t.cfg) || noSheet || !!(F && F.raport), p: true, t: pts, f: folder && !noSheet, sp: false, sm: true, se: false, sg: false, xp: true, xw: true, one: true };
   };
   P.needs = function (t) { return Object.assign(P.needsDefault(t), needsAll()[t.id] || {}); };
   P.setNeeds = function (t, patch) {

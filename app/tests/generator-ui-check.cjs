@@ -1,0 +1,88 @@
+// Weekly Generator Check (Grzegorz 21/11/2026): własna inspekcja OEST, nie ma jej w Vantify – stały klocek uruchamiany ręcznie.
+// Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (26 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO), domyślnie Yes) w basic form.
+// Scenariusz: gen-weekly → lista włączona od razu → bez kartki przycisk prosi o zdjęcie formularza → kartka + 1 zdjęcie + odczyt paliwa w 📝
+// → Wyślij → PDF i Word z listą 26 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
+// Uruchomienie: node app/tests/generator-ui-check.cjs (po npm run copy-web); OEST_SHOTS=katalog → zrzuty ekranu.
+const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
+const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { docxText, docxImages, pdfText, pdfImages, includesFlat } = require('./raport-tresc.cjs');
+const root = path.resolve(__dirname, '../www');
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+const server = http.createServer((req, res) => {
+  const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
+  if (!p.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
+  fs.readFile(p, (e, b) => { if (e) { res.writeHead(404).end(); return; } res.setHeader('Content-Type', TYPES[path.extname(p)] || 'application/octet-stream'); res.end(b); });
+});
+const ID = 'gen-weekly', SHOTS = process.env.OEST_SHOTS || '';
+const POINTS = ['Fuel level (% / litres) (G1)', 'Oil level (G1)', 'Coolant level (G1)', 'Water level (G1)', 'No leaks (G1)', 'Control panel – available to start in AUTO (G1)', 'Start-up carried out – engine running smoothly and stable (G1)', 'L1 voltage (V) (G1)', 'L2 voltage (V) (G1)', 'L3 voltage (V) (G1)', 'Frequency (Hz) (G1)', 'Engine speed (RPM) (G1)', 'Generator returned to AUTO, all secured (G1)', 'Fuel level (% / litres) (G2)', 'Oil level (G2)', 'Coolant level (G2)', 'Water level (G2)', 'No leaks (G2)', 'Control panel – available to start in AUTO (G2)', 'Start-up carried out – engine running smoothly and stable (G2)', 'L1 voltage (V) (G2)', 'L2 voltage (V) (G2)', 'L3 voltage (V) (G2)', 'Frequency (Hz) (G2)', 'Engine speed (RPM) (G2)', 'Generator returned to AUTO, all secured (G2)'];
+const OK = 'All generator checks acceptable – generators available to start in AUTO', STMT = 'All checks acceptable. Generators available to start in AUTO.';
+const fails = []; let passed = 0;
+const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
+
+(async () => {
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
+  try {
+    browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
+    const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: SHOTS ? 2 : 1, serviceWorkers: 'block' });
+    await ctx.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' })); });
+    const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message));
+    const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: path.join(SHOTS, n + '.png'), fullPage: true }); } };
+    const queuedFn = () => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { try { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const all = g.result; if (!all.length) return res(null); const last = all[all.length - 1]; const b64 = u => { let s = ''; const a = new Uint8Array(u); for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode.apply(null, a.subarray(i, i + 32768)); return btoa(s); }; res({ n: all.length, files: (last.files || []).map(f => ({ name: f.name, data: f.bytes ? b64(f.bytes) : '' })) }); }; } catch (e) { res(null); } }; rq.onerror = () => res(null); });
+    const queued = () => pg.evaluate(queuedFn);
+    const waitQueue = async n =>  { for (let i = 0; i < 150; i++) { const q = await queued(); if (q && q.n >= n) return q; await pg.waitForTimeout(200); } return null; };
+    await pg.goto(B + '/index.html#home'); await pg.waitForFunction(() => window.OESTSettings);
+    await pg.evaluate(() => OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; return s; })); // adresat raportu
+    await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => document.getElementById('flOn') && document.getElementById('toQueue')); await pg.waitForTimeout(1500);
+
+    const s0 = await pg.evaluate(() => ({ on: document.getElementById('flOn').checked, rows: [...document.querySelectorAll('#flList .fl-row .txt')].map(e => e.textContent),
+      yes: document.querySelectorAll('#flList button[data-s="yes"].on').length, hint: document.getElementById('flHint').textContent,
+      send: document.getElementById('toQueue').textContent.trim(), shCam: !!document.getElementById('shCamIn') }));
+    await shot('1-start');
+    check(s0.on, 'nasz formularz (lista) włączony od razu');
+    check(JSON.stringify(s0.rows) === JSON.stringify(POINTS.map(p => p.replace(/ \(G\d\)$/, ''))), 'punkty jak w propozycji (' + JSON.stringify(s0.rows) + ')');
+    check(s0.yes === POINTS.length, 'wszystkie punkty domyślnie Yes (' + s0.yes + ')');
+    check(/kartki/.test(s0.hint) && !/Spa|klap|call point/i.test(s0.hint), 'podpowiedź dla generatora (' + s0.hint + ')');
+    const odcz = await pg.evaluate(() => [...document.querySelectorAll('#flList input.fl-note')].map(e => +e.getAttribute('data-fln')));
+    check(JSON.stringify(odcz) === JSON.stringify([0, 7, 8, 9, 10, 11, 13, 20, 21, 22, 23, 24]), 'pola odczytów (paliwo, L1–L3, Hz, RPM) otwarte od razu (' + odcz + ')');
+    check(s0.shCam, 'przycisk „Formularz” jest');
+    const nd = await pg.evaluate(id => { const P = window.OEST_PPM; return P && P.needs ? P.needs(P.byId(id)) : null; }, ID);
+    check(!!nd && nd.f === true && nd.q === true, 'zdjęcie formularza wymagane (jak AOV) i nasz raport włączony od razu (' + JSON.stringify(nd) + ')');
+
+    const jpeg = (w, h, kolor) => pg.evaluate(([w, h, kolor]) => new Promise(res => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = kolor; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.fillRect(w / 3, h / 3, w / 3, h / 3);
+      c.toBlob(b => { const fr = new FileReader(); fr.onload = () => res(fr.result.split(',')[1]); fr.readAsDataURL(b); }, 'image/jpeg', 0.8); }), [w, h, kolor]).then(b => Buffer.from(b, 'base64'));
+    await pg.setInputFiles('#shCamIn', { name: 'kartka.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1200, 1600, '#ddd') });
+    await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos img').length === 1, null, { timeout: 15000 });
+    await pg.setInputFiles('#camIn', { name: 'gen.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1600, 1200, '#3a7') });
+    await pg.waitForFunction(() => document.querySelectorAll('#photos img').length === 1, null, { timeout: 15000 });
+    // odczyty z panelu DSE 7320 (zdjęcia Grzegorza 21/11/2026): paliwo 29% / 229 l, L1–L3 251 V, 1500 RPM
+    for (const [i, v] of [[0, '29% / 229 l'], [7, '251'], [8, '251'], [9, '251'], [11, '1500']]) await pg.fill('#flList input[data-fln="' + i + '"]', v); await pg.waitForTimeout(500);
+    await shot('2-gotowe');
+    const send = await pg.evaluate(() => document.getElementById('toQueue').textContent.trim());
+    check(/^Wyślij/.test(send), 'po zdjęciu kartki przycisk to „Wyślij” (' + send + ')');
+    await pg.click('#toQueue');
+    const q1 = await waitQueue(1);
+    check(!!q1, 'raport w kolejce');
+    const files = q1 ? q1.files : [], pdfF = files.find(f => f.name.endsWith('.pdf')), docF = files.find(f => f.name.endsWith('.docx'));
+    check(!!pdfF && !!docF, 'raport w Word i PDF (' + files.map(f => f.name).join(', ') + ')');
+    if (pdfF && docF) {
+      const P = pdfText(Buffer.from(pdfF.data, 'base64')), W = docxText(Buffer.from(docF.data, 'base64'));
+      for (const [n, T] of [['PDF', P], ['Word', W]]) {
+        check(POINTS.every(p => includesFlat(T, p.replace(/ \(G\d\)$/, ''))) && !/\(G[12]\)/.test(T), n + ': wszystkie punkty w grupach, bez dopisku (G1)/(G2)');
+        check(includesFlat(T, 'Fuel level (% / litres) – 29% / 229 l') && includesFlat(T, 'L1 voltage (V) – 251') && includesFlat(T, 'Engine speed (RPM) – 1500'), n + ': odczyty przy punktach');
+        check(includesFlat(T, 'GENERATOR 1 – SERIAL 667449') && includesFlat(T, 'GENERATOR 2'), n + ': grupy generatorów');
+        check(includesFlat(T, STMT), n + ': zdanie pod grupami');
+        check(includesFlat(T, 'Generator Checks – Weekly'), n + ': tytuł Generator Checks – Weekly');
+      }
+      check(pdfImages(Buffer.from(pdfF.data, 'base64')) >= 2, 'PDF: zdjęcie kartki i zdjęcie ogólne');
+      check(docxImages(Buffer.from(docF.data, 'base64')) >= 2, 'Word: zdjęcie kartki i zdjęcie ogólne');
+      if (SHOTS) { fs.writeFileSync(path.join(SHOTS, 'raport.pdf'), Buffer.from(pdfF.data, 'base64')); fs.writeFileSync(path.join(SHOTS, 'raport.docx'), Buffer.from(docF.data, 'base64')); }
+    }
+    check(!errors.length, 'błędy strony: ' + errors.join(' | '));
+  } catch (e) { fails.push('przerwane: ' + (e && e.stack || e)); }
+  finally { if (browser) await browser.close(); server.close(); }
+  console.log('generator-ui-check: ' + passed + ' OK, ' + fails.length + ' błędów');
+  fails.forEach(f => console.log('  ✗ ' + f));
+  if (!fails.length) console.log('GENERATOR PASS: Generator Checks – Weekly (TP-025) – kartka wymagana, 26 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO), odczyt w notatce, raport Word i PDF');
+  process.exit(fails.length ? 1 : 0);
+})();

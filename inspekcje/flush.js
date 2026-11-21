@@ -153,7 +153,8 @@
       var idx = z[1].map(function (nm) { for (var i = 0; i < f.taps.length; i++) if (f.taps[i].name === nm) return i; throw Error("FLUSH_ZONE"); });
       o["zone" + (k + 1)] = idx.filter(function (i) { return f.taps[i].state === "yes"; }).length + "/" + idx.length;
     });
-    o.statement = all ? STATEMENT.all : STATEMENT.part;
+    var st = f.statement || [STATEMENT.all, STATEMENT.part]; // zdanie z konfiguracji typu (Generator), domyślnie Flushing
+    o.statement = all ? st[0] : st[1];
     return o;
   }
   // PDF basic form: te same strefy co Word (nagłówek strefy, 2 krany w wierszu, kratka / N/A, zdanie w szarej ramce).
@@ -182,7 +183,7 @@
       for (var r = 0; r < nr; r++) {
         pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
         var cells = [0, 1].map(function (c) { var nm = z[1][r * 2 + c], t = nm == null ? null : f.taps.filter(function (q) { return q.name === nm; })[0];
-          return t ? { t: t, ls: pdf.splitTextToSize(nm + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
+          return t ? { t: t, ls: pdf.splitTextToSize((f.etykieta ? nm.replace(new RegExp(f.etykieta), "") : nm) + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
         // notatka łamie się w komórce jak w Wordzie; bardzo długa – w partiach po 30 linii na kolejnych stronach (jak {details})
         var nl = Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; }));
         for (var j = 0; j * 30 < nl; j++) {
