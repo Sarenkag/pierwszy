@@ -9,7 +9,7 @@
 // Wynik NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 // Uruchomienie: node app/tests/formularz-ptaszek-ui-check.cjs (po npm run copy-web); OEST_SHOTS=katalog → zrzuty ekranu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
@@ -87,8 +87,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     const pdfF = (files || []).find(f => f.name.endsWith('.pdf')), docF = (files || []).find(f => f.name.endsWith('.docx'));
     check(!!pdfF && !!docF, 'raport w Word i PDF (' + (files || []).map(f => f.name).join(', ') + ')');
     if (pdfF) {
-      const pdf = Buffer.from(pdfF.data, 'base64').toString('latin1');
-      const boxes = [...pdf.matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g)].map(m => +m[1] > +m[2] ? 'L' : 'P');
+      const boxes = [require('./raport-tresc.cjs').pdfOrientacja(Buffer.from(pdfF.data, 'base64'))];
       check(boxes.join('') === 'LP', 'PDF: strona 1 pozioma (formularz), strona 2 pionowa z 5 małymi zdjęciami (' + boxes.join('') + ')');
       if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'raport.pdf'), Buffer.from(pdfF.data, 'base64'));
     }

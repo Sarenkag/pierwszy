@@ -8,7 +8,7 @@
 // raport z PDF i Word w kolejce). Limit dla raportu zostaje taki jak był: 3,5 s od „Wyślij”, inaczej FAIL jak dotąd.
 // Inspekcje idą po kilka naraz (OEST_RAPORT_NARAZ, domyślnie 3), każda w osobnym kontekście przeglądarki = osobne dane, jak dotąd.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const { inspections, tasks } = require('./ppm-lista.cjs'), { docxText, docxHighlighted, docxImages, pdfText, pdfPages, pdfImages, includesFlat } = require('./raport-tresc.cjs');
 const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 const server = http.createServer((req, res) => {
@@ -53,7 +53,7 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
       else if (await pg.locator('#galIn').count()) { await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
       if (await pg.locator('#toQueue').isDisabled()) { const ok = pg.locator('[data-allok], #allOk, button:has-text("Wszystko OK")').first(); if (await ok.count()) await ok.click().catch(() => {}); await pg.waitForTimeout(300); }
       if (await pg.locator('#toQueue').isDisabled()) { bad.push(id + ': Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')'); await ctx.close(); return; }
-      const t0 = Date.now(); await pg.click('#toQueue'); const naCzas = await pg.waitForFunction(queued, null, { timeout: RAPORT_MS, polling: 100 }).then(() => true, () => false); czasy.push(Date.now() - t0);
+      const t0 = Date.now(); await pg.click('#toQueue'); let naCzas = false; while (!naCzas && Date.now() - t0 < RAPORT_MS) { naCzas = await pg.evaluate(queued).catch(() => false); if (!naCzas) await pg.waitForTimeout(100); } czasy.push(Date.now() - t0); // czekanie na wynik obietnicy (waitForFunction brał samą obietnicę za „prawdę”)
       if (!naCzas) { bad.push(id + ': Wyślij nie dodało raportu (PDF + Word) do kolejki w ' + RAPORT_MS + ' ms' + (errs.length ? ' (' + errs.join(' | ') + ')' : '')); await ctx.close(); return; } // limit jak dawne stałe czekanie: przekroczenie = FAIL
       await pg.waitForTimeout(200);
       const files = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { try { const g = rq.result.transaction('queue').objectStore('queue').getAll(); g.onsuccess = () => { const last = g.result[g.result.length - 1]; if (!last) return res(null); const b64 = u => { let s = ''; const a = new Uint8Array(u); for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode.apply(null, a.subarray(i, i + 32768)); return btoa(s); }; res((last.files || []).map(f => ({ name: f.name, data: f.bytes ? b64(f.bytes) : '' }))); }; } catch (e) { res(null); } }; rq.onerror = () => res(null); }));

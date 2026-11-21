@@ -20,7 +20,6 @@ Wpisy zastane, sprzed rejestru (stan main 20/11/2026). Kolumna „Gdzie używana
 | `@capgo/capacitor-social-login` | 8.5.15 | MPL-2.0 | logowanie wymaga sieci | `app/www/index.html` (logowanie Google) | zastana |
 | `docxtemplater` | 3.71.0 | MIT | tak (`www/inspekcje/lib`) | `inspekcje/index.html` | zastana |
 | `pizzip` | 3.3.0 | MIT lub GPL-3.0 | tak (`www/inspekcje/lib`) | `moduly/raporty`, `moduly/word-pdf`, `inspekcje/index.html` | zastana |
-| `jspdf` | 4.2.1 | MIT | tak (`www/inspekcje/lib`) | `moduly/word-pdf`, `moduly/czcionka-pdf`, `inspekcje/index.html`, `app/www/index.html` | zastana |
 | LibreOfficeKit – silnik z oficjalnego LibreOffice Viewer (F-Droid, `org.documentfoundation.libreoffice_135.apk`, sha256 sprawdzany) + powiązania `org.libreoffice.kit` (bez zmian) | 26.2.7.3 | MPL-2.0 | tak (silnik w telefonie, bez sieci; +~79 MB APK) | adapter `moduly/word-pdf` (`zWorda`) → `LibreOfficePlugin.java`; silnik dokłada CI `app/scripts/libreoffice-silnik.py` | Grzegorz 20/11/2026, karta „Tak, LibreOfficeKit” (PDF z Worda); 23:42 „zrobienie update'u oryginalnej apki” |
 | `pdf-lib` | 1.17.1 | MIT | tak (`www/inspekcje/lib`) | `moduly/word-pdf` (`zWordow`: sklejenie PDF-ów z silnika – Flushing: formularz firmy + basic form) | Grzegorz 21/11/2026, PR #196 (PDF wszystkich raportów z Worda) – czeka na jego „tak” |
 | `@ionic/core` | 9.0.13 | MIT | tak | `moduly/szkielet` (rama, komponenty, Wstecz) | Grzegorz 21/11/2026, wątek „Ionic + Vue” (apka stoi na Ionic + Vue) |
@@ -36,3 +35,5 @@ Wpisy zastane, sprzed rejestru (stan main 20/11/2026). Kolumna „Gdzie używana
 | `playwright-core` | 1.48.2 | Apache-2.0 | `quality/package.json` (`devDependencies`), testy przeglądarkowe G2 | zastana |
 | `vite` | 8.3.8 | MIT | `app/package.json` (`devDependencies`), budowanie paczki `moduly/szkielet` (`npm run copy-web`) | Grzegorz 21/11/2026, wątek „Ionic + Vue” (apka stoi na Ionic + Vue) |
 | `@vitejs/plugin-vue` | 6.0.11 | MIT | `app/package.json` (`devDependencies`), budowanie ekranów Vue | Grzegorz 21/11/2026, wątek „Ionic + Vue” (apka stoi na Ionic + Vue) |
+| `pdfjs-dist` (pdf.js, Mozilla) | 5.7.284 | Apache-2.0 | `app/package.json` (`devDependencies`), `app/tests/pdf-czytaj.mjs`: testy czytają PDF z LibreOffice (tekst, czcionki, zdjęcia, strony) zamiast własnego parsera | Grzegorz 21/11/2026 17:57, karta „Tak, LibreOffice i pdf.js w testach” |
+| LibreOffice (`soffice --headless`) + `fonts-crosextra-carlito`, `fonts-opensymbol` | z Ubuntu runnera (24.2.x; lokalnie 24.2.7.2) | MPL-2.0 / OFL | `app/tests/przegladarka.cjs`: testy G2 konwertują Word prawdziwym LibreOffice (jak silnik w telefonie); instalacja w `.github/workflows/quality-gate.yml` i `android.yml` | Grzegorz 21/11/2026 17:57, karta „Tak, LibreOffice i pdf.js w testach” |

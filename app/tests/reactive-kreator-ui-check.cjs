@@ -1,7 +1,7 @@
 // Kreator opisu zlecenia Reactive (Grzegorz 18/11/2026 „Tak, ruszaj”, PROD-039): zastępuje „Typ” i „Co dokładnie”.
 // Uruchomienie: node app/tests/reactive-kreator-ui-check.cjs
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www'), SHOTS = process.env.OEST_SHOTS || '';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

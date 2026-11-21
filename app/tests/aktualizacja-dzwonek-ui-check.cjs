@@ -3,7 +3,7 @@
 // Udajemy apkę Android (Capacitor) z wersją 671 i wydanie apk-672 na GitHubie. Wynik NIE zastępuje sprawdzenia na Pixelu.
 // OEST_ZRZUTY=<folder> zapisuje zrzuty PL/EN.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www'), OUT = process.env.OEST_ZRZUTY || '';
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

@@ -15,7 +15,7 @@
 // Test czeka na stan (raport w kolejce), nie mierzy czasu.
 // NIE sprawdza: wyglądu (czcionki, odstępy, położenie na stronie) – to wymaga porównania obrazów stron; kolejności słów między tabelami.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const { inspections } = require('./ppm-lista.cjs'), { wordPdfDiff } = require('./raport-tresc.cjs');
 const BASELINE = path.resolve(__dirname, '../../quality/baselines/word-pdf.json');
 // Numer zlecenia Vantify (Grzegorz 20/11/2026): na końcu nazwy KAŻDEGO pliku raportu, a w raporcie na wzorze Engineers Report

@@ -4,7 +4,7 @@
 // Wygasłe logowanie: okno Vantify do zalogowania, po „Zakończ” pobranie jeszcze raz. Przy starcie: najwyżej co 4 h,
 // nowe/zamknięte zlecenia → pytanie „Pokazać?”, wygasłe logowanie → pytanie najwyżej raz na dobę.
 // Zapamiętany login i hasło: pola w Ustawienia → Vantify, „Pokaż”, zmiana bez pomocy, odrzucone hasło → prośba o nowe.
-const {chromium}=require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const {chromium}=require('./przegladarka.cjs');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const base=path.resolve(__dirname,'../www');
 const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url.split('?')[0]);let p=path.resolve(base,'.'+name);if(!p.startsWith(base+path.sep)&&p!==base){res.writeHead(403);return res.end();}if(name.endsWith('/'))p=path.join(p,'index.html');fs.readFile(p,(e,b)=>{if(e){res.writeHead(404);return res.end();}res.setHeader('Content-Type',p.endsWith('.js')?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream');res.end(b);});});

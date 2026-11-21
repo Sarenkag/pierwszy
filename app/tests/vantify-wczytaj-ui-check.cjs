@@ -2,7 +2,7 @@
 // Przycisk „Wczytaj eksport” z pliku usunięty 18/11/2026 (Grzegorz: „Pobierz” wczytuje samo) – ten sam podgląd z CSV sprawdzany przez okno Vantify.
 // Scenariusz Grzegorza: eksport z Vantify z nowszą datą, część zleceń zamknięta, nowe zlecenia; po zapisie lista PPM i strona
 // inspekcji biorą terminy z wczytanego pliku, także po ponownym uruchomieniu. Starszy plik niczego nie zmienia.
-const {chromium}=require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const {chromium}=require('./przegladarka.cjs');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const base=path.resolve(__dirname,'../www');
 const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url.split('?')[0]);let p=path.resolve(base,'.'+name);if(!p.startsWith(base+path.sep)&&p!==base){res.writeHead(403);return res.end();}if(name.endsWith('/'))p=path.join(p,'index.html');fs.readFile(p,(e,b)=>{if(e){res.writeHead(404);return res.end();}res.setHeader('Content-Type',p.endsWith('.js')?'text/javascript; charset=utf-8':p.endsWith('.css')?'text/css':p.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream');res.end(b);});});

@@ -139,6 +139,13 @@ jobs:
       - name: Playwright (wersja przypięta w quality/package-lock.json)
         working-directory: quality
         run: npm ci
+      # PDF raportu robi TYLKO LibreOffice z Worda (Grzegorz 21/11/2026) – testy konwertują Word prawdziwym LibreOffice
+      # (app/tests/przegladarka.cjs), czytają PDF przez pdf.js (pdfjs-dist z app/package.json). Carlito = odpowiednik metryczny Calibri.
+      - name: LibreOffice (silnik PDF w testach)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-opensymbol
+          soffice --version
       - name: Testy przeglądarkowe
         run: |
           export OEST_PLAYWRIGHT_PATH="$GITHUB_WORKSPACE/quality/node_modules/playwright-core"

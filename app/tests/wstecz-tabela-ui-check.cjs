@@ -9,7 +9,7 @@
 // nowa rozbieżność = FAIL, rozbieżność z listy, której już nie ma = FAIL (usuń wpis). Ekran, którego nie da się otworzyć = FAIL.
 // Wynik NIE zastępuje sprawdzenia na Pixelu 8 Pro (gest Wstecz).
 const fs = require('node:fs'), path = require('node:path');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const { REPO, MAPA, serwer, KONTO, zasiej, szkic, ID, DOKLEJ, adres: adresEkranu } = require('./ekrany-dane.cjs');
 const root = path.resolve(__dirname, '../www');
 const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');

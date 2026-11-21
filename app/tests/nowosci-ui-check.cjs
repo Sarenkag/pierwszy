@@ -8,7 +8,7 @@
 // Chrome 412×915 jak Pixel 8 Pro. Zapytania do Google News są podstawione (stałe dane), nic nie wychodzi do sieci.
 // Wynik NIE zastępuje sprawdzenia na Pixelu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
+const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const server = http.createServer((req, res) => {

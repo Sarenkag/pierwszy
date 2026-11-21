@@ -9,7 +9,7 @@
 //  4. raport: zdjęcia zmniejszane raz – drugie Wyślij tej samej inspekcji nie dekoduje ich ponownie; Word i PDF w kolejce poniżej 1 MB.
 // Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
-const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
+const { chromium } = require('./przegladarka.cjs'), root = path.resolve(__dirname, '../www');
 const LIMIT = 1024 * 1024, GENERAL = 7, PODGLAD_MS = 600; // podgląd po zdjęciu w teście trwa 600 ms (człowiek zwykle patrzy dłużej)
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {
@@ -75,7 +75,9 @@ async function run(browser, url, worker) {
     await pg.click('#toQueue');
     const asked = await pg.waitForSelector('.oest-ask', { timeout: 8000 }).then(() => true, () => false);
     if (asked) await pg.click('.oest-ask [data-a="ok"]');
-    await pg.waitForFunction(n => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result > n); }; }), q, { timeout: 120000, polling: 500 });
+    // czekanie na WYNIK obietnicy (waitForFunction brał samą obietnicę za „prawdę” i nie czekał na raport)
+    const ile = () => pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result); }; }));
+    const t0 = Date.now(); while (!((await ile()) > q)) { if (Date.now() - t0 > 120000) throw Error('Wyślij nie dodało raportu do kolejki w 120 s'); await pg.waitForTimeout(500); }
     await pg.waitForTimeout(1500);
     return (await pg.evaluate(() => window.__dec)) - d;
   }
