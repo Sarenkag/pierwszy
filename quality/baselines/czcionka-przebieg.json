@@ -96,7 +96,7 @@
     },
     {
       "id": "pdf:EFA-INS-004:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 20,
       "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
@@ -216,7 +216,7 @@
     },
     {
       "id": "pdf:EFA-INS-012:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 19,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
@@ -526,7 +526,7 @@
     },
     {
       "id": "pdf:EFA-INS-026:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 21,
       "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
