@@ -857,15 +857,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|pad|inspekcje/index.html",
-      "rule": "JM",
-      "detail": "inspekcje/index.html: własna kopia funkcji pad (zera z przodu w dacie) – 2× poza właścicielem (zakazane).",
-      "maks": 2,
-      "punkt": "D24",
-      "usuwa": "U1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|pad|moduly/zdjecia/zdjecia.js",
       "rule": "JM",
       "detail": "moduly/zdjecia/zdjecia.js: własna kopia funkcji pad (zera z przodu w dacie) – 1× poza właścicielem (zakazane).",
