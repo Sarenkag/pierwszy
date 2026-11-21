@@ -165,23 +165,27 @@ function wordPdfDiff(wordBufs, pdfBufs) {
 function docxRunFonts(buf) {
   const zip = new PizZip(buf), xml = f => zip.file(f) ? zip.file(f).asText() : '';
   const theme = xml('word/theme/theme1.xml'), themeFont = t => { const blk = /^major/.test(t) ? /<a:majorFont>([\s\S]*?)<\/a:majorFont>/.exec(theme) : /<a:minorFont>([\s\S]*?)<\/a:minorFont>/.exec(theme); const m = blk && /<a:latin typeface="([^"]*)"/.exec(blk[1]); return m ? m[1] : null; };
-  const rf = rpr => { const m = rpr && /<w:rFonts\b([^>]*)\/?>/.exec(rpr); if (!m) return null; const a = /w:ascii="([^"]+)"/.exec(m[1]), t = /w:asciiTheme="([^"]+)"/.exec(m[1]); return t ? themeFont(t[1]) : a ? unxml(a[1]) : null; };
+  // k = 'ascii' (znaki do U+007F) albo 'hAnsi' (pozostałe znaki łacińskie, np. „—”, „ł”) – Word dobiera czcionkę osobno dla każdego zakresu
+  const rf = (rpr, k) => { const m = rpr && /<w:rFonts\b([^>]*)\/?>/.exec(rpr); if (!m) return null; const a = new RegExp('w:' + k + '="([^"]+)"').exec(m[1]), t = new RegExp('w:' + k + 'Theme="([^"]+)"').exec(m[1]); return t ? themeFont(t[1]) : a ? unxml(a[1]) : null; };
   const styles = xml('word/styles.xml'), byId = new Map();
   for (const m of styles.matchAll(/<w:style\b([^>]*)>([\s\S]*?)<\/w:style>/g)) { const id = /w:styleId="([^"]+)"/.exec(m[1]); if (id) byId.set(id[1], { attrs: m[1], body: m[2] }); }
-  const styleFont = (id, seen = new Set()) => { const st = id && byId.get(id); if (!st || seen.has(id)) return null; seen.add(id); const r = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(st.body), f = rf(r && r[1]); if (f) return f; const b = /<w:basedOn w:val="([^"]+)"/.exec(st.body); return b ? styleFont(b[1], seen) : null; };
+  const styleFont = (id, k, seen = new Set()) => { const st = id && byId.get(id); if (!st || seen.has(id)) return null; seen.add(id); const r = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(st.body), f = rf(r && r[1], k); if (f) return f; const b = /<w:basedOn w:val="([^"]+)"/.exec(st.body); return b ? styleFont(b[1], k, seen) : null; };
   const defPara = [...byId.entries()].find(([, v]) => /w:type="paragraph"/.test(v.attrs) && /w:default="(?:1|true)"/.test(v.attrs));
-  const dd = /<w:rPrDefault>\s*<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(styles), docDefault = rf(dd && dd[1]);
+  const dd = /<w:rPrDefault>\s*<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(styles), docDefault = k => rf(dd && dd[1], k);
   const parts = Object.keys(zip.files).filter(f => /^word\/(document|header\d*|footer\d*)\.xml$/.test(f)).sort(), out = [];
   for (const part of parts) for (const p of xml(part).split('</w:p>')) {
     const pp = /<w:pPr>([\s\S]*?)<\/w:pPr>/.exec(p), ps = pp && /<w:pStyle w:val="([^"]+)"/.exec(pp[1]);
-    const paraFont = (ps && styleFont(ps[1])) || (defPara && styleFont(defPara[0])) || docDefault;
+    const paraFont = k => (ps && styleFont(ps[1], k)) || (defPara && styleFont(defPara[0], k)) || docDefault(k);
     for (const r of p.matchAll(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/g)) {
       const rp = /<w:rPr>([\s\S]*?)<\/w:rPr>/.exec(r[1]), rs = rp && /<w:rStyle w:val="([^"]+)"/.exec(rp[1]);
-      const font = rf(rp && rp[1]) || (rs && styleFont(rs[1])) || paraFont || null;
+      const fontK = k => rf(rp && rp[1], k) || (rs && styleFont(rs[1], k)) || paraFont(k) || null;
       const sym = [...r[1].matchAll(/<w:sym\b[^>]*w:font="([^"]+)"[^>]*\/>/g)];
       for (const m of sym) out.push({ part: part.slice(5, -4), text: /w:char="F052"/.test(m[0]) ? '☑' : /w:char="F054"/.test(m[0]) ? '☒' : '(symbol)', font: unxml(m[1]), sym: true });
       const text = [...r[1].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map(m => unxml(m[1])).join('');
-      if (text.trim()) out.push({ part: part.slice(5, -4), text, font });
+      // znaki ASCII czcionką w:ascii, pozostałe czcionką w:hAnsi – osobne wpisy, gdy przebieg ma oba rodzaje
+      const asc = text.replace(/[^\u0000-\u007f]/g, ''), hi = text.replace(/[\u0000-\u007f]/g, '');
+      if (asc.trim()) out.push({ part: part.slice(5, -4), text, font: fontK('ascii'), zakres: 'ascii' });
+      if (hi.trim()) out.push({ part: part.slice(5, -4), text, font: fontK('hAnsi'), zakres: 'hAnsi' });
     }
   }
   return out;

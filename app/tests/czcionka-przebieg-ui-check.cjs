@@ -8,7 +8,9 @@
 //  - pdf:<id>:<plik>:<czcionka Worda>→<czcionka PDF> – napis w PDF inną czcionką niż jego przebieg w Wordzie,
 //  - pdf:<id>:<plik>:brak:<czcionka Worda> – czcionki z Worda nie ma w PDF w żadnym napisie, a nie wyszła jako „→” (np. kratki narysowane kreskami).
 // Rozbieżności, które już są w apce, są na liście quality/baselines/czcionka-przebieg.json (lista może tylko maleć; naprawa: faza 4 planu):
-// nowa = FAIL, z listy, której już nie ma = FAIL (usuń wpis), raport, którego nie da się sprawdzić = FAIL.
+// nowa = FAIL, z listy, której już nie ma = FAIL (usuń wpis), raport, którego nie da się sprawdzić = FAIL;
+// „maks” = liczba trafień wpisu (przebiegi Worda / napisy PDF): więcej = FAIL (rozlanie), mniej = FAIL do czasu obniżenia „maks”.
+// Word: znaki ASCII czcionką w:ascii, pozostałe (np. „—”, „ł”) czcionką w:hAnsi – każdy zakres sprawdzany osobno.
 // NIE sprawdza: PDF z prawdziwego silnika LibreOffice na Pixelu (tam czcionki zależą od czcionek w APK – sprawdzenie na telefonie).
 const fs = require('node:fs'), path = require('node:path');
 const { zbierz } = require('./raporty-kolejka.cjs');
@@ -25,7 +27,8 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
   const bad = [], roz = new Map(), bezTekstu = [];
   let sprawdzen = 0;
   const sp = (ok, m) => { sprawdzen++; if (!ok) bad.push(m); return ok; };
-  const dodaj = (id, opis) => { if (!roz.has(id)) roz.set(id, opis); };
+  // liczba trafień każdej rozbieżności (przebiegi Worda / napisy PDF): rozlanie zastanej rozbieżności na kolejne miejsca = FAIL („maks” w liście)
+  const dodaj = (id, opis) => { const v = roz.get(id); if (v) v.n++; else roz.set(id, { opis, n: 1 }); };
   const { raporty, bledy, oczekiwane } = await zbierz({ wtyczka: false });
   bad.push(...bledy);
   for (const { id, pliki, errs } of raporty) {
@@ -48,7 +51,7 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
       for (const t of pr) {
         let ocz;
         if (KRATKA.test(t.text)) ocz = [...new Set(runs.filter(r => r.sym || KRATKA.test(r.text)).map(r => r.font || 'brak'))];
-        else { const ft = flat(t.text); ocz = [...new Set(runs.filter(r => !r.sym && flat(r.text).length > 1 && (flat(r.text).includes(ft) || ft.includes(flat(r.text)))).map(r => r.font || 'brak'))]; }
+        else { const ft = flat(t.text), zak = new Set([/[\u0000-\u007f]/.test(t.text) && 'ascii', /[^\u0000-\u007f]/.test(t.text) && 'hAnsi']); ocz = [...new Set(runs.filter(r => !r.sym && zak.has(r.zakres) && flat(r.text).length > 1 && (flat(r.text).includes(ft) || ft.includes(flat(r.text)))).map(r => r.font || 'brak'))]; }
         if (!ocz.length) ocz = wszystkie;
         sprawdzen++; if (ocz.some(f => rodzina(f) === rodzina(t.font))) continue;
         for (const f of ocz) { zle.add(f); dodaj('pdf:' + id + ':' + cz + ':' + f + '→' + t.font, id + ': „' + p.name + '” napis „' + t.text.slice(0, 40) + '” czcionką ' + t.font + ', w Wordzie ' + ocz.join(' / ')); }
@@ -60,10 +63,15 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
     sp(!errs.length, id + ': błędy strony: ' + errs.join(' | '));
   }
   sp(raporty.length === oczekiwane, 'sprawdzono ' + raporty.length + ' z ' + oczekiwane + ' raportów (pominięcie to nie PASS)');
-  const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8')), known = new Set(base.entries.map(e => e.id));
-  for (const [k, opis] of roz) if (!known.has(k)) bad.push('nowa rozbieżność spoza listy ' + path.basename(BASELINE) + ': ' + k + ' – ' + opis);
+  const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8')), known = new Set(base.entries.map(e => e.id)), maks = new Map(base.entries.map(e => [e.id, e.maks]));
+  for (const [k, { opis, n }] of roz) {
+    if (!known.has(k)) { bad.push('nowa rozbieżność spoza listy ' + path.basename(BASELINE) + ': ' + k + ' – ' + opis); continue; }
+    const m = maks.get(k);
+    if (typeof m !== 'number' || n > m) bad.push(k + ': ' + n + ' trafień, na liście maks ' + m + ' – zastana rozbieżność objęła nowe miejsca');
+    else if (n < m) bad.push(k + ': ' + n + ' trafień, na liście maks ' + m + ' – obniż „maks” do ' + n + ' (lista maleje)');
+  }
   for (const k of known) if (!roz.has(k)) bad.push('wpis ' + k + ' z listy ' + path.basename(BASELINE) + ' już nie występuje – usuń go (lista maleje)');
-  if (process.env.OEST_DEBUG) console.log(JSON.stringify([...roz].map(([id, reason]) => ({ id, reason })), null, 1));
+  if (process.env.OEST_DEBUG) console.log(JSON.stringify([...roz].map(([id, { opis, n }]) => ({ id, maks: n, reason: opis })), null, 1));
   if (bad.length) { console.error('CZCIONKA PRZEBIEG UI FAIL:\n - ' + bad.join('\n - ')); process.exit(1); }
   console.log('CZCIONKA PRZEBIEG UI PASS: ' + raporty.length + ' raportów (inspekcje EFA-INS z listy PPM + Reactive), czcionka każdego przebiegu Worda i napisu PDF; Word bez tekstu (same zdjęcia): ' + (bezTekstu.join(', ') || 'brak') + '; znane rozbieżności z listy: ' + roz.size + '; ' + sprawdzen + ' sprawdzeń');
 })().catch(e => { console.error('CZCIONKA PRZEBIEG UI FAIL:', e && e.stack || e); process.exit(1); });
