@@ -250,22 +250,23 @@
       step = "upload";
       return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { sent.push({ href: u.href, file: u.file, resource: u.resource, title: f.title, name: f.name, type: f.type || "image/jpeg" }); }); }); }, Promise.resolve()).then(function () {
         step = "create";
-        // przy zakładaniu tylko pierwsze zdjęcie – tak jak w zapisie „Zbadaj” 18/11 (files.links z jednym plikiem, 201); 3 zdjęcia naraz
-        // Vantify odrzucił (Grzegorz 21/11/2026, http400). Pozostałe po założeniu do tego samego numeru przez Files → Add (też z zapisu)
-        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent.slice(0, 1), priority: a.priority }));
+        // zlecenie bez linków do zdjęć: zdjęcie w zakładaniu Vantify odrzucał („files[links][0]: File resource could not be found”,
+        // Grzegorz 21/11/2026), a bez zdjęć zakładanie przechodzi. Zdjęcia (jeśli są – nie zawsze są) zaraz po założeniu do tego samego
+        // numeru przez Files → Add (zapis „Zbadaj” 18/11, 201); odmowa przy zdjęciu nie cofa założenia, powód wraca w photoError
+        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: [], priority: a.priority }));
       }).then(function (r) {
-        var id = r && r.id, hrefs = sent.map(function (f) { return f.href; }); if (!id) return end({ status: "error", code: "noid" });
+        var id = r && r.id, hrefs = sent.map(function (f) { return f.href; }), photoError = ""; if (!id) return end({ status: "error", code: "noid" });
         step = "check";
         // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
         return job(id).then(function (j) {
-          var rest = sent.slice(1), Wa = W.attach, now = new Date();
+          var rest = sent, Wa = W.attach, now = new Date();
           // błąd przy dosyłaniu nie cofa założenia: numer wraca, brakujące zdjęcia pokaże „⚠ Vantify #nr · zdjęcia n/m”
           return (rest.length ? (Wa ? Promise.resolve() : visOf(j).then(function (v) { Wa = built("attach", { visibility: v }); })).then(function () {
             return rest.reduce(function (p, f) { return p.then(function () { return req("POST", "/sites/" + site + "/jobs/" + id + "/files", attach(Wa, { title: f.title, href: f.href, date: now })); }); }, Promise.resolve());
-          }).catch(function () {}).then(function () { return job(id).catch(function () { return j; }); }) : Promise.resolve(j));
+          }).catch(function (e) { photoError = (e && (e.msg || e.code)) || "error"; }).then(function () { return job(id).catch(function () { return j; }); }) : Promise.resolve(j));
         }).then(function (j) {
           // po założeniu każdy błąd sprawdzenia (też wygasłe logowanie) = „nie wiadomo”, numer zlecenia zawsze wraca (przegląd Codex #167)
-          return seenOf(j, hrefs).catch(function () { return null; }).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
+          return seenOf(j, hrefs).catch(function () { return null; }).then(function (l) { var o = { status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }; if (photoError) o.photoError = photoError; end(o); });
         }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0, hrefs: hrefs, seenHrefs: [] }); });
       }).catch(fail);
     }
