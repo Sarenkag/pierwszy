@@ -4,8 +4,7 @@ const PizZip=require('pizzip'),Docxtemplater=require('docxtemplater');
 const html=fs.readFileSync(path.join(__dirname,'..','..','inspekcje','index.html'),'utf8');
 const src=html.slice(html.indexOf('function fillDocx('),html.indexOf('// Tekst i logo'));
 const ctx={};vm.runInNewContext(src+';this.fillDocx=fillDocx;',ctx);
-const tplJs=fs.readFileSync(path.join(__dirname,'..','..','inspekcje','tpl-oest-basic.js'),'utf8');
-const w={};vm.runInNewContext(tplJs,{window:w});const tpl=Buffer.from(w.OEST_BASIC_TPL,'base64');
+const tpl=fs.readFileSync(path.join(__dirname,'..','..','moduly','wzory','basic.docx')); // wzór z modułu Wzory
 const data={site:'One Eastside Tower',date:'01/11/2026',engineer:'G. Sarna',title:'AOV Operation Test (TA)',condition:'Good',building:'Tower A',level:'Roof',details:'• Visual inspection carried out.',quote:'No'};
 const text=x=>(x.match(/<w:t[^>]*>[^<]*<\/w:t>/g)||[]).map(t=>t.replace(/<[^>]+>/g,'')).join('');
 test('built-in OEST-basic template has all English fields',()=>{

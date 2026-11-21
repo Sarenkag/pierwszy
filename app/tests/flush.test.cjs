@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),PizZip=require('pizzip'),F=require('../../inspekcje/flush.js');
-global.window={};global.localStorage={getItem(){return null},setItem(){}};require('../www/ppm.js');require('../../inspekcje/tpl-flush.js');
+global.window={};global.localStorage={getItem(){return null},setItem(){}};require('../www/ppm.js');const TPL_FLUSH=require('node:fs').readFileSync(require('node:path').join(__dirname,'../../moduly/wzory/flush.docx')); // wzór z modułu Wzory
 const P=window.OEST_PPM;
-function doc(k,opt={}){const f=P.forms.flush[k],z=new PizZip(Buffer.from(window.TPL_FLUSH,'base64'));const taps=f.taps.map((n,i)=>({name:n,state:opt.states?.[i]||'yes',note:opt.notes?.[i]||''}));
+function doc(k,opt={}){const f=P.forms.flush[k],z=new PizZip(TPL_FLUSH);const taps=f.taps.map((n,i)=>({name:n,state:opt.states?.[i]||'yes',note:opt.notes?.[i]||''}));
   const d={building:f.building,year:2026,month:10,week:opt.week||2,date:new Date(2026,10,9),name:'G & S',taps};return {xml:F.fill(z.file('word/document.xml').asText(),d),hdr:F.header(z.file('word/header1.xml').asText(),f.building),d};}
 const text=x=>[...x.matchAll(/<w:t(?: [^>]*)?>([^<]*)/g)].map(m=>m[1]).join('|');
 test('trzy inspekcje Flush mają swoje listy kranów i wspólny wzór',()=>{for(const [id,k,n] of [['EFA-INS-004','TA',12],['EFA-INS-026','TB',20],['EFA-INS-012','P',2]]){const t=P.tasks.find(t=>t.id===id);assert.equal(t.flush,k);assert.equal(t.form,'folder');assert.equal(P.forms.flush[k].taps.length,n);}});
@@ -14,7 +14,7 @@ test('bieżący rok i miesiąc na zielono, lata od bieżącego',()=>{const {xml}
   const nov=xml.split('November')[0];assert.match(nov.slice(nov.lastIndexOf('<w:tc>')),/92D050/);});
 test('nagłówek: TOWER A / TOWER B / PAVILION',()=>{assert.match(text(doc('TA').hdr),/TOWER\| A/);assert.match(text(doc('TB').hdr),/TOWER\| B/);const p=text(doc('P').hdr);assert.match(p,/PAVILION/);assert.doesNotMatch(p,/TOWER/);});
 test('podsumowanie: niezalane krany → Fault Log',()=>{assert.equal(F.summary({taps:[{state:'yes'},{state:'na'}]}),'All outlets flushed (1 N/A)');assert.match(F.summary({taps:[{state:'no'}]}),/Fault and Remedial/);});
-test('Date odznaczone: kolumna daty pusta, Yes zostaje',()=>{const f=P.forms.flush.P,z=new PizZip(Buffer.from(window.TPL_FLUSH,'base64'));const xml=F.fill(z.file('word/document.xml').asText(),{building:'Pavilion',year:2026,month:0,week:1,date:new Date(2026,0,5),noDate:true,name:'',taps:f.taps.map(n=>({name:n,state:'yes',note:''}))});assert.doesNotMatch(xml,/05\.01\.2026/);assert.match(xml,/>Yes</);});
+test('Date odznaczone: kolumna daty pusta, Yes zostaje',()=>{const f=P.forms.flush.P,z=new PizZip(TPL_FLUSH);const xml=F.fill(z.file('word/document.xml').asText(),{building:'Pavilion',year:2026,month:0,week:1,date:new Date(2026,0,5),noDate:true,name:'',taps:f.taps.map(n=>({name:n,state:'yes',note:''}))});assert.doesNotMatch(xml,/05\.01\.2026/);assert.match(xml,/>Yes</);});
 
 // 04/11: odtworzenie Flushingu z PDF-a raportu w kolejce (PDF z apki: tydzień 3, kran 2 = No z notatką, zdjęcia przy kranach 1, 3, 5)
 test('fromPdf reads answers, week and photo→outlet from the queued report PDF', () => {

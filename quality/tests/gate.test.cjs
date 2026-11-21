@@ -143,6 +143,15 @@ test('Zasady JM: historia poza właścicielem, window.open i window["open"] (tak
   zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ window['open']('x'); return w.OESTA.x; } }; })(window);" })), /JM\|okno-przegladarki\|app\.js\]/);
   assert.equal(g1(www('', { 'app.js': '(function(w){ /* history.pushState({}) */ w.OESTApp = { go(){ return w.OESTA.x; } }; })(window); // w.open(x)' })).code, 0);
 });
+test('Zasady JM wzory Word: plik .docx poza moduly/wzory i wzór base64 w kodzie → FAIL; .docx w moduly/wzory → PASS', () => {
+  const R = { ...REJESTR, rzeczy: [...REJESTR.rzeczy, { rzecz: 'wzor-word', opis: 'wzór', wzory: ['UEsDB[A-Za-z0-9+/]{200}'], wlasciciele: [] }] };
+  assert.equal(g1(www('', { 'moduly/wzory/basic.docx': 'PK' }), [], [], R).code, 0);
+  zasadaFail(g1(www('', { 'moduly/wzory/basic.docx': 'PK', 'templates/OEST-basic.docx': 'PK' }), [], [], R), /JM\|wzor-plik\|templates\/OEST-basic\.docx\]/);
+  zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { t: "UEsDB' + 'A'.repeat(300) + '", go(){ return w.OESTA.x; } }; })(window);' }), [], [], R), /JM\|wzor-word\|app\.js\]/);
+  const R2 = { ...R, rzeczy: [...R.rzeczy, { rzecz: 'wzor-sciezka', opis: 'ścieżka', wzory: ['["\'`][A-Za-z0-9_./-]+\\.docx["\'`]'], wlasciciele: ['moduly/wzory/wzory.js'] }] };
+  zasadaFail(g1(www('', { 'app.js': "(function(w){ w.OESTApp = { go(){ fetch('templates/nowy.docx'); return w.OESTA.x; } }; })(window);" }), [], [], R2), /JM\|wzor-sciezka\|app\.js\]/);
+  assert.equal(g1(www('', { 'moduly/wzory/wzory.js': '(function(g){ g.OESTWzory = { p: "basic.docx" }; })(window);', 'app.js': '(function(w){ w.OESTApp = { go(){ return w.OESTA.x + ".docx"; } }; })(window);' }), [], [], R2).code, 0);
+});
 test('Zasady JM: jedno nowe trafienie ponad „maks” → FAIL; mniej trafień = obniż „maks” → FAIL; równe → PASS', () => {
   const app = n => www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ ' + 'history.back(); '.repeat(n) + 'return w.OESTA.x; } }; })(window);' });
   const zb = [{ id: 'JM|historia|app.js', maks: 2 }];
