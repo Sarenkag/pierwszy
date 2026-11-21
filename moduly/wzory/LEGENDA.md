@@ -98,14 +98,14 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 | `{no12}` | Flushing basic: ☒ kran 12 nie przepłukany | Flushing basic: ☒ outlet 12 not flushed | flush-basic-ta, flush-basic-tb, gen-basic |
 | `{na12}` | Flushing basic: N/A kran 12 | Flushing basic: N/A outlet 12 | flush-basic-ta, flush-basic-tb, gen-basic |
 | `{note12}` | Flushing basic: notatka kranu 12 | Flushing basic: outlet 12 note | flush-basic-ta, flush-basic-tb, gen-basic |
-| `{ok13}` | Flushing basic: ☑ kran 13 przepłukany | Flushing basic: ☑ outlet 13 flushed | flush-basic-tb, gen-basic |
-| `{no13}` | Flushing basic: ☒ kran 13 nie przepłukany | Flushing basic: ☒ outlet 13 not flushed | flush-basic-tb, gen-basic |
-| `{na13}` | Flushing basic: N/A kran 13 | Flushing basic: N/A outlet 13 | flush-basic-tb, gen-basic |
-| `{note13}` | Flushing basic: notatka kranu 13 | Flushing basic: outlet 13 note | flush-basic-tb, gen-basic |
-| `{ok14}` | Flushing basic: ☑ kran 14 przepłukany | Flushing basic: ☑ outlet 14 flushed | flush-basic-tb, gen-basic |
-| `{no14}` | Flushing basic: ☒ kran 14 nie przepłukany | Flushing basic: ☒ outlet 14 not flushed | flush-basic-tb, gen-basic |
-| `{na14}` | Flushing basic: N/A kran 14 | Flushing basic: N/A outlet 14 | flush-basic-tb, gen-basic |
-| `{note14}` | Flushing basic: notatka kranu 14 | Flushing basic: outlet 14 note | flush-basic-tb, gen-basic |
+| `{ok13}` | Flushing basic: ☑ kran 13 przepłukany | Flushing basic: ☑ outlet 13 flushed | flush-basic-tb |
+| `{no13}` | Flushing basic: ☒ kran 13 nie przepłukany | Flushing basic: ☒ outlet 13 not flushed | flush-basic-tb |
+| `{na13}` | Flushing basic: N/A kran 13 | Flushing basic: N/A outlet 13 | flush-basic-tb |
+| `{note13}` | Flushing basic: notatka kranu 13 | Flushing basic: outlet 13 note | flush-basic-tb |
+| `{ok14}` | Flushing basic: ☑ kran 14 przepłukany | Flushing basic: ☑ outlet 14 flushed | flush-basic-tb |
+| `{no14}` | Flushing basic: ☒ kran 14 nie przepłukany | Flushing basic: ☒ outlet 14 not flushed | flush-basic-tb |
+| `{na14}` | Flushing basic: N/A kran 14 | Flushing basic: N/A outlet 14 | flush-basic-tb |
+| `{note14}` | Flushing basic: notatka kranu 14 | Flushing basic: outlet 14 note | flush-basic-tb |
 | `{ok15}` | Flushing basic: ☑ kran 15 przepłukany | Flushing basic: ☑ outlet 15 flushed | flush-basic-tb |
 | `{no15}` | Flushing basic: ☒ kran 15 nie przepłukany | Flushing basic: ☒ outlet 15 not flushed | flush-basic-tb |
 | `{na15}` | Flushing basic: N/A kran 15 | Flushing basic: N/A outlet 15 | flush-basic-tb |
@@ -158,5 +158,5 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 - **Weekly Flushing Tower A – basic form** (`flush-basic-ta`, plik `flush-basic-ta.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}` `{zone3}`
 - **Weekly Flushing Tower B – basic form** (`flush-basic-tb`, plik `flush-basic-tb.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{ok15}` `{no15}` `{na15}` `{note15}` `{ok16}` `{no16}` `{na16}` `{note16}` `{zone1}` `{zone2}` `{zone3}` `{zone4}`
 - **Weekly Flushing Pavilion – basic form** (`flush-basic-p`, plik `flush-basic-p.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
-- **Generator Checks – Weekly (TP-025) – basic form** (`gen-basic`, plik `gen-basic.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{zone1}` `{zone2}`
+- **Generator Checks – Weekly (TP-025) – basic form** (`gen-basic`, plik `gen-basic.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{quote}` `{%photos}` `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
 - **Monthly Tap Temperature Check TB (QHS-031)** (`temp-tb`, plik `temp-tb.docx`): `{temp}` `{name}` `{data}`

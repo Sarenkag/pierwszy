@@ -90,17 +90,19 @@ window.OEST_PPM = {
       GEN: { points: true, ui: "checks", raport: true, title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
         hint: ["Zrób zdjęcie wypełnionej kartki („Formularz”), zaznacz punkty (domyślnie Yes) i wpisz odczyty: paliwo w % i litrach, napięcia L1–L3 w V, częstotliwość w Hz, obroty RPM. Do raportu idzie nasz formularz, zdjęcia i zdjęcie kartki.",
           "Take a photo of the filled-in paper form (“Form”), mark the checks (Yes by default) and type the readings: fuel in % and litres, L1–L3 voltage in V, frequency in Hz, engine RPM. The report gets our form, the photos and the form photo."],
-        summary: ["All generator checks acceptable – generator available to start in AUTO", "check(s) not acceptable – record on the Generator Fault & Remedial Actions Log"],
-        statement: ["All checks acceptable. Generator available to start in AUTO.",
-          "Faults / failures identified must be recorded on the Generator Fault & Remedial Actions Log with details of follow up actions taken to rectify."],
-        groups: [{ name: "Generator 1 – Serial 667449 · 5KJDD585ASB · Visual check", n: 6 }, { name: "Start-up test (off-load)", n: 8 }],
+        summary: ["All generator checks acceptable – generator returned to AUTO", "check(s) not acceptable – record on the Generator Fault & Remedial Actions Log"],
+        // powrót do AUTO i test off-load to nie kratki, tylko stałe zdanie w szarej tabelce pod kratkami: wszystko ogarnięte, sprzątnięte, działa sprawnie, przywrócony do AUTO – nie „gotowy do startu w AUTO” (Grzegorz 17:22)
+        statement: ["All checks acceptable, generator running smoothly. Everything secured and area left clean. Generator returned to AUTO.",
+          "Everything secured and area left clean. Generator returned to AUTO. Faults / failures identified must be recorded on the Generator Fault & Remedial Actions Log with details of follow up actions taken to rectify."],
+        podtytul: "Generator – Serial 667449 · Make / Model 5KJDD585ASB", // jeden generator, linia nad częściami (Grzegorz 17:19–17:21)
+        groups: [{ name: "Visual check", n: 6 }, { name: "Off-load test", n: 6 }],
         // środek basic form w stylu Flushing (Grzegorz 21/11/2026: „w tym samym stylu co najnowszy Flushing”): grupa na generator, 2 punkty w wierszu
-        // dwie grupy (Grzegorz 17:18: „rozdziel Visual Check od rozruchu”); w Start-up test L1, L2, L3, Hz pod sobą w lewej kolumnie (17:17)
-        strefy: [["Generator 1 – Serial 667449 · 5KJDD585ASB · Visual check", ["Fuel level (% / litres)", "Oil level", "Coolant level", "Water level", "No leaks", "Control panel – available to start in AUTO"]], ["Start-up test (off-load)", ["L1 voltage (V)", "Start-up carried out – engine running smoothly and stable", "L2 voltage (V)", "Engine speed (RPM)", "L3 voltage (V)", "Generator returned to AUTO, all secured", "Frequency (Hz)", "Generator tested off-load"]]],
+        // dwie grupy (Grzegorz 17:18: „rozdziel Visual Check od rozruchu”); w Start-up test L1, L2, L3 pod sobą w lewej kolumnie (17:17), obok rozruch, Hz, RPM
+        strefy: [["Visual check", ["Fuel level (% / litres)", "Oil level", "Coolant level", "Water level", "No leaks", "Control panel – available to start in AUTO"]], ["Off-load test", ["L1 voltage (V)", "Start-up carried out – engine running smoothly and stable", "L2 voltage (V)", "Frequency (Hz)", "L3 voltage (V)", "Engine speed (RPM)"]]],
         // wartości wpisane od razu, do poprawy (Grzegorz 21/11/2026 16:40: „po 250, tak jak na zdjęciu, i 1500 RPM i 50 Hz”)
         domyslne: { "L1 voltage (V)": "250", "L2 voltage (V)": "250", "L3 voltage (V)": "250", "Frequency (Hz)": "50", "Engine speed (RPM)": "1500" },
         odczyty: ["Fuel level (% / litres)", "L1 voltage (V)", "L2 voltage (V)", "L3 voltage (V)", "Frequency (Hz)", "Engine speed (RPM)"], // pole na liczbę otwarte od razu pod punktem
-        taps: ["Fuel level (% / litres)", "Oil level", "Coolant level", "Water level", "No leaks", "Control panel – available to start in AUTO", "Start-up carried out – engine running smoothly and stable", "L1 voltage (V)", "L2 voltage (V)", "L3 voltage (V)", "Frequency (Hz)", "Engine speed (RPM)", "Generator returned to AUTO, all secured", "Generator tested off-load"] },
+        taps: ["Fuel level (% / litres)", "Oil level", "Coolant level", "Water level", "No leaks", "Control panel – available to start in AUTO", "Start-up carried out – engine running smoothly and stable", "L1 voltage (V)", "L2 voltage (V)", "L3 voltage (V)", "Frequency (Hz)", "Engine speed (RPM)"] },
       "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
         groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
         taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },

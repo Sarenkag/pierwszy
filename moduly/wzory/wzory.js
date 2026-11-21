@@ -54,7 +54,7 @@
     "flush-basic-tb": { plik: "flush-basic-tb.docx", nazwa: "Weekly Flushing Tower B – basic form", pola: flushPola(16, 4) },
     "flush-basic-p": { plik: "flush-basic-p.docx", nazwa: "Weekly Flushing Pavilion – basic form", pola: flushPola(2, 1) },
     // Weekly Generator Check (Grzegorz 21/11/2026): ramka basic + grupy w stylu Flushing (kartka TP-025: jeden generator, 14 punktów w 2 grupach)
-    "gen-basic": { plik: "gen-basic.docx", nazwa: "Generator Checks – Weekly (TP-025) – basic form", pola: flushPola(14, 2) },
+    "gen-basic": { plik: "gen-basic.docx", nazwa: "Generator Checks – Weekly (TP-025) – basic form", pola: flushPola(12, 2) },
     "temp-tb": { plik: "temp-tb.docx", nazwa: "Monthly Tap Temperature Check TB (QHS-031)", pola: ["temp", "name", "data"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();

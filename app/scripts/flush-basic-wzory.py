@@ -56,6 +56,10 @@ def build(f, out):
     for ch in list(tc):
         if ch.tag != W + "tcPr": tc.remove(ch)
     taps = f["taps"]
+    if f.get("podtytul"):  # jedna linia nad grupami (np. który generator) – tak samo w PDF (OESTFlush.rysujStrefy)
+        p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(4); p.paragraph_format.space_after = Pt(0); run(p, f["podtytul"], 11, True)
+        tc.append(p._p)
     for k, (name, lst) in enumerate(f["strefy"], 1):
         tc.append(spacer())
         t = d.add_table(rows=(len(lst) + 1) // 2 + 1, cols=4); borders(t, 4, LINE)

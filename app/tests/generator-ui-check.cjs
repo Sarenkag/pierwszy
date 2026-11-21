@@ -1,7 +1,7 @@
 // Weekly Generator Check (Grzegorz 21/11/2026): własna inspekcja OEST, nie ma jej w Vantify – stały klocek uruchamiany ręcznie.
-// Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (jeden generator, 14 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), domyślnie Yes) w basic form.
+// Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), domyślnie Yes) w basic form.
 // Scenariusz: gen-weekly → lista włączona od razu → bez kartki przycisk prosi o zdjęcie formularza → kartka + 1 zdjęcie + odczyt paliwa w 📝
-// → Wyślij → PDF i Word z listą jeden generator, 14 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
+// → Wyślij → PDF i Word z listą jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), odczytem, podsumowaniem, zdjęciem kartki i zdjęciem ogólnym. Nie zastępuje sprawdzenia na Pixelu 8 Pro.
 // Uruchomienie: node app/tests/generator-ui-check.cjs (po npm run copy-web); OEST_SHOTS=katalog → zrzuty ekranu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
@@ -14,8 +14,8 @@ const server = http.createServer((req, res) => {
   fs.readFile(p, (e, b) => { if (e) { res.writeHead(404).end(); return; } res.setHeader('Content-Type', TYPES[path.extname(p)] || 'application/octet-stream'); res.end(b); });
 });
 const ID = 'gen-weekly', SHOTS = process.env.OEST_SHOTS || '';
-const POINTS = ['Fuel level (% / litres)', 'Oil level', 'Coolant level', 'Water level', 'No leaks', 'Control panel – available to start in AUTO', 'Start-up carried out – engine running smoothly and stable', 'L1 voltage (V)', 'L2 voltage (V)', 'L3 voltage (V)', 'Frequency (Hz)', 'Engine speed (RPM)', 'Generator returned to AUTO, all secured', 'Generator tested off-load'];
-const OK = 'All generator checks acceptable – generator available to start in AUTO', STMT = 'All checks acceptable. Generator available to start in AUTO.';
+const POINTS = ['Fuel level (% / litres)', 'Oil level', 'Coolant level', 'Water level', 'No leaks', 'Control panel – available to start in AUTO', 'Start-up carried out – engine running smoothly and stable', 'L1 voltage (V)', 'L2 voltage (V)', 'L3 voltage (V)', 'Frequency (Hz)', 'Engine speed (RPM)'];
+const OK = 'All generator checks acceptable – generator returned to AUTO', STMT = 'All checks acceptable, generator running smoothly. Everything secured and area left clean. Generator returned to AUTO.';
 const fails = []; let passed = 0;
 const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
@@ -70,9 +70,9 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     if (pdfF && docF) {
       const P = pdfText(Buffer.from(pdfF.data, 'base64')), W = docxText(Buffer.from(docF.data, 'base64'));
       for (const [n, T] of [['PDF', P], ['Word', W]]) {
-        check(POINTS.every(p => includesFlat(T, p)), n + ': wszystkie 14 punktów');
+        check(POINTS.every(p => includesFlat(T, p)), n + ': wszystkie 12 punktów');
         check(includesFlat(T, 'Fuel level (% / litres) – 29% / 229 l') && includesFlat(T, 'L1 voltage (V) – 251') && includesFlat(T, 'Engine speed (RPM) – 1500') && includesFlat(T, 'Frequency (Hz) – 50'), n + ': odczyty przy punktach');
-        check(includesFlat(T, 'GENERATOR 1 – SERIAL 667449 · 5KJDD585ASB · VISUAL CHECK') && includesFlat(T, 'START-UP TEST (OFF-LOAD)') && !/GENERATOR 2/.test(T), n + ': dwie grupy (Visual check, Start-up test), jeden generator');
+        check(includesFlat(T, 'Generator – Serial 667449 · Make / Model 5KJDD585ASB') && includesFlat(T, 'VISUAL CHECK') && includesFlat(T, 'OFF-LOAD TEST') && !/GENERATOR [12]/.test(T), n + ': linia generatora nad dwiema grupami (Visual check, Off-load test), jeden generator bez numeru');
         check(includesFlat(T, STMT), n + ': zdanie pod grupami');
         check(includesFlat(T, 'Generator Checks – Weekly'), n + ': tytuł Generator Checks – Weekly');
       }
@@ -81,10 +81,11 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
       if (SHOTS) { fs.writeFileSync(path.join(SHOTS, 'raport.pdf'), Buffer.from(pdfF.data, 'base64')); fs.writeFileSync(path.join(SHOTS, 'raport.docx'), Buffer.from(docF.data, 'base64')); }
     }
     check(!errors.length, 'błędy strony: ' + errors.join(' | '));
+
   } catch (e) { fails.push('przerwane: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }
   console.log('generator-ui-check: ' + passed + ' OK, ' + fails.length + ' błędów');
   fails.forEach(f => console.log('  ✗ ' + f));
-  if (!fails.length) console.log('GENERATOR PASS: Generator Checks – Weekly (TP-025) – kartka wymagana, jeden generator, 14 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM + powrót do AUTO + test off-load), odczyt w notatce, raport Word i PDF');
+  if (!fails.length) console.log('GENERATOR PASS: Generator Checks – Weekly (TP-025) – kartka wymagana, jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), odczyt w notatce, raport Word i PDF');
   process.exit(fails.length ? 1 : 0);
 })();
