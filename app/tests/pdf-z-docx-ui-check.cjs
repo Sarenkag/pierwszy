@@ -24,9 +24,12 @@ const sha = b => crypto.createHash('sha256').update(b).digest('hex');
     let par = 0;
     for (const p of pliki.filter(f => f.name.endsWith('.pdf'))) {
       const w = word.get(p.name.slice(0, -4)); if (!w) continue; par++;
-      const tekst = buf(p).toString('latin1'), i = tekst.indexOf(ZNACZNIK), czesc = p.name.replace(/^.*?( - [^.]+)?\.pdf$/, (_, s) => s ? s.slice(3) : 'raport');
-      if (i < 0) roz.push({ id: 'rysownik:' + id + ':' + czesc, opis: id + ': „' + p.name + '” narysowany osobno, nie z Worda „' + w.name + '”' });
-      else if (tekst.slice(i + ZNACZNIK.length, i + ZNACZNIK.length + 64) !== sha(buf(w))) roz.push({ id: 'inny-word:' + id + ':' + czesc, opis: id + ': „' + p.name + '” powstał z innych bajtów niż wysyłany Word „' + w.name + '”' });
+      // Flushing: PDF = formularz firmy + basic form sklejone (moduly/word-pdf → zWordow) – znaczniki obu Wordów, w tej kolejności
+      const tekst = buf(p).toString('latin1'), czesc = p.name.replace(/^.*?( - [^.]+)?\.pdf$/, (_, s) => s ? s.slice(3) : 'raport');
+      const znaczniki = tekst.split(ZNACZNIK).slice(1).map(t => t.slice(0, 64)), basic = word.get(p.name.slice(0, -4) + ' - basic');
+      const oczek = [sha(buf(w))].concat(basic ? [sha(buf(basic))] : []);
+      if (!znaczniki.length) roz.push({ id: 'rysownik:' + id + ':' + czesc, opis: id + ': „' + p.name + '” narysowany osobno, nie z Worda „' + w.name + '”' });
+      else if (znaczniki.join() !== oczek.join()) roz.push({ id: 'inny-word:' + id + ':' + czesc, opis: id + ': „' + p.name + '” powstał z innych bajtów niż wysyłane Wordy „' + w.name + '”' + (basic ? ' + „' + basic.name + '”' : '') });
       else sp(true, '');
     }
     sp(par > 0, id + ': w raporcie nie ma żadnej pary Word + PDF o tej samej nazwie (' + pliki.map(f => f.name).join(', ') + ')');

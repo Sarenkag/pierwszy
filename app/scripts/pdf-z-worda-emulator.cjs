@@ -29,7 +29,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page(?![s\w])/g) || []).length;
     console.log(nazwa, "OK stron", pages, "KB", Math.round(pdf.length / 1024), "ms", Date.now() - t0); ok++;
   }
-  console.log(ok === 4 ? "WYNIK OK 4/4" : "WYNIK ZŁY " + ok + "/4");
+  // Flushing: dwa Wordy (formularz firmy + basic) → jeden PDF sklejony pdf-lib w module (OESTWordPdf.zWordow) – strony obu
+  {
+    const t0 = Date.now();
+    const v = await val(`(function(){function w(n){return fillDocx(PizZip,docxtemplater,OESTWzory.bajty(n),{},[]).generate({type:"uint8array"});}
+      return OESTWordPdf.zWordow([w("flush"),w("basic")]).then(function(p){if(!p)return {ok:0};var s2="";for(var i=0;i<p.length;i+=32768)s2+=String.fromCharCode.apply(null,p.subarray(i,i+32768));return {ok:1,b64:btoa(s2)};});})()`);
+    const strony = n => { try { return (fs.readFileSync("lo-emu/" + n + ".pdf", "latin1").match(/\/Type\s*\/Page(?![s\w])/g) || []).length; } catch (e) { return -1; } };
+    if (!v || !v.ok) console.log("flush+basic BŁĄD / brak PDF", JSON.stringify(v).slice(0, 500));
+    else {
+      const pdf = Buffer.from(v.b64, "base64"); fs.writeFileSync("lo-emu/flush-basic.pdf", pdf);
+      const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page(?![s\w])/g) || []).length, oczek = strony("flush") + strony("basic");
+      console.log("flush+basic stron", pages, "oczekiwane", oczek, "KB", Math.round(pdf.length / 1024), "ms", Date.now() - t0);
+      if (pages === oczek && oczek > 1) ok++;
+    }
+  }
+  console.log(ok === 5 ? "WYNIK OK 5/5" : "WYNIK ZŁY " + ok + "/5");
   try { ws.close(); } catch (e) {}
   process.exit(0);
 })();

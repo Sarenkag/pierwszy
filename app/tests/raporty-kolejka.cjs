@@ -14,7 +14,12 @@ const wtyczkaLO = znacznik => {
     isPluginAvailable: n => n === 'LibreOffice',
     Plugins: Object.assign((window.Capacitor && window.Capacitor.Plugins) || {}, { LibreOffice: { toPdf: async ({ docx }) => {
       const s = atob(docx), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
-      return { pdf: btoa('%PDF-1.4\n' + znacznik + hex(await crypto.subtle.digest('SHA-256', u)) + '\n%%EOF\n') };
+      // poprawny 1-stronicowy PDF ze znacznikiem w treści strony – przeżywa sklejanie kilku PDF (pdf-lib, Flushing: firma + basic)
+      const c = znacznik + hex(await crypto.subtle.digest('SHA-256', u)) + '\nBT ET', obj = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R >>', '<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream'];
+      let p = '%PDF-1.4\n'; const off = []; obj.forEach((o, i) => { off.push(p.length); p += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+      const x = p.length; p += 'xref\n0 5\n0000000000 65535 f \n' + off.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + 'trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF\n';
+      return { pdf: btoa(p) };
     } } })
   });
 };
