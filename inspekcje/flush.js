@@ -158,8 +158,12 @@
   }
   // PDF basic form: te same strefy co Word (nagłówek strefy, 2 krany w wierszu, kratka / N/A, zdanie w szarej ramce).
   // pdf: jsPDF z czcionką „DV”; x, w: komórka ramki (mm); y: start; room(h): łamie stronę, gdy trzeba, i zwraca nowy y albo null.
+  // Kolejność w PDF: najpierw obramowania i tła (warstwa 0), potem tekst i kratki (warstwa 1) w kolejności Worda – po kratce
+  // od razu następny tekst (jak w Wordzie: kratka, potem kolejny kran / strefa / zdanie), bez ramek pomiędzy.
   function rysujStrefy(pdf, f, x, y, w, room) {
-    var p = basicPola(f), gap = 3.4, X = x + 1.9, Wd = w - 3.8, cn = Wd * 12 / 155.2, cw = Wd / 2 - cn, RH = 6.2, HH = 6.2;
+    var p = basicPola(f), gap = 3.4, X = x + 1.9, Wd = w - 3.8, cn = Wd * 12 / 155.2, cw = Wd / 2 - cn, RH = 6.2, HH = 6.2, ops = [];
+    function pg() { return pdf.getCurrentPageInfo().pageNumber; }
+    function d(l, fn) { ops.push({ p: pg(), l: l, fn: fn }); }
     function at(h) { var ny = room(y, h); if (ny != null) y = ny; }
     function box(cx, cy, s) { // kratka rysowana: font PDF nie ma ☑/☒
       var b = 3.4, bx = cx - b / 2, by = cy - b / 2; pdf.setLineWidth(0.25);
@@ -171,8 +175,9 @@
     }
     (f.strefy || []).forEach(function (z, k) {
       var nr = Math.ceil(z[1].length / 2); at(gap + HH + RH * Math.min(nr, 2)); y += gap;
-      pdf.setFillColor(31, 78, 95); pdf.rect(X, y, Wd, HH, "F");
-      pdf.setFont("DV", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(255, 255, 255); pdf.text(z[0].toUpperCase() + "   \u00b7   " + p["zone" + (k + 1)], X + 1.5, y + 4.3); pdf.setTextColor(0, 0, 0);
+      var hy = y, ht = z[0].toUpperCase() + "   \u00b7   " + p["zone" + (k + 1)];
+      d(0, function () { pdf.setFillColor(31, 78, 95); pdf.rect(X, hy, Wd, HH, "F"); });
+      d(1, function () { pdf.setFont("DV", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(255, 255, 255); pdf.text(ht, X + 1.5, hy + 4.3); pdf.setTextColor(0, 0, 0); });
       y += HH;
       for (var r = 0; r < nr; r++) {
         pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
@@ -182,23 +187,31 @@
         var nl = Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; }));
         for (var j = 0; j * 30 < nl; j++) {
           var rh = Math.max(RH, Math.min(30, nl - j * 30) * 4.2 + 2);
-          at(rh); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
+          at(rh);
           cells.forEach(function (q, c) {
-            var cx = X + c * (cw + cn); pdf.rect(cx, y, cw, rh); pdf.rect(cx + cw, y, cn, rh);
+            var cx = X + c * (cw + cn), ry = y, jj = j;
+            d(0, function () { pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(cx, ry, cw, rh); pdf.rect(cx + cw, ry, cn, rh); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
             if (!q) return;
-            var part = q.ls.slice(j * 30, j * 30 + 30);
-            if (part.length) { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(part, cx + 1.5, y + 4.2); }
-            if (!j) { box(cx + cw + cn / 2, y + rh / 2, q.t.state); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); }
+            var part = q.ls.slice(jj * 30, jj * 30 + 30);
+            d(1, function () {
+              if (part.length) { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(part, cx + 1.5, ry + 4.2); }
+              if (!jj) box(cx + cw + cn / 2, ry + rh / 2, q.t.state);
+            });
           });
           y += rh;
         }
       }
-      pdf.setDrawColor(0); pdf.setLineWidth(0.4);
     });
     pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
     var ls = pdf.splitTextToSize(p.statement, Wd - 3), sh = ls.length * 4.2 + 3.6; at(gap + sh); y += gap;
-    pdf.setFillColor(242, 242, 242); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(X, y, Wd, sh, "FD");
-    pdf.text(ls, X + 1.5, y + 4.6); pdf.setDrawColor(0); pdf.setLineWidth(0.4); y += sh;
+    var sy = y;
+    d(0, function () { pdf.setFillColor(242, 242, 242); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(X, sy, Wd, sh, "FD"); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
+    d(1, function () { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(ls, X + 1.5, sy + 4.6); });
+    y += sh;
+    var last = pg(), strony = [];
+    ops.forEach(function (o) { if (strony.indexOf(o.p) < 0) strony.push(o.p); });
+    strony.forEach(function (s) { pdf.setPage(s); [0, 1].forEach(function (l) { ops.forEach(function (o) { if (o.p === s && o.l === l) o.fn(); }); }); });
+    pdf.setPage(last);
     return y + 2;
   }
   // Szkic Flushingu po zmianie listy kranów (DATA-002, uwaga Codex #187): odpowiedzi i notatki zostają przy swoich kranach.
