@@ -1179,7 +1179,7 @@ function makeName(pattern, data, when) {
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
-    fl = { on: false, week: 0, open: {}, names: ((cur.type.flush || {}).taps || []).map(String), taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
+    fl = flStart(cur.type.flush || {}); renderFlush();
   }
   // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
@@ -1386,6 +1386,8 @@ function makeName(pattern, data, when) {
 
   // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
   var fl = { on: false, week: 0, open: {}, taps: [] };
+  // nowa lista: wszystko Yes; domyslne (Generator) = wartość wpisana od razu, do poprawy (Grzegorz 21/11/2026)
+  function flStart(F) { var t = F.taps || []; return { on: false, week: 0, open: {}, names: t.map(String), taps: t.map(function (nm) { return { state: "yes", note: (F.domyslne && F.domyslne[nm]) || "" }; }) }; }
   // zdjęcie wypełnionego formularza (osobny przycisk w inspekcji, Grzegorz 04/11) – w raporcie na końcu, po zdjęciach z inspekcji
   function sheetPhotos() { return photos.filter(function (p) { return p.sheet; }); }
   function tapPhotos(i) { return photos.filter(function (p) { return p.tap === i; }); }
@@ -1394,7 +1396,7 @@ function makeName(pattern, data, when) {
   function renderFlush() {
     var F = cur.type && cur.type.flush;
     if (!F) { $("flList").innerHTML = ""; return; }
-    if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, names: F.taps.map(String), taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
+    if (fl.taps.length !== F.taps.length) fl = flStart(F);
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
