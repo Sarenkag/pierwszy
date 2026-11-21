@@ -47,7 +47,7 @@ assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')&&
 await page.evaluate(()=>{window.__seq=[{status:'ok',count:1,jobs:[{id:1,type:'reactive',summary:'Leak',completionDueAt:'2026-11-20T18:00:00+00:00'}]}];});await page.locator('#vtPull').click();
 await page.waitForFunction(()=>/nie pokazuje zleceń planowych[\s\S]*ustaw filtr/.test(document.getElementById('vtPreview')?.textContent||''));assert.equal(await page.locator('#vtSave').count(),0);
 // przy starcie: Vantify ma nowe zlecenie → pytanie „Pokazać?” → Ustawienia → Vantify z podglądem; nic nie zapisuje samo
-await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__jobs.push({id:3070001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-01T23:59:59+00:00',frequency:'1W'});window.__calls={sync:0,open:0};location.hash='#home';});
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__jobs.push({id:3070001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-01T23:59:59+00:00',frequency:'1W'});window.__calls={sync:0,open:0};OESTEkrany.go('#home');});
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();
 assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/Są nowe terminy PPM z Vantify: nowe zlecenia 1, zamknięte 0[\s\S]*Później[\s\S]*Pokaż/);
 const before=await page.evaluate(()=>localStorage.getItem('oest.vantify.plan'));
@@ -55,19 +55,19 @@ await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await pag
 assert.match(await page.locator('#vtPreview').textContent(),/Nowe zlecenia: 1[\s\S]*01\/01\/2027 · AOV Operation Test \(TA\) · 3070001/);
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),before,'samo sprawdzenie niczego nie zapisuje');
 // podgląd czeka też po wyjściu i powrocie; Anuluj go usuwa
-await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtSave').waitFor();
+await page.evaluate(()=>{OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtSave').waitFor();
 await page.locator('#vtCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null);
 // telefon nie zapisze nowego podglądu (brak miejsca): „Pokaż” pokazuje świeżą listę z pamięci, nie starszą z magazynu (przegląd Codex #135)
 await page.evaluate(()=>{const I=window.OESTVantifyImport;I.keepNew({jobs:window.__jobs});const j2=window.__jobs.concat([{id:3080001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-08T23:59:59+00:00',frequency:'1W'}]);
   const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='oest.vantify.nowe')throw new DOMException('full','QuotaExceededError');return set.call(this,k,v);};try{I.keepNew({jobs:j2});}finally{Storage.prototype.setItem=set;}
-  location.hash='#settings';});
-await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtSave').waitFor();
+  OESTEkrany.go('#settings');});
+await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtSave').waitFor();
 assert.match(await page.locator('#vtPreview').textContent(),/08\/01\/2027 · AOV Operation Test \(TA\) · 3080001/,'świeży podgląd z pamięci');
 await page.locator('#vtCancel').click();assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null);
 // najwyżej co 4 h
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>window.__calls.sync),1,'drugie sprawdzenie dopiero po 4 h');
 // bez zmian → bez pytania
-await page.evaluate(()=>{window.__jobs.pop();localStorage.removeItem('oest.vantify.auto');location.hash='#home';});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
+await page.evaluate(()=>{window.__jobs.pop();localStorage.removeItem('oest.vantify.auto');OESTEkrany.go('#home');});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
 await page.waitForFunction(()=>window.__calls.sync===2);await page.waitForTimeout(400);assert.equal(await page.locator('.oest-ask:not([data-wy-out])').count(),0,'bez zmian nie pyta');
 // wygasłe logowanie przy starcie: pytanie raz na dobę; „Zaloguj” otwiera Vantify i potem pobiera
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login'}];});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
@@ -75,7 +75,7 @@ await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await 
 await page.locator('.oest-ask:not([data-wy-out]) [data-a=no]').click();await page.waitForFunction(()=>!document.querySelector('.oest-ask:not([data-wy-out])'));
 await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.auto'));a.at=0;localStorage.setItem('oest.vantify.auto',JSON.stringify(a));window.__seq=[{status:'login'}];});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
 await page.waitForFunction(()=>window.__calls.sync===4);await page.waitForTimeout(400);assert.equal(await page.locator('.oest-ask:not([data-wy-out])').count(),0,'o logowanie pyta najwyżej raz na dobę');
-await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.auto'));a.at=0;a.askedLogin=0;localStorage.setItem('oest.vantify.auto',JSON.stringify(a));window.__seq=[{status:'login'}];window.__calls.open=0;location.hash='#home';});
+await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.auto'));a.at=0;a.askedLogin=0;localStorage.setItem('oest.vantify.auto',JSON.stringify(a));window.__seq=[{status:'login'}];window.__calls.open=0;OESTEkrany.go('#home');});
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();
 await page.waitForFunction(()=>window.__calls.open===1);await page.locator('#vtSave').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#settings/vantify','„Zaloguj” → okno Vantify, potem podgląd');
 await page.locator('#vtCancel').click();
@@ -89,12 +89,12 @@ await page.locator('#vtCancel').click();await page.evaluate(()=>window.OESTVanti
 const csv=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,q=s=>'"'+String(s).replace(/"/g,'""')+'"',d=new Date().toISOString().slice(0,10);let t='id,jobType,task,completeBy,frequency,createdAt\n';for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])t+=[j.no,'Planned',q(P.byId(id).name),j.due+' 23:59',j.f,d+' 08:00'].join(',')+'\n';return t+['3090001','Planned',q('AOV Operation Testing (Tower A)'),'2027-01-15 23:59','1W',d+' 08:00'].join(',')+'\n';});
 await loadCsv(page,csv);await page.locator('#vtSave').waitFor();await page.locator('#vtSave').click();await page.locator('#vtPreview .ok').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.nowe')),null,'zapis pliku usuwa odłożony podgląd');
-await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtPull').waitFor();await page.waitForTimeout(300);
+await page.evaluate(()=>{OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtPull').waitFor();await page.waitForTimeout(300);
 assert.equal(await page.locator('#vtSave').count(),0,'po zapisie pliku stary podgląd nie wraca');
 // zapamiętany login i hasło (Grzegorz 10/11/2026): wpisuje raz, zmienia sam; hasło zagwiazdkowane, „Pokaż”; odrzucone hasło → prośba o nowe
 await page.evaluate(()=>{const V=window.Capacitor.Plugins.Vantify;window.__login=null;window.__bad=false;const info=()=>({saved:!!window.__login,user:window.__login?window.__login.user:'',bad:!!window.__login&&window.__bad});
   V.loginInfo=async()=>info();V.saveLogin=async o=>{window.__login={user:o.user,pass:o.pass};window.__bad=false;return info();};V.showLogin=async o=>{window.__shown=(window.__shown||[]).concat([o&&o.lang]);return {ok:!!window.__login};};V.clearLogin=async()=>{window.__login=null;return info();};
-  location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtUser').waitFor();
+  OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtUser').waitFor();
 await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));
 await page.locator('#vtLoginSave').click();assert.match(await page.locator('#vtLoginMsg').textContent(),/Wpisz login i hasło/);
 await page.locator('#vtUser').fill('greg@example.com');await page.locator('#vtPass').fill('Haslo1');await page.locator('#vtLoginSave').click();
@@ -118,14 +118,14 @@ await page.locator('[data-action=language]').first().click();await page.waitForF
 assert.deepEqual(await page.evaluate(()=>[document.getElementById('vtUser').value,document.getElementById('vtPass').value,document.getElementById('vtPass').type]),['nowy@example.com','Haslo3','password'],'PL→EN zachowuje wpisane pola');
 await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Zapisz login i hasło/.test(document.getElementById('vtLoginSave')?.textContent||''));
 assert.equal(await page.locator('#vtPass').inputValue(),'Haslo3');assert.equal(await page.evaluate(()=>window.__login.pass),'Haslo2','bez „Zapisz” nic się nie zmienia');
-await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtUser').waitFor();
+await page.evaluate(()=>{OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtUser').waitFor();
 await page.waitForFunction(()=>document.getElementById('vtUser').value==='greg@example.com');assert.equal(await page.locator('#vtPass').inputValue(),'','wyjście z ekranu porzuca niezapisane');
 // Vantify odrzucił zapisane hasło: przy „Pobierz” komunikat i pole hasła, bez otwierania logowania w kółko
 await page.evaluate(()=>{window.__bad=true;window.__calls={sync:0,open:0};window.__seq=[{status:'login',code:'bad'}];});await page.locator('#vtPull').click();
 await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtPullMsg')?.textContent||''));assert.deepEqual(await page.evaluate(()=>window.__calls),{sync:1,open:0});
 await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtLoginMsg')?.textContent||''));
 // przy starcie: pytanie „Wpisać aktualne hasło?” → Ustawienia → Vantify, pole hasła
-await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login',code:'bad'}];location.hash='#home';});await page.waitForFunction(()=>location.hash==='#home');
+await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login',code:'bad'}];OESTEkrany.go('#home');});await page.waitForFunction(()=>location.hash==='#home');
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/nie przyjął zapisanego hasła/);
 await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await page.waitForFunction(()=>location.hash==='#settings/vantify'&&document.activeElement&&document.activeElement.id==='vtPass');assert.equal(await page.evaluate(()=>window.__calls.open),0);
 await page.locator('#vtLoginClear').click();await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));assert.equal(await page.evaluate(()=>window.__login),null);

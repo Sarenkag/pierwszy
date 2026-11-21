@@ -46,7 +46,7 @@ async function zrzuty(browser, www, errs) {
   const ctx = await browser.newContext({ viewport: { width: 448, height: 998 }, deviceScaleFactor: 1, serviceWorkers: 'block', timezoneId: 'Europe/London', locale: 'en-GB', reducedMotion: 'reduce' });
   try {
     await ctx.addInitScript(k => { localStorage.setItem('oest.account', k); localStorage.setItem('insp.cfg', JSON.stringify({ insp: 'G. Sarna', email: 'demo@example.com' }));
-      window.Capacitor = { isNativePlatform: () => true, Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }), exitApp: () => {} } } }; }, JSON.stringify(KONTO));
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }), exitApp: () => {} } } }; }, JSON.stringify(KONTO));
     // bez internetu: zapytania poza stronę testową (np. sprawdzanie aktualizacji) od razu kończą się błędem – zawsze tak samo
     await ctx.route(u => !u.href.startsWith(B + '/'), r => r.abort('internetdisconnected'));
     const pg = await ctx.newPage(); pg.on('pageerror', e => errs.push(e.message));
@@ -55,10 +55,20 @@ async function zrzuty(browser, www, errs) {
     const ids = await zasiej(pg); ids.draft = await szkic(pg, B, ids.leaf);
     // nowy = pełne załadowanie dokumentu: inspekcje/index.html otwiera formularz tylko przy starcie (openPpm), bez obsługi hashchange
     const strzal = async (nazwa, url, nowy = false, czyje = null) => {
-      await pg.goto(url); if (nowy) await pg.reload(); await pg.waitForLoadState('networkidle'); await pg.evaluate(() => document.fonts.ready); await pg.mouse.move(0, 0);
+      await pg.goto(url); if (nowy) await pg.reload();
+      // szkielet Ionic: sam hash w adresie nie jest nawigacją (adres zmienia tylko replaceState) – przejście robi OESTEkrany.go; w wersji bazowej (hashchange) go nie ma
+      if (!nowy && /index\.html#/.test(url)) await pg.evaluate(h => { if (window.OESTEkrany && OESTEkrany.go) OESTEkrany.go(h); }, new URL(url).hash); await pg.waitForLoadState('networkidle'); await pg.evaluate(() => document.fonts.ready); await pg.mouse.move(0, 0);
       // jak toHaveScreenshot w Playwright: zrzut dopiero, gdy 2 kolejne są identyczne (ekran skończył się rysować); inaczej zostaje ostatni
       let a = null;
-      for (let i = 0; i < 20; i++) { await pg.waitForTimeout(150); const b = await pg.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }); if (a && a.equals(b)) break; a = b; }
+      // treść przewija się w ion-content (nie w oknie): fullPage obejmowałby tylko okno, więc na czas zrzutu okno rośnie do pełnej treści ekranu (stara wersja: bez ion-content, bez zmiany)
+      for (let i = 0; i < 20; i++) {
+        await pg.waitForTimeout(150);
+        const pelna = await pg.evaluate(async () => { const c = document.querySelector('ion-content'); if (!c) return 0; const el = await c.getScrollElement(); return el.scrollHeight + (innerHeight - c.clientHeight); });
+        if (pelna > 998) await pg.setViewportSize({ width: 448, height: pelna }); else await pg.setViewportSize({ width: 448, height: 998 });
+        await pg.waitForTimeout(100);
+        const b = await pg.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }); if (a && a.equals(b)) break; a = b;
+      }
+      await pg.setViewportSize({ width: 448, height: 998 });
       if (czyje && !(await pg.evaluate(czyje))) errs.push(nazwa + ': na ekranie nie ten formularz (zrzut nie przedstawia ' + nazwa + ')');
       out[nazwa] = a;
     };

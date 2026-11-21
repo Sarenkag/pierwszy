@@ -16,7 +16,7 @@
         <div v-else class="oest-pas"></div>
       </ion-header>
       <ion-content ref="tresc">
-        <component v-if="stan.komponent" :is="stan.komponent" :key="stan.trasa + '|' + stan.wersja" :T="T"></component>
+        <component v-if="stan.komponent" :is="stan.komponent" :key="stan.trasa" :T="T" :wersja="stan.wersja"></component>
       </ion-content>
       <ion-footer><div id="oest-stopka"></div></ion-footer>
     </div>

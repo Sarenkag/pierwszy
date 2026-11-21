@@ -52,7 +52,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
       await new Promise(r => { t.oncomplete = r; });
     }, PNG);
 
-    await p.goto(url + '/#settings/reports'); await p.locator('#rptList .k2').first().waitFor();
+    await p.evaluate(()=>OESTEkrany.go('settings/reports')); await p.locator('#rptList .k2').first().waitFor();
     const names = () => p.$$eval('#rptList .knm', a => a.map(e => [...e.childNodes].filter(n => !(n.classList && n.classList.contains('kbl'))).map(n => n.textContent).join('').trim())); // bez znacznika budynku
     ok(JSON.stringify(await names()) === JSON.stringify(['DB-TA-L5 08112026', 'ATS TB 07112026', 'Weekly Flushing TB 06112026', 'REACTIVE Leak 01112026']), 'lista: najnowsze na górze, bez cudzego raportu');
     const pills = await p.locator('#rptList .kst').allTextContents();

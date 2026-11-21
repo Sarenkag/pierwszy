@@ -30,7 +30,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     for (const vp of EKRANY) {
       const PASEK = vp.apka ? 44 : PASEK_PRZEGLADARKA, DOL = vp.apka ? 44 : 0;
       const c = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: true });
-      if (vp.apka) await c.addInitScript(() => { window.Capacitor = { isNativePlatform: () => true, Plugins: { App: { addListener() { return { remove() {} }; } } } }; });
+      if (vp.apka) await c.addInitScript(() => { window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener() { return { remove() {} }; } } } }; });
       await c.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await c.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
       await c.addInitScript(([h, d]) => { const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', h + 'px'), document.documentElement.style.setProperty('--safe-area-inset-bottom', d + 'px'), true); if (!set()) new MutationObserver((m, o) => { if (set()) o.disconnect(); }).observe(document, { childList: true }); }, [PASEK, DOL]);
@@ -64,8 +64,8 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
         check(m.sh <= m.ih && m.bsh <= m.ih && m.wsh <= 0, `${k}: ekran da się przewinąć (${m.sh} px treści na ${m.ih} px)`);
         // palcem w dół i w górę: nic się nie przesuwa
         await p.mouse.move(200, 600); await p.mouse.wheel(0, 400); await p.waitForTimeout(150);
-        await p.evaluate(() => scrollTo(0, 500)); await p.waitForTimeout(100);
-        const y = await p.evaluate(() => scrollY + document.scrollingElement.scrollTop + document.body.scrollTop + document.querySelector('.wrap').scrollTop);
+        await p.evaluate(() => { scrollTo(0, 500); OESTEkrany.przewin(500); }); await p.waitForTimeout(100);
+        const y = await p.evaluate(() => OESTEkrany.przewiniecie() + scrollY + document.scrollingElement.scrollTop + document.body.scrollTop + document.querySelector('.wrap').scrollTop);
         check(y === 0, `${k}: ekran przesunął się o ${y} px`);
         // najdłuższe napisy, jakie mogą się pojawić, też mieszczą się w jednej linii
         for (const t of l === 'pl' ? ['HDD · brak połączenia', 'HDD · zsynchronizowany', 'HDD · 99 w kolejce'] : ['HDD · not connected', 'HDD · 99 queued']) {
@@ -85,8 +85,10 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       if (process.env.OEST_EKRAN_ZRZUT && vp.height === 915) for (const l of ['pl', 'en']) { await setLang(l); await p.waitForTimeout(400); await p.screenshot({ path: process.env.OEST_EKRAN_ZRZUT.replace('.png', '-' + l + '.png') }); }
       await setLang('pl');
       // inne ekrany przewijają się dalej normalnie (blokada tylko na ekranie głównym)
-      await p.goto(url + 'index.html#settings'); await p.waitForTimeout(500);
+      await p.evaluate(() => OESTEkrany.go('settings')); await p.waitForTimeout(500);
       const ust = await p.evaluate(() => { const s = getComputedStyle(document.querySelector('.wrap')); return s.overflowY + ' ' + s.paddingBottom; });
+      const ustY = await p.evaluate(() => { OESTEkrany.przewin(500); return OESTEkrany.przewiniecie(); });
+      check(ustY > 0, `${vp.width}×${vp.height}: Ustawienia nie przewijają się (${ustY} px) – blokada ekranu głównego została`);
       if (!vp.apka) check(ust === 'visible 48px', `${vp.width}×${vp.height}: układ ekranu głównego został na Ustawieniach (${ust})`);
       check(errors.length === 0, 'błędy JS: ' + errors.slice(0, 3).join(' | '));
       await c.close();

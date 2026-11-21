@@ -14,13 +14,14 @@
 //   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
 //   OESTOkna.open(zamknij) → zwolnij               okienko na wierzchu: Wstecz woła zamknij(); okienko po zamknięciu woła zwolnij()
 //   OESTOkna.ile() / .zamknijGorne() / .zamknijWszystkie()
-import { createApp, h, reactive, markRaw } from 'vue';
+import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { IonicVue } from '@ionic/vue';
 import '@ionic/vue/css/core.css';
 import '@ionic/vue/css/structure.css';
 import '@ionic/vue/css/padding.css';
 import '@ionic/vue/css/display.css';
+import '@ionic/vue/css/text-alignment.css';
 import '@ionic/vue/css/palettes/dark.always.css'; // apka jest ciemna (motyw „Szkło i poświata”): ciemna paleta Ionic
 import mapa from '../../ekrany/ekrany.json';
 import Rama from './Rama.vue';
@@ -75,8 +76,11 @@ function naglowekDomyslny() {
   stan.nad = ''; stan.akcje = []; stan.jezykFn = null; stan.jezyk = !!m.jezyk;
   stan.tytul = m.pl ? T(m.pl, m.en) : '';
 }
+const pozycje = {}; // przewinięcie ekranów na Vue: Wstecz wraca w to samo miejsce
 function wykonaj(cel, o) {
   cel = czysta(cel);
+  if (stan.komponent && stan.trasa) pozycje[stan.trasa] = OESTEkrany.przewiniecie();
+  const wroc = !!(o && o.wstecz) || (!!stan.trasa && rodzic(stan.trasa) === cel); // powrót do rodzica (także starą strzałką ‹)
   OESTOkna.zamknijWszystkie(); // zmiana ekranu zamyka okienka (R4)
   router.replace('/' + cel);
   const r = dopasuj(cel);
@@ -86,6 +90,7 @@ function wykonaj(cel, o) {
   try { history.replaceState(null, '', '#' + cel); } catch (e) {}
   d.dispatchEvent(new CustomEvent('oest:ekran', { detail: { trasa: cel, wstecz: !!(o && o.wstecz) } }));
   if (naEkran) naEkran(cel);
+  if (k) { const y = wroc ? pozycje[cel] || 0 : 0; let n = 0; const pr = () => { OESTEkrany.przewin(y); if (Math.abs(OESTEkrany.przewiniecie() - y) > 1 && ++n < 30) requestAnimationFrame(pr); }; nextTick(pr); } // komponenty Ionic dorysowują się chwilę – ponawiaj do skutku (max ~0,5 s)
   return true;
 }
 function go(cel) { cel = czysta(cel); if (cel === 'up') return up(); czeka = null; return wykonaj(cel, {}); }

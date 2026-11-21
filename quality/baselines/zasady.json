@@ -1110,15 +1110,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|moduly/naglowek/naglowek.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/naglowek/naglowek.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|moduly/notatki/glos.js",
       "rule": "ZNACZNIK",
       "detail": "moduly/notatki/glos.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
@@ -1303,15 +1294,6 @@
       "rule": "ZNACZNIK",
       "detail": "keys.js: stary znacznik data-key-action 3×.",
       "maks": 3,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|moduly/naglowek/naglowek.js|data-go",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/naglowek/naglowek.js: stary znacznik data-go 1×.",
-      "maks": 1,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

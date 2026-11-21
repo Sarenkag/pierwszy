@@ -43,7 +43,7 @@ function snap(zapamietaj) {
   const inRow = el => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const ox = getComputedStyle(a).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   const els = [...document.body.querySelectorAll('*')].filter(e => !/^(SCRIPT|STYLE|TEMPLATE|svg|path|circle|rect|g|line|polyline|polygon|ellipse|use|defs)$/.test(e.tagName) && !e.closest('svg') && e.getClientRects().length && e.offsetWidth + e.offsetHeight > 0);
   if (zapamietaj !== false) window.__el = els; // pomiar stabilności (settle) nie nadpisuje elementów zapamiętanych w PL
-  return els.map(e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), w: Math.round(r.width), h: Math.round(r.height), row: inRow(e), blok: !/^inline/.test(getComputedStyle(e).display) || /^(BUTTON|LABEL)$/.test(e.tagName) || e.matches('.chip,.tile,.k2,.day,[role=button],.prow'), sw: !!e.closest('.oest-sw'), t: e.tagName + (e.id ? '#' + e.id : ''), d: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '')) + ' „' + (e.textContent || e.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 28) + '”' }; });
+  return els.map(e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), w: Math.round(r.width), h: Math.round(r.height), row: inRow(e), blok: !/^inline/.test(getComputedStyle(e).display) || /^(BUTTON|LABEL)$/.test(e.tagName) || e.matches('.chip,.tile,.k2,.day,[role=button],.prow'), sw: !!e.closest('.oest-sw, ion-toolbar ion-buttons[slot="end"]'), t: e.tagName + (e.id ? '#' + e.id : ''), d: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '')) + ' „' + (e.textContent || e.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 28) + '”' }; });
 }
 function again() { return (window.__el || []).map(e => { if (!e.isConnected) return null; const r = e.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), w: Math.round(r.width), h: Math.round(r.height), hidden: !e.getClientRects().length }; }); }
 // obserwator: elementy dodane/usunięte (przerysowanie) i uruchomione animacje
@@ -87,7 +87,7 @@ function quiet(n) {
     const lang = () => pg.evaluate(() => { try { return localStorage.getItem('oest.lang') === 'en' ? 'en' : 'pl'; } catch (e) { return 'pl'; } });
     // język ustawiony tak, jak robi to apka (Mój profil / ustawienia), bez klikania na badanym ekranie
     const ustawJezyk = l => pg.evaluate(l => { if (window.OESTSettings && window.OESTSettingsUI) { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); } localStorage.setItem('oest.lang', l); }, l);
-    const SW = '#hmLang:visible, .view:not([hidden]) .oest-sw[data-sw="lang"]:visible, .view:not([hidden]) [data-oest-lang]:visible';
+    const SW = '#hmLang:visible, .view:not([hidden]) .oest-sw[data-sw="lang"]:visible, .view:not([hidden]) [data-oest-lang]:visible, ion-toolbar ion-buttons[slot="end"] ion-button:visible'; // ostatni: przełącznik EN/PL w pasku ekranu na Ionic + Vue
     const ruch = (x, y) => { const out = []; x.forEach((e, i) => { const f = y[i]; if (!f || f.hidden || e.sw) return; if (f.y !== e.y || f.h !== e.h || (e.blok && !e.row && f.x !== e.x)) out.push(`${e.d} ${e.w}×${e.h} @${e.x},${e.y} → ${f.w}×${f.h} @${f.x},${f.y}`); }); return out; };
     const sprawdz = async (ekran, adres) => {
       await pg.goto(url + adres); await settle(); await ustawJezyk('pl'); await pg.reload(); await settle();
@@ -125,15 +125,15 @@ function quiet(n) {
       }
     };
 
-    // lista ekranów jest pełna: wszystkie strony Ustawień z settings-ui.js i wszystkie cele [data-go] ekranu głównego i Ustawień
+    // lista ekranów jest pełna: wszystkie strony Ustawień z settings-ui.js i wszystkie cele [data-nav] ekranu głównego i Ustawień
     {
       const src = fs.readFileSync(path.join(root, 'settings-ui.js'), 'utf8'), m = /var titles=\{([^;]*)\};/.exec(src);
       const pages = m ? [...m[1].matchAll(/(\w+):\[/g)].map(x => x[1]).filter(p => p !== 'backup') : []; // backup = ta sama strona co drive (open(): settings/backup → settings/drive)
       if (!pages.length) ogolne.push('lista ekranów: nie znaleziono stron Ustawień (titles) w settings-ui.js');
       for (const p of pages) if (!APP.includes('settings/' + p)) ogolne.push('lista ekranów: brak strony Ustawień settings/' + p);
       await pg.goto(url + '/index.html#home'); await settle();
-      const cele = new Set(await pg.evaluate(() => [...document.querySelectorAll('[data-go]')].map(b => b.dataset.go)));
-      for (const g of cele) { const r = g === 'profile' ? 'settings/profile' : g === 'appset' ? 'settings/account' : g; if (!APP.includes(r) && !['list', 'start'].includes(r)) ogolne.push('lista ekranów: do ekranu #' + g + ' da się przejść, a test go nie sprawdza'); }
+      const cele = new Set(await pg.evaluate(() => [...document.querySelectorAll('[data-nav]')].map(b => b.dataset.nav)));
+      for (const g of cele) { const r = g === 'profile' ? 'settings/profile' : g === 'appset' ? 'settings/account' : g; if (!APP.includes(r) && !['list', 'start', 'up'].includes(r)) ogolne.push('lista ekranów: do ekranu #' + g + ' da się przejść, a test go nie sprawdza'); }
     }
 
     for (const e of APP) await sprawdz('#' + e, '/index.html#' + e);

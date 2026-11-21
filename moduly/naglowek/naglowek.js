@@ -19,7 +19,7 @@
   function html(o) {
     o = o || {};
     return '<div class="top oest-top">' +
-      (o.back !== false ? '<button class="back" type="button"' + (o.back ? ' data-go="' + esc(o.back) + '"' : "") + ' aria-label="' + esc(T("Wstecz", "Back")) + '">' + ARROW + "</button>" : "") +
+      (o.back !== false ? '<button class="back" type="button"' + (o.back ? ' data-nav="' + esc(o.back) + '"' : "") + ' aria-label="' + esc(T("Wstecz", "Back")) + '">' + ARROW + "</button>" : "") +
       '<div class="t"><h1>' + esc(o.title || "") + "</h1></div>" + (o.actions || "") + (o.lang ? sw() : "") + "</div>";
   }
   function setLang(next) {

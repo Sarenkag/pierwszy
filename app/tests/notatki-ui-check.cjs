@@ -31,7 +31,7 @@ function fakePhone() {
       ? { text: 'The isolator next to the AOV on level 13 has a cracked gland. The panel shows an error in zone 4.' }
       : { text: (prompt.split('Note:\n')[1] || '').split('\n\n')[0] } }
   };
-  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || {}, convertFileSrc: x => x };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, isPluginAvailable: n => !!plugins[n], registerPlugin: n => plugins[n] || {}, convertFileSrc: x => x };
 }
 
 (async () => {
@@ -50,7 +50,8 @@ function fakePhone() {
     const record = async (n, wstecz) => {
       await pg.locator('#ntRec').click(); await pg.waitForSelector('.oest-rec'); await pg.waitForTimeout(1200);
       if (wstecz) { // Wstecz telefonu w trakcie nagrywania = Zakończ i zapis, strona zostaje (przegląd Codex #108)
-        const u = pg.url(); R.wsteczPrzyNagrywaniu = await pg.evaluate(() => OESTWstecz.wstecz()); await pg.waitForTimeout(300);
+        const u = pg.url(), okien0 = await pg.evaluate(() => OESTOkna.ile()); await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await pg.waitForTimeout(300);
+        R.wsteczPrzyNagrywaniu = okien0 > (await pg.evaluate(() => OESTOkna.ile())) ? 'okno' : 'nie zamknął okna (' + okien0 + ' okien)'; // Wstecz zamyka okno nagrywania (nie wychodzi z inspekcji)
         check(pg.url() === u && R.wsteczPrzyNagrywaniu === 'okno', 'Wstecz przy nagrywaniu opuścił inspekcję: ' + R.wsteczPrzyNagrywaniu + ' ' + pg.url());
       } else await pg.locator('.oest-rec button').click();
       await pg.waitForFunction(n => document.querySelector('#ntN').textContent === String(n), n, { timeout: 10000 });

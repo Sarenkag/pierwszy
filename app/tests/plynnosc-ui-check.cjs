@@ -63,22 +63,23 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const p = await c.newPage();
     p.on('pageerror', e => errors.push(e.message));
     await p.goto(url + '/index.html#home');
+    const nav = rt => p.evaluate(rt => OESTEkrany.go(rt), rt); // nawigacja w apce (adres zmienia tylko replaceState – hashchange nie istnieje)
     const setLang = l => p.evaluate(l => { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); }, l);
 
     // ---------- B2: geometria przy zmianie PL → EN na 11 ekranach ----------
     // Nic nie może zmienić pozycji w pionie ani wysokości. W poziomie wolno tylko w rzędzie przewijanym w bok (pasek dni, filtry Inspekcji – wariant A).
-    const SEL = 'button,.tile,.k2,.chip,.day,.oest-sw,[role=button],.settings-card,.prow';
+    const SEL = 'button,.tile,.k2,.chip,.day,.oest-sw,[role=button],ion-card[data-nav],.prow';
     const snap = () => p.evaluate(SEL => {
       const v = [...document.querySelectorAll('.view')].find(x => !x.hidden) || document.body;
       const inScrollRow = el => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const ox = getComputedStyle(a).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
       return [...v.querySelectorAll(SEL)].filter(e => e.offsetWidth > 0 && e.offsetHeight > 0).map((e, i) => {
         const r = e.getBoundingClientRect();
-        return { k: i + '|' + (e.id || e.dataset.go || e.dataset.id || e.dataset.g || e.dataset.day || e.dataset.route || ''), x: Math.round(r.x), y: Math.round(r.y + scrollY), w: e.offsetWidth, h: e.offsetHeight, row: inScrollRow(e), t: (e.textContent || '').trim().slice(0, 24) };
+        return { k: i + '|' + (e.id || e.dataset.nav || e.dataset.id || e.dataset.g || e.dataset.day || ''), x: Math.round(r.x), y: Math.round(r.y + OESTEkrany.przewiniecie()), w: e.offsetWidth, h: e.offsetHeight, row: inScrollRow(e), t: (e.textContent || '').trim().slice(0, 24) };
       });
     }, SEL);
     R.plEn = {};
     for (const rt of ROUTES) {
-      await setLang('pl'); await p.goto(url + '/index.html#' + rt); await p.waitForTimeout(700);
+      await setLang('pl'); await nav(rt); await p.waitForTimeout(700);
       const a = await snap();
       await p.evaluate(() => { window.__anim = []; });
       await setLang('en'); await p.waitForTimeout(700);
@@ -99,7 +100,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // ---------- B5/B6: elementy tej samej klasy w jednej grupie mają tę samą wysokość (rozmiar układu, bez efektu wciśnięcia) ----------
     R.grupy = {};
     for (const rt of ['home', 'ppm', 'settings', 'reactive', 'questions']) {
-      await p.goto(url + '/index.html#' + rt); await p.waitForTimeout(600);
+      await nav(rt); await p.waitForTimeout(600);
       R.grupy[rt] = await p.evaluate(() => {
         const v = [...document.querySelectorAll('.view')].find(x => !x.hidden) || document.body, bad = [];
         for (const par of new Set([...v.querySelectorAll('button')].map(b => b.parentElement))) {
@@ -114,19 +115,20 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // B4/B5: Ustawienia – grupy bez ramki, wszystkie kafelki tej samej wysokości (412 px i wąski telefon 360 px, PL i EN)
     R.ustawienia = {};
     for (const [wdt, l] of [[412, 'pl'], [412, 'en'], [360, 'pl'], [360, 'en']]) {
-      await p.setViewportSize({ width: wdt, height: 915 }); await setLang(l); await p.goto(url + '/index.html#settings'); await p.waitForTimeout(600);
+      await p.setViewportSize({ width: wdt, height: 915 }); await setLang(l); await nav('settings'); await p.waitForTimeout(600);
       const s = await p.evaluate(() => ({
-        ramki: [...document.querySelectorAll('#v-settings .settings-group')].map(g => parseFloat(getComputedStyle(g).borderTopWidth)).filter(x => x > 0).length,
-        wysokosci: [...new Set([...document.querySelectorAll('#v-settings .settings-grid > .settings-card')].map(e => e.offsetHeight))]
+        ramki: [...document.querySelectorAll('ion-grid.oest-rowne')].map(g => parseFloat(getComputedStyle(g).borderTopWidth)).filter(x => x > 0).length, grupy: document.querySelectorAll('ion-grid.oest-rowne').length,
+        wysokosci: [...new Set([...document.querySelectorAll('ion-grid.oest-rowne ion-card[data-nav]')].map(e => e.offsetHeight))], kafelki: document.querySelectorAll('ion-grid.oest-rowne ion-card[data-nav]').length
       }));
       R.ustawienia[wdt + '-' + l] = s;
+      check(s.grupy > 0 && s.kafelki > 0, `B4: Ustawienia ${wdt}px ${l}: brak grup/kafelków (${s.grupy}/${s.kafelki})`);
       check(s.ramki === 0, `B4: Ustawienia ${wdt}px ${l}: ${s.ramki} grup z ramką`);
       check(s.wysokosci.length === 1, `B5: Ustawienia ${wdt}px ${l}: kafelki różnej wysokości ${s.wysokosci.join('/')}`);
     }
     await p.setViewportSize({ width: 412, height: 915 }); await setLang('pl');
 
     // ---------- B2: filtry Inspekcji w jednym rzędzie, lista zawsze w tym samym miejscu ----------
-    await p.goto(url + '/index.html#ppm'); await p.waitForTimeout(700);
+    await nav('ppm'); await p.waitForTimeout(700);
     R.filtry = await p.evaluate(() => { const c = document.getElementById('ppmChips'); return { rzedy: new Set([...c.children].map(e => e.offsetTop)).size, listaOdY: Math.round(document.getElementById('ppmList').getBoundingClientRect().top) }; });
     check(R.filtry.rzedy === 1, `B2: filtry Inspekcji w ${R.filtry.rzedy} rzędach (ma być 1)`);
     // stuknięcie filtra za krawędzią ekranu nie przewija rzędu z powrotem na początek
@@ -163,33 +165,33 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
 
     // ---------- Wstecz: wraca na ten sam ekran, przewinięcie i wybór ----------
     R.wstecz = {};
-    await p.goto(url + '/index.html#home'); await p.waitForTimeout(500);
-    await p.click('[data-go=ppm]'); await p.waitForTimeout(600); await p.evaluate(() => scrollTo(0, 900)); await p.waitForTimeout(200);
-    let y0 = await p.evaluate(() => scrollY);
+    await nav('home'); await p.waitForTimeout(500);
+    await p.click('[data-nav=ppm]'); await p.waitForTimeout(600); await p.evaluate(() => OESTEkrany.przewin(900)); await p.waitForTimeout(200);
+    let y0 = await p.evaluate(() => OESTEkrany.przewiniecie());
     await p.evaluate(() => [...document.querySelectorAll('#ppmList [data-id]')].find(e => e.getBoundingClientRect().top > 0).click());
-    await p.waitForURL(/inspekcje\/index\.html/); await p.waitForTimeout(800); await p.goBack(); await p.waitForTimeout(1200);
-    R.wstecz.inspekcje = { y0, po: await p.evaluate(() => location.hash + ' y=' + scrollY), y: await p.evaluate(() => scrollY) };
+    await p.waitForURL(/inspekcje\/index\.html/); await p.waitForTimeout(800); await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(1200);
+    R.wstecz.inspekcje = { y0, po: await p.evaluate(() => location.hash + ' y=' + OESTEkrany.przewiniecie()), y: await p.evaluate(() => OESTEkrany.przewiniecie()) };
     check(/#ppm/.test(R.wstecz.inspekcje.po) && Math.abs(R.wstecz.inspekcje.y - y0) <= 10, 'Wstecz z inspekcji do listy: ' + JSON.stringify(R.wstecz.inspekcje));
-    await p.goto(url + '/index.html#home'); await p.waitForTimeout(400); await p.click('[data-go=cal]'); await p.waitForTimeout(500);
+    await nav('home'); await p.waitForTimeout(400); await p.click('[data-nav=cal]'); await p.waitForTimeout(500);
     const day = await p.evaluate(() => { const b = [...document.querySelectorAll('#calGrid [data-cd]')].find(x => x.querySelector('i')); b.click(); return b.dataset.cd; });
     await p.waitForTimeout(300);
     const opened = await p.evaluate(() => { const b = document.querySelector('#calDay [data-id]'); if (b) b.click(); return !!b; });
-    if (opened) { await p.waitForURL(/inspekcje\/index\.html/); await p.waitForTimeout(800); await p.goBack(); await p.waitForTimeout(1200); }
+    if (opened) { await p.waitForURL(/inspekcje\/index\.html/); await p.waitForTimeout(800); await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(1200); }
     R.wstecz.kalendarz = { dzien: day, otwarto: opened, po: await p.evaluate(() => location.hash + ' ' + ((document.querySelector('#calGrid .cd.on') || {}).dataset || {}).cd) };
     check(opened && R.wstecz.kalendarz.po === '#cal ' + day, 'Wstecz z inspekcji do kalendarza: ' + JSON.stringify(R.wstecz.kalendarz));
-    await p.goto(url + '/index.html#home'); await p.waitForTimeout(400); await p.click('[data-go=settings]'); await p.waitForTimeout(500);
-    await p.evaluate(() => scrollTo(0, 700)); await p.waitForTimeout(150); y0 = await p.evaluate(() => scrollY);
-    await p.evaluate(() => [...document.querySelectorAll('#v-settings .settings-card[data-route]')].find(e => e.getBoundingClientRect().top > 0).click()); await p.waitForTimeout(500);
-    await p.goBack(); await p.waitForTimeout(600);
-    R.wstecz.ustawienia = { y0, po: await p.evaluate(() => location.hash + ' y=' + scrollY), y: await p.evaluate(() => scrollY) };
+    await nav('home'); await p.waitForTimeout(400); await p.click('[data-nav=settings]'); await p.waitForTimeout(500);
+    await p.evaluate(() => OESTEkrany.przewin(700)); await p.waitForTimeout(150); y0 = await p.evaluate(() => OESTEkrany.przewiniecie());
+    await p.evaluate(() => [...document.querySelectorAll('ion-card[data-nav^="settings/"]')].find(e => e.getBoundingClientRect().top > 0).click()); await p.waitForTimeout(500);
+    await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(600);
+    R.wstecz.ustawienia = { y0, po: await p.evaluate(() => location.hash + ' y=' + OESTEkrany.przewiniecie()), y: await p.evaluate(() => OESTEkrany.przewiniecie()) };
     check(R.wstecz.ustawienia.po.startsWith('#settings ') && Math.abs(R.wstecz.ustawienia.y - y0) <= 10, 'Wstecz z podstrony Ustawień: ' + JSON.stringify(R.wstecz.ustawienia));
 
     // ---------- płynność: czas klatek przy przewijaniu listy i przejściu ekranu (Chromium, nie telefon) ----------
-    await p.goto(url + '/index.html#ppm'); await p.waitForTimeout(700);
+    await nav('ppm'); await p.waitForTimeout(700);
     R.plynnosc = await p.evaluate(async () => {
       const frames = [], longT = []; let last = performance.now();
       try { new PerformanceObserver(l => l.getEntries().forEach(e => longT.push(Math.round(e.duration)))).observe({ type: 'longtask' }); } catch (e) {}
-      await new Promise(done => { let n = 0; (function step(t) { frames.push(t - last); last = t; scrollBy(0, 40); if (++n < 90) requestAnimationFrame(step); else done(); })(performance.now()); });
+      await new Promise(done => { let n = 0; (function step(t) { frames.push(t - last); last = t; OESTEkrany.przewin(OESTEkrany.przewiniecie() + 40); if (++n < 90) requestAnimationFrame(step); else done(); })(performance.now()); });
       const s = frames.slice(1).sort((a, b) => a - b);
       return { klatki: s.length, medianaMs: +s[Math.floor(s.length / 2)].toFixed(1), p95Ms: +s[Math.floor(s.length * 0.95)].toFixed(1), dlugieZadania: longT.length };
     });
@@ -243,7 +245,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       const q = await c2.newPage(); q.on('pageerror', e => errors.push(e.message));
       await q.goto(url + '/index.html#home'); await q.waitForTimeout(500);
-      for (const rt of ['ppm', 'cal', 'settings', 'reactive']) { await q.click(`[data-go=${rt}]`).catch(() => q.goto(url + '/index.html#' + rt)); await q.waitForTimeout(500); if (rt === 'ppm') { await q.click('#ppmChips [data-g=fire]'); await q.waitForTimeout(400); await q.click('#ppmChips [data-g=all]'); await q.waitForTimeout(400); } await q.goBack(); await q.waitForTimeout(400); }
+      for (const rt of ['ppm', 'cal', 'settings', 'reactive']) { await q.click(`[data-nav=${rt}]`).catch(() => q.evaluate(rt => OESTEkrany.go(rt), rt)); await q.waitForTimeout(500); if (rt === 'ppm') { await q.click('#ppmChips [data-g=fire]'); await q.waitForTimeout(400); await q.click('#ppmChips [data-g=all]'); await q.waitForTimeout(400); } await q.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await q.waitForTimeout(400); }
       await q.evaluate(() => { if (window.OESTPytaj) OESTPytaj({ title: 'Test', text: 'x' }); }); await q.waitForTimeout(400);
       const press = await q.evaluate(() => { const b = document.querySelector('.kf'); return getComputedStyle(document.documentElement).getPropertyValue('--ruch-kafelek-nacisk').trim() + '/' + getComputedStyle(document.documentElement).getPropertyValue('--ruch-przycisk-nacisk').trim(); });
       R.mniejRuchu = { animacje: await q.evaluate(() => window.__anim.filter(a => !/spin/.test(a.n)).map(a => a.n + '@' + a.el)), nacisk: press };

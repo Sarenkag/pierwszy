@@ -7,14 +7,14 @@
           <img v-if="d.photo" :src="d.photo" alt="">
           <span v-else class="oest-inicjaly">{{ d.initials }}</span>
         </ion-avatar>
-        <ion-label>
+        <ion-label class="ion-text-nowrap">
           <p>OEST · {{ T('Twój warsztat', 'Your workspace') }}</p>
           <h2>{{ d.name }}</h2>
           <p>{{ T('Ustaw raz. Korzystaj w każdym module.', 'Set once. Reuse across modules.') }}</p>
         </ion-label>
       </ion-item>
     </ion-card>
-    <template v-for="g in d.groups" :key="g.name">
+    <template v-for="(g, i) in d.groups" :key="i">
       <ion-list-header>{{ g.name }}</ion-list-header>
       <ion-grid class="oest-rowne">
         <ion-row>
@@ -35,7 +35,9 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { IonCard, IonItem, IonAvatar, IonLabel, IonListHeader, IonGrid, IonRow, IonCol, IonCardHeader, IonCardTitle, IonCardSubtitle, IonIcon, IonNote } from '@ionic/vue';
-defineProps({ T: Function });
-const d = window.OESTSettingsUI.hubDane();
+const props = defineProps({ T: Function, wersja: Number });
+// PL/EN: dane liczone na nowo, ekran się nie przerysowuje (Vue podmienia tylko teksty)
+const d = computed(() => (props.wersja, window.OESTSettingsUI.hubDane()));
 </script>

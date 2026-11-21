@@ -33,7 +33,7 @@ let STEP = 'start';
       IDBFactory.prototype.open = function () { const rq = {}; setTimeout(() => { rq.error = new DOMException('denied', 'UnknownError'); rq.onerror && rq.onerror({ target: rq }); }, 0); return rq; };
       window.__shareCalls = 0;
       const P = { ReportShare: { share: async () => { window.__shareCalls++; return { status: 'shared' }; } } };
-      window.Capacitor = { isNativePlatform: () => true, Plugins: P, convertFileSrc: x => x,
+      window.Capacitor = { isNativePlatform: () => true, Plugins: P, isPluginAvailable: n => !!P[n], convertFileSrc: x => x,
         registerPlugin: n => P[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }) };
       new MutationObserver(() => { const a = document.querySelector('.oest-ask:not([data-wy-out])'); const b = a && a.querySelector('[data-a=ok]'); if (b) { console.log('OEST-ASK ' + a.innerText); b.click(); } }).observe(document, { childList: true, subtree: true });
     });

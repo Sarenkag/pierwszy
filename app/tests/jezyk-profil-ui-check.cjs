@@ -45,7 +45,7 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
     ok(/Zapisano/.test(await p.locator('#settingsMessage').textContent()), 'profil zapisany');
 
     // 2. Na ekranie głównym przełączam u góry na EN.
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor();
+    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('#hmLang').waitFor();
     await p.locator('#hmLang').click(); await p.waitForTimeout(150);
     let l = await lang(p); ok(l.ui === 'en' && l.cur === 'en', 'przełącznik u góry: EN'); ok(l.def === 'pl', 'przełącznik nie zmienia języka w profilu');
     ok(/Settings/.test(await homeText(p)), 'ekran główny po angielsku');
@@ -56,15 +56,15 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
     ok((await lang(p)).ui === 'en', 'po powrocie z inspekcji nadal EN (bez restartu)');
 
     // 4. Ustawienia w EN: przełącznik nie rusza wyboru w profilu, klocki się nie przesuwają przy zmianie PL/EN.
-    await p.goto(url + '/#settings/profile'); await p.locator('[data-path="profile.language"]').waitFor();
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.language"]').waitFor();
     ok(await p.locator('[data-path="profile.language"]').inputValue() === 'pl', 'w profilu nadal Polski, choć apka w EN');
-    await p.goto(url + '/#settings'); await p.locator('.settings-card').first().waitFor();
-    const boxes = () => p.evaluate(() => [...document.querySelectorAll('#v-settings .settings-card')].map(e => { let x = 0, y = 0; for (let n = e; n; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return [x, y, e.offsetWidth, e.offsetHeight, getComputedStyle(e).height].join(','); }) /* układ (bez chwilowej animacji dotyku) */);
+    await p.evaluate(() => OESTEkrany.go('settings')); await p.locator('ion-card[data-nav]').first().waitFor();
+    const boxes = () => p.evaluate(() => [...document.querySelectorAll('ion-card[data-nav]')].map(e => { let x = 0, y = 0; for (let n = e; n; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return [x, y, e.offsetWidth, e.offsetHeight, getComputedStyle(e).height].join(','); }) /* układ (bez chwilowej animacji dotyku) */);
     const enBoxes = await boxes();
-    await p.locator('#v-settings [data-action=language]').click(); await p.waitForTimeout(200);
+    await p.locator('ion-toolbar ion-buttons[slot=end] ion-button').click(); await p.waitForTimeout(200);
     ok((await lang(p)).ui === 'pl', 'przełącznik w Ustawieniach: PL');
     const plBoxes = await boxes(); ok(JSON.stringify(plBoxes) === JSON.stringify(enBoxes), 'PL/EN: klocki Ustawień w tych samych miejscach i rozmiarach');
-    await p.locator('#v-settings [data-action=language]').click(); await p.waitForTimeout(200);
+    await p.locator('ion-toolbar ion-buttons[slot=end] ion-button').click(); await p.waitForTimeout(200);
     ok((await lang(p)).ui === 'en', 'z powrotem EN przed zamknięciem');
     await close(app);
 
@@ -75,12 +75,12 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
     ok(/Ustawienia/.test(await homeText(p)), 'ekran główny po polsku po restarcie');
 
     // 6. Profil na EN + zapis: od razu cała apka EN; restart dalej EN; przełącznik na PL działa do zamknięcia.
-    await p.goto(url + '/#settings/profile'); await p.locator('[data-path="profile.language"]').waitFor();
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.language"]').waitFor();
     await p.locator('[data-path="profile.language"]').selectOption('en');
     await p.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click(); await p.waitForTimeout(150);
     l = await lang(p); ok(l.def === 'en' && l.ui === 'en', 'zapis profilu z EN: apka od razu EN');
     ok(/My Profile/.test(await p.locator('#v-settings h1').textContent()), 'nagłówek profilu po angielsku');
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor(); await p.locator('#hmLang').click(); await p.waitForTimeout(150);
+    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('#hmLang').waitFor(); await p.locator('#hmLang').click(); await p.waitForTimeout(150);
     ok((await lang(p)).ui === 'pl', 'w trakcie pracy przełączone na PL');
     await close(app);
     app = await launch(); p = app.p;
@@ -89,7 +89,7 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
 
     // 7. Zapis profilu bez zmiany języka (np. stanowisko) nie przestawia bieżącego języka.
     await p.locator('#hmLang').click(); await p.waitForTimeout(150);
-    await p.goto(url + '/#settings/profile'); await p.locator('[data-path="profile.position"]').waitFor();
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.position"]').waitFor();
     await p.locator('[data-path="profile.position"]').fill('Shift Engineer');
     await p.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click(); await p.waitForTimeout(150);
     l = await lang(p); ok(l.ui === 'pl' && l.def === 'en', 'zapis innego pola: bieżący PL zostaje, domyślny EN');
@@ -104,9 +104,9 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
       localStorage.setItem('oest.lang', 'en');
     }, JSON.stringify(ACCOUNT));
     const p8 = await ctx.newPage(); p8.on('pageerror', e => errors.push(e.message));
-    await p8.goto(url + '/#settings'); await p8.locator('.settings-card').first().waitFor();
+    await p8.goto(url + '/#settings'); await p8.locator('ion-card[data-nav]').first().waitFor();
     await p8.evaluate(() => { const k = 'oest.settings.v1.test', s = JSON.parse(localStorage.getItem(k)); delete s.profile.language; s.appearance.language = 'en'; s.appearance.density = 'compact'; s.appearance.reduceMotion = true; localStorage.setItem(k, JSON.stringify(s)); sessionStorage.clear(); });
-    await p8.reload(); await p8.locator('.settings-card').first().waitFor();
+    await p8.reload(); await p8.locator('ion-card[data-nav]').first().waitFor();
     l = await lang(p8); ok(l.def === 'en' && l.ui === 'en', 'migracja: domyślny = dotychczasowy język (EN)');
     const look = await p8.evaluate(() => ({ d: document.documentElement.dataset.settingsDensity, m: document.documentElement.dataset.settingsMotion }));
     ok(look.d === 'comfortable' && look.m === 'normal', 'bez klocka Wygląd: gęstość Wygodna, animacje normalne');

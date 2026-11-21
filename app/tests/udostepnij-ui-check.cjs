@@ -38,7 +38,7 @@ let STEP = 'start';
         localStorage.setItem('insp.cfg', JSON.stringify({ insp: 'G. Sarna', email: 'demo@example.com' }));
         window.__shareCalls = [];
         const P = { ReportShare: { share: async o => { window.__shareCalls.push({ files: o.files.map(f => f.name), to: o.to }); console.log('OEST-SHARE'); if (m.reject) throw new Error('SHARE_UNAVAILABLE'); return { status: 'shared' }; } } };
-        window.Capacitor = { isNativePlatform: () => true, Plugins: P, convertFileSrc: x => x,
+        window.Capacitor = { isNativePlatform: () => true, Plugins: P, isPluginAvailable: n => !!P[n], convertFileSrc: x => x,
           registerPlugin: n => P[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }) };
         // okienka apki (moduly/przycisk ask): odpowiedź „OK” jak użytkownik
         window.__said = []; // treść okienek zapamiętana przed kliknięciem (okienko znika od razu)

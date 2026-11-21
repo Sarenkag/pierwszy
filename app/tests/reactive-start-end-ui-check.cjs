@@ -15,7 +15,7 @@ function fakePhone() {
     HandoverTools: { startAudio: async () => ({}), stopAudio: async () => ({ data: wav }), transcribe: async () => ({ text: 'pompa numer 12 cieknie przy zaworze, temperatura 54 stopnie' }) },
     Translate: { plToEn: async () => ({ text: 'Pump number 12 is leaking at the valve, temperature 54 °C' }) }
   };
-  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, isPluginAvailable: n => !!plugins[n], registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
   window.__askMode = '';
 }
 

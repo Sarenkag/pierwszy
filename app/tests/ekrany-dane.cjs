@@ -51,6 +51,8 @@ const ID = { 'keys/detail/:id': 'key', 'keys/edit/:id': 'key', 'powertrace/view/
 // szkic Reactive: tworzy go sama apka po wejściu w nowe zgłoszenie (węzeł drzewa) – adres zmienia się na reactive/draft/<id>
 async function szkic(pg, B, leaf) {
   await pg.goto(B + '/index.html#reactive/new/' + leaf); await pg.waitForLoadState('networkidle');
+  // szkielet Ionic: sam hash w adresie nie jest nawigacją – przejście robi OESTEkrany.go (wersja bazowa z hashchange go nie ma)
+  await pg.evaluate(h => { if (window.OESTEkrany && OESTEkrany.go) OESTEkrany.go(h); }, '#reactive/new/' + leaf);
   await pg.waitForFunction(() => /^#reactive\/draft\/[-\w]+$/.test(location.hash), null, { timeout: 5000 }).catch(() => {});
   return (await pg.evaluate(() => (location.hash.match(/^#reactive\/draft\/([-\w]+)$/) || [])[1])) || null;
 }

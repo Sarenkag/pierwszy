@@ -23,13 +23,16 @@ function fakePhone() {
     HandoverTools: { startAudio: async () => ({}), stopAudio: async () => ({ data: wav }), transcribe: async () => ({ text: 'pompa numer 12 cieknie przy zaworze, temperatura 54 stopnie' }) },
     Translate: { plToEn: async () => ({ text: 'Pump number 12 is leaking at the valve, temperature 54 °C' }) }
   };
-  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, isPluginAvailable: n => !!plugins[n], registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
   window.__askMode = '';
 }
 
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
+  // Nawigacja do ekranu apki: gdy strona już jest apką (index.html, szkielet wystartował) – OESTEkrany.go (adres zmienia tylko replaceState,
+  // hash w adresie nie jest nawigacją); w przeciwnym razie (pusta karta, strona inspekcji) – prawdziwe wczytanie strony.
+  const idz = async (pg, r) => { const u = new URL(pg.url()); if (!/inspekcje/.test(u.pathname) && /(index\.html|\/)$/.test(u.pathname) && await pg.evaluate(() => !!(window.OESTEkrany && OESTEkrany.trasa())).catch(() => false)) await pg.evaluate(x => OESTEkrany.go(x), r); else await pg.goto(B + '/index.html#' + r); };
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, serviceWorkers: 'block' });
@@ -49,7 +52,7 @@ function fakePhone() {
     };
 
     // ---------- Reactive ----------
-    await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
+    await idz(pg, 'reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     check(await pg.locator('#rxNotes .nt-rec').isVisible(), 'Reactive: brak „🎤 Nagraj notatkę”');
     check(await pg.locator('#rxNotes .nt-n').textContent() === '0', 'Reactive: licznik na starcie');
     check(await pg.locator('#rxRecord').isHidden(), 'Reactive: nagłówek starych nagrań widoczny bez nagrań');
@@ -62,16 +65,16 @@ function fakePhone() {
     // ‹ zaraz po nagraniu (opis pusty): szkic z notatką nie jest „pusty” i zostaje
     await pg.locator('#v-reactive .top .back').click(); await pg.waitForTimeout(600);
     check(await until(k => OESTReactiveUI.repository.get().then(d => !!(d.reactiveDrafts || {})[k]), scope.slice(3)), 'Reactive: szkic z samą notatką skasowany po ‹');
-    await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
+    await idz(pg, 'reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     check(await until(() => document.querySelector('#rxNotes .nt-n').textContent === '1'), 'Reactive: po ‹ i ponownym otwarciu brak notatki');
     // „Połącz”, a ekran w tym czasie się zmienia (zapis wpisu → nowy formularz): propozycja nie otwiera się nad nowym ekranem (przegląd Codex #113)
     await pg.waitForFunction(() => !document.querySelector('#rxNotes .nt-join').hidden, null, { timeout: 10000 });
-    await pg.evaluate(() => { document.querySelector('#rxNotes .nt-join').click(); location.hash = '#home'; }); // jak systemowy Wstecz: ekran Reactive tylko ukryty (hidden), pasek nadal w DOM
+    await pg.evaluate(() => { document.querySelector('#rxNotes .nt-join').click(); OESTEkrany.go('#home'); }); // jak systemowy Wstecz: ekran Reactive tylko ukryty (hidden), pasek nadal w DOM
     await pg.waitForTimeout(800);
     check(await pg.locator('#v-reactive').isHidden() && await pg.locator('#rxNotes').count() === 1, 'test: Reactive nie ukryty albo pasek odłączony – scenariusz nie jak w apce');
     check(await pg.locator('.oest-ask').count() === 0, 'Reactive: propozycja z notatek otwarta nad zmienionym ekranem');
     if (await pg.locator('.oest-ask').count()) { await pg.locator('.oest-ask [data-a=no]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); }
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
+    await idz(pg, 'home'); await idz(pg, 'reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     // okienko 📝 Notatki
     await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note');
     check(/Pump number 12/.test(await pg.locator('.nt-pop .nt-en').textContent()), 'Reactive: okienko bez tekstu EN');
@@ -91,14 +94,14 @@ function fakePhone() {
     await pg.locator('#v-reactive .top .back').click(); await pg.waitForTimeout(500);
     const kept = await pg.evaluate(() => OESTReactiveUI.repository.get().then(d => Object.keys(d.reactiveDrafts||{}).length));
     check(kept >= 1, 'Reactive: szkic z notatką skasowany po ‹');
-    await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
+    await idz(pg, 'reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     await pg.waitForFunction(() => document.querySelector('#rxNotes .nt-n').textContent === '1', null, { timeout: 5000 }).catch(() => check(false, 'Reactive: po ponownym otwarciu brak notatki'));
     // stare nagranie (sprzed 09/11) zostaje z „Na tekst”
     await pg.evaluate(async () => {
       const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts||{}).at(-1), id = 'old-audio-1';
       await r.saveReactiveDraft({ ...d, audioMediaIds: [id] }, [{ id, kind: 'audio', blob: new Blob([new Uint8Array(64)], { type: 'audio/wav' }), name: 'Audio.wav', mime: 'audio/wav', size: 64 }]);
     });
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
+    await idz(pg, 'home'); await idz(pg, 'reactive/draft/' + scope.slice(3)); await pg.locator('#rxNotes .nt-n').waitFor();
     await pg.locator('#rxAudio .rx-voice').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive: stare nagranie zniknęło'));
     check(await pg.locator('#rxRecord').isVisible() && await pg.locator('#rxAudio [data-rx=transcribe]').count() === 1, 'Reactive: stare nagranie bez „Na tekst” / nagłówka');
     // Usuń szkic = usuwa też jego notatki
@@ -111,7 +114,7 @@ function fakePhone() {
     // ---------- Hand over ----------
     // okres zmiany tylko z grafiku (Ustawienia → Mój profil): Hand over sam otwiera bieżący blok 4/4
     await pg.evaluate(() => { const d = new Date(), t = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); return window.OESTSettings.addSchedule({ effectiveFrom: '2026-01-01', anchor: t, kind: '4on4', start: '08:00', end: '20:00', endNextDay: false }); });
-    await pg.goto(B + '/#home'); await pg.locator('[data-go=handover]').click(); await pg.locator('#hoText').waitFor();
+    await idz(pg, 'home'); await pg.locator('[data-nav=handover]').click(); await pg.locator('#hoText').waitFor();
     check(await pg.locator('#hoNotes .nt-rec').isVisible(), 'Hand over: brak „🎤 Nagraj notatkę”');
     check(await pg.locator('[data-ho=record]').count() === 0, 'Hand over: stary przycisk nagrywania nadal jest');
     await record('#hoNotes', 1);
@@ -148,7 +151,7 @@ function fakePhone() {
     await pg.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
 
     // notatka w szybkim wpisie nie zależy od id zmiany (scalanie kont zmienia id zmiany – przegląd Codex #113): nowa zmiana nadal ją widzi
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#handover'); await pg.locator('#hoText').waitFor(); // następny blok z grafiku
+    await idz(pg, 'home'); await idz(pg, 'handover'); await pg.locator('#hoText').waitFor(); // następny blok z grafiku
     const sid1 = await pg.evaluate(() => OESTHandover.repository.get().then(d => (d.shifts.find(x => !x.archived) || {}).id));
     await record('#hoNotes', 1);
     await pg.evaluate(() => { window.__askMode = 'ok'; });
@@ -158,9 +161,9 @@ function fakePhone() {
     check(await until(s => OESTHandover.repository.get().then(d => d.shifts.some(x => !x.archived && x.id !== s)), sid1), 'Hand over: po zamknięciu zmiany nie otwarto kolejnej z grafiku');
     check(await until(() => document.querySelector('#hoNotes .nt-n').textContent === '1'), 'Hand over: notatka szybkiego wpisu zgubiona po zmianie id zmiany');
     // notatki szybkiego wpisu należą do konta: inne konto na tym telefonie ich nie widzi; z trybu bez logowania przechodzą na konto (przegląd Codex #113)
-    const asAccount = async acc => { await pg.evaluate(a => localStorage.setItem('oest.account', JSON.stringify(a)), acc); await pg.goto(B + '/#home'); await pg.reload();
+    const asAccount = async acc => { await pg.evaluate(a => localStorage.setItem('oest.account', JSON.stringify(a)), acc); await idz(pg, 'home'); await pg.reload();
       await pg.evaluate(() => { const d = new Date(), t = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); if (!OESTSettings.scheduleOn(t)) return OESTSettings.addSchedule({ effectiveFrom: '2026-01-01', anchor: t, kind: '4on4', start: '08:00', end: '20:00', endNextDay: false }); });
-      await pg.goto(B + '/#handover'); await pg.locator('#hoNotes .nt-n').waitFor(); await pg.waitForTimeout(400); return pg.locator('#hoNotes .nt-n').textContent(); };
+      await idz(pg, 'handover'); await pg.locator('#hoNotes .nt-n').waitFor(); await pg.waitForTimeout(400); return pg.locator('#hoNotes .nt-n').textContent(); };
     const accA = await pg.evaluate(() => localStorage.getItem('oest.account'));
     check(await asAccount({ provider: 'local', id: 'nt-other', email: 'other@example.com', first: 'Ann', last: 'B' }) === '0', 'Hand over: inne konto widzi notatki szybkiego wpisu');
     check(await asAccount(JSON.parse(accA)) === '1', 'Hand over: po powrocie na konto brak jego notatki');
@@ -168,9 +171,9 @@ function fakePhone() {
     check(await pg.evaluate(() => OESTSettings.get().owner) === 'local-preview', 'test: konto bez logowania nie jest local-preview');
     await record('#hoNotes', 1);
     check(await asAccount({ provider: 'local', id: 'nt-new', email: 'new@example.com', first: 'Greg', last: 'Sarna' }) === '1', 'Hand over: notatka z trybu bez logowania nie przeszła na konto');
-    await pg.evaluate(a => localStorage.setItem('oest.account', a), accA); await pg.goto(B + '/#home'); await pg.reload();
+    await pg.evaluate(a => localStorage.setItem('oest.account', a), accA); await idz(pg, 'home'); await pg.reload();
     // zakończone zadanie (historia): notatki nadal do odsłuchu i odczytu, tylko do odczytu (przegląd Codex #113)
-    await pg.goto(B + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
+    await idz(pg, 'reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     await record('#rxNotes', 1);
     // przerwana poprawka (Popraw → Wstecz) przed zakończeniem: w historii nie wraca edytor (przegląd Codex #113)
     await pg.locator('#rxNotes .nt-open').click(); await pg.waitForSelector('.nt-pop .nt-note'); await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
@@ -178,7 +181,7 @@ function fakePhone() {
     await pg.locator('[data-rx=row][data-id=end]').click(); await record('#rxNotesEnd', 1); // info na koniec – w historii też do odczytu (Codex #144)
     const jobId = await pg.evaluate(async () => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).find(x => !x.jobId);
       return (await r.saveReactive({ ...d, title: 'Leak', status: 'completed', actionId: 'repaired' })).id; });
-    await pg.goto(B + '/#home'); await pg.goto(B + '/#reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
+    await idz(pg, 'home'); await idz(pg, 'reactive/job/' + jobId); await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').waitFor({ state: 'attached' }).catch(() => check(false, 'Reactive historia: nie otwarto widoku historii'));
     check(await pg.locator('#rxNotes').count() === 0, 'Reactive historia: pasek nagrywania w zakończonym zadaniu');
     await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').waitFor({ timeout: 5000 }).catch(() => check(false, 'Reactive historia: brak „📝 Notatki” w zakończonym zadaniu'));
     if (await pg.locator('#v-reactive .rx-notes:not(.rx-notes-end)').isVisible()) {
@@ -199,7 +202,7 @@ function fakePhone() {
 
     // ---------- EN ----------
     const p2 = await ctx.newPage(); p2.on('pageerror', e => errors.push(e.message)); // Hand over ma niezapisany wpis – osobna karta zamiast wychodzenia
-    await p2.goto(B + '/#reactive'); await p2.locator('[data-rx=new]').waitFor(); await p2.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await p2.locator('[data-rx=new]').click(); await p2.locator('#rxNotes .nt-rec').waitFor();
+    await idz(p2, 'reactive'); await p2.locator('[data-rx=new]').waitFor(); await p2.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await p2.locator('[data-rx=new]').click(); await p2.locator('#rxNotes .nt-rec').waitFor();
     const en = await p2.locator('#rxNotes').innerText();
     check(/Voice/.test(en) && /Text/.test(en) && /Notes/.test(en) && !/[ąćęłńóśźż]/i.test(en), 'EN: pasek notatek nie po angielsku: ' + en);
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }

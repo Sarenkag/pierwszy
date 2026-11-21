@@ -19,11 +19,14 @@ function fakePhone() {
     open: async o => { window.__vt.calls.push({ op: 'window', ...o }); return window.__vt.open || { events: [] }; }
   };
   const plugins = { Vantify: V, Translate: { plToEn: async ({ text }) => ({ text: 'EN ' + text }) } };
-  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, isPluginAvailable: n => !!plugins[n], registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
 }
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
+  // Nawigacja do ekranu apki: gdy strona już jest apką (index.html, szkielet wystartował) – OESTEkrany.go (adres zmienia tylko replaceState,
+  // hash w adresie nie jest nawigacją); w przeciwnym razie (pusta karta, strona inspekcji) – prawdziwe wczytanie strony.
+  const idz = async (pg, r) => { const u = new URL(pg.url()); if (!/inspekcje/.test(u.pathname) && /(index\.html|\/)$/.test(u.pathname) && await pg.evaluate(() => !!(window.OESTEkrany && OESTEkrany.trasa())).catch(() => false)) await pg.evaluate(x => OESTEkrany.go(x), r); else await pg.goto(B + '/index.html#' + r); };
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, serviceWorkers: 'block' });
@@ -39,7 +42,7 @@ function fakePhone() {
     const jobs = () => pg.evaluate(() => OESTReactiveUI.repository.get().then(d => d.jobs));
     const drafts = () => pg.evaluate(() => OESTReactiveUI.repository.get().then(d => Object.values(d.reactiveDrafts || {})));
     const photo = path.join(require('node:os').tmpdir(), 'rx-kr-' + process.pid + '.png');
-    await pg.goto(B + '/#reactive');
+    await idz(pg, 'reactive');
     const png = await pg.evaluate(() => { const c = document.createElement('canvas'); c.width = 320; c.height = 240; const x = c.getContext('2d'); x.fillStyle = '#987'; x.fillRect(0, 0, 320, 240); return c.toDataURL('image/png').split(',')[1]; });
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
     // ---------- 1. Typ: 16 przycisków, domyślnie REPAIR ----------
@@ -62,7 +65,7 @@ function fakePhone() {
     await pg.locator('[data-rx=kr-add]').click(); await pg.locator('.rx-kr-new').fill('key cabinet'); await pg.locator('.rx-kr-pl').fill('szafka na klucze'); await ask().locator('[data-a=ok]').click(); await gone();
     check(await pg.locator('[data-rx=kr-item][data-id="key cabinet"]:checked').count() === 1, '＋ Dodaj: nowa pozycja nie zaznaczona');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'kreator-pozycje.png') });
-    await pg.evaluate(() => OESTWstecz.wstecz()); await pg.locator('[data-rx=kr-group]').first().waitFor();
+    await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await pg.locator('[data-rx=kr-group]').first().waitFor();
     check(await pg.locator('[data-rx=kr-group][data-id=furniture]').textContent().then(t => /✓/.test(t)), 'Wstecz: grupy bez ✓ przy Meblach');
     await pg.locator('[data-rx=kr-done]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     // ---------- 4. Na czym + opis EN ----------
@@ -96,7 +99,7 @@ function fakePhone() {
     await row('co'); await pg.locator('[data-rx=kr-open]').first().click(); await pg.locator('[data-rx=kr-group]').first().waitFor();
     { const t = await pg.locator('.rx-body').innerText(); check(/Furniture/.test(t) && !/Meble/.test(t), 'EN: grupy po polsku'); }
     // ---------- 9. stare zadanie z drzewka: zostaje „What exactly” z dotychczasowym wyborem (PROD-039, przegląd Codex #147) ----------
-    await pg.goto(B + '/#reactive/new/handle-0'); await pg.reload(); await pg.locator('[data-rx-field=title]').waitFor();
+    await idz(pg, 'reactive/new/handle-0'); await pg.reload(); await pg.locator('[data-rx-field=title]').waitFor();
     check(await pg.locator('[data-rx=row][data-id=tree]').count() === 1 && await pg.locator('[data-rx=row][data-id=co]').count() === 0, 'stare zadanie: brak sekcji drzewka, wymuszony kreator');
     check(/›/.test(await pg.locator('[data-rx=row][data-id=tree]').textContent()), 'stare zadanie: zniknął zapisany wybór');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }

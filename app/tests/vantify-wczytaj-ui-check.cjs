@@ -9,15 +9,15 @@ const server=http.createServer((req,res)=>{const name=decodeURIComponent(req.url
 const HEAD=['id','jobType','summary','reporterName','createdAt','completeBy','frequency','task'];
 function csv(rows){return '﻿'+HEAD.join(',')+'\r\n'+rows.map(r=>HEAD.map(h=>{const v=String(r[h]??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n')+'\r\n';}
 const job=(id,task,due,created='2026-11-10 08:00:00',f='1W')=>({id,jobType:'Planned',summary:'Opis, "x"',reporterName:'Jan Kowalski',createdAt:created,completeBy:due+' 23:59:59',frequency:f,task});
-async function loadCsv(page,text){await page.evaluate(t=>{window.__capPrev=window.Capacitor;const C=window.Capacitor||{},Pl=Object.assign({},C.Plugins||{}),V=Object.assign({},Pl.Vantify||{});V.open=async()=>({csv:t,name:'job.csv',log:[]});Pl.Vantify=V;window.Capacitor=Object.assign({},C,{isNativePlatform:()=>true,Plugins:Pl});},text);await page.locator('#vtOpen').click();await page.waitForFunction(()=>(document.getElementById('vtPreview')?.textContent||'').length>0);await page.evaluate(()=>{window.Capacitor=window.__capPrev;});}
+async function loadCsv(page,text){await page.evaluate(t=>{window.__capPrev=window.Capacitor;const C=window.Capacitor||{},Pl=Object.assign({},C.Plugins||{}),V=Object.assign({},Pl.Vantify||{});V.open=async()=>({csv:t,name:'job.csv',log:[]});Pl.Vantify=V;window.Capacitor=Object.assign({},C,{isNativePlatform:()=>true,isPluginAvailable:n=>!!Pl[n],Plugins:Pl});},text);await page.locator('#vtOpen').click();await page.waitForFunction(()=>(document.getElementById('vtPreview')?.textContent||'').length>0);await page.evaluate(()=>{window.Capacitor=window.__capPrev;});}
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{browser=await chromium.launch({headless:true, ...(process.env.OEST_BROWSER_PATH ? {executablePath:process.env.OEST_BROWSER_PATH} : {})});const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
 await context.addInitScript(()=>{if(!localStorage.getItem('oest.account')){localStorage.setItem('oest.account',JSON.stringify({provider:'local',id:'test',email:'demo@example.com',first:'Greg',last:'Sarna'}));localStorage.setItem('oest.profile',JSON.stringify({first:'Greg',last:'Sarna',email1:'demo@example.com'}));}});
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 const url='http://127.0.0.1:'+server.address().port,out=process.env.OEST_SCREENSHOTS;
-await page.goto(url+'/#settings');await page.locator('.settings-card[data-route=vantify]').waitFor();
-assert.match(await page.locator('.settings-card[data-route=vantify]').textContent(),/Vantify[\s\S]*Eksport z 09\/11\/2026/,'klocek Vantify z datą wbudowanego eksportu');
-await page.locator('.settings-card[data-route=vantify]').click();await page.locator('#vtNow').waitFor();
+await page.goto(url+'/#settings');await page.locator('ion-card[data-nav="settings/vantify"]').waitFor();
+assert.match(await page.locator('ion-card[data-nav="settings/vantify"]').textContent(),/Vantify[\s\S]*Eksport z 09\/11\/2026/,'klocek Vantify z datą wbudowanego eksportu');
+await page.locator('ion-card[data-nav="settings/vantify"]').click();await page.locator('#vtNow').waitFor();
 assert.match(await page.locator('#vtNow').textContent(),/Eksport z 09\/11\/2026 · \d+ zleceń · wbudowany w apkę/);
 // eksport z 10/11: AOV TA (EFA-INS-003) bez 3000623 (zamknięte), z nowym 3060001 na 25/12; reszta jak w planie wbudowanym
 const rows=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,r=[];for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])r.push({id:j.no,task:P.byId(id).name,due:j.due,f:j.f});return r;});
@@ -28,8 +28,8 @@ await page.locator('#vtPreview .warn').waitFor();assert.match(await page.locator
 assert.equal(await page.locator('#vtSave').count(),1,'świeży eksport po zamknięciu najnowszego zlecenia da się zapisać');
 await page.locator('#vtCancel').click();assert.equal(await page.locator('#vtPreview').textContent(),'');
 // wybór pliku to nie niezapisana zmiana Ustawień: wyjście z ekranu bez okienka „Masz niezapisane zmiany”
-await page.evaluate(()=>{location.hash='#settings';});await page.waitForFunction(()=>location.hash==='#settings');
-assert.equal(await page.locator('.oest-ask').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{location.hash='#settings/vantify';});await page.locator('#vtNow').waitFor();
+await page.evaluate(()=>{OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');
+assert.equal(await page.locator('.oest-ask').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtNow').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null);
 // zły plik: komunikat, bez zapisu
 await loadCsv(page,'a,b\n1,2\n');
@@ -65,7 +65,7 @@ await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem('oest.vantify.p
 // Vantify w apce (PROD-035, 10/11/2026): w przeglądarce uczciwy komunikat; w apce Android pobrany eksport idzie do podglądu, zapis „Zbadaj” do udostępnienia
 await page.goto(url+'/#settings/vantify');await page.locator('#vtOpen').click();await page.waitForFunction(()=>/działa w aplikacji Android/.test(document.getElementById('vtMsg')?.textContent||''));
 assert.equal(await page.locator('#vtShare').isHidden(),true,'bez zapisu nie ma czego udostępniać');
-await page.evaluate(t=>{window.Capacitor={isNativePlatform:()=>true,Plugins:{Vantify:{open:async o=>({csv:t,name:'job1.csv',log:[{k:'nav',u:'https://savillsuk.cafm.vantify.com/#/user/jobs'},{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/jobs',st:200}]})},ReportShare:{share:async o=>{window.__shared=o;return {status:'shared'};}}}};},csv(now));
+await page.evaluate(t=>{window.Capacitor={isNativePlatform:()=>true,isPluginAvailable:n=>n==='Vantify'||n==='ReportShare',Plugins:{Vantify:{open:async o=>({csv:t,name:'job1.csv',log:[{k:'nav',u:'https://savillsuk.cafm.vantify.com/#/user/jobs'},{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/jobs',st:200}]})},ReportShare:{share:async o=>{window.__shared=o;return {status:'shared'};}}}};},csv(now));
 await page.locator('#vtOpen').click();await page.locator('#vtSave').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/Eksport z 10\/11\/2026[\s\S]*Nowe zlecenia: 0[\s\S]*Zamknięte w Vantify \(znikną z apki\): 0/);
 assert.match(await page.locator('#vtShare').textContent(),/Udostępnij zapis „Zbadaj” \(2\)/);await page.locator('#vtCancel').click();
 await page.locator('#vtShare').click();await page.waitForFunction(()=>window.__shared);
@@ -87,7 +87,7 @@ assert.match(await page.evaluate(()=>decodeURIComponent(escape(atob(window.__sha
 await page.evaluate(()=>{Storage.prototype.setItem=window.__S;});
 await page.evaluate(()=>{delete window.Capacitor;});
 // EN, bez przewijania w bok
-await page.goto(url+'/#settings/vantify');await page.locator('#vtNow').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+await page.evaluate(()=>OESTEkrany.go('settings/vantify'));await page.locator('#vtNow').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from 10\/11\/2026/.test(document.getElementById('vtNow')?.textContent||''));
 assert.match(await page.locator('#vtNow').textContent(),/loaded on this phone/);
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_EN.png'),fullPage:true});

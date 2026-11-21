@@ -28,12 +28,16 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
 // zapis klatek: który ekran widać, jego jasność, kierunek Wstecz; startuje przy wczytaniu strony i na żądanie (__start)
 function rejestrator() {
   window.__klatki = []; window.__anim = [];
-  document.addEventListener('animationstart', e => { if (e.target.classList && e.target.classList.contains('view')) window.__anim.push(e.animationName + '@' + e.target.id); }, true);
+  // ekran = stary widok .view albo korzeń ekranu na Ionic + Vue (bezpośrednie dziecko ion-content poza .wrap; id = 'v-' + trasa)
+  const vueEkran = () => { const e = document.querySelector('ion-content > :not(.wrap)'); return e && e.getClientRects().length ? e : null; };
+  const idEkranu = e => e.id || ('v-' + (window.OESTEkrany ? OESTEkrany.trasa().split('/')[0] : ''));
+  window.__el = id => document.getElementById(id) || (vueEkran() && idEkranu(vueEkran()) === id ? vueEkran() : null);
+  document.addEventListener('animationstart', e => { const t = e.target; if (t.classList && (t.classList.contains('view') || (t.matches && t.matches('ion-content > :not(.wrap)')))) window.__anim.push(e.animationName + '@' + idEkranu(t)); }, true);
   let n = 0;
   const krok = () => {
     const de = document.documentElement;
-    const v = de && [...document.querySelectorAll('.view')].find(x => !x.hidden && x.getClientRects().length);
-    window.__klatki.push(v ? { id: v.id, op: +getComputedStyle(v).opacity, wstecz: de.classList.contains('wy-wstecz') } : null);
+    const v = de && (vueEkran() || [...document.querySelectorAll('.view')].find(x => !x.hidden && x.getClientRects().length));
+    window.__klatki.push(v ? { id: idEkranu(v), op: +getComputedStyle(v).opacity, wstecz: de.classList.contains('wy-wstecz') } : null);
     if (++n < 90) requestAnimationFrame(krok);
   };
   window.__start = () => { window.__klatki = []; window.__anim = []; n = 0; requestAnimationFrame(krok); };
@@ -79,18 +83,18 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     const krokApki = async (nazwa, akcja, cel, wstecz) => {
       await p.evaluate(() => window.__start()); await akcja(); await klatki();
       const [k, a] = await p.evaluate(() => [window.__klatki, window.__anim]);
-      const koniec = await p.evaluate(async cel => { const v = document.getElementById(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel); // koniec animacji (stan, nie zegar)
+      const koniec = await p.evaluate(async cel => { const v = window.__el(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel); // koniec animacji (stan, nie zegar)
       ocen(nazwa, k, a, cel, wstecz, efekt, koniec);
     };
     for (const [go, cel] of [['ppm', 'v-ppm'], ['settings', 'v-settings'], ['cal', 'v-cal']]) {
-      await krokApki(`ekran główny → ${go}`, () => p.click(`#hmTiles [data-go="${go}"]`), cel, false);
-      await krokApki(`${go} → Wstecz telefonu`, () => p.goBack(), 'v-home', true);
+      await krokApki(`ekran główny → ${go}`, () => p.click(`#hmTiles [data-nav="${go}"]`), cel, false);
+      await krokApki(`${go} → Wstecz telefonu`, () => p.evaluate(() => document.dispatchEvent(new Event('backbutton'))), 'v-home', true);
     }
-    await p.click('#hmTiles [data-go="ppm"]'); await klatki();
+    await p.click('#hmTiles [data-nav="ppm"]'); await klatki();
     await krokApki('ppm → strzałka ‹', () => p.click('#v-ppm .top .back'), 'v-home', true);
 
     // ---------- Z4: nowa strona – lista PPM → inspekcja i Wstecz z inspekcji ----------
-    await p.click('#hmTiles [data-go="ppm"]'); await klatki();
+    await p.click('#hmTiles [data-nav="ppm"]'); await klatki();
     const nowaStrona = async (nazwa, akcja, wzor, cel) => {
       await Promise.all([p.waitForURL(wzor), akcja()]); await klatki();
       const [k, a] = await p.evaluate(() => [window.__klatki, window.__anim]);
@@ -100,7 +104,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
       const i = k.findIndex(f => f && f.id === cel);
       check(i >= 0 && k[i].op <= 0.05, `Z4 ${nazwa}: ekran ${cel} w pierwszej klatce ma jasność ${i >= 0 ? k[i].op : 'brak'}`);
       let spadek = false; const d = k.slice(i).filter(f => f && f.id === cel); for (let j = 1; j < d.length; j++) if (d[j].op < d[j - 1].op - 0.001) spadek = true;
-      const koniec = await p.evaluate(async cel => { const v = document.getElementById(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel);
+      const koniec = await p.evaluate(async cel => { const v = window.__el(cel); await Promise.all(v.getAnimations().map(x => x.finished.catch(() => {}))); return +getComputedStyle(v).opacity; }, cel);
       check(!spadek && koniec === 1, `Z4 ${nazwa}: jasność ekranu ${cel} nie rośnie równo do 1 (spadek: ${spadek}, koniec: ${koniec})`);
     };
     try {
@@ -120,7 +124,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     // ---------- Z6: tabela ruchu – podmiana efektu ekranu ----------
     R.tabela = await p.evaluate(async () => {
       const W = OESTWyglad.ruch, out = { warianty: W.warianty('ekran'), pola: Object.keys(W.pobierz('ekran')) };
-      W.ustaw('ekran', 'zanikanie'); history.back(); await new Promise(r => setTimeout(r, 50));
+      W.ustaw('ekran', 'zanikanie'); OESTEkrany.up(); await new Promise(r => setTimeout(r, 50));
       const v = [...document.querySelectorAll('.view')].find(x => !x.hidden); out.poPodmianie = getComputedStyle(v).animationName;
       W.domyslne(); out.poPowrocie = getComputedStyle(document.documentElement).getPropertyValue('--ruch-ekran-efekt').trim();
       return out;
@@ -141,7 +145,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     // ---------- Z8: zamknięcie okienka (Wstecz) nie animuje ekranu pod spodem; Z9: zmiana ekranu bez historii po wczytaniu = Poświata ----------
     await p.goto(url + '/index.html#home'); await klatki();
     R.okienko = await p.evaluate(async () => {
-      window.__anim = []; OESTWstecz.nakladki.open(() => {}); history.back();
+      window.__anim = []; OESTOkna.open(() => {}); document.dispatchEvent(new Event('backbutton'));
       await new Promise(r => setTimeout(r, 300));
       return { animacje: window.__anim.slice(), wstecz: document.documentElement.classList.contains('wy-wstecz'), wczytanie: document.documentElement.classList.contains('wy-wczytanie') };
     });
@@ -170,8 +174,8 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
       const q = await (await ctx(opts)).newPage();
       await q.goto(url + '/index.html#home'); await q.waitForLoadState('load'); await q.waitForFunction(() => window.OESTWyglad && window.__klatki.length >= 30);
       if (init) await q.evaluate(init);
-      await q.evaluate(() => window.__start()); await q.click('#hmTiles [data-go="ppm"]'); await q.waitForFunction(() => window.__klatki.length >= 20);
-      await q.goBack(); await q.waitForFunction(() => window.__klatki.length >= 40);
+      await q.evaluate(() => window.__start()); await q.click('#hmTiles [data-nav="ppm"]'); await q.waitForFunction(() => window.__klatki.length >= 20);
+      await q.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await q.waitForFunction(() => window.__klatki.length >= 40);
       const a = await q.evaluate(() => window.__anim);
       R['mniejRuchu-' + nazwa] = a;
       check(!a.length, `Z6 mniej ruchu (${nazwa}): animacje ekranu ${a}`);
