@@ -1,0 +1,4 @@
+/* Powłoka Ionic OEST: treść apki w ion-content (kolory z theme.css). Wygląd wspólnego paska ekranu – po ustaleniu z Grzegorzem. */
+ion-app { background: var(--bg); }
+.oest-rama-tresc { --background: var(--bg); --color: var(--ink); }
+.oest-rama-tresc .wrap { min-height: 100%; }

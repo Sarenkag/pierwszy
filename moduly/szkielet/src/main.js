@@ -1,0 +1,169 @@
+// Szkielet apki OEST (Ionic + Vue) – JEDNO miejsce na: ramę ekranu (pasek ze strzałką i tytułem + treść), nawigację
+// między ekranami, klawisz/gest Wstecz Androida i stos okienek. Decyzja Grzegorza 21/11/2026: apka stoi na Ionic + Vue,
+// nic obok. Budowanie: app/vite.szkielet.config.mjs → app/www/moduly/szkielet/lib/szkielet.js (+ szkielet.css).
+//
+// Interfejs dla reszty apki (stary kod łączy się tylko przez niego):
+//   OESTEkrany.start({ naEkran(trasa), trasa })  apka: rama + nawigacja; naEkran rysuje treść ekranu (do czasu przejścia ekranu na Vue)
+//   OESTEkrany.strona({ up })                     osobna strona (inspekcje): tylko Wstecz i okienka, bez ramy (następny krok)
+//   OESTEkrany.go(trasa) / .up() / .trasa()        nawigacja; historia przeglądarki NIE jest stanem (adres tylko replaceState)
+//   OESTEkrany.zamien(trasa)                       nowy adres tego samego ekranu bez rysowania (np. szkic → zapisane zlecenie)
+//   OESTEkrany.straz(przedrostek, fn)              przed wyjściem w górę: fn() → false = zostań, true = rodzic z mapy, 'trasa' = tam
+//   OESTEkrany.ponow()                             po „Opuść” w pytaniu o niezapisane zmiany: dokończ wyjście
+//   OESTEkrany.otworzStrone(url)                   przejście na inną stronę apki bez wpisu w historii (inspekcje)
+//   OESTEkrany.naGore() / .przewiniecie() / .przewin(y)   przewijanie treści ramy
+//   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
+//   OESTOkna.open(zamknij) → zwolnij               okienko na wierzchu: Wstecz woła zamknij(); okienko po zamknięciu woła zwolnij()
+//   OESTOkna.ile() / .zamknijGorne() / .zamknijWszystkie()
+import { createApp, h, reactive } from 'vue';
+import { createRouter, createMemoryHistory } from 'vue-router';
+import { IonicVue } from '@ionic/vue';
+import '@ionic/vue/css/core.css';
+import mapa from '../../ekrany/ekrany.json';
+import Rama from './Rama.vue';
+import './szkielet.css';
+
+const w = window, d = document;
+const T = (pl, en) => (w.OESTT ? w.OESTT(pl, en) : pl);
+
+// ---------- okienka: jeden stos w pamięci (bez wpisów historii) ----------
+const stos = [];
+const OESTOkna = {
+  open(zamknij) { stos.push(zamknij); return () => { const i = stos.lastIndexOf(zamknij); if (i >= 0) stos.splice(i, 1); }; },
+  ile() { return stos.length + d.querySelectorAll('dialog[open]').length; },
+  zamknijGorne() {
+    if (stos.length) { const z = stos.pop(); try { z(); } catch (e) { console.error(e); } return true; }
+    const dl = d.querySelectorAll('dialog[open]');
+    if (dl.length) { try { dl[dl.length - 1].close(); } catch (e) {} return true; }
+    return false;
+  },
+  zamknijWszystkie() { let n = 50; while (n-- > 0 && OESTOkna.zamknijGorne()); }
+};
+
+// ---------- mapa ekranów (moduly/ekrany/ekrany.json) → trasy Vue Router ----------
+const Pusty = { render: () => null };
+const routes = mapa.ekrany.map(e => ({ path: '/' + e.id, name: e.id, component: Pusty, alias: (e.aliasy || []).map(a => '/' + a), meta: { id: e.id, rodzic: e.rodzic, pl: e.pl, en: e.en, jezyk: !!e.jezyk } }));
+routes.push({ path: '/:reszta(.*)*', name: '-nieznany', component: Pusty, meta: {} });
+const router = createRouter({ history: createMemoryHistory(), routes });
+
+function czysta(t) { return String(t == null ? '' : t).replace(/^#?\/*/, '') || 'home'; }
+// ekran z mapy dla trasy; trasa spoza mapy (np. reactive/job/12/coś) = najbliższy ekran nad nią
+function dopasuj(t) {
+  let p = czysta(t).split('/');
+  while (p.length) { const r = router.resolve('/' + p.join('/')); if (r.name !== '-nieznany') return r; p = p.slice(0, -1); }
+  return router.resolve('/home');
+}
+function rodzic(t) {
+  const r = dopasuj(t), id = r.meta.rodzic;
+  if (!id) return null;
+  try { return router.resolve({ name: id, params: r.params }).fullPath.slice(1); } catch (e) { return id.split('/:')[0]; }
+}
+
+// ---------- stan ramy ----------
+const stan = reactive({ trasa: '', glowny: true, meta: {}, nad: '', tytul: '', akcje: [], jezyk: false, jezykFn: null, wersja: 0 });
+let naEkran = null, czeka = null, pytam = false, tryb = '', stronaUp = null, scrollEl = null;
+const straze = [];
+function straz(t) { const s = straze.filter(x => t === x.p || t.indexOf(x.p + '/') === 0).sort((a, b) => b.p.length - a.p.length)[0]; return s && s.fn; }
+
+function naglowekDomyslny() {
+  const m = stan.meta;
+  stan.nad = ''; stan.akcje = []; stan.jezykFn = null; stan.jezyk = !!m.jezyk;
+  stan.tytul = m.pl ? T(m.pl, m.en) : '';
+}
+function wykonaj(cel, o) {
+  cel = czysta(cel);
+  OESTOkna.zamknijWszystkie(); // zmiana ekranu zamyka okienka (R4)
+  router.replace('/' + cel);
+  const r = dopasuj(cel);
+  stan.trasa = cel; stan.meta = r.meta; stan.glowny = !r.meta.rodzic; naglowekDomyslny();
+  try { history.replaceState(null, '', '#' + cel); } catch (e) {}
+  d.dispatchEvent(new CustomEvent('oest:ekran', { detail: { trasa: cel, wstecz: !!(o && o.wstecz) } }));
+  if (naEkran) naEkran(cel);
+  return true;
+}
+function go(cel) { cel = czysta(cel); if (cel === 'up') return up(); czeka = null; return wykonaj(cel, {}); }
+function up() {
+  if (tryb === 'strona') { if (stronaUp) stronaUp(); return; }
+  const t = stan.trasa, s = straz(t), p = rodzic(t);
+  if (s) {
+    const v = s();
+    if (v === false) { czeka = p ? { cel: p } : null; return false; }
+    if (typeof v === 'string') return wykonaj(v, { wstecz: true });
+  }
+  if (!p) return wyjscie();
+  czeka = null;
+  return wykonaj(p, { wstecz: true });
+}
+function ponow() { const c = czeka; czeka = null; if (c) wykonaj(c.cel, { wstecz: true }); }
+function wyjscie() {
+  if (pytam) return;
+  const P = w.OESTPrzycisk, App = w.Capacitor && w.Capacitor.Plugins && w.Capacitor.Plugins.App;
+  const zamknij = () => { if (App && App.exitApp) App.exitApp(); };
+  if (!P || !P.confirm) { zamknij(); return; }
+  pytam = true;
+  Promise.resolve(P.confirm(T('Chcesz wyjść z aplikacji?', 'Do you want to exit the app?'), { ok: T('Tak', 'Yes'), cancel: T('Nie', 'No'), danger: false }))
+    .then(tak => { pytam = false; if (tak) zamknij(); }, () => { pytam = false; });
+}
+
+// ---------- Wstecz Androida: jedna obsługa przez Ionic (ionBackButton, priorytety) ----------
+// 100: okienko na wierzchu (okienka Ionic mają własne 100); 10: ekran o poziom wyżej / pytanie o wyjście
+d.addEventListener('ionBackButton', e => {
+  e.detail.register(100, next => { if (!OESTOkna.zamknijGorne()) next(); });
+  e.detail.register(10, () => { if (tryb) up(); });
+});
+
+// ---------- kliknięcia: data-nav="ekran" / data-nav="up" (R26) ----------
+function kliknij(e) {
+  const b = e.target.closest && e.target.closest('[data-nav]');
+  if (!b || b.disabled || !tryb) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const cel = b.getAttribute('data-nav');
+  if (cel === 'up') { up(); return; }
+  go(cel);
+  if (b.dataset.title) stan.tytul = b.dataset.title;
+}
+d.addEventListener('click', kliknij, true);
+
+function setLang() {
+  const next = (w.OESTBledy && w.OESTBledy.lang ? w.OESTBledy.lang() : (d.documentElement.lang || 'pl')) === 'en' ? 'pl' : 'en';
+  if (stan.jezykFn) { stan.jezykFn(next); return; }
+  try { w.OESTSettings.update(s => { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
+  catch (e) { w.dispatchEvent(new CustomEvent('oest:lang')); }
+}
+w.addEventListener('oest:lang', () => { if (!tryb) return; const t = stan.tytul, m = stan.meta; if (m.pl && (t === m.pl || t === m.en)) stan.tytul = T(m.pl, m.en); stan.wersja++; });
+
+function montuj(zRama) {
+  const host = d.createElement('div'); host.id = 'oest-szkielet';
+  d.body.insertBefore(host, d.body.firstChild);
+  const app = createApp({ render: () => h(Rama, { stan, rama: zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T }) });
+  app.use(IonicVue, { mode: 'md', hardwareBackButton: true, animated: true, swipeBackEnabled: false });
+  app.use(router);
+  app.mount(host);
+}
+
+const OESTEkrany = {
+  start(o) {
+    if (tryb) return; tryb = 'apka'; naEkran = o && o.naEkran;
+    montuj(true);
+    wykonaj(czysta(o && o.trasa), {});
+  },
+  strona(o) { if (tryb) return; tryb = 'strona'; stronaUp = o && o.up; montuj(false); },
+  go, up, ponow, trasa: () => stan.trasa,
+  zamien(cel) { cel = czysta(cel); router.replace('/' + cel); stan.trasa = cel; try { history.replaceState(null, '', '#' + cel); } catch (e) {} },
+  straz(p, fn) { straze.push({ p: czysta(p), fn }); },
+  rodzic,
+  otworzStrone(url) { location.replace(url); },
+  naGore() { if (scrollEl) scrollEl.scrollTop = 0; else w.scrollTo(0, 0); },
+  przewiniecie() { return scrollEl ? scrollEl.scrollTop : (w.scrollY || 0); },
+  przewin(y) { if (scrollEl) scrollEl.scrollTop = y || 0; else w.scrollTo(0, y || 0); }
+};
+const OESTRama = {
+  ustaw(o) {
+    o = o || {};
+    if ('nad' in o) stan.nad = o.nad || '';
+    if ('tytul' in o) stan.tytul = o.tytul == null ? '' : String(o.tytul);
+    if ('akcje' in o) stan.akcje = (o.akcje || []).filter(Boolean);
+    if ('jezyk' in o) { stan.jezyk = !!o.jezyk; stan.jezykFn = typeof o.jezyk === 'function' ? o.jezyk : null; }
+  },
+  stan: () => ({ nad: stan.nad, tytul: stan.tytul, jezyk: stan.jezyk, akcje: stan.akcje.length })
+};
+w.OESTEkrany = OESTEkrany; w.OESTRama = OESTRama; w.OESTOkna = OESTOkna;
