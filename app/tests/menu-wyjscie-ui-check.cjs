@@ -29,7 +29,7 @@ let STEP = 'start';
       localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'menu-test', email: '', first: 'G', last: 'S' }));
       localStorage.setItem('insp.cfg', JSON.stringify({ insp: 'G. Sarna', email: 'demo@example.com' }));
       sessionStorage.setItem('oest.back', JSON.stringify({ h: '#ppm' }));
-      window.Capacitor = { isNativePlatform: () => true, Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }) } }, convertFileSrc: x => x,
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }) } }, convertFileSrc: x => x,
         registerPlugin: () => new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }) };
     });
     const page = await ctx.newPage(), errors = [];

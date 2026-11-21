@@ -131,7 +131,7 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
    Kierunek: html.wy-wstecz (wyglad.js ustawia przy Wstecz) odwraca skalę/przesunięcie. */
 :root{--wy-s-in:calc(1 - var(--ruch-ekran-skala));--wy-dx:var(--ruch-ekran-przesuniecie)}
 :root.wy-wstecz{--wy-s-in:calc(1 + var(--ruch-ekran-skala));--wy-dx:calc(-1 * var(--ruch-ekran-przesuniecie))}
-.view:not([hidden]):not(.wy-zostaje){animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) backwards}
+.view:not([hidden]):not(.wy-zostaje),ion-content>:not(.wrap){animation:var(--ruch-ekran-efekt) var(--ruch-ekran-czas) var(--ruch-ekran-easing) backwards}
 /* pierwsze pokazanie strony (start apki, wejście do inspekcji i powrót, gdy przeglądarka nie przenika stron): samo rozjaśnienie,
    bez zmiany rozmiaru – układ od pierwszej klatki stoi w miejscu; telefon trzyma poprzedni ekran do pierwszej klatki nowego */
 @keyframes wyWczytanie{from{opacity:.01}to{opacity:1}} /* .01, nie 0: przeglądarka liczy pierwszy obraz od pierwszej klatki, nie od końca rozjaśniania */
@@ -154,10 +154,10 @@ html body .type b{font-family:var(--font-body)!important;font-size:16px!importan
 .settings-status:not(:empty),.toast:not(:empty){animation:var(--ruch-status-efekt) var(--ruch-status-czas) var(--ruch-status-easing) both}
 
 @media (prefers-reduced-motion:reduce){
-  .view:not([hidden]),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}
+  .view:not([hidden]),ion-content>:not(.wrap),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty){animation:none!important}
   details::details-content{transition:none!important}
 }
-:root[data-settings-motion=reduce] :is(.view:not([hidden]),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty)){animation:none!important}
+:root[data-settings-motion=reduce] :is(.view:not([hidden]),ion-content>:not(.wrap),.wy-item,.wy-pop,.wy-pop-out,.wy-dim,.wy-dim-out,.kmenu:not([hidden]),.settings-status:not(:empty),.toast:not(:empty)){animation:none!important}
 :root[data-settings-motion=reduce] details::details-content{transition:none!important}
 
 /* „Dodaj / Nowe …” – główny przycisk listy w każdym module: pełna szerokość, kolor akcji (Reactive, Klucze, Power trace, Pytania) */
@@ -170,8 +170,6 @@ html body :is(.panel,.prow,.chip,.btn,.day,.cd,.tile,.kf,.pbtn,.sm,.settings-car
 /* tło apki jako osobna, przyklejona warstwa zamiast background-attachment:fixed (to przemalowywało cały ekran przy przewijaniu) */
 html{background:#0a0e1f!important}
 html::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 15% 0%,#26357f 0,transparent 42%),radial-gradient(circle at 100% 55%,#4a2478 0,transparent 45%),#0a0e1f}
-/* pasek systemowy telefonu (godzina, bateria) zawsze czytelny: stałe czarne tło na całej szerokości pod paskiem,
-   na każdym ekranie i nad każdym okienkiem; treść przewija się POD nim (Grzegorz 07/11/2026, zrzut z apk-274).
-   Wysokość = wysokość paska z Androida (Capacitor SystemBars podaje --safe-area-inset-top), w przeglądarce 0. */
-:root{--oest-gora:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px))} /* jedna wysokość paska: używają jej czarny pas i odstęp treści od góry na każdym ekranie */
-html::after{content:"";position:fixed;top:0;left:0;right:0;height:var(--oest-gora);background:#000;z-index:2147483647;pointer-events:none}
+/* wysokość paska telefonu (Capacitor SystemBars podaje --safe-area-inset-top), w przeglądarce 0 – dla okienek na cały ekran (aparat).
+   Pasek telefonu nad ekranami: rama moduly/szkielet (edge-to-edge, Grzegorz 21/11/2026 – bez czarnego pasa). */
+:root{--oest-gora:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px))}

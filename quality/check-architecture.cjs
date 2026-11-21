@@ -24,6 +24,7 @@ const JSON_OUT = arg('--json', '');
 const BASELINE_Z = path.resolve(ROOT, arg('--baseline-zasady', 'quality/baselines/zasady.json'));
 // R27 (LOGIKA): osobny plik zastanych, obok zasady.json – wprowadzony 20/11/2026 jako nowy plik (ratchet: pierwsze wprowadzenie za zgodą właściciela), potem tylko maleje
 const BASELINE_L = path.join(path.dirname(BASELINE_Z), 'logika.json');
+const BASELINE_I = path.join(path.dirname(BASELINE_Z), 'ionic.json'); // „Poza Ionic/Vue” – licznik do zera
 const REJESTR = path.resolve(ROOT, arg('--rejestr', 'quality/jedno-miejsce.json'));
 const zasady = require('./zasady.cjs');
 const PAGES = ['index.html', 'inspekcje/index.html'];
@@ -31,7 +32,9 @@ const PAGES = ['index.html', 'inspekcje/index.html'];
 const LIBS = {
   'pizzip.min.js': { name: 'PizZip', use: /\bPizZip\b/ },
   'docxtemplater.min.js': { name: 'docxtemplater', use: /\bnew\s+(?:window\.)?docxtemplater\b|\bwindow\.docxtemplater\b/i },
-  'jspdf.umd.min.js': { name: 'jspdf', use: /\bjspdf\.jsPDF\b|\bwindow\.jspdf\b/ }
+  'jspdf.umd.min.js': { name: 'jspdf', use: /\bjspdf\.jsPDF\b|\bwindow\.jspdf\b/ },
+  // szkielet Ionic + Vue (moduly/szkielet, paczka Vite): tworzy API dla reszty apki; z apki czyta dopiero w działaniu (nie przy ładowaniu)
+  'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna'], use: /(?!)/ }
 };
 const TRACKED = /^(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)$/;
 const USE_RE = /\b(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)\b/g;
@@ -85,14 +88,14 @@ function pageScripts(page) {
       const id = rel(abs);
       if (!fs.existsSync(abs)) { out.push({ id, missing: true, defs: new Set(), uses: new Set() }); continue; }
       const lib = LIBS[path.basename(abs)];
-      out.push(lib ? { id, lib: true, defs: new Set([lib.name]), uses: new Set() } : { id, ...scan(fs.readFileSync(abs, 'utf8')) });
+      out.push(lib ? { id, lib: true, defs: new Set([].concat(lib.name)), uses: new Set() } : { id, ...scan(fs.readFileSync(abs, 'utf8')) });
     } else if (m[2].trim()) {
       inline++; out.push({ id: page + '#inline-' + inline, ...scan(m[2]) });
     }
   }
   return out;
 }
-function libScan(url) { const lib = LIBS[path.basename(url.split('?')[0])]; return { defs: new Set(lib ? [lib.name] : []), uses: new Set() }; }
+function libScan(url) { const lib = LIBS[path.basename(url.split('?')[0])]; return { defs: new Set(lib ? [].concat(lib.name) : []), uses: new Set() }; }
 
 function analyse() {
   const violations = new Map(), add = (id, rule, detail) => { if (!violations.has(id)) violations.set(id, { id, rule, detail }); };
@@ -173,7 +176,7 @@ function main() {
   for (const v of fresh) console.log('::error title=G1 nowe naruszenie (' + v.rule + ')::' + v.detail);
   for (const id of stale) console.log('::error title=G1 baseline nieaktualny::' + id + ' już nie występuje – usuń wpis z quality/baselines/architecture.json (baseline może tylko maleć).');
   // zasady architektury: ta sama logika listy zastanych (tylko maleje)
-  const zEntries = [BASELINE_Z, BASELINE_L].flatMap(b => fs.existsSync(b) ? JSON.parse(fs.readFileSync(b, 'utf8')).entries : []);
+  const zEntries = [BASELINE_Z, BASELINE_L, BASELINE_I].flatMap(b => fs.existsSync(b) ? JSON.parse(fs.readFileSync(b, 'utf8')).entries : []);
   const zBase = zEntries.map(e => e.id), zMaks = new Map(zEntries.map(e => [e.id, e.maks]));
   const zNow = new Set(zv.map(v => v.id)), zBaseSet = new Set(zBase);
   const zFresh = zv.filter(v => !zBaseSet.has(v.id)), zStale = zBase.filter(id => !zNow.has(id));
@@ -190,6 +193,8 @@ function main() {
   for (const id of zStale) console.log('::error title=G1 lista zastanych nieaktualna::' + (id.includes(' – obniż') ? id : id + ' już nie występuje – usuń wpis z quality/baselines/zasady.json (lista może tylko maleć).'));
   const status = fresh.length || stale.length || zFresh.length || zStale.length ? 'FAIL' : 'PASS';
   if (JSON_OUT) { fs.mkdirSync(path.dirname(path.resolve(JSON_OUT)), { recursive: true }); } if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ status, total: violations.length, byRule, baseline: known.length, fresh, stale, notLoaded, pages, zasady: { total: zv.length, byRule: zByRule, fresh: zFresh, stale: zStale } }, null, 2));
+  const poza = zv.filter(v => /^IONIC\|(ekran|strona|modul-ui)\|/.test(v.id));
+  console.log('Poza Ionic/Vue: ' + poza.length + ' (ekrany ' + poza.filter(v => /\|ekran\|/.test(v.id)).length + ', strona inspekcji ' + poza.filter(v => /\|strona\|/.test(v.id)).length + ', wspólne moduły ' + poza.filter(v => /\|modul-ui\|/.test(v.id)).length + ') – praca skończona przy 0.');
   console.log('G1 ' + status);
   process.exitCode = status === 'PASS' ? 0 : 1;
 }

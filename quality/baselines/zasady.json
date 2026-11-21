@@ -8,7 +8,7 @@
       "id": "JM|adres|handover.js",
       "rule": "JM",
       "detail": "handover.js: zmiana adresu strony (location.hash=, location.assign/replace) – 2× poza właścicielem (index.html).",
-      "maks": 2,
+      "maks": 1,
       "punkt": "#9",
       "usuwa": "N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -35,24 +35,6 @@
       "id": "JM|adres|moduly/wysylka/wysylka.js",
       "rule": "JM",
       "detail": "moduly/wysylka/wysylka.js: zmiana adresu strony (location.hash=, location.assign/replace) – 1× poza właścicielem (index.html).",
-      "maks": 1,
-      "punkt": "#9",
-      "usuwa": "N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|adres|settings-ui.js",
-      "rule": "JM",
-      "detail": "settings-ui.js: zmiana adresu strony (location.hash=, location.assign/replace) – 1× poza właścicielem (index.html).",
-      "maks": 1,
-      "punkt": "#9",
-      "usuwa": "N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|adres|vantify-import.js",
-      "rule": "JM",
-      "detail": "vantify-import.js: zmiana adresu strony (location.hash=, location.assign/replace) – 1× poza właścicielem (index.html).",
       "maks": 1,
       "punkt": "#9",
       "usuwa": "N3",
@@ -363,15 +345,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|historia|home.js",
-      "rule": "JM",
-      "detail": "home.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 2× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 2,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|historia|inspekcje/index.html",
       "rule": "JM",
       "detail": "inspekcje/index.html: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
@@ -381,46 +354,10 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|historia|keys.js",
-      "rule": "JM",
-      "detail": "keys.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 1,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|historia|moduly/przycisk/przycisk.js",
-      "rule": "JM",
-      "detail": "moduly/przycisk/przycisk.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 6× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 6,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|historia|moduly/wyglad/wyglad.js",
       "rule": "JM",
       "detail": "moduly/wyglad/wyglad.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
       "maks": 1,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|historia|powertrace.js",
-      "rule": "JM",
-      "detail": "powertrace.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 1,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|historia|reactive.js",
-      "rule": "JM",
-      "detail": "reactive.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 4× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 4,
       "punkt": "#5/#12",
       "usuwa": "N1–N4",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -557,14 +494,6 @@
       "id": "JM|klucz|oest.lang|moduly/przelacznik/przelacznik.js",
       "rule": "JM",
       "detail": "moduly/przelacznik/przelacznik.js: klucz oest.lang używany także w home.js, index.html, inspekcje/index.html, moduly/bledy/bledy.js, moduly/naglowek/naglowek.js, moduly/wstecz/wstecz.js, settings-ui.js (właściciel: moduly/bledy/bledy.js).",
-      "punkt": "#23/#24/D22",
-      "usuwa": "D-1/D-2/D-4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|klucz|oest.lang|moduly/wstecz/wstecz.js",
-      "rule": "JM",
-      "detail": "moduly/wstecz/wstecz.js: klucz oest.lang używany także w home.js, index.html, inspekcje/index.html, moduly/bledy/bledy.js, moduly/naglowek/naglowek.js, moduly/przelacznik/przelacznik.js, settings-ui.js (właściciel: moduly/bledy/bledy.js).",
       "punkt": "#23/#24/D22",
       "usuwa": "D-1/D-2/D-4",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -857,24 +786,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|strzalka-po-klasie|index.html",
-      "rule": "JM",
-      "detail": "index.html: szukanie strzałki ‹ po klasie stylu „.top .back” – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "#6",
-      "usuwa": "N2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|strzalka-po-klasie|moduly/wstecz/wstecz.js",
-      "rule": "JM",
-      "detail": "moduly/wstecz/wstecz.js: szukanie strzałki ‹ po klasie stylu „.top .back” – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "#6",
-      "usuwa": "N2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|tlumaczenie-T|index.html",
       "rule": "JM",
       "detail": "index.html: własna kopia funkcji T() zamiast OESTT – 1× poza właścicielem (zakazane).",
@@ -995,15 +906,6 @@
       "id": "JM|tlumaczenie-T|moduly/raporty/przegladarka.js",
       "rule": "JM",
       "detail": "moduly/raporty/przegladarka.js: własna kopia funkcji T() zamiast OESTT – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D20",
-      "usuwa": "U2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|tlumaczenie-T|moduly/wstecz/wstecz.js",
-      "rule": "JM",
-      "detail": "moduly/wstecz/wstecz.js: własna kopia funkcji T() zamiast OESTT – 1× poza właścicielem (zakazane).",
       "maks": 1,
       "punkt": "D20",
       "usuwa": "U2",
@@ -1139,7 +1041,7 @@
       "id": "ZNACZNIK|brak|index.html",
       "rule": "ZNACZNIK",
       "detail": "index.html: 26 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 26,
+      "maks": 16,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -1203,15 +1105,6 @@
       "rule": "ZNACZNIK",
       "detail": "moduly/model/model.js: 3 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
       "maks": 3,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|moduly/naglowek/naglowek.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/naglowek/naglowek.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -1328,7 +1221,7 @@
       "id": "ZNACZNIK|brak|settings-ui.js",
       "rule": "ZNACZNIK",
       "detail": "settings-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 6,
+      "maks": 5,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -1370,15 +1263,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|stary|index.html|data-go",
-      "rule": "ZNACZNIK",
-      "detail": "index.html: stary znacznik data-go 12×.",
-      "maks": 12,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|stary|index.html|data-href",
       "rule": "ZNACZNIK",
       "detail": "index.html: stary znacznik data-href 2×.",
@@ -1410,24 +1294,6 @@
       "rule": "ZNACZNIK",
       "detail": "keys.js: stary znacznik data-key-action 3×.",
       "maks": 3,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|moduly/naglowek/naglowek.js|data-go",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/naglowek/naglowek.js: stary znacznik data-go 1×.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|moduly/przycisk/przycisk.js|data-go",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/przycisk/przycisk.js: stary znacznik data-go 1×.",
-      "maks": 1,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

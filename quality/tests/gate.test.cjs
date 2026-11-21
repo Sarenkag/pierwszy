@@ -16,16 +16,17 @@ function www(extraIndex = '', extraFiles = {}) {
     'inspekcje/index.html': `<script src="../moduly/a/a.js"></script>`,
     'moduly/a/a.js': `(function(w){ w.OESTA = { x: 1 }; })(window);`,
     'app.js': `(function(w){ w.OESTApp = { go(){ return w.OESTA.x; } }; })(window); // tekst "OESTNic" w napisie to nie użycie`,
-    // zasady (quality/zasady.cjs): mapa ekranów, jedyna rejestracja Wstecz Androida
+    // zasady (quality/zasady.cjs): mapa ekranów (ekran home już w Ionic/Vue), szkielet Ionic – jedyna obsługa Wstecz Androida
     'moduly/ekrany/ekrany.json': JSON.stringify({ ekrany: [{ id: 'home', rodzic: null, pudelko: 'v-home', pl: 'Główny', en: 'Home' }] }),
-    'moduly/wstecz/wstecz.js': `(function(w){ function wstecz(){} if (w.App) w.App.addListener('backButton', function () { wstecz(); }); })(window);`,
+    'moduly/szkielet/lib/szkielet.js': '/* paczka szkieletu (Vite) */',
+    'moduly/szkielet/src/ekrany/index.js': "import Glowny from './Glowny.vue'; export const EKRANY_VUE = { home: Glowny };",
     ...extraFiles
   });
   return d;
 }
-// rejestr „jedno miejsce” próbki: historia tylko w moduly/wstecz; lista zastanych zasad osobno (zbaseline)
+// rejestr „jedno miejsce” próbki: historia zakazana poza szkieletem (paczka lib nie jest skanowana); lista zastanych zasad osobno (zbaseline)
 const REJESTR = { rzeczy: [
-  { rzecz: 'historia', opis: 'historia', wzory: ['\\bhistory\\s*\\.\\s*(?:pushState|replaceState|back|go)\\s*\\(', '["\']popstate["\']'], wlasciciele: ['moduly/wstecz/wstecz.js'] },
+  { rzecz: 'historia', opis: 'historia', wzory: ['\\bhistory\\s*\\.\\s*(?:pushState|replaceState|back|go)\\s*\\(', '["\']popstate["\']'], wlasciciele: [] },
   { rzecz: 'okno-przegladarki', opis: 'window.open', wzory: ['\\b(?:window|w|g|self|globalThis)\\s*\\.\\s*open\\s*\\(', '\\b(?:window|w|g|self|globalThis)\\s*\\[\\s*["\']open["\']\\s*\\]'], wlasciciele: [] }
 ], kluczeWlasciciele: {} };
 const g1 = (d, baseline, zbaseline, rejestr) => {
@@ -113,7 +114,8 @@ test('Zasady: brak pliku mapy, sekcja bez wpisu, wpis bez sekcji, „up” jako 
 });
 test('Zasady EKRANY: id sekcji i strzałka ‹ w apostrofach czytane tak samo jak w cudzysłowach', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
-  const zb = [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }];
+  // settings i questions to ekrany jeszcze w starym kodzie: na liście zastanych jak w repo (licznik „Poza Ionic/Vue”)
+  const zb = [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }, { id: 'IONIC|ekran|settings' }, { id: 'IONIC|ekran|questions' }];
   const html = go => "<section class='view' id='v-settings'></section><section class='view' id='v-questions'><div class='top'><button class='back' type='button' data-go='" + go + "'>‹</button></div></section>";
   assert.equal(g1(www(html('settings'), { 'moduly/ekrany/ekrany.json': m }), [], zb).code, 0);
   zasadaFail(g1(www(html('home'), { 'moduly/ekrany/ekrany.json': m }), [], zb), /EKRANY\|strzalka\|v-questions\|home/);
@@ -121,8 +123,9 @@ test('Zasady EKRANY: id sekcji i strzałka ‹ w apostrofach czytane tak samo ja
 test('Zasady EKRANY: strzałka ‹ z nowym znacznikiem musi mieć data-nav="up"; zwykły znacznik z wieloma atrybutami sprawdza się szybko', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const html = nav => '<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-nav="' + nav + '">‹</button></div></section>';
-  zasadaFail(g1(www(html('missing'), { 'moduly/ekrany/ekrany.json': m })), /EKRANY\|strzalka\|v-questions\|missing/);
-  assert.equal(g1(www(html('up'), { 'moduly/ekrany/ekrany.json': m })).code, 0);
+  const stare = [{ id: 'IONIC|ekran|settings' }, { id: 'IONIC|ekran|questions' }]; // ekrany jeszcze w starym kodzie – na liście zastanych jak w repo
+  zasadaFail(g1(www(html('missing'), { 'moduly/ekrany/ekrany.json': m }), [], stare), /EKRANY\|strzalka\|v-questions\|missing/);
+  const ok = g1(www(html('up'), { 'moduly/ekrany/ekrany.json': m }), [], stare); assert.equal(ok.code, 0, ok.out);
   const atr = Array.from({ length: 200 }, (_, i) => `data-x${i}="x"`).join(' ');
   const t0 = Date.now(), r = g1(www('', { 'b.js': `x.innerHTML = '<div ${atr}></div>';` }));
   assert.equal(r.code, 0, r.out); assert.ok(Date.now() - t0 < 3000, 'G1 ' + (Date.now() - t0) + ' ms');
@@ -133,9 +136,9 @@ test('Zasady EKRANY: dwie sekcje .view z tym samym id → FAIL', () => {
 test('Zasady: strzałka ‹ w sekcji prowadzi gdzie indziej niż rodzic z mapy → FAIL; zgodna → PASS', () => {
   const m = mapa([DOM, { id: 'settings', rodzic: 'home', pudelko: 'v-settings', pl: 'U', en: 'S' }, { id: 'questions', rodzic: 'settings', pudelko: 'v-questions', pl: 'P', en: 'Q' }]);
   const zla = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="home">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
-  zasadaFail(g1(zla, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }]), /EKRANY\|strzalka\|v-questions\|home/);
+  zasadaFail(g1(zla, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }, { id: 'IONIC|ekran|settings' }, { id: 'IONIC|ekran|questions' }]), /EKRANY\|strzalka\|v-questions\|home/);
   const dobra = www('<section class="view" id="v-settings"></section><section class="view" id="v-questions"><div class="top"><button class="back" type="button" data-go="settings">‹</button></div></section>', { 'moduly/ekrany/ekrany.json': m });
-  const r = g1(dobra, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }]); assert.equal(r.code, 0, r.out);
+  const r = g1(dobra, [], [{ id: 'ZNACZNIK|brak|index.html', maks: 1 }, { id: 'ZNACZNIK|stary|index.html|data-go', maks: 1 }, { id: 'IONIC|ekran|settings' }, { id: 'IONIC|ekran|questions' }]); assert.equal(r.code, 0, r.out);
 });
 test('Zasady JM: historia poza właścicielem, window.open i window["open"] (także w apostrofach) → FAIL; w komentarzu → PASS', () => {
   zasadaFail(g1(www('', { 'app.js': '(function(w){ w.OESTApp = { go(){ history.pushState({}, "", "#x"); return w.OESTA.x; } }; })(window);' })), /JM\|historia\|app\.js\]/);
@@ -164,17 +167,18 @@ test('Zasady JM: jedno nowe trafienie ponad „maks” → FAIL; mniej trafień 
 test('Zasady EKRANY: mapa nie jest obiektem (liczba, null, tablica) albo nie ma listy ekranów → FAIL', () => {
   for (const zla of ['5', 'null', '[]', '{}', '{"ekrany":3}']) zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': zla })), /EKRANY\|zly-ksztalt/);
 });
-test('Zasady JM: Wstecz Androida z dodatkowym wywołaniem przed wstecz() → PASS', () => {
-  const r = g1(www('', { 'moduly/wstecz/wstecz.js': "(function(w){ function wstecz(){} if (w.App) w.App.addListener('backButton', function () { console.debug('x'); wstecz(); }); })(window);" }));
-  assert.equal(r.code, 0, r.out);
+test('Zasady JM: Wstecz Androida tylko w szkielecie Ionic (paczka lib), bez własnych nasłuchów → PASS', () => {
+  const r = g1(www()); assert.equal(r.code, 0, r.out);
 });
 test('Zasady JM: klucz oest.* i baza w dwóch plikach, Wstecz Androida zarejestrowany dwa razy albo wcale, brak właściciela z rejestru → FAIL', () => {
   zasadaFail(g1(www('', { 'b.js': 'localStorage.getItem("oest.lang");', 'c.js': "localStorage.setItem('oest.lang','pl');" })), /JM\|klucz\|oest\.lang\|b\.js/);
   zasadaFail(g1(www('', { 'b.js': 'indexedDB.open("oest-x", 1);', 'c.js': "indexedDB.open('oest-x', 2);" })), /JM\|baza\|oest-x\|c\.js/);
-  zasadaFail(g1(www('', { 'b.js': "App.addListener('backButton', function () { wstecz(); });" })), /JM\|backButton\|b\.js\+moduly\/wstecz\/wstecz\.js/);
-  const bez = www(); fs.writeFileSync(path.join(bez, 'moduly/wstecz/wstecz.js'), '(function(w){ })(window);');
-  zasadaFail(g1(bez), /JM\|backButton\|brak/);
-  zasadaFail(g1(www('', { 'moduly/wstecz/wstecz.js': "(function(w){ function wstecz(){} w.App.addListener('backButton', function () { wsteczz(); }); })(window);" })), /JM\|backButton\|moduly\/wstecz\/wstecz\.js/);
+  zasadaFail(g1(www('', { 'b.js': "App.addListener('backButton', function () { wstecz(); });" })), /JM\|backButton\|b\.js/);
+  zasadaFail(g1(www('', { 'c.js': "document.addEventListener('backbutton', function () {});" })), /JM\|backButton\|c\.js/);
+  zasadaFail(g1(www('', { 'd.js': "document.addEventListener('ionBackButton', function (e) {});" })), /JM\|backButton\|d\.js/);
+  const bez = www(); fs.rmSync(path.join(bez, 'moduly/szkielet/lib/szkielet.js'));
+  zasadaFail(g1(bez), /JM\|backButton\|brak-szkieletu/);
+  zasadaFail(g1(www('', { 'moduly/wstecz/wstecz.js': "(function(w){ })(window);" })), /JM\|backButton\|moduly\/wstecz/);
   const rj = { rzeczy: [{ rzecz: 'x', opis: 'x', wzory: ['zzz'], wlasciciele: ['moduly/nie-ma/nie-ma.js'] }] };
   zasadaFail(g1(www(), [], [], rj), /JM\|brak-wlasciciela\|x\|moduly\/nie-ma\/nie-ma\.js/);
   zasadaFail(g1(www(), [], [], '{ "rzeczy": [ ], }'), /Nie da się odczytać rejestru/);
@@ -494,4 +498,19 @@ test('Podsumowanie: nowe naruszenie zasad (np. EKRANY) jest w raporcie z id i li
   assert.equal(o.code, 1, o.out);
   assert.match(o.out, /Zasady R1–R26 \(EKRANY, JM, KOPIA, ZNACZNIK\) \| ❌ FAIL \| naruszeń 1 \{"EKRANY":1\}, nowe 1, nieaktualne wpisy 0: .*\[EKRANY\\\|sekcja-podwojna\\\|v-home\]/);
   assert.match(o.out, /Zależności modułów i kolejność skryptów \| ✅ PASS/);
+});
+test('Zasady IONIC: ekran poza Ionic/Vue, własny element/klasa, pole poza ion-item, radio zamiast ion-select, wyjątek bez „tak” → FAIL; czysty ekran Ionic → PASS', () => {
+  const m = mapa([DOM, { id: 'keys', rodzic: 'home', pudelko: 'v-keys', pl: 'K', en: 'K' }]);
+  zasadaFail(g1(www('<section class="view" id="v-keys"></section>', { 'moduly/ekrany/ekrany.json': m })), /IONIC\|ekran\|keys/);
+  const ekran = t => www('', { 'moduly/szkielet/src/ekrany/Glowny.vue': '<template>' + t + '</template>' });
+  assert.equal(g1(ekran('<div class="ion-padding"><ion-list><ion-item><ion-select label="Typ"></ion-select></ion-item></ion-list></div>')).code, 0);
+  zasadaFail(g1(ekran('<button>x</button>')), /IONIC\|wlasny-element\|.*\|button/);
+  zasadaFail(g1(ekran('<div class="moja"></div>')), /IONIC\|wlasna-klasa\|.*\|moja/);
+  zasadaFail(g1(ekran('<ion-select></ion-select>')), /IONIC\|pole-poza-item/);
+  zasadaFail(g1(ekran('<ion-item><ion-radio-group></ion-radio-group></ion-item>')), /IONIC\|pole-inne\|.*\|ion-radio-group/);
+  zasadaFail(g1(ekran('<ion-item><ion-datetime></ion-datetime></ion-item>')), /IONIC\|data-poza-modal/);
+  const bezZgody = www('', { 'moduly/szkielet/src/ekrany/Glowny.vue': '<template><div class="moja"></div></template>', 'quality/wyjatki-ionic.json': JSON.stringify({ wyjatki: [{ co: 'klasa:moja', powod: 'x', zgoda: '' }] }) });
+  zasadaFail(g1(bezZgody), /IONIC\|wyjatek-bez-zgody/);
+  const zZgoda = www('', { 'moduly/szkielet/src/ekrany/Glowny.vue': '<template><div class="moja"></div></template>', 'quality/wyjatki-ionic.json': JSON.stringify({ wyjatki: [{ co: 'klasa:moja', powod: 'x', zgoda: 'cmsg_' + 'A'.repeat(30) }] }) });
+  const r = g1(zZgoda); assert.equal(r.code, 0, r.out);
 });

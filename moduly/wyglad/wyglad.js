@@ -40,7 +40,7 @@
   var pokazane = d.querySelector(".view:not([hidden])") ? 1 : 0; // ekran widoczny już przy wczytaniu (np. ramka formularza z karty PPM) to pierwszy ekran strony
   function poWczytaniu() { if (d.readyState !== "loading") root.classList.remove("wy-wczytanie"); }
   function nav() { navAt = Date.now(); }
-  // okienko na wierzchu dokłada wpis historii z tym samym adresem – jego zamknięcie (Wstecz) to nie zmiana ekranu
+  // osobna strona inspekcji (do przeniesienia na szkielet): zmiany ekranu przez historię; okienko z tym samym adresem to nie zmiana ekranu
   var adres = location.hash;
   w.addEventListener("popstate", function (e) {
     var zmiana = location.hash !== adres; adres = location.hash;
@@ -53,7 +53,8 @@
     if (zmiana && !(s && s.overlay)) { nav(); poWczytaniu(); wstecz(!!(s && s.up)); } // strzałka ‹ idzie do rodzica nowym wpisem (up) – animacja powrotu
     return r;
   };
-  w.addEventListener("hashchange", function () { adres = location.hash; nav(); });
+  // apka (moduly/szkielet): zmiana ekranu bez historii – szkielet mówi, czy to Wstecz (strzałka ‹ / Wstecz telefonu)
+  d.addEventListener("oest:ekran", function (e) { adres = location.hash; nav(); poWczytaniu(); wstecz(!!(e.detail && e.detail.wstecz)); });
   // ekran schowany i od razu pokazany w tym samym kroku (przebudowa, zmiana języka, powrót po błędzie) nie jest zmianą ekranu:
   // dostaje wy-zostaje i nie animuje się od nowa (inaczej „drgnąłby” w miejscu) – do czasu, aż naprawdę zniknie.
   // Zmiana ekranu bez historii (inspekcja: formularz → podgląd → kolejka) też kończy tryb wczytywania.

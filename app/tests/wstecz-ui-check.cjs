@@ -4,7 +4,7 @@
 // chodzenie po klockach → lista PPM → inspekcja → aparat (podgląd zdjęcia, edytor) → Wstecz:
 //   edytor → podgląd → ta sama inspekcja → lista, z której przyszedł (ten sam dzień) → ekran główny → „Chcesz wyjść z aplikacji?” (Tak/Nie).
 // Do tego: po kilku inspekcjach Wstecz z listy nie wraca do żadnej z nich, podgląd raportu (okienko) zamyka się Wstecz, Ustawienia → Raporty → Ustawienia → ekran główny,
-// odzyskana inspekcja wraca do klocka Raporty. Strzałka ‹ = zawsze rodzic, nie historia (18/11: Ustawienia ↔ Vantify w kółko). Wstecz = OESTWstecz.wstecz() – dokładnie to, co woła klawisz w telefonie (wtyczka App, backButton).
+// odzyskana inspekcja wraca do klocka Raporty. Strzałka ‹ = zawsze rodzic, nie historia (18/11: Ustawienia ↔ Vantify w kółko). Wstecz = zdarzenie „backbutton” – to, co Ionic (ionBackButton, szkielet moduly/szkielet) dostaje od klawisza w telefonie.
 // Wynik NIE zastępuje sprawdzenia na Pixelu 8 Pro (gest Wstecz, prawdziwy aparat).
 // Uruchomienie: node app/tests/wstecz-ui-check.cjs (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
@@ -30,19 +30,19 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     await ctx.addInitScript(() => {
       if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' }));
       // wyjście z apki (wtyczka App) – w przeglądarce tylko zapisujemy, że apka by się zamknęła
-      window.Capacitor = { isNativePlatform: () => false, Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }), exitApp: () => { sessionStorage.setItem('wstecz.wyjscie', '1'); } } } };
+      window.Capacitor = { isNativePlatform: () => false, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener: () => Promise.resolve({ remove() {} }), exitApp: () => { sessionStorage.setItem('wstecz.wyjscie', '1'); } } } };
     });
     const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message));
     const wait = ms => pg.waitForTimeout(ms);
     // stan ekranu: strona, widoczny widok, otwarte okienka
     const where = () => pg.evaluate(() => ({
       page: /\/inspekcje\//.test(location.pathname) ? 'inspekcja' : 'apka', hash: location.hash,
-      view: [...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(','),
+      view: (v => v || (window.OESTEkrany && document.querySelector('ion-content > .ion-padding') ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(',')), // ekran na Vue (hub Ustawień) nie ma widoku v-…: jego id = v-<trasa>
       ask: [...document.querySelectorAll('.oest-ask')].map(a => a.textContent.trim()).join(' | '),
       review: document.querySelectorAll('.oest-review').length, editor: document.querySelectorAll('.oest-edit-box, .oest-editor').length,
       len: history.length, exit: sessionStorage.getItem('wstecz.wyjscie') === '1'
     }));
-    const back = async (ms = 1500) => { await pg.evaluate(() => window.OESTWstecz.wstecz()); await wait(ms); await pg.waitForLoadState('domcontentloaded'); await wait(300); return where(); };
+    const back = async (ms = 1500) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(ms); await pg.waitForLoadState('domcontentloaded'); await wait(300); return where(); };
     const toHome = async (label, max = 3) => { // z każdego miejsca: najwyżej `max` naciśnięć do ekranu głównego
       let n = 0, s = await where();
       while (!(s.page === 'apka' && s.view === 'v-home') && n < 10) { s = await back(); n++; }
@@ -53,9 +53,9 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 1. Grzegorz chodzi po klockach: Ustawienia, kalendarz, lista PPM, dwie inspekcje (każda zamknięta strzałką ‹)
     const log = m => process.env.OEST_DEBUG && console.log(((Date.now() - T0) / 1000).toFixed(1) + 's ' + m);
     log('start'); await pg.goto(B + '/index.html'); await wait(1500); log('home');
-    for (const go of ['settings', 'cal', 'ppm']) { log(go); await pg.click('#v-home [data-go="' + go + '"]').catch(() => {}); await wait(900); await pg.evaluate(() => window.OESTWstecz.wstecz()); await wait(900); }
+    for (const go of ['settings', 'cal', 'ppm']) { log(go); await pg.click('#v-home [data-nav="' + go + '"]').catch(() => {}); await wait(900); await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(900); }
     let s = await where(); check(s.view === 'v-home', '1: po Ustawieniach/kalendarzu/liście Wstecz wraca na ekran główny, jest ' + s.view);
-    await pg.click('#v-home [data-go="ppm"]'); await wait(1200);
+    await pg.click('#v-home [data-nav="ppm"]'); await wait(1200);
     // wybrany dzień na pasku dni (lista „tam, skąd przyszedłem” = ten sam dzień)
     const day = await pg.evaluate(() => { const n = e => +(((e.querySelector('i.n') || {}).textContent || '').split('/')[1] || 0), d = [...document.querySelectorAll('#v-ppm [data-day]')].sort((a, b) => n(b) - n(a))[0]; if (d) d.click(); return d ? d.getAttribute('data-day') : ''; }); await wait(700);
     const dayCls = day ? await pg.$eval('#v-ppm [data-day="' + day + '"]', e => e.classList.contains('on')) : false;
@@ -71,7 +71,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await back(2000); check(s.page === 'apka' && s.view === 'v-home', '1: Wstecz z listy PPM → ekran główny (nie poprzednia inspekcja), jest ' + s.page + s.hash + ' ' + s.view);
 
     // 2. lista → inspekcja → aparat: podgląd zdjęcia i edytor zamyka Wstecz, zostajemy w tej samej inspekcji
-    await pg.click('#v-home [data-go="ppm"]'); await wait(1200);
+    await pg.click('#v-home [data-nav="ppm"]'); await wait(1200);
     if (day) { await pg.evaluate(d => { const e = document.querySelector('#v-ppm [data-day="' + d + '"]'); if (e) e.click(); }, day); await wait(700); }
     const id = await pg.$eval('#v-ppm #ppmList [data-id]', e => e.getAttribute('data-id'));
     await pg.click('#v-ppm #ppmList [data-id="' + id + '"]'); await wait(3000);
@@ -110,11 +110,11 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await where(); check(s.exit, '4: „Tak” zamyka apkę');
     await pg.evaluate(() => sessionStorage.removeItem('wstecz.wyjscie'));
     // EN
-    await pg.evaluate(() => { localStorage.setItem('oest.lang', 'en'); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
+    await pg.evaluate(() => { localStorage.setItem('oest.lang', 'en'); OESTSettings.update(x => { x.appearance.language = 'en'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
     s = await back(700); check(/Do you want to exit the app\?/.test(s.ask), '4: EN: „Do you want to exit the app?”, jest: ' + s.ask);
     const btnsEn = await pg.$$eval('.oest-ask button', a => a.map(b => b.textContent.trim()));
     check(btnsEn.join('/') === 'No/Yes', '4: EN: przyciski No/Yes, są ' + btnsEn.join('/'));
-    await back(700); await pg.evaluate(() => { localStorage.setItem('oest.lang', 'pl'); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
+    await back(700); await pg.evaluate(() => { localStorage.setItem('oest.lang', 'pl'); OESTSettings.update(x => { x.appearance.language = 'pl'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
 
     // 5. raport w archiwum (jak po wysyłce) z zapisem inspekcji – potrzebny do podglądu i odzyskanej inspekcji
     await pg.evaluate(() => OESTSettings.update(x => { x.profile.companyEmail = 'work@firma.com'; return x; }));
@@ -131,8 +131,8 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     }, q);
     await pg.goto(B + '/index.html#home'); await wait(1200);
     // Ustawienia → Raporty (przeglądarka raportów) → podgląd raportu (okienko) → Wstecz zamyka podgląd
-    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
-    await pg.click('#v-settings [data-route="reports"]'); await wait(1500);
+    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.click('ion-card[data-nav="settings/reports"]'); await wait(1500);
     s = await where(); check(/settings\/reports/.test(s.hash), '5: otwarta przeglądarka raportów, jest ' + s.hash);
     await pg.locator('#rptList .k2').first().click(); await wait(1200);
     s = await where(); check(!!s.ask, '5: podgląd raportu otwarty');
@@ -145,27 +145,27 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await back(); check(s.view === 'v-home', '6: Wstecz z Ustawień → ekran główny, jest ' + s.view);
 
     // 7. z każdego ekranu z kafelka ekranu głównego: najwyżej 3 naciśnięcia do ekranu głównego
-    const tiles = await pg.$$eval('#v-home [data-go]', a => [...new Set(a.map(e => e.getAttribute('data-go')))]);
-    for (const t of tiles) { await pg.click('#v-home [data-go="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
+    const tiles = await pg.$$eval('#v-home [data-nav]', a => [...new Set(a.map(e => e.getAttribute('data-nav')))]);
+    for (const t of tiles) { await pg.click('#v-home [data-nav="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
     // 8. Strzałka ‹ u góry = zawsze poziom wyżej, nigdy po historii (Grzegorz 18/11/2026: krążyła Ustawienia ↔ Vantify, „na każdej stronie”)
-    const arrow = async () => { await pg.locator('.view:not([hidden]) .top .back').first().click(); await wait(900); return where(); };
+    const arrow = async () => { await pg.locator('ion-back-button[data-nav="up"]:visible, .view:not([hidden]) .top .back:visible').first().click(); await wait(900); return where(); };
     await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#home'); }); await pg.reload(); await wait(1500);
-    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
-    await pg.evaluate(() => { location.hash = '#settings/vantify'; }); await wait(1200); // wejście z okienka „Nowe terminy → Pokaż” (zmiana adresu, bez wpisu n)
+    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.evaluate(() => { OESTEkrany.go('#settings/vantify'); }); await wait(1200); // wejście z okienka „Nowe terminy → Pokaż” (zmiana adresu, bez wpisu n)
     s = await where(); check(s.hash === '#settings/vantify', '8: Vantify otwarte z okienka, jest ' + s.hash);
     s = await arrow(); check(s.hash === '#settings', '8: ‹ z Vantify → Ustawienia, jest ' + s.hash);
     s = await arrow(); check(s.view === 'v-home', '8: ‹ z Ustawień → ekran główny (nie z powrotem do Vantify), jest ' + s.view + s.hash);
     // to samo Wstecz telefonu
-    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
-    await pg.evaluate(() => { location.hash = '#settings/vantify'; }); await wait(1200);
+    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.evaluate(() => { OESTEkrany.go('#settings/vantify'); }); await wait(1200);
     s = await back(); check(s.hash === '#settings', '8: Wstecz z Vantify → Ustawienia, jest ' + s.hash);
     s = await back(); check(s.view === 'v-home', '8: Wstecz z Ustawień → ekran główny, jest ' + s.view + s.hash);
     // każdy klocek Ustawień: ‹ → Ustawienia → ekran główny, także po krążeniu między klockami
-    await pg.click('#v-home [data-go="settings"]'); await wait(1200);
-    const routes = await pg.$$eval('#v-settings [data-route]:not(.back)', a => [...new Set(a.map(e => e.dataset.route).filter(Boolean))]);
+    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    const routes = await pg.$$eval('ion-card[data-nav]', a => [...new Set(a.map(e => e.dataset.nav).filter(Boolean))]);
     check(routes.length > 3, '8: klocki Ustawień: ' + routes.length);
     for (const r of routes) {
-      await pg.click('#v-settings [data-route="' + r + '"]').catch(() => {}); await wait(1000);
+      await pg.click('ion-card[data-nav="' + r + '"]').catch(() => {}); await wait(1000);
       const from = (await where()).hash;
       s = await arrow(); check(s.hash === '#settings', '8: ‹ z ' + from + ' → Ustawienia, jest ' + s.hash);
       if (s.hash !== '#settings') { await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#settings'); }); await pg.reload(); await wait(1500); }
@@ -173,7 +173,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await arrow(); check(s.view === 'v-home', '8: po wszystkich klockach ‹ z Ustawień → ekran główny, jest ' + s.view + s.hash);
     // 9. otwarty <dialog> (Klucze, Power trace) zamyka się pierwszy, ekran pod spodem zostaje (audyt 19/11/2026 nr 35)
     for (const [route, dlg] of [['keys', 'keysPhotoDialog'], ['powertrace', 'ptPhotoDialog'], ['powertrace', 'ptMarkerDialog']]) {
-      await pg.evaluate(r => { history.replaceState({ n: 0 }, '', '#home'); location.hash = '#' + r; }, route); await wait(1200);
+      await pg.evaluate(r => { OESTEkrany.go(r); }, route); await wait(1200);
       const otw = await pg.evaluate(id => { const d = document.getElementById(id); if (!d) return false; d.showModal(); return d.open; }, dlg);
       check(otw, '9: ' + dlg + ' jest na ekranie ' + route);
       const przed = await where();

@@ -126,7 +126,7 @@ const stanInspekcji = () => ({
         await pg.evaluate(() => Promise.all(document.getAnimations().filter(a => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.oest-ask')).map(a => a.finished.catch(() => {})))); // okienko rośnie z miejsca stuknięcia – pomiar po końcu
         const m = await pg.$$eval('.oest-ask .row button', bs => bs.map(b => { const r = b.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, b.offsetWidth, b.offsetHeight].map(v => Math.round(v * 10) / 10).concat(b.textContent); }));
         if (how === 'esc') await pg.keyboard.press('Escape');
-        else if (how === 'wstecz') await pg.evaluate(() => history.back());
+        else if (how === 'wstecz') await pg.evaluate(() => document.dispatchEvent(new Event('backbutton')));
         else await pg.click('.oest-ask [data-a="' + how + '"]');
         await pg.waitForFunction(() => window.__ans !== 'czeka' && !document.querySelector('.oest-ask'));
         return { m, ans: await pg.evaluate(() => window.__ans) };

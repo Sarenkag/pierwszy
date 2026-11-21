@@ -4,7 +4,7 @@
 //   2. okienko apki (pytanie OESTPrzycisk) i każdy <dialog> na tym ekranie: Wstecz zamyka okienko, ekran zostaje,
 //   3. Wstecz na ekranie: idzie do rodzica z mapy (ten sam numer w „:id”), a na ekranie bez rodzica pyta „Chcesz wyjść z aplikacji?”,
 //      Wstecz w tym pytaniu = Nie (pytanie znika, apka zostaje).
-// Wstecz = zdarzenie „backButton” wtyczki App (Capacitor), dokładnie to, co wysyła telefon – nie wywołanie funkcji modułu.
+// Wstecz = zdarzenie „backbutton” na document, które Ionic (szkielet moduly/szkielet) odbiera od telefonu (ionBackButton) – nie wywołanie funkcji modułu.
 // Rozbieżności, które już są w apce, są na liście quality/baselines/wstecz-tabela.json (lista może tylko maleć):
 // nowa rozbieżność = FAIL, rozbieżność z listy, której już nie ma = FAIL (usuń wpis). Ekran, którego nie da się otworzyć = FAIL.
 // Wynik NIE zastępuje sprawdzenia na Pixelu 8 Pro (gest Wstecz).
@@ -16,6 +16,9 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
 (async () => {
   const server = await serwer(root);
   const B = server.url, fails = [], roz = [], tabela = [];
+  // Nawigacja do ekranu apki: gdy strona już jest apką (index.html, szkielet wystartował) – OESTEkrany.go (adres zmienia tylko replaceState,
+  // hash w adresie nie jest nawigacją); w przeciwnym razie (pusta karta, strona inspekcji) – prawdziwe wczytanie strony.
+  const idz = async (pg, r) => { const u = new URL(pg.url()); if (!/inspekcje/.test(u.pathname) && /(index\.html|\/)$/.test(u.pathname) && await pg.evaluate(() => !!(window.OESTEkrany && OESTEkrany.trasa())).catch(() => false)) await pg.evaluate(x => OESTEkrany.go(x), r); else await pg.goto(B + '/index.html#' + r); };
   let browser, sprawdzen = 0;
   const check = (ok, msg) => { sprawdzen++; if (!ok) fails.push(msg); return ok; };
   try {
@@ -25,31 +28,34 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
     await ctx.addInitScript(k => {
       if (!sessionStorage.getItem('bez.konta')) localStorage.setItem('oest.account', k); else localStorage.removeItem('oest.account');
       // telefon: wtyczka App przyjmuje słuchacza „backButton”; test wysyła to zdarzenie jak Android
-      window.__wstecz = []; window.__wyjscie = 0;
-      window.Capacitor = { isNativePlatform: () => true, Plugins: { App: { addListener: (n, cb) => { if (n === 'backButton') window.__wstecz.push(cb); return Promise.resolve({ remove() {} }); }, exitApp: () => { window.__wyjscie++; } } } };
+      window.__wstecz = []; window.__wyjscie = 0; window.__bb = 0;
+      const dodaj = document.addEventListener.bind(document); // nasłuchy „backbutton” na document (Ionic): ma być dokładnie jeden
+      document.addEventListener = function (typ, ...r) { if (typ === 'backbutton') window.__bb++; return dodaj(typ, ...r); };
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'App', Plugins: { App: { addListener: (n, cb) => { if (n === 'backButton') window.__wstecz.push(cb); return Promise.resolve({ remove() {} }); }, exitApp: () => { window.__wyjscie++; } } } };
     }, JSON.stringify(KONTO));
     const pg = await ctx.newPage(), errs = []; pg.on('pageerror', e => errs.push(e.message));
-    await pg.goto(B + '/index.html#home'); await pg.waitForLoadState('networkidle');
+    await idz(pg, 'home'); await pg.waitForLoadState('networkidle');
     const ids = await zasiej(pg);
     ids.draft = await szkic(pg, B, ids.leaf);
     for (const k of new Set([...Object.values(ID), ...Object.values(DOKLEJ)])) check(!!ids[k], 'nie udało się utworzyć rekordu „' + k + '” dla ekranów z :id');
-    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: [...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(','), pytanie: !!document.querySelector('.oest-ask'), sluchaczy: window.__wstecz.length, wyjscie: window.__wyjscie }));
+    // ekran na Vue (hub Ustawień) nie ma widoku v-…: jego id = v-<trasa>
+    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: (v => v || (document.querySelector('ion-content > .ion-padding') ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(',')), pytanie: !!document.querySelector('.oest-ask'), sluchaczy: window.__bb, wyjscie: window.__wyjscie }));
     // po Wstecz: czekamy na stan (okienko pytania zniknęło z DOM albo ma zostać), nie na czas
-    const wstecz = async (okienkoZnika = true) => { await pg.evaluate(() => window.__wstecz.forEach(cb => cb())); if (okienkoZnika) await pg.locator('.oest-ask').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {}); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150); };
+    const wstecz = async (okienkoZnika = true) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); if (okienkoZnika) await pg.locator('.oest-ask').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {}); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150); };
     const pudelko = id => (MAPA.find(e => e.id === id) || {}).pudelko;
     for (const e of MAPA) {
       const id = e.id, adres = adresEkranu(id, ids), rodzic = e.rodzic && (ID[e.rodzic] ? e.rodzic.replace(':id', ids[ID[e.rodzic]]) : e.rodzic);
       await pg.evaluate(bez => bez ? sessionStorage.setItem('bez.konta', '1') : sessionStorage.removeItem('bez.konta'), id === 'start');
-      await pg.goto(B + '/index.html#' + adres); await pg.waitForLoadState('networkidle');
+      await idz(pg, '' + adres); await pg.waitForLoadState('networkidle');
       // ekran wczytujący dane (np. Edytor pytań: najpierw „Wczytywanie…”, potem pasek ze strzałką) – czekamy na stan, nie na czas;
       // po 3 s ocena idzie dalej tym samym warunkiem co niżej (nic nie jest luzowane, tylko nie oceniamy ekranu w trakcie wczytywania)
-      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = document.querySelector('#' + p + ' .top .back'); return location.hash.slice(1) === a && s && !s.hidden && (!r || (!!b && b.offsetParent !== null)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
+      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0), vue = !!document.querySelector('ion-content > .ion-padding') && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue) && (!r || (!!b && b.getClientRects().length > 0)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
       await pg.waitForTimeout(150);
       const s0 = await stan();
       if (!check(s0.sluchaczy === 1, id + ': strona zarejestrowała ' + s0.sluchaczy + ' słuchaczy „backButton” (ma być dokładnie 1)')) continue;
       // ekran jest otwarty, gdy adres i sekcja się zgadzają, a ekran z rodzicem ma widoczną strzałkę ‹ w górnym pasku
       // (panel błędu modułu, np. „Ta zmiana jest już zarchiwizowana”, nie ma strzałki – to nie jest ten ekran)
-      const strzalka = await pg.evaluate(p => { const b = document.querySelector('#' + p + ' .top .back'); return !!b && b.offsetParent !== null; }, e.pudelko);
+      const strzalka = await pg.evaluate(p => { const b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0); return !!b; }, e.pudelko); // strzałka ‹ w starym nagłówku .top albo w pasku Ionic
       const otwarty = s0.hash === adres && s0.widok === e.pudelko && (!e.rodzic || strzalka);
       const wiersz = { id, adres, rodzic: rodzic || null, otwarty, przed: s0.hash + ' ' + s0.widok };
       tabela.push(wiersz);

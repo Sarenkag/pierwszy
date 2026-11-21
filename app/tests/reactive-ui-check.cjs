@@ -102,12 +102,12 @@ assert.equal(job.reactive.beforeMediaIds.length,1);assert.equal(job.reactive.aft
 {const st=job.history.map(h=>h.reactiveStatus||h.status);assert.ok(job.history.length>=3,'historia statusów: '+JSON.stringify(st));assert.equal(job.history.at(-1).status,'fixed','ostatni wpis historii = zakończone');}
 assert.equal(await page.locator('[data-rx=job]').count(),0,'Aktywne: zakończone zadanie zniknęło z aktywnych');
 await page.locator('[data-rx=filter][data-id=done]').click();await page.locator('[data-rx=job]').waitFor();assert.match(await page.locator('[data-rx=job]').textContent(),/Door handle detached/);
-await page.goto(url+'/#reactive/history');await page.locator('[data-rx=job]').waitFor();await snap('07-history');
+await page.evaluate(()=>OESTEkrany.go('reactive/history'));await page.locator('[data-rx=job]').waitFor();await snap('07-history');
 await page.locator('[data-rx=job]').click();await page.waitForFunction(()=>document.querySelectorAll('#rx-before img').length===1&&document.querySelectorAll('#rx-after img').length===1);assert.match(await page.locator('.rx-body').innerText(),/Zakończone zadanie — historia/);assert.equal(await page.locator('#rx-before .del').count(),0,'w historii nie da się usunąć zdjęcia');
 
 STEP='krok 10';// 10. Wpis Reactive dodany w Handover widoczny w Reactive.
 await page.evaluate(async()=>{const d=new Date(),start=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),end=new Date(Date.parse(start)+3*86400000).toISOString().slice(0,10),r=OESTHandover.repository,sh=await r.startShift(start,end);await r.addEntry(sh.id,{kind:'reactive',text:'Job entered through Handover',location:'Loading bay',language:'en'});});
-await page.goto(url+'/#reactive');await page.locator('[data-rx=filter][data-id=active]').click();await page.waitForFunction(()=>document.querySelector('.rx-body')?.textContent.includes('Job entered through Handover')).catch(async()=>{throw Error('Brak wpisu z Handover w Reactive: '+JSON.stringify({list:(await page.locator('.rx-body').innerText()).slice(0,300),jobs:(await state()).jobs.map(j=>j.text)}));});
+await page.evaluate(()=>OESTEkrany.go('reactive'));await page.locator('[data-rx=filter][data-id=active]').click();await page.waitForFunction(()=>document.querySelector('.rx-body')?.textContent.includes('Job entered through Handover')).catch(async()=>{throw Error('Brak wpisu z Handover w Reactive: '+JSON.stringify({list:(await page.locator('.rx-body').innerText()).slice(0,300),jobs:(await state()).jobs.map(j=>j.text)}));});
 /* zadanie z Handover ma lokalizację tylko w job.location – okno po przytrzymaniu ją pokazuje (uwaga Codex w PR #103) */{const k=page.locator('[data-rx=job]',{hasText:'Job entered through Handover'}),bx=await k.boundingBox();await page.mouse.move(bx.x+bx.width/2,bx.y+bx.height/2);await page.mouse.down();await page.locator('.oest-ask.ki-info').waitFor();await page.mouse.up();assert.match(await page.locator('.oest-ask.ki-info').innerText(),/Loading bay/,'lokalizacja z Handover');await page.locator('.oest-ask.ki-info').click({position:{x:5,y:5}});await page.locator('.oest-ask.ki-info').waitFor({state:'detached'});}
 
 STEP='krok 11';// 11. Usuń szkic: pytanie → szkic znika, zadania bez zmian.
@@ -119,12 +119,12 @@ STEP='krok 12';// 12. Braki: bez nazwy i bez kto zlecił → komunikat po polsku
 await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=title]').waitFor();await row('who');await page.locator('[data-rx=who][data-value=self]').click();await saved();
 await page.evaluate(()=>{const d=document.querySelector('[data-rx-field=title]');d.value='';d.dispatchEvent(new Event('input'));});await saved();
 await page.locator('[data-rx=send]').click();{const m=await msg();assert.match(m,/Uzupełnij: nazwa zadania/);assert.doesNotMatch(m,RAW_CODE);}
-await page.evaluate(()=>OESTSettings.update(s=>{s.appearance.language='en';}));await page.goto(url+'/#reactive');await page.locator('[data-rx=new]').waitFor();assert.match(await page.locator('[data-rx=new]').textContent(),/New job/);
+await page.evaluate(()=>OESTSettings.update(s=>{s.appearance.language='en';}));await page.evaluate(()=>OESTEkrany.go('reactive'));await page.locator('[data-rx=new]').waitFor();assert.match(await page.locator('[data-rx=new]').textContent(),/New job/);
 await page.locator('[data-rx=draft]').click();await page.locator('[data-rx-field=title]').waitFor();await page.locator('[data-rx=send]').click();{const m=await msg();assert.match(m,/Fill in: job name/);assert.doesNotMatch(m,RAW_CODE);}
 await page.evaluate(()=>OESTSettings.update(s=>{s.appearance.language='pl';}));
 
 STEP='krok 13';// 13. Drzewko jako osobny ekran (zakres prac oświetlenia) i brak poziomego przewijania.
-await page.goto(url+'/#reactive/tree/lighting');await page.locator('[data-id=lighting-scope-0]').waitFor();await snap('08-scope');
+await page.evaluate(()=>OESTEkrany.go('reactive/tree/lighting'));await page.locator('[data-id=lighting-scope-0]').waitFor();await snap('08-scope');
 assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
 assert.deepEqual(errors,[]);
 console.log('REACTIVE UI PASS: new job without builder, builder „Co” (Doors › handle), draft persistence after reload (fields/builder/photo), parts status + park, before/after photos, temporary/contractor/repaired + close, status history, completed list + history view with photos, summary, Word+PDF content (same data, 2 photos), company email only, send keeps photos/job, Gmail send queue entry with honest message (no real email), Handover entry, drop draft, PL/EN missing-field messages without raw codes; 412x915. Not covered: camera, voice notes, actual Gmail delivery, Android share fallback.');

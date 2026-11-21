@@ -8,7 +8,7 @@
       "id": "LOGIKA|index.html",
       "rule": "LOGIKA",
       "detail": "index.html: 38 funkcji zapisanych w <script> strony zamiast w module.",
-      "maks": 38,
+      "maks": 37,
       "punkt": "R27",
       "usuwa": "K01–K16 (plan-modulow-karty.md)",
       "reason": "Zastany stan main przy wprowadzeniu R27 (20/11/2026, karta M0). Zgoda właściciela: „Tak” 20/11/2026 do planu modułów."

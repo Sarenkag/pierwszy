@@ -61,10 +61,9 @@
         (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + "</button>") +
         '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>");
       if (o.node) box.querySelector(".oest-ask-body").appendChild(o.node); // własna treść okienka (np. tick boxy ustawień wysyłki)
-      var res = !!(o.alert || o.bare), over = false, O = w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null, own = false; // stos okien apki (moduly/wstecz)
-      function finish() { if (over) return; over = true; document.removeEventListener("keydown", key, true); w.removeEventListener("popstate", pop); box.remove(); done(res); }
-      function closeVia(v) { res = v; if (O && O.stack && O.stack.indexOf(finish) >= 0) O.close(); else if (own) history.back(); else finish(); }
-      function pop() { if (own) finish(); }
+      var res = !!(o.alert || o.bare), over = false, zw = null; // stos okienek apki (moduly/szkielet: OESTOkna)
+      function finish() { if (over) return; over = true; document.removeEventListener("keydown", key, true); if (zw) zw(); box.remove(); done(res); }
+      function closeVia(v) { res = v; finish(); }
       function key(e) { if (e.key === "Escape") { e.preventDefault(); closeVia(!!o.alert); } }
       box.addEventListener("click", function (e) {
         var b = e.target.closest("[data-a]");
@@ -73,10 +72,7 @@
       });
       document.addEventListener("keydown", key, true);
       // Wstecz telefonu zamyka okienko (jak każde okno na wierzchu)
-      try {
-        if (O && O.open) O.open(finish);
-        else { history.pushState({ n: ((history.state && history.state.n) || 0) + 1, overlay: 1 }, "", location.hash || location.pathname); own = true; w.addEventListener("popstate", pop); }
-      } catch (e) {}
+      if (w.OESTOkna) zw = w.OESTOkna.open(finish);
       document.body.appendChild(box);
       var f = box.querySelector(".ok"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
     });
@@ -93,12 +89,12 @@
   var leaving = false;
   function leave(text, onYes) {
     if (leaving) return false; leaving = true;
-    var ev = w.event, el = ev && ev.type === "click" && ev.target && ev.target.closest ? ev.target.closest("button,a,[role=button],[data-route],[data-go]") : null, viaBack = ev && ev.type === "popstate";
-    setTimeout(function () { // po tym, jak ekran cofnie wpis historii (Wstecz telefonu)
+    var ev = w.event, el = ev && ev.type === "click" && ev.target && ev.target.closest ? ev.target.closest("button,a,[role=button],[data-route],[data-nav]") : null;
+    setTimeout(function () {
       ask({ title: T("Niezapisane zmiany", "Unsaved changes"), text: text, ok: T("Opuść", "Leave"), cancel: T("Zostań", "Stay"), danger: true }).then(function (yes) {
         leaving = false; if (!yes) return;
         try { if (onYes) onYes(); } catch (e) {}
-        setTimeout(function () { if (el && el.isConnected) el.click(); else if (viaBack || !el) history.back(); }, 30);
+        setTimeout(function () { if (el && el.isConnected) el.click(); else if (w.OESTEkrany) w.OESTEkrany.ponow(); }, 30); // Wstecz telefonu: szkielet kończy wyjście w górę
       });
     }, 0);
     return false;

@@ -24,6 +24,9 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
+  // Nawigacja do ekranu apki: gdy strona już jest apką (index.html, szkielet wystartował) – OESTEkrany.go (adres zmienia tylko replaceState,
+  // hash w adresie nie jest nawigacją); w przeciwnym razie (pusta karta, strona inspekcji) – prawdziwe wczytanie strony.
+  const idz = async (pg, r) => { const u = new URL(pg.url()); if (!/inspekcje/.test(u.pathname) && /(index\.html|\/)$/.test(u.pathname) && await pg.evaluate(() => !!(window.OESTEkrany && OESTEkrany.trasa())).catch(() => false)) await pg.evaluate(x => OESTEkrany.go(x), r); else await pg.goto(B + '/index.html#' + r); };
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: SHOTS ? 2 : 1, serviceWorkers: 'block' });
@@ -38,7 +41,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
 
     // 1. zwykła inspekcja ATS: zdjęcie + jedna odpowiedź NIE (szkic zapisuje się sam), potem Wyślij (bez Gmaila raport czeka w kolejce)
-    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(800);
+    await idz(pg, 'home'); await pg.waitForTimeout(800);
     await pg.evaluate(() => OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; return s; }));
     await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForTimeout(2500);
     await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(800);
@@ -60,7 +63,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(q.at === q.created, 'Wyślij zapisuje czas przygotowania wersji (spóźniony mail nie nadpisze nowszego Update)');
     const name = q.name;
     // archiwum jak po wysłaniu maila (moduł wysyłki: archive) – ten sam zapis i opis
-    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(800);
+    await idz(pg, 'home'); await pg.waitForTimeout(800);
     await pg.evaluate(async ({ q }) => {
       const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>' + q.subject + '</w:t></w:r></w:p></w:body></w:document>');
       await window.OESTRaporty.save({ key: q.name, at: Date.parse('2026-11-06T10:00:00'), name: q.name, docx: z.generate({ type: 'uint8array' }), pdf: new Uint8Array(20), folder: q.rpt,
@@ -69,7 +72,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const lsBefore = await ppmLs();
 
     // 3. Ustawienia → Raporty: brak odzyskanych; podgląd → Odzyskaj do edycji
-    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptList .k2').first().waitFor();
+    await idz(pg, 'settings/reports'); await pg.locator('#rptList .k2').first().waitFor();
     check(await pg.locator('#rptRec').isHidden(), 'bez odzyskanych: brak sekcji „Odzyskane inspekcje”');
     await pg.locator('#rptList .k2').first().click();
     const rb = pg.locator('.oest-ask [data-a=rec]'); await rb.waitFor();
@@ -125,7 +128,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(await pg.locator('#recPill .oest-st').textContent() === 'Odzyskana', 'po Wyślij pigułka nadal Odzyskana');
 
     // 6. klocek Raporty: odzyskana jak zwykły klocek inspekcji; PL/EN bez skoków
-    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
     const card = await pg.evaluate(() => { const k = document.querySelector('#rptRec .ki'), s = k.querySelector('.oest-st'); return { n: document.querySelectorAll('#rptRec .ki').length, st: s.textContent, c: getComputedStyle(s).color, nm: k.querySelector('.knm').textContent, loc: k.querySelector('.klok').textContent, h: Math.round(k.getBoundingClientRect().height) }; });
     check(card.nm === q.card.name && card.loc === 'TB/L13', 'klocek odzyskanej: nazwa i lokalizacja jak na liście inspekcji (' + card.nm + ', ' + card.loc + ')');
     check(card.n === 1 && card.st === 'Odzyskana' && card.c === 'rgb(163, 91, 255)', 'klocek Raporty: odzyskana z fioletową pigułką (' + JSON.stringify(card) + ')');
@@ -149,30 +152,30 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(f2.fails === 0 && f2.photos === 1, 'ponowne otwarcie: poprawiona wersja (' + JSON.stringify(f2) + ')');
     check(await pg.locator('#updOn').isChecked(), '„Updated” zapamiętane w odzyskanej');
     // 8. zwykła inspekcja z listy PPM nadal ma swoje dane i zwykły wygląd
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(500); // nowa strona (jak w apce: z listy PPM), nie tylko zmiana # w tej samej
+    await idz(pg, 'ppm'); await pg.waitForTimeout(500); // nowa strona (jak w apce: z listy PPM), nie tylko zmiana # w tej samej
     await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForTimeout(2500);
     const f3 = await form();
     check(f3.fails === 1 && f3.photos === 1, 'zwykła inspekcja: nadal NIE + zdjęcie (' + JSON.stringify(f3) + ')');
     check(await pg.locator('#recUpdate').isHidden() && await pg.locator('#updBox').isHidden() && !(await pg.locator('#recPill').count()), 'zwykła inspekcja: bez Update, Updated i pigułki Odzyskana');
     // 9. „Wyczyść inspekcję” w odzyskanej: formularz zostaje pusty także po ponownym otwarciu (nie wraca zapis z raportu)
-    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
     await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
     pg.evaluate(() => window.OEST_clearInspection()); await pg.locator('.oest-ask [data-a=ok]').first().click(); await pg.waitForTimeout(1500);
     const f4 = await form();
     check(f4.fails === 0 && f4.photos === 0, 'Wyczyść: odzyskana pusta (' + JSON.stringify(f4) + ')');
-    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
     await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
     const f5 = await form();
     check(f5.fails === 0 && f5.photos === 0, 'Wyczyść: po ponownym otwarciu nadal pusta (' + JSON.stringify(f5) + ')');
     // 10. odzyskana, której zdjęcia nie ma już w telefonie: Update i Wyślij nie nadpisują pełnego raportu niepełnym (uwaga Codex #101)
-    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(600);
+    await idz(pg, 'home'); await pg.waitForTimeout(600);
     const lostId = await pg.evaluate(async ({ q }) => {
       const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>X</w:t></w:r></w:p></w:body></w:document>');
       const snap = JSON.parse(JSON.stringify(q.snap)); snap.photos = [{ zid: 'nie-ma-takiego-zdjecia', width: 10, height: 10, when: Date.now() }];
       const r = await window.OESTRaporty.save({ key: 'brak-zdjec', at: 1, name: 'Brak zdjec 05112026', docx: z.generate({ type: 'uint8array' }), folder: q.rpt, meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: 1 }, snap });
       await window.OESTRaporty.setRec(r.id, true); return r.id;
     }, { q });
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await idz(pg, 'ppm'); await pg.waitForTimeout(300);
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(lostId)); await pg.waitForTimeout(2500);
     await pg.locator('#recUpdate').click(); await pg.waitForTimeout(800);
     check(/Brakuje 1 zdjęć/.test(await pg.locator('#formHint').textContent()), 'brak zdjęcia: Update mówi wprost, czego brakuje');
@@ -180,7 +183,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const lost = await pg.evaluate(id => window.OESTRaporty.get(id), lostId);
     check(lost.versions === 1, 'brak zdjęcia: raport w archiwum (i na Dysku) bez zmian');
     // 11. pytania wyłączone później w zwykłej karcie PPM: odzyskana ma swoje ustawienia (odpowiedzi nie zamieniają się w N/A), karta bez zmian (uwaga Codex #101)
-    await pg.goto(B + '/index.html#home'); await pg.waitForTimeout(600);
+    await idz(pg, 'home'); await pg.waitForTimeout(600);
     const qOffId = await pg.evaluate(async ({ q, ID }) => {
       const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[ID] = Object.assign({}, n[ID] || {}, { q: false }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
       const z = new PizZip(); z.file('word/document.xml', '<w:document><w:body><w:p><w:r><w:t>X</w:t></w:r></w:p></w:body></w:document>');
@@ -188,11 +191,11 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
       const r = await window.OESTRaporty.save({ key: 'pytania-wylaczone', at: 1, name: 'Pytania 05112026', docx: z.generate({ type: 'uint8array' }), folder: q.rpt, meta: { ppm: q.ppm, type: q.type, code: q.code, sentAt: 1 }, snap });
       await window.OESTRaporty.setRec(r.id, true); return r.id;
     }, { q, ID });
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await idz(pg, 'ppm'); await pg.waitForTimeout(300);
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(qOffId)); await pg.waitForTimeout(2500);
     check((await form()).fails === 1, 'pytania wyłączone w karcie: odzyskana nadal z odpowiedzią NIE');
     await pg.waitForTimeout(1500); // szkic odzyskanej zapisuje się sam
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await idz(pg, 'ppm'); await pg.waitForTimeout(300);
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(qOffId)); await pg.waitForTimeout(2500);
     check((await form()).fails === 1, 'pytania wyłączone w karcie: po ponownym otwarciu nadal NIE');
     check(await pg.evaluate(ID => JSON.parse(localStorage.getItem('oest.ppm.needs'))[ID].q === false, ID), 'zwykła karta PPM: pytania nadal wyłączone');
@@ -200,7 +203,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     //     + zdjęcie, którego moduł zdjęć nie przyjął (zapis awaryjny w szkicu): zapis w raporcie je liczy, a odzyskana nie nadpisze raportu
     const AOV = 'EFA-INS-003';
     const sendAov = async failSave => {
-      await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+      await idz(pg, 'ppm'); await pg.waitForTimeout(300);
       await pg.goto(B + '/inspekcje/index.html#ppm=' + AOV); await pg.waitForTimeout(2500);
       await pg.evaluate(({ AOV, failSave }) => { const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[AOV] = Object.assign({}, n[AOV] || {}, { xw: false, xp: true }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
         if (failSave) window.OESTZdjecia.save = () => Promise.reject(new Error('brak miejsca')); }, { AOV, failSave });
@@ -217,7 +220,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const qa = await sendAov(false);
     check(qa.snap && qa.snap.photos.length === 1 && !qa.snap.lost, 'AOV: zdjęcie formularza w zapisie (' + JSON.stringify(qa.snap && { n: qa.snap.photos.length, lost: qa.snap.lost }) + ')');
     const aovId = await toArchive(qa, 'aov-bez-worda');
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await idz(pg, 'ppm'); await pg.waitForTimeout(300);
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(aovId)); await pg.waitForTimeout(2500);
     await pg.locator('#recUpdate').click();
     for (let i = 0; i < 100 && !/Zapisano|Brakuje|nie|not/i.test(await pg.locator('#formHint').textContent()); i++) await pg.waitForTimeout(200);
@@ -227,7 +230,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const ql = await sendAov(true);
     check(ql.snap && ql.snap.lost === 1, 'zdjęcie tylko w zapisie awaryjnym: policzone w zapisie raportu (' + JSON.stringify(ql.snap && { n: ql.snap.photos.length, lost: ql.snap.lost }) + ')');
     const lostAov = await toArchive(ql, 'aov-awaryjne');
-    await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300);
+    await idz(pg, 'ppm'); await pg.waitForTimeout(300);
     await pg.goto(B + '/inspekcje/index.html#rec=' + encodeURIComponent(lostAov)); await pg.waitForTimeout(2500);
     await pg.locator('#recUpdate').click(); await pg.waitForTimeout(800);
     check(/Brakuje 1 zdjęć/.test(await pg.locator('#formHint').textContent()), 'zapis awaryjny: odzyskana mówi, czego brakuje');

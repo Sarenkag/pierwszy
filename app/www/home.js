@@ -5,7 +5,7 @@
  * także po stuknięciu obok i po systemowym Wstecz (stos okien moduly/wstecz). Zmiana języka podmienia tylko teksty w miejscu. */
 (function (w) {
   "use strict";
-  var d = w.document, deps = null, pop = null, popKind = "", popClose = null;
+  var d = w.document, deps = null, pop = null, popKind = "", popClose = null, popZw = null;
   var $ = function (id) { return d.getElementById(id); };
   var LAT = 52.4797, LON = -1.8834; // One Eastside, Birmingham
   var WX_KEY = "oest.weather", WX_AGE = 3600000;
@@ -236,20 +236,20 @@
     pop.classList.remove("in"); void card.offsetWidth; pop.classList.add("in");
     from.classList.add("hm-act");
     popClose = function () { from.classList.remove("hm-act"); hide(); };
-    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O) O.open(function () { if (popClose) popClose(); });
+    popZw = w.OESTOkna ? w.OESTOkna.open(function () { if (popClose) popClose(); }) : null; // Wstecz telefonu zamyka okienko (moduly/szkielet)
   }
   function hide() {
-    var p = pop; popKind = ""; popClose = null; if (!p) return;
+    var p = pop; popKind = ""; popClose = null; if (popZw) { popZw(); popZw = null; } if (!p) return;
     p.classList.remove("in");
     if (reduce()) { p.hidden = true; return; }
     setTimeout(function () { if (!popKind) p.hidden = true; }, 200);
   }
-  // zamknięcie przyciskiem / stuknięciem obok = to samo co Wstecz (zdejmuje wpis historii)
+  // zamknięcie przyciskiem / stuknięciem obok = to samo co Wstecz
   function closePop() {
     if (!popKind) return;
-    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O && O.stack.length) O.close(); else if (popClose) popClose();
+    if (popClose) popClose();
   }
-  // przejście ze źródła powiadomienia: najpierw zamknij okienko (wpis historii), potem otwórz ekran
+  // przejście ze źródła powiadomienia: najpierw zamknij okienko, potem otwórz ekran
   function goFromPop(target) {
     var after = function () {
       if (target === "queue") { if (w.OESTSender && w.OESTSender.expand) w.OESTSender.expand(); return; }
@@ -258,10 +258,7 @@
       if (target === "update") { if (w.OESTUpdate) w.OESTUpdate.install(); return; }
       deps.show(target);
     };
-    var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); if (O && O.stack.length) {
-      w.addEventListener("popstate", function once() { w.removeEventListener("popstate", once); setTimeout(after, 0); });
-      O.close();
-    } else { if (popClose) popClose(); after(); }
+    if (popClose) popClose(); after();
   }
   function driveOp(op, btn) {
     var U = w.OESTZdjeciaUI, G = w.OESTGoogle, msg = function (t) { var m = $("hmDrMsg"); if (m) m.textContent = t; };

@@ -241,14 +241,15 @@
     ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid var(--line,rgba(255,255,255,.12));opacity:.85}" +
     // lampka sieci: moduly/znacznik (ten sam wzór co na ekranie głównym)
     "@keyframes oest-spin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
-    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}";
+    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}#oest-stopka .oest-sbar{position:static}"; // w stopce ramy (moduly/szkielet) pasek stoi w miejscu
   var el = null;
   function mount() {
     if (el || !doc.body) return;
     var st = doc.createElement("style"); st.textContent = css; doc.head.appendChild(st);
     el = doc.createElement("div"); el.className = "oest-sbar"; el.hidden = true; el.setAttribute("role", "status");
     el.innerHTML = '<div class="r"><span class="n"><i></i><span></span></span><span class="i"></span><span class="t"></span><span aria-hidden="true">▴</span></div><div class="p"></div><div class="m"></div>';
-    doc.body.appendChild(el);
+    // w apce pasek stoi w stopce ramy (moduly/szkielet: ion-footer, poza przewijaniem – nie drga); osobna strona (inspekcje) – na dole strony
+    var stopka = doc.getElementById("oest-stopka"); (stopka || doc.body).appendChild(el);
     el.querySelector(".r").addEventListener("click", function () { open = !open; render(); });
     el.querySelector(".m").addEventListener("click", function (e) {
       var b = e.target.closest("button"); if (!b) return;
@@ -299,7 +300,7 @@
     var nb = el.querySelector(".n"); nb.className = "n " + net[0]; nb.lastChild.textContent = net[1];
     el.querySelector(".m").innerHTML = more;
     el.querySelector(".p").style.width = Math.round(prog * 100) + "%";
-    el.hidden = false; doc.body.classList.add("oest-sbar-on");
+    el.hidden = false; if (!el.closest("#oest-stopka")) doc.body.classList.add("oest-sbar-on");
   }
   function refresh() { return loadAll().then(render, render); }
 

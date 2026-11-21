@@ -4,12 +4,19 @@
 //             droga do ekranu głównego bez pętli, „up” zarezerwowane, każda sekcja .view w index.html ma wpis i odwrotnie,
 //             strzałka ‹ (data-go) w sekcji prowadzi dokładnie do rodzica z mapy.
 //   JM      – jedna rzecz = jedno miejsce (R25, rejestr quality/jedno-miejsce.json): każde trafienie wzoru poza właścicielem;
-//             klucz „oest.*” lub baza IndexedDB w więcej niż jednym pliku; Wstecz Androida (backButton) zarejestrowany dokładnie raz
-//             i tylko w moduly/wstecz; właściciel z rejestru musi istnieć (JM-4).
+//             klucz „oest.*” lub baza IndexedDB w więcej niż jednym pliku; Wstecz Androida tylko w szkielecie Ionic (moduly/szkielet);
+//             właściciel z rejestru musi istnieć (JM-4).
 //   KOPIA   – ta sama funkcja (min. 40 tokenów, R25/JM-2) w dwóch plikach; dwa identyczne pliki (JM-3).
 //   ZNACZNIK – klikalny element (button, a, role=button) bez dokładnie jednego znacznika data-nav / data-okno / data-akcja,
 //             stare znaczniki data-go, data-href, data-open, data-hnews, data-rx, data-key-action, data-pt-action, data-qq (R26).
 //   LOGIKA  – nazwane funkcje w <script> stron index.html i inspekcje/index.html (R27): logika tylko w modułach; liczba może tylko maleć.
+//   IONIC   – apka stoi na Ionic + Vue (decyzja Grzegorza 21/11/2026, moduly/szkielet): każdy ekran z ekrany.json bez komponentu Vue
+//             i strona inspekcji to „Poza Ionic/Vue” (lista zastanych quality/baselines/ionic.json, tylko maleje – licznik do zera);
+//             tak samo wspólne moduły rysujące własny interfejs (moduly/*: innerHTML, createElement);
+//             w ekranach Vue i ramie: tylko komponenty Ionic (bez własnych przycisków, pól, list, nawigacji, style=, <style>, klas
+//             spoza Ionic), w CSS szkieletu tylko reguły ustawiające zmienne motywu; wszystko inne tylko z pliku quality/wyjatki-ionic.json,
+//             gdzie każdy wpis ma powód i id pisemnego „tak” Grzegorza (cmsg_…). Przewijanie (overscroll-behavior, overflow auto/scroll)
+//             ustawia tylko rama – w pozostałych plikach liczba trafień może tylko maleć.
 // Identyfikator naruszenia nie ma numerów linii ani liczby trafień (np. JM|historia|keys.js); liczba trafień jest w polu „liczba”.
 // Na liście zastanych wpis ma „maks” = dzisiejsza liczba: więcej trafień → FAIL, mniej → FAIL z prośbą o obniżenie „maks”
 // (lista może tylko maleć; check-ratchet.cjs blokuje podniesienie „maks”).
@@ -152,14 +159,13 @@ function analyse(www, opts) {
     if (w ? poza.length : fs_.size > 1) for (const f of poza) add(`JM|klucz|${k}|${f}`, 'JM', `${f}: klucz ${k} używany także w ${[...fs_].filter(x => x !== f).join(', ') || '—'}${w ? ' (właściciel: ' + w + ')' : ''}.`, { punkt: '#23/#24/D22', usuwa: 'D-1/D-2/D-4' });
   }
   for (const [b, fs_] of bazy) if (fs_.size > 1) for (const f of fs_) add(`JM|baza|${b}|${f}`, 'JM', `${f}: baza ${b} otwierana w ${fs_.size} plikach (${[...fs_].join(', ')}).`, { punkt: 'D4/D21', usuwa: 'D-3/F3' });
-  // Wstecz Androida: dokładnie jedna rejestracja, w moduly/wstecz/wstecz.js, wołająca wstecz()
-  // ciało całego callbacka (od „{” do pasującej „}”), nie do pierwszego średnika
-  const bb = [...kod].flatMap(([f, c]) => [...c.matchAll(/addListener\(\s*["']backButton["']\s*,/g)].map(m => {
-    const i = c.indexOf('{', m.index), j = i < 0 ? -1 : klamra(c, i);
-    return { f, cb: j < 0 ? c.slice(m.index, m.index + 200) : c.slice(i, j + 1) };
-  }));
-  const ok = bb.length === 1 && bb[0].f === 'moduly/wstecz/wstecz.js' && /\bwstecz\(\)/.test(bb[0].cb);
-  if (!ok) add('JM|backButton|' + (bb.map(x => x.f).join('+') || 'brak'), 'JM', `Wstecz Androida (backButton) ma być zarejestrowany dokładnie raz, w moduly/wstecz/wstecz.js, i wołać wstecz(); jest: ${bb.length ? bb.map(x => x.f).join(', ') : 'brak'}.`);
+  // Wstecz Androida: obsługuje tylko szkielet Ionic (moduly/szkielet, ionBackButton) – nigdzie indziej nasłuchu klawisza Wstecz
+  for (const [f, c] of kod) {
+    const n = (c.match(/addListener\(\s*["']backButton["']|["'](?:backbutton|ionBackButton)["']/g) || []).length;
+    if (n) add('JM|backButton|' + f, 'JM', `${f}: własna obsługa klawisza Wstecz ${n}× – Wstecz Androida obsługuje tylko szkielet Ionic (moduly/szkielet).`);
+  }
+  if (fs.existsSync(path.join(www, 'moduly/wstecz'))) add('JM|backButton|moduly/wstecz', 'JM', 'moduly/wstecz wróciło – Wstecz Androida obsługuje tylko szkielet Ionic (moduly/szkielet).');
+  if (!fs.existsSync(path.join(www, 'moduly/szkielet/lib/szkielet.js'))) add('JM|backButton|brak-szkieletu', 'JM', 'Brak paczki szkieletu moduly/szkielet/lib/szkielet.js (Wstecz, nawigacja, rama).');
 
   // ---------- KOPIA: ta sama funkcja (JM-2), ten sam plik (JM-3) ----------
   const funkcje = new Map();
@@ -198,7 +204,89 @@ function analyse(www, opts) {
     const n = funkcjeStrony(src.get(f));
     if (n) add(`LOGIKA|${f}`, 'LOGIKA', `${f}: ${n} funkcji zapisanych w <script> strony zamiast w module (moduly/ albo plik obok strony).`, { punkt: 'R27', usuwa: 'K01–K16', liczba: n });
   }
+  ionic(www, src, add);
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+// ---------- IONIC (21/11/2026): ekrany na Ionic + Vue, nic własnego obok ----------
+const POLA = new Set(['ion-input', 'ion-select', 'ion-textarea', 'ion-datetime-button', 'ion-toggle', 'ion-checkbox']);
+const POLE_INNE = new Set(['ion-radio-group', 'ion-radio', 'ion-picker', 'ion-picker-column', 'ion-picker-column-option', 'ion-segment', 'ion-segment-button', 'ion-range', 'ion-input-otp']);
+const IONIC_TAGI = new Set(['template', 'component', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'slot', 'strong', 'b', 'small', 'br']);
+function ionic(www, src, add) {
+  // repo: www = app/www, źródła szkieletu dwa poziomy wyżej; próbka testowa bramki: wszystko w jednym katalogu
+  const ROOT = fs.existsSync(path.resolve(www, '../../moduly/szkielet/src')) ? path.resolve(www, '../..') : www, SZK = path.join(ROOT, 'moduly/szkielet/src');
+  const czytaj = f => { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return null; } };
+  const plikW = path.join(ROOT, 'quality/wyjatki-ionic.json'), txtW = czytaj(plikW);
+  let wyj = [];
+  if (txtW) { try { wyj = JSON.parse(txtW).wyjatki || []; } catch (e) { add('IONIC|wyjatki-zly-json', 'IONIC', 'quality/wyjatki-ionic.json to nie poprawny JSON: ' + e.message); } }
+  for (const x of wyj) if (!x || !x.co || !(Array.isArray(x.co) ? x.co : [x.co]).length || !String(x.powod || '').trim() || !/^cmsg_[A-Za-z0-9]{20,}$/.test(String(x.zgoda || '')))
+    add('IONIC|wyjatek-bez-zgody|' + (x && x.co), 'IONIC', `quality/wyjatki-ionic.json: wyjątek „${x && x.co}” bez powodu albo bez id pisemnego „tak” Grzegorza (cmsg_…).`);
+  const wolno = co => wyj.some(x => x && [].concat(x.co).includes(co) && /^cmsg_/.test(String(x.zgoda || '')) && String(x.powod || '').trim());
+  // 1. ekrany poza Ionic/Vue (licznik do zera)
+  const idx = czytaj(path.join(SZK, 'ekrany/index.js')) || '';
+  const m = idx.match(/EKRANY_VUE\s*=\s*\{([^}]*)\}/), vue = new Set(m ? [...m[1].matchAll(/['"]?([\w/:-]+)['"]?\s*:/g)].map(x => x[1]) : []);
+  let mapa = null; try { mapa = JSON.parse(fs.readFileSync(path.join(www, 'moduly/ekrany/ekrany.json'), 'utf8')); } catch (e) {}
+  const lista = mapa && Array.isArray(mapa.ekrany) ? mapa.ekrany : []; // zły kształt mapy zgłasza reguła EKRANY
+  for (const e of lista) if (e && e.id && !vue.has(e.id))
+    add('IONIC|ekran|' + e.id, 'IONIC', `Ekran ${e.id} (${e.pl}) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu' });
+  for (const k of vue) if (!lista.some(e => e && e.id === k)) add('IONIC|vue-bez-ekranu|' + k, 'IONIC', `moduly/szkielet/src/ekrany/index.js: ${k} nie ma wpisu w ekrany.json.`);
+  if ((src.get('inspekcje/index.html') || '').includes('OESTEkrany.strona('))
+    add('IONIC|strona|inspekcje/index.html', 'IONIC', 'Strona inspekcji jest jeszcze poza ramą Ionic/Vue (tylko Wstecz i okienka ze szkieletu).', { punkt: 'Ionic', usuwa: 'przeniesienie inspekcji' });
+  // 2. ekrany Vue i rama: tylko komponenty Ionic
+  const vuePliki = [];
+  const walk = d => { for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else vuePliki.push(f); } };
+  walk(SZK);
+  for (const f of vuePliki) {
+    const rel = path.relative(ROOT, f).split(path.sep).join('/'), c = czytaj(f) || '';
+    if (f.endsWith('.vue')) {
+      const t = (c.match(/<template>([\s\S]*)<\/template>/) || [])[1] || '';
+      const bez = t.replace(/<!--[\s\S]*?-->/g, '');
+      for (const g of bez.matchAll(/<([a-z][\w-]*)\b([^>]*)>/g)) {
+        const tag = g[1], atr = g[2];
+        if (!tag.startsWith('ion-') && !IONIC_TAGI.has(tag) && !wolno('element:' + tag)) add(`IONIC|wlasny-element|${rel}|${tag}`, 'IONIC', `${rel}: własny element <${tag}> zamiast komponentu Ionic.`);
+        if (/(^|\s):?style\s*=/.test(atr)) add(`IONIC|style|${rel}`, 'IONIC', `${rel}: atrybut style= (wygląd tylko z Ionic i zmiennych motywu).`);
+        const kl = (atr.match(/(?:^|\s)class\s*=\s*"([^"]*)"/) || [])[1];
+        for (const k of (kl || '').split(/\s+/).filter(Boolean)) if (!k.startsWith('ion-') && !wolno('klasa:' + k)) add(`IONIC|wlasna-klasa|${rel}|${k}`, 'IONIC', `${rel}: własna klasa „${k}” (dozwolone klasy Ionic ion-* albo wyjątek z „tak” Grzegorza).`);
+      }
+      // pola formularza (Grzegorz 21/11: „4 listy, każda inna”): jeden sposób na każdy rodzaj pola, zawsze w ion-item (ten sam wygląd).
+      // Wybór z listy = ion-select (bez dodatkowego przycisku „Wybierz z listy”), data/godzina = ion-datetime-button + ion-datetime w ion-modal.
+      const stos = [];
+      for (const g of bez.matchAll(/<(\/?)([a-z][\w-]*)\b([^>]*?)(\/?)>/g)) {
+        const zamk = g[1] === '/', tag = g[2], sam = g[4] === '/' || /^(img|br|input)$/.test(tag);
+        if (zamk) { const i = stos.lastIndexOf(tag); if (i >= 0) stos.length = i; continue; }
+        if (POLE_INNE.has(tag) && !wolno('element:' + tag)) add(`IONIC|pole-inne|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> – wybór z listy tylko przez ion-select, data przez ion-datetime-button (jeden sposób w całej apce).`);
+        if (POLA.has(tag) && !stos.includes('ion-item')) add(`IONIC|pole-poza-item|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> poza ion-item – każde pole w ion-item, żeby wszystkie wyglądały tak samo.`);
+        if (tag === 'ion-datetime' && !stos.includes('ion-modal')) add(`IONIC|data-poza-modal|${rel}`, 'IONIC', `${rel}: <ion-datetime> poza ion-modal – data tylko przez ion-datetime-button (ten sam wygląd co inne pola).`);
+        if (!sam) stos.push(tag);
+      }
+      if (/<style\b/.test(c)) add(`IONIC|style|${rel}`, 'IONIC', `${rel}: blok <style> w ekranie (wygląd tylko z Ionic i zmiennych motywu).`);
+    }
+    if (f.endsWith('.css')) {
+      const css = c.replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const r of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        const sel = r[1].trim().replace(/\s+/g, ' '), cialo = r[2];
+        const tylkoZmienne = cialo.split(';').map(x => x.trim()).filter(Boolean).every(x => x.startsWith('--')); // zmienne motywu (Ionic: --ion-*, --background…)
+        if (!tylkoZmienne && !wolno('css:' + sel)) add(`IONIC|css|${rel}|${sel}`, 'IONIC', `${rel}: własna reguła CSS „${sel}” (w szkielecie tylko zmienne motywu w :root; reszta tylko z wyjątkiem z „tak” Grzegorza).`);
+      }
+    }
+  }
+  // 2b. wspólne moduły, które same rysują interfejs (HTML z kodu) – do zastąpienia komponentami Ionic (licznik do zera)
+  for (const d of fs.existsSync(path.join(ROOT, 'moduly')) ? fs.readdirSync(path.join(ROOT, 'moduly'), { withFileTypes: true }) : []) {
+    if (!d.isDirectory() || d.name === 'szkielet') continue;
+    const js = fs.readdirSync(path.join(ROOT, 'moduly', d.name)).filter(f => f.endsWith('.js'));
+    if (js.some(f => /\binnerHTML\s*[+]?=|insertAdjacentHTML\s*\(|createElement\s*\(/.test(czytaj(path.join(ROOT, 'moduly', d.name, f)) || '')))
+      add('IONIC|modul-ui|' + d.name, 'IONIC', `moduly/${d.name} rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranów' });
+  }
+  // 3. przewijanie ustawia tylko rama (jedno ustawienie dla całej apki – Grzegorz 21/11/2026)
+  const css = [];
+  const walkW = d => { for (const e of fs.readdirSync(path.join(www, d), { withFileTypes: true })) { const r = d ? d + '/' + e.name : e.name; if (e.isDirectory()) { if (e.name !== 'node_modules') walkW(r); } else if (/\.(css|js|html)$/.test(e.name)) css.push(r); } };
+  walkW('');
+  for (const f of css) {
+    if (OBCA_STRONA.has(f) || DANE(f)) continue;
+    const c = fs.readFileSync(path.join(www, f), 'utf8');
+    const n = (c.match(/overscroll-behavior|overflow(?:-[xy])?\s*:\s*(?:auto|scroll)/g) || []).length;
+    if (n) add('IONIC|przewijanie|' + f, 'IONIC', `${f}: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) ${n}× – przewijanie ustawia tylko rama (moduly/szkielet).`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu', liczba: n });
+  }
 }
 
 // R27: nazwane funkcje w skryptach wpisanych w stronę – „function nazwa(”, „nazwa = function”, „nazwa = (…) =>”, „nazwa = x =>”;

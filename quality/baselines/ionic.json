@@ -1,0 +1,493 @@
+{
+  "schema": "oest.quality.baseline",
+  "version": 1,
+  "rule": "ionic",
+  "note": "„Poza Ionic/Vue” (decyzja Grzegorza 21/11/2026): ekrany, strona inspekcji i wspólne moduły jeszcze nie na Ionic + Vue oraz własne ustawienia przewijania. Lista może tylko maleć – licznik do zera; praca skończona, gdy lista jest pusta. Dodanie wpisu wymaga wyraźnej zgody właściciela.",
+  "entries": [
+    {
+      "id": "IONIC|ekran|cal",
+      "rule": "IONIC",
+      "detail": "Ekran cal (Kalendarz) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|handover",
+      "rule": "IONIC",
+      "detail": "Ekran handover (Handover) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|handover/archive",
+      "rule": "IONIC",
+      "detail": "Ekran handover/archive (Archiwum) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|handover/draft",
+      "rule": "IONIC",
+      "detail": "Ekran handover/draft (Szkic) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|handover/shift/:id",
+      "rule": "IONIC",
+      "detail": "Ekran handover/shift/:id (Zmiana) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|home",
+      "rule": "IONIC",
+      "detail": "Ekran home (Ekran główny) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|keys",
+      "rule": "IONIC",
+      "detail": "Ekran keys (Klucze) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|keys/detail/:id",
+      "rule": "IONIC",
+      "detail": "Ekran keys/detail/:id (Klucz) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|keys/edit/:id",
+      "rule": "IONIC",
+      "detail": "Ekran keys/edit/:id (Edycja klucza) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|keys/find",
+      "rule": "IONIC",
+      "detail": "Ekran keys/find (Szukaj klucza) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|keys/new",
+      "rule": "IONIC",
+      "detail": "Ekran keys/new (Nowy klucz) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|konto-stare",
+      "rule": "IONIC",
+      "detail": "Ekran konto-stare (Konto (stary ekran)) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|powertrace",
+      "rule": "IONIC",
+      "detail": "Ekran powertrace (Power trace) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|powertrace/edit/:id",
+      "rule": "IONIC",
+      "detail": "Ekran powertrace/edit/:id (Edycja rozdzielnicy) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|powertrace/new",
+      "rule": "IONIC",
+      "detail": "Ekran powertrace/new (Nowa rozdzielnica) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|powertrace/view/:id",
+      "rule": "IONIC",
+      "detail": "Ekran powertrace/view/:id (Rozdzielnica) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|ppm",
+      "rule": "IONIC",
+      "detail": "Ekran ppm (Inspekcje) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|questions",
+      "rule": "IONIC",
+      "detail": "Ekran questions (Edytor pytań) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive",
+      "rule": "IONIC",
+      "detail": "Ekran reactive (Reactive) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/complete/:id",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/complete/:id (Zamknięcie zlecenia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/config",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/config (Ustawienia Reactive) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/draft/:id",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/draft/:id (Szkic zlecenia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/history",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/history (Historia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/job/:id",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/job/:id (Zlecenie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/new/:id",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/new/:id (Nowe zlecenie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|reactive/tree/:id",
+      "rule": "IONIC",
+      "detail": "Ekran reactive/tree/:id (Wybór (drzewo)) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/about",
+      "rule": "IONIC",
+      "detail": "Ekran settings/about (O aplikacji) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/account",
+      "rule": "IONIC",
+      "detail": "Ekran settings/account (Konto) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/ai",
+      "rule": "IONIC",
+      "detail": "Ekran settings/ai (OCR i modele AI) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/calendar",
+      "rule": "IONIC",
+      "detail": "Ekran settings/calendar (Kalendarz i grafik) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/contacts",
+      "rule": "IONIC",
+      "detail": "Ekran settings/contacts (Zespół i kontakty) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/drive",
+      "rule": "IONIC",
+      "detail": "Ekran settings/drive (Google Drive i kopia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/mail",
+      "rule": "IONIC",
+      "detail": "Ekran settings/mail (Poczta i wysyłka) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/profile",
+      "rule": "IONIC",
+      "detail": "Ekran settings/profile (Mój profil) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/reports",
+      "rule": "IONIC",
+      "detail": "Ekran settings/reports (Raporty i zdjęcia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/sync",
+      "rule": "IONIC",
+      "detail": "Ekran settings/sync (Synchronizacja) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|settings/vantify",
+      "rule": "IONIC",
+      "detail": "Ekran settings/vantify (Vantify) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|soon",
+      "rule": "IONIC",
+      "detail": "Ekran soon (Wkrótce) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|start",
+      "rule": "IONIC",
+      "detail": "Ekran start (Logowanie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|ekran|zdjecia",
+      "rule": "IONIC",
+      "detail": "Ekran zdjecia (Zdjęcia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|modul-ui|aparat",
+      "rule": "IONIC",
+      "detail": "moduly/aparat rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|checkbox",
+      "rule": "IONIC",
+      "detail": "moduly/checkbox rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|kafelek",
+      "rule": "IONIC",
+      "detail": "moduly/kafelek rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|klocek",
+      "rule": "IONIC",
+      "detail": "moduly/klocek rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|ladowanie",
+      "rule": "IONIC",
+      "detail": "moduly/ladowanie rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|model",
+      "rule": "IONIC",
+      "detail": "moduly/model rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|naglowek",
+      "rule": "IONIC",
+      "detail": "moduly/naglowek rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|notatki",
+      "rule": "IONIC",
+      "detail": "moduly/notatki rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|odczyt",
+      "rule": "IONIC",
+      "detail": "moduly/odczyt rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|pasek-dni",
+      "rule": "IONIC",
+      "detail": "moduly/pasek-dni rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|podmien",
+      "rule": "IONIC",
+      "detail": "moduly/podmien rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|pole-email",
+      "rule": "IONIC",
+      "detail": "moduly/pole-email rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|przelacznik",
+      "rule": "IONIC",
+      "detail": "moduly/przelacznik rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|przycisk",
+      "rule": "IONIC",
+      "detail": "moduly/przycisk rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|raporty",
+      "rule": "IONIC",
+      "detail": "moduly/raporty rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|wysylka",
+      "rule": "IONIC",
+      "detail": "moduly/wysylka rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|zdjecia",
+      "rule": "IONIC",
+      "detail": "moduly/zdjecia rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|modul-ui|znacznik",
+      "rule": "IONIC",
+      "detail": "moduly/znacznik rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranów"
+    },
+    {
+      "id": "IONIC|przewijanie|home.css",
+      "rule": "IONIC",
+      "detail": "home.css: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|index.html",
+      "rule": "IONIC",
+      "detail": "index.html: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 2× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 2,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|inspekcje/index.html",
+      "rule": "IONIC",
+      "detail": "inspekcje/index.html: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|moduly/notatki/notatki.js",
+      "rule": "IONIC",
+      "detail": "moduly/notatki/notatki.js: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|moduly/odczyt/odczyt.js",
+      "rule": "IONIC",
+      "detail": "moduly/odczyt/odczyt.js: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|moduly/przycisk/przycisk.js",
+      "rule": "IONIC",
+      "detail": "moduly/przycisk/przycisk.js: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|moduly/raporty/przegladarka.js",
+      "rule": "IONIC",
+      "detail": "moduly/raporty/przegladarka.js: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|powertrace.css",
+      "rule": "IONIC",
+      "detail": "powertrace.css: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 2× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 2,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|przewijanie|theme.css",
+      "rule": "IONIC",
+      "detail": "theme.css: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
+      "maks": 1,
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie ekranu"
+    },
+    {
+      "id": "IONIC|strona|inspekcje/index.html",
+      "rule": "IONIC",
+      "detail": "Strona inspekcji jest jeszcze poza ramą Ionic/Vue (tylko Wstecz i okienka ze szkieletu).",
+      "punkt": "Ionic",
+      "usuwa": "przeniesienie inspekcji"
+    }
+  ]
+}

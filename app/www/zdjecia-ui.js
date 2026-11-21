@@ -131,10 +131,10 @@
         var o = w.document.createElement('div'); o.className = 'zd-full';
         o.innerHTML = '<img alt="" src="' + u + '"><p>' + esc(r.name) + '<br><span class="hint">' + esc(r.folder.join(' / ')) + ' · ' + mb(r.size) + '</span></p>' +
           '<div class="zd-act"><button type="button" class="btn" data-a="del">' + T('🗑 Usuń', '🗑 Delete') + '</button><button type="button" class="btn" data-a="close">' + T('Zamknij', 'Close') + '</button></div>';
-        // Wstecz telefonu zamyka podgląd zamiast cofać apkę (stos okien moduly/wstecz)
-        var O = (w.OESTWstecz && w.OESTWstecz.nakladki.on ? w.OESTWstecz.nakladki : null); w.document.body.appendChild(o);
-        if (O) O.open(function () { o.remove(); });
-        var shut = function () { if (!o.isConnected) return; if (O) O.close(); else o.remove(); }; // tylko ten podgląd, jeśli jest jeszcze otwarty
+        // Wstecz telefonu zamyka podgląd zamiast cofać apkę (stos okienek moduly/szkielet)
+        w.document.body.appendChild(o);
+        var zw = w.OESTOkna ? w.OESTOkna.open(function () { shut(); }) : null;
+        var shut = function () { if (zw) zw(); o.remove(); }; // tylko ten podgląd
         o.onclick = function (e) {
           var a = e.target.closest('[data-a]');
           if (!a) { if (e.target === o || e.target.tagName === 'IMG') shut(); return; }

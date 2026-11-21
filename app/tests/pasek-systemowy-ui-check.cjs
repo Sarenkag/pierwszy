@@ -1,5 +1,7 @@
-// Pasek systemowy telefonu (godzina, bateria) zawsze czytelny (Grzegorz 07/11/2026, zrzut z apk-274):
-// stałe czarne tło na całej szerokości pod paskiem, na każdym ekranie i nad każdym okienkiem; treść przewija się pod nim.
+// Pasek systemowy telefonu (godzina, bateria) zawsze czytelny (Grzegorz 07/11/2026, zrzut z apk-274).
+// Od szkieletu Ionic (21/11/2026) apka jest edge-to-edge i czarnego pasa html::after już nie ma: ekran z nagłówkiem ma pod godziną
+// nieprzezroczysty pas w ion-header (.oest-pas = wysokość paska telefonu, na ekranie Vue – ion-toolbar z dopełnieniem), więc treść
+// nigdy nie przewija się pod godziną; ekran główny i start są przezroczyste, ale ich treść zaczyna się poniżej paska.
 // Test przeglądarkowy (Quality Gate G2). Na telefonie wysokość paska podaje Capacitor (--safe-area-inset-top);
 // tu ustawiamy ją ręcznie na 48 px, tak jak robi to Android. Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
@@ -28,10 +30,20 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await c.addInitScript(() => { if (location.protocol !== 'http:') return; if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
     await c.addInitScript(h => { const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', h + 'px'), true); if (!set()) new MutationObserver((m, o) => { if (set()) o.disconnect(); }).observe(document, { childList: true }); }, PASEK);
     const p = await c.newPage(); const errors = []; p.on('pageerror', e => errors.push(e.message));
-    const pasek = () => p.evaluate(() => {
-      const s = getComputedStyle(document.documentElement, '::after');
-      return { h: parseFloat(s.height), top: s.top, w: parseFloat(s.width), tlo: s.backgroundColor, poz: s.position, z: s.zIndex, klik: s.pointerEvents, szer: innerWidth };
-    });
+    // pas pod godziną: czym jest pokryty (ion-header), na jaką szerokość, czy nieprzezroczysty
+    const pasek = () => p.evaluate(PASEK => {
+      const hdr = document.querySelector('ion-header'), r = hdr ? hdr.getBoundingClientRect() : null;
+      const pts = [2, innerWidth / 4, innerWidth / 2, innerWidth * 3 / 4, innerWidth - 2].flatMap(x => [1, PASEK / 2, PASEK - 1].map(y => document.elementFromPoint(x, y)));
+      const norm = c => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = '#123456'; k.fillStyle = c; return k.fillStyle; }; // '#rrggbb' = nieprzezroczysty, 'rgba(…)' = z przezroczystością
+      const pas = document.querySelector('ion-header .oest-pas'), tb = document.querySelector('ion-header ion-toolbar');
+      const tlo = pas ? getComputedStyle(pas).backgroundColor : tb ? getComputedStyle(tb).getPropertyValue('--background').trim() : '';
+      const wrap = document.querySelector('.wrap');
+      return { jestHeader: !!hdr, top: r ? Math.round(r.top) : null, szerHeader: r ? Math.round(r.width) : null, wysHeader: r ? Math.round(r.height) : null, szer: innerWidth,
+        pokryte: pts.filter(el => el && el.closest('ion-header')).length, punkty: pts.length,
+        pasH: pas ? Math.round(pas.getBoundingClientRect().height) : null, toolbarPad: tb ? parseFloat(getComputedStyle(tb).paddingTop) || parseFloat(getComputedStyle(tb).getPropertyValue('--padding-top')) || 0 : null,
+        tlo, tloOpak: !!tlo && /^#[0-9a-f]{6}$/i.test(norm(tlo)), wrapPad: wrap ? parseFloat(getComputedStyle(wrap).paddingTop) : null,
+        czarnyPas: getComputedStyle(document.documentElement, '::after').content };
+    }, PASEK);
     for (const e of EKRANY) {
       await p.goto('about:blank'); await p.goto(url + e); await p.waitForTimeout(600);
       R.widoki = R.widoki || {}; R.widoki[e] = await p.evaluate(() => (document.querySelector('.view:not([hidden])') || document.body).id || location.pathname);
@@ -48,14 +60,24 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       }).map(el => (el.id || el.getAttribute('class') || el.tagName).toString().slice(0, 30) + '@' + Math.round(el.getBoundingClientRect().top)), PASEK);
       R[e + ' zasloniete'] = zasloniete.slice(0, 5);
       check(zasloniete.length === 0, `${e}: pod czarnym pasem jest treść przed przewinięciem: ${zasloniete.slice(0, 4).join(', ')}`);
-      await p.evaluate(() => { scrollTo(0, 600); document.querySelectorAll('*').forEach(el => { if (el.scrollHeight > el.clientHeight + 50 && /auto|scroll/.test(getComputedStyle(el).overflowY)) el.scrollTop = 600; }); });
+      const przewinieto = await p.evaluate(() => { if (window.OESTEkrany) OESTEkrany.przewin(600); scrollTo(0, 600); document.querySelectorAll('*').forEach(el => { if (el.scrollHeight > el.clientHeight + 50 && /auto|scroll/.test(getComputedStyle(el).overflowY)) el.scrollTop = 600; }); return (window.OESTEkrany ? OESTEkrany.przewiniecie() : 0) + scrollY; });
       await p.waitForTimeout(200);
       const b = await pasek();
-      R[e] = { wysokosc: a.h, tlo: a.tlo, poPrzewinieciu: b.h };
-      check(a.h === PASEK && b.h === PASEK, `${e}: czarny pasek ma ${a.h}/${b.h} px zamiast ${PASEK}`);
-      check(a.top === '0px' && a.poz === 'fixed' && a.w === a.szer, `${e}: pasek nie stoi na górze na całej szerokości (${a.poz} top ${a.top}, ${a.w}/${a.szer} px)`);
-      check(a.tlo === 'rgb(0, 0, 0)', `${e}: tło pod paskiem nie jest czarne (${a.tlo})`);
-      check(a.z === '2147483647' && a.klik === 'none', `${e}: pasek nie jest na wierzchu albo przechwytuje dotyk (z ${a.z}, ${a.klik})`);
+      R[e] = { header: a.jestHeader, wysHeader: a.wysHeader, pasH: a.pasH, tlo: a.tlo, przewinieto, pokryte: [a.pokryte, b.pokryte, a.punkty] };
+      const naglowek = !/#home$/.test(e) && a.jestHeader; // ekran z nagłówkiem (każdy poza głównym i inspekcją-stroną bez ramy)
+      check(a.czarnyPas === 'none' || a.czarnyPas === 'normal', `${e}: czarny pas html::after wrócił (${a.czarnyPas}) – apka jest edge-to-edge`);
+      if (!/#home$/.test(e)) check(a.jestHeader || /inspekcje\//.test(e), `${e}: ekran z nagłówkiem nie ma ion-header z pasem pod godziną`);
+      if (naglowek) {
+        check(a.top === 0 && a.szerHeader === a.szer, `${e}: pas pod godziną nie stoi na górze na całej szerokości (top ${a.top}, ${a.szerHeader}/${a.szer} px)`);
+        check(a.wysHeader >= PASEK, `${e}: nagłówek ma ${a.wysHeader} px, a pasek telefonu ${PASEK} px`);
+        check(a.pasH === null || a.pasH === PASEK, `${e}: .oest-pas ma ${a.pasH} px zamiast wysokości paska ${PASEK} px`);
+        check(a.toolbarPad === null || a.toolbarPad >= PASEK, `${e}: ion-toolbar ma dopełnienie ${a.toolbarPad} px zamiast ≥ ${PASEK} px (pod paskiem telefonu)`);
+        check(a.tloOpak, `${e}: tło pasa pod godziną nie jest nieprzezroczyste (${a.tlo})`);
+        check(a.pokryte === a.punkty && b.pokryte === b.punkty, `${e}: pas pod godziną nie zasłania całej szerokości nagłówkiem przed/po przewinięciu (${a.pokryte}/${b.pokryte} z ${a.punkty} punktów) – treść przewija się pod godziną`);
+      } else {
+        check(a.wrapPad >= PASEK, `${e}: treść ekranu bez nagłówka zaczyna się pod paskiem telefonu (padding-top ${a.wrapPad} < ${PASEK})`);
+        check(a.jestHeader || przewinieto === 0 || /#home$/.test(e), `${e}: ekran przewija się (${przewinieto} px) bez nagłówka pod godziną`);
+      }
     }
     // okienko na wierzchu (np. pytanie, aparat) nie zasłania paska
     await p.goto(url + 'index.html#home'); await p.waitForTimeout(500);
@@ -65,13 +87,14 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // w przeglądarce bez paska systemowego: wysokość 0, nic nie zasłania
     const c2 = await browser.newContext({ viewport: { width: 412, height: 915 } });
     await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+    await c2.addInitScript(() => { if (location.protocol !== 'http:') return; if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
     const q = await c2.newPage(); await q.goto(url + 'index.html#ppm'); await q.waitForTimeout(500);
-    R.bezPaska = await q.evaluate(() => parseFloat(getComputedStyle(document.documentElement, '::after').height));
-    check(R.bezPaska === 0, 'bez paska systemowego czarny pas ma ' + R.bezPaska + ' px (powinno 0)');
-    if (process.env.OEST_PASEK_ZRZUT) { await p.goto('about:blank'); await p.goto(url + 'index.html#ppm'); await p.waitForTimeout(600); await p.evaluate(() => scrollTo(0, 140)); await p.waitForTimeout(200); await p.screenshot({ path: process.env.OEST_PASEK_ZRZUT }); }
+    R.bezPaska = await q.evaluate(() => { const pas = document.querySelector('ion-header .oest-pas'); return pas ? pas.getBoundingClientRect().height : null; });
+    check(R.bezPaska === 0, 'bez paska systemowego pas pod godziną (.oest-pas) ma ' + R.bezPaska + ' px (powinno 0)');
+    if (process.env.OEST_PASEK_ZRZUT) { await p.goto('about:blank'); await p.goto(url + 'index.html#ppm'); await p.waitForTimeout(600); await p.evaluate(() => { if (window.OESTEkrany) OESTEkrany.przewin(140); scrollTo(0, 140); }); await p.waitForTimeout(200); await p.screenshot({ path: process.env.OEST_PASEK_ZRZUT }); }
     check(errors.length === 0, 'błędy JS: ' + errors.slice(0, 3).join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }
   console.log('POMIARY ' + JSON.stringify(R));
   if (fails.length) { console.error('PASEK SYSTEMOWY UI FAIL (' + fails.length + '):\n- ' + fails.join('\n- ')); process.exitCode = 1; return; }
-  console.log(`PASEK SYSTEMOWY UI PASS: czarne tło ${PASEK} px na całej szerokości na ${EKRANY.length} ekranach, także po przewinięciu i nad okienkiem; bez paska 0 px.`);
+  console.log(`PASEK SYSTEMOWY UI PASS: pas pod godziną ${PASEK} px (nagłówek ion-header, nieprzezroczysty, cała szerokość) albo treść poniżej paska na ${EKRANY.length} ekranach, także po przewinięciu; bez paska 0 px.`);
 })().catch(e => { console.error(e); process.exitCode = 1; });

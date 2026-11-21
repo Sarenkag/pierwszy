@@ -16,7 +16,7 @@
     { "id": "settings/calendar", "rodzic": "settings", "pudelko": "v-settings", "pl": "Kalendarz i grafik", "en": "Calendar & shifts" },
     { "id": "settings/reports", "rodzic": "settings", "pudelko": "v-settings", "pl": "Raporty i zdjęcia", "en": "Reports & photos" },
     { "id": "settings/sync", "rodzic": "settings", "pudelko": "v-settings", "pl": "Synchronizacja", "en": "Sync & transfer" },
-    { "id": "settings/account", "rodzic": "settings", "pudelko": "v-settings", "pl": "Konto i bezpieczeństwo", "en": "Account & security", "aliasy": ["appset"] },
+    { "id": "settings/account", "rodzic": "settings", "pudelko": "v-settings", "pl": "Konto", "en": "Account", "aliasy": ["appset"] },
     { "id": "settings/about", "rodzic": "settings", "pudelko": "v-settings", "pl": "O aplikacji", "en": "About" },
     { "id": "settings/vantify", "rodzic": "settings", "pudelko": "v-settings", "pl": "Vantify", "en": "Vantify" },
     { "id": "settings/ai", "rodzic": "settings", "pudelko": "v-settings", "pl": "OCR i modele AI", "en": "OCR & AI models" },

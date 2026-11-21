@@ -24,11 +24,14 @@ function fakePhone() {
     open: async o => { window.__vt.calls.push({ op: 'window', ...o }); return window.__vt.open || { events: [] }; }
   };
   const plugins = { Vantify: V, Translate: { plToEn: async ({ text }) => ({ text: 'EN ' + text }) } };
-  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: plugins, isPluginAvailable: n => !!plugins[n], registerPlugin: n => plugins[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }), convertFileSrc: x => x };
 }
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const B = 'http://127.0.0.1:' + server.address().port; let browser; const errors = [];
+  // Nawigacja do ekranu apki: gdy strona już jest apką (index.html, szkielet wystartował) – OESTEkrany.go (adres zmienia tylko replaceState,
+  // hash w adresie nie jest nawigacją); w przeciwnym razie (pusta karta, strona inspekcji) – prawdziwe wczytanie strony.
+  const idz = async (pg, r) => { const u = new URL(pg.url()); if (!/inspekcje/.test(u.pathname) && /(index\.html|\/)$/.test(u.pathname) && await pg.evaluate(() => !!(window.OESTEkrany && OESTEkrany.trasa())).catch(() => false)) await pg.evaluate(x => OESTEkrany.go(x), r); else await pg.goto(B + '/index.html#' + r); };
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.OEST_BROWSER_PATH ? { executablePath: process.env.OEST_BROWSER_PATH } : {}) });
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, serviceWorkers: 'block' });
@@ -40,11 +43,11 @@ function fakePhone() {
     const msg = re => pg.waitForFunction(r => new RegExp(r).test(document.querySelector('#rxMessage')?.textContent || ''), re.source);
     const saved = () => pg.waitForFunction(() => document.querySelector('#rxMessage')?.textContent.includes('Szkic zapisany'));
     const row = id => pg.locator('[data-rx=row][data-id=' + id + ']').click();
-    const back = () => pg.evaluate(() => window.OESTWstecz.wstecz());
+    const back = () => pg.evaluate(() => document.dispatchEvent(new Event('backbutton')));
     const onCard = () => pg.locator('[data-rx-field=title]').waitFor({ timeout: 5000 }).then(() => true, () => false);
     const leaked = () => pg.evaluate(() => ({ body: [...document.body.children].filter(e => e.tagName === 'IMG').length, imgs: [...document.images].filter(i => i.getBoundingClientRect().height > 0 && !i.closest('.view:not([hidden]), .oest-ask, .top')).map(i => i.className || i.alt || 'img') }));
     const photo = path.join(require('node:os').tmpdir(), 'rx-pg-' + process.pid + '.png');
-    await pg.goto(B + '/#reactive');
+    await idz(pg, 'reactive');
     await pg.evaluate(() => window.OESTSettings.update(s => { s.profile.companyEmail = 'work@example.com'; }));
     const png = await pg.evaluate(() => { const c = document.createElement('canvas'); c.width = 320; c.height = 240; const x = c.getContext('2d'); x.fillStyle = '#6a4'; x.fillRect(0, 0, 320, 240); return c.toDataURL('image/png').split(',')[1]; });
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
@@ -78,12 +81,12 @@ function fakePhone() {
     await pg.locator('#rx-before img').first().click(); await ask().locator('img.rx-photo-full').waitFor(); await back(); await gone();
     let jobHash = await pg.evaluate(() => location.hash);
     await back(); await pg.locator('[data-rx=new]').waitFor();
-    await pg.evaluate(() => { location.hash = '#settings'; }); await pg.waitForFunction(() => document.querySelector('#v-settings:not([hidden])'));
+    await pg.evaluate(() => { OESTEkrany.go('#settings'); }); await pg.waitForFunction(() => document.querySelector('ion-card[data-nav^="settings/"]'));
     { const l = await leaked(); check(l.body === 0 && l.imgs.length === 0, 'Ustawienia: zdjęcie/obraz z innego ekranu pod kafelkami ' + JSON.stringify(l)); }
     // ---------- 4. wysyłka: pola raportu (Word/PDF) po angielsku, bez powtórzeń ----------
     const seed = (extra, first = true) => pg.evaluate(async ([x, first]) => { const r = OESTReactiveUI.repository, d = Object.values((await r.get()).reactiveDrafts || {}).at(-1), id = 'old-audio-1';
       await r.saveReactiveDraft({ ...d, ...x, audioMediaIds: [id] }, first ? [{ id, kind: 'audio', blob: new Blob([new Uint8Array(64)], { type: 'audio/wav' }), name: 'Audio.wav', mime: 'audio/wav', size: 64 }] : []); }, [extra, first]);
-    const reopen = async () => { await pg.goto(B + '/#home'); await pg.goto(B + '/' + jobHash); await pg.locator('[data-rx-field=title]').waitFor(); };
+    const reopen = async () => { await idz(pg, 'home'); await idz(pg, jobHash.replace(/^#/, '')); await pg.locator('[data-rx-field=title]').waitFor(); };
     // starsze nagranie z gotowym polskim tekstem zostaje w raporcie, po angielsku (przegląd Codex #153)
     await seed({ voiceTexts: { 'old-audio-1': 'stara notatka głosowa' }, voicePl: { 'old-audio-1': true } }); await reopen();
     await pg.evaluate(() => { const R = window.OESTReactiveReport; R.build = async f => { window.__sent = f; throw Error('STOP_TEST'); }; });

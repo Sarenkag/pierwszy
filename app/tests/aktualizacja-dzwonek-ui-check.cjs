@@ -24,7 +24,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     await c.addInitScript(() => {
       window.__installs = 0; window.__failNext = false;
       const AppUpdate = { info: () => Promise.resolve({ versionCode: 671 }), install: () => { window.__installs++; return window.__failNext ? Promise.reject(new Error('timeout')) : new Promise(() => {}); }, addListener: () => ({ remove() {} }) };
-      window.Capacitor = { isNativePlatform: () => true, registerPlugin: n => n === 'AppUpdate' ? AppUpdate : {}, Plugins: { AppUpdate, App: { addListener() { return { remove() {} }; } } } };
+      window.Capacitor = { isNativePlatform: () => true, isPluginAvailable: n => n === 'AppUpdate' || n === 'App', registerPlugin: n => n === 'AppUpdate' ? AppUpdate : {}, Plugins: { AppUpdate, App: { addListener() { return { remove() {} }; } } } };
       if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 }));
       const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', '44px'), document.documentElement.style.setProperty('--safe-area-inset-bottom', '44px'), true);
       if (!set()) new MutationObserver((m, o) => { if (set()) o.disconnect(); }).observe(document, { childList: true });
@@ -54,7 +54,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
       check(b.row && b.row.includes(want[0]) && b.row.includes(want[1]), `${l}: w dzwonku brak wpisu o wersji 672 (${b.row})`);
       check(b.later === want[2], `${l}: przycisk odłożenia to „${b.later}” zamiast „${want[2]}”`);
       await shot('po-dzwonek-' + l + '.png');
-      await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(700);
+      await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(700);
     }
 
     // 3. stuknięcie wpisu: najpierw pytanie (Pobierz / Anuluj), nic bez zgody
@@ -63,7 +63,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     const ask = await p.evaluate(() => ({ ask: [...document.querySelectorAll('.oest-ask')].map(a => a.textContent.replace(/\s+/g, ' ').trim()).join('|'), installs: window.__installs }));
     check(/Pobrać i zainstalować wersję 672/.test(ask.ask), 'stuknięcie wpisu nie pyta o pobranie: ' + ask.ask);
     check(ask.installs === 0, 'pobieranie ruszyło przed zgodą');
-    await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(700); // = Anuluj, działa jak „Później”
+    await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(700); // = Anuluj, działa jak „Później”
     check(await p.evaluate(() => localStorage.getItem('oest.update.later') === '672' && !OESTUpdate.note()), '„Anuluj” w pytaniu nie odłożył wersji 672');
     await p.evaluate(() => localStorage.removeItem('oest.update.later')); await p.reload(); await p.waitForTimeout(5200);
 
@@ -75,11 +75,11 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     const po = await p.evaluate(() => ({ row: !!document.querySelector('[data-hgo="update"]'), n: +document.querySelector('#hmBell .hm-badge').textContent || 0, hid: document.querySelector('#hmBell .hm-badge').hidden }));
     check(!po.row, '„Później” nie schował wpisu');
     check((po.hid ? 0 : po.n) === przed - 1, `licznik dzwonka po „Później” ${po.hid ? 0 : po.n}, a powinien ${przed - 1}`);
-    await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(500);
+    await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(500);
     await p.reload(); await p.waitForTimeout(5200);
     await p.click('#hmBell'); await p.waitForTimeout(800);
     check(!(await p.$('[data-hgo="update"]')), 'po „Później” wpis wrócił przy tej samej wersji');
-    await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(500);
+    await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(500);
 
     // 5. Ustawienia → Konto: instalacja nadal dostępna ręcznie
     const panel = await p.evaluate(() => OESTUpdate.panelHtml());
@@ -93,7 +93,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     await p.click('#hmBell'); await p.waitForTimeout(800);
     const err = await p.evaluate(() => { const r = document.querySelector('[data-hgo="update"]'); return r && r.textContent.replace(/\s+/g, ' ').trim(); });
     check(err && /Nie udało się pobrać/.test(err) && /spróbować jeszcze raz/.test(err), 'po przerwanym pobieraniu wpis nie mówi o błędzie: ' + err);
-    await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(500);
+    await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(500);
     check(!errors.length, 'błędy JS: ' + errors.join('; '));
     console.log('licznik dzwonka: przed „Później” ' + przed + ', po ' + (po.hid ? 0 : po.n));
   } finally { await browser.close(); server.close(); }

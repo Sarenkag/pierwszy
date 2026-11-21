@@ -48,9 +48,9 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const lang = {};
     for (const L of ['pl', 'en']) {
       await p.evaluate(L => { window.OESTSettings.update(s => { s.appearance.language = L; }); window.OESTSettingsUI.applyTheme(); }, L);
-      await p.evaluate(() => { location.hash = 'home'; }); await p.waitForTimeout(400);
+      await p.evaluate(() => { OESTEkrany.go('home'); }); await p.waitForTimeout(400);
       const home = await strip(p, 'hmDays');
-      await p.evaluate(() => { location.hash = 'ppm'; }); await p.waitForTimeout(400);
+      await p.evaluate(() => { OESTEkrany.go('ppm'); }); await p.waitForTimeout(400);
       const ppm = await strip(p, 'ppmDays');
       lang[L] = { home, ppm };
     }
@@ -88,7 +88,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     {
       const { c: c2, p: p2 } = await open(false);
       const h = await strip(p2, 'hmDays');
-      await p2.evaluate(() => { location.hash = 'ppm'; }); await p2.waitForTimeout(400);
+      await p2.evaluate(() => { OESTEkrany.go('ppm'); }); await p2.waitForTimeout(400);
       const q = await strip(p2, 'ppmDays');
       check(!h.some(x => x.sh) && !q.some(x => x.sh), 'bez grafiku: pasek wyróżnia dni pracy');
       check(h.concat(q).filter(x => !x.past).every(x => x.op === '1'), 'bez grafiku: dni przygaszone');
