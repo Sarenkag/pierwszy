@@ -1,0 +1,26 @@
+{
+  "schema": "oest.quality.baseline",
+  "version": 1,
+  "rule": "logika",
+  "note": "R27: logika tylko w modułach. Liczba nazwanych funkcji w <script> stron może tylko maleć: każda karta K obniża „maks” w tym samym PR (check-ratchet blokuje podniesienie i nowe wpisy). To nie jest limit długości pliku.",
+  "entries": [
+    {
+      "id": "LOGIKA|index.html",
+      "rule": "LOGIKA",
+      "detail": "index.html: 38 funkcji zapisanych w <script> strony zamiast w module.",
+      "maks": 38,
+      "punkt": "R27",
+      "usuwa": "K01–K16 (plan-modulow-karty.md)",
+      "reason": "Zastany stan main przy wprowadzeniu R27 (20/11/2026, karta M0). Zgoda właściciela: „Tak” 20/11/2026 do planu modułów."
+    },
+    {
+      "id": "LOGIKA|inspekcje/index.html",
+      "rule": "LOGIKA",
+      "detail": "inspekcje/index.html: 273 funkcji zapisanych w <script> strony zamiast w module.",
+      "maks": 273,
+      "punkt": "R27",
+      "usuwa": "K01–K16 (plan-modulow-karty.md)",
+      "reason": "Zastany stan main przy wprowadzeniu R27 (20/11/2026, karta M0). Zgoda właściciela: „Tak” 20/11/2026 do planu modułów."
+    }
+  ]
+}

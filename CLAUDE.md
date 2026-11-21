@@ -3,7 +3,7 @@
 Ten plik jest **punktem wejścia**, nie konkurencyjną kopią zasad. Claude musi stosować `AGENTS.md` i dokumenty `docs/` zgodnie z zakresem zadania.
 
 1. **Najpierw odczytaj `AGENTS.md`** — szczególnie AI-001 do AI-008, ARCH-001 do ARCH-003, UX-001/002, DATA-001/002, QG-001/002, REL-001.
-2. **Architektura:** `docs/ARCHITECTURE.md` i `docs/ZASADY.md` (zasady R1–R26 pilnowane przez G1) — przed utworzeniem funkcji sprawdź istniejący moduł oraz wszystkich konsumentów. Zachowaj OEST i twórz przenośne moduły bez duplikacji.
+2. **Architektura:** `docs/ARCHITECTURE.md` i `docs/ZASADY.md` (zasady R1–R27 pilnowane przez G1) — przed utworzeniem funkcji sprawdź istniejący moduł oraz wszystkich konsumentów. Zachowaj OEST i twórz przenośne moduły bez duplikacji.
 3. **UI:** `docs/DESIGN-SYSTEM.md` — żadnego samowolnego przeprojektowania, zmiany ikon lub rozkładu. Zachowaj płynność i naturalność.
 4. **Testy:** `docs/QUALITY.md` — nie pomijaj regresji, nie obniżaj progów, nie nazywaj niewykonanych testów sukcesem. CI nie zastępuje testu na Pixelu 8 Pro.
 5. **Specyfikacja:** `docs/PRODUCT.md` oraz istniejące formularze, **pełna pamięć projektu Claude i Claude Doc**, historia zatwierdzonych ustaleń i dokumenty źródłowe. Odczytaj je przed realizacją zadania, o ile są dostępne, i wykrywaj niespójności. Inni agenci mogą nie widzieć pamięci Claude, dlatego obowiązujące twarde wymagania muszą znaleźć się w repo. Nie zastępuj specyfikacji skrótem.

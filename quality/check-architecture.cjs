@@ -22,6 +22,8 @@ const WWW = path.resolve(ROOT, arg('--www', 'app/www'));
 const BASELINE = path.resolve(ROOT, arg('--baseline', 'quality/baselines/architecture.json'));
 const JSON_OUT = arg('--json', '');
 const BASELINE_Z = path.resolve(ROOT, arg('--baseline-zasady', 'quality/baselines/zasady.json'));
+// R27 (LOGIKA): osobny plik zastanych, obok zasady.json – wprowadzony 20/11/2026 jako nowy plik (ratchet: pierwsze wprowadzenie za zgodą właściciela), potem tylko maleje
+const BASELINE_L = path.join(path.dirname(BASELINE_Z), 'logika.json');
 const REJESTR = path.resolve(ROOT, arg('--rejestr', 'quality/jedno-miejsce.json'));
 const zasady = require('./zasady.cjs');
 const PAGES = ['index.html', 'inspekcje/index.html'];
@@ -171,7 +173,7 @@ function main() {
   for (const v of fresh) console.log('::error title=G1 nowe naruszenie (' + v.rule + ')::' + v.detail);
   for (const id of stale) console.log('::error title=G1 baseline nieaktualny::' + id + ' już nie występuje – usuń wpis z quality/baselines/architecture.json (baseline może tylko maleć).');
   // zasady architektury: ta sama logika listy zastanych (tylko maleje)
-  const zEntries = fs.existsSync(BASELINE_Z) ? JSON.parse(fs.readFileSync(BASELINE_Z, 'utf8')).entries : [];
+  const zEntries = [BASELINE_Z, BASELINE_L].flatMap(b => fs.existsSync(b) ? JSON.parse(fs.readFileSync(b, 'utf8')).entries : []);
   const zBase = zEntries.map(e => e.id), zMaks = new Map(zEntries.map(e => [e.id, e.maks]));
   const zNow = new Set(zv.map(v => v.id)), zBaseSet = new Set(zBase);
   const zFresh = zv.filter(v => !zBaseSet.has(v.id)), zStale = zBase.filter(id => !zNow.has(id));
