@@ -67,3 +67,12 @@ test('szkic TB sprzed zmiany (20 kranów, bez nazw): odpowiedzi, notatki, tydzie
   assert.equal(m.week,3);assert.equal(m.on,true);assert.deepEqual(m.names,n);
   const z=F.migrujSzkic({names:['A','B'],taps:[{state:'no',note:'x'},{state:'na',note:''}]},['B','C','A']);assert.deepEqual(z.taps.map(t=>t.state),['na','yes','no']);
   assert.equal(F.migrujSzkic({taps:[{state:'no'}]},['A','B']),null);assert.equal(F.migrujSzkic(null,['A']),null);});
+test('PDF basic Flushing: bardzo długa notatka dzielona na partie po 30 linii, każda partia osobno łamie stronę (uwaga Codex #187)',()=>{
+  const out=[],rooms=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='text'?(s=>{out.push([].concat(s));return pdf;}):k==='splitTextToSize'?(s=>s.indexOf('LONG')>=0?Array.from({length:75},(_,i)=>'L'+i):[s]):nop});
+  const f=P.forms.flush.P,fl={taps:f.taps.map((n,i)=>({name:n,state:'no',note:i?'':'LONG'})),strefy:f.strefy};
+  F.rysujStrefy(pdf,fl,15,60,180,(yy,h)=>{rooms.push(h);return null;});
+  const parts=out.filter(a=>String(a[0]).startsWith('L'));assert.deepEqual(parts.map(a=>a.length),[30,30,15]);assert.equal(parts.flat().length,75);
+  assert.ok(Math.max(...rooms)<=30*4.2+2+1e-9);});
+test('zdjęcia kranów idą za kranem; usunięty kran (apartament TB) → zdjęcie ogólne, nie osierocone (uwaga Codex #187)',()=>{
+  const n=P.forms.flush.TB.taps;assert.deepEqual(F.mapaKranow({taps:Array(20).fill({state:'yes'})},n),[...n.map((_,i)=>i),null,null,null,null]);
+  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});

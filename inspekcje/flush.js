@@ -178,15 +178,20 @@
         pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
         var cells = [0, 1].map(function (c) { var nm = z[1][r * 2 + c], t = nm == null ? null : f.taps.filter(function (q) { return q.name === nm; })[0];
           return t ? { t: t, ls: pdf.splitTextToSize(nm + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
-        var rh = Math.max(RH, Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; })) * 4.2 + 2); // notatka łamie się w komórce jak w Wordzie
-        at(rh); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
-        cells.forEach(function (q, c) {
-          var cx = X + c * (cw + cn); pdf.rect(cx, y, cw, rh); pdf.rect(cx + cw, y, cn, rh);
-          if (!q) return;
-          pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(q.ls, cx + 1.5, y + 4.2);
-          box(cx + cw + cn / 2, y + rh / 2, q.t.state); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
-        });
-        y += rh;
+        // notatka łamie się w komórce jak w Wordzie; bardzo długa – w partiach po 30 linii na kolejnych stronach (jak {details})
+        var nl = Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; }));
+        for (var j = 0; j * 30 < nl; j++) {
+          var rh = Math.max(RH, Math.min(30, nl - j * 30) * 4.2 + 2);
+          at(rh); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
+          cells.forEach(function (q, c) {
+            var cx = X + c * (cw + cn); pdf.rect(cx, y, cw, rh); pdf.rect(cx + cw, y, cn, rh);
+            if (!q) return;
+            var part = q.ls.slice(j * 30, j * 30 + 30);
+            if (part.length) { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(part, cx + 1.5, y + 4.2); }
+            if (!j) { box(cx + cw + cn / 2, y + rh / 2, q.t.state); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); }
+          });
+          y += rh;
+        }
       }
       pdf.setDrawColor(0); pdf.setLineWidth(0.4);
     });
@@ -199,16 +204,23 @@
   // Szkic Flushingu po zmianie listy kranów (DATA-002, uwaga Codex #187): odpowiedzi i notatki zostają przy swoich kranach.
   // Szkic z nazwami (od 21/11/2026) – po nazwie; starszy bez nazw – po kolejności, gdy lista tylko skrócona na końcu (TB: apartamenty 17–20).
   // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
-  function migrujSzkic(dfl, names) {
+  // mapaKranow: stary indeks kranu → nowy indeks albo null (kranu już nie ma na liście); null, gdy szkicu nie da się przenieść.
+  // Zdjęcia usuniętych kranów stają się zwykłymi zdjęciami (widoczne i usuwalne w edytorze), nie giną i nie wiszą bez podpisu.
+  function mapaKranow(dfl, names) {
     if (!dfl || !dfl.taps || !names) return null;
-    var old = dfl.names, def = function () { return { state: "yes", note: "" }; }, taps;
-    if (old && old.length === dfl.taps.length) taps = names.map(function (n) { var i = old.indexOf(n); return i < 0 ? def() : dfl.taps[i]; });
-    else if (!old && dfl.taps.length >= names.length) taps = dfl.taps.slice(0, names.length);
-    else return null;
+    var old = dfl.names;
+    if (old && old.length === dfl.taps.length) return old.map(function (n) { var i = names.indexOf(n); return i < 0 ? null : i; });
+    if (!old && dfl.taps.length >= names.length) return dfl.taps.map(function (t, i) { return i < names.length ? i : null; });
+    return null;
+  }
+  function migrujSzkic(dfl, names) {
+    var m = mapaKranow(dfl, names); if (!m) return null;
+    var taps = names.map(function () { return { state: "yes", note: "" }; });
+    m.forEach(function (n, i) { if (n != null) taps[n] = dfl.taps[i]; });
     var out = {}; Object.keys(dfl).forEach(function (k) { out[k] = dfl[k]; });
     out.taps = taps; out.names = names.map(String); out.open = {};
     return out;
   }
-  var api = { fill: fill, migrujSzkic: migrujSzkic, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
+  var api = { fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);

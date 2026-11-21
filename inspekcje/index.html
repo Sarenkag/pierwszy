@@ -1262,6 +1262,7 @@ function makeName(pattern, data, when) {
     if (d.temps && d.temps.length === temps.length) temps = d.temps.slice();
     var F = cur.type.flush;
     var mfl = F && window.OESTFlush ? OESTFlush.migrujSzkic(d.fl, F.taps) : null; // szkic sprzed zmiany listy kranów (TB bez apartamentów 21/11/2026): odpowiedzi zostają
+    var mtap = mfl ? OESTFlush.mapaKranow(d.fl, F.taps) : null; // zdjęcia kranów idą za swoim kranem; usuniętego kranu → zdjęcie ogólne
     if (mfl) { fl = mfl; if (fl.on && cur.ppm && PPM.setNeeds && !(needsNow() || {}).q) PPM.setNeeds(cur.ppm, { q: true }); } // szkic z włączonym formularzem elektronicznym zostaje z nim
     renderChecks(); renderFaults(); renderTemps(); renderFlush(); applyNeeds();
     try { $("v-form").dispatchEvent(new CustomEvent("oest:restored")); } catch (e) {}
@@ -1269,6 +1270,7 @@ function makeName(pattern, data, when) {
     if (!list.length) { updateFormHint(); return; }
     var my = restoring = ++restSeq;
     updateFormHint();
+    if (mtap) list = list.map(function (sp) { if (sp.tap == null) return sp; var n = mtap[sp.tap]; return Object.assign({}, sp, { tap: n == null ? undefined : n }); });
     Promise.all(list.map(function (sp) { return photoFromSaved(sp).then(function (p) { if (sp.tap != null) p.tap = sp.tap; return p; }, function () { return { failed: sp }; }); })).then(function (ps) {
       var ok = ps.filter(function (p) { return !p.failed; });
       if (my !== restoring || tok !== formSeq) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
