@@ -6,7 +6,7 @@ name: PDF z Worda – emulator
 
 on:
   pull_request:
-    paths: ["moduly/word-pdf/**", "app/scripts/libreoffice-silnik.py", "app/scripts/pdf-z-worda-emulator*", "app/android/app/src/main/java/**", ".github/workflows/pdf-z-worda-emulator.yml"]
+    paths: ["moduly/word-pdf/**", "moduly/wzory/**", "app/scripts/libreoffice-silnik.py", "app/scripts/pdf-z-worda-emulator*", "app/android/app/src/main/java/**", ".github/workflows/pdf-z-worda-emulator.yml"]
   workflow_dispatch:
 
 permissions:

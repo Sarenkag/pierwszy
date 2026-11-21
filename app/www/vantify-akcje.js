@@ -95,6 +95,24 @@
   }
   // dosłanie zdjęcia przed do już założonego zlecenia (przegląd Codex #166): ten sam wzór, tytuł i adres pliku z wysyłki
   function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(o.date, t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
+  // treść odmowy Vantify w całości (Grzegorz 21/11/2026: „http400 (create)” bez powodu): komunikat, lista naruszeń
+  // ({property_path|propertyPath|field, message}), błędy formularza (errors / children) albo surowy tekst odpowiedzi; do 1000 znaków
+  function errText(j, raw) {
+    var out = [], WRAP = /^(message|title|detail|errors|children|violations|\d+)$/;
+    function add(k, m) { var t = (k ? k + ": " : "") + String(m).trim(); if (String(m).trim() && out.indexOf(t) < 0) out.push(t); }
+    function walk(v, k, d) {
+      if (v == null || d > 8) return;
+      if (typeof v === "string") return add(k, v);
+      if (typeof v !== "object") return;
+      if (Array.isArray(v)) return v.forEach(function (x) { walk(x, k, d + 1); });
+      var f = v.property_path || v.propertyPath || v.field;
+      if (f && (v.message || v.title)) return add(String(f), v.message || v.title);
+      Object.keys(v).forEach(function (n) { if (n !== "_links" && n !== "code" && n !== "status" && n !== "type") walk(v[n], WRAP.test(n) ? k : n, d + 1); });
+    }
+    if (j && typeof j === "object") walk(j, "", 0);
+    else if (typeof raw === "string") add("", raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " "));
+    return out.join("; ").slice(0, 1000);
+  }
   function message(t, o) { var b = strip(t); b.body = String(o.text || "").trim(); return b; }
   // świeży odczyt przed zamknięciem: to samo zlecenie, otwarte, zatwierdzone, ta sama nazwa co na karcie
   function check(job, exp) {
@@ -113,7 +131,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief };
+  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief, errText: errText };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -154,7 +172,7 @@
         x.onload = function () {
           var j = null; try { j = x.responseText ? JSON.parse(x.responseText) : null; } catch (e) {}
           if (x.status === 401) return rej({ code: "login" });
-          if (x.status < 200 || x.status > 299) return rej({ code: "http" + x.status, msg: j && (j.message || j.title || j.detail) ? String(j.message || j.title || j.detail).slice(0, 200) : "" });
+          if (x.status < 200 || x.status > 299) return rej({ code: "http" + x.status, msg: errText(j, x.responseText) });
           res(j);
         };
         x.onerror = function () { rej({ code: "net" }); };
@@ -232,12 +250,20 @@
       step = "upload";
       return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { sent.push({ href: u.href, file: u.file, resource: u.resource, title: f.title, name: f.name, type: f.type || "image/jpeg" }); }); }); }, Promise.resolve()).then(function () {
         step = "create";
-        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent, priority: a.priority }));
+        // przy zakładaniu tylko pierwsze zdjęcie – tak jak w zapisie „Zbadaj” 18/11 (files.links z jednym plikiem, 201); 3 zdjęcia naraz
+        // Vantify odrzucił (Grzegorz 21/11/2026, http400). Pozostałe po założeniu do tego samego numeru przez Files → Add (też z zapisu)
+        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: sent.slice(0, 1), priority: a.priority }));
       }).then(function (r) {
         var id = r && r.id, hrefs = sent.map(function (f) { return f.href; }); if (!id) return end({ status: "error", code: "noid" });
         step = "check";
         // ile zdjęć widać przy zleceniu (po adresie pliku) – karta mówi, gdy czegoś brakuje
         return job(id).then(function (j) {
+          var rest = sent.slice(1), Wa = W.attach, now = new Date();
+          // błąd przy dosyłaniu nie cofa założenia: numer wraca, brakujące zdjęcia pokaże „⚠ Vantify #nr · zdjęcia n/m”
+          return (rest.length ? (Wa ? Promise.resolve() : visOf(j).then(function (v) { Wa = built("attach", { visibility: v }); })).then(function () {
+            return rest.reduce(function (p, f) { return p.then(function () { return req("POST", "/sites/" + site + "/jobs/" + id + "/files", attach(Wa, { title: f.title, href: f.href, date: now })); }); }, Promise.resolve());
+          }).catch(function () {}).then(function () { return job(id).catch(function () { return j; }); }) : Promise.resolve(j));
+        }).then(function (j) {
           // po założeniu każdy błąd sprawdzenia (też wygasłe logowanie) = „nie wiadomo”, numer zlecenia zawsze wraca (przegląd Codex #167)
           return seenOf(j, hrefs).catch(function () { return null; }).then(function (l) { end({ status: "ok", id: id, job: brief(j), photos: sent.length, photosSeen: l ? l.length : 0, hrefs: hrefs, seenHrefs: l }); });
         }, function () { end({ status: "ok", id: id, job: { id: id, status: r.status || "" }, photos: sent.length, photosSeen: 0, hrefs: hrefs, seenHrefs: [] }); });

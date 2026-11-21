@@ -52,6 +52,7 @@ Ten plik obowiązuje razem z `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN-S
 - **Rejestr „jedna rzecz = jedno miejsce”:** `quality/jedno-miejsce.json` (R25, JM-1 i JM-4). Każda rzecz ma właściciela, a trafienie poza nim to naruszenie. Dodatkowo:
   - klucz `oest.*` i baza w telefonie mają być w jednym pliku;
   - Wstecz Androida rejestruje tylko `moduly/wstecz`.
+  - wzór Word raportu jest tylko plikiem `.docx` w `moduly/wzory` (moduł Wzory, słownik nawiasów i `LEGENDA.md` tamże); plik `.docx` gdzie indziej albo wzór zakodowany w kodzie (base64) to naruszenie.
 - **Kopie:** ta sama funkcja (min. 40 tokenów; `function`, strzałkowa z klamrą, metoda obiektu/klasy) w dwóch plikach, z liczbą kopii w „maks” i dwa identyczne pliki (JM-2, JM-3).
 - **Znaczniki klikalnych elementów (R26):** każdy przycisk, link i `role=button` ma dokładnie jeden znacznik: `data-nav`, `data-okno` albo `data-akcja`.
 - **Zastane naruszenia** są w `quality/baselines/zasady.json`:

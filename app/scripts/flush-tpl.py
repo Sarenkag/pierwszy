@@ -4,7 +4,7 @@
 Zostaje strona 1 (rok/miesiąc + tabela kranów + zdanie o Fault Log). Wiersz kranu staje się
 szablonem między <!--ROW--> (apka powtarza go dla każdego kranu), komórki dostają pola
 {o} {c1}..{c12}; lata {y0}..{y5}, cieniowanie roku/miesiąca {yf0}.. / {mf0}..{mf11}, budynek {bld}.
-Użycie: python3 app/scripts/flush-tpl.py wzor.docx inspekcje/tpl-flush.js
+Użycie: python3 app/scripts/flush-tpl.py wzor.docx moduly/wzory/flush.docx  (wynik = wzór w module Wzory)
 """
 import base64, io, re, sys, zipfile
 
@@ -98,8 +98,5 @@ with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
         if i.filename == 'word/document.xml': data = doc2.encode('utf8')
         elif i.filename == 'word/header1.xml': data = hdr.encode('utf8')
         z.writestr(i, data)
-b64 = base64.b64encode(buf.getvalue()).decode()
-open(out, 'w').write('// Wzór Weekly Taps/Shower Flushing Record (Word od Grzegorza 02/11/2026, TB) — wspólny dla TA/TB/P.\n'
-                     '// Generowany: python3 app/scripts/flush-tpl.py wzor.docx inspekcje/tpl-flush.js\n'
-                     'window.TPL_FLUSH = "' + b64 + '";\n')
-print('ok', len(doc), '->', len(doc2), 'bytes xml;', len(b64), 'b64')
+open(out, 'wb').write(buf.getvalue())  # moduly/wzory/flush.docx – jedyne miejsce wzoru (moduł Wzory, 21/11/2026)
+print('ok', len(doc), '->', len(doc2), 'bytes xml;', len(buf.getvalue()), 'bytes docx')

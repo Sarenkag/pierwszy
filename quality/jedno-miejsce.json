@@ -4,6 +4,28 @@
   "note": "Rejestr „jedna rzecz = jedno miejsce” (docs/ZASADY.md R25, test JM-1). Każda rzecz ma właściciela (plik w zbudowanej paczce app/www); każde trafienie wzoru poza właścicielem to naruszenie. Pusta lista właścicieli = rzecz zakazana wszędzie. Wzory to wyrażenia regularne JS na kodzie bez komentarzy (napisy zostają). Zmiana właściciela tylko razem z PR, który przenosi rzecz (plan: kolumna „usuwa”).",
   "rzeczy": [
     {
+      "rzecz": "wzor-sciezka",
+      "opis": "nazwa pliku wzoru Word (…\".docx\") w kodzie – wzór bierze się tylko przez moduł Wzory (OESTWzory.bajty), nie z własnej ścieżki",
+      "wzory": [
+        "[\"'`][A-Za-z0-9_./-]+\\.docx[\"'`]"
+      ],
+      "wlasciciele": [
+        "moduly/wzory/wzory.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "wzory"
+    },
+    {
+      "rzecz": "wzor-word",
+      "opis": "wzór Word raportu zapisany w kodzie (base64 .docx) – wzory tylko jako pliki w moduly/wzory (moduł Wzory, Grzegorz 21/11/2026)",
+      "wzory": [
+        "UEsDB[A-Za-z0-9+/]{200}"
+      ],
+      "wlasciciele": [],
+      "punkt": "R25",
+      "usuwa": "wzory"
+    },
+    {
       "rzecz": "historia",
       "opis": "zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – historię i adres prowadzi tylko szkielet Ionic (moduly/szkielet, paczka lib)",
       "wzory": [
