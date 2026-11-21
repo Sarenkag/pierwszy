@@ -87,7 +87,7 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor();
     { const sum = await pg.locator('.rx-vt-sum').inputValue(), desc = await pg.locator('.rx-vt-desc').inputValue();
       check(sum === 'Hang coat hooks, key cabinet and stone block (approx. over 100 kg) on door – Flat 504, EN Office, Level 5, Tower B', 'Summary z kreatora: ' + sum);
-      check(/^Hang coat hooks, key cabinet and stone block/.test(desc) && /Location: Tower B, 5, Flat 504, EN Office/.test(desc), 'Description z kreatora: ' + desc); }
+      check(/^Hang coat hooks, key cabinet and stone block/.test(desc) && /Location: Tower B, Level 5, Flat 504, EN Office/.test(desc), 'Description z kreatora: ' + desc); }
     await ask().locator('[data-a=no]').click(); await gone();
     // ---------- 7b. zmiana budynku na Premises: nr mieszkania dalej widoczny i do usunięcia (przegląd Codex #147) ----------
     await row('where'); await pg.locator('[data-rx=building][data-value="Premises"]').click(); await pg.locator('[data-rx-field=flat]').waitFor();

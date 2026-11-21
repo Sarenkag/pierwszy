@@ -54,7 +54,8 @@
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
     /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
     const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = w.OESTKreator, ks = K && K.fromDraft(d, roomEn);
-    const where = [d.building, d.level, d.flat ? 'Flat ' + d.flat : '', roomEn].filter(Boolean).join(', ');
+    /* piętro z napisem jak w kreatorze (K.where): „Level 20”, nie gołe „20” (Grzegorz 21/11/2026) */
+    const lvl = String(d.level || ''), where = [d.building, /^\d/.test(lvl) ? 'Level ' + lvl : lvl, d.flat ? 'Flat ' + d.flat : '', roomEn].filter(Boolean).join(', ');
     /* kreator opisu (PROD-039): Summary i opis zlecenia z wyborów (już po angielsku), info na start dopisane pod spodem */
     const sum = ks ? K.summary(ks) : await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
     const desc = [ks ? K.request(ks) : '', body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');

@@ -74,7 +74,7 @@ function fakePhone() {
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
     const sum = await ask().locator('.rx-vt-sum').inputValue(), desc = await ask().locator('.rx-vt-desc').inputValue();
     check(/^EN Haczyki na drzwiach biura$/.test(sum), 'Summary nie przetłumaczone: ' + sum);
-    check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, 5, EN Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
+    check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, Level 5, EN Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
     await ask().locator('.rx-vt-sum').fill('Coat hooks on office door – Tower B');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podglad.png') });
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
@@ -384,6 +384,17 @@ function fakePhone() {
     await ask().locator('[data-a=ok]').click(); await msg(/Nie widzę zamknięcia w Vantify/);
     { const k = await calls(); check(k.length === 3 && k[1].op === 'close' && k[2].op === 'window' && k[2].hash === '#/user/jobs/3070040/status' && /\.pdf$/.test(k[2].fileName || ''), 'zamknięcie odrzucone: złe zapytania ' + JSON.stringify(k.map(c => ({ op: c.op, hash: c.hash, fileName: c.fileName })))); }
     await pg.evaluate(() => { window.__vt.open = null; });
+    // ---------- 7f. „Połącz notatki” wstawiło tekst EN do „info na start” (Grzegorz 21/11/2026: opis w Vantify 2×, drugi raz
+    // przetłumaczony jak polski – „Open a Closed Door…”): notatka idzie raz, angielski wiersz z notatki nie jest tłumaczony drugi raz ----------
+    await idz(pg, 'reactive'); await job('Drzwi', false);
+    { const en = 'Door will not open, batteries probably flat.', did = await pg.evaluate(() => (location.hash.match(/reactive\/(?:draft|job)\/([^/]+)/) || [])[1] || '');
+      await pg.evaluate(([sc, en]) => new Promise((ok, no) => { const q = indexedDB.open('oest-notatki', 1); q.onsuccess = () => { const t = q.result.transaction('notes', 'readwrite'); t.objectStore('notes').put({ id: 'n-7f', scope: sc, at: Date.now(), seq: 1, ctx: '', ms: 3000, audio: [], pl: 'Drzwi się nie otwierają, prawdopodobnie wyczerpane baterie', en, st: 'ready', err: '' }); t.oncomplete = ok; t.onerror = no; }; q.onerror = no; }), ['rx|' + did, en]);
+      await pg.locator('[data-rx-field=note]').fill(en + '\nKlucz u ochrony.'); await saved();
+      await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; });
+      await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
+      const desc = await ask().locator('.rx-vt-desc').inputValue(), n = desc.split(en).length - 1;
+      check(!!did && n === 1 && !/EN Door will not open/.test(desc) && /EN Klucz u ochrony/.test(desc), 'notatka wstawiona do pola: opis z dublem albo przetłumaczony drugi raz: ' + JSON.stringify(desc));
+      await ask().locator('[data-a=no]').click(); await gone(); check((await calls()).length === 0, 'Wróć w podglądzie coś wysłało'); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await idz(pg, 'reactive'); await pg.locator('[data-rx=new]').waitFor();
     await pg.locator('[data-rx=new]').click(); await pg.locator('.rx-vt-row').waitFor();
