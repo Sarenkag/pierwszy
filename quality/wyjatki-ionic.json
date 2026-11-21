@@ -1,9 +1,43 @@
 {
   "opis": "Jedyne wyjątki od zasady „tylko komponenty Ionic”. Każdy wpis: co, powód i id pisemnego „tak” Grzegorza. Nowy wpis tylko po jego zgodzie w czacie.",
   "wyjatki": [
-    { "co": "css:ion-content::part(scroll)", "powod": "Wyłączenie sprężynowania (overscroll) na każdym ekranie jednym ustawieniem, żeby dolny pasek stał w miejscu.", "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq" },
-    { "co": ["css:.oest-pas", "klasa:oest-pas"], "powod": "Tło pod paskiem stanu telefonu na starych ekranach (edge-to-edge bez twardej czarnej linii) do czasu ich przeniesienia na Ionic.", "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq" },
-    { "co": ["css:.oest-rowne ion-card", "css:.oest-rowne ion-card::part(native)", "klasa:oest-rowne"], "powod": "Równa wysokość kafelków w grupie (zasada: przyciski w grupie równe).", "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq" },
-    { "co": ["css:.oest-inicjaly", "klasa:oest-inicjaly"], "powod": "Kółko z inicjałami w ion-avatar, gdy profil nie ma zdjęcia.", "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq" }
+    {
+      "co": "css:ion-content::part(scroll)",
+      "powod": "Wyłączenie sprężynowania (overscroll) na każdym ekranie jednym ustawieniem, żeby dolny pasek stał w miejscu.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
+    },
+    {
+      "co": [
+        "css:.oest-pas",
+        "klasa:oest-pas"
+      ],
+      "powod": "Tło pod paskiem stanu telefonu na starych ekranach (edge-to-edge bez twardej czarnej linii) do czasu ich przeniesienia na Ionic.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
+    },
+    {
+      "co": [
+        "css:.oest-rowne ion-card",
+        "css:.oest-rowne ion-card::part(native)",
+        "klasa:oest-rowne"
+      ],
+      "powod": "Równa wysokość kafelków w grupie (zasada: przyciski w grupie równe).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
+    },
+    {
+      "co": [
+        "css:.oest-inicjaly",
+        "klasa:oest-inicjaly"
+      ],
+      "powod": "Kółko z inicjałami w ion-avatar, gdy profil nie ma zdjęcia.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
+    },
+    {
+      "co": [
+        "css:.oest-rowne ion-card-title",
+        "css:.oest-rowne ion-card-subtitle"
+      ],
+      "powod": "Miejsce na 2 linie tytułu i podpisu kafelka, żeby przełącznik PL/EN niczego nie przesuwał.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF"
+    }
   ]
 }

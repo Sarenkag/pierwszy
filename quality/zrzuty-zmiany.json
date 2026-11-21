@@ -2,5 +2,170 @@
  "schema": "oest.quality.zrzuty-zmiany",
  "version": 1,
  "note": "Plan audytu 19/11/2026 punkt 1.6: ekrany, których wygląd ZMIENIA bieżący PR (zrzuty-ui-check.cjs porównuje piksel w piksel z main). Wpis tylko za zgodą właściciela na zmianę wyglądu tego ekranu (DESIGN-SYSTEM.md: żadnego samowolnego przeprojektowania). Po scaleniu następny PR musi wpisy usunąć – lista dotyczy tylko jednej zmiany.",
- "entries": []
+ "entries": [
+  {
+   "id": "cal",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "handover",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "handover/archive",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "handover/draft",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "handover/shift/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "home",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "keys",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "keys/detail/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "keys/edit/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "keys/find",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "keys/new",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "konto-stare",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "powertrace",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "powertrace/edit/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "powertrace/new",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "powertrace/view/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "ppm",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "questions",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/complete/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/config",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/draft/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/history",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/job/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/new/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "reactive/tree/",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/about",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/account",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/ai",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/calendar",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/contacts",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/drive",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/mail",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/profile",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/reports",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/sync",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "settings/vantify",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "soon",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "start",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  },
+  {
+   "id": "zdjecia",
+   "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
+  }
+ ]
 }
