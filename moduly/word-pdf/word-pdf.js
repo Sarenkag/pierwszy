@@ -2,6 +2,7 @@
  * żeby obie wersje raportu miały identyczną treść i układ formularza (zasada: każdy raport w dwóch identycznych wersjach Word i PDF).
  *
  * Użycie:  OESTWordPdf.pdf(docxBytes, { PizZip, jsPDF, czcionka })  → Uint8Array (PDF)
+ *          OESTWordPdf.zWorda(docxBytes) / zWordow([docx, …])  → Promise<Uint8Array|null> (silnik LibreOffice; kilka Wordów sklejone pdf-lib)
  *   czcionka: obiekt z dodaj(pdf), rejestrujący czcionkę „DV” normal/bold (moduly/czcionka-pdf).
  * Obsługuje to, czego używają formularze firmy: strona i marginesy z sectPr (też poziomo), nagłówek i stopka (tekst, tabela, logo),
  * akapity (wyrównanie, pogrubienie, wielkość, WIELKIE LITERY, zakreślenie), tabele (siatka, gridSpan, vMerge, obramowania
@@ -212,6 +213,26 @@
     }, function (e) { if (root.console) root.console.warn("LibreOffice PDF: " + (e && e.message || e)); return null; });
   }
 
-  var api = { pdf: pdf, zWorda: zWorda, dostepny: dostepny };
+  // Kilka Wordów → jeden PDF (Flushing: formularz firmy + basic form Smart): każdy przez silnik (zWorda), potem sklejenie stron
+  // gotową biblioteką pdf-lib (PDFLib). null, gdy którykolwiek się nie uda – wtedy apka zostaje przy PDF z rysownika.
+  function zWordow(docs, PDFLib) {
+    docs = (docs || []).filter(function (d) { return d && d.length; });
+    if (!docs.length) return Promise.resolve(null);
+    var pdfy = [];
+    return docs.reduce(function (p, d) { return p.then(function () { return zWorda(d).then(function (b) { pdfy.push(b); }); }); }, Promise.resolve()).then(function () {
+      if (pdfy.some(function (b) { return !b; })) return null;
+      if (pdfy.length === 1) return pdfy[0];
+      PDFLib = PDFLib || root.PDFLib;
+      if (!PDFLib) return null;
+      return PDFLib.PDFDocument.create().then(function (wynik) {
+        return pdfy.reduce(function (p, b) {
+          return p.then(function () { return PDFLib.PDFDocument.load(b); }).then(function (src) {
+            return wynik.copyPages(src, src.getPageIndices()).then(function (strony) { strony.forEach(function (s) { wynik.addPage(s); }); });
+          });
+        }, Promise.resolve()).then(function () { return wynik.save({ useObjectStreams: false }); }); // zwykłe obiekty: czytelne dla każdej przeglądarki PDF
+      }).then(function (b) { return new Uint8Array(b); }, function (e) { if (root.console) root.console.warn("Sklejanie PDF: " + (e && e.message || e)); return null; });
+    });
+  }
+  var api = { pdf: pdf, zWorda: zWorda, zWordow: zWordow, dostepny: dostepny };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTWordPdf = api;
 })(typeof window !== "undefined" ? window : globalThis);

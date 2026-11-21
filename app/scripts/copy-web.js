@@ -10,7 +10,8 @@ const skip = new Set(["Code.gs.txt", "README.md"]); // skrypt Google i instrukcj
 const libs = {
   "https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js": "pizzip/dist/pizzip.min.js",
   "https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js": "docxtemplater/build/docxtemplater.min.js",
-  "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js": "jspdf/dist/jspdf.umd.min.js"
+  "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js": "jspdf/dist/jspdf.umd.min.js",
+  "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js": "pdf-lib/dist/pdf-lib.min.js"
 };
 
 fs.rmSync(dst, { recursive: true, force: true });

@@ -5,7 +5,8 @@ var SHELL = ["./", "./index.html", "./flush.js", "./rodzaje.js", "./manifest.web
 var LIBS = [
   "https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js",
   "https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js",
-  "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"
+  "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js",
+  "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"
 ];
 
 self.addEventListener("install", function (e) {
