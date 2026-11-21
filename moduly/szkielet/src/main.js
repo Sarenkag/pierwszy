@@ -10,13 +10,14 @@
 //   OESTEkrany.straz(przedrostek, fn)              przed wyjściem w górę: fn() → false = zostań, true = rodzic z mapy, 'trasa' = tam
 //   OESTEkrany.ponow()                             po „Opuść” w pytaniu o niezapisane zmiany: dokończ wyjście
 //   OESTEkrany.otworzStrone(url)                   przejście na inną stronę apki bez wpisu w historii (inspekcje)
+//   OESTOkna.komunikat({ tytul, tresc, przyciski }) → Promise<rola>   okienko Ionic (ion-alert) dla starego kodu
 //   OESTEkrany.naGore() / .przewiniecie() / .przewin(y)   przewijanie treści ramy
 //   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
 //   OESTOkna.open(zamknij) → zwolnij               okienko na wierzchu: Wstecz woła zamknij(); okienko po zamknięciu woła zwolnij()
 //   OESTOkna.ile() / .zamknijGorne() / .zamknijWszystkie()
 import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
-import { IonicVue } from '@ionic/vue';
+import { IonicVue, alertController, modalController, actionSheetController } from '@ionic/vue';
 import '@ionic/vue/css/core.css';
 import '@ionic/vue/css/structure.css';
 import '@ionic/vue/css/padding.css';
@@ -42,7 +43,14 @@ const OESTOkna = {
     if (dl.length) { try { dl[dl.length - 1].close(); } catch (e) {} return true; }
     return false;
   },
-  zamknijWszystkie() { let n = 50; while (n-- > 0 && OESTOkna.zamknijGorne()); }
+  zamknijWszystkie() { let n = 50; while (n-- > 0 && OESTOkna.zamknijGorne()); },
+  // okienko z komunikatem Ionic (ion-alert) dla starego kodu: zostaje do zamknięcia, Wstecz je zamyka; zwraca rolę wciśniętego przycisku
+  // OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text, role }] }) → Promise<role>
+  async komunikat(o) {
+    const a = await alertController.create({ header: o.tytul || '', message: o.tresc || '', backdropDismiss: false, buttons: o.przyciski || [{ text: 'OK', role: 'ok' }] });
+    await a.present();
+    return (await a.onDidDismiss()).role;
+  }
 };
 
 // ---------- mapa ekranów (moduly/ekrany/ekrany.json) → trasy Vue Router ----------
@@ -123,9 +131,13 @@ function wyjscie() {
 }
 
 // ---------- Wstecz Androida: jedna obsługa przez Ionic (ionBackButton, priorytety) ----------
-// 100: okienko na wierzchu (okienka Ionic mają własne 100); 10: ekran o poziom wyżej / pytanie o wyjście
+// 100: okienka Ionic (ion-alert, ion-modal…); 99: okienko starego kodu na wierzchu (OESTOkna.open); 10: ekran o poziom wyżej / pytanie o wyjście
 d.addEventListener('ionBackButton', e => {
-  e.detail.register(100, next => { if (!OESTOkna.zamknijGorne()) next(); });
+  e.detail.register(99, async next => {
+    // okienko Ionic bez zamykania stuknięciem obok (backdropDismiss: false) – Ionic go nie zamyka Wstecz, więc robimy to tu
+    for (const c of [alertController, modalController, actionSheetController]) { const t = await c.getTop(); if (t) { t.dismiss(undefined, 'cancel'); return; } }
+    if (!OESTOkna.zamknijGorne()) next();
+  });
   e.detail.register(10, () => { if (tryb) up(); });
 });
 
