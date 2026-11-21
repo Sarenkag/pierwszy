@@ -40,7 +40,11 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
     for (const e of MAPA) {
       const id = e.id, adres = adresEkranu(id, ids), rodzic = e.rodzic && (ID[e.rodzic] ? e.rodzic.replace(':id', ids[ID[e.rodzic]]) : e.rodzic);
       await pg.evaluate(bez => bez ? sessionStorage.setItem('bez.konta', '1') : sessionStorage.removeItem('bez.konta'), id === 'start');
-      await pg.goto(B + '/index.html#' + adres); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150);
+      await pg.goto(B + '/index.html#' + adres); await pg.waitForLoadState('networkidle');
+      // ekran wczytujący dane (np. Edytor pytań: najpierw „Wczytywanie…”, potem pasek ze strzałką) – czekamy na stan, nie na czas;
+      // po 3 s ocena idzie dalej tym samym warunkiem co niżej (nic nie jest luzowane, tylko nie oceniamy ekranu w trakcie wczytywania)
+      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = document.querySelector('#' + p + ' .top .back'); return location.hash.slice(1) === a && s && !s.hidden && (!r || (!!b && b.offsetParent !== null)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
+      await pg.waitForTimeout(150);
       const s0 = await stan();
       if (!check(s0.sluchaczy === 1, id + ': strona zarejestrowała ' + s0.sluchaczy + ' słuchaczy „backButton” (ma być dokładnie 1)')) continue;
       // ekran jest otwarty, gdy adres i sekcja się zgadzają, a ekran z rodzicem ma widoczną strzałkę ‹ w górnym pasku
