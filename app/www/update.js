@@ -31,7 +31,7 @@
   });
   // Nowa wersja = wpis w dzwonku ekranu głównego (home.js), nie pasek na ekranie (Grzegorz 20/11/2026: duży pasek zasłaniał kafelki,
   // nie dało się go zamknąć i wyglądał jak wymuszona aktualizacja). „Później” chowa wpis do następnej wersji; Ustawienia → Konto zawsze pozwalają zainstalować.
-  var LATER = "oest.update.later", avail = false;
+  var LATER = "oest.update.later", avail = false, failed = false; // failed: ostatnie pobieranie przerwane – wpis pokazuje błąd, nie „dotknij, żeby pobrać”
   function later() { try { return +w.localStorage.getItem(LATER) || 0; } catch (e) { return 0; } }
   function changed() { try { w.dispatchEvent(new CustomEvent("oest:update")); } catch (e) {} }
   function offer(show) { avail = !!show; changed(); }
@@ -39,8 +39,8 @@
   function note() {
     if (!latest || !(busy || avail)) return null;
     if (!busy && later() >= latest.n) return null;
-    var s = busy ? lastStatus : ["Wersja " + latest.n + " – dotknij, żeby pobrać", "Version " + latest.n + " – tap to download"];
-    return { n: latest.n, busy: busy, pl: s[0], en: s[1] };
+    var s = busy || failed ? lastStatus : ["Wersja " + latest.n + " – dotknij, żeby pobrać", "Version " + latest.n + " – tap to download"];
+    return { n: latest.n, busy: busy, failed: failed, pl: s[0], en: s[1] };
   }
   function postpone() { if (!latest) return; try { w.localStorage.setItem(LATER, String(latest.n)); } catch (e) {} changed(); }
   function check(manual) {
@@ -60,7 +60,7 @@
     if (busy) { setStatus("Pobieranie już trwa – postęp widać w dzwonku na ekranie głównym.", "Download already running – progress is in the bell on the home screen."); return; }
     if (!latest) return; var p = api(); if (!p) return;
     if (!(await ask(T("Pobrać i zainstalować wersję ", "Download and install version ") + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?"))) { postpone(); return; }
-    busy = true; busySince = Date.now(); setStatus("Pobieram wersję " + latest.n + "…", "Downloading version " + latest.n + "…");
+    busy = true; failed = false; busySince = Date.now(); setStatus("Pobieram wersję " + latest.n + "…", "Downloading version " + latest.n + "…");
     changed();
     // procenty na pasku i w Ustawieniach (58 MB na danych mobilnych trwa – bez postępu wyglądało na zawieszone)
     var sub = null, mb = Math.round((latest.size || 0) / 1048576);
@@ -72,7 +72,7 @@
     p.install({ url: latest.url, name: "OEST-" + latest.n + ".apk" }).then(function () {
       unsub(); setStatus("Instaluję wersję " + latest.n + "… Apka sama się zamknie – otwórz ją ponownie.", "Installing version " + latest.n + "… The app will close itself – open it again."); offer(false);
     }).catch(function (e) {
-      unsub();
+      unsub(); failed = true;
       var m = e && e.message || String(e), perm = /PERMISSION/.test(m);
       var why = m.replace(/^Pobieranie nie powiodło się: /, ""); // i18n-ok: tekst z wtyczki Androida
       if (perm) setStatus("Zezwól OEST na instalowanie aplikacji (otworzyłem ustawienia), wróć i dotknij jeszcze raz.", "Allow OEST to install apps (settings are open), come back and tap again.");

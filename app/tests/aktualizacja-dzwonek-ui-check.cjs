@@ -22,8 +22,8 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
   try {
     const c = await browser.newContext({ viewport: { width: 384, height: 855 }, deviceScaleFactor: OUT ? 2 : 1, hasTouch: true });
     await c.addInitScript(() => {
-      window.__installs = 0;
-      const AppUpdate = { info: () => Promise.resolve({ versionCode: 671 }), install: () => { window.__installs++; return new Promise(() => {}); }, addListener: () => ({ remove() {} }) };
+      window.__installs = 0; window.__failNext = false;
+      const AppUpdate = { info: () => Promise.resolve({ versionCode: 671 }), install: () => { window.__installs++; return window.__failNext ? Promise.reject(new Error('timeout')) : new Promise(() => {}); }, addListener: () => ({ remove() {} }) };
       window.Capacitor = { isNativePlatform: () => true, registerPlugin: n => n === 'AppUpdate' ? AppUpdate : {}, Plugins: { AppUpdate, App: { addListener() { return { remove() {} }; } } } };
       if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 }));
       const set = () => document.documentElement && (document.documentElement.style.setProperty('--safe-area-inset-top', '44px'), document.documentElement.style.setProperty('--safe-area-inset-bottom', '44px'), true);
@@ -84,9 +84,19 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     // 5. Ustawienia → Konto: instalacja nadal dostępna ręcznie
     const panel = await p.evaluate(() => OESTUpdate.panelHtml());
     check(/Pobierz i zainstaluj wersję 672/.test(panel), 'w Ustawieniach brak przycisku „Pobierz i zainstaluj wersję 672”');
+
+    // 6. przerwane pobieranie: wpis w dzwonku pokazuje błąd i „spróbuj jeszcze raz” (nie udaje zwykłego „dotknij, żeby pobrać”) – uwaga Codex #184
+    await p.evaluate(() => { localStorage.removeItem('oest.update.later'); window.__failNext = true; }); await p.reload(); await p.waitForTimeout(5200);
+    await p.evaluate(() => { window.__failNext = true; });
+    await p.click('#hmBell'); await p.waitForTimeout(800); await p.click('[data-hgo="update"]'); await p.waitForTimeout(900);
+    await p.click('.oest-ask .ok'); await p.waitForTimeout(800);
+    await p.click('#hmBell'); await p.waitForTimeout(800);
+    const err = await p.evaluate(() => { const r = document.querySelector('[data-hgo="update"]'); return r && r.textContent.replace(/\s+/g, ' ').trim(); });
+    check(err && /Nie udało się pobrać/.test(err) && /spróbować jeszcze raz/.test(err), 'po przerwanym pobieraniu wpis nie mówi o błędzie: ' + err);
+    await p.evaluate(() => OESTWstecz.wstecz()); await p.waitForTimeout(500);
     check(!errors.length, 'błędy JS: ' + errors.join('; '));
     console.log('licznik dzwonka: przed „Później” ' + przed + ', po ' + (po.hid ? 0 : po.n));
   } finally { await browser.close(); server.close(); }
   if (fails.length) { console.log('BŁĘDY:\n- ' + fails.join('\n- ')); process.exit(1); }
-  console.log('AKTUALIZACJA UI PASS: (PL/EN, bez paska, „Później”, pytanie przed pobraniem, przycisk w Ustawieniach).');
+  console.log('AKTUALIZACJA UI PASS: (PL/EN, bez paska, „Później”, pytanie przed pobraniem, błąd pobierania w dzwonku, przycisk w Ustawieniach).');
 })().catch(e => { console.error(e); process.exit(1); });
