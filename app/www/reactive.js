@@ -183,8 +183,11 @@
     if(what!=='start'&&what!=='end')return tr(String(what||'').trim());
     const scope=what==='start'?ntScope():ntEnd(),list=scope&&N?.list?await N.list(scope).catch(()=>[]):[],ex=String(extra||'').trim();
     if(probe)return list.length?'1':'';
-    const parts=[];for(const n of list){if(ex&&n.pl&&ex.includes(String(n.pl).trim()))continue;/* tekst już wstawiony do pola */parts.push(n.en||await tr(n.pl));}
-    if(ex)parts.push(await tr(uniqLines(ex)));/* ta sama notatka wstawiona kilka razy = jeden wiersz, przed i po tłumaczeniu (Grzegorz 19/11/2026: notatki 3× w raporcie) */return uniqLines(parts.join('\n'));}
+    /* „Połącz notatki” wstawia do pola tekst JUŻ po angielsku (Grzegorz 21/11/2026: opis w Vantify 2×, drugi raz przetłumaczony jak polski):
+       notatka obecna w polu (PL albo EN) nie idzie drugi raz, a wiersze pola z angielskim tekstem notatek nie są tłumaczone ponownie */
+    const nk=t=>String(t||'').toLowerCase().replace(/[.!?\s]+/g,' ').trim(),exk=nk(ex),ens=list.map(n=>nk(n.en)).filter(Boolean);
+    const parts=[];for(const n of list){if(ex&&((n.pl&&exk.includes(nk(n.pl)))||(n.en&&exk.includes(nk(n.en)))))continue;/* tekst już wstawiony do pola */parts.push(n.en||await tr(n.pl));}
+    if(ex){const lines=uniqLines(ex).split('\n'),en=l=>ens.some(e=>nk(l).includes(e)||e.includes(nk(l)));const out=[];for(const l of lines)out.push(en(l)?l:await tr(l));parts.push(out.join('\n'));}/* ta sama notatka wstawiona kilka razy = jeden wiersz, przed i po tłumaczeniu (Grzegorz 19/11/2026: notatki 3× w raporcie) */return uniqLines(parts.join('\n'));}
   function uniqLines(t){const seen=new Set();return String(t||'').split('\n').map(x=>x.trim()).filter(x=>{const k=x.toLowerCase().replace(/\s+/g,' ');if(!k||seen.has(k))return false;seen.add(k);return true;}).join('\n');}
   /* Job Sheet do Vantify po angielsku (przegląd Codex #146): nazwa = Summary z Vantify, info na start/koniec z notatek EN, bez polskich nagrań */
   async function vtEn(){return {...draft,title:draft.vantify?.summary||await vtEnglish(draft.title||draft.problem||''),note:await vtEnglish('start',draft.note),endNote:await vtEnglish('end',draft.endNote),/* pozostałe pola wpisywane ręcznie też po angielsku (przegląd Codex #146) */room:await vtEnglish(draft.room||''),problem:await vtEnglish(draft.problem||''),partsNote:await vtEnglish(draft.partsNote||''),audioMediaIds:[],actionId:draft.pendingActionId||draft.actionId,reportText:draft.reportEdited?draft.reportText:''};}

@@ -163,6 +163,11 @@ test('wzory wbudowane: kształt jak w zapisie 18/11 (Commence, Complete z Job Sh
   assert.deepStrictEqual(a._links, { file: { href: '/files/5' }, documentType: { href: '/documenttypes/3' } }); assert.ok(!('visibility' in a), 'bez znanej widoczności pole pominięte');
   for (const k of ['tags', 'id', 'isContract', 'documentDate', 'expiresAt', 'isStatutory', 'userTags', 'notifyExpiry', 'isJobFile', 'description', 'applicableTo']) assert.ok(k in a, 'Files → Add bez pola ' + k);
 });
+test('Files → Add: documentDate nigdy z przyszłości (Grzegorz 21/11/2026: „documentDate: This value should be less than or equal to … 4:51 PM”)', () => {
+  const W = A.built('attach', {}), now = Date.now(), dt = x => Date.parse(A.attach(W, { title: 'p', href: '/files/1', date: x }).documentDate);
+  for (const x of [new Date(now), new Date(now + 90000), new Date(now + 86400000)]) { const t = dt(x); assert.ok(t <= now - 240000, 'data z przyszłości albo za blisko „teraz”: ' + new Date(t).toISOString()); assert.strictEqual(t % 60000, 0, 'bez sekund'); }
+  const old = new Date(Date.UTC(2026, 10, 20, 15, 0, 30)); assert.strictEqual(dt(old), Date.UTC(2026, 10, 20, 15, 0), 'stara data zostaje (pełna minuta)');
+});
 test('zamknięcie bez nauczonego wzoru: Commence + Complete z wzoru wbudowanego, Job Sheet typu wymaganego przez zlecenie, widoczność z pliku przy zleceniu', async () => {
   const jobs = { 3070050: { id: 3070050, status: 'acknowledged', is_final_status: false, summary: 'Shelves', _links: { commence: {}, files: { href: '/sites/6324/jobs/3070050/files' } }, requiredDocumentTypes: { count: 1, documentTypes: [{ id: 1, _links: { self: { href: '/documenttypes/1' } } }] }, files: [{ visibility: 'VisFromJob', _links: { file: { href: '/files/400' } } }] } };
   const s = world({ op: 'close', nonce: 'b1', id: 3070050, summary: 'Shelves', onSite: '2026-11-20T09:00:00Z', done: '2026-11-20T10:00:00Z', file: { b64: PDF, name: 'REACTIVE Shelves 20112026.pdf', title: 'REACTIVE Shelves 20112026', type: 'application/pdf' } }, { create: WZ.create }, jobs); await s.run();

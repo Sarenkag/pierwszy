@@ -94,7 +94,10 @@
     return b;
   }
   // dosłanie zdjęcia przed do już założonego zlecenia (przegląd Codex #166): ten sam wzór, tytuł i adres pliku z wysyłki
-  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(o.date, t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
+  // documentDate nie może być późniejsza niż „teraz” Vantify (Grzegorz 21/11/2026: „documentDate: This value should be less than or equal to Nov 21, 2026, 4:51 PM”,
+  // zegar telefonu minimalnie przed serwerem) – data dokumentu = 5 min wcześniej, pełna minuta; nigdy nie z przyszłości
+  function docDate(d) { var t = Math.min(d instanceof Date && !isNaN(d) ? d.getTime() : Date.now(), Date.now() - 300000); return new Date(Math.floor(t / 60000) * 60000); }
+  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(docDate(o.date), t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
   // treść odmowy Vantify w całości (Grzegorz 21/11/2026: „http400 (create)” bez powodu): komunikat, lista naruszeń
   // ({property_path|propertyPath|field, message}), błędy formularza (errors / children) albo surowy tekst odpowiedzi; do 1000 znaków
   function errText(j, raw) {
