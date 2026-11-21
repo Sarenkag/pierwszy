@@ -63,7 +63,7 @@ function natywne() {
       const n = m[1] || m[2]; if (!n || /^(if|for|while|switch|catch|return|new)$/.test(n)) continue;
       const b = blok(s, m.index + m[0].length - 1); funkcje.set(n, (funkcje.get(n) || '') + b);
     }
-    const metody = new Map();
+    const metody = new Map(), wywolaniaNazwy = [...s.matchAll(/\bPluginCall\s+(\w+)|\b(\w+)\s*:\s*PluginCall\b/g)].map(x => x[1] || x[2]);
     for (const m of s.matchAll(/@PluginMethod(?:\s*\([^)]*\))?\s*(?:public\s+)?(?:void\s+|fun\s+)(\w+)\s*\(/g)) {
       const i = s.indexOf(m[1] === 'x' ? '' : '{', m.index + m[0].length), tresc = blok(s, i);
       // treść metody + funkcji pomocniczych, które woła (2 poziomy)
@@ -74,8 +74,15 @@ function natywne() {
       for (const cb of razem.matchAll(/startActivityForResult\(\s*call\s*,[^;]*?"(\w+)"\s*\)/g)) if (funkcje.has(cb[1])) { razem += '\n' + funkcje.get(cb[1]); for (const [n, b] of funkcje) if (new RegExp('\\b' + n + '\\s*\\(').test(funkcje.get(cb[1])) && !razem.includes(b)) razem += '\n' + b; }
       const przekazana = /new\s+\w+\s*\([^;]*\bcall\b|\.\w+\(\s*call\s*[,)]/.test(tresc.replace(/\bcall\.\w+\(/g, ''));
       // wynik zbudowany z JSON (new JSObject(tekst), fromJSONObject) – pól zwrotu nie da się odczytać z kodu, nie są sprawdzane
-      const dowolny = /new\s+JSObject\(\s*\w|fromJSONObject\(/.test(przekazana ? s : razem);
-      metody.set(m[1], { przekazana, dowolny, czyta: new Set([...razem.matchAll(/\.(?:get|opt|has)\w*\(\s*"(\w+)"/g)].map(x => x[1])), zwraca: new Set([...(przekazana ? s : razem).matchAll(/\bput\(\s*"(\w+)"/g)].map(x => x[1])) });
+      // tylko to, co trafia do call.resolve(…): argument (albo zmienna z tym argumentem) zbudowany z JSON – konwersja danych wejściowych się nie liczy
+      const zakres = przekazana ? s : razem, zJson = t => /new\s+JSObject\(\s*\w|fromJSONObject\(/.test(t);
+      const dowolny = [...zakres.matchAll(/\.resolve\(/g)].some(r => { const arg = blok(zakres, r.index + r[0].length - 1).slice(1, -1).trim();
+        if (zJson(arg)) return true; if (!/^\w+$/.test(arg)) return false;
+        return [...zakres.matchAll(new RegExp('\\b' + arg + '\\s*=(?!=)([^;]*)', 'g'))].some(x => zJson(x[1])); });
+      // parametry główne = odczyty z obiektu wywołania (PluginCall) albo z jego call.getData(); pola zagnieżdżonych obiektów się nie liczą
+      const zrodla = new Set(['call', ...wywolaniaNazwy]); for (const d of razem.matchAll(/\b(\w+)\s*=\s*(\w+)\.getData\(\)/g)) if (zrodla.has(d[2])) zrodla.add(d[1]);
+      const czyta = new Set([...razem.matchAll(/\b(\w+)\.(?:get|opt|has)\w*\(\s*"(\w+)"/g)].filter(x => zrodla.has(x[1])).map(x => x[2]));
+      metody.set(m[1], { przekazana, dowolny, czyta, zwraca: new Set([...zakres.matchAll(/\bput\(\s*"(\w+)"/g)].map(x => x[1])) });
     }
     // metody, które ma każda wtyczka Capacitor (klasa bazowa Plugin): słuchacze zdarzeń i uprawnienia
     for (const b of ['addListener', 'removeListener', 'removeAllListeners', 'checkPermissions', 'requestPermissions']) if (!metody.has(b)) metody.set(b, null);
@@ -104,10 +111,14 @@ function wywolania(wt) {
     const wtyczkiW = t => [...t.matchAll(RE_WT)].map(m => m[1] || m[2] || m[3]);
     // zmienna = … Plugins.X / registerPlugin('X') (bez przecinka i średnika po drodze)
     for (const m of s.matchAll(/\b(\w+)\s*=(?!=)\s*([^;,\n]*?(?:Plugins(?:\?\.|\.)[A-Z]\w*|registerPlugin\(\s*['"]\w+['"]\)|Plugins\[\s*['"]\w+['"]\s*\])[^;,\n]*)/g)) for (const w of wtyczkiW(m[2])) dodaj(m[1], w, m.index);
+    // adapter: { plugin: () => …Plugins.X } przekazany dalej i wołany jako o.plugin()
+    const klucz = new Map();
+    for (const m of s.matchAll(/[{,]\s*(\w+)\s*:\s*(?:\([^)]*\)|\w+)\s*=>\s*([^,}\n]*)/g)) { const w = [...new Set(wtyczkiW(m[2]))]; if (w.length === 1 && wt.has(w[0])) klucz.set(m[1], w[0]); }
+    const wtyczkiZ = t => [...wtyczkiW(t), ...[...t.matchAll(/\.(\w+)\(\)/g)].filter(x => klucz.has(x[1])).map(x => klucz.get(x[1]))];
     // funkcja zwracająca wtyczkę: function x() {…} / const x = () => …
     for (const m of s.matchAll(/function\s+(\w+)\s*\([^)]*\)\s*\{|\b(\w+)\s*=\s*(?:\([^)]*\)|\w+)\s*=>\s*/g)) {
       const n = m[1] || m[2], i = m.index + m[0].length - (m[1] ? 1 : 0), t = s[i] === '{' || s[i] === '(' ? blok(s, i) : s.slice(i, s.indexOf('\n', i) < 0 ? undefined : s.indexOf('\n', i));
-      const w = [...new Set(wtyczkiW(t))]; if (w.length === 1 && /return|=>/.test(m[0] + t.slice(0, 400))) dodaj(n, w[0]);
+      const w = [...new Set(wtyczkiZ(t))]; if (w.length === 1 && /return|=>/.test(m[0] + t.slice(0, 400))) dodaj(n, w[0]);
     }
     // fabryka z nazwą w parametrze: function plugin(name) { … Plugins[name] … registerPlugin(name) } → x = plugin("Vantify")
     for (const m of s.matchAll(/function\s+(\w+)\s*\(\s*(\w+)\s*\)\s*\{/g)) {
