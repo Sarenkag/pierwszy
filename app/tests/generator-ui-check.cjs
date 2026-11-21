@@ -60,6 +60,23 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     // odczyty z panelu DSE 7320 (zdjęcia Grzegorza 21/11/2026): paliwo 29% / 229 l, L1–L3 251 V, 1500 RPM
     for (const [i, v] of [[0, '29% / 229 l'], [7, '251'], [8, '251'], [9, '251']]) await pg.fill('#flList input[data-fln="' + i + '"]', v); await pg.waitForTimeout(500);
     await shot('2-gotowe');
+    // „Open Vantify” na formularzu klocka (Grzegorz 21/11/2026 16:31): ta sama ścieżka co Reactive; wtyczka Vantify podstawiona (bez prawdziwego zlecenia)
+    const vb = await pg.evaluate(() => { const b = document.getElementById('vtBtn'); return { on: !b.hidden, t: b.textContent.trim() }; });
+    check(vb.on && vb.t === 'Open Vantify', 'na formularzu przycisk „Open Vantify” (' + JSON.stringify(vb) + ')');
+    await pg.evaluate(() => { window.__vt = []; window.Capacitor = { isNativePlatform: () => true, registerPlugin: () => ({ wzory: async () => ({ create: true }),
+      action: async ({ action: a }) => { window.__vt.push(a); return a.op === 'priorities' ? { status: 'ok', list: [] } : a.op === 'create' ? { status: 'ok', id: 999001, job: { status: 'approval_pending', summary: a.summary }, hrefs: a.files.map((f, i) => 'h' + i), seenHrefs: a.files.map((f, i) => 'h' + i) } : { status: 'ok', jobs: [] }; } }) }; });
+    await pg.click('#vtBtn');
+    await pg.waitForSelector('.oest-ask button[data-a="ok"]', { timeout: 30000 });
+    const okno = await pg.evaluate(() => ({ sum: (document.querySelector('.oest-ask .rx-vt-sum') || {}).value || '', desc: (document.querySelector('.oest-ask .rx-vt-desc') || {}).value || '' }));
+    check(/^Generator Checks – Weekly \d\d\/\d\d\/\d{4}$/.test(okno.sum), 'Vantify: Summary do poprawy przed wysłaniem (' + okno.sum + ')');
+    check(okno.desc.includes('Generator – Serial 667449') && okno.desc.includes('L1 voltage (V): Yes – 251') && okno.desc.includes(STMT), 'Vantify: Description = generator, punkty z odczytami, zdanie (' + okno.desc + ')');
+    await pg.click('.oest-ask button[data-a="ok"]');
+    await pg.waitForFunction(() => window.__vt.some(a => a.op === 'create'), null, { timeout: 30000 });
+    await pg.waitForFunction(() => /✓ Vantify #999001/.test(document.getElementById('vtBtn').textContent), null, { timeout: 15000 }).catch(() => {});
+    const vt = await pg.evaluate(() => { const a = window.__vt.find(x => x.op === 'create'); return { files: a.files.map(f => f.title + '|' + f.type + '|' + (f.b64 || '').length), btn: document.getElementById('vtBtn').textContent.trim() }; });
+    check(vt.files.length === 3 && /^Generator check form 1\|image\/jpeg\|\d{3,}/.test(vt.files[0]) && /\|application\/pdf\|\d{3,}/.test(vt.files[1]) && /^Photo 1\|image\/jpeg\|\d{3,}/.test(vt.files[2]), 'Vantify: zdjęcie kartki, Basic form PDF, zdjęcie (' + vt.files.join(', ') + ')');
+    check(vt.btn === '✓ Vantify #999001', 'Vantify: po założeniu „✓ Vantify #nr” (' + vt.btn + ')');
+    await pg.evaluate(() => { document.querySelectorAll('.oest-ask').forEach(e => e.remove()); delete window.Capacitor; });
     const send = await pg.evaluate(() => document.getElementById('toQueue').textContent.trim());
     check(/^Wyślij/.test(send), 'po zdjęciu kartki przycisk to „Wyślij” (' + send + ')');
     await pg.click('#toQueue');
