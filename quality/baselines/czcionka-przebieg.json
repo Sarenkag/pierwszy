@@ -91,12 +91,12 @@
     },
     {
       "id": "pdf:EFA-INS-004:raport:Calibri→DV",
-      "maks": 34,
+      "maks": 33,
       "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-004:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 20,
       "reason": "EFA-INS-004: „Weekly Flushing TA 21112026 3000622.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
@@ -206,17 +206,17 @@
     },
     {
       "id": "pdf:EFA-INS-012:raport:Times New Roman→DV",
-      "maks": 11,
+      "maks": 10,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD PAVIL” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-012:raport:Calibri→DV",
-      "maks": 33,
+      "maks": 32,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD PAVIL” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-012:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 19,
       "reason": "EFA-INS-012: „Weekly Flushing of Seldom Used Outlets P 21112026 3000616.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {
@@ -511,22 +511,22 @@
     },
     {
       "id": "word:EFA-INS-026:raport:document:Times New Roman",
-      "maks": 115,
+      "maks": 99,
       "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.docx” tekst „O” czcionką Times New Roman"
     },
     {
       "id": "pdf:EFA-INS-026:raport:Times New Roman→DV",
-      "maks": 30,
+      "maks": 26,
       "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-026:raport:Calibri→DV",
-      "maks": 39,
+      "maks": 38,
       "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „WEEKLY TAPS/SHOWER FLUSHING RECORD TOWER” czcionką DV, w Wordzie Times New Roman / Calibri"
     },
     {
       "id": "pdf:EFA-INS-026:raport:niedopasowany:DV",
-      "maks": 18,
+      "maks": 21,
       "reason": "EFA-INS-026: „Weekly Flushing TB 21112026 3000611.pdf” napis „Engineers Report” (DV) bez odpowiednika w przebiegach Worda – czcionki nie da się sprawdzić"
     },
     {

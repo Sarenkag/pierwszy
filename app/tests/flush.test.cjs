@@ -4,7 +4,7 @@ const P=window.OEST_PPM;
 function doc(k,opt={}){const f=P.forms.flush[k],z=new PizZip(TPL_FLUSH);const taps=f.taps.map((n,i)=>({name:n,state:opt.states?.[i]||'yes',note:opt.notes?.[i]||''}));
   const d={building:f.building,year:2026,month:10,week:opt.week||2,date:new Date(2026,10,9),name:'G & S',taps};return {xml:F.fill(z.file('word/document.xml').asText(),d),hdr:F.header(z.file('word/header1.xml').asText(),f.building),d};}
 const text=x=>[...x.matchAll(/<w:t(?: [^>]*)?>([^<]*)/g)].map(m=>m[1]).join('|');
-test('trzy inspekcje Flush mają swoje listy kranów i wspólny wzór',()=>{for(const [id,k,n] of [['EFA-INS-004','TA',12],['EFA-INS-026','TB',20],['EFA-INS-012','P',2]]){const t=P.tasks.find(t=>t.id===id);assert.equal(t.flush,k);assert.equal(t.form,'folder');assert.equal(P.forms.flush[k].taps.length,n);}});
+test('trzy inspekcje Flush mają swoje listy kranów i wspólny wzór',()=>{for(const [id,k,n] of [['EFA-INS-004','TA',12],['EFA-INS-026','TB',16],['EFA-INS-012','P',2]]){const t=P.tasks.find(t=>t.id===id);assert.equal(t.flush,k);assert.equal(t.form,'folder');assert.equal(P.forms.flush[k].taps.length,n);}});
 test('wiersz na każdy kran, Yes/No/N/A tylko w kolumnie wybranego tygodnia, bez pól i znaczników',()=>{const {xml}=doc('TA',{week:3,states:{1:'no',2:'na'},notes:{1:'Seized <tap>'}});
   assert.doesNotMatch(xml,/\{[a-z]+\d*\}|<!--ROW-->/);assert.equal((xml.match(/<w:tr[ >]/g)||[]).length,3+3+12);
   const rows=xml.split(/<w:tr[ >]/).slice(7).map(r=>(r.match(/<w:tc>.*?<\/w:tc>/gs)||[]).map(text));
@@ -36,3 +36,49 @@ test('fromPdf: exact outlet name wins over a prefix; ambiguous short caption is 
   const b = base.slice(); b[0] = "Roof A"; b[1] = "Roof B"; // podpis „Roof” pasuje do dwóch kranów: zdjęcie pominięte
   assert.deepEqual(F.fromPdf(pdf, b).photos.map(p => p.tap), [2, 4]);
 });
+
+// 21/11/2026: basic form Flushing ze strefami (moduly/wzory/flush-basic-*.docx) – Grzegorz: grupy stref, TB bez apartamentów, stałe zdanie
+const Docxtemplater=require('docxtemplater'),fs2=require('node:fs'),path2=require('node:path');
+const ALL='All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
+const PART='Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
+function basic(k,states={},notes={}){const f=P.forms.flush[k],taps=f.taps.map((n,i)=>({name:n,state:states[i]||'yes',note:notes[i]||''}));
+  const z=new PizZip(fs2.readFileSync(path2.join(__dirname,'../../moduly/wzory',f.wzorBasic+'.docx')));const dt=new Docxtemplater(z,{paragraphLoop:true,linebreaks:true,nullGetter:()=>''});
+  dt.render(Object.assign({title:f.title,date:'21/11/2026'},F.basicPola({taps,strefy:f.strefy})));return dt.getZip().file('word/document.xml').asText();}
+test('strefy: każdy kran dokładnie w jednej strefie, TB bez apartamentów, każdy budynek ma swój wzór basic',()=>{
+  for(const k of ['TA','TB','P']){const f=P.forms.flush[k],w=[].concat(...f.strefy.map(z=>z[1]));
+    assert.deepEqual([...w].sort(),[...f.taps].sort(),k);assert.equal(new Set(w).size,w.length,k);
+    assert.ok(fs2.existsSync(path2.join(__dirname,'../../moduly/wzory',f.wzorBasic+'.docx')),f.wzorBasic);}
+  assert.ok(!P.forms.flush.TB.taps.some(t=>/Apartment/.test(t)));});
+test('basic Flushing: wszystkie Yes → ☑ przy każdym kranie, strefa „n/n”, zdanie ALL, bez Overall Condition i bez nawiasów',()=>{
+  const x=basic('TB'),t=text(x);assert.doesNotMatch(t,/[{}]/);assert.equal((t.match(/☑/g)||[]).length,16);assert.doesNotMatch(t,/☒|N\/A|Overall Condition/);
+  assert.match(t,/SPA &amp; WELLNESS   ·   7\/7/);assert.ok(t.includes(ALL));assert.ok(!t.includes(PART));});
+test('basic Flushing: No i N/A → ☒ i N/A przy właściwym kranie, licznik strefy, notatka przy nazwie, zdanie PART',()=>{
+  const f=P.forms.flush.TA,i=f.taps.indexOf('Private Dining'),j=f.taps.indexOf('Bin Store');
+  const t=text(basic('TA',{[i]:'no',[j]:'na'},{[i]:'Seized'}));
+  assert.match(t,/Private Dining\| – Seized\|☒/);assert.match(t,/Bin Store\|N\/A/);assert.match(t,/LEVEL 49   ·   4\/5/);assert.match(t,/BACK OF HOUSE   ·   1\/2/);
+  assert.equal((t.match(/☑/g)||[]).length,10);assert.ok(t.includes(PART));assert.ok(!t.includes(ALL));});
+test('PDF basic Flushing rysuje te same strefy, krany i zdanie co Word',()=>{
+  const out=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='text'?(s=>{out.push([].concat(s).join(' '));return pdf;}):k==='splitTextToSize'?(s=>[s]):nop});
+  const f=P.forms.flush.P,fl={taps:f.taps.map((n,i)=>({name:n,state:i?'no':'yes',note:''})),strefy:f.strefy};const y=F.rysujStrefy(pdf,fl,15,60,180,(yy)=>yy);
+  assert.ok(y>60);assert.ok(out.some(s=>/TOILETS   ·   1\/2/.test(s)));assert.ok(out.includes('Unisex Toilet')&&out.includes('Disabled Toilet'));assert.ok(out.includes(PART));});
+test('szkic TB sprzed zmiany (20 kranów, bez nazw): odpowiedzi, notatki, tydzień i formularz pierwszych 16 kranów zostają (DATA-002)',()=>{
+  const n=P.forms.flush.TB.taps,old={on:true,week:3,open:{1:true},taps:Array.from({length:20},(_,i)=>({state:i===2?'no':i===5?'na':'yes',note:i===2?'Seized':''}))};
+  const m=F.migrujSzkic(old,n);assert.equal(m.taps.length,16);assert.equal(m.taps[2].state,'no');assert.equal(m.taps[2].note,'Seized');assert.equal(m.taps[5].state,'na');
+  assert.equal(m.week,3);assert.equal(m.on,true);assert.deepEqual(m.names,n);
+  const z=F.migrujSzkic({names:['A','B'],taps:[{state:'no',note:'x'},{state:'na',note:''}]},['B','C','A']);assert.deepEqual(z.taps.map(t=>t.state),['na','yes','no']);
+  assert.equal(F.migrujSzkic({taps:[{state:'no'}]},['A','B']),null);assert.equal(F.migrujSzkic(null,['A']),null);});
+test('PDF basic Flushing: bardzo długa notatka dzielona na partie po 30 linii, każda partia osobno łamie stronę (uwaga Codex #187)',()=>{
+  const out=[],rooms=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='text'?(s=>{out.push([].concat(s));return pdf;}):k==='splitTextToSize'?(s=>s.indexOf('LONG')>=0?Array.from({length:75},(_,i)=>'L'+i):[s]):nop});
+  const f=P.forms.flush.P,fl={taps:f.taps.map((n,i)=>({name:n,state:'no',note:i?'':'LONG'})),strefy:f.strefy};
+  F.rysujStrefy(pdf,fl,15,60,180,(yy,h)=>{rooms.push(h);return null;});
+  const parts=out.filter(a=>String(a[0]).startsWith('L'));assert.deepEqual(parts.map(a=>a.length),[30,30,15]);assert.equal(parts.flat().length,75);
+  assert.ok(Math.max(...rooms)<=30*4.2+2+1e-9);});
+test('zdjęcia kranów idą za kranem; usunięty kran (apartament TB) → zdjęcie ogólne, nie osierocone (uwaga Codex #187)',()=>{
+  const n=P.forms.flush.TB.taps;assert.deepEqual(F.mapaKranow({taps:Array(20).fill({state:'yes'})},n),[...n.map((_,i)=>i),null,null,null,null]);
+  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});
+test('PDF basic Flushing: każdy wiersz ma swoją wysokość także przy odroczonym rysowaniu (uwaga Codex #187)',()=>{
+  const rects=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='rect'?((x,y,w,h)=>{rects.push([y,h]);return pdf;}):k==='splitTextToSize'?(s=>s.indexOf('LONG')>=0?Array(10).fill('L'):[s]):nop});
+  const f=P.forms.flush.TB,fl={taps:f.taps.map(n=>({name:n,state:'yes',note:n==='Cycle Store'?'LONG':''})),strefy:f.strefy};
+  F.rysujStrefy(pdf,fl,15,60,180,()=>null);
+  const h=[...new Set(rects.map(r=>Math.round(r[1]*100)/100))];assert.ok(h.includes(6.2));assert.ok(h.includes(10*4.2+2));
+  const ys=rects.filter(r=>Math.abs(r[1]-(10*4.2+2))<1e-9).map(r=>r[0]);assert.equal(ys.length,4);assert.equal(new Set(ys).size,1);});

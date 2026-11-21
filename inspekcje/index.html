@@ -1178,7 +1178,7 @@ function makeName(pattern, data, when) {
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
     $("ov-1").checked = true; $("q-0").checked = true;
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
-    fl = { on: false, week: 0, open: {}, taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
+    fl = { on: false, week: 0, open: {}, names: ((cur.type.flush || {}).taps || []).map(String), taps: ((cur.type.flush || {}).taps || []).map(function () { return { state: "yes", note: "" }; }) }; renderFlush();
   }
   // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
@@ -1261,13 +1261,16 @@ function makeName(pattern, data, when) {
     roomNotes = Object.assign({}, d.roomNotes); dateTouched = !!d.dateTouched;
     if (d.temps && d.temps.length === temps.length) temps = d.temps.slice();
     var F = cur.type.flush;
-    if (F && d.fl && d.fl.taps && d.fl.taps.length === F.taps.length) { fl = d.fl; if (fl.on && cur.ppm && PPM.setNeeds && !(needsNow() || {}).q) PPM.setNeeds(cur.ppm, { q: true }); } // szkic z włączonym formularzem elektronicznym zostaje z nim
+    var mfl = F && window.OESTFlush ? OESTFlush.migrujSzkic(d.fl, F.taps) : null; // szkic sprzed zmiany listy kranów (TB bez apartamentów 21/11/2026): odpowiedzi zostają
+    var mtap = mfl ? OESTFlush.mapaKranow(d.fl, F.taps) : null; // zdjęcia kranów idą za swoim kranem; usuniętego kranu → zdjęcie ogólne
+    if (mfl) { fl = mfl; if (fl.on && cur.ppm && PPM.setNeeds && !(needsNow() || {}).q) PPM.setNeeds(cur.ppm, { q: true }); } // szkic z włączonym formularzem elektronicznym zostaje z nim
     renderChecks(); renderFaults(); renderTemps(); renderFlush(); applyNeeds();
     try { $("v-form").dispatchEvent(new CustomEvent("oest:restored")); } catch (e) {}
     var list = d.photos || [];
     if (!list.length) { updateFormHint(); return; }
     var my = restoring = ++restSeq;
     updateFormHint();
+    if (mtap) list = list.map(function (sp) { if (sp.tap == null) return sp; var n = mtap[sp.tap]; return Object.assign({}, sp, { tap: n == null ? undefined : n }); });
     Promise.all(list.map(function (sp) { return photoFromSaved(sp).then(function (p) { if (sp.tap != null) p.tap = sp.tap; return p; }, function () { return { failed: sp }; }); })).then(function (ps) {
       var ok = ps.filter(function (p) { return !p.failed; });
       if (my !== restoring || tok !== formSeq) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
@@ -1390,7 +1393,7 @@ function makeName(pattern, data, when) {
   function renderFlush() {
     var F = cur.type && cur.type.flush;
     if (!F) { $("flList").innerHTML = ""; return; }
-    if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
+    if (fl.taps.length !== F.taps.length) fl = { on: false, week: 0, open: {}, names: F.taps.map(String), taps: F.taps.map(function () { return { state: "yes", note: "" }; }) };
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
@@ -1433,7 +1436,7 @@ function makeName(pattern, data, when) {
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
-    return { points: !!F.points, ui: F.ui || "", col: F.col, groups: F.groups || null, building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
+    return { points: !!F.points, ui: F.ui || "", col: F.col, groups: F.groups || null, strefy: F.strefy || null, wzorBasic: F.wzorBasic || "", building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
   // ---------- pomiary temperatur (wzór 024) ----------
@@ -2561,9 +2564,10 @@ function makeName(pattern, data, when) {
     pdf.setFont("DV", "bold"); pdf.setFontSize(F);
     var tl = pdf.splitTextToSize(d.tytul || "", W - 6); pdf.text(tl, L + W / 2, ty, { align: "center" }); ty += tl.length * 5.5 + 3;
     pdf.setFont("DV", "normal");
-    pdf.text("Overall Condition: " + (d.stan_ogolny || ""), L + 1.5, ty);
+    if (!d.flushStrefy) pdf.text("Overall Condition: " + (d.stan_ogolny || ""), L + 1.5, ty); // Flushing ze strefami: bez Overall Condition, jak wzór flush-basic-*
     // Location jest w nagłówku (nowy wzór basic 20/11/2026), nie w wierszu Overall Condition
-    ty += 8; pdf.setFontSize(10.5);
+    ty += d.flushStrefy ? 0 : 8; pdf.setFontSize(10.5);
+    if (d.flushStrefy) { ty = OESTFlush.rysujStrefy(pdf, d.flushStrefy, L, ty - 4, W, function (yy, h) { ty = yy; room(h); return ty; }); pdf.setFontSize(10.5); }
     function cpCell(c, x, yy, b) {
       var m = c.charAt(0), box = m === "\u2611" || m === "\u2612";
       if (!box) { pdf.text(c, x, yy); return; }
@@ -2735,7 +2739,7 @@ function makeName(pattern, data, when) {
   // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
-  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, OESTWzory.bajty("basic"), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
+  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
   // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
   function flushBasic(d, pics) {
     var f = d.flush, dd = Object.assign({}, d), sum = f.points ? pointsSummary(f) : OESTFlush.summary(f);
@@ -2745,6 +2749,8 @@ function makeName(pattern, data, when) {
     dd.details = dd.opis = [(f.points ? "" : OESTFlush.MONTHS[f.month] + " " + f.year + " · Week " + f.week + " in month · ") + "Date: " + d.data + " · Name: " + (f.name || ""), ""]
       .concat([].concat.apply([], f.taps.map(function (t, i) { return (heads[i] ? ["", heads[i] + ":"] : []).concat([t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : "")]); })))
       .concat(["", sum + "."]).join("\n");
+    // Flushing ze strefami (Grzegorz 21/11/2026): wzór flush-basic-* – strefy, kratki i stałe zdanie zamiast listy w {details}; PDF rysuje te same strefy
+    if (f.strefy && f.wzorBasic) { Object.assign(dd, OESTFlush.basicPola(f)); dd.details = dd.opis = ""; dd.flushStrefy = f; }
     var ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })).map(function (p) {
       return p.tap != null && f.taps[p.tap] ? Object.assign({}, p, { caption: f.taps[p.tap].name }) : p;
     });

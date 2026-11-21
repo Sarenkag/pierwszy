@@ -136,6 +136,104 @@
     });
     return out;
   }
-  var api = { fill: fill, header: header, summary: summary, fromPdf: fromPdf, MONTHS: MONTHS, LABEL: LABEL };
+  // ---- basic form Flushing ze strefami (Grzegorz 21/11/2026, wzory moduly/wzory/flush-basic-*.docx) ----
+  // Zdanie pod strefami, bajt w bajt od Grzegorza: wszystkie krany Yes → ALL, inaczej (No albo N/A) → PART.
+  var STATEMENT = {
+    all: "All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.",
+    part: "Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation."
+  };
+  // f: { taps:[{name,state,note}], strefy:[[nazwa,[krany]]] } → pola wzoru: ok/no/na/note i (numer kranu na liście, od 1), zone k, statement
+  function basicPola(f) {
+    var o = {}, all = true;
+    f.taps.forEach(function (t, i) {
+      var n = i + 1; o["ok" + n] = t.state === "yes" ? "\u2611" : ""; o["no" + n] = t.state === "no" ? "\u2612" : ""; o["na" + n] = t.state === "na" ? "N/A" : "";
+      o["note" + n] = t.note ? " \u2013 " + t.note : ""; if (t.state !== "yes") all = false;
+    });
+    (f.strefy || []).forEach(function (z, k) {
+      var idx = z[1].map(function (nm) { for (var i = 0; i < f.taps.length; i++) if (f.taps[i].name === nm) return i; throw Error("FLUSH_ZONE"); });
+      o["zone" + (k + 1)] = idx.filter(function (i) { return f.taps[i].state === "yes"; }).length + "/" + idx.length;
+    });
+    o.statement = all ? STATEMENT.all : STATEMENT.part;
+    return o;
+  }
+  // PDF basic form: te same strefy co Word (nagłówek strefy, 2 krany w wierszu, kratka / N/A, zdanie w szarej ramce).
+  // pdf: jsPDF z czcionką „DV”; x, w: komórka ramki (mm); y: start; room(h): łamie stronę, gdy trzeba, i zwraca nowy y albo null.
+  // Kolejność w PDF: najpierw obramowania i tła (warstwa 0), potem tekst i kratki (warstwa 1) w kolejności Worda – po kratce
+  // od razu następny tekst (jak w Wordzie: kratka, potem kolejny kran / strefa / zdanie), bez ramek pomiędzy.
+  function rysujStrefy(pdf, f, x, y, w, room) {
+    var p = basicPola(f), gap = 3.4, X = x + 1.9, Wd = w - 3.8, cn = Wd * 12 / 155.2, cw = Wd / 2 - cn, RH = 6.2, HH = 6.2, ops = [];
+    function pg() { return pdf.getCurrentPageInfo().pageNumber; }
+    function d(l, fn) { ops.push({ p: pg(), l: l, fn: fn }); }
+    function at(h) { var ny = room(y, h); if (ny != null) y = ny; }
+    function box(cx, cy, s) { // kratka rysowana: font PDF nie ma ☑/☒
+      var b = 3.4, bx = cx - b / 2, by = cy - b / 2; pdf.setLineWidth(0.25);
+      if (s === "na") { pdf.setFont("DV", "bold"); pdf.setFontSize(8.5); pdf.setTextColor(89, 89, 89); pdf.text("N/A", cx, cy + 1.1, { align: "center" }); pdf.setTextColor(0, 0, 0); return; }
+      var c = s === "yes" ? [30, 138, 60] : [198, 40, 40]; pdf.setDrawColor(c[0], c[1], c[2]); pdf.rect(bx, by, b, b); pdf.setLineWidth(0.45);
+      if (s === "yes") pdf.lines([[0.95, 1.05], [1.7, -2.1]], bx + 0.6, by + 1.7);
+      else { pdf.line(bx + 0.7, by + 0.7, bx + b - 0.7, by + b - 0.7); pdf.line(bx + b - 0.7, by + 0.7, bx + 0.7, by + b - 0.7); }
+      pdf.setDrawColor(0); pdf.setLineWidth(0.4);
+    }
+    (f.strefy || []).forEach(function (z, k) {
+      var nr = Math.ceil(z[1].length / 2); at(gap + HH + RH * Math.min(nr, 2)); y += gap;
+      var hy = y, ht = z[0].toUpperCase() + "   \u00b7   " + p["zone" + (k + 1)];
+      d(0, function () { pdf.setFillColor(31, 78, 95); pdf.rect(X, hy, Wd, HH, "F"); });
+      d(1, function () { pdf.setFont("DV", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(255, 255, 255); pdf.text(ht, X + 1.5, hy + 4.3); pdf.setTextColor(0, 0, 0); });
+      y += HH;
+      for (var r = 0; r < nr; r++) {
+        pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
+        var cells = [0, 1].map(function (c) { var nm = z[1][r * 2 + c], t = nm == null ? null : f.taps.filter(function (q) { return q.name === nm; })[0];
+          return t ? { t: t, ls: pdf.splitTextToSize(nm + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
+        // notatka łamie się w komórce jak w Wordzie; bardzo długa – w partiach po 30 linii na kolejnych stronach (jak {details})
+        var nl = Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; }));
+        for (var j = 0; j * 30 < nl; j++) {
+          var rh = Math.max(RH, Math.min(30, nl - j * 30) * 4.2 + 2);
+          at(rh);
+          cells.forEach(function (q, c) {
+            var cx = X + c * (cw + cn), ry = y, jj = j, hh = rh;
+            d(0, function () { pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(cx, ry, cw, hh); pdf.rect(cx + cw, ry, cn, hh); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
+            if (!q) return;
+            var part = q.ls.slice(jj * 30, jj * 30 + 30);
+            d(1, function () {
+              if (part.length) { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(part, cx + 1.5, ry + 4.2); }
+              if (!jj) box(cx + cw + cn / 2, ry + hh / 2, q.t.state);
+            });
+          });
+          y += rh;
+        }
+      }
+    });
+    pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
+    var ls = pdf.splitTextToSize(p.statement, Wd - 3), sh = ls.length * 4.2 + 3.6; at(gap + sh); y += gap;
+    var sy = y;
+    d(0, function () { pdf.setFillColor(242, 242, 242); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(X, sy, Wd, sh, "FD"); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
+    d(1, function () { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(ls, X + 1.5, sy + 4.6); });
+    y += sh;
+    var last = pg(), strony = [];
+    ops.forEach(function (o) { if (strony.indexOf(o.p) < 0) strony.push(o.p); });
+    strony.forEach(function (s) { pdf.setPage(s); [0, 1].forEach(function (l) { ops.forEach(function (o) { if (o.p === s && o.l === l) o.fn(); }); }); });
+    pdf.setPage(last);
+    return y + 2;
+  }
+  // Szkic Flushingu po zmianie listy kranów (DATA-002, uwaga Codex #187): odpowiedzi i notatki zostają przy swoich kranach.
+  // Szkic z nazwami (od 21/11/2026) – po nazwie; starszy bez nazw – po kolejności, gdy lista tylko skrócona na końcu (TB: apartamenty 17–20).
+  // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
+  // mapaKranow: stary indeks kranu → nowy indeks albo null (kranu już nie ma na liście); null, gdy szkicu nie da się przenieść.
+  // Zdjęcia usuniętych kranów stają się zwykłymi zdjęciami (widoczne i usuwalne w edytorze), nie giną i nie wiszą bez podpisu.
+  function mapaKranow(dfl, names) {
+    if (!dfl || !dfl.taps || !names) return null;
+    var old = dfl.names;
+    if (old && old.length === dfl.taps.length) return old.map(function (n) { var i = names.indexOf(n); return i < 0 ? null : i; });
+    if (!old && dfl.taps.length >= names.length) return dfl.taps.map(function (t, i) { return i < names.length ? i : null; });
+    return null;
+  }
+  function migrujSzkic(dfl, names) {
+    var m = mapaKranow(dfl, names); if (!m) return null;
+    var taps = names.map(function () { return { state: "yes", note: "" }; });
+    m.forEach(function (n, i) { if (n != null) taps[n] = dfl.taps[i]; });
+    var out = {}; Object.keys(dfl).forEach(function (k) { out[k] = dfl[k]; });
+    out.taps = taps; out.names = names.map(String); out.open = {};
+    return out;
+  }
+  var api = { fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);

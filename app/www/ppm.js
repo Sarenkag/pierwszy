@@ -59,14 +59,22 @@ window.OEST_PPM = {
       { key: "mechanical", name: "Mechanical plant room", loc: "TB External access" } ],
     plantCps: ["Secure", "Clean", "Access", "Lighting", "No leaks", "Panel secure"],
     plantCpsMonthly: ["No active alarms", "Emergency lighting"],
-    // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (moduly/wzory/flush.docx)
+    // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (moduly/wzory/flush.docx).
+    // strefy (Grzegorz 21/11/2026): grupy kranów basic form (moduly/wzory/flush-basic-*.docx, generator app/scripts/flush-basic-wzory.py);
+    // każdy kran dokładnie w jednej strefie. TB bez apartamentów (Grzegorz 21/11/2026: znikają z apki i z raportu).
     flush: {
-      TA: { title: "Weekly Taps/Shower Flushing Record Tower A", building: "A", taps: ["Disable Toilet LG", "Toilet LG", "Kitchen next to Pantree", "Bin Store", "Kitchen UL",
-        "Bar Area Level 49", "Private Dining", "Toilet Level 49", "Disable Toilet Level 49", "Meeting Area Level 49", "Disable Toilet/Shower UG", "Roof Level"] },
-      TB: { title: "Weekly Taps/Shower Flushing Record Tower B", building: "B", taps: ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room",
+      TA: { title: "Weekly Taps/Shower Flushing Record Tower A", wzorBasic: "flush-basic-ta", building: "A", taps: ["Disable Toilet LG", "Toilet LG", "Kitchen next to Pantree", "Bin Store", "Kitchen UL",
+        "Bar Area Level 49", "Private Dining", "Toilet Level 49", "Disable Toilet Level 49", "Meeting Area Level 49", "Disable Toilet/Shower UG", "Roof Level"],
+        strefy: [["Level 49", ["Bar Area Level 49", "Private Dining", "Meeting Area Level 49", "Toilet Level 49", "Disable Toilet Level 49"]],
+          ["Ground Floors (LG / UG)", ["Disable Toilet LG", "Toilet LG", "Disable Toilet/Shower UG", "Kitchen next to Pantree", "Kitchen UL"]],
+          ["Back of House", ["Bin Store", "Roof Level"]]] },
+      TB: { title: "Weekly Taps/Shower Flushing Record Tower B", wzorBasic: "flush-basic-tb", building: "B", taps: ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room",
         "Hairdresser Room", "Disable Toilet LG", "Studio", "Fitness 1", "Fitness 2 Learner", "SPA", "Cycle Store", "Office Sink",
-        "Shower Disable Toilet", "Shower in SPA", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107"] },
-      P: { title: "Weekly Taps/Shower Flushing Record Pavilion", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"] },
+        "Shower Disable Toilet", "Shower in SPA"],
+        strefy: [["Spa & Wellness", ["SPA", "SPA Hall (Toilets)", "SPA Chemical Room", "Shower in SPA", "Massage Hall", "Massage Room", "Hairdresser Room"]],
+          ["Fitness", ["Studio", "Fitness 1", "Fitness 2 Learner"]], ["Common Areas & Office", ["Disable Toilet LG", "Shower Disable Toilet", "Office Sink"]],
+          ["Back of House", ["Roof", "Bin Stores", "Cycle Store"]]] },
+      P: { title: "Weekly Taps/Shower Flushing Record Pavilion", wzorBasic: "flush-basic-p", building: "Pavilion", taps: ["Unisex Toilet", "Disabled Toilet"], strefy: [["Toilets", ["Unisex Toilet", "Disabled Toilet"]]] },
       // AOV Tower B (Grzegorz 03/11/2026): 3 przyciski pod 2 grupami klap. Lista punktów (bez tygodnia i bez wzoru Word): tak jak krany, Yes/No/N/A + 📷 + 📝, domyślnie Yes.
       // Weekly Spa Checks (Grzegorz 13/11/2026): bez zdjęcia ręcznego formularza – lista potwierdzeń (Yes/No/N/A + 📷 + 📝, domyślnie Yes)
       // i zdjęcia z plant roomów Spa. „Spa” = spa pool + plunge pool. Przycisk „Formularz” zostaje na zaś, ale nie jest wymagany (sheet: false).
