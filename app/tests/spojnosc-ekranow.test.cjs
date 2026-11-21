@@ -11,7 +11,7 @@ function walk(d, base, top) { for (const e of fs.readdirSync(d, { withFileTypes:
 walk(WWW, WWW, true); for (const g of GEN) walk(path.join(ROOT, g), ROOT, false);
 const rel = ([p, base]) => path.relative(base, p).split(path.sep).join('/'), read = ([p]) => fs.readFileSync(p, 'utf8');
 // wspólne moduły okienek/nakładek i zastane miejsca (lista może tylko maleć)
-const BODY_OK = new Set(['moduly/przycisk/przycisk.js', 'moduly/aparat/aparat.js', 'moduly/notatki/glos.js', 'moduly/odczyt/odczyt.js', 'zdjecia-ui.js', 'update.js', 'inspekcje/index.html', 'inspekcje/form-ui.js']);
+const BODY_OK = new Set(['moduly/przycisk/przycisk.js', 'moduly/aparat/aparat.js', 'moduly/notatki/glos.js', 'moduly/odczyt/odczyt.js', 'zdjecia-ui.js', 'inspekcje/index.html', 'inspekcje/form-ui.js']);
 test('żaden ekran nie otwiera window.open() (w WebView dokleja treść pod wszystkie ekrany)', () => {
   const bad = files.filter(f => /\b(?:w|window|self|globalThis)\.open\s*\(/.test(read(f))).map(rel);
   assert.deepEqual(bad, [], 'window.open() w: ' + bad.join(', ') + ' – użyj OESTPrzycisk.ask({node})');
