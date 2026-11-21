@@ -157,6 +157,12 @@
     o.statement = all ? st[0] : st[1];
     return o;
   }
+  // Szkic Flushingu po zmianie listy kranów (DATA-002, uwaga Codex #187): odpowiedzi i notatki zostają przy swoich kranach.
+  // Szkic z nazwami (od 21/11/2026) – po nazwie; starszy bez nazw – po kolejności, gdy lista tylko skrócona na końcu (TB: apartamenty 17–20).
+  // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
+  // mapaKranow: stary indeks kranu → nowy indeks albo null (kranu już nie ma na liście); null, gdy szkicu nie da się przenieść.
+  // Zdjęcia usuniętych kranów stają się zwykłymi zdjęciami (widoczne i usuwalne w edytorze), nie giną i nie wiszą bez podpisu.
+  // nowa lista: wszystko Yes; domyslne (Generator) = wartość wpisana od razu, do poprawy (Grzegorz 21/11/2026)
   function start(F) { var t = F.taps || []; return { on: false, week: 0, open: {}, names: t.map(String), taps: t.map(function (nm) { return { state: "yes", note: (F.domyslne && F.domyslne[nm]) || "" }; }) }; }
   function mapaKranow(dfl, names) {
     if (!dfl || !dfl.taps || !names) return null;

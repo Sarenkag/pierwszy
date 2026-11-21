@@ -23,7 +23,6 @@ function docxHighlighted(buf) {
 // Liczba obrazów w Word (word/media/*).
 function docxImages(buf) { return Object.keys(new PizZip(buf).files).filter(f => /^word\/media\/[^/]+$/.test(f)).length; }
 
-// Tekst PDF: rozpakowane strumienie (FlateDecode) i napisy z operatorów Tj/TJ. Wystarcza dla PDF z jsPDF (czcionki standardowe).
 // PDF czytany gotową biblioteką pdf.js (pdf-czytaj.mjs) – PDF raportów robi LibreOffice, nie nasz rysownik (Grzegorz 21/11/2026).
 const czytane = new WeakMap();
 function pdfCzytaj(buf) {

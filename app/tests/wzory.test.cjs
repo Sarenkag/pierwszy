@@ -20,7 +20,7 @@ test('w module nie ma innych plików .docx niż zarejestrowane', () => {
   const docx = fs.readdirSync(DIR).filter(f => /\.docx$/i.test(f)).sort();
   assert.deepEqual(docx, W.lista().map(w => w.plik).sort());
 });
-test('każdy wzór ma dokładnie swoje pola (żaden nieznany nawias, żadne pole bez nawiasu)', () => {
+test('każdy wzór (dla środka: plik środka) ma dokładnie swoje pola (żaden nieznany nawias, żadne pole bez nawiasu)', () => {
   for (const w of W.lista()) assert.deepEqual(nawiasy(fs.readFileSync(path.join(DIR, w.plik))), [...w.pola].sort(), w.id);
 });
 test('każde pole każdego wzoru jest we wspólnym słowniku', () => {
@@ -66,4 +66,32 @@ test('każda inspekcja z własnym wzorem (ppm.js „wzor”) wskazuje wzór z mo
   przejdz(P.forms);
   assert.deepEqual([...new Set(uzyte)].sort(), ['plant', 'temp-tb']);
   for (const u of uzyte) assert.ok(ids.includes(u), u);
+});
+
+// RAMKA + ŚRODEK (Grzegorz 21/11/2026 17:33: „jak zmienisz w jednym, wszystko się zmieni”): środek wkładany w AKTUALNĄ ramkę basic.docx
+test('ramka + środek: bajty() wkłada plik środka w basic.docx; ramka bez zmian, kopii ramki w module nie ma', () => {
+  globalThis.PizZip = PizZip;
+  const B = fs.readFileSync(path.join(DIR, 'basic.docx')); W.ustaw('basic', B);
+  const xml = b => new PizZip(b).file('word/document.xml').asText();
+  const wiersze = x => { const t = x.slice(x.indexOf('<w:tbl>'), x.indexOf('</w:tbl>') + 8); return t.split('</w:tr>').slice(0, -1).map(r => r.replace(/<[^>]+>/g, '')); };
+  const rb = wiersze(xml(B)), ti = rb.findIndex(r => r.includes('{title}')), wi = rb.findIndex(r => r.includes('Works Complete'));
+  const srodki = W.lista().filter(w => w.ramka);
+  assert.deepEqual(srodki.map(w => w.id).sort(), ['flush-basic-p', 'flush-basic-ta', 'flush-basic-tb', 'gen-basic']);
+  for (const w of srodki) {
+    assert.equal(w.ramka, 'basic', w.id);
+    const S = fs.readFileSync(path.join(DIR, w.plik)); W.ustaw(w.id, S);
+    assert.ok(!/Works Complete|\{title\}|\{site\}/.test(xml(S).replace(/<[^>]+>/g, '')), w.id + ': plik środka nie zawiera ramki');
+    const zl = W.bajty(w.id), tz = xml(zl).replace(/<[^>]+>/g, '');
+    // pola złożonego Worda = pola ramki bez condition/details + pola środka
+    const ramkaPola = W.pola('basic').filter(p => p !== 'condition' && p !== 'details');
+    assert.deepEqual(nawiasy(zl), [...new Set([...ramkaPola, ...w.pola])].sort(), w.id);
+    // góra i dół ramki identyczne z basic.docx; zmiana ramki = zmiana w każdym złożonym raporcie
+    const gora = rb.slice(0, ti + 1).join(''), dol = rb.slice(wi).join('');
+    const tb = xml(B).replace(/<[^>]+>/g, ''), pre = tb.slice(0, tb.indexOf(gora) + gora.length), post = tb.slice(tb.lastIndexOf(dol));
+    assert.ok(pre.length > gora.length - 1 && tz.startsWith(pre), w.id + ': góra ramki'); assert.ok(tz.endsWith(post), w.id + ': dół ramki');
+    const zmieniona = new PizZip(B); zmieniona.file('word/document.xml', xml(B).replace('Works Complete', 'Works Completed TEST'));
+    W.ustaw('basic', zmieniona.generate({ type: 'nodebuffer' }));
+    assert.ok(xml(W.bajty(w.id)).includes('Works Completed TEST'), w.id + ': zmiana ramki trafia do raportu');
+    W.ustaw('basic', B);
+  }
 });
