@@ -20,7 +20,7 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "handover/shift/",
+   "id": "handover/shift/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -32,11 +32,11 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "keys/detail/",
+   "id": "keys/detail/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "keys/edit/",
+   "id": "keys/edit/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -56,7 +56,7 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "powertrace/edit/",
+   "id": "powertrace/edit/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -64,7 +64,7 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "powertrace/view/",
+   "id": "powertrace/view/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -80,7 +80,7 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "reactive/complete/",
+   "id": "reactive/complete/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -88,7 +88,7 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "reactive/draft/",
+   "id": "reactive/draft/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
@@ -96,15 +96,15 @@
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "reactive/job/",
+   "id": "reactive/job/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "reactive/new/",
+   "id": "reactive/new/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {
-   "id": "reactive/tree/",
+   "id": "reactive/tree/:id",
    "reason": "Nowa rama Ionic + Vue: pas pod godziną zamiast czarnego, pasek wysyłki w stopce, wysokość 998 px (zgoda Grzegorza 21/11/2026, cmsg_01XEAk2s9PJV8mCFfCy1yHHT34ZCjwwSL1nkEHusvkErzF)."
   },
   {

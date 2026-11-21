@@ -205,6 +205,8 @@ function analyse(www, opts) {
 }
 
 // ---------- IONIC (21/11/2026): ekrany na Ionic + Vue, nic własnego obok ----------
+const POLA = new Set(['ion-input', 'ion-select', 'ion-textarea', 'ion-datetime-button', 'ion-toggle', 'ion-checkbox']);
+const POLE_INNE = new Set(['ion-radio-group', 'ion-radio', 'ion-picker', 'ion-picker-column', 'ion-picker-column-option', 'ion-segment', 'ion-segment-button', 'ion-range', 'ion-input-otp']);
 const IONIC_TAGI = new Set(['template', 'component', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'slot', 'strong', 'b', 'small', 'br']);
 function ionic(www, src, add) {
   const ROOT = path.resolve(www, '../..'), SZK = path.join(ROOT, 'moduly/szkielet/src');
@@ -239,6 +241,17 @@ function ionic(www, src, add) {
         if (/(^|\s):?style\s*=/.test(atr)) add(`IONIC|style|${rel}`, 'IONIC', `${rel}: atrybut style= (wygląd tylko z Ionic i zmiennych motywu).`);
         const kl = (atr.match(/(?:^|\s)class\s*=\s*"([^"]*)"/) || [])[1];
         for (const k of (kl || '').split(/\s+/).filter(Boolean)) if (!k.startsWith('ion-') && !wolno('klasa:' + k)) add(`IONIC|wlasna-klasa|${rel}|${k}`, 'IONIC', `${rel}: własna klasa „${k}” (dozwolone klasy Ionic ion-* albo wyjątek z „tak” Grzegorza).`);
+      }
+      // pola formularza (Grzegorz 21/11: „4 listy, każda inna”): jeden sposób na każdy rodzaj pola, zawsze w ion-item (ten sam wygląd).
+      // Wybór z listy = ion-select (bez dodatkowego przycisku „Wybierz z listy”), data/godzina = ion-datetime-button + ion-datetime w ion-modal.
+      const stos = [];
+      for (const g of bez.matchAll(/<(\/?)([a-z][\w-]*)\b([^>]*?)(\/?)>/g)) {
+        const zamk = g[1] === '/', tag = g[2], sam = g[4] === '/' || /^(img|br|input)$/.test(tag);
+        if (zamk) { const i = stos.lastIndexOf(tag); if (i >= 0) stos.length = i; continue; }
+        if (POLE_INNE.has(tag) && !wolno('element:' + tag)) add(`IONIC|pole-inne|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> – wybór z listy tylko przez ion-select, data przez ion-datetime-button (jeden sposób w całej apce).`);
+        if (POLA.has(tag) && !stos.includes('ion-item')) add(`IONIC|pole-poza-item|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> poza ion-item – każde pole w ion-item, żeby wszystkie wyglądały tak samo.`);
+        if (tag === 'ion-datetime' && !stos.includes('ion-modal')) add(`IONIC|data-poza-modal|${rel}`, 'IONIC', `${rel}: <ion-datetime> poza ion-modal – data tylko przez ion-datetime-button (ten sam wygląd co inne pola).`);
+        if (!sam) stos.push(tag);
       }
       if (/<style\b/.test(c)) add(`IONIC|style|${rel}`, 'IONIC', `${rel}: blok <style> w ekranie (wygląd tylko z Ionic i zmiennych motywu).`);
     }

@@ -7,6 +7,8 @@ Wzór: `src/ekrany/Ustawienia.vue` (ekran `settings`). Jeden ekran = jeden PR. B
    - Nie wolno: własnych `button`/`input`/`a`/`ul`/`dialog`, `style=`, `<style>` ani klas spoza `ion-*`.
    - Teksty zawsze jako `T('polski', 'English')`.
    - Przejście: `data-nav="<id z ekrany.json>"`. Strzałka i Wstecz telefonu są w ramie.
+   - **Pola formularza – jeden sposób w całej apce** (Grzegorz 21/11: „4 listy, każda inna”): każde pole w `ion-item`; wybór z listy = `ion-select` (bez dodatkowego przycisku „Wybierz z listy”); data/godzina = `ion-datetime-button` + `ion-datetime` w `ion-modal`; tekst = `ion-input`/`ion-textarea`; tak/nie = `ion-toggle`. Bez `ion-radio-group`, `ion-segment`, pigułek ani własnych rozwijanych list. Bramka to sprawdza.
+   - Nazwy (tytuły, kafelki) krótkie – test PL/EN sprawdza, że w obu językach mieszczą się w zarezerwowanym miejscu.
    - Okienka: `alertController`, `modalController` i `actionSheetController` z `@ionic/vue`.
 3. **Dopisz ekran do `src/ekrany/index.js`** (`EKRANY_VUE`) pod tym samym `id` co w `moduly/ekrany/ekrany.json`.
 4. **Usuń stary kod ekranu:**

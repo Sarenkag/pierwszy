@@ -196,7 +196,7 @@
     {
       "id": "IONIC|ekran|settings/account",
       "rule": "IONIC",
-      "detail": "Ekran settings/account (Konto i bezpieczeństwo) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
+      "detail": "Ekran settings/account (Konto) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
