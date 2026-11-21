@@ -39,7 +39,8 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
       if (!runs.length) { bezTekstu.push(id + ':' + cz); continue; }
       // Word: tekst Calibri, kratki Wingdings 2 (D2)
       for (const r of runs) {
-        const kratka = r.sym || KRATKA.test(r.text), ok = kratka ? rodzina(r.font) === 'wingdings2' : rodzina(r.font) === 'calibri';
+        // w Wordzie dokładnie te nazwy (bez zamienników – Carlito/OpenSymbol dopuszczalne tylko w PDF)
+        const kratka = r.sym || KRATKA.test(r.text), nz = String(r.font || '').replace(/\s+/g, '').toLowerCase(), ok = kratka ? nz === 'wingdings2' : nz === 'calibri';
         sprawdzen++; if (ok) continue;
         dodaj('word:' + id + ':' + cz + ':' + r.part.replace(/\d+$/, '') + ':' + (r.font || 'brak'), id + ': „' + w.name + '” ' + (kratka ? 'kratka' : 'tekst') + ' „' + r.text.slice(0, 40) + '” czcionką ' + (r.font || '(brak – Word dobiera sam)'));
       }
@@ -49,12 +50,16 @@ const czesc = n => n.replace(/^.*?( - [^.]+)?\.(docx|pdf)$/, (_, s) => s ? s.sli
       if (!sp(pr.length > 0, id + ': „' + p.name + '” bez żadnego napisu z czcionką (Tf), a Word ma tekst')) continue;
       const zle = new Set(), wszystkie = [...new Set(runs.filter(r => !r.sym && !KRATKA.test(r.text)).map(r => r.font || 'brak'))];
       for (const t of pr) {
-        let ocz;
-        if (KRATKA.test(t.text)) ocz = [...new Set(runs.filter(r => r.sym || KRATKA.test(r.text)).map(r => r.font || 'brak'))];
-        else { const ft = flat(t.text), zak = new Set([/[\u0000-\u007f]/.test(t.text) && 'ascii', /[^\u0000-\u007f]/.test(t.text) && 'hAnsi']); ocz = [...new Set(runs.filter(r => !r.sym && zak.has(r.zakres) && flat(r.text).length > 1 && (flat(r.text).includes(ft) || ft.includes(flat(r.text)))).map(r => r.font || 'brak'))]; }
-        if (!ocz.length) ocz = wszystkie;
-        sprawdzen++; if (ocz.some(f => rodzina(f) === rodzina(t.font))) continue;
-        for (const f of ocz) { zle.add(f); dodaj('pdf:' + id + ':' + cz + ':' + f + '→' + t.font, id + ': „' + p.name + '” napis „' + t.text.slice(0, 40) + '” czcionką ' + t.font + ', w Wordzie ' + ocz.join(' / ')); }
+        // oczekiwane czcionki osobno dla każdego zakresu znaków napisu (ASCII → w:ascii, pozostałe → w:hAnsi): każdy zakres musi się zgadzać
+        const fonty = rr => [...new Set(rr.map(r => r.font || 'brak'))];
+        let grupy;
+        if (KRATKA.test(t.text)) grupy = [fonty(runs.filter(r => r.sym || KRATKA.test(r.text)))];
+        else { const ft = flat(t.text), pas = r => !r.sym && flat(r.text).length > 1 && (flat(r.text).includes(ft) || ft.includes(flat(r.text)));
+          grupy = ['ascii', 'hAnsi'].filter(z => (z === 'ascii' ? /[\u0000-\u007f]/ : /[^\u0000-\u007f]/).test(t.text.replace(/\s+/g, ''))).map(z => fonty(runs.filter(r => r.zakres === z && pas(r)))); }
+        grupy = grupy.filter(g => g.length); if (!grupy.length) grupy = [wszystkie];
+        const zleG = grupy.filter(g => !g.some(f => rodzina(f) === rodzina(t.font)));
+        sprawdzen++; if (!zleG.length) continue;
+        for (const ocz of zleG) for (const f of ocz) { zle.add(f); dodaj('pdf:' + id + ':' + cz + ':' + f + '→' + t.font, id + ': „' + p.name + '” napis „' + t.text.slice(0, 40) + '” czcionką ' + t.font + ', w Wordzie ' + ocz.join(' / ')); }
       }
       // czcionka z Worda, której nie ma w żadnym napisie PDF i nie wyszła wyżej (np. kratki Wingdings 2 narysowane w PDF kreskami)
       const wPdf = new Set(pr.map(t => rodzina(t.font)));

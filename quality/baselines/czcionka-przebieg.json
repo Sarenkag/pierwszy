@@ -111,7 +111,7 @@
     },
     {
       "id": "pdf:EFA-INS-008:raport:Calibri→DV",
-      "maks": 30,
+      "maks": 32,
       "reason": "EFA-INS-008: „Weekly Spa Checks 21112026 3000618.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
@@ -286,7 +286,7 @@
     },
     {
       "id": "pdf:EFA-INS-019:raport:Calibri→DV",
-      "maks": 27,
+      "maks": 32,
       "reason": "EFA-INS-019: „AOV Operation Test TB 21112026 3000614.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
@@ -341,7 +341,7 @@
     },
     {
       "id": "pdf:EFA-INS-022:raport:Calibri→DV",
-      "maks": 39,
+      "maks": 40,
       "reason": "EFA-INS-022: „Monthly Lighting Checks 21112026 3029025.pdf” napis „Engineers Report” czcionką DV, w Wordzie Calibri"
     },
     {
@@ -381,7 +381,7 @@
     },
     {
       "id": "pdf:EFA-INS-024:raport:Calibri→DV",
-      "maks": 182,
+      "maks": 202,
       "reason": "EFA-INS-024: „Water Temperature Checks TB 21112026 3029023.pdf” napis „Circle / highlight sampling year and mon” czcionką DV, w Wordzie Calibri"
     },
     {
@@ -446,7 +446,7 @@
     },
     {
       "id": "pdf:REACTIVE:raport:Times New Roman→DV",
-      "maks": 4,
+      "maks": 7,
       "reason": "REACTIVE: „REACTIVE Door handle detached 21112026 3123456.pdf” napis „ONE EASTSIDE TOWER” czcionką DV, w Wordzie Calibri / Times New Roman / Arial"
     },
     {
