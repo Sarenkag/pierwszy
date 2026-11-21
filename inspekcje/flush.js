@@ -220,6 +220,8 @@
   // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
   // mapaKranow: stary indeks kranu → nowy indeks albo null (kranu już nie ma na liście); null, gdy szkicu nie da się przenieść.
   // Zdjęcia usuniętych kranów stają się zwykłymi zdjęciami (widoczne i usuwalne w edytorze), nie giną i nie wiszą bez podpisu.
+  // nowa lista: wszystko Yes; domyslne (Generator) = wartość wpisana od razu, do poprawy (Grzegorz 21/11/2026)
+  function start(F) { var t = F.taps || []; return { on: false, week: 0, open: {}, names: t.map(String), taps: t.map(function (nm) { return { state: "yes", note: (F.domyslne && F.domyslne[nm]) || "" }; }) }; }
   function mapaKranow(dfl, names) {
     if (!dfl || !dfl.taps || !names) return null;
     var old = dfl.names;
@@ -235,6 +237,6 @@
     out.taps = taps; out.names = names.map(String); out.open = {};
     return out;
   }
-  var api = { fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
+  var api = { start: start, fill: fill, migrujSzkic: migrujSzkic, mapaKranow: mapaKranow, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);
