@@ -189,13 +189,13 @@
           var rh = Math.max(RH, Math.min(30, nl - j * 30) * 4.2 + 2);
           at(rh);
           cells.forEach(function (q, c) {
-            var cx = X + c * (cw + cn), ry = y, jj = j;
-            d(0, function () { pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(cx, ry, cw, rh); pdf.rect(cx + cw, ry, cn, rh); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
+            var cx = X + c * (cw + cn), ry = y, jj = j, hh = rh;
+            d(0, function () { pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(cx, ry, cw, hh); pdf.rect(cx + cw, ry, cn, hh); pdf.setDrawColor(0); pdf.setLineWidth(0.4); });
             if (!q) return;
             var part = q.ls.slice(jj * 30, jj * 30 + 30);
             d(1, function () {
               if (part.length) { pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(part, cx + 1.5, ry + 4.2); }
-              if (!jj) box(cx + cw + cn / 2, ry + rh / 2, q.t.state);
+              if (!jj) box(cx + cw + cn / 2, ry + hh / 2, q.t.state);
             });
           });
           y += rh;

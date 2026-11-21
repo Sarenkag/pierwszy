@@ -76,3 +76,9 @@ test('PDF basic Flushing: bardzo długa notatka dzielona na partie po 30 linii, 
 test('zdjęcia kranów idą za kranem; usunięty kran (apartament TB) → zdjęcie ogólne, nie osierocone (uwaga Codex #187)',()=>{
   const n=P.forms.flush.TB.taps;assert.deepEqual(F.mapaKranow({taps:Array(20).fill({state:'yes'})},n),[...n.map((_,i)=>i),null,null,null,null]);
   assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});
+test('PDF basic Flushing: każdy wiersz ma swoją wysokość także przy odroczonym rysowaniu (uwaga Codex #187)',()=>{
+  const rects=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='rect'?((x,y,w,h)=>{rects.push([y,h]);return pdf;}):k==='splitTextToSize'?(s=>s.indexOf('LONG')>=0?Array(10).fill('L'):[s]):nop});
+  const f=P.forms.flush.TB,fl={taps:f.taps.map(n=>({name:n,state:'yes',note:n==='Cycle Store'?'LONG':''})),strefy:f.strefy};
+  F.rysujStrefy(pdf,fl,15,60,180,()=>null);
+  const h=[...new Set(rects.map(r=>Math.round(r[1]*100)/100))];assert.ok(h.includes(6.2));assert.ok(h.includes(10*4.2+2));
+  const ys=rects.filter(r=>Math.abs(r[1]-(10*4.2+2))<1e-9).map(r=>r[0]);assert.equal(ys.length,4);assert.equal(new Set(ys).size,1);});
