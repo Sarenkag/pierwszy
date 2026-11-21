@@ -3,11 +3,11 @@
    podgląd Summary / Description do poprawy przed wysłaniem, zlecenie, potem przy zleceniu pliki: zdjęcie kartki, nasz Basic form (PDF), zdjęcia;
    „⚠ Vantify” dosyła brakujące. Stan zlecenia zapamiętany dla tej inspekcji i dnia – drugi raz tego samego nie założy.
    Typ włącza przycisk polem vantify: true (ppm.js). Strona podaje: $, T, zbuduj (buildAll), dzien (data → rrrr-mm-dd), blad (tekst błędu)
-   i stan() = { typ, ppm, data, raport (flushReport), blokada („Wyślij” zablokowane), zajete }. */
+   i stan() = { typ, tryb (tylko „one” – raport na urządzenie), ppm, data, raport (flushReport), blokada („Wyślij” zablokowane), zajete }. */
 (function (w) {
   'use strict';
   var o = null, draft = null;
-  function on(s) { return !!(o && w.OESTReactiveVantify && s.typ && s.typ.flush && s.typ.flush.vantify); }
+  function on(s) { return !!(o && w.OESTReactiveVantify && s.tryb === 'one' && s.typ && s.typ.flush && s.typ.flush.vantify); }
   function klucz(s) { return 'oest-vt-' + ((s.ppm && s.ppm.id) || s.typ.id || s.typ.flush.title) + '-' + o.dzien(s.data); }
   function wczytaj(s) { var d = {}; try { var t = w.localStorage.getItem(klucz(s)); if (t) d.vantify = JSON.parse(t); } catch (e) {} return d; }
   function zapisz() {
@@ -20,7 +20,7 @@
   }
   function render() {
     if (!o) return;
-    var s = o.stan(), b = o.$('vtBtn'); b.hidden = !on(s); if (b.hidden) return;
+    var s = o.stan(), b = o.$('vtBtn'); b.hidden = o.$('vtHint').hidden = !on(s); if (b.hidden) return; // bez klocka z Vantify ani przycisku, ani miejsca na komunikat
     draft = wczytaj(s);
     var V = w.OESTReactiveVantify, st = V.state(draft), v = draft.vantify || {}, nowe = st === 'none' || st === 'pending';
     b.disabled = nowe && s.blokada; // jak „Wyślij”: bez zdjęcia kartki i w trakcie zdjęć nie zakłada
