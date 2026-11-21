@@ -376,6 +376,11 @@
       "timeoutSec": 300
     },
     {
+      "file": "app/tests/zrzuty-ui-check.cjs",
+      "passMarker": "ZRZUTY UI PASS",
+      "timeoutSec": 600
+    },
+    {
       "file": "app/tests/flush-odczyt-ui-check.cjs",
       "passMarker": "FLUSH ODCZYT UI PASS",
       "timeoutSec": 300
