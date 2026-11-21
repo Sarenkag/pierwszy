@@ -538,6 +538,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="flush.js"></script>
 <script src="rodzaje.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script>
 // Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
 function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
@@ -2740,7 +2741,13 @@ function makeName(pattern, data, when) {
   // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
-  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
+  var basicRaz = new WeakMap(); // raz na zestaw zdjęć danego raportu: PDF z silnika powstaje z TYCH SAMYCH bajtów basic form, które idą mailem (zip Worda ma datę zapisu)
+  function flushBasicDocx(d, pics) {
+    var k = "", raz = basicRaz.get(d) || {}; basicRaz.set(d, raz);
+    for (var i = 0; i < pics.length; i++) k += pics[i].url + "|";
+    if (raz[k]) return raz[k];
+    var b = flushBasic(d, pics); return (raz[k] = fillDocx(PizZip, docxtemplater, OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }));
+  }
   // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
   function flushBasic(d, pics) {
     var f = d.flush, dd = Object.assign({}, d), sum = f.points ? pointsSummary(f) : OESTFlush.summary(f);
@@ -2863,13 +2870,16 @@ function makeName(pattern, data, when) {
   // r.files = to, co faktycznie idzie mailem.
   // PDF z TEGO SAMEGO Worda (Grzegorz 20/11/2026, „Tak, LibreOfficeKit”): gdy w apce jest silnik LibreOffice, PDF raportu
   // to Word przepuszczony przez silnik (moduly/word-pdf → zWorda), a nie osobny rysunek. Bez silnika (przeglądarka, testy)
-  // albo gdy silnik zawiedzie – zostaje PDF z rysownika jak dotąd. Flushing (formularz + basic form w jednym PDF) na razie bez zmian.
+  // albo gdy silnik zawiedzie – zostaje PDF z rysownika jak dotąd. Flushing i listy punktów (Generator, AOV, Spa – Grzegorz 21/11/2026):
+  // PDF z tych samych Wordów, które idą mailem (formularz firmy + basic form), sklejony w jeden plik (zWordow).
   function buildAll(opt) {
     // wzory Word z modułu Wzory: przed każdym raportem (po błędzie przy starcie – ponowna próba); błąd idzie do zwykłej obsługi (uwaga Codex #186)
     return OESTWzory.wczytaj().then(function () { return buildAllRysowane(opt); }).then(function (r) {
-      if (!r || !window.OESTWordPdf || !OESTWordPdf.dostepny() || (r.data && r.data.flush) || !r.docx || !r.docx.length) return r;
+      // r.wordDocs: Wordy, z których ma powstać PDF (Flushing / listy punktów / raport ze zdjęć kartki); inaczej r.docx
+      var wiele = !!(r && r.wordDocs);
+      if (!r || !window.OESTWordPdf || !OESTWordPdf.dostepny() || (!wiele && (!r.docx || !r.docx.length))) return r;
       var glowne = (r.files || []).filter(function (f) { return /\.pdf$/.test(f.name) && (f.name === r.name + ".pdf" || f.name === r.name + " - report.pdf"); });
-      return OESTWordPdf.zWorda(r.docx).then(function (pdf) {
+      return (wiele ? OESTWordPdf.zWordow(r.wordDocs) : OESTWordPdf.zWorda(r.docx)).then(function (pdf) {
         if (!pdf) return r;
         glowne.forEach(function (f) { f.bytes = pdf; });
         // r.pdf = pełny PDF do archiwum (ponowna wysyłka z Raportów): podmieniamy go tylko, gdy Word ma wszystkie zdjęcia (uwaga Codex #173).
@@ -2889,13 +2899,13 @@ function makeName(pattern, data, when) {
       var sel = pick(r.pics), files = [], sh = sel.filter(function (p) { return p.sheet; }), rest = sel.filter(function (p) { return !p.sheet; });
       var wantForm = !!form, word = n.xw && form && ((form.docx && form.docx.length) || form.basic), main = form && form.docx && form.docx.length;
       if (n.one) { // jeden dokument: raport → zdjęcia formularza → zdjęcia (Word nie scala zdjęć: idzie obok, gdy zaznaczony)
-        if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); }
+        if (n.xp || !word) { var one = wantForm ? form.pdf(sel) : sel.length ? photosPdf(sel) : null; if (one) files.push(file("", PDF, one)); if (wantForm && form.word) r.wordDocs = [form.docx, form.basic(sel)]; }
         else if (sel.length) files.push(file(" - photos", PDF, photosPdf(sel)));
-        if (!form && n.xw && sel.length) files.push(file("", MIME_DOCX, photoDocx(sh.concat(rest), small))); // sam formularz ze zdjęć: ten sam w Wordzie
+        if (!form && n.xw && sel.length) { var fw = photoDocx(sh.concat(rest), small); files.push(file("", MIME_DOCX, fw)); r.wordDocs = [fw]; } // sam formularz ze zdjęć: ten sam w Wordzie, PDF z niego
         if (word && main) files.push(file("", MIME_DOCX, form.docx));
         if (word && form.basic) files.push(file(main ? " - basic" : "", MIME_DOCX, form.basic(sel))); // Flushing: basic form Smart z listą kranów i zdjęciami
       } else {
-        if (wantForm && n.xp) files.push(file(" - report", PDF, form.pdf([])));
+        if (wantForm && n.xp) { files.push(file(" - report", PDF, form.pdf([]))); if (form.word) r.wordDocs = [form.docx, form.basic([])]; }
         if (word && main) files.push(file(" - report", MIME_DOCX, form.docx));
         if (word && form.basic) files.push(file(main ? " - basic" : " - report", MIME_DOCX, form.basic([])));
         if (sh.length) files.push(file(" - form", PDF, buildPhotoPdf(sh, small)));
@@ -2921,14 +2931,16 @@ function makeName(pattern, data, when) {
         // formularz (zdjęcia z przycisku „Formularz”) zawsze pierwszy, zdjęcia za nim – niezależnie od kolejności robienia (Grzegorz 12/11/2026)
         if (small) pics = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; }));
         if (!d.flush) {
-          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics, small), pics: pics, info: {}, logoUrl: "" };
+          var r0 = { name: name, data: d, docx: new Uint8Array(0), pdf: pics.length ? photosPdf(pics) : buildPhotoPdf(pics, small), pics: pics, info: {}, logoUrl: "", wordPelny: !!n.one && pick(pics).length === pics.length };
           return done(r0, null);
         }
         d.stan_ogolny = d.stan = d.flush.points ? pointsSummary(d.flush) : OESTFlush.summary(d.flush);
         d.punkty = d.flush.taps.map(function (t) { return t.name + ": " + OESTFlush.LABEL[t.state] + (t.note ? " – " + t.note : ""); });
         var docx = d.flush.points ? new Uint8Array(0) : fillFlushDocx(d.flush);
         var r = { name: name, data: d, docx: docx, pdf: buildFlushPdf(d, pics), pics: pics, info: {}, logoUrl: "" };
-        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx, basic: function (sel) { return flushBasicDocx(d, sel); } });
+        r.wordPelny = !!n.one && pick(pics).length === pics.length;
+        // word: PDF tego raportu z silnika = formularz firmy (jeśli jest) + basic form z tymi samymi zdjęciami
+        return done(r, { pdf: function (sel) { return buildFlushPdf(d, sel); }, docx: docx, basic: function (sel) { return flushBasicDocx(d, sel); }, word: true });
       });
     }
     var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
