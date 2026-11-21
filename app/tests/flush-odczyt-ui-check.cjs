@@ -77,7 +77,10 @@ const jpeg = (pg, [w, h], kolor) => pg.evaluate(([w, h, kolor]) => { const c = d
         sp(x.week === TYDZIEN, 'tydzień ' + x.week + ' zamiast ' + TYDZIEN);
         sp(x.taps.length === nazwy.length, 'kranów ' + x.taps.length + ' zamiast ' + nazwy.length);
         sp(JSON.stringify(x.taps) === JSON.stringify(oczek), 'odpowiedzi kranów inne niż wpisane: ' + JSON.stringify(x.taps.map((t, i) => t.state !== oczek[i].state || t.note !== oczek[i].note ? i + ':' + t.state + '/' + t.note : '').filter(Boolean)));
-        sp(JSON.stringify(x.photos) === JSON.stringify(ZE_ZDJECIEM), 'zdjęcia przy kranach ' + JSON.stringify(x.photos) + ' zamiast ' + JSON.stringify(ZE_ZDJECIEM));
+        // zdjęcia z tap: null to zdjęcia ogólne formularza (kontrakt flush.js, offerRestore) – sprawdzane osobno, dokładnie
+        const przyKranach = x.photos.filter(t => t != null), luzem = x.photos.length - przyKranach.length;
+        sp(JSON.stringify(przyKranach) === JSON.stringify(ZE_ZDJECIEM), 'zdjęcia przy kranach ' + JSON.stringify(przyKranach) + ' zamiast ' + JSON.stringify(ZE_ZDJECIEM));
+        sp(luzem === (kartkaIn ? 1 : 0), 'zdjęć formularza (bez kranu) ' + luzem + ' zamiast ' + (kartkaIn ? 1 : 0));
         sp(!errs.length, 'błędy strony');
         ok.push(id + ' (' + nazwy.length + ' kranów)');
       } finally { await ctx.close(); }
