@@ -213,7 +213,8 @@ const POLA = new Set(['ion-input', 'ion-select', 'ion-textarea', 'ion-datetime-b
 const POLE_INNE = new Set(['ion-radio-group', 'ion-radio', 'ion-picker', 'ion-picker-column', 'ion-picker-column-option', 'ion-segment', 'ion-segment-button', 'ion-range', 'ion-input-otp']);
 const IONIC_TAGI = new Set(['template', 'component', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'slot', 'strong', 'b', 'small', 'br']);
 function ionic(www, src, add) {
-  const ROOT = path.resolve(www, '../..'), SZK = path.join(ROOT, 'moduly/szkielet/src');
+  // repo: www = app/www, źródła szkieletu dwa poziomy wyżej; próbka testowa bramki: wszystko w jednym katalogu
+  const ROOT = fs.existsSync(path.resolve(www, '../../moduly/szkielet/src')) ? path.resolve(www, '../..') : www, SZK = path.join(ROOT, 'moduly/szkielet/src');
   const czytaj = f => { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return null; } };
   const plikW = path.join(ROOT, 'quality/wyjatki-ionic.json'), txtW = czytaj(plikW);
   let wyj = [];
@@ -225,9 +226,10 @@ function ionic(www, src, add) {
   const idx = czytaj(path.join(SZK, 'ekrany/index.js')) || '';
   const m = idx.match(/EKRANY_VUE\s*=\s*\{([^}]*)\}/), vue = new Set(m ? [...m[1].matchAll(/['"]?([\w/:-]+)['"]?\s*:/g)].map(x => x[1]) : []);
   let mapa = null; try { mapa = JSON.parse(fs.readFileSync(path.join(www, 'moduly/ekrany/ekrany.json'), 'utf8')); } catch (e) {}
-  for (const e of (mapa && mapa.ekrany) || []) if (e && e.id && !vue.has(e.id))
+  const lista = mapa && Array.isArray(mapa.ekrany) ? mapa.ekrany : []; // zły kształt mapy zgłasza reguła EKRANY
+  for (const e of lista) if (e && e.id && !vue.has(e.id))
     add('IONIC|ekran|' + e.id, 'IONIC', `Ekran ${e.id} (${e.pl}) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu' });
-  for (const k of vue) if (!((mapa && mapa.ekrany) || []).some(e => e.id === k)) add('IONIC|vue-bez-ekranu|' + k, 'IONIC', `moduly/szkielet/src/ekrany/index.js: ${k} nie ma wpisu w ekrany.json.`);
+  for (const k of vue) if (!lista.some(e => e && e.id === k)) add('IONIC|vue-bez-ekranu|' + k, 'IONIC', `moduly/szkielet/src/ekrany/index.js: ${k} nie ma wpisu w ekrany.json.`);
   if ((src.get('inspekcje/index.html') || '').includes('OESTEkrany.strona('))
     add('IONIC|strona|inspekcje/index.html', 'IONIC', 'Strona inspekcji jest jeszcze poza ramą Ionic/Vue (tylko Wstecz i okienka ze szkieletu).', { punkt: 'Ionic', usuwa: 'przeniesienie inspekcji' });
   // 2. ekrany Vue i rama: tylko komponenty Ionic
@@ -269,7 +271,7 @@ function ionic(www, src, add) {
     }
   }
   // 2b. wspólne moduły, które same rysują interfejs (HTML z kodu) – do zastąpienia komponentami Ionic (licznik do zera)
-  for (const d of fs.readdirSync(path.join(ROOT, 'moduly'), { withFileTypes: true })) {
+  for (const d of fs.existsSync(path.join(ROOT, 'moduly')) ? fs.readdirSync(path.join(ROOT, 'moduly'), { withFileTypes: true }) : []) {
     if (!d.isDirectory() || d.name === 'szkielet') continue;
     const js = fs.readdirSync(path.join(ROOT, 'moduly', d.name)).filter(f => f.endsWith('.js'));
     if (js.some(f => /\binnerHTML\s*[+]?=|insertAdjacentHTML\s*\(|createElement\s*\(/.test(czytaj(path.join(ROOT, 'moduly', d.name, f)) || '')))
