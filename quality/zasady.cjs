@@ -9,11 +9,13 @@
 //   KOPIA   – ta sama funkcja (min. 40 tokenów, R25/JM-2) w dwóch plikach; dwa identyczne pliki (JM-3).
 //   ZNACZNIK – klikalny element (button, a, role=button) bez dokładnie jednego znacznika data-nav / data-okno / data-akcja,
 //             stare znaczniki data-go, data-href, data-open, data-hnews, data-rx, data-key-action, data-pt-action, data-qq (R26).
+//   LOGIKA  – nazwane funkcje w <script> stron index.html i inspekcje/index.html (R27): logika tylko w modułach; liczba może tylko maleć.
 // Identyfikator naruszenia nie ma numerów linii ani liczby trafień (np. JM|historia|keys.js); liczba trafień jest w polu „liczba”.
 // Na liście zastanych wpis ma „maks” = dzisiejsza liczba: więcej trafień → FAIL, mniej → FAIL z prośbą o obniżenie „maks”
 // (lista może tylko maleć; check-ratchet.cjs blokuje podniesienie „maks”).
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
+const { kodWykonywalny } = require('./kod.cjs');
 
 // Skrypty, które apka wstrzykuje do stron Vantify (działają na vantify.com, nie w apce) i pliki danych (wzory raportów, biblioteki).
 const OBCA_STRONA = new Set(['vantify-sync.js', 'vantify-rejestr.js', 'vantify-akcje.js']);
@@ -41,10 +43,14 @@ function bezKomentarzy(src) {
   }
   return out;
 }
+// treść skryptów wpisanych w stronę (bez <script src>)
+function skryptyStrony(html) {
+  return [...html.replace(/<!--[\s\S]*?-->/g, ' ').matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join('\n;\n');
+}
 // komentarze HTML i skrypty: z HTML bierzemy znaczniki (bez <!-- -->) i treść skryptów wpisanych w stronę
 function zHtml(html) {
   const bez = html.replace(/<!--[\s\S]*?-->/g, ' ');
-  const skrypty = [...bez.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join('\n;\n');
+  const skrypty = skryptyStrony(bez);
   const znaczniki = bez.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ');
   return { kod: bezKomentarzy(skrypty), znaczniki };
 }
@@ -180,7 +186,36 @@ function analyse(www, opts) {
     if (brak) add(`ZNACZNIK|brak|${f}`, 'ZNACZNIK', `${f}: ${brak} klikalnych elementów bez dokładnie jednego znacznika ${ZNACZNIKI.join('/')}.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: brak });
     for (const s of STARE) { const n = (c.match(new RegExp('\\b' + s + '\\b(?!-)', 'g')) || []).length; if (n) add(`ZNACZNIK|stary|${f}|${s}`, 'ZNACZNIK', `${f}: stary znacznik ${s} ${n}×.`, { punkt: 'R26/D12', usuwa: 'N1–N3', liczba: n }); }
   }
+
+  // ---------- LOGIKA (R27): logika tylko w modułach, strona tylko łączy moduły ----------
+  // liczy nazwane funkcje w <script> bez src strony; to NIE jest limit długości pliku – nowa funkcja w stronie = FAIL
+  for (const f of STRONY) {
+    if (!src.has(f)) continue;
+    const n = funkcjeStrony(src.get(f));
+    if (n) add(`LOGIKA|${f}`, 'LOGIKA', `${f}: ${n} funkcji zapisanych w <script> strony zamiast w module (moduly/ albo plik obok strony).`, { punkt: 'R27', usuwa: 'K01–K16', liczba: n });
+  }
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+// R27: nazwane funkcje w skryptach wpisanych w stronę – „function nazwa(”, „nazwa = function”, „nazwa = (…) =>”, „nazwa = x =>”;
+// komentarze i treść napisów się nie liczą
+function funkcjeStrony(html) {
+  const kod = kodWykonywalny(skryptyStrony(html)); // bez komentarzy, treści napisów i RegExp; z szablonów zostaje kod ${…}
+  // jedna funkcja = jedna pozycja: „var p = function p()” liczy się raz (pozycja słowa function)
+  const poz = new Set();
+  for (const m of kod.matchAll(/\bfunction\s*\*?\s*[A-Za-z_$][\w$]*\s*\(/g)) poz.add(m.index);
+  const fn = /function\b/y, krotka = /[A-Za-z_$][\w$]*\s*=>/y, strzalka = /\s*=>/y;
+  for (const m of kod.matchAll(/\b[A-Za-z_$][\w$]*\s*=(?![=>])\s*(?:async\s+)?/g)) {
+    const i = m.index + m[0].length;
+    fn.lastIndex = krotka.lastIndex = i;
+    if (fn.test(kod) || krotka.test(kod)) { poz.add(i); continue; }
+    if (kod[i] !== '(') continue;
+    let g = 0, j = i;                       // parametry z zagnieżdżonymi nawiasami: „(x = Number(1)) =>”
+    for (; j < kod.length; j++) { if (kod[j] === '(') g++; else if (kod[j] === ')' && --g === 0) break; }
+    strzalka.lastIndex = j + 1;
+    if (j < kod.length && strzalka.test(kod)) poz.add(i);
+  }
+  return poz.size;
 }
 
 // funkcje z kodu: „function nazwa(…) {…}”, „nazwa = function(…) {…}”, strzałkowe „(…) => {…}” / „x => {…}”
@@ -264,4 +299,4 @@ function poczatekRegExp(c, k) {
   return !!slowo && ['return', 'typeof', 'case', 'in', 'of', 'void', 'delete', 'throw'].includes(slowo[1]);
 }
 
-module.exports = { analyse, bezKomentarzy, MIN_TOKENOW };
+module.exports = { analyse, bezKomentarzy, funkcjeStrony, MIN_TOKENOW };
