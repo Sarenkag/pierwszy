@@ -524,6 +524,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/word-pdf/word-pdf.js"></script>
 <script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
+<script src="../moduly/narzedzia/narzedzia.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
 <script src="../moduly/checkbox/checkbox.js"></script>
@@ -799,7 +800,7 @@ function templateInfo(PizZip, templateBytes) {
 
 // Nazwa pliku według wzoru: {RRRR} {MM} {DD} {GG} {mm} {kod} {urzadzenie} {lokalizacja} {obiekt} {rodzaj} {nr}
 function makeName(pattern, data, when) {
-  function pad(n) { return String(n).padStart(2, "0"); }
+  var pad = window.OESTNarzedzia.pad;
   function clean(s) {
     return String(s || "").replace(/[(),]/g, " ").trim()
       .normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -972,13 +973,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   var APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
   // ---------- pomocnicze ----------
-  function pad(n) { return String(n).padStart(2, "0"); }
-  function fmtDate(d) { return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear(); }
-  function fmtTime(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
-  function isoDay(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  function b64ToBytes(b64) { var s = atob(b64), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
-  function bytesToB64(u8) { var s = "", C = 0x8000; for (var i = 0; i < u8.length; i += C) s += String.fromCharCode.apply(null, u8.subarray(i, i + C)); return btoa(s); }
-  function kb(n) { return n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
+  var NZ = window.OESTNarzedzia; // pad, daty, base64, kb – moduly/narzedzia (K01)
+  // esc zostaje tu do osobnej karty: ta sama funkcja jest w 11 plikach .js, łączymy je wszystkie naraz (audyt nr 53)
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function val(id) { return $(id).value.trim(); }
   function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
@@ -1010,10 +1006,6 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function qPut(it) { return idb("queue", "readwrite", function (s, m) { if (m) m[it.id] = it; else s.put(it); }); }
   function qDel(id) { return idb("queue", "readwrite", function (s, m) { if (m) delete m[id]; else s.delete(id); }); }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
-
-  // ---------- EXIF: data zrobienia zdjęcia ----------
-  // odczyt jest w module zdjęć (jedno miejsce: data na zdjęciu i data inspekcji z tego samego EXIF, 09/11/2026)
-  function exifDate(file) { return window.OESTZdjecia && OESTZdjecia.exifDate ? OESTZdjecia.exifDate(file) : Promise.resolve(null); }
 
   // ---------- ekrany ----------
   var PPM = window.OEST_PPM || null;
@@ -1047,18 +1039,18 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });
 
   // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
-  function doneToday(t) { var d = load("done", {}), day = d[isoDay(new Date())] || {}; return day[t.id] || {}; }
+  function doneToday(t) { var d = load("done", {}), day = d[NZ.dzienIso(new Date())] || {}; return day[t.id] || {}; }
   function markDone(t, code) {
-    var d = load("done", {}), k = isoDay(new Date()), keep = {};
-    keep[k] = d[k] || {}; keep[k][t.id] = keep[k][t.id] || {}; keep[k][t.id][code] = fmtTime(new Date()); save("done", keep);
+    var d = load("done", {}), k = NZ.dzienIso(new Date()), keep = {};
+    keep[k] = d[k] || {}; keep[k][t.id] = keep[k][t.id] || {}; keep[k][t.id][code] = NZ.godzina(new Date()); save("done", keep);
   }
   function waiting(t, code) { return queue.some(function (q) { return q.type === t.id && q.code === code && q.status !== "sent"; }); }
 
   function renderHome() {
-    $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + fmtDate(new Date());
+    $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + NZ.data(new Date());
     function html() { return TYPES.map(function (t) {
       var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
-      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + T(" · od ", " · since ") + esc(fmtDate(new Date(pr.started))) + " "+T("· dotknij, by wznowić", "· tap to resume")+"</span>" :
+      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + T(" · od ", " · since ") + esc(NZ.data(new Date(pr.started))) + " "+T("· dotknij, by wznowić", "· tap to resume")+"</span>" :
         '<span class="sub">' + all.length + T(" urządzeń · dziś zrobione: ", " devices · done today: ") + done + "</span>";
       // jeden kafelek dla całej apki (moduly/kafelek, Grzegorz 04/11)
       if (window.OESTKafelek) return OESTKafelek.html({ name: t.name, sub: (pr && pr.n ? "◐ " : "") + sub.replace(/<[^>]+>/g, "").trim(), badge: pr && pr.n ? pr.n + "/" + all.length : "", cls: "type",
@@ -1287,7 +1279,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     restoring = 0; formSeq++; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
     states = cur.type.checks.map(function (c) { return c.def; }); renderChecks(); renderFaults();
-    $("dzien").value = isoDay(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
+    $("dzien").value = NZ.dzienIso(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
     $("ov-1").checked = true; $("q-0").checked = true;
@@ -1398,7 +1390,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var b = $("restoreIns"); b.hidden = true; restoreList = []; restorePdf = null;
     if (!window.OESTZdjecia || cur.mode !== "one" || !cur.type) return;
     var ctx = copyCtx(), st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
-    var y = isoDay(new Date(Date.now() - 864e5)), from = st && st.day && st.day < y ? st.day : y; // od dnia wysłania, ale najpóźniej od wczoraj
+    var y = NZ.dzienIso(new Date(Date.now() - 864e5)), from = st && st.day && st.day < y ? st.day : y; // od dnia wysłania, ale najpóźniej od wczoraj
     // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
     var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
     var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
@@ -1582,13 +1574,13 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var d = { data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: pts, quote: "", site: cfg.site, komentarz: "", zakres: "", temps: slots.map(function (s, i) { var n = tempNum(temps[i]); return n === null ? "" : String(n); }),
       stan_ogolny: outN ? outN + " reading(s) out of range – record in the Fault and Remedial Actions Log" : "All readings within range" };
-    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date()); d.opis = pts.join("\n");
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date()); d.opis = pts.join("\n");
     d.rok = w.getFullYear(); d.miesiac = w.getMonth(); // zaznaczenie roku i miesiąca w formularzu = data inspekcji
     return d;
   }
   // Wzór firmy: kolejne pola {temp} dostają kolejne pomiary, {name} podpis, {data} datę; reszta tabeli bez zmian
   function fillTempDocx(d) {
-    var zip = new PizZip(b64ToBytes(window[cur.type.tpl])), xml = zip.file("word/document.xml").asText(), i = 0;
+    var zip = new PizZip(NZ.b64ToBytes(window[cur.type.tpl])), xml = zip.file("word/document.xml").asText(), i = 0;
     function x(s) { return String(s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
     xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
     xml = markPeriod(xml, d.rok, d.miesiac);
@@ -1771,7 +1763,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var all = devices(t), codes = Object.keys(batch.items), fails = codes.filter(function (c) { return batch.items[c].fails; }).length;
     var nextUp = all.filter(function (d) { return !batch.items[d.code]; })[0];
     bar.innerHTML = '<div class="label">Zlecenie: ' + esc(t.batch) + "</div>" +
-      "<div>"+T("Zapisane:", "Saved:")+" " + codes.length + T(" z ", " of ") + all.length + T(" · z uwagami: ", " · with remarks: ") + fails + (batch.started ? T(" · zaczęte ", " · started ") + esc(fmtDate(new Date(batch.started))) : "") + "</div>" +
+      "<div>"+T("Zapisane:", "Saved:")+" " + codes.length + T(" z ", " of ") + all.length + T(" · z uwagami: ", " · with remarks: ") + fails + (batch.started ? T(" · zaczęte ", " · started ") + esc(NZ.data(new Date(batch.started))) : "") + "</div>" +
       (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">'+T('Wznów od', 'Resume from')+' ' + esc(nextUp.code) + "</button></div>" : "") +
       '<p class="hint">'+T('Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.', 'Each device is saved on the phone straight away. You can stop, close the app and come back tomorrow.')+'</p>' +
       '<div class="row"><button class="go" type="button" id="batchEnd">'+T('Zakończ zlecenie', 'Finish job')+'</button></div>' +
@@ -1909,7 +1901,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       tytul: t.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? t.scope : ""
     };
-    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date());
     d.opis = pts.map(function (x) { return "• " + x; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
     return english(d);
   }
@@ -2046,7 +2038,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
-        return exifDate(f).then(function (ex) {
+        return OESTZdjecia.exifDate(f).then(function (ex) {
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
           return storePhoto(f, when, ctx).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
@@ -2125,11 +2117,11 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function suggestDate() {
     var p = photos[0], box = $("dateSug");
     if (!p) { box.hidden = true; updateFormHint(); return; }
-    var pd = isoDay(p.when), today = isoDay(new Date());
+    var pd = NZ.dzienIso(p.when), today = NZ.dzienIso(new Date());
     if (!dateTouched) $("dzien").value = pd;
     box.hidden = false;
-    box.innerHTML = "<span>" + (p.exif ? T("Zdjęcie zrobione ", "Photo taken ") : T("Plik zdjęcia z ", "Photo file from ")) + esc(fmtDate(p.when) + " " + fmtTime(p.when)) + ".</span>" +
-      ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(fmtDate(p.when)) + "</button>" : "") +
+    box.innerHTML = "<span>" + (p.exif ? T("Zdjęcie zrobione ", "Photo taken ") : T("Plik zdjęcia z ", "Photo file from ")) + esc(NZ.data(p.when) + " " + NZ.godzina(p.when)) + ".</span>" +
+      ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(NZ.data(p.when)) + "</button>" : "") +
       ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">'+T('Ustaw dziś', 'Set today')+'</button>' : "");
     updateFormHint();
   }
@@ -2313,7 +2305,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function finalOpts(p, d) {
     var general = !p.sheet && p.tap == null && !p.code && !p.small, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
     var px = p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink), q = p.sheet ? SHEET_Q : rs.q;
-    var stamp = cfg.stamp ? fmtDate(p.when) + " " + fmtTime(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
+    var stamp = cfg.stamp ? NZ.data(p.when) + " " + NZ.godzina(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
     return { px: px, q: q, stamp: stamp, key: px + "|" + q + "|" + stamp };
   }
   function finalPhoto(p, d) {
@@ -2367,7 +2359,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
     f.classList.toggle("ready", ready); f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
     f.title = ready ? T("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
-    if (ready) { f.textContent = T("✓ GOTOWA ", "✓ READY ") + fmtDate(new Date(st.at || Date.now())); return; }
+    if (ready) { f.textContent = T("✓ GOTOWA ", "✓ READY ") + NZ.data(new Date(st.at || Date.now())); return; }
     f.textContent = T("✓ Zakończ inspekcję", "✓ Finish inspection");
   }
   function updateFormHint0() {
@@ -2383,7 +2375,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce($("formHint"), OESTBledy.wJezyku(OESTBledy.drugi(), tx)); // PL i EN w tym samym miejscu
       var blk = !filled || bad > 0;
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
-      $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
+      $("toQueue").textContent = T("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
     }
     if (cur.type && cur.type.flush && fl.on) {
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
@@ -2391,14 +2383,14 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? T("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
         (pts ? (cur.type.flush.ui === "checks" ? T("Punkty: ", "Checks: ") : T("Przyciski: ", "Call points: ")) : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
-      $("toQueue").textContent = T("Wyślij · ", "Send · ") + fmtDate(reportDate()); return;
+      $("toQueue").textContent = T("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
     }
     if (cur.type && cur.type.folder) {
       var none = !sheetPhotos().length;
       $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? T("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : T("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + T(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? T("Dodaj zdjęcie formularza", "Add form photo") : T("Wyślij · ", "Send · ") + fmtDate(reportDate());
+      $("toQueue").textContent = none ? T("Dodaj zdjęcie formularza", "Add form photo") : T("Wyślij · ", "Send · ") + NZ.data(reportDate());
       $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
     }
     if (cur.mode === "item") {
@@ -2413,14 +2405,14 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (pendingPh) h.push(T("Zmniejszam zdjęcie…", "Reducing the photo…"));
     var block = !!restoring || pendingPh > 0;
     $("toPreview").disabled = block; $("toQueue").disabled = block;
-    $("toQueue").textContent = block && h.length ? h[0] : T("Wyślij · ", "Send · ") + fmtDate(reportDate());
+    $("toQueue").textContent = block && h.length ? h[0] : T("Wyślij · ", "Send · ") + NZ.data(reportDate());
   }
 
   // ---------- dane raportu ----------
   function dateOn() { var c = document.getElementById("dateOn"); return !c || c.checked; }
   // data w raporcie; odzyskana inspekcja z zaznaczonym „Updated” (Grzegorz 08/11/2026 12:53, domyślnie wyłączone): „06/11/2026 (Updated 08/11/2026)”
-  function updTxt() { var c = document.getElementById("updOn"); return REC && c && c.checked ? "Updated " + fmtDate(new Date()) : ""; }
-  function dateTxt(w) { var a = dateOn() ? fmtDate(w) : "", u = updTxt(); return a && u ? a + " (" + u + ")" : a || u; }
+  function updTxt() { var c = document.getElementById("updOn"); return REC && c && c.checked ? "Updated " + NZ.data(new Date()) : ""; }
+  function dateTxt(w) { var a = dateOn() ? NZ.data(w) : "", u = updTxt(); return a && u ? a + " (" + u + ")" : a || u; }
   function reportDate() {
     var v = $("dzien").value, n = new Date();
     if (!v) return n;
@@ -2434,7 +2426,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (cur.type.rooms) return roomsData(w);
     if (cur.type.folder) return english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: "", quote: "", site: cfg.site, komentarz: "", zakres: "", folder: true,
-      obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: fmtTime(new Date()), opis: "", flush: cur.type.flush && fl.on ? flushReport(w) : null });
+      obiekt: cur.where, stan: "", rodzaj: cur.type.title, nr: "", godzina: NZ.godzina(new Date()), opis: "", flush: cur.type.flush && fl.on ? flushReport(w) : null });
     cur.type.checks.forEach(function (c, i) { if (states[i] === "ok") pts.push(c.ok); else if (states[i] === "fail") pts.push(override[i] || c.fail); });
     pts = pts.concat(extraFaults(true));
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
@@ -2443,7 +2435,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
-    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date());
     var head = cur.type.plain ? "" : deviceHead(d.tytul, cur.code), body; // PPM: kod = nazwa zadania, już w tytule/lokalizacji
     if (cur.type.checks.length && cur.type.checks.every(function (c) { return c.cp; })) body = checkpointText(cur.type.checks);
     else body = pts.map(function (s) { return "• " + s; }).join("\n");
@@ -2454,7 +2446,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function roomsData(w) {
     var d = english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site, komentarz: $("komentarz").value.trim(), zakres: "" });
-    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = fmtTime(new Date());
+    d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date());
     // 01/11 Grzegorz: w pomieszczeniach same kratki (układ się nie rozjeżdża), usterki pełnymi zdaniami + uwagi dopiero na końcu
     var seen = {}, last = "", rooms = [], issues = [];
     cur.type.checks.forEach(function (c) {
@@ -2524,16 +2516,16 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     if (REC) return (REC.meta && REC.meta.job) || "";
     var t = cur.ppm; if (!t || !PPM || !PPM.jobFor) return "";
     var st = PPM.stage && PPM.stage(t), dd = PPM.due(t);
-    var day = st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent") ? st.period : dd ? isoDay(dd) : "";
+    var day = st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent") ? st.period : dd ? NZ.dzienIso(dd) : "";
     var j = day ? PPM.jobFor(t, day) : null; return j && j.no ? String(j.no) : "";
   }
 
   // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
   function templateBytes() {
-    if (cur.type && cur.type.tpl && window[cur.type.tpl]) return b64ToBytes(window[cur.type.tpl]); // wzór firmy dla tej inspekcji
+    if (cur.type && cur.type.tpl && window[cur.type.tpl]) return NZ.b64ToBytes(window[cur.type.tpl]); // wzór firmy dla tej inspekcji
     // w apce bez skryptu Google zawsze wbudowany wzór (stara kopia z Drive w telefonie nie może go podmieniać)
-    if (APP && !cfg.api) return b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
-    return serverTpl ? serverTpl.bytes : b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
+    if (APP && !cfg.api) return NZ.b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
+    return serverTpl ? serverTpl.bytes : NZ.b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL);
   }
   function tplState(err) {
     var n = $("tplNotice");
@@ -2585,7 +2577,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       save("setup", { email: r.email, folder: r.folder, site: r.site, engineer: r.engineer, devices: r.devices, questions: r.questions });
       if (r.error) tplState(r.error);
       else {
-        serverTpl = { name: r.templateName, bytes: b64ToBytes(r.template) }; tplState();
+        serverTpl = { name: r.templateName, bytes: NZ.b64ToBytes(r.template) }; tplState();
         kvSet("tpl", serverTpl).catch(function () {});
       }
       renderHome(); updateFormHint();
@@ -2841,7 +2833,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     return new Uint8Array(pdf.output("arraybuffer"));
   }
   function fillFlushDocx(f) {
-    var zip = new PizZip(b64ToBytes(window.TPL_FLUSH));
+    var zip = new PizZip(NZ.b64ToBytes(window.TPL_FLUSH));
     zip.file("word/document.xml", OESTFlush.fill(zip.file("word/document.xml").asText(), f));
     zip.file("word/header1.xml", OESTFlush.header(zip.file("word/header1.xml").asText(), f.building));
     return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
@@ -2849,7 +2841,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // PDF: strona 1 = formularz (tabela), dalej zdjęcia kranów małe z podpisem (jak izolatory), na końcu zdjęcia kartek
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
-  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
+  function flushBasicDocx(d, pics) { var b = flushBasic(d, pics); return fillDocx(PizZip, docxtemplater, NZ.b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); }
   // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
   function flushBasic(d, pics) {
     var f = d.flush, dd = Object.assign({}, d), sum = f.points ? pointsSummary(f) : OESTFlush.summary(f);
@@ -2875,8 +2867,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   }
   // Wzory firmy wczytane raz: logo Smart z formularza Flushing i nagłówek/stopka basic form (OEST-basic)
   var flushLogo = null, basicInfoC = null;
-  function flushLogoImg() { if (!flushLogo) { var z = new PizZip(b64ToBytes(window.TPL_FLUSH)), f = z.file("word/media/image1.png"); flushLogo = f ? f.asUint8Array() : new Uint8Array(0); } return flushLogo; }
-  function basicInfo() { return basicInfoC || (basicInfoC = templateInfo(PizZip, b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL))); }
+  function flushLogoImg() { if (!flushLogo) { var z = new PizZip(NZ.b64ToBytes(window.TPL_FLUSH)), f = z.file("word/media/image1.png"); flushLogo = f ? f.asUint8Array() : new Uint8Array(0); } return flushLogo; }
+  function basicInfo() { return basicInfoC || (basicInfoC = templateInfo(PizZip, NZ.b64ToBytes(window.OEST_BASIC_TPL || SAMPLE_TPL))); }
   // Pełny formularz Weekly Taps/Shower Flushing Record w PDF — ten sam układ co Word (tpl-flush.js), poziomo, 5 tygodni,
   // wypełniony tylko wybrany tydzień (Grzegorz 04/11: „w PDF-ie jedna wersja, w docu druga” → obie takie same)
   function flushForm(pdf, d) {
@@ -3051,7 +3043,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   $("toPreview").addEventListener("click", function () {
     if (queueing) return;
     var b = this; b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); queueing = true;
-    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
+    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
       r.from = from; built = r; renderPreview(); show("preview");
@@ -3175,7 +3167,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       if (from.ppm && (!from.ppm.open || from.mode === "sum" || from.ppm.dev)) {
         // etap na klocku: zapisany termin okresu, zanim termin przesunie się na następny
         if (PPM.setStage && !from.fix) { ppmTrack(true); // ostatnie liczniki (usterki, zdjęcia) z formularza, który właśnie wyszedł
- var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), period: dd ? isoDay(dd) : from.day, day: isoDay(new Date()), manual: false }); }
+ var dd = PPM.due(from.ppm); PPM.setStage(from.ppm, { s: it.status === "sent" ? "sent" : "queued", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), period: dd ? NZ.dzienIso(dd) : from.day, day: NZ.dzienIso(new Date()), manual: false }); }
         if (!from.fix && (!from.ppm.open || from.mode === "sum")) PPM.close(from.ppm, from.day);
       }
       return closeUp(from, d);
@@ -3205,7 +3197,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function finHint() {
     var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null; if (!st) return "";
     if (st.s !== "queued" && st.s !== "sent" && st.s !== "done") return "";
-    return T("✓ GOTOWA od ", "✓ READY since ") + fmtDate(new Date(st.at || Date.now())) + " · " +
+    return T("✓ GOTOWA od ", "✓ READY since ") + NZ.data(new Date(st.at || Date.now())) + " · " +
       (st.s === "sent" ? T("raport wysłany.", "report sent.") : st.s === "queued" ? T("raport czeka w kolejce.", "report waiting in the queue.") : T("raport jeszcze nie wysłany.", "report not sent yet.")) +
       T(" Wszystko zostaje w telefonie.", " Everything stays on the phone.");
   }
@@ -3255,7 +3247,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     // „Gotowa” to tylko znacznik Grzegorza (04/11): ponowne Wyślij bez pytań; termin się nie przesuwa (fix)
     queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
     if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
-    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) }, fail = "";
+    var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) }, fail = "";
     from = Object.assign({}, from, { fix: fix, finish: !!finish, sig: formSig(), draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return fitReport(r, buildAll); }).then(function (r) { return enqueue(r, from); }).catch(function (e) {
       fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
@@ -3285,8 +3277,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
     if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { unready(t); return; } // już Gotowa → zdjęcie znacznika
     if (t) {
-      var dd = PPM.due(t), day = isoDay(reportDate());
-      PPM.setStage(t, { s: st && st.mail === "sent" ? "sent" : st && st.mail === "queued" ? "queued" : "done", period: dd ? isoDay(dd) : day, day: isoDay(new Date()), manual: false });
+      var dd = PPM.due(t), day = NZ.dzienIso(reportDate());
+      PPM.setStage(t, { s: st && st.mail === "sent" ? "sent" : st && st.mail === "queued" ? "queued" : "done", period: dd ? NZ.dzienIso(dd) : day, day: NZ.dzienIso(new Date()), manual: false });
       if (!t.open || cur.mode === "sum") PPM.close(t, day); // następny termin z grafiku/Vantify; ta inspekcja zostaje z napisem Gotowa
     }
     markDone(cur.type, cur.code);
@@ -3316,11 +3308,11 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     var nu = unconfirmed().length;
     $("qSub").textContent = n ? T("Do wysłania: ", "To send: ") + n + (nu ? T(" · do potwierdzenia: ", " · to confirm: ") + nu : "") : nu ? T("Do potwierdzenia: ", "To confirm: ") + nu : T("Wszystko wysłane", "All sent");
     $("qList").innerHTML = list.length ? list.map(function (q) {
-      var st = q.status === "sent" ? '<span class="st ok">'+T('✓ wysłane', '✓ sent')+' ' + esc(fmtTime(new Date(q.sentAt))) + "</span>" :
+      var st = q.status === "sent" ? '<span class="st ok">'+T('✓ wysłane', '✓ sent')+' ' + esc(NZ.godzina(new Date(q.sentAt))) + "</span>" :
         q.status === "sending" ? '<span class="st">'+T('wysyłam…', 'sending…')+'</span>' :
         q.status === "err" ? '<span class="st err">'+T('błąd', 'error')+'</span>' :
         q.status === "shared" ? '<span class="st">'+T('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
-      return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + kb(q.docx.length + q.pdf.length) +
+      return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + NZ.kb(q.docx.length + q.pdf.length) +
         (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
         (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+T('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
           ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+T('Wyślij ponownie', 'Send again')+'</button>' : "") +
@@ -3360,7 +3352,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
   function submitArg(it) {
     return { id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
-      docx: bytesToB64(it.docx), pdf: bytesToB64(it.pdf), photos: it.photos.map(bytesToB64) };
+      docx: NZ.bytesToB64(it.docx), pdf: NZ.bytesToB64(it.pdf), photos: it.photos.map(NZ.bytesToB64) };
   }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
@@ -3387,10 +3379,10 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function shareSend(it) {
     if (sending || !it) return Promise.resolve(); // jedno przekazanie naraz
     var files = [];
-    if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
+    if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: NZ.bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
     else {
-      if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: bytesToB64(it.pdf) });
-      if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: bytesToB64(it.docx) });
+      if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: NZ.bytesToB64(it.pdf) });
+      if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: NZ.bytesToB64(it.docx) });
     }
     var to = Array.isArray(it.toList) ? it.toList : [it.to || myEmail()].filter(Boolean);
     sending = true; it.status = "sending"; refresh(); // blokada na całe sprawdzanie sieci i przekazanie (drugie „Wyślij wszystko” nie otwiera wyboru drugi raz)
@@ -3482,8 +3474,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       var due = PPM.due(t), left = PPM.daysLeft(due);
       // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
       // po ostatnim zleceniu z importu też bez ręcznej daty – apka nie tworzy terminu (PROD-010)
-      var vj = (due && PPM.jobFor ? PPM.jobFor(t, isoDay(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? isoDay(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
+      var vj = (due && PPM.jobFor ? PPM.jobFor(t, NZ.dzienIso(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? NZ.dzienIso(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '" data-alt="' + esc(window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 
@@ -3504,7 +3496,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
           if (was.period) PPM.setDue(tt, was.period);
           var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
         }
-        if (!this.value) { PPM.setStage(tt, null); if (PPM.setUnstarted) PPM.setUnstarted(tt, ppmCounts()); } else PPM.setStage(tt, { s: this.value, manual: true, day: isoDay(new Date()) });
+        if (!this.value) { PPM.setStage(tt, null); if (PPM.setUnstarted) PPM.setUnstarted(tt, ppmCounts()); } else PPM.setStage(tt, { s: this.value, manual: true, day: NZ.dzienIso(new Date()) });
         renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
       });
       top.insertBefore(sel, top.firstChild);
@@ -3605,7 +3597,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     queueing = true;
     var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";
     if (!btn) b.disabled = true;
-    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: isoDay(reportDate()) };
+    var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
     var buildWord = function () { return buildAll({ word: true }); };
     buildWord().then(function (r) { return fitReport(r, buildWord); }).then(function (r) {
