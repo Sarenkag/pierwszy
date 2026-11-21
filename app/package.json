@@ -17,7 +17,6 @@
     "@ionic/core": "9.0.13",
     "@ionic/vue": "9.0.13",
     "docxtemplater": "3.71.0",
-    "jspdf": "4.2.1",
     "pdf-lib": "^1.17.1",
     "pizzip": "3.3.0",
     "vue": "3.5.46",
