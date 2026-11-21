@@ -133,7 +133,7 @@
           '<div class="zd-act"><button type="button" class="btn" data-a="del">' + T('🗑 Usuń', '🗑 Delete') + '</button><button type="button" class="btn" data-a="close">' + T('Zamknij', 'Close') + '</button></div>';
         // Wstecz telefonu zamyka podgląd zamiast cofać apkę (stos okienek moduly/szkielet)
         w.document.body.appendChild(o);
-        var zw = w.OESTOkna ? w.OESTOkna.open(function () { o.remove(); }) : null;
+        var zw = w.OESTOkna ? w.OESTOkna.open(function () { shut(); }) : null;
         var shut = function () { if (zw) zw(); o.remove(); }; // tylko ten podgląd
         o.onclick = function (e) {
           var a = e.target.closest('[data-a]');

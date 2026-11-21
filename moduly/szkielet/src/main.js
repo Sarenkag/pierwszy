@@ -38,12 +38,16 @@ const OESTOkna = {
   open(zamknij) { stos.push(zamknij); return () => { const i = stos.lastIndexOf(zamknij); if (i >= 0) stos.splice(i, 1); }; },
   ile() { return stos.length + d.querySelectorAll('dialog[open]').length; },
   zamknijGorne() {
-    if (stos.length) { const z = stos.pop(); try { z(); } catch (e) { console.error(e); } return true; }
+    // wpis zdejmuje samo okienko (zwolnij), gdy naprawdę się zamknie – okienko zajęte (np. aparat przy edycji) może odmówić i zostaje na stosie
+    if (stos.length) { const z = stos[stos.length - 1]; try { z(); } catch (e) { console.error(e); const i = stos.lastIndexOf(z); if (i >= 0) stos.splice(i, 1); } return true; }
     const dl = d.querySelectorAll('dialog[open]');
     if (dl.length) { try { dl[dl.length - 1].close(); } catch (e) {} return true; }
     return false;
   },
-  zamknijWszystkie() { let n = 50; while (n-- > 0 && OESTOkna.zamknijGorne()); },
+  zamknijWszystkie() { // zmiana ekranu: zamyka wszystko i czyści stos także z okienek, które odmówiły
+    while (stos.length) { const z = stos.pop(); try { z(); } catch (e) { console.error(e); } }
+    d.querySelectorAll('dialog[open]').forEach(x => { try { x.close(); } catch (e) {} });
+  },
   // okienko z komunikatem Ionic (ion-alert) dla starego kodu: zostaje do zamknięcia, Wstecz je zamyka; zwraca rolę wciśniętego przycisku
   // OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text, role }] }) → Promise<role>
   async komunikat(o) {
