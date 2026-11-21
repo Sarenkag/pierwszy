@@ -140,6 +140,9 @@
     },
     {
       "file": "app/tests/vantify-przyciski-java.test.cjs"
+    },
+    {
+      "file": "app/tests/wtyczki-kontrakt.test.cjs"
     }
   ],
   "browser": [
