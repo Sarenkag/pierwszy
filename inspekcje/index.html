@@ -537,6 +537,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="tpl-temp-tb.js"></script>
 <script src="tpl-flush.js"></script>
 <script src="flush.js"></script>
+<script src="rodzaje.js"></script>
 <script src="tpl-oest-basic.js"></script>
 <script src="tpl-plant.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
@@ -832,110 +833,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   var $ = function (id) { return document.getElementById(id); };
   var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-  // ---------- rodzaje inspekcji ----------
-  // key: łączy punkt checklisty z gotową usterką (FAULTS)
-  var TYPES = [{
-    id: "db", name: "Distribution Boards", title: "Distribution Board - Visual Inspection",
-    scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
-    devices: [], // lista z Code.gs (getSetup)
-    checks: [
-      { key: "enclosure", cp: "Enclosure undamaged", ok: "Enclosure inspected – no physical damage, distortion or corrosion.", fail: "Enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { key: "door", cp: "Door closes properly", ok: "Door/cover closes fully and sits secure; hinges operating correctly.", fail: "Door/cover does not close fully or hinge defective.", def: "ok" },
-      { key: "lock", cp: "Lock working", ok: "Lock present and operating correctly.", fail: "Lock missing, damaged or not operating.", def: "ok" },
-      { key: "integrity", cp: "No open knockouts", ok: "Enclosure integrity maintained – no missing blanks, open knockouts or gaps.", fail: "Enclosure integrity compromised – missing blanks, open knockouts or gaps present.", def: "na" },
-      { key: "label", cp: "ID label present", ok: "Board identification label present and legible.", fail: "Board identification label missing or illegible.", def: "na" },
-      { key: "chart", cp: "Circuit chart present", ok: "Circuit chart/schedule present, legible and appears up to date.", fail: "Circuit chart/schedule missing, illegible or out of date.", def: "ok" },
-      { key: "notices", cp: "Warning labels present", ok: "Required warning notices present and legible (e.g. RCD test, periodic inspection, voltage warning).", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { key: "heat", cp: "No overheating signs", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { key: "noise", cp: "No noise or odour", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "na" },
-      { key: "devices", cp: "Devices not tripped", ok: "Protective devices visually intact; no tripped or damaged devices observed.", fail: "Tripped or visibly damaged protective device(s) observed.", def: "na" },
-      { key: "glands", cp: "Cables secure", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "ok" },
-      { key: "fixings", cp: "Fixings tight", ok: "Board fixings secure – no loose mounting.", fail: "Board fixings loose – re-securing required.", def: "ok" },
-      { key: "earth", cp: "Earthing secure", ok: "Visible earthing and bonding conductors present and secure.", fail: "Earthing/bonding conductor loose, damaged or missing.", def: "na" },
-      { key: "clean", cp: "Clean and dry", ok: "Board clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the board.", def: "na" },
-      { key: "damp", cp: "No damp nearby", ok: "No evidence of water leaks or damp in the vicinity of the board.", fail: "Evidence of water leaks or damp in the vicinity of the board.", def: "na" },
-      { key: "access", cp: "Access clear", ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
-    ]
-  }, {
-    id: "ats", name: "ATS", title: "Automatic Transfer Switch - Visual Inspection",
-    scope: "Scope: visual inspection only – no covers removed, no transfer test and no electrical testing carried out.",
-    devices: [],
-    checks: [
-      { key: "enclosure", cp: "Enclosure undamaged", ok: "ATS enclosure inspected – no physical damage, distortion or corrosion.", fail: "ATS enclosure shows physical damage, distortion or corrosion – remedial action required.", def: "ok" },
-      { key: "door", cp: "Door and lock OK", ok: "Door/cover secure; locks and hinges operating correctly.", fail: "Door/cover not secure, or lock/hinge defective.", def: "ok" },
-      { key: "display", cp: "No alarms on display", ok: "Controller display operating normally; no alarms or fault codes shown.", fail: "Alarm or fault code shown on the controller display.", def: "ok" },
-      { key: "position", cp: "Normal supply shown", ok: "Switch position indicators and status lamps showing normal supply.", fail: "Switch position indicators/status lamps not showing normal supply.", def: "ok" },
-      { key: "auto", cp: "Selector in AUTO", ok: "Mode selector in AUTO position.", fail: "Mode selector not in AUTO position.", def: "ok" },
-      { key: "label", cp: "ID label present", ok: "ATS identification label present and legible.", fail: "ATS identification label missing or illegible.", def: "ok" },
-      { key: "notices", cp: "Warning labels present", ok: "Required warning notices present and legible.", fail: "Required warning notices missing or illegible.", def: "ok" },
-      { key: "heat", cp: "No overheating signs", ok: "No visible signs of overheating, burning, discolouration or arcing.", fail: "Signs of overheating, burning, discolouration or arcing observed.", def: "ok" },
-      { key: "noise", cp: "No noise or odour", ok: "No abnormal noise (buzzing/humming) or burning odour detected.", fail: "Abnormal noise or burning odour detected.", def: "ok" },
-      { key: "glands", cp: "Cables secure", ok: "Cable entries and glands secure; cables adequately supported.", fail: "Cable entries/glands not secure, or cables inadequately supported.", def: "na" },
-      { key: "clean", cp: "Clean and dry", ok: "ATS clean and free from dust, debris and moisture ingress.", fail: "Dust, debris or moisture ingress found in or around the ATS.", def: "ok" },
-      { key: "access", cp: "Access clear", ok: "Access to the ATS clear and unobstructed; area not used for storage.", fail: "Access to the ATS obstructed, or area used for storage.", def: "ok" }
-    ]
-  }, {
-    id: "iso", name: "Local Isolators", title: "Local Isolators - Visual Inspection", batch: "Isolators Inspection",
-    scope: "Scope: visual inspection only – no covers removed and no electrical testing carried out.",
-    devices: [],
-    // ask: dwa poziomy. Ogólne pytanie (TAK = w porządku, domyślnie), pod nim konkretne powody z gotowym tekstem EN —
-    // kliknięcie powodu od razu daje NIE.
-    // Do raportu: „Isolator KOD: <powody albo en pytania>.” Pytania robocze — docelowo z SFG20;
-    // można je podmienić bez zmiany apki: CFG.questions.iso w Code.gs (ten sam układ).
-    ask: true,
-    checks: [
-      { key: "access", q: "Dostępny?", qen: "Accessible?", en: "access obstructed", def: "ok", reasons: [
-        { id: "blocked", pl: "Zastawiony", en: "access obstructed" },
-        { id: "locked", pl: "Brak dostępu (zamknięte)", en: "no access at time of inspection" } ] },
-      { key: "label", q: "Oznaczony?", qen: "Labelled?", en: "label missing or illegible", def: "ok", reasons: [
-        { id: "nolabel", pl: "Brak oznaczenia", en: "no identification label" },
-        { id: "illegible", pl: "Nieczytelna naklejka", en: "identification label illegible" },
-        { id: "desc", pl: "Nieczytelny opis", en: "circuit description illegible" },
-        { id: "wrong", pl: "Niezgodna z urządzeniem", en: "label does not match equipment served" } ] },
-      { key: "damage", q: "Bez uszkodzeń?", qen: "Free from damage?", en: "damage found", def: "ok", reasons: [
-        { id: "crack", pl: "Pęknięta obudowa", en: "enclosure cracked" },
-        { id: "knob", pl: "Brak pokrętła", en: "operating handle missing" },
-        { id: "knobdmg", pl: "Uszkodzone pokrętło", en: "operating handle damaged" },
-        { id: "scratch", pl: "Porysowana", en: "enclosure scratched" },
-        { id: "gland", pl: "Kabel / dławik", en: "cable or gland damaged" },
-        { id: "heat", pl: "Ślady przegrzania", en: "signs of overheating" } ] },
-      { key: "secure", q: "Pokrywa i mocowanie w porządku?", qen: "Cover and fixings OK?", en: "cover or fixings defective", def: "ok", reasons: [
-        { id: "nocover", pl: "Brak pokrywy", en: "cover missing" },
-        { id: "looseenc", pl: "Luźna obudowa", en: "enclosure loose – not securely fixed" },
-        { id: "notfixed", pl: "Nieprzykręcony", en: "not secured to the wall/mounting" },
-        { id: "loose", pl: "Luźne mocowanie", en: "loose fixings" },
-        { id: "screws", pl: "Brak śrub", en: "missing screws" } ] },
-      { key: "clean", q: "Czysty i suchy?", qen: "Clean and dry?", en: "dirt or moisture present", def: "ok", reasons: [
-        { id: "rust", pl: "Rdza", en: "corrosion" },
-        { id: "water", pl: "Woda / wilgoć", en: "signs of water ingress" },
-        { id: "flood", pl: "Zalany", en: "flooded – water damage" },
-        { id: "dirt", pl: "Brud", en: "dirt build-up" } ] },
-      { key: "state", q: "W normalnym stanie pracy?", qen: "In normal operating state?", en: "not in normal operating state", def: "ok", reasons: [
-        { id: "off", pl: "Wyłączony (OFF)", en: "switch found in OFF position" },
-        { id: "padlock", pl: "Kłódka / LOTO", en: "padlock / LOTO fitted", note: true } ] }
-    ]
-  }];
-  // Gotowe usterki: jedno dotknięcie = zdanie EN w raporcie + „Requires attention”.
-  // Jeśli typ ma punkt o tym samym key, ten punkt dostaje ✗ i to zdanie; jeśli nie, zdanie dochodzi jako osobny punkt.
-  var FAULTS = [
-    { id: "dirty", pl: "Obudowa brudna", enl: "Enclosure dirty", key: "clean", en: "Enclosure dirty – cleaning required." },
-    { id: "display", pl: "Błąd na wyświetlaczu", enl: "Display error", key: "display", en: "Error/fault message shown on the display – further investigation required." },
-    { id: "damage", pl: "Uszkodzenie", enl: "Damage", key: "enclosure", en: "Visible damage to the enclosure – remedial action required." },
-    { id: "label", pl: "Brak oznaczenia", enl: "No label", key: "label", en: "Identification label missing or illegible – new label required." }
-  ];
-  function faultsFor(t) { return FAULTS.filter(function (f) { return !f.types || f.types.indexOf(t.id) >= 0; }); }
-  // Piętra potwierdzone przez użytkownika: UG = Upper Ground, LG = Lower Ground, LL-06 = Level 6
-  function floorOf(code) {
-    var c = String(code || "").toUpperCase(), m;
-    if (/-UG$/.test(c)) return "Upper Ground";
-    if (/-LG$/.test(c)) return "Lower Ground";
-    if ((m = /-LL-(\d+)$/.exec(c))) return "Level " + parseInt(m[1], 10);
-    return "";
-  }
-  function towerOf(code) {
-    var m = /(?:^|-)T([AB])(?:-|$)/i.exec(code || "");
-    return m ? "Tower " + m[1].toUpperCase() : "";
-  }
+  // ---------- rodzaje inspekcji: inspekcje/rodzaje.js (K02) ----------
+  var RD = window.OESTRodzaje, TYPES = RD.lista, FAULTS = RD.usterki;
 
   // ---------- pamięć lokalna (tylko w tej przeglądarce) ----------
   function load(k, d) { try { var v = localStorage.getItem("insp." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -1073,8 +972,8 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   }
   // Urządzenie: kod albo {code, loc, room} z Code.gs; lokalizacja z kodu (TA/TB) albo zapisana przy dodawaniu
   function norm(c) {
-    if (typeof c === "string") return { code: c, loc: towerOf(c) || "Tower B", room: "" };
-    return { code: c.code, loc: c.loc || towerOf(c.code) || "Tower B", room: c.room || "" };
+    if (typeof c === "string") return { code: c, loc: RD.wieza(c) || "Tower B", room: "" };
+    return { code: c.code, loc: c.loc || RD.wieza(c.code) || "Tower B", room: c.room || "" };
   }
   function customList(t) { return load("custom_" + t.id, []).map(norm); }
   function devices(t) {
@@ -1083,7 +982,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     return list;
   }
   function devOf(code) { return devices(cur.type).filter(function (x) { return x.code === code; })[0] || norm(code); }
-  function where(d) { return [d.loc, floorOf(d.code), d.room].filter(Boolean).join(", "); }
+  function where(d) { return [d.loc, RD.pietro(d.code), d.room].filter(Boolean).join(", "); }
   var lastQueued = "";
   function renderList() {
     var t = cur.type, dn = doneToday(t), q = val("search").toUpperCase();
@@ -1115,7 +1014,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     $("customCode").value = ""; renderList(); openForm(c);
   });
 
-  $("customCode").addEventListener("input", function () { var tw = towerOf(val("customCode")); if (tw) $("customLoc").value = tw; });
+  $("customCode").addEventListener("input", function () { var tw = RD.wieza(val("customCode")); if (tw) $("customLoc").value = tw; });
 
   // ---------- formularz ----------
   var states = [], override = {}, faultsOn = {}, photos = [], built = null, trOriginal = null, dateTouched = false;
@@ -1197,14 +1096,13 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // Zapis na stałe dla tej inspekcji z listy PPM (ppm.js → P.needs). Pytania wyłączone: checklista schowana, wszystkie „–” (nie idą do raportu).
   var qSaved = null;
   function needsNow() { return cur.ppm && PPM && PPM.needs ? PPM.needs(cur.ppm) : null; }
-  function qPossible() { return !!(cur.type && cur.type.checks && cur.type.checks.length && !cur.type.folder && !cur.type.temp); }
   function applyNeeds(toggled) { // toggled = Grzegorz właśnie włączył pytania (tylko wtedy wracają domyślne odpowiedzi)
     var n = needsNow(), F = cur.type && cur.type.flush;
     if (!n) { syncSendHint(); return; }
     // Flushing / AOV: „Nasz raport” = formularz elektroniczny (wcześniej osobny przełącznik w Flushingu)
     if (F) { if (fl.on !== !!n.q) { fl.on = !!n.q; renderFlush(); } syncSendHint(); return; }
     syncSendHint();
-    if (!qPossible() || cur.mode !== "one") return;
+    if (!RD.pytaniaMozliwe(cur.type) || cur.mode !== "one") return;
     var ckp = $("ck").closest(".panel");
     if (!n.q) {
       ckp.hidden = true; $("faults").closest(".panel").hidden = true;
@@ -1221,7 +1119,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   // „Zapisz jako domyślne” = zapamiętane dla tej inspekcji; Wyślij wysyła jednym stuknięciem wg zapisanych ustawień.
   function sendParts() { // co ta inspekcja w ogóle ma do wysłania (reszta w okienku wyszarzona)
     var F = cur.type && cur.type.flush;
-    return { q: qPossible() || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Pytania w raporcie", "Questions in the report") };
+    return { q: RD.pytaniaMozliwe(cur.type) || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Pytania w raporcie", "Questions in the report") };
   }
   function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? true : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
   function syncSendHint() {
@@ -1654,7 +1552,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   $("ck").addEventListener("input", function (e) { var el = e.target.closest("input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
-    $("faults").innerHTML = faultsFor(cur.type).map(function (f) {
+    $("faults").innerHTML = RD.usterkiDla(cur.type).map(function (f) {
       return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(T(f.pl, f.enl)) + "</button>";
     }).join("");
   }
@@ -1669,7 +1567,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
       if (faultsOn[f.id]) { states[i] = "fail"; override[i] = f.en; }
       else {
         // inna aktywna usterka z tym samym punktem trzyma go dalej na ✗
-        var other = faultsFor(cur.type).filter(function (x) { return x.key === f.key && faultsOn[x.id]; })[0];
+        var other = RD.usterkiDla(cur.type).filter(function (x) { return x.key === f.key && faultsOn[x.id]; })[0];
         if (other) override[i] = other.en;
         else { delete override[i]; states[i] = cur.type.checks[i].def === "na" ? "na" : "ok"; }
       }
@@ -1680,7 +1578,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   }
   // usterki bez pasującego punktu checklisty idą jako osobne zdania
   function extraFaults(notes) {
-    return faultsFor(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
+    return RD.usterkiDla(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
   }
   $("ck").addEventListener("click", function (e) {
     var r = e.target.closest("button[data-r]");
@@ -2137,7 +2035,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
   function analyze(ph) {
     if (typeof window.INSP_ANALYZE !== "function") return;
     var ask = !!cur.type.ask, code = cur.code;
-    var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : faultsFor(cur.type).map(function (f) { return f.id; });
+    var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : RD.usterkiDla(cur.type).map(function (f) { return f.id; });
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
     $("photoInfo").textContent = T("Sprawdzam zdjęcie…", "Checking the photo…");
     bitmap(ph.blob).then(function (img) {
@@ -2431,7 +2329,7 @@ var SAMPLE_TPL = "UEsDBBQAAAAIAN1kXF2tUqWRlQEAAMoGAAATAAAAW0NvbnRlbnRfVHlwZXNdLn
     pts = pts.concat(extraFaults(true));
     if (!pts.length) pts = ["Visual inspection carried out."]; // wszystko N/A: sama inspekcja wzrokowa
     var d = {
-      data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: floorOf(cur.code),
+      data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: RD.pietro(cur.code),
       tytul: cur.type.title, punkty: pts, stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site,
       komentarz: $("komentarz").value.trim(), zakres: cfg.scope ? cur.type.scope : ""
     };
