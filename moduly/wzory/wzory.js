@@ -26,7 +26,23 @@
     SLOWNIK[k] = ["Plant: pomieszczenie " + k, "Plant: room " + k]; SLOWNIK[k + "_notes"] = ["Plant: uwagi " + k, "Plant: notes " + k];
   });
   ["y0", "y1", "y2", "y3", "y4", "y5"].forEach(function (k, i) { SLOWNIK[k] = { opis: ["Flushing: rok " + (i + 1) + " (kod skryptu)", "Flushing: year " + (i + 1) + " (script code)"], stare: true }; });
+  // basic form Weekly Flushing (Grzegorz 21/11/2026): kran nr i z listy kranów (ppm.js) i strefa nr k
+  for (var i = 1; i <= 20; i++) {
+    SLOWNIK["ok" + i] = ["Flushing basic: ☑ kran " + i + " przepłukany", "Flushing basic: ☑ outlet " + i + " flushed"];
+    SLOWNIK["no" + i] = ["Flushing basic: ☒ kran " + i + " nie przepłukany", "Flushing basic: ☒ outlet " + i + " not flushed"];
+    SLOWNIK["na" + i] = ["Flushing basic: N/A kran " + i, "Flushing basic: N/A outlet " + i];
+    SLOWNIK["note" + i] = ["Flushing basic: notatka kranu " + i, "Flushing basic: outlet " + i + " note"];
+  }
+  for (var z = 1; z <= 6; z++) SLOWNIK["zone" + z] = ["Flushing basic: przepłukane w strefie " + z + " (np. 7/7)", "Flushing basic: flushed in zone " + z + " (e.g. 7/7)"];
+  SLOWNIK.statement = ["Flushing basic: stałe zdanie pod strefami", "Flushing basic: fixed statement below zones"];
   for (var n = 1; n <= 12; n++) SLOWNIK["c" + n] = { opis: ["Flushing: kolumna " + n + " (kod skryptu)", "Flushing: column " + n + " (script code)"], stare: true };
+  // basic form Flushing: ramka basic (bez condition i details) + nawiasy kranów i stref (generator app/scripts/flush-basic-wzory.py)
+  function flushPola(krany, strefy) {
+    var p = ["site", "date", "job number", "engineer", "building", "level", "title", "quote", "%photos", "statement"];
+    for (var i = 1; i <= krany; i++) p.push("ok" + i, "no" + i, "na" + i, "note" + i);
+    for (var k = 1; k <= strefy; k++) p.push("zone" + k);
+    return p;
+  }
   // pola = nawiasy, które apka wypełnia w danym wzorze (test app/tests/wzory.test.cjs: plik ma dokładnie te nawiasy, każdy jest w SŁOWNIKU)
   var WZORY = {
     basic: { plik: "basic.docx", nazwa: "OEST basic Engineers Report", pola: ["site", "date", "job number", "engineer", "building", "level", "title", "condition", "details", "quote", "%photos"] },
@@ -34,6 +50,9 @@
       "comms", "mechanical", "primary_switch", "secondary_switch", "spa_filtration", "spa_pump", "sprinkler",
       "comms_notes", "mechanical_notes", "primary_switch_notes", "secondary_switch_notes", "spa_filtration_notes", "spa_pump_notes", "sprinkler_notes"] },
     flush: { plik: "flush.docx", nazwa: "Weekly Taps/Shower Flushing Record (TA / TB / P)", pola: ["o", "bld", "twr", "y0", "y1", "y2", "y3", "y4", "y5", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"] },
+    "flush-basic-ta": { plik: "flush-basic-ta.docx", nazwa: "Weekly Flushing Tower A – basic form", pola: flushPola(12, 3) },
+    "flush-basic-tb": { plik: "flush-basic-tb.docx", nazwa: "Weekly Flushing Tower B – basic form", pola: flushPola(16, 4) },
+    "flush-basic-p": { plik: "flush-basic-p.docx", nazwa: "Weekly Flushing Pavilion – basic form", pola: flushPola(2, 1) },
     "temp-tb": { plik: "temp-tb.docx", nazwa: "Monthly Tap Temperature Check TB (QHS-031)", pola: ["temp", "name", "data"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();

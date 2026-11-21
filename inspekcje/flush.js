@@ -136,6 +136,66 @@
     });
     return out;
   }
-  var api = { fill: fill, header: header, summary: summary, fromPdf: fromPdf, MONTHS: MONTHS, LABEL: LABEL };
+  // ---- basic form Flushing ze strefami (Grzegorz 21/11/2026, wzory moduly/wzory/flush-basic-*.docx) ----
+  // Zdanie pod strefami, bajt w bajt od Grzegorza: wszystkie krany Yes → ALL, inaczej (No albo N/A) → PART.
+  var STATEMENT = {
+    all: "All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.",
+    part: "Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation."
+  };
+  // f: { taps:[{name,state,note}], strefy:[[nazwa,[krany]]] } → pola wzoru: ok/no/na/note i (numer kranu na liście, od 1), zone k, statement
+  function basicPola(f) {
+    var o = {}, all = true;
+    f.taps.forEach(function (t, i) {
+      var n = i + 1; o["ok" + n] = t.state === "yes" ? "\u2611" : ""; o["no" + n] = t.state === "no" ? "\u2612" : ""; o["na" + n] = t.state === "na" ? "N/A" : "";
+      o["note" + n] = t.note ? " \u2013 " + t.note : ""; if (t.state !== "yes") all = false;
+    });
+    (f.strefy || []).forEach(function (z, k) {
+      var idx = z[1].map(function (nm) { for (var i = 0; i < f.taps.length; i++) if (f.taps[i].name === nm) return i; throw Error("FLUSH_ZONE"); });
+      o["zone" + (k + 1)] = idx.filter(function (i) { return f.taps[i].state === "yes"; }).length + "/" + idx.length;
+    });
+    o.statement = all ? STATEMENT.all : STATEMENT.part;
+    return o;
+  }
+  // PDF basic form: te same strefy co Word (nagłówek strefy, 2 krany w wierszu, kratka / N/A, zdanie w szarej ramce).
+  // pdf: jsPDF z czcionką „DV”; x, w: komórka ramki (mm); y: start; room(h): łamie stronę, gdy trzeba, i zwraca nowy y albo null.
+  function rysujStrefy(pdf, f, x, y, w, room) {
+    var p = basicPola(f), gap = 3.4, X = x + 1.9, Wd = w - 3.8, cn = Wd * 12 / 155.2, cw = Wd / 2 - cn, RH = 6.2, HH = 6.2;
+    function at(h) { var ny = room(y, h); if (ny != null) y = ny; }
+    function box(cx, cy, s) { // kratka rysowana: font PDF nie ma ☑/☒
+      var b = 3.4, bx = cx - b / 2, by = cy - b / 2; pdf.setLineWidth(0.25);
+      if (s === "na") { pdf.setFont("DV", "bold"); pdf.setFontSize(8.5); pdf.setTextColor(89, 89, 89); pdf.text("N/A", cx, cy + 1.1, { align: "center" }); pdf.setTextColor(0, 0, 0); return; }
+      var c = s === "yes" ? [30, 138, 60] : [198, 40, 40]; pdf.setDrawColor(c[0], c[1], c[2]); pdf.rect(bx, by, b, b); pdf.setLineWidth(0.45);
+      if (s === "yes") pdf.lines([[0.95, 1.05], [1.7, -2.1]], bx + 0.6, by + 1.7);
+      else { pdf.line(bx + 0.7, by + 0.7, bx + b - 0.7, by + b - 0.7); pdf.line(bx + b - 0.7, by + 0.7, bx + 0.7, by + b - 0.7); }
+      pdf.setDrawColor(0); pdf.setLineWidth(0.4);
+    }
+    (f.strefy || []).forEach(function (z, k) {
+      var nr = Math.ceil(z[1].length / 2); at(gap + HH + RH * Math.min(nr, 2)); y += gap;
+      pdf.setFillColor(31, 78, 95); pdf.rect(X, y, Wd, HH, "F");
+      pdf.setFont("DV", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(255, 255, 255); pdf.text(z[0].toUpperCase() + "   \u00b7   " + p["zone" + (k + 1)], X + 1.5, y + 4.3); pdf.setTextColor(0, 0, 0);
+      y += HH;
+      for (var r = 0; r < nr; r++) {
+        pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
+        var cells = [0, 1].map(function (c) { var nm = z[1][r * 2 + c], t = nm == null ? null : f.taps.filter(function (q) { return q.name === nm; })[0];
+          return t ? { t: t, ls: pdf.splitTextToSize(nm + (t.note ? " \u2013 " + t.note : ""), cw - 3) } : null; });
+        var rh = Math.max(RH, Math.max.apply(null, cells.map(function (q) { return q ? q.ls.length : 1; })) * 4.2 + 2); // notatka łamie się w komórce jak w Wordzie
+        at(rh); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
+        cells.forEach(function (q, c) {
+          var cx = X + c * (cw + cn); pdf.rect(cx, y, cw, rh); pdf.rect(cx + cw, y, cn, rh);
+          if (!q) return;
+          pdf.setFont("DV", "normal"); pdf.setFontSize(9.5); pdf.text(q.ls, cx + 1.5, y + 4.2);
+          box(cx + cw + cn / 2, y + rh / 2, q.t.state); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2);
+        });
+        y += rh;
+      }
+      pdf.setDrawColor(0); pdf.setLineWidth(0.4);
+    });
+    pdf.setFont("DV", "normal"); pdf.setFontSize(9.5);
+    var ls = pdf.splitTextToSize(p.statement, Wd - 3), sh = ls.length * 4.2 + 3.6; at(gap + sh); y += gap;
+    pdf.setFillColor(242, 242, 242); pdf.setDrawColor(176, 183, 187); pdf.setLineWidth(0.2); pdf.rect(X, y, Wd, sh, "FD");
+    pdf.text(ls, X + 1.5, y + 4.6); pdf.setDrawColor(0); pdf.setLineWidth(0.4); y += sh;
+    return y + 2;
+  }
+  var api = { fill: fill, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);

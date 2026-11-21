@@ -1,5 +1,5 @@
 // Szybszy zapis zdjęć (audyt wydajności 07/11/2026, „tak” Grzegorza 07/11 21:56). Prawdziwy scenariusz Grzegorza:
-// Weekly Flushing TB – 20 kranów z innym zdjęciem 12 MP (3072×4080 jak z Pixela), 3 zdjęcia ogólne i kartka formularza.
+// Weekly Flushing TB – 16 kranów (TB bez apartamentów od 21/11/2026) z innym zdjęciem 12 MP (3072×4080 jak z Pixela), 7 zdjęć ogólnych (razem jak dawniej 20 + 3) i kartka formularza.
 // Sprawdza:
 //  1. kompresja idzie w Web Workerze (OESTZdjecia.compressedIn() === 'worker'), a bez OffscreenCanvas – jak dawniej w głównym wątku;
 //  2. oba sposoby dają te same wymiary zdjęć (KINDS: kran 800 px, ogólne 1600 px, kartka 1600 px) i prawie ten sam rozmiar pliku;
@@ -10,7 +10,7 @@
 // Wynik z przeglądarki NIE zastępuje sprawdzenia na Pixelu 8 Pro.
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright'), root = path.resolve(__dirname, '../www');
-const LIMIT = 1024 * 1024, GENERAL = 3, PODGLAD_MS = 600; // podgląd po zdjęciu w teście trwa 600 ms (człowiek zwykle patrzy dłużej)
+const LIMIT = 1024 * 1024, GENERAL = 7, PODGLAD_MS = 600; // podgląd po zdjęciu w teście trwa 600 ms (człowiek zwykle patrzy dłużej)
 const SRC = [1, 2].map(i => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'dane', 'zdjecie-' + i + '.jpg')).toString('base64'));
 const server = http.createServer((req, res) => {
   const p = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
@@ -47,7 +47,7 @@ async function run(browser, url, worker) {
   }, worker);
   await pg.goto(url + 'inspekcje/index.html#ppm=EFA-INS-026'); await pg.waitForTimeout(2000);
   if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
-  const taps = await pg.locator('[data-flcam]').count(); assert.ok(taps >= 20, 'Flushing TB: kranów ' + taps);
+  const taps = await pg.locator('[data-flcam]').count(); assert.ok(taps >= 16, 'Flushing TB: kranów ' + taps);
   const list = []; for (let i = 0; i < taps; i++) list.push(i); for (let i = 0; i < GENERAL; i++) list.push(30 + i); list.push(51);
   assert.equal(await makePhotos(pg, list), list.length);
   // aparat jak w apce na telefonie (OESTAparat.take → podgląd OK): zdjęcie podajemy z pamięci strony, bez wyboru pliku

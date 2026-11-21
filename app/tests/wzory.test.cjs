@@ -11,9 +11,9 @@ function nawiasy(bytes) {
   }
   return [...out].sort();
 }
-test('lista wzorów: 4 wzory, każdy plik istnieje w module', () => {
+test('lista wzorów: 7 wzorów, każdy plik istnieje w module', () => {
   const l = W.lista();
-  assert.deepEqual(l.map(w => w.id).sort(), ['basic', 'flush', 'plant', 'temp-tb']);
+  assert.deepEqual(l.map(w => w.id).sort(), ['basic', 'flush', 'flush-basic-p', 'flush-basic-ta', 'flush-basic-tb', 'plant', 'temp-tb']);
   for (const w of l) assert.ok(fs.existsSync(path.join(DIR, w.plik)), w.plik);
 });
 test('w module nie ma innych plików .docx niż zarejestrowane', () => {
@@ -41,7 +41,7 @@ test('wczytaj: pobiera każdy plik raz, błąd sieci = REPORT_TEMPLATE_MISSING',
   const wolane = [];
   globalThis.fetch = async u => { wolane.push(u); return { ok: true, arrayBuffer: async () => fs.readFileSync(path.join(DIR, u)).buffer.slice(0) }; };
   await W.wczytaj(); await W.wczytaj();
-  assert.equal(wolane.length, 4);
+  assert.equal(wolane.length, 7);
   assert.ok(W.bajty('plant').length > 1000);
 });
 test('wczytaj po błędzie sieci: odrzuca REPORT_TEMPLATE_MISSING, a następne wywołanie pobiera od nowa (inspekcje wołają je przed każdym raportem)', async () => {
@@ -51,7 +51,7 @@ test('wczytaj po błędzie sieci: odrzuca REPORT_TEMPLATE_MISSING, a następne w
   await assert.rejects(W2.wczytaj(), /REPORT_TEMPLATE_MISSING/);
   assert.throws(() => W2.bajty('basic'), /REPORT_TEMPLATE_MISSING/);
   siec = true; await W2.wczytaj();
-  assert.ok(W2.bajty('basic').length > 1000); assert.ok(wolane > 4);
+  assert.ok(W2.bajty('basic').length > 1000); assert.ok(wolane > 7);
 });
 test('LEGENDA.md (plik tekstowy dla Grzegorza) zgadza się ze słownikiem apki', () => {
   const { legenda, PLIK } = require('../scripts/wzory-legenda.cjs');
