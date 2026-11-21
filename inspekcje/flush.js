@@ -196,6 +196,19 @@
     pdf.text(ls, X + 1.5, y + 4.6); pdf.setDrawColor(0); pdf.setLineWidth(0.4); y += sh;
     return y + 2;
   }
-  var api = { fill: fill, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
+  // Szkic Flushingu po zmianie listy kranów (DATA-002, uwaga Codex #187): odpowiedzi i notatki zostają przy swoich kranach.
+  // Szkic z nazwami (od 21/11/2026) – po nazwie; starszy bez nazw – po kolejności, gdy lista tylko skrócona na końcu (TB: apartamenty 17–20).
+  // Krany nowe na liście dostają domyślne Yes. Wynik: nowy stan formularza albo null (nie da się bezpiecznie przenieść).
+  function migrujSzkic(dfl, names) {
+    if (!dfl || !dfl.taps || !names) return null;
+    var old = dfl.names, def = function () { return { state: "yes", note: "" }; }, taps;
+    if (old && old.length === dfl.taps.length) taps = names.map(function (n) { var i = old.indexOf(n); return i < 0 ? def() : dfl.taps[i]; });
+    else if (!old && dfl.taps.length >= names.length) taps = dfl.taps.slice(0, names.length);
+    else return null;
+    var out = {}; Object.keys(dfl).forEach(function (k) { out[k] = dfl[k]; });
+    out.taps = taps; out.names = names.map(String); out.open = {};
+    return out;
+  }
+  var api = { fill: fill, migrujSzkic: migrujSzkic, header: header, summary: summary, fromPdf: fromPdf, basicPola: basicPola, rysujStrefy: rysujStrefy, STATEMENT: STATEMENT, MONTHS: MONTHS, LABEL: LABEL };
   if (typeof module === "object" && module.exports) module.exports = api; else root.OESTFlush = api;
 })(this);

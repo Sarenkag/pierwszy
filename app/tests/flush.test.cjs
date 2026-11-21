@@ -61,3 +61,9 @@ test('PDF basic Flushing rysuje te same strefy, krany i zdanie co Word',()=>{
   const out=[],nop=()=>pdf;const pdf=new Proxy({},{get:(o,k)=>k==='text'?(s=>{out.push([].concat(s).join(' '));return pdf;}):k==='splitTextToSize'?(s=>[s]):nop});
   const f=P.forms.flush.P,fl={taps:f.taps.map((n,i)=>({name:n,state:i?'no':'yes',note:''})),strefy:f.strefy};const y=F.rysujStrefy(pdf,fl,15,60,180,(yy)=>yy);
   assert.ok(y>60);assert.ok(out.some(s=>/TOILETS   ·   1\/2/.test(s)));assert.ok(out.includes('Unisex Toilet')&&out.includes('Disabled Toilet'));assert.ok(out.includes(PART));});
+test('szkic TB sprzed zmiany (20 kranów, bez nazw): odpowiedzi, notatki, tydzień i formularz pierwszych 16 kranów zostają (DATA-002)',()=>{
+  const n=P.forms.flush.TB.taps,old={on:true,week:3,open:{1:true},taps:Array.from({length:20},(_,i)=>({state:i===2?'no':i===5?'na':'yes',note:i===2?'Seized':''}))};
+  const m=F.migrujSzkic(old,n);assert.equal(m.taps.length,16);assert.equal(m.taps[2].state,'no');assert.equal(m.taps[2].note,'Seized');assert.equal(m.taps[5].state,'na');
+  assert.equal(m.week,3);assert.equal(m.on,true);assert.deepEqual(m.names,n);
+  const z=F.migrujSzkic({names:['A','B'],taps:[{state:'no',note:'x'},{state:'na',note:''}]},['B','C','A']);assert.deepEqual(z.taps.map(t=>t.state),['na','yes','no']);
+  assert.equal(F.migrujSzkic({taps:[{state:'no'}]},['A','B']),null);assert.equal(F.migrujSzkic(null,['A']),null);});
