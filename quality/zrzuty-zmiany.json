@@ -2,38 +2,5 @@
   "schema": "oest.quality.zrzuty-zmiany",
   "version": 1,
   "note": "Plan audytu 19/11/2026 punkt 1.6: ekrany, których wygląd ZMIENIA bieżący PR (zrzuty-ui-check.cjs porównuje piksel w piksel z main). Wpis tylko za zgodą właściciela na zmianę wyglądu tego ekranu (DESIGN-SYSTEM.md: żadnego samowolnego przeprojektowania). Po scaleniu następny PR musi wpisy usunąć – lista dotyczy tylko jednej zmiany.",
-  "entries": [
-    {
-      "id": "reactive/new/:id",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – zdjęcia przed/po jako kafelki z ikoną jak w formularzu inspekcji, etykiety bez łamania, dolne przyciski bez emoji i niższe (--h-btn)"
-    },
-    {
-      "id": "reactive/draft/:id",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – zdjęcia przed/po jako kafelki z ikoną jak w formularzu inspekcji, etykiety bez łamania, dolne przyciski bez emoji i niższe (--h-btn)"
-    },
-    {
-      "id": "reactive/job/:id",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – zdjęcia przed/po jako kafelki z ikoną jak w formularzu inspekcji, etykiety bez łamania, dolne przyciski bez emoji i niższe (--h-btn)"
-    },
-    {
-      "id": "reactive/complete/:id",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – zdjęcia przed/po jako kafelki z ikoną jak w formularzu inspekcji, etykiety bez łamania, dolne przyciski bez emoji i niższe (--h-btn)"
-    },
-    {
-      "id": "handover",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – okres zmiany jako DD/MM/RRRR (UX-025)"
-    },
-    {
-      "id": "handover/archive",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – okres zmiany jako DD/MM/RRRR (UX-025), stan przekazania słowami zamiast kodu not_shared (UX-029)"
-    },
-    {
-      "id": "handover/shift/:id",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – okres zmiany jako DD/MM/RRRR (UX-025)"
-    },
-    {
-      "id": "settings/account",
-      "reason": "Grzegorz 22/11/2026: „nadać ludzki ekran, reactive kosmetycznie jest kompletnie zjebane” – błąd sprawdzenia aktualizacji z treścią zamiast „undefined” (UX-029)"
-    }
-  ]
+  "entries": []
 }
