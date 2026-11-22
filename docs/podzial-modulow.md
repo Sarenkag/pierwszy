@@ -63,7 +63,7 @@ Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funk
 - Krok 18 (krótkie opisy modułów): Coder 30B pisze opis z `docs/mapa-repo.txt` i `inspekcje/tags` swojego pliku, 27B albo Claude sprawdza.
 - **Do samej indeksacji model nie jest potrzebny** – spis robią aider i ctags bez modelu, szybciej i bez błędów. Model od embeddingów (`nomic-embed-text`) tylko przy opcjonalnym wyszukiwaniu po znaczeniu.
 
-## Krok 0 – bramka jakości (potrzebna zgoda Grzegorza, robi Claude albo agent)
+## Krok 0 – bramka jakości (ZROBIONE 22/11/2026, zgoda Grzegorza „tak”)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
 Rozwiązanie: w `quality/zasady.cjs` w funkcji `pliki()` treść plików `inspekcje/i-*.js` doklejać do treści `inspekcje/index.html` jako skrypt strony (zamiast liczyć je osobno). Liczby naruszeń zostają te same, nic się nie poluzowuje. Test: `node quality/check-architecture.cjs` → G1 PASS, 0 nowych; `node --test quality/tests/gate.test.cjs` PASS.
 
