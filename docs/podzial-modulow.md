@@ -7,7 +7,7 @@
 ## Stan przed podziałem (zmierzone 22/11/2026, main `f66c9fc`)
 - `npm test` w `app/`: 438/438 PASS.
 - G1 (`node quality/check-architecture.cjs`): PASS, 0 nowych naruszeń. Ratchet: PASS.
-- G2 (`node quality/run-gate.cjs --part browser`): wynik w opisie PR.
+- G2 (`node quality/run-gate.cjs --part browser`): 52/52 PASS.
 
 ## Jak jest zbudowana strona
 `index.html` ma: style (linie 14–309), HTML (310–505), skrypty z `../moduly` (506–543), skrypt Word (544–827, zwykłe funkcje globalne: `fillDocx`, `makeName`…) i **jeden wielki skrypt** (828–3294) w środku `(function () { "use strict"; … })();`. Ten skrypt dzieli się komentarzami `// ---------- nazwa ----------` na sekcje. Sekcje mocno dzielą zmienne (np. `states`, `photos`, `fl`, `temps` są zmieniane z kilku sekcji).
