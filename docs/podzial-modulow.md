@@ -51,6 +51,8 @@ Zależności: każdy plik może używać plików o **niższym numerze**; wyższe
 - Odświeża się sama przy każdym uruchomieniu aidera (liczy z plików na dysku). Rozmiar ustawia `--map-tokens` (np. 2048).
 - Dla agentów spoza aidera (OpenCode w Paperclipie) zapisać mapę do pliku po każdym kroku: `aider --show-repo-map > docs/mapa-repo.txt` i dodać do commita kroku.
 - OpenCode z LSP (serwer TypeScript dla plików .js) daje skok do definicji i listę odwołań na żądanie. To dobre uzupełnienie, ale nie daje gotowego spisu. Nie sprawdzałem, czy LSP działa w OpenCode u Grzegorza.
+- **Wyszukiwanie po znaczeniu (opcja, nie instalowane):** `open-codebase-index` (github.com/Helweg/open-codebase-index, MIT, v0.40.1 z 19/11/2026). Wg README: wtyczka OpenCode i serwer MCP, embeddingi z Ollamy modelem `nomic-embed-text` (już jest w Ollamie u Grzegorza), indeks lokalnie (SQLite + wektory + BM25), odświeża tylko zmienione pliki (obserwuje pliki), ma też „kto woła”/„gdzie zdefiniowane”, działa na Windows. Nie uruchamiałem go. Zapas: indeksowanie w Kilo Code (Ollama + nomic-embed-text, ale wymaga Qdranta). Przed uruchomieniem: zasada Ollamy (sprawdzić `ollama ps`, karty, innych klientów).
+- Podział ról: spis symboli robi narzędzie deterministyczne (repo-map), a model od embeddingów służy tylko do szukania po znaczeniu. Mały model językowy do indeksu nie jest potrzebny.
 - ctags: nie sprawdzałem na tym repo (brak programu w chmurze). Nie jest potrzebny, skoro repo-map już jest.
 
 Spis niżej (stan na dziś, wyliczony z kodu 22/11) mówi agentowi, gdzie co jest, bez czytania całości. „Wejścia” to elementy strony z obsługą kliknięcia/zmiany. „Woła funkcje z” obejmuje też wywołania w obsłudze kliknięć. Po kroku 18 spis zastępuje `docs/mapa-repo.txt` z aidera.
