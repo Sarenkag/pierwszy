@@ -31,7 +31,7 @@
   function L(pl, en) { return lang() === "en" ? en : pl; }
   function dmy(iso) { return iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : "–"; }
   function hm(iso) { var d = new Date(iso); return isNaN(d) ? "" : ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function cards() { var P = w.OEST_PPM; return P ? P.tasks.map(function (t) { return [t.id, t.name]; }) : []; }
   function cardName(id) { var P = w.OEST_PPM, t = P && P.byId(id); return t ? t.name : id; }
   // zmiana treści bez przerysowania (moduly/podmien): przełącznik PL/EN podmienia tylko teksty

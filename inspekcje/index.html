@@ -507,6 +507,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
 <script src="../moduly/bledy/bledy.js"></script>
 <script src="../moduly/podmien/podmien.js"></script>
+<script src="../moduly/narzedzia/narzedzia.js"></script>
 <script src="../moduly/ladowanie/ladowanie.js"></script>
 <script src="../moduly/znacznik/znacznik.js"></script>
 <script src="../moduly/kafelek/kafelek.js"></script>
@@ -525,7 +526,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 <script src="../moduly/word-pdf/word-pdf.js"></script>
 <script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
-<script src="../moduly/narzedzia/narzedzia.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
 <script src="../moduly/checkbox/checkbox.js"></script>
@@ -873,7 +873,7 @@ function makeName(pattern, data, when) {
   // ---------- pomocnicze ----------
   var NZ = window.OESTNarzedzia; // pad, daty, base64, kb – moduly/narzedzia (K01)
   // esc zostaje tu do osobnej karty: ta sama funkcja jest w 11 plikach .js, łączymy je wszystkie naraz (audyt nr 53)
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function val(id) { return $(id).value.trim(); }
   function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
   function online() { return navigator.onLine !== false; }

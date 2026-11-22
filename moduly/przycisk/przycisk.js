@@ -44,7 +44,7 @@
     (document.head || document.documentElement).insertBefore(s, (document.head || document.documentElement).firstChild);
   })();
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   // Małe okno z pytaniem – JEDNO okienko „Na pewno?” w całej apce (zamiast systemowego confirm/alert, Grzegorz 04/11/2026).
   // Rośnie z miejsca stuknięcia i zamyka się pomniejszeniem (moduly/wyglad); Wstecz telefonu i stuknięcie obok = Anuluj.
   //   ask({ title, text, ok: "Usuń", cancel: "Anuluj", danger: true }) → Promise<true|false>

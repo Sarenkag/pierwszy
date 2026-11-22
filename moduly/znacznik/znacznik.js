@@ -19,7 +19,7 @@
 (function (w, d) {
   "use strict";
   if (w.OESTZnacznik) return;
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var N = ".oest-n,.hm-badge,.kf-n,.fl-ic b,.cd i";
   var CSS =
     // licznik

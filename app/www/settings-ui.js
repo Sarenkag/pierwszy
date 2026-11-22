@@ -3,7 +3,7 @@
   var store=w.OESTSettings,google=w.OESTGoogle,route='settings',navigate=function(v){w.OESTEkrany.go(v);},dirty=false,pendingRestore=null;
   var adapters={},queue={count:null,bytes:null},lang='pl',uploading=false,readingQueue=false;
   function L(pl,en){return lang==='en'?en:pl;}
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var esc=w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function root(){return document.getElementById('v-settings');}
   function state(){return store.get();}
   function val(o,path){return path.split('.').reduce(function(v,k){return v[k];},o);}

@@ -177,7 +177,7 @@ function analyse(www, opts) {
   // ---------- KOPIA: ta sama funkcja (JM-2), ten sam plik (JM-3) ----------
   const funkcje = new Map();
   for (const [f, c] of kod) {
-    if (f.endsWith('.html')) continue; // skrypty z HTML: tylko przez JM-1 (do P9 zostają w HTML)
+    if (f.endsWith('.html') && f !== 'inspekcje/index.html') continue; // skrypty z HTML: tylko przez JM-1 (do P9 zostają w HTML); strona inspekcji sprawdzana (Grzegorz 22/11/2026: testy mają pokazywać, co naprawić)
     for (const fn of funkcjeZ(c)) { if (fn.tokeny < MIN_TOKENOW) continue; if (!funkcje.has(fn.hash)) funkcje.set(fn.hash, []); funkcje.get(fn.hash).push({ f, nazwa: fn.nazwa }); }
   }
   for (const [h, lista] of funkcje) {

@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const J=x=>JSON.parse(JSON.stringify(x));
 function load(extra){const w=Object.assign({notatkiPamiecTestowa:true,localStorage:{getItem:()=>null,setItem:()=>{}}},extra||{});w.window=w;const ctx={window:w,console};
-  for(const f of ['model/model.js','notatki/notatki.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly',f),'utf8'),ctx);return w;}
+  for(const f of ['narzedzia/narzedzia.js','model/model.js','notatki/notatki.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly',f),'utf8'),ctx);return w;}
 test('notatki: słowa branżowe – PL po rozpoznaniu mowy, EN po tłumaczeniu',()=>{const N=load().OESTNotatki;
   assert.equal(N.fix('kran ma 54 stopnie celsjusza, zimna 17,8 stopni','pl'),'kran ma 54 °C, zimna 17,8 °C');
   // kąt to nie temperatura (przegląd Codex #108)

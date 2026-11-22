@@ -103,7 +103,9 @@
         "\\bfunction\\s+esc\\w*\\s*\\(",
         "\\besc\\w*\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)"
       ],
-      "wlasciciele": [],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
       "punkt": "#50/D23",
       "usuwa": "U1"
     },

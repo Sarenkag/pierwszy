@@ -7,7 +7,7 @@
 (function (w) {
   'use strict';
   function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
 
   // ---------- jakość tekstu: słowa branżowe (rozpoznawanie mowy i tłumacz mylą je najczęściej) ----------
   // PL: po rozpoznaniu mowy, przed tłumaczeniem. EN: po tłumaczeniu i po modelu. Dopisuj tu kolejne pary.

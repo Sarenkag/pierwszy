@@ -2,7 +2,7 @@
 (function(w){'use strict';
   const core=w.OESTHandoverCore,R=w.OESTReactive,repo=R.createRepository({owner:()=>w.OESTSettings.get().owner});
   const adapters={};let navigate=r=>{w.OESTEkrany.go(r);},route='handover',data=null,shiftId=null,owner='',busy=false,dirty=false,pending=[],mediaUrls=[],ppm=null;
-  const $=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $=id=>document.getElementById(id),esc=w.OESTNarzedzia.esc; // esc: moduly/narzedzia (audyt nr 53)
   const localDay=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
   function native(){return w.Capacitor&&w.Capacitor.isNativePlatform()&&w.Capacitor.Plugins.HandoverTools;}
   function L(pl,en){return w.OESTSettings.get().appearance.language==='en'?en:pl;}
