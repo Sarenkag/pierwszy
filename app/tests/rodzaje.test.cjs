@@ -32,7 +32,7 @@ test('rodzaje: gotowe usterki, piętro i wieża z kodu urządzenia', () => {
 });
 
 test('rodzaje: formularz inspekcji bierze dane z modułu i nie ma własnych kopii', () => {
-  const html = [ 'index.html', ...fs.readdirSync(path.join(root, 'inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(root, 'inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
+  const html = require('../../quality/strona-inspekcji.cjs').strona(path.join(root, 'inspekcje')).tekst /* strona inspekcji w kolejności ładowania, z częściami (docs/podzial-modulow.md) */;
   assert.doesNotMatch(html, /var TYPES = \[\{/);
   assert.doesNotMatch(html, /var FAULTS = \[/);
   for (const f of ['faultsFor', 'floorOf', 'towerOf', 'qPossible']) assert.doesNotMatch(html, new RegExp('function\\s+' + f + '\\s*\\('), f);
