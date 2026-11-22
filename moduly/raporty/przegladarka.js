@@ -16,7 +16,7 @@
 (function (w) {
   "use strict";
   function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var BLD = { "Tower A": "TA", "Tower B": "TB", "Pavilion": "P" };
   var ICON = '<svg class="ty" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h10l4 4v16H5zM15 2v5h4M8 11h8M8 15h8M8 18h5"/></svg>';
   var CSS = ".rpt-find{display:flex;gap:8px;margin:0 0 12px}.rpt-find input{flex:1 1 auto;min-width:0}.rpt-find select{flex:0 0 34%;min-width:0}" +

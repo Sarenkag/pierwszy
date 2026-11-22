@@ -16,7 +16,7 @@
 (function (w, d) {
   "use strict";
   if (w.OESTPasekDni) return;
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function iso(x) { return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
   var CSS =
     // ten sam odstęp wokół paska na każdym ekranie (poświata „dziś” nie jest ucinana)

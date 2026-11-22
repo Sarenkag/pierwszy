@@ -1,5 +1,5 @@
 (function(w){
-  'use strict';const L=(pl,en)=>w.OESTT?w.OESTT(pl,en):pl,X=(id,v)=>w.OESTTx?w.OESTTx("pytania." + id,v):id,A=w.OESTQuestions,Q=w.OESTQuestionsCore,P=w.OEST_PPM,$=id=>document.getElementById(id),uid=()=>crypto.randomUUID(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  'use strict';const L=(pl,en)=>w.OESTT?w.OESTT(pl,en):pl,X=(id,v)=>w.OESTTx?w.OESTTx("pytania." + id,v):id,A=w.OESTQuestions,Q=w.OESTQuestionsCore,P=w.OEST_PPM,$=id=>document.getElementById(id),uid=()=>crypto.randomUUID(),esc=w.OESTNarzedzia.esc;
   let navigate=()=>{},s=null,tab='base',draft=null,profile=null,taskId='',dirty=false,busy=false,search='',filter='',proposal=null,preview=[],epoch=0;
   const btn=(label,action,extra='')=>'<button type="button" class="btn" data-qq="'+action+'" '+extra+'>'+label+'</button>',panel=html=>'<section class="panel">'+html+'</section>';
   const input=(label,key,value='',type='text')=>'<label class="field"><span>'+label+'</span><input data-f="'+key+'" type="'+type+'" value="'+esc(value)+'" maxlength="5000"></label>';

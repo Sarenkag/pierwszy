@@ -267,7 +267,7 @@
       return Promise.all(pending().filter(function (q) { return q.status === "err"; }).map(function (q) { q.status = "wait"; q.err = ""; changed(q); return put(q); }));
     }).then(function () { run({ login: true, anyNet: true }); }); // Ponów = świadoma decyzja, także przez dane
   }
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = root.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function render() {
     mount(); if (!el) return;
     var p = pending(), n = p.length, err = p.filter(function (q) { return q.status === "err"; })[0];

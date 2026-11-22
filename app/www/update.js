@@ -5,7 +5,7 @@
   var plugin = null, mine = null, latest = null, busy = false;
   function native() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform()); }
   function api() { if (!plugin && native()) plugin = w.Capacitor.registerPlugin ? w.Capacitor.registerPlugin("AppUpdate") : w.Capacitor.Plugins.AppUpdate; return plugin; }
-  function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function current() {
     if (mine !== null) return Promise.resolve(mine);
     var p = api(); if (!p) return Promise.resolve(0);

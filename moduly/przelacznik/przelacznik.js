@@ -8,7 +8,7 @@
 (function (w, d) {
   "use strict";
   if (w.OESTPrzelacznik) return;
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var CSS =
     ".oest-sw{--n:2;--i:0;position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:stretch;flex:none;min-width:calc(var(--n) * 30px);height:32px;padding:3px;box-sizing:border-box;" +
     "border-radius:11px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(255,255,255,.04));" +

@@ -9,7 +9,7 @@
   function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   function loc() { return T('pl-PL', 'en-GB'); }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function mb(b) { return (b / MB).toLocaleString(loc(), { maximumFractionDigits: b < 10 * MB ? 1 : 0 }) + ' MB'; }
   function bar(used, limit) { var p = Math.min(100, Math.round(used / limit * 100)); return '<div class="zd-bar"><span style="width:' + p + '%"' + (p >= 90 ? ' class="full"' : '') + '></span></div>'; }
   function drive() {

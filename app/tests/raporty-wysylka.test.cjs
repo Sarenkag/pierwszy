@@ -62,6 +62,7 @@ function app(o = {}) {
   root.window = root;
   const R = require('../../moduly/raporty/raporty.js');
   root.OESTRaporty = R.createBrowser(root);
+  new Function('window', fs.readFileSync(__dirname + '/../../moduly/narzedzia/narzedzia.js', 'utf8'))(root); // jak w apce: narzędzia (esc) przed modułem
   new Function('window', 'setInterval', fs.readFileSync(__dirname + '/../../moduly/wysylka/wysylka.js', 'utf8'))(root, () => 0);
   return { root, S: root.OESTSender, R: root.OESTRaporty, mails, files, folders, events, setDrive: v => { driveDown = !v; } };
 }

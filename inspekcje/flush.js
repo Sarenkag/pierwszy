@@ -4,7 +4,7 @@
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var LABEL = { yes: "Yes", no: "No", na: "N/A" };
   var GREEN = "92D050";
-  function x(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var x = (root.OESTNarzedzia || (typeof require === "function" && (require("../moduly/narzedzia/narzedzia.js"), globalThis.OESTNarzedzia))).esc; // moduly/narzedzia (audyt nr 53)
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   // d: { noDate (Date odznaczone), building: "A"|"B"|"Pavilion", year, month (0–11), week (1–5), date: Date, name, taps: [{ name, state, note }] }
   function fill(xml, d) {
