@@ -391,6 +391,11 @@
       "timeoutSec": 600
     },
     {
+      "file": "app/tests/sw-komplet-ui-check.cjs",
+      "passMarker": "SW KOMPLET UI PASS",
+      "timeoutSec": 120
+    },
+    {
       "file": "app/tests/flush-odczyt-ui-check.cjs",
       "passMarker": "FLUSH ODCZYT UI PASS",
       "timeoutSec": 300
