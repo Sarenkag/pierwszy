@@ -1,6 +1,6 @@
 # Podział apki inspekcji na moduły – mapa dla lokalnego agenta (22/11/2026)
 
-**Po co:** `inspekcje/index.html` ma **87 892 tokenów** (zmierzone tokenizerem Qwen 3.6 27B, pakiet `qwen-tokenizer`; tokenizera Qwen 3.8 nie miałem, liczby mogą się nieco różnić). Lokalny model ma pracować na kawałkach do ~25k. Po podziale największy plik ma ~11k, a `index.html` ~15k (ze stylami).
+**Po co:** `inspekcje/index.html` ma **87 892 tokenów** (zmierzone tokenizerem Qwen 3.6 27B, pakiet `qwen-tokenizer`; tokenizera Qwen 3.8 nie miałem, liczby mogą się nieco różnić). Lokalny model ma pracować na kawałkach do ~25k. Po podziale największy plik ma ~11k, a `index.html` ~7k.
 
 **Ten dokument nie przenosi kodu.** Kroki wykonuje lokalny agent, jeden krok = jeden commit (albo jeden PR).
 
@@ -24,8 +24,8 @@ Etap 2 (później, osobne zlecenie): każdy plik dostaje własny interfejs `wind
 
 | # | Plik | Linie dziś | Tokeny | Co zawiera | Wolno ruszać |
 |---|---|---|---|---|---|
-| – | `index.html` (zostaje) | 1–543 | ~15 300 | nagłówek, style (8,1k), HTML ekranów, lista `<script>` | tylko listę `<script>` |
-| 1 | — | — | — | style **zostają w `index.html`** (patrz krok 1) | — |
+| – | `index.html` (zostaje) | 1–13, 310–543 | ~7 200 | nagłówek, HTML ekranów, lista `<script>` | tylko listę `<script>`/`<link>` |
+| 1 | `insp.css` | 14–309 | 8 112 | style strony | wygląd |
 | 2 | `i-word.js` | 545–826 | 7 122 | `T`, `fillDocx`, `tabsToColumns`, `templateInfo`, `makeName` – wypełnianie Worda | Word |
 | 3 | `i-rdzen.js` | 832–907 | 1 505 | `$`, `MIME_DOCX`, `RD/TYPES/FAULTS`, pamięć `load/save/cfg`, pomocnicze (`NZ`, `esc`, `val`…), IndexedDB (`kvGet`, `qAll`, `qPut`…) | **nie ruszać bez potrzeby** – używają go wszystkie |
 | 4 | `i-ekrany.js` | 908–1018 | 3 202 | `show`, `renderHome`, `renderList`, `devices`, `markDone` | ekran główny i lista |
@@ -65,9 +65,11 @@ Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funk
 
 ## Krok 0 – bramka jakości (ZROBIONE 22/11/2026, zgoda Grzegorza „tak”)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
-Zrobione: w `quality/zasady.cjs` pliki `inspekcje/i-*.js` liczą się pod nazwą `inspekcje/index.html`. Porównanie identycznych plików widzi części osobno. Kopie funkcji w częściach nie są sprawdzane, tak samo jak dziś w skryptach `index.html`. Tak samo 8 testów (`report-template`, `raport-rozmiar`, `raporty-folder`, `narzedzia`, `rodzaje`, `aparat-java`, `moduly-zasady`, `spojnosc-ekranow`) czyta stronę razem z częściami.
+Zrobione: `quality/strona-inspekcji.cjs` składa stronę tak, jak ładuje ją przeglądarka: treść każdej części (`i-*.js`, `insp.css`) wstawia dokładnie w miejsce jej `<script src>`/`<link>`, w kolejności ładowania. Zasady (`quality/zasady.cjs`) i 8 testów (`report-template`, `raport-rozmiar`, `raporty-folder`, `narzedzia`, `rodzaje`, `aparat-java`, `moduly-zasady`, `spojnosc-ekranow`) sprawdzają ten złożony tekst, więc widzą to samo co przed podziałem, łącznie z kolejnością (np. „moduł ładuje się przed formularzem”). Część, której strona nie ładuje, sprawdzana jest jako osobny plik. Kopie funkcji w kodzie strony nie są sprawdzane – tak było już przed podziałem (decyzja do Grzegorza, opis w PR).
 
-**Symulacja pełnego podziału (22/11, cięcie dokładnie wg tabeli, bez kroku 1):** `npm test` 438/438, G1 PASS (0 nowych), G2 52/52 PASS (w tym zrzuty piksel w piksel).
+*Poprawka 22/11 (PR po #201):* pierwsza wersja sklejała części alfabetycznie i doklejała je na końcu strony. To mogło przepuścić błąd kolejności ładowania – poprawione.
+
+**Symulacja pełnego podziału (22/11, cięcie JS dokładnie wg tabeli):** `npm test` 438/438, G1 PASS (0 nowych), G2 52/52 PASS (w tym zrzuty piksel w piksel). Osobno sam krok 1 (CSS): zrzuty 46/46 piksel w piksel. Wcześniejszy wniosek „CSS zmienia wygląd” był błędny: pochodził z przebiegu, w którym naraz przeniesiono CSS i cały JS, i nie został zbadany.
 
 ## Kroki dla agenta
 Przed każdym krokiem: `git pull`, w `app/`: `npm install` (raz). Po każdym kroku **zawsze**:
@@ -80,11 +82,11 @@ node quality/run-gate.cjs --part node --only <nazwa>.test.cjs         # każdy t
 aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks (aider)
 ctags -R --languages=JavaScript --kinds-JavaScript=fcv -f inspekcje/tags inspekcje   # odśwież indeks (ctags)
 ```
-Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. **Testów nie zmieniać:** od kroku 0 testy czytają `index.html` razem ze wszystkimi `i-*.js`, więc przeniesienie kodu ich nie psuje (sprawdzone na symulacji pełnego podziału: `npm test` 438/438).
+Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. **Testów nie zmieniać:** testy czytają stronę złożoną z częściami w kolejności ładowania (`quality/strona-inspekcji.cjs`). Jeśli test padnie, to znaczy, że przeniesienie coś zmieniło – naprawić przeniesienie, nie test (sprawdzone na symulacji pełnego podziału: `npm test` 438/438).
 
 | Krok | Polecenie dla agenta | Testy do sprawdzenia |
 |---|---|---|
-| 1 | **Nie robić.** Sprawdzone 22/11: style przeniesione do osobnego pliku zmieniają zrzuty ekranu inspekcji (`zrzuty-ui-check` FAIL, nagłówek i tło inne, zrzut niestabilny). Bez tego kroku: PASS piksel w piksel. Style zostają w `index.html`. | — |
+| 1 | Przenieś zawartość `<style>` (linie 14–309) do `inspekcje/insp.css`. W miejscu `<style>…</style>` wstaw `<link rel="stylesheet" href="insp.css">` (ta sama pozycja, przed `../theme.css` – kolejność stylów się nie zmienia). Dopisz `"./insp.css"` do `SHELL` w `inspekcje/sw.js`. **Sprawdzone 22/11:** sam ten krok daje zrzuty piksel w piksel na 46 ekranach (każdy 2× stabilny), a strona złożona przez `quality/strona-inspekcji.cjs` jest bajt w bajt taka jak przed krokiem. | całe G2 (wygląd) |
 | 2 | Przenieś treść drugiego skryptu (od `// Tekst na ekranie: OESTT` do końca przed `</script>`, linie 545–826) do `inspekcje/i-word.js`; w HTML zostaw `<script src="i-word.js"></script>`. | `report-template.test`, `word-pdf-ui-check`, `raport-ui-check` |
 | 3 | W dużym skrypcie usuń linię `(function () {` i na końcu `})();` (przed `</script>`). `"use strict";` zostaje jako pierwsza linia skryptu. Nic więcej. | całe `npm test` i całe G2 |
 | 4 | Wytnij od linii po `"use strict";` do linii przed `// ---------- ekrany ----------` → `inspekcje/i-rdzen.js` (na górze `"use strict";`). Przed dużym `<script>` dodaj `<script src="i-rdzen.js"></script>`. | `narzedzia.test`, `rodzaje.test`, `ekran-glowny-ui-check` |
