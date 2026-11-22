@@ -81,7 +81,8 @@ function fakePhone() {
     // sekcje niezależne (Grzegorz 22/11/2026 „tak”): otwarcie „na koniec” nie zwija „na start” z 🎤 i notatkami
     check(await pg.locator('#rxNotes .nt-rec').isVisible() && await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'otwarcie „na koniec” zwinęło „na start” (mikrofon zniknął)');
     await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes').waitFor({ state: 'detached' });
-    check(await until(() => (document.querySelector('[data-ntc=start]') || {}).hidden === false && document.querySelector('[data-ntc=start]').textContent === '🎤 2'), 'zwinięte „na start”: brak licznika 🎤 2 na nagłówku');
+    check(await until(() => (document.querySelector('[data-ntc=start]') || {}).hidden === false && /^🎤 2( · 📷 \d+)?$/.test(document.querySelector('[data-ntc=start]').textContent)), 'zwinięte „na start”: brak licznika 🎤 2 na nagłówku');
+    check(await pg.evaluate(() => { const n = document.querySelectorAll('#rx-before img').length, t = document.querySelector('[data-ntc=start]').textContent; return n ? t.endsWith('📷 ' + n) : !/📷/.test(t); }), 'zwinięte „na start”: liczba zdjęć przed nie zgadza się z kartą');
     check(await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'zwinięcie „na start” zwinęło też „na koniec”');
     await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes .nt-rec').waitFor();
     await pg.locator('#rxNotesEnd .nt-add').click(); await pg.waitForSelector('.nt-pop textarea');
