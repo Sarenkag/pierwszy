@@ -67,7 +67,7 @@ Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funk
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
 Zrobione: w `quality/zasady.cjs` pliki `inspekcje/i-*.js` liczą się pod nazwą `inspekcje/index.html`. Porównanie identycznych plików widzi części osobno. Kopie funkcji w częściach nie są sprawdzane, tak samo jak dziś w skryptach `index.html`. Tak samo 8 testów (`report-template`, `raport-rozmiar`, `raporty-folder`, `narzedzia`, `rodzaje`, `aparat-java`, `moduly-zasady`, `spojnosc-ekranow`) czyta stronę razem z częściami.
 
-**Symulacja pełnego podziału (22/11, cięcie dokładnie wg tabeli, bez kroku 1):** `npm test` 438/438, G1 PASS (0 nowych), G2: wynik w PR.
+**Symulacja pełnego podziału (22/11, cięcie dokładnie wg tabeli, bez kroku 1):** `npm test` 438/438, G1 PASS (0 nowych), G2 52/52 PASS (w tym zrzuty piksel w piksel).
 
 ## Kroki dla agenta
 Przed każdym krokiem: `git pull`, w `app/`: `npm install` (raz). Po każdym kroku **zawsze**:
