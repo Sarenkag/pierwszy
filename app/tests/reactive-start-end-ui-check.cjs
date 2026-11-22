@@ -78,7 +78,12 @@ function fakePhone() {
     if (SHOTS) { await pg.locator('#rxNotes').scrollIntoViewIfNeeded(); await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-notatki.png') }); }
     // ---------- info na koniec: osobne notatki ----------
     await pg.locator('[data-rx=row][data-id=end]').click(); await pg.locator('#rxNotesEnd .nt-add').waitFor();
-    check(await pg.locator('#rxNotes').count() === 0, 'start i koniec otwarte naraz');
+    // sekcje niezależne (Grzegorz 22/11/2026 „tak”): otwarcie „na koniec” nie zwija „na start” z 🎤 i notatkami
+    check(await pg.locator('#rxNotes .nt-rec').isVisible() && await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'otwarcie „na koniec” zwinęło „na start” (mikrofon zniknął)');
+    await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes').waitFor({ state: 'detached' });
+    check(await until(() => (document.querySelector('[data-ntc=start]') || {}).hidden === false && document.querySelector('[data-ntc=start]').textContent === '🎤 2'), 'zwinięte „na start”: brak licznika 🎤 2 na nagłówku');
+    check(await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'zwinięcie „na start” zwinęło też „na koniec”');
+    await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes .nt-rec').waitFor();
     await pg.locator('#rxNotesEnd .nt-add').click(); await pg.waitForSelector('.nt-pop textarea');
     await pg.locator('.nt-pop textarea').fill('wymieniono uszczelkę'); await ask().locator('[data-a=ok]').click();
     await pg.waitForFunction(() => document.querySelector('#rxNotesEnd .nt-list [data-nt-id]')?.textContent === '📝1', null, { timeout: 10000 });
