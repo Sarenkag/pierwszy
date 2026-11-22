@@ -71,10 +71,15 @@ function pliki(www) {
 
 function analyse(www, opts) {
   const v = new Map(), add = (id, rule, detail, extra) => { if (!v.has(id)) v.set(id, { id, rule, detail, ...extra }); };
-  const all = pliki(www);
+  // Części strony inspekcji (inspekcje/i-*.js, docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): liczone razem z inspekcje/index.html
+  // jako jej skrypty, żeby przeniesienie kodu nie zmieniało nazw zastanych naruszeń. Liczby naruszeń zostają te same.
+  const CZESC = f => /^inspekcje\/i-[^/]*\.js$/.test(f);
+  const czesci = pliki(www).filter(CZESC), all = pliki(www).filter(f => !CZESC(f));
   const src = new Map(), kod = new Map();
   for (const f of all) {
-    const raw = fs.readFileSync(path.join(www, f), 'utf8'); src.set(f, raw);
+    let raw = fs.readFileSync(path.join(www, f), 'utf8');
+    if (f === 'inspekcje/index.html') for (const c of czesci) raw += '\n<script>\n' + fs.readFileSync(path.join(www, c), 'utf8') + '\n</script>';
+    src.set(f, raw);
     if (OBCA_STRONA.has(f) || DANE(f)) continue;
     if (f.endsWith('.html')) { const h = zHtml(raw); kod.set(f, h.kod + '\n' + h.znaczniki); } else kod.set(f, bezKomentarzy(raw));
   }
