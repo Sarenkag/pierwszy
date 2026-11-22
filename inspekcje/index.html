@@ -2983,8 +2983,10 @@ function makeName(pattern, data, when) {
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
   var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  if (NATIVE && "serviceWorker" in navigator) {
-    // w APK pliki są w telefonie: pamięć offline tylko pokazywała starą wersję po aktualizacji, więc ją usuwamy
+  if ("serviceWorker" in navigator) {
+    // Bez pamięci offline (service worker) – w APK pliki są w telefonie, a w przeglądarce apka nie musi działać bez zasięgu
+    // (Grzegorz 22/11/2026). Stara pamięć tylko pokazywała starą wersję po aktualizacji i mogła rozjechać stronę z jej plikami,
+    // więc ją usuwamy także w przeglądarkach, które ją mają z wcześniejszych wersji.
     var stale = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
       .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : null; })
@@ -2992,8 +2994,6 @@ function makeName(pattern, data, when) {
         var k = "oest.sw.reloaded";
         try { if (stale && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); } } catch (e) {}
       }).catch(function () {});
-  } else if (!IN_GAS && "serviceWorker" in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register("sw.js").catch(function () {});
   }
 })();
 </script>
