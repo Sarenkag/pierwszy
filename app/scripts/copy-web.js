@@ -20,8 +20,8 @@ for (const f of fs.readdirSync(src)) {
   fs.copyFileSync(path.join(src, f), path.join(dst, f));
 }
 for (const file of Object.values(libs)) fs.copyFileSync(require.resolve(file), path.join(dst, "lib", path.basename(file)));
-// strona i service worker (lista plików offline) wskazują na kopie lokalne
-for (const f of ["index.html", "sw.js"]) {
+// strona wskazuje na kopie lokalne
+for (const f of ["index.html"]) {
   const p = path.join(dst, f);
   let txt = fs.readFileSync(p, "utf8");
   for (const [url, file] of Object.entries(libs)) {

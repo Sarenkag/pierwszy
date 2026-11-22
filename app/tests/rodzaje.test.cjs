@@ -37,5 +37,5 @@ test('rodzaje: formularz inspekcji bierze dane z modułu i nie ma własnych kopi
   assert.doesNotMatch(html, /var FAULTS = \[/);
   for (const f of ['faultsFor', 'floorOf', 'towerOf', 'qPossible']) assert.doesNotMatch(html, new RegExp('function\\s+' + f + '\\s*\\('), f);
   assert.ok(html.indexOf('<script src="rodzaje.js"></script>') >= 0 && html.indexOf('<script src="rodzaje.js"></script>') < html.indexOf('var RD = window.OESTRodzaje'), 'moduł ładuje się przed formularzem');
-  assert.match(fs.readFileSync(path.join(root, 'inspekcje/sw.js'), 'utf8'), /"\.\/rodzaje\.js"/, 'moduł w pamięci offline obok flush.js');
+  assert.doesNotMatch(html, /serviceWorker\.register\(/, 'strona nie włącza pamięci offline (service worker usunięty 22/11/2026, Grzegorz: w przeglądarce bez pracy offline)');
 });

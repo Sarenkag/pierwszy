@@ -9,7 +9,7 @@ Aplikacja na telefon do raportów z inspekcji (checklista + zdjęcia → DOCX i 
 
 Pliki:
 - `index.html` — aplikacja.
-- `sw.js`, `manifest.webmanifest`, `icon-*.png` — instalacja na ekranie głównym i praca offline.
+- `manifest.webmanifest`, `icon-*.png` — instalacja na ekranie głównym (bez pracy offline: service worker usunięty 22/11/2026).
 - `Code.gs.txt` — wzór skryptu Apps Script (dane obiektu i listy urządzeń uzupełnia się w kopii na koncie Google).
 
 ## Wdrożenie (raz, na laptopie, ok. 15 min)
