@@ -5,6 +5,7 @@ function load(settings){
   const data=new Map([['oest.account',JSON.stringify({id:'a',email:'a@gmail.com'})],['oest.settings.v1.a',JSON.stringify(settings)]]);
   const root={localStorage:{getItem:k=>data.get(k)??null,setItem(k,v){data.set(k,v);}},navigator:{onLine:true},document:{addEventListener(){},readyState:'loading'},addEventListener(){},setTimeout,clearTimeout};
   const src=require('node:fs').readFileSync(__dirname+'/../../moduly/wysylka/wysylka.js','utf8');
+  new Function('window',require('node:fs').readFileSync(__dirname+'/../../moduly/narzedzia/narzedzia.js','utf8'))(root); // jak w apce: narzędzia (esc) przed modułem
   new Function('window','setInterval',src)(root,()=>0);
   return root.OESTSender;
 }

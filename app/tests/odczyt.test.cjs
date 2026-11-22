@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const J=x=>JSON.parse(JSON.stringify(x)),w={};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/odczyt/odczyt.js'),'utf8'),{window:w});
+const J=x=>JSON.parse(JSON.stringify(x)),w={};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/narzedzia/narzedzia.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../../moduly/odczyt/odczyt.js'),'utf8'),{window:w});
 test('odczyt: liczby z jednostkami i unikalne linie',()=>{const r=w.OESTOdczyt.parse('EZETROL\nCl2 0.85 mg/l\npH 7.2\n  Cl2 0.85 mg/l \n49.8 Hz  12.5A\nSN 4471-B');assert.deepEqual(J(r.lines),['EZETROL','Cl2 0.85 mg/l','pH 7.2','49.8 Hz 12.5A','SN 4471-B']);assert.deepEqual(J(r.numbers),['0.85 mg/l','pH 7.2','49.8 Hz','12.5A','4471']);});
 test('odczyt: nieznana jednostka nie daje obciętej liczby',()=>{assert.deepEqual(J(w.OESTOdczyt.parse('230VAC').numbers),[]);assert.deepEqual(J(w.OESTOdczyt.parse('12.5amps').numbers),[]);assert.deepEqual(J(w.OESTOdczyt.parse('230 VAC').numbers),['230']);});
 test('odczyt: liczba do pola liczbowego',()=>{assert.equal(w.OESTOdczyt.numberOf('Cl2 0.85 mg/l'),'0.85');assert.equal(w.OESTOdczyt.numberOf('12,5 °C'),'12.5');assert.equal(w.OESTOdczyt.numberOf('49.8 Hz 12.5 A'),null);});
@@ -12,7 +12,7 @@ test('odczyt: znak po literze nie gubi minusa',()=>{assert.deepEqual(J(w.OESTOdc
 // 14/11/2026 (przegląd pkt 7): Klucze i Power trace czytają przez OESTOdczyt.tekst – ten sam obraz i surowy tekst co wcześniej
 test('odczyt: tekst(canvas) wysyła obraz bez zmian i oddaje surowy tekst, błąd wtyczki przechodzi bez zmian',async()=>{
   const sent=[],plug={recognize:o=>{sent.push(o);return Promise.resolve({text:'L1 Lights\nL1 Lights\n12 SPARE'});}},w2={Capacitor:{isNativePlatform:()=>true,Plugins:{OESTKeys:plug}}};
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/odczyt/odczyt.js'),'utf8'),{window:w2});
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/narzedzia/narzedzia.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../../moduly/odczyt/odczyt.js'),'utf8'),{window:w2});
   const canvas={toDataURL:(t,q)=>{assert.equal(t,'image/jpeg');assert.equal(q,0.9);return 'data:image/jpeg;base64,QUJD';}};
   assert.equal(await w2.OESTOdczyt.tekst(canvas),'L1 Lights\nL1 Lights\n12 SPARE');assert.deepEqual(J(sent),[{base64:'QUJD'}]);
   plug.recognize=()=>Promise.resolve({});assert.equal(await w2.OESTOdczyt.tekst(canvas),'');

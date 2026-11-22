@@ -18,7 +18,7 @@
 (function (w) {
   "use strict";
   var TONE = ["#c3c9e8", "#f0c75e", "#5fd6a0", "#ff7b72", "#79b8ff"];
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var CSS = ".prow.k2{position:relative;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;justify-content:space-between;gap:6px!important;min-height:104px;box-sizing:border-box;padding:12px 38px 11px 18px!important;border-radius:16px!important;text-align:left;color:var(--ink);overflow:hidden;width:100%;margin:0 0 8px}" +
     ".ppm>.prow.k2{margin:0}" +
     ".prow.k2:before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--g)}" +

@@ -9,7 +9,7 @@
    english(scope, extra), jobSheet(date). Bez Capacitora (komputer, testy) przyciski mówią, że to działa w telefonie. */
 (function (w) {
   'use strict';
-  const SITE = 6324, esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const SITE = 6324, esc = w.OESTNarzedzia.esc; // esc: moduly/narzedzia (audyt nr 53)
   const plugin = () => { const C = w.Capacitor; if (!C?.isNativePlatform?.()) return null; return C.registerPlugin ? C.registerPlugin('Vantify') : C.Plugins?.Vantify || null; };
   const ask = o => w.OESTPrzycisk?.ask ? w.OESTPrzycisk.ask(o) : Promise.resolve(false);
   const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');

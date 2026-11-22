@@ -80,6 +80,6 @@
       }, function (e) { o.querySelector('.hint').textContent = e.message; });
     });
   }
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   w.OESTOdczyt = { available: available, tekst: tekst, read: read, parse: parse, pick: pick, numberOf: numberOf };
 })(window);

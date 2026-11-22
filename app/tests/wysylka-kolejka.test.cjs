@@ -10,6 +10,7 @@ function fakeIDB(){ // minimalny IndexedDB: jedna baza, magazyny w Map, transakc
 }
 function load(idb){
   const root={localStorage:{getItem:k=>k==='oest.account'?JSON.stringify({email:'a@gmail.com'}):null,setItem(){}},navigator:{onLine:true},document:{addEventListener(){},readyState:'loading'},addEventListener(){},setTimeout,clearTimeout,indexedDB:idb,crypto:globalThis.crypto};
+  new Function('window',fs.readFileSync(__dirname+'/../../moduly/narzedzia/narzedzia.js','utf8'))(root); // jak w apce: narzędzia (esc) przed modułem
   new Function('window','setInterval',fs.readFileSync(__dirname+'/../../moduly/wysylka/wysylka.js','utf8'))(root,()=>0);
   return root.OESTSender;
 }

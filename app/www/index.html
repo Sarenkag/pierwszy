@@ -256,6 +256,7 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="teksty.js"></script>
 <script src="moduly/podmien/podmien.js"></script>
 <!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
+<script src="moduly/narzedzia/narzedzia.js"></script><!-- narzędzia (esc, pad, daty) – przed modułami, które z nich korzystają (audyt nr 53) -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
 <script src="moduly/pasek-dni/pasek-dni.js"></script>
@@ -467,7 +468,7 @@ input[type=text], input[type=email], input[type=date], select {
   if (!Array.isArray(ppmSel)) { var og = load("ppm.group", "all"); ppmSel = og && og !== "all" && og !== "assets" ? [og] : []; }
   var DAYS = [["Nd", "Su"], ["Pn", "Mo"], ["Wt", "Tu"], ["Śr", "We"], ["Cz", "Th"], ["Pt", "Fr"], ["So", "Sa"]];
   function dayName(i) { return T(DAYS[i][0], DAYS[i][1]); }
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
   // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
   // aktywo Vantify przypięte do karty PPM (aktywa.js): numer + nazwa na karcie, lista „Aktywa”

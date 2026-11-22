@@ -7,7 +7,7 @@
 //   OESTKafelek.grid(lista)  → '<div class="tiles kf-grid">…</div>'
 (function (w, d) {
   "use strict";
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var CSS =
     ".kf-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}" +
     "html body .kf{position:relative;display:flex!important;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;" +
