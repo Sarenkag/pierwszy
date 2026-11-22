@@ -62,6 +62,11 @@ function zHtml(html) {
   return { kod: bezKomentarzy(skrypty), znaczniki };
 }
 
+// Części strony inspekcji (docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): inspekcje/i-*.js i inspekcje/insp.css liczone
+// razem z inspekcje/index.html, żeby przeniesienie kodu ze strony nie zmieniało nazw zastanych naruszeń. Liczby zostają te same.
+const CZESC = f => /^inspekcje\/i-[^/]*\.js$/.test(f);
+const STRONA_INSP = f => (CZESC(f) || f === 'inspekcje/insp.css') ? 'inspekcje/index.html' : f;
+
 function pliki(www) {
   const out = [];
   const walk = d => { for (const e of fs.readdirSync(path.join(www, d), { withFileTypes: true })) { const r = d ? d + '/' + e.name : e.name; if (e.isDirectory()) { if (e.name !== 'node_modules') walk(r); } else if (/\.(js|html)$/.test(e.name)) out.push(r); } };
@@ -71,9 +76,6 @@ function pliki(www) {
 
 function analyse(www, opts) {
   const v = new Map(), add = (id, rule, detail, extra) => { if (!v.has(id)) v.set(id, { id, rule, detail, ...extra }); };
-  // Części strony inspekcji (inspekcje/i-*.js, docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): liczone razem z inspekcje/index.html
-  // jako jej skrypty, żeby przeniesienie kodu nie zmieniało nazw zastanych naruszeń. Liczby naruszeń zostają te same.
-  const CZESC = f => /^inspekcje\/i-[^/]*\.js$/.test(f);
   const czesci = pliki(www).filter(CZESC), all = pliki(www).filter(f => !CZESC(f));
   const src = new Map(), kod = new Map();
   for (const f of all) {
@@ -186,7 +188,7 @@ function analyse(www, opts) {
     add(`KOPIA|funkcja|${h.slice(0, 10)}|${plikiF.sort().join('+')}`, 'KOPIA', `Ta sama funkcja w ${plikiF.length} plikach: ${opis.join(', ')}.`, { punkt: 'R25', usuwa: 'P7/P8', liczba: lista.length });
   }
   const tresci = new Map();
-  for (const f of all) { const h = crypto.createHash('sha1').update(src.get(f)).digest('hex'); if (!tresci.has(h)) tresci.set(h, []); tresci.get(h).push(f); }
+  for (const f of [...all, ...czesci]) { const h = crypto.createHash('sha1').update(src.has(f) ? src.get(f) : fs.readFileSync(path.join(www, f), 'utf8')).digest('hex'); if (!tresci.has(h)) tresci.set(h, []); tresci.get(h).push(f); }
   for (const lista of tresci.values()) if (lista.length > 1) add(`KOPIA|plik|${lista.join('+')}`, 'KOPIA', `Identyczne pliki: ${lista.join(', ')}.`, { punkt: 'R25', usuwa: 'P8' });
 
   // ---------- ZNACZNIK: klikalne elementy (R26) ----------
@@ -286,11 +288,15 @@ function ionic(www, src, add) {
   const css = [];
   const walkW = d => { for (const e of fs.readdirSync(path.join(www, d), { withFileTypes: true })) { const r = d ? d + '/' + e.name : e.name; if (e.isDirectory()) { if (e.name !== 'node_modules') walkW(r); } else if (/\.(css|js|html)$/.test(e.name)) css.push(r); } };
   walkW('');
+  const przew = new Map();
   for (const f of css) {
     if (OBCA_STRONA.has(f) || DANE(f)) continue;
     const c = fs.readFileSync(path.join(www, f), 'utf8');
     const n = (c.match(/overscroll-behavior|overflow(?:-[xy])?\s*:\s*(?:auto|scroll)/g) || []).length;
-    if (n) add('IONIC|przewijanie|' + f, 'IONIC', `${f}: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) ${n}× – przewijanie ustawia tylko rama (moduly/szkielet).`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu', liczba: n });
+    if (n) przew.set(STRONA_INSP(f), (przew.get(STRONA_INSP(f)) || 0) + n);
+  }
+  for (const [f, n] of przew) {
+    add('IONIC|przewijanie|' + f, 'IONIC', `${f}: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) ${n}× – przewijanie ustawia tylko rama (moduly/szkielet).`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu', liczba: n });
   }
 }
 

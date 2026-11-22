@@ -65,7 +65,7 @@ Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funk
 
 ## Krok 0 – bramka jakości (ZROBIONE 22/11/2026, zgoda Grzegorza „tak”)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
-Rozwiązanie: w `quality/zasady.cjs` w funkcji `pliki()` treść plików `inspekcje/i-*.js` doklejać do treści `inspekcje/index.html` jako skrypt strony (zamiast liczyć je osobno). Liczby naruszeń zostają te same, nic się nie poluzowuje. Test: `node quality/check-architecture.cjs` → G1 PASS, 0 nowych; `node --test quality/tests/gate.test.cjs` PASS.
+Zrobione: w `quality/zasady.cjs` pliki `inspekcje/i-*.js` i `inspekcje/insp.css` liczą się pod nazwą `inspekcje/index.html` (też przewijanie w CSS). Porównanie identycznych plików widzi części osobno. Kopie funkcji w częściach nie są sprawdzane, tak samo jak dziś w skryptach `index.html`. Stare zdanie planu:  w funkcji `pliki()` treść plików `inspekcje/i-*.js` doklejać do treści `inspekcje/index.html` jako skrypt strony (zamiast liczyć je osobno). Liczby naruszeń zostają te same, nic się nie poluzowuje. Test: `node quality/check-architecture.cjs` → G1 PASS, 0 nowych; `node --test quality/tests/gate.test.cjs` PASS.
 
 ## Kroki dla agenta
 Przed każdym krokiem: `git pull`, w `app/`: `npm install` (raz). Po każdym kroku **zawsze**:
@@ -95,9 +95,9 @@ Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez za
 | 11 | `serwer` + tłumaczenie + model + notatki (do `// ---------- zdjęcia`) → `i-serwer.js`. | `notatki-ui-check`, `pl-en-ui-check` |
 | 12 | `zdjęcia` + „sugestie ze zdjęcia” (do `// ---------- jeden zapis zdjęcia`) → `i-zdjecia.js`. | `zdjecia.test`, `zdjecia-data-ui-check` |
 | 13 | „jeden zapis zdjęcia” (do `// ---------- dane raportu`) → `i-zapis-zdjec.js`. `raport-rozmiar.test.cjs` i `aparat-java.test.cjs` (tylko `camOpts`) czytają `i-zapis-zdjec.js`. | `raport-rozmiar.test`, `aparat-java.test`, `raport-rozmiar-ui-check`, `zdjecia-szybkosc-ui-check` |
-| 14 | `dane raportu` + `szablon` (do `// ---------- ustawienia`) → `i-raport.js`. | `raport-ui-check`, `word-pdf-ui-check` |
+| 14 | `dane raportu` + `szablon` (do `// ---------- ustawienia`) → `i-raport.js`. W `raporty-folder.test.cjs` stałą `BUILDING` czytaj z `i-raport.js` (funkcja `reportFolder` zostaje czytana ze starego miejsca). | `raport-ui-check`, `word-pdf-ui-check` |
 | 15 | `ustawienia` (do `// ---------- podgląd`) → `i-ustawienia.js`. | `pdf-z-docx-ui-check`, `word-pdf-ui-check` |
-| 16 | `podgląd` + `kolejka` (do `// ---------- start`) → `i-kolejka.js`. `raporty-folder.test.cjs` czyta `i-kolejka.js`. | `raporty-folder.test`, `raporty-wysylka.test`, `udostepnij-ui-check`, `raport-ui-check` |
+| 16 | `podgląd` + `kolejka` (do `// ---------- start`) → `i-kolejka.js`. W `raporty-folder.test.cjs` funkcję `reportFolder` czytaj z `i-kolejka.js` (`BUILDING` dalej z `i-raport.js`). | `raporty-folder.test`, `raporty-wysylka.test`, `udostepnij-ui-check`, `raport-ui-check` |
 | 17 | Reszta (`start`, wejście z PPM, odzyskana) → `i-start.js`; pusty `<script></script>` usuń. | całe `npm test` i całe G2 |
 | 18 | Odśwież mapę: `aider --show-repo-map > docs/mapa-repo.txt`. Do każdego pliku na górze 3–5 linii komentarza: co robi, z czego korzysta (numery z tabeli), czego nie ruszać. W `docs/ARCHITECTURE.md` w wierszu „Inspekcje i raporty” dopisz listę plików `i-*.js`. | `check-architecture` |
 
