@@ -172,11 +172,6 @@ test('Zasady: części strony inspekcji (inspekcje/i-*.js) liczą się razem z i
   zasadaFail(g1(insp(1, 1), [], zb), /JM\|historia\|inspekcje\/index\.html\]/);
   assert.doesNotMatch(g1(insp(0, 1), [], []).out, /inspekcje\/i-x\.js/);
   zasadaFail(g1(www('', { 'inspekcje/inne.js': 'history.back();' }), [], zb), /JM\|historia\|inspekcje\/inne\.js\]/);
-  // style przeniesione do inspekcje/insp.css: przewijanie liczone dalej pod nazwą strony
-  const prz = [{ id: 'IONIC|przewijanie|inspekcje/index.html', maks: 1 }];
-  const zCss = www('', { 'inspekcje/insp.css': '.wrapscroll { overflow-x: auto; }' });
-  assert.doesNotMatch(g1(zCss, [], prz).out, /przewijanie\|inspekcje\/insp\.css/);
-  zasadaFail(g1(www('', { 'inspekcje/insp.css': '.a { overflow-x: auto; } .b { overflow: scroll; }' }), [], prz), /przewijanie ustawia tylko rama|IONIC\|przewijanie\|inspekcje\/index\.html/);
   // identyczne pliki: część strony nadal porównywana jak zwykły plik
   zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'inspekcje/i-x.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+inspekcje\/i-x\.js/);
 });

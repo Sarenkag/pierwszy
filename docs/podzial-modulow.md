@@ -1,6 +1,6 @@
 # Podział apki inspekcji na moduły – mapa dla lokalnego agenta (22/11/2026)
 
-**Po co:** `inspekcje/index.html` ma **87 892 tokenów** (zmierzone tokenizerem Qwen 3.6 27B, pakiet `qwen-tokenizer`; tokenizera Qwen 3.8 nie miałem, liczby mogą się nieco różnić). Lokalny model ma pracować na kawałkach do ~25k. Po podziale największy plik ma ~11k, a `index.html` ~7k.
+**Po co:** `inspekcje/index.html` ma **87 892 tokenów** (zmierzone tokenizerem Qwen 3.6 27B, pakiet `qwen-tokenizer`; tokenizera Qwen 3.8 nie miałem, liczby mogą się nieco różnić). Lokalny model ma pracować na kawałkach do ~25k. Po podziale największy plik ma ~11k, a `index.html` ~15k (ze stylami).
 
 **Ten dokument nie przenosi kodu.** Kroki wykonuje lokalny agent, jeden krok = jeden commit (albo jeden PR).
 
@@ -24,8 +24,8 @@ Etap 2 (później, osobne zlecenie): każdy plik dostaje własny interfejs `wind
 
 | # | Plik | Linie dziś | Tokeny | Co zawiera | Wolno ruszać |
 |---|---|---|---|---|---|
-| – | `index.html` (zostaje) | 1–13, 310–543 | ~7 200 | nagłówek, HTML ekranów, lista `<script>` | tylko listę `<script>`/`<link>` |
-| 1 | `insp.css` | 14–309 | 8 112 | style strony | wygląd |
+| – | `index.html` (zostaje) | 1–543 | ~15 300 | nagłówek, style (8,1k), HTML ekranów, lista `<script>` | tylko listę `<script>` |
+| 1 | — | — | — | style **zostają w `index.html`** (patrz krok 1) | — |
 | 2 | `i-word.js` | 545–826 | 7 122 | `T`, `fillDocx`, `tabsToColumns`, `templateInfo`, `makeName` – wypełnianie Worda | Word |
 | 3 | `i-rdzen.js` | 832–907 | 1 505 | `$`, `MIME_DOCX`, `RD/TYPES/FAULTS`, pamięć `load/save/cfg`, pomocnicze (`NZ`, `esc`, `val`…), IndexedDB (`kvGet`, `qAll`, `qPut`…) | **nie ruszać bez potrzeby** – używają go wszystkie |
 | 4 | `i-ekrany.js` | 908–1018 | 3 202 | `show`, `renderHome`, `renderList`, `devices`, `markDone` | ekran główny i lista |
@@ -65,7 +65,9 @@ Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funk
 
 ## Krok 0 – bramka jakości (ZROBIONE 22/11/2026, zgoda Grzegorza „tak”)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
-Zrobione: w `quality/zasady.cjs` pliki `inspekcje/i-*.js` i `inspekcje/insp.css` liczą się pod nazwą `inspekcje/index.html` (też przewijanie w CSS). Porównanie identycznych plików widzi części osobno. Kopie funkcji w częściach nie są sprawdzane, tak samo jak dziś w skryptach `index.html`. Stare zdanie planu:  w funkcji `pliki()` treść plików `inspekcje/i-*.js` doklejać do treści `inspekcje/index.html` jako skrypt strony (zamiast liczyć je osobno). Liczby naruszeń zostają te same, nic się nie poluzowuje. Test: `node quality/check-architecture.cjs` → G1 PASS, 0 nowych; `node --test quality/tests/gate.test.cjs` PASS.
+Zrobione: w `quality/zasady.cjs` pliki `inspekcje/i-*.js` liczą się pod nazwą `inspekcje/index.html`. Porównanie identycznych plików widzi części osobno. Kopie funkcji w częściach nie są sprawdzane, tak samo jak dziś w skryptach `index.html`. Tak samo 8 testów (`report-template`, `raport-rozmiar`, `raporty-folder`, `narzedzia`, `rodzaje`, `aparat-java`, `moduly-zasady`, `spojnosc-ekranow`) czyta stronę razem z częściami.
+
+**Symulacja pełnego podziału (22/11, cięcie dokładnie wg tabeli, bez kroku 1):** `npm test` 438/438, G1 PASS (0 nowych), G2: wynik w PR.
 
 ## Kroki dla agenta
 Przed każdym krokiem: `git pull`, w `app/`: `npm install` (raz). Po każdym kroku **zawsze**:
@@ -78,14 +80,14 @@ node quality/run-gate.cjs --part node --only <nazwa>.test.cjs         # każdy t
 aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks (aider)
 ctags -R --languages=JavaScript --kinds-JavaScript=fcv -f inspekcje/tags inspekcje   # odśwież indeks (ctags)
 ```
-Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. Test czytający przeniesiony kod: zmienić **tylko ścieżkę pliku**, nie asercje.
+Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. **Testów nie zmieniać:** od kroku 0 testy czytają `index.html` razem ze wszystkimi `i-*.js`, więc przeniesienie kodu ich nie psuje (sprawdzone na symulacji pełnego podziału: `npm test` 438/438).
 
 | Krok | Polecenie dla agenta | Testy do sprawdzenia |
 |---|---|---|
-| 1 | Przenieś zawartość `<style>` (linie 14–309) do `inspekcje/insp.css`. W miejscu `<style>…</style>` wstaw `<link rel="stylesheet" href="insp.css">` (ta sama pozycja, przed `../theme.css`). | całe G2 (wygląd) |
-| 2 | Przenieś treść drugiego skryptu (od `// Tekst na ekranie: OESTT` do końca przed `</script>`, linie 545–826) do `inspekcje/i-word.js`; w HTML zostaw `<script src="i-word.js"></script>`. W `app/tests/report-template.test.cjs` czytaj `inspekcje/i-word.js` zamiast `index.html`. | `report-template.test`, `word-pdf-ui-check`, `raport-ui-check` |
+| 1 | **Nie robić.** Sprawdzone 22/11: style przeniesione do osobnego pliku zmieniają zrzuty ekranu inspekcji (`zrzuty-ui-check` FAIL, nagłówek i tło inne, zrzut niestabilny). Bez tego kroku: PASS piksel w piksel. Style zostają w `index.html`. | — |
+| 2 | Przenieś treść drugiego skryptu (od `// Tekst na ekranie: OESTT` do końca przed `</script>`, linie 545–826) do `inspekcje/i-word.js`; w HTML zostaw `<script src="i-word.js"></script>`. | `report-template.test`, `word-pdf-ui-check`, `raport-ui-check` |
 | 3 | W dużym skrypcie usuń linię `(function () {` i na końcu `})();` (przed `</script>`). `"use strict";` zostaje jako pierwsza linia skryptu. Nic więcej. | całe `npm test` i całe G2 |
-| 4 | Wytnij od linii po `"use strict";` do linii przed `// ---------- ekrany ----------` → `inspekcje/i-rdzen.js` (na górze `"use strict";`). Przed dużym `<script>` dodaj `<script src="i-rdzen.js"></script>`. W `narzedzia.test.cjs` i `rodzaje.test.cjs` sprawdzenie kolejności: tag modułu przed tagiem `i-rdzen.js`, a `var NZ …`/`var RD …` szukaj w `i-rdzen.js`. | `narzedzia.test`, `rodzaje.test`, `ekran-glowny-ui-check` |
+| 4 | Wytnij od linii po `"use strict";` do linii przed `// ---------- ekrany ----------` → `inspekcje/i-rdzen.js` (na górze `"use strict";`). Przed dużym `<script>` dodaj `<script src="i-rdzen.js"></script>`. | `narzedzia.test`, `rodzaje.test`, `ekran-glowny-ui-check` |
 | 5 | To samo dla sekcji `ekrany` (do `// ---------- formularz`) → `i-ekrany.js`. Tag za poprzednim. | `ekran-glowny-ui-check`, `klocek-inspekcji-ui-check` |
 | 6 | `formularz` + „co ta inspekcja wymaga” + „ustawienia wysyłki” (do `// ---------- szkic`) → `i-formularz.js`. | `formularz-ptaszek-ui-check`, `nie-rozpoczeta-ui-check` |
 | 7 | `szkic` + „odzyskanie inspekcji” (do `// ---------- Weekly Flushing`) → `i-szkic.js`. | `odzyskana-ui-check`, `czyszczenie-ui-check`, `zapis-bez-bazy-ui-check` |
@@ -94,10 +96,10 @@ Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez za
 | 10 | `zlecenie zbiorcze` (do `// ---------- serwer`) → `i-zbiorcze.js`. | `raport-ui-check` |
 | 11 | `serwer` + tłumaczenie + model + notatki (do `// ---------- zdjęcia`) → `i-serwer.js`. | `notatki-ui-check`, `pl-en-ui-check` |
 | 12 | `zdjęcia` + „sugestie ze zdjęcia” (do `// ---------- jeden zapis zdjęcia`) → `i-zdjecia.js`. | `zdjecia.test`, `zdjecia-data-ui-check` |
-| 13 | „jeden zapis zdjęcia” (do `// ---------- dane raportu`) → `i-zapis-zdjec.js`. `raport-rozmiar.test.cjs` i `aparat-java.test.cjs` (tylko `camOpts`) czytają `i-zapis-zdjec.js`. | `raport-rozmiar.test`, `aparat-java.test`, `raport-rozmiar-ui-check`, `zdjecia-szybkosc-ui-check` |
-| 14 | `dane raportu` + `szablon` (do `// ---------- ustawienia`) → `i-raport.js`. W `raporty-folder.test.cjs` stałą `BUILDING` czytaj z `i-raport.js` (funkcja `reportFolder` zostaje czytana ze starego miejsca). | `raport-ui-check`, `word-pdf-ui-check` |
+| 13 | „jeden zapis zdjęcia” (do `// ---------- dane raportu`) → `i-zapis-zdjec.js`. | `raport-rozmiar.test`, `aparat-java.test`, `raport-rozmiar-ui-check`, `zdjecia-szybkosc-ui-check` |
+| 14 | `dane raportu` + `szablon` (do `// ---------- ustawienia`) → `i-raport.js`. | `raport-ui-check`, `word-pdf-ui-check` |
 | 15 | `ustawienia` (do `// ---------- podgląd`) → `i-ustawienia.js`. | `pdf-z-docx-ui-check`, `word-pdf-ui-check` |
-| 16 | `podgląd` + `kolejka` (do `// ---------- start`) → `i-kolejka.js`. W `raporty-folder.test.cjs` funkcję `reportFolder` czytaj z `i-kolejka.js` (`BUILDING` dalej z `i-raport.js`). | `raporty-folder.test`, `raporty-wysylka.test`, `udostepnij-ui-check`, `raport-ui-check` |
+| 16 | `podgląd` + `kolejka` (do `// ---------- start`) → `i-kolejka.js`. | `raporty-folder.test`, `raporty-wysylka.test`, `udostepnij-ui-check`, `raport-ui-check` |
 | 17 | Reszta (`start`, wejście z PPM, odzyskana) → `i-start.js`; pusty `<script></script>` usuń. | całe `npm test` i całe G2 |
 | 18 | Odśwież mapę: `aider --show-repo-map > docs/mapa-repo.txt`. Do każdego pliku na górze 3–5 linii komentarza: co robi, z czego korzysta (numery z tabeli), czego nie ruszać. W `docs/ARCHITECTURE.md` w wierszu „Inspekcje i raporty” dopisz listę plików `i-*.js`. | `check-architecture` |
 

@@ -2,7 +2,7 @@
 // z prawdziwymi zdjęciami: Word 708 KB, PDF 757 KB przy tych rozmiarach. Większe wartości = raport ponad 1 MB.
 // Pomiar na różnych zdjęciach z Pixela: 480 px q0.55 ≈ 10–22 KB, 1000 px q0.6 ≈ 40–75 KB, kartka 1600 px q0.7 ≈ 170 KB.
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', '..', 'inspekcje', 'index.html'), 'utf8');
+const html = [ 'index.html', ...fs.readdirSync(path.join(__dirname, '..', '..', 'inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(__dirname, '..', '..', 'inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
 function num(re) { const m = html.match(re); assert.ok(m, 'brak w kodzie: ' + re); return +m[1]; }
 
 test('zdjęcia w raporcie: przy pytaniach/kranach/izolatorach ≤ 480 px, ogólne ≤ 1000 px, kartka ≤ 1600 px (raport < 1 MB)', () => {

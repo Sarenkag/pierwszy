@@ -25,7 +25,7 @@ test('narzędzia: base64 w obie strony, także powyżej jednego kawałka 32 KB',
 });
 
 test('narzędzia: formularz inspekcji nie ma własnych kopii ani pośrednika exifDate', () => {
-  const html = fs.readFileSync(path.join(root, 'inspekcje/index.html'), 'utf8');
+  const html = [ 'index.html', ...fs.readdirSync(path.join(root, 'inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(root, 'inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
   for (const f of ['pad', 'fmtDate', 'fmtTime', 'isoDay', 'b64ToBytes', 'bytesToB64', 'kb', 'exifDate'])
     assert.doesNotMatch(html, new RegExp('function\\s+' + f + '\\s*\\('), f);
   assert.match(html, /<script src="\.\.\/moduly\/narzedzia\/narzedzia\.js"><\/script>/);

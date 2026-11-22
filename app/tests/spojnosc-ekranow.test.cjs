@@ -9,7 +9,8 @@ const ROOT = path.resolve(__dirname, '../..'), WWW = path.join(ROOT, 'app/www');
 const GEN = new Set(['moduly', 'inspekcje']), files = [];
 function walk(d, base, top) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (!['lib', 'node_modules', 'templates'].includes(e.name) && !(top && GEN.has(e.name))) walk(p, base, false); } else if (/\.(js|html)$/.test(e.name)) files.push([p, base]); } }
 walk(WWW, WWW, true); for (const g of GEN) walk(path.join(ROOT, g), ROOT, false);
-const rel = ([p, base]) => path.relative(base, p).split(path.sep).join('/'), read = ([p]) => fs.readFileSync(p, 'utf8');
+// części strony inspekcji (inspekcje/i-*.js, docs/podzial-modulow.md) liczą się jako inspekcje/index.html – przeniesienie kodu nie zmienia listy zastanych
+const rel = ([p, base]) => path.relative(base, p).split(path.sep).join('/').replace(/^inspekcje\/i-[^/]*\.js$/, 'inspekcje/index.html'), read = ([p]) => fs.readFileSync(p, 'utf8');
 // wspólne moduły okienek/nakładek i zastane miejsca (lista może tylko maleć)
 const BODY_OK = new Set(['moduly/przycisk/przycisk.js', 'moduly/aparat/aparat.js', 'moduly/notatki/glos.js', 'moduly/odczyt/odczyt.js', 'zdjecia-ui.js', 'inspekcje/index.html', 'inspekcje/form-ui.js']);
 test('żaden ekran nie otwiera window.open() (w WebView dokleja treść pod wszystkie ekrany)', () => {

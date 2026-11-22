@@ -90,7 +90,7 @@ test('aparat przekazuje do Javy rozmiar zapisu; bez rozmiaru prosi o pełne zdj�
 });
 
 test('inspekcje i Reactive pytają o rozmiar dla rodzaju zdjęcia (nie o największy)', () => {
-  const insp = fs.readFileSync(path.join(ROOT, 'inspekcje/index.html'), 'utf8');
+  const insp = [ 'index.html', ...fs.readdirSync(path.join(ROOT, 'inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(ROOT, 'inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
   assert.match(insp, /function camOpts\(kind\) \{ var Z = window\.OESTZdjecia; return \{ max: Z && Z\.maxPx \? Z\.maxPx\(kind\) : 0,/);
   const re = fs.readFileSync(path.join(ROOT, 'app/www/reactive.js'), 'utf8');
   assert.match(re, /max:w\.OESTZdjecia\?\.maxPx\?w\.OESTZdjecia\.maxPx\('ogolne'\):0/);

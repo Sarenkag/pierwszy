@@ -62,10 +62,10 @@ function zHtml(html) {
   return { kod: bezKomentarzy(skrypty), znaczniki };
 }
 
-// Części strony inspekcji (docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): inspekcje/i-*.js i inspekcje/insp.css liczone
+// Części strony inspekcji (docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): inspekcje/i-*.js liczone
 // razem z inspekcje/index.html, żeby przeniesienie kodu ze strony nie zmieniało nazw zastanych naruszeń. Liczby zostają te same.
 const CZESC = f => /^inspekcje\/i-[^/]*\.js$/.test(f);
-const STRONA_INSP = f => (CZESC(f) || f === 'inspekcje/insp.css') ? 'inspekcje/index.html' : f;
+const STRONA_INSP = f => CZESC(f) ? 'inspekcje/index.html' : f;
 
 function pliki(www) {
   const out = [];
