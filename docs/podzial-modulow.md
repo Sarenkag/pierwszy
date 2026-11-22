@@ -73,7 +73,8 @@ Przed każdym krokiem: `git pull`, w `app/`: `npm install` (raz). Po każdym kro
 cd app && node scripts/copy-web.js && npm test          # 438+ PASS, 0 FAIL
 cd .. && node quality/check-architecture.cjs            # G1 PASS, NOWE: 0
 node quality/check-ratchet.cjs                          # PASS
-node quality/run-gate.cjs --part browser --only <test>  # testy podane w kroku
+node quality/run-gate.cjs --part browser --only <nazwa>-ui-check.cjs   # każdy test *-ui-check z kroku, pełna nazwa z .cjs
+node quality/run-gate.cjs --part node --only <nazwa>.test.cjs         # każdy test *.test z kroku (też są w npm test)
 aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks (aider)
 ctags -R --languages=JavaScript --kinds-JavaScript=fcv -f inspekcje/tags inspekcje   # odśwież indeks (ctags)
 ```
