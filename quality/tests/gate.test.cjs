@@ -174,6 +174,24 @@ test('Zasady: części strony inspekcji (inspekcje/i-*.js) liczą się razem z i
   zasadaFail(g1(www('', { 'inspekcje/inne.js': 'history.back();' }), [], zb), /JM\|historia\|inspekcje\/inne\.js\]/);
   // identyczne pliki: część strony nadal porównywana jak zwykły plik
   zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'inspekcje/i-x.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+inspekcje\/i-x\.js/);
+  // część, której strona nie ładuje, nie chowa się pod stroną – sprawdzana jako osobny plik
+  zasadaFail(g1(www('', { 'inspekcje/index.html': '<p>x</p>', 'inspekcje/i-y.js': 'history.back();' }), [], zb), /JM\|historia\|inspekcje\/i-y\.js\]/);
+  // style w inspekcje/insp.css (ładowane przez <link>) liczą się jak <style> strony
+  const prz = [{ id: 'IONIC|przewijanie|inspekcje/index.html', maks: 1 }], css = c => www('', { 'inspekcje/index.html': '<link rel="stylesheet" href="insp.css"><p>x</p>', 'inspekcje/insp.css': c });
+  assert.equal(g1(css('.a { overflow-x: auto; }'), [], prz).code, 0);
+  zasadaFail(g1(css('.a { overflow-x: auto; } .b { overflow: scroll; }'), [], prz), /IONIC\|przewijanie\|inspekcje\/index\.html/);
+});
+test('Strona inspekcji: części wstawiane dokładnie w miejsce <script src>/<link>, w kolejności ładowania; style wracają do postaci sprzed podziału', () => {
+  const { strona } = require('../strona-inspekcji.cjs'), d = tmp();
+  write(d, { 'index.html': '<style>\n.a{}\n</style>\n<p>1</p><script src="i-b.js"></script><p>2</p><script src="i-a.js"></script>', 'i-a.js': 'A', 'i-b.js': 'B', 'i-c.js': 'C' });
+  const przed = fs.readFileSync(path.join(d, 'index.html'), 'utf8');
+  let S = strona(d);
+  assert.ok(S.tekst.indexOf('B') < S.tekst.indexOf('<p>2</p>') && S.tekst.indexOf('<p>2</p>') < S.tekst.indexOf('A'), 'kolejność ładowania, nie alfabetyczna');
+  assert.deepEqual(S.czesci, ['i-b.js', 'i-a.js']);
+  assert.doesNotMatch(S.tekst, /C/, 'część nieładowana nie jest wstawiana');
+  write(d, { 'index.html': przed.replace('<style>\n.a{}\n</style>', '<link rel="stylesheet" href="insp.css">'), 'insp.css': '.a{}\n' });
+  S = strona(d);
+  assert.ok(S.tekst.startsWith('<style>\n.a{}\n</style>\n<p>1</p>'), 'style z insp.css jak przed przeniesieniem');
 });
 test('Zasady EKRANY: mapa nie jest obiektem (liczba, null, tablica) albo nie ma listy ekranów → FAIL', () => {
   for (const zla of ['5', 'null', '[]', '{}', '{"ekrany":3}']) zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': zla })), /EKRANY\|zly-ksztalt/);

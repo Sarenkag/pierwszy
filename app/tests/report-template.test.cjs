@@ -1,7 +1,7 @@
 // Raport na wzorze firmy OEST-basic: pola po angielsku, brak pustej strony bez zdjęć, autor z profilu.
 const test=require('node:test'),assert=require('node:assert'),fs=require('fs'),path=require('path'),vm=require('vm');
 const PizZip=require('pizzip'),Docxtemplater=require('docxtemplater');
-const html=[ 'index.html', ...fs.readdirSync(path.join(__dirname,'..','..','inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(__dirname,'..','..','inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
+const html=require('../../quality/strona-inspekcji.cjs').strona(path.join(__dirname,'..','..','inspekcje')).tekst /* strona inspekcji w kolejności ładowania, z częściami (docs/podzial-modulow.md) */;
 const src=html.slice(html.indexOf('function fillDocx('),html.indexOf('// Tekst i logo'));
 const ctx={};vm.runInNewContext(src+';this.fillDocx=fillDocx;',ctx);
 const tpl=fs.readFileSync(path.join(__dirname,'..','..','moduly','wzory','basic.docx')); // wzór z modułu Wzory

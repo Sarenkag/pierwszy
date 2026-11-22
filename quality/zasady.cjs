@@ -62,10 +62,9 @@ function zHtml(html) {
   return { kod: bezKomentarzy(skrypty), znaczniki };
 }
 
-// Części strony inspekcji (docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): inspekcje/i-*.js liczone
-// razem z inspekcje/index.html, żeby przeniesienie kodu ze strony nie zmieniało nazw zastanych naruszeń. Liczby zostają te same.
-const CZESC = f => /^inspekcje\/i-[^/]*\.js$/.test(f);
-const STRONA_INSP = f => CZESC(f) ? 'inspekcje/index.html' : f;
+// Części strony inspekcji (docs/podzial-modulow.md, zgoda Grzegorza 22/11/2026): treść części, które ładuje inspekcje/index.html,
+// jest wstawiana w miejsce ich <script src>/<link> (quality/strona-inspekcji.cjs) i sprawdzana jako ta strona, w kolejności ładowania.
+const { strona } = require('./strona-inspekcji.cjs');
 
 function pliki(www) {
   const out = [];
@@ -76,11 +75,11 @@ function pliki(www) {
 
 function analyse(www, opts) {
   const v = new Map(), add = (id, rule, detail, extra) => { if (!v.has(id)) v.set(id, { id, rule, detail, ...extra }); };
-  const czesci = pliki(www).filter(CZESC), all = pliki(www).filter(f => !CZESC(f));
+  const S = fs.existsSync(path.join(www, 'inspekcje/index.html')) ? strona(path.join(www, 'inspekcje')) : { tekst: '', czesci: [] };
+  const czesci = S.czesci.map(c => 'inspekcje/' + c), all = pliki(www).filter(f => !czesci.includes(f));
   const src = new Map(), kod = new Map();
   for (const f of all) {
-    let raw = fs.readFileSync(path.join(www, f), 'utf8');
-    if (f === 'inspekcje/index.html') for (const c of czesci) raw += '\n<script>\n' + fs.readFileSync(path.join(www, c), 'utf8') + '\n</script>';
+    const raw = f === 'inspekcje/index.html' ? S.tekst : fs.readFileSync(path.join(www, f), 'utf8');
     src.set(f, raw);
     if (OBCA_STRONA.has(f) || DANE(f)) continue;
     if (f.endsWith('.html')) { const h = zHtml(raw); kod.set(f, h.kod + '\n' + h.znaczniki); } else kod.set(f, bezKomentarzy(raw));
@@ -211,7 +210,7 @@ function analyse(www, opts) {
     const n = funkcjeStrony(src.get(f));
     if (n) add(`LOGIKA|${f}`, 'LOGIKA', `${f}: ${n} funkcji zapisanych w <script> strony zamiast w module (moduly/ albo plik obok strony).`, { punkt: 'R27', usuwa: 'K01–K16', liczba: n });
   }
-  ionic(www, src, add);
+  ionic(www, src, add, czesci);
   return [...v.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -219,7 +218,7 @@ function analyse(www, opts) {
 const POLA = new Set(['ion-input', 'ion-select', 'ion-textarea', 'ion-datetime-button', 'ion-toggle', 'ion-checkbox']);
 const POLE_INNE = new Set(['ion-radio-group', 'ion-radio', 'ion-picker', 'ion-picker-column', 'ion-picker-column-option', 'ion-segment', 'ion-segment-button', 'ion-range', 'ion-input-otp']);
 const IONIC_TAGI = new Set(['template', 'component', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'slot', 'strong', 'b', 'small', 'br']);
-function ionic(www, src, add) {
+function ionic(www, src, add, czesci) {
   // repo: www = app/www, źródła szkieletu dwa poziomy wyżej; próbka testowa bramki: wszystko w jednym katalogu
   const ROOT = fs.existsSync(path.resolve(www, '../../moduly/szkielet/src')) ? path.resolve(www, '../..') : www, SZK = path.join(ROOT, 'moduly/szkielet/src');
   const czytaj = f => { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return null; } };
@@ -293,7 +292,8 @@ function ionic(www, src, add) {
     if (OBCA_STRONA.has(f) || DANE(f)) continue;
     const c = fs.readFileSync(path.join(www, f), 'utf8');
     const n = (c.match(/overscroll-behavior|overflow(?:-[xy])?\s*:\s*(?:auto|scroll)/g) || []).length;
-    if (n) przew.set(STRONA_INSP(f), (przew.get(STRONA_INSP(f)) || 0) + n);
+    const g = czesci.includes(f) ? 'inspekcje/index.html' : f;
+    if (n) przew.set(g, (przew.get(g) || 0) + n);
   }
   for (const [f, n] of przew) {
     add('IONIC|przewijanie|' + f, 'IONIC', `${f}: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) ${n}× – przewijanie ustawia tylko rama (moduly/szkielet).`, { punkt: 'Ionic', usuwa: 'przeniesienie ekranu', liczba: n });
