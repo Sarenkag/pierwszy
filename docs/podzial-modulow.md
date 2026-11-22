@@ -53,100 +53,15 @@ Zależności: każdy plik może używać plików o **niższym numerze**; wyższe
 - OpenCode z LSP (serwer TypeScript dla plików .js) daje skok do definicji i listę odwołań na żądanie. To dobre uzupełnienie, ale nie daje gotowego spisu. Nie sprawdzałem, czy LSP działa w OpenCode u Grzegorza.
 - **Wyszukiwanie po znaczeniu (opcja, nie instalowane):** `open-codebase-index` (github.com/Helweg/open-codebase-index, MIT, v0.40.1 z 19/11/2026). Wg README: wtyczka OpenCode i serwer MCP, embeddingi z Ollamy modelem `nomic-embed-text` (już jest w Ollamie u Grzegorza), indeks lokalnie (SQLite + wektory + BM25), odświeża tylko zmienione pliki (obserwuje pliki), ma też „kto woła”/„gdzie zdefiniowane”, działa na Windows. Nie uruchamiałem go. Zapas: indeksowanie w Kilo Code (Ollama + nomic-embed-text, ale wymaga Qdranta). Przed uruchomieniem: zasada Ollamy (sprawdzić `ollama ps`, karty, innych klientów).
 - Podział ról: spis symboli robi narzędzie deterministyczne (repo-map), a model od embeddingów służy tylko do szukania po znaczeniu. Mały model językowy do indeksu nie jest potrzebny.
-- ctags: nie sprawdzałem na tym repo (brak programu w chmurze). Nie jest potrzebny, skoro repo-map już jest.
 
-Spis niżej (stan na dziś, wyliczony z kodu 22/11) mówi agentowi, gdzie co jest, bez czytania całości. „Wejścia” to elementy strony z obsługą kliknięcia/zmiany. „Woła funkcje z” obejmuje też wywołania w obsłudze kliknięć. Po kroku 18 spis zastępuje `docs/mapa-repo.txt` z aidera.
+- **ctags (Universal Ctags) – drugi gotowy spis, sprawdzony 22/11 (wersja 5.9):** na samym `index.html` widzi tylko id elementów HTML, **funkcji z `<script>` nie widzi**. Na wyciętym kodzie JS znajduje funkcje z numerami linii (np. `openForm`, `renderQueue`, `buildAll`). Czyli działa dopiero po podziale. Polecenie po każdym kroku: `ctags -R --languages=JavaScript --kinds-JavaScript=fcv -f inspekcje/tags inspekcje` (plik `tags` czyta OpenCode/edytory; dodać do commita kroku).
 
-### i-word.js
-- funkcje: T, both, lang, fillDocx, drawing, replacePara, photoTables, dropPhotoSection, photoPages, photoGrid, tabsToColumns, boxGlyphFont, templateInfo, text, makeName, clean
-- wejścia (kliknięcia/zmiany): —
-- moduły apki: OESTBledy, OESTNarzedzia, OESTPodmien, OESTT
-- woła funkcje z: —
+Dziś żadne z tych narzędzi nie widzi logiki w `index.html`, dlatego spis funkcji w tabeli modułów wyżej to tylko orientacja. Po każdym kroku prawdziwy spis dają `docs/mapa-repo.txt` (aider) i `inspekcje/tags` (ctags).
 
-### i-rdzen.js
-- funkcje: load, save, esc, val, radio, online, idb, kvGet, kvSet, qAll, qPut, qDel
-- wejścia (kliknięcia/zmiany): —
-- moduły apki: OESTNarzedzia, OESTRodzaje
-- woła funkcje z: —
-
-### i-ekrany.js
-- funkcje: show, backUrl, leave, gm, doneToday, markDone, waiting, renderHome, norm, customList, devices, devOf, where, renderList
-- wejścia (kliknięcia/zmiany): #appMenu, #customCode, #customGo, #search
-- moduły apki: OESTEkrany, OESTKafelek, OESTSender, OEST_PPM
-- woła funkcje z: i-formularz.js, i-kolejka.js, i-rdzen.js, i-serwer.js, i-start.js, i-szkic.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
-
-### i-formularz.js
-- funkcje: openForm, ppmCounts, ppmSig, ppmTrack, formMode, needsNow, applyNeeds, sendParts, hasWord, syncSendHint, needOn, resetForm
-- wejścia (kliknięcia/zmiany): #sendCfg
-- moduły apki: OESTBledy, OESTFlush, OESTPodmien, OESTPrzycisk
-- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-rdzen.js, i-start.js, i-szkic.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js, i-zdjecia.js
-
-### i-szkic.js
-- funkcje: draftKey, draftFields, draftSnap, saveDraftNow, scheduleDraft, dropDraft, loadDraft, draftReady, restoreDraft, offerRestore, unstartedNow
-- wejścia (kliknięcia/zmiany): #restoreIns, #v-form; wystawia: OEST_clearInspection
-- moduły apki: OESTFlush, OESTNotatki, OESTPrzycisk, OESTZdjecia
-- woła funkcje z: i-checklista.js, i-flushing.js, i-formularz.js, i-kolejka.js, i-rdzen.js, i-serwer.js, i-start.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js, i-zdjecia.js
-
-### i-flushing.js
-- funkcje: sheetPhotos, tapPhotos, genPhotos, recipientsFor, renderFlush, flushReport
-- wejścia (kliknięcia/zmiany): #flCam, #flOn, #flushBox
-- moduły apki: OESTAparat, OESTFlush, OESTSender
-- woła funkcje z: i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js, i-zdjecia.js
-
-### i-checklista.js
-- funkcje: tempNum, tempBad, renderTemps, tempData, fillTempDocx, markPeriod, renderChecks, roomFails, checkIdx, renderFaults, setFault, extraFaults, failCount, suggestOverall
-- wejścia (kliknięcia/zmiany): #allOk, #ck, #faults, #tempList
-- moduły apki: OESTWzory
-- woła funkcje z: i-formularz.js, i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
-
-### i-zbiorcze.js
-- funkcje: batchKey, saveBatch, histOf, saveHist, clearBatch, loadBatch, renderBatchBar, askFinds, itemLines, photoFromSaved, restoreItem, openSum, renderSum, batchData
-- wejścia (kliknięcia/zmiany): #batchClear, #batchEnd, #batchResume, #saveItem
-- moduły apki: —
-- woła funkcje z: i-checklista.js, i-ekrany.js, i-formularz.js, i-raport.js, i-rdzen.js, i-serwer.js, i-word.js, i-zapis-zdjec.js, i-zdjecia.js
-
-### i-serwer.js
-- funkcje: gs, api, gErr, nativeTr, renderTranslate, renderModel, runModel, ntScope, ntCtx, ntRefresh
-- wejścia (kliknięcia/zmiany): #komentarz, #mdDrop, #mdRun, #mdUse, #ntJoin, #ntOpen, #translate, #undoTr
-- moduły apki: OESTBledy, OESTModel, OESTNotatki
-- woła funkcje z: i-formularz.js, i-rdzen.js, i-szkic.js, i-word.js
-
-### i-zdjecia.js
-- funkcje: addFiles, renderPhotos, suggestDate, analyze, renderSugs, loadImage, copyCtx
-- wejścia (kliknięcia/zmiany): #camIn, #dateSug, #dzien, #galIn, #shCamIn, #shGalIn, #sugBox
-- moduły apki: OESTAparat, OESTZdjecia, OESTZnacznik
-- woła funkcje z: i-checklista.js, i-flushing.js, i-formularz.js, i-rdzen.js, i-szkic.js, i-word.js, i-zapis-zdjec.js
-
-### i-zapis-zdjec.js
-- funkcje: camOpts, photoSizeShow, photoKind, tapName, savedPhoto, bitmap, thumbUrl, makePhoto, storePhoto, processPhoto, releaseUnused, reportSize, bigFile, mb1, fitReport, finalOpts, finalPhoto, mapLimit, finalFrom, ask, say, busySpin, updateFormHint, syncFinish, updateFormHint0
-- wejścia (kliknięcia/zmiany): —
-- moduły apki: OESTBledy, OESTKomunikat, OESTLadowanie, OESTPodmien, OESTPrzycisk, OESTPytaj, OESTRaporty, OESTVantifyKlocek, OESTZdjecia
-- woła funkcje z: i-checklista.js, i-flushing.js, i-kolejka.js, i-raport.js, i-rdzen.js, i-word.js, i-zdjecia.js
-
-### i-raport.js
-- funkcje: dateOn, updTxt, dateTxt, reportDate, formData, formData0, roomsData, checkpointText, summaryLine, deviceHead, scopeForWord, english, jobNo, templateBytes, tplState, applySetup, loadSetup
-- wejścia (kliknięcia/zmiany): #tplReload
-- moduły apki: OESTWzory
-- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-rdzen.js, i-serwer.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
-
-### i-ustawienia.js
-- funkcje: fillSettings, readSettings, photoDocx, smallDocxBody, fillFlushDocx, flushBasicDocx, flushBasic, pointsSummary, buildAll, buildAllWordy
-- wejścia (kliknięcia/zmiany): #s-wifi
-- moduły apki: OESTFlush, OESTSender, OESTWordPdf, OESTWzory
-- woła funkcje z: i-checklista.js, i-ekrany.js, i-formularz.js, i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js
-
-### i-kolejka.js
-- funkcje: freeBuilt, buildErr, renderPreview, reportFolder, queueItem, archiveSnap, enqueue, closeUp, finHint, waitsWifi, mailState, mailHint, formSig, mailSame, sendOk, recMissing, queueBtn, unready, pending, unconfirmed, renderNet, qBusy, renderQueue, refresh, submitArg, markSent, shareApi, myEmail, shareSend, sendQueue
-- wejścia (kliknięcia/zmiany): #editBtn, #finishIns, #prevQueue, #qList, #qNext, #qSend, #toPreview, #toQueue
-- moduły apki: OESTFlush, OESTPrzycisk, OESTSender, OESTVantifyKlocek
-- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-formularz.js, i-raport.js, i-rdzen.js, i-serwer.js, i-start.js, i-szkic.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
-
-### i-start.js
-- funkcje: renderPpmBar, openPpm, openRec
-- wejścia (kliknięcia/zmiany): #recUpdate
-- moduły apki: OESTBledy, OESTPrzycisk, OESTRaporty, OESTSender, OESTWzory, OESTZnacznik, OEST_PPM
-- woła funkcje z: i-ekrany.js, i-formularz.js, i-kolejka.js, i-raport.js, i-rdzen.js, i-serwer.js, i-szkic.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
-
+## Kto wykonuje kroki
+- **Pierwszy: Qwen3-Coder 30B** (szybki). Kroki 1–17 to wycinanie i wklejanie bez zmian kodu, a każdy krok ma test. Przy porażce testu: `git checkout .` i ten sam krok dostaje **Qwen 27B**. Uwaga z pomiarów 20–21.11: Coder 30B miał 0/3 na zadaniach apki i zapętlał się, więc liczę się z częstym przejmowaniem przez 27B. Nie sprawdzałem, czy Coder 30B jest dziś w ustawieniach strażnika.
+- Krok 18 (krótkie opisy modułów): Coder 30B pisze opis z `docs/mapa-repo.txt` i `inspekcje/tags` swojego pliku, 27B albo Claude sprawdza.
+- **Do samej indeksacji model nie jest potrzebny** – spis robią aider i ctags bez modelu, szybciej i bez błędów. Model od embeddingów (`nomic-embed-text`) tylko przy opcjonalnym wyszukiwaniu po znaczeniu.
 
 ## Krok 0 – bramka jakości (potrzebna zgoda Grzegorza, robi Claude albo agent)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
@@ -159,7 +74,8 @@ cd app && node scripts/copy-web.js && npm test          # 438+ PASS, 0 FAIL
 cd .. && node quality/check-architecture.cjs            # G1 PASS, NOWE: 0
 node quality/check-ratchet.cjs                          # PASS
 node quality/run-gate.cjs --part browser --only <test>  # testy podane w kroku
-aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks, dodaj do commita
+aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks (aider)
+ctags -R --languages=JavaScript --kinds-JavaScript=fcv -f inspekcje/tags inspekcje   # odśwież indeks (ctags)
 ```
 Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. Test czytający przeniesiony kod: zmienić **tylko ścieżkę pliku**, nie asercje.
 
