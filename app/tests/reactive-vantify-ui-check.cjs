@@ -58,7 +58,7 @@ function fakePhone() {
       await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
       await pg.locator('[data-rx-field=title]').fill(title); await saved();
       await row('where'); await pg.locator('[data-rx=building][data-value="Tower B"]').click(); await pg.locator('[data-rx-field=level]').selectOption('5'); await pg.locator('[data-rx-field=room]').fill('Office door');
-      await row('start'); await pg.locator('[data-rx-field=note]').fill('Proszę o 10 haczyków na drzwiach biura.'); await saved();
+      if (!await pg.locator('[data-rx-field=note]').isVisible()) await row('start'); /* „info na start” niezależne od innych wierszy (22/11/2026) – zwykle już otwarte */ await pg.locator('[data-rx-field=note]').fill('Proszę o 10 haczyków na drzwiach biura.'); await saved();
       if (withPhoto) { await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-before img')); }
     }
     // ---------- 1. nowe zadanie: dwa przyciski Vantify, ta sama wielkość ----------

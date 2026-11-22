@@ -133,6 +133,7 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 #v-reactive .rx-name{margin:0 0 4px}
 #v-reactive .rx-f{border-top:1px solid rgba(255,255,255,.08)}
 #v-reactive .rx-fr{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:6px 0;background:none;border:0;color:var(--ink);font:inherit;text-align:left}
+/* licznik notatek na zwiniętej sekcji „info na start/koniec” (Grzegorz 22/11/2026) */#v-reactive .rx-info .rx-ntc{flex:0 0 auto;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:.8rem;line-height:1.4;background:rgba(124,132,255,.22);color:var(--ink);white-space:nowrap}
 #v-reactive .rx-fr .k{width:104px;flex:none;font-size:.8rem;color:var(--muted)}
 #v-reactive .rx-fr .v{flex:1;min-width:0;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:0;color:inherit;font-family:inherit;padding:0}
 #v-reactive .rx-fr .v.ph{color:var(--muted)}#v-reactive .rx-fr .ar{color:var(--muted);font-size:.8rem}
