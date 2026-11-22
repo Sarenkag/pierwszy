@@ -155,3 +155,12 @@ input[type=text],input[type=email],input[type=date],input[type=time],input[type=
 .rx-photo-full{display:block;width:100%;max-height:70vh;object-fit:contain;border-radius:10px}
 #v-reactive .rx-sum-p{display:flex;gap:6px;align-items:flex-start}#v-reactive .rx-sum-p .rx-info-t{min-height:44px;flex:1;min-width:0;width:auto}#v-reactive .rx-sum-x{flex:0 0 36px;height:36px;margin-top:8px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:var(--ink);font:inherit}
 #v-reactive .rx-info-t{display:block;width:100%;min-width:100%;max-width:100%;box-sizing:border-box;min-height:84px;resize:vertical;margin-top:8px;font:inherit;font-size:.9rem;border-radius:10px;padding:8px;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid rgba(255,255,255,.14)}
+/* „Ludzki ekran” Reactive (Grzegorz 22/11/2026): zdjęcia przed/po jako dwa kafelki z ikoną jak w formularzu inspekcji (ten sam rysunek SVG, bez emoji – UX-001/UX-020);
+   etykiety wierszy w jednej kolumnie bez łamania („Dodaj info na start”, „Zakończenie i raport”); dolne przyciski karty w jednej wysokości zwykłego przycisku (--h-btn), żeby mniej zasłaniały formularz */
+#v-reactive .rx-pics .rx-phb{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+#v-reactive .rx-pics .rx-phb>.btn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;min-height:58px!important;margin:0;padding:6px 2px!important;font-size:12.5px!important;line-height:1.15;text-align:center}
+#v-reactive .rx-phb svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#v-reactive .rx-phb span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#v-reactive .rx-f:not(.rx-2)>.rx-fr .k{width:132px}
+#v-reactive .rx-footer{padding-top:6px}
+#v-reactive .rx-footer .rx-row>.btn{min-height:var(--h-btn)!important;margin:3px 0}
