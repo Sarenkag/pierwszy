@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '../..');
 const win = { addEventListener() {}, dispatchEvent() {} };
 const ctx = { window: win, localStorage: { getItem: () => null, setItem() {} }, CustomEvent: function () {} };
 vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(root, 'app/www/ppm.js'), 'utf8'), ctx);
-const PPM = win.OEST_PPM, html = fs.readFileSync(path.join(root, 'inspekcje/index.html'), 'utf8');
+const PPM = win.OEST_PPM, html = [ 'index.html', ...fs.readdirSync(path.join(root, 'inspekcje')).filter(f => /^i-[^/]*\.js$/.test(f)).sort() ].map(f => fs.readFileSync(path.join(path.join(root, 'inspekcje'), f), 'utf8')).join('\n') /* strona inspekcji + jej części i-*.js (docs/podzial-modulow.md) */;
 const BUILDING = JSON.parse(/var BUILDING = (\{[^}]+\})/.exec(html)[1].replace(/(\w+):/g, '"$1":'));
 const src = html.slice(html.indexOf('function reportFolder'), html.indexOf('function enqueue(r, from)'));
 const reportFolder = new Function('PPM', 'BUILDING', src + ';return reportFolder')(PPM, BUILDING);

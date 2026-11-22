@@ -232,7 +232,9 @@ function zrodla() {
   for (const f of fs.readdirSync(path.join(REPO, 'app/www'))) if (/\.(js|html)$/.test(f) && !/\.min\.js$|^vendor/.test(f) && fs.statSync(path.join(REPO, 'app/www', f)).isFile()) out.push('app/www/' + f);
   walk('moduly', p => /\.js$/.test(p));
   for (const f of fs.readdirSync(path.join(REPO, 'inspekcje'))) if (/\.(js|html)$/.test(f) && !/\.min\.js$/.test(f) && !/^(jszip|docx|pdf|vendor)/i.test(f)) out.push('inspekcje/' + f);
-  return out.map(p => ({ p, t: fs.readFileSync(path.join(REPO, p), 'utf8') }));
+  // części strony inspekcji (inspekcje/i-*.js, docs/podzial-modulow.md) liczą się jako jeden plik ze stroną: pole aparatu w HTML, obsługa w części
+  const czesc = p => /^inspekcje\/i-[^/]*\.js$/.test(p);
+  return out.filter(p => !czesc(p)).map(p => ({ p, t: fs.readFileSync(path.join(REPO, p), 'utf8') + (p === 'inspekcje/index.html' ? out.filter(czesc).sort().map(c => '\n' + fs.readFileSync(path.join(REPO, c), 'utf8')).join('') : '') }));
 }
 const ZR = zrodla();
 

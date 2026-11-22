@@ -164,6 +164,17 @@ test('Zasady JM: jedno nowe trafienie ponad „maks” → FAIL; mniej trafień 
   assert.equal(g1(app(1), [], [{ id: 'JM|historia|app.js', maks: 1 }]).code, 0);
   zasadaFail(g1(app(1), [], ['JM|historia|app.js']), /maks undefined/);
 });
+test('Zasady: części strony inspekcji (inspekcje/i-*.js) liczą się razem z inspekcje/index.html – przeniesienie kodu nie zmienia nazwy naruszenia, nowe trafienie w części → FAIL', () => {
+  const insp = (wStronie, wCzesci) => www('', { 'inspekcje/index.html': '<script src="../moduly/a/a.js"></script><script>' + 'history.back(); '.repeat(wStronie) + '</script><script src="i-x.js"></script>', 'inspekcje/i-x.js': 'history.back(); '.repeat(wCzesci) });
+  const zb = [{ id: 'JM|historia|inspekcje/index.html', maks: 1 }];
+  assert.equal(g1(insp(1, 0), [], zb).code, 0);
+  assert.equal(g1(insp(0, 1), [], zb).code, 0);
+  zasadaFail(g1(insp(1, 1), [], zb), /JM\|historia\|inspekcje\/index\.html\]/);
+  assert.doesNotMatch(g1(insp(0, 1), [], []).out, /inspekcje\/i-x\.js/);
+  zasadaFail(g1(www('', { 'inspekcje/inne.js': 'history.back();' }), [], zb), /JM\|historia\|inspekcje\/inne\.js\]/);
+  // identyczne pliki: część strony nadal porównywana jak zwykły plik
+  zasadaFail(g1(www('', { 'b.js': 'var a = 1;', 'inspekcje/i-x.js': 'var a = 1;' })), /KOPIA\|plik\|b\.js\+inspekcje\/i-x\.js/);
+});
 test('Zasady EKRANY: mapa nie jest obiektem (liczba, null, tablica) albo nie ma listy ekranów → FAIL', () => {
   for (const zla of ['5', 'null', '[]', '{}', '{"ekrany":3}']) zasadaFail(g1(www('', { 'moduly/ekrany/ekrany.json': zla })), /EKRANY\|zly-ksztalt/);
 });
