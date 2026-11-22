@@ -44,6 +44,108 @@ Etap 2 (później, osobne zlecenie): każdy plik dostaje własny interfejs `wind
 
 Zależności: każdy plik może używać plików o **niższym numerze**; wyższe tylko wewnątrz obsługi kliknięć (tak jest dziś). Agent dostaje swój plik + `i-rdzen.js` (1,5k) + ten wiersz tabeli, razem dużo poniżej 25k.
 
+## Indeks kodu dla agentów
+
+**Polecane: mapa repo aidera (repo-map)** – już jest na PC, nic nie trzeba pisać.
+- Sprawdzone 22/11 w paczce aider-chat 0.86.2: mapa ma reguły dla JavaScript, **nie ma dla HTML**. Dziś cała logika siedzi w `index.html`, więc mapa jej nie widzi. Po podziale każdy plik `i-*.js` trafia do mapy z nazwami funkcji.
+- Odświeża się sama przy każdym uruchomieniu aidera (liczy z plików na dysku). Rozmiar ustawia `--map-tokens` (np. 2048).
+- Dla agentów spoza aidera (OpenCode w Paperclipie) zapisać mapę do pliku po każdym kroku: `aider --show-repo-map > docs/mapa-repo.txt` i dodać do commita kroku.
+- OpenCode z LSP (serwer TypeScript dla plików .js) daje skok do definicji i listę odwołań na żądanie. To dobre uzupełnienie, ale nie daje gotowego spisu. Nie sprawdzałem, czy LSP działa w OpenCode u Grzegorza.
+- ctags: nie sprawdzałem na tym repo (brak programu w chmurze). Nie jest potrzebny, skoro repo-map już jest.
+
+Spis niżej (stan na dziś, wyliczony z kodu 22/11) mówi agentowi, gdzie co jest, bez czytania całości. „Wejścia” to elementy strony z obsługą kliknięcia/zmiany. „Woła funkcje z” obejmuje też wywołania w obsłudze kliknięć. Po kroku 18 spis zastępuje `docs/mapa-repo.txt` z aidera.
+
+### i-word.js
+- funkcje: T, both, lang, fillDocx, drawing, replacePara, photoTables, dropPhotoSection, photoPages, photoGrid, tabsToColumns, boxGlyphFont, templateInfo, text, makeName, clean
+- wejścia (kliknięcia/zmiany): —
+- moduły apki: OESTBledy, OESTNarzedzia, OESTPodmien, OESTT
+- woła funkcje z: —
+
+### i-rdzen.js
+- funkcje: load, save, esc, val, radio, online, idb, kvGet, kvSet, qAll, qPut, qDel
+- wejścia (kliknięcia/zmiany): —
+- moduły apki: OESTNarzedzia, OESTRodzaje
+- woła funkcje z: —
+
+### i-ekrany.js
+- funkcje: show, backUrl, leave, gm, doneToday, markDone, waiting, renderHome, norm, customList, devices, devOf, where, renderList
+- wejścia (kliknięcia/zmiany): #appMenu, #customCode, #customGo, #search
+- moduły apki: OESTEkrany, OESTKafelek, OESTSender, OEST_PPM
+- woła funkcje z: i-formularz.js, i-kolejka.js, i-rdzen.js, i-serwer.js, i-start.js, i-szkic.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
+
+### i-formularz.js
+- funkcje: openForm, ppmCounts, ppmSig, ppmTrack, formMode, needsNow, applyNeeds, sendParts, hasWord, syncSendHint, needOn, resetForm
+- wejścia (kliknięcia/zmiany): #sendCfg
+- moduły apki: OESTBledy, OESTFlush, OESTPodmien, OESTPrzycisk
+- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-rdzen.js, i-start.js, i-szkic.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js, i-zdjecia.js
+
+### i-szkic.js
+- funkcje: draftKey, draftFields, draftSnap, saveDraftNow, scheduleDraft, dropDraft, loadDraft, draftReady, restoreDraft, offerRestore, unstartedNow
+- wejścia (kliknięcia/zmiany): #restoreIns, #v-form; wystawia: OEST_clearInspection
+- moduły apki: OESTFlush, OESTNotatki, OESTPrzycisk, OESTZdjecia
+- woła funkcje z: i-checklista.js, i-flushing.js, i-formularz.js, i-kolejka.js, i-rdzen.js, i-serwer.js, i-start.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js, i-zdjecia.js
+
+### i-flushing.js
+- funkcje: sheetPhotos, tapPhotos, genPhotos, recipientsFor, renderFlush, flushReport
+- wejścia (kliknięcia/zmiany): #flCam, #flOn, #flushBox
+- moduły apki: OESTAparat, OESTFlush, OESTSender
+- woła funkcje z: i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js, i-zdjecia.js
+
+### i-checklista.js
+- funkcje: tempNum, tempBad, renderTemps, tempData, fillTempDocx, markPeriod, renderChecks, roomFails, checkIdx, renderFaults, setFault, extraFaults, failCount, suggestOverall
+- wejścia (kliknięcia/zmiany): #allOk, #ck, #faults, #tempList
+- moduły apki: OESTWzory
+- woła funkcje z: i-formularz.js, i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
+
+### i-zbiorcze.js
+- funkcje: batchKey, saveBatch, histOf, saveHist, clearBatch, loadBatch, renderBatchBar, askFinds, itemLines, photoFromSaved, restoreItem, openSum, renderSum, batchData
+- wejścia (kliknięcia/zmiany): #batchClear, #batchEnd, #batchResume, #saveItem
+- moduły apki: —
+- woła funkcje z: i-checklista.js, i-ekrany.js, i-formularz.js, i-raport.js, i-rdzen.js, i-serwer.js, i-word.js, i-zapis-zdjec.js, i-zdjecia.js
+
+### i-serwer.js
+- funkcje: gs, api, gErr, nativeTr, renderTranslate, renderModel, runModel, ntScope, ntCtx, ntRefresh
+- wejścia (kliknięcia/zmiany): #komentarz, #mdDrop, #mdRun, #mdUse, #ntJoin, #ntOpen, #translate, #undoTr
+- moduły apki: OESTBledy, OESTModel, OESTNotatki
+- woła funkcje z: i-formularz.js, i-rdzen.js, i-szkic.js, i-word.js
+
+### i-zdjecia.js
+- funkcje: addFiles, renderPhotos, suggestDate, analyze, renderSugs, loadImage, copyCtx
+- wejścia (kliknięcia/zmiany): #camIn, #dateSug, #dzien, #galIn, #shCamIn, #shGalIn, #sugBox
+- moduły apki: OESTAparat, OESTZdjecia, OESTZnacznik
+- woła funkcje z: i-checklista.js, i-flushing.js, i-formularz.js, i-rdzen.js, i-szkic.js, i-word.js, i-zapis-zdjec.js
+
+### i-zapis-zdjec.js
+- funkcje: camOpts, photoSizeShow, photoKind, tapName, savedPhoto, bitmap, thumbUrl, makePhoto, storePhoto, processPhoto, releaseUnused, reportSize, bigFile, mb1, fitReport, finalOpts, finalPhoto, mapLimit, finalFrom, ask, say, busySpin, updateFormHint, syncFinish, updateFormHint0
+- wejścia (kliknięcia/zmiany): —
+- moduły apki: OESTBledy, OESTKomunikat, OESTLadowanie, OESTPodmien, OESTPrzycisk, OESTPytaj, OESTRaporty, OESTVantifyKlocek, OESTZdjecia
+- woła funkcje z: i-checklista.js, i-flushing.js, i-kolejka.js, i-raport.js, i-rdzen.js, i-word.js, i-zdjecia.js
+
+### i-raport.js
+- funkcje: dateOn, updTxt, dateTxt, reportDate, formData, formData0, roomsData, checkpointText, summaryLine, deviceHead, scopeForWord, english, jobNo, templateBytes, tplState, applySetup, loadSetup
+- wejścia (kliknięcia/zmiany): #tplReload
+- moduły apki: OESTWzory
+- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-rdzen.js, i-serwer.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
+
+### i-ustawienia.js
+- funkcje: fillSettings, readSettings, photoDocx, smallDocxBody, fillFlushDocx, flushBasicDocx, flushBasic, pointsSummary, buildAll, buildAllWordy
+- wejścia (kliknięcia/zmiany): #s-wifi
+- moduły apki: OESTFlush, OESTSender, OESTWordPdf, OESTWzory
+- woła funkcje z: i-checklista.js, i-ekrany.js, i-formularz.js, i-raport.js, i-rdzen.js, i-word.js, i-zapis-zdjec.js
+
+### i-kolejka.js
+- funkcje: freeBuilt, buildErr, renderPreview, reportFolder, queueItem, archiveSnap, enqueue, closeUp, finHint, waitsWifi, mailState, mailHint, formSig, mailSame, sendOk, recMissing, queueBtn, unready, pending, unconfirmed, renderNet, qBusy, renderQueue, refresh, submitArg, markSent, shareApi, myEmail, shareSend, sendQueue
+- wejścia (kliknięcia/zmiany): #editBtn, #finishIns, #prevQueue, #qList, #qNext, #qSend, #toPreview, #toQueue
+- moduły apki: OESTFlush, OESTPrzycisk, OESTSender, OESTVantifyKlocek
+- woła funkcje z: i-checklista.js, i-ekrany.js, i-flushing.js, i-formularz.js, i-raport.js, i-rdzen.js, i-serwer.js, i-start.js, i-szkic.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
+
+### i-start.js
+- funkcje: renderPpmBar, openPpm, openRec
+- wejścia (kliknięcia/zmiany): #recUpdate
+- moduły apki: OESTBledy, OESTPrzycisk, OESTRaporty, OESTSender, OESTWzory, OESTZnacznik, OEST_PPM
+- woła funkcje z: i-ekrany.js, i-formularz.js, i-kolejka.js, i-raport.js, i-rdzen.js, i-serwer.js, i-szkic.js, i-ustawienia.js, i-word.js, i-zapis-zdjec.js, i-zbiorcze.js
+
+
 ## Krok 0 – bramka jakości (potrzebna zgoda Grzegorza, robi Claude albo agent)
 Problem (sprawdzony w kodzie bramki): `quality/baselines/zasady.json` ma 19 zastanych naruszeń zapisanych na plik `inspekcje/index.html` (np. `JM|esc|…`, `ZNACZNIK|brak|… maks 56`). Po przeniesieniu kodu do `i-*.js` te same naruszenia dostaną nową nazwę pliku, a `check-ratchet.cjs` traktuje nowy wpis jako FAIL (baseline może tylko maleć, QG-014).
 Rozwiązanie: w `quality/zasady.cjs` w funkcji `pliki()` treść plików `inspekcje/i-*.js` doklejać do treści `inspekcje/index.html` jako skrypt strony (zamiast liczyć je osobno). Liczby naruszeń zostają te same, nic się nie poluzowuje. Test: `node quality/check-architecture.cjs` → G1 PASS, 0 nowych; `node --test quality/tests/gate.test.cjs` PASS.
@@ -55,6 +157,7 @@ cd app && node scripts/copy-web.js && npm test          # 438+ PASS, 0 FAIL
 cd .. && node quality/check-architecture.cjs            # G1 PASS, NOWE: 0
 node quality/check-ratchet.cjs                          # PASS
 node quality/run-gate.cjs --part browser --only <test>  # testy podane w kroku
+aider --show-repo-map > docs/mapa-repo.txt              # odśwież indeks, dodaj do commita
 ```
 Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez zasięgu). Nie zmieniać kodu, nazw, wcięć ani kolejności. Test czytający przeniesiony kod: zmienić **tylko ścieżkę pliku**, nie asercje.
 
@@ -77,6 +180,6 @@ Każdy nowy plik `i-*.js`: dopisać do `SHELL` w `inspekcje/sw.js` (praca bez za
 | 15 | `ustawienia` (do `// ---------- podgląd`) → `i-ustawienia.js`. | `pdf-z-docx-ui-check`, `word-pdf-ui-check` |
 | 16 | `podgląd` + `kolejka` (do `// ---------- start`) → `i-kolejka.js`. `raporty-folder.test.cjs` czyta `i-kolejka.js`. | `raporty-folder.test`, `raporty-wysylka.test`, `udostepnij-ui-check`, `raport-ui-check` |
 | 17 | Reszta (`start`, wejście z PPM, odzyskana) → `i-start.js`; pusty `<script></script>` usuń. | całe `npm test` i całe G2 |
-| 18 | Do każdego pliku na górze 3–5 linii komentarza: co robi, z czego korzysta (numery z tabeli), czego nie ruszać. W `docs/ARCHITECTURE.md` w wierszu „Inspekcje i raporty” dopisz listę plików `i-*.js`. | `check-architecture` |
+| 18 | Odśwież mapę: `aider --show-repo-map > docs/mapa-repo.txt`. Do każdego pliku na górze 3–5 linii komentarza: co robi, z czego korzysta (numery z tabeli), czego nie ruszać. W `docs/ARCHITECTURE.md` w wierszu „Inspekcje i raporty” dopisz listę plików `i-*.js`. | `check-architecture` |
 
 Jeśli test nie przechodzi: cofnąć krok (`git checkout .`) i zgłosić, **nie poprawiać kodu ani testu na siłę**. Skończone = wszystkie kroki zielone + test na Pixelu 8 Pro (CI go nie zastępuje).
