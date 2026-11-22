@@ -51,7 +51,7 @@
       if (!l) { if (manual) setStatus("Nie znalazłem pliku APK w najnowszym wydaniu.", "No APK file in the latest release."); return; }
       if (l.n > have) { offer(true); if (manual) { setStatus("Jest nowa wersja " + l.n + " (masz " + have + ").", "New version " + l.n + " available (you have " + have + ")."); showInstallBtn(l.n); install(); } }
       else { offer(false); if (manual) setStatus("Masz najnowszą wersję (" + have + ").", "You have the latest version (" + have + ")."); }
-    }).catch(function (e) { if (manual) var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
+    }).catch(function (e) { /* błąd z każdego sprawdzenia, nie tylko ręcznego (wcześniej „if (manual) var em” zostawiało „Nie udało się sprawdzić: undefined”, 22/11/2026) */ var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
   }
   var busySince = 0;
   function ask(t) { return w.OESTPytaj ? w.OESTPytaj(t, { ok: T("Pobierz", "Download") }) : Promise.resolve(w.confirm(t)); } // okienko apki zamiast systemowego
