@@ -69,6 +69,9 @@ const stanInspekcji = () => ({
       const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message));
       const otworz = async () => { await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => window.OESTPrzycisk && document.querySelector('#ck .ck-row') && document.getElementById('toQueue').offsetParent); await pg.waitForLoadState('networkidle'); };
       await otworz();
+      // język i adres firmowy = ustawienia konta (jedno źródło; oest.lang i insp.cfg to ich kopie) – ustawiamy jak użytkownik w Ustawieniach
+      await pg.evaluate(l => { if (window.OESTSettings) OESTSettings.update(s => { s.appearance.language = l; s.profile.companyEmail = 'demo@example.com'; }); localStorage.setItem('oest.lang', l); }, lang);
+      await pg.reload(); await pg.waitForFunction(() => window.OESTPrzycisk && document.querySelector('#ck .ck-row') && document.getElementById('toQueue').offsetParent); await pg.waitForLoadState('networkidle');
       const L = lang.toUpperCase();
 
       // ================= P: moduly/przycisk =================
