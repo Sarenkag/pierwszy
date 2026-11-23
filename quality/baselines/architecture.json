@@ -68,13 +68,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|index.html|settings-ui.js|OESTModel",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: settings-ui.js (poz. 20) używa OESTModel z moduly/model/model.js (poz. 48, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|settings-ui.js|OESTPrzycisk",
       "rule": "LOAD_ORDER",
       "detail": "index.html: settings-ui.js (poz. 20) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",

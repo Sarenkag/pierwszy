@@ -57,11 +57,10 @@
     return miss;
   }
   // Panel w Ustawieniach → AI: wybór E2B/E4B, pobranie przez Wi‑Fi, postęp, usunięcie
-  function mount(el) {
-    if (!el) return; var timer = null;
-    function gb(n) { return (n / 1073741824).toFixed(2).replace('.', ',') + ' GB'; }
-    function draw(s, err) {
-      if (!el.isConnected) { clearInterval(timer); return; }
+  // panel „Model tekstowy na telefonie” w Ustawieniach → OCR i modele AI (moduly/szkielet/src/ekrany/Ai.vue): moduł daje dane i akcje, ekran tylko je pokazuje
+  function gb(n) { return (n / 1073741824).toFixed(2).replace('.', ',') + ' GB'; }
+  function panel(err) {
+    return status().then(function (s) { return s || {}; }, function (e) { err = w.OESTBledy ? w.OESTBledy.text(e) : e.message; return {}; }).then(function (s) {
       var k = key(), line;
       if (!available()) line = w.OESTT('Model działa w apce na telefonie.', 'The model works in the phone app.');
       else if (s.supported === false) line = w.OESTT('Ten telefon ma za stary Android (potrzebny 12+).', 'This phone has an older Android (12+ needed).');
@@ -69,24 +68,19 @@
       else if (s.downloading) line = s.paused ? w.OESTT('⏸ Czeka na Wi‑Fi… ', '⏸ Waiting for Wi‑Fi… ') + (s.total > 0 ? Math.round(s.got / s.total * 100) + '%' : '') : w.OESTT('⬇ Pobieram… ', '⬇ Downloading… ') + (s.total > 0 ? Math.round(s.got / s.total * 100) + '% (' + gb(s.got) + w.OESTT(' z ', ' of ') + gb(s.total) + ')' : '');
       else line = w.OESTT('Nie pobrany. Plik ' + MODELS[k].size + ', pobieranie tylko przez Wi‑Fi.', 'Not downloaded. File ' + MODELS[k].size.replace(',', '.') + ', download over Wi‑Fi only.');
       if (s.error) line = w.OESTT('Pobieranie nie udało się (' + s.error + '). Spróbuj jeszcze raz.', 'Download failed (' + s.error + '). Try again.');
-      var h = '<h2>' + w.OESTT('Model tekstowy na telefonie', 'On-device text model') + '</h2><p class="hint">' + w.OESTT('Układa notatki w dobre zdania po angielsku i łączy je w jeden akapit raportu. Nie dodaje faktów; wynik zawsze sprawdzasz Ty. Bez modelu apka działa jak dotąd.', 'Turns notes into good English sentences and joins them into one report paragraph. It adds no facts; you always check the result. Without the model the app works as before.') + '</p>' +
-        '<label class="field"><span>Model</span><select data-model-key><option value="E2B"' + (k === 'E2B' ? ' selected' : '') + '>' + w.OESTT('Gemma 4 E2B – mniejszy, szybszy (2,6 GB)', 'Gemma 4 E2B – smaller, faster (2.6 GB)') + '</option><option value="E4B"' + (k === 'E4B' ? ' selected' : '') + '>' + w.OESTT('Gemma 4 E4B – dokładniejszy (3,7 GB)', 'Gemma 4 E4B – more accurate (3.7 GB)') + '</option></select></label>' +
-        '<p data-model-line>' + line + (err ? '<br>' + err : '') + '</p><div class="row">' +
-        (available() && s.supported !== false && !s.ready && !s.downloading ? '<button type="button" class="btn" data-model-act="download">' + w.OESTT('⬇ Pobierz model (Wi‑Fi)', '⬇ Download model (Wi‑Fi)') + '</button>' : '') +
-        (s.downloading ? '<button type="button" class="btn" data-model-act="remove">' + w.OESTT('Anuluj pobieranie', 'Cancel download') + '</button>' : '') +
-        (s.ready ? '<button type="button" class="btn" data-model-act="remove">' + w.OESTT('Usuń model z telefonu', 'Remove model from phone') + '</button>' : '') + '</div>';
-      (w.OESTPodmien ? w.OESTPodmien.html(el, h) : (el.innerHTML = h)); // bez przerysowania przy zmianie języka
-      var sel = el.querySelector('[data-model-key]'); sel.oninput = function (e) { e.stopPropagation(); }; sel.onchange = function (e) { e.stopPropagation(); setKey(e.target.value); refresh(); };
-      el.querySelectorAll('[data-model-act]').forEach(function (b) { b.onclick = async function () {
-        var a = b.getAttribute('data-model-act'); if (a === 'remove' && !(await (w.OESTPytaj ? w.OESTPytaj(w.OESTT('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?')) : w.confirm(w.OESTT('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?'))))) return;
-        (a === 'download' ? download() : remove()).then(refresh, function (e) { refresh(w.OESTBledy ? w.OESTBledy.text(e) : e.message); });
-      }; });
-      clearInterval(timer); if (s.downloading) timer = setInterval(refresh, 3000);
-    }
-    function refresh(err) { status().then(function (s) { draw(s || {}, err); }, function (e) { draw({}, w.OESTBledy ? w.OESTBledy.text(e) : e.message); }); }
-    refresh();
-    // zmiana języka: panel rysuje się na nowo tylko ze stanem modelu (pola nie ma tu do zgubienia)
-    w.addEventListener('oest:lang', function on() { if (!el.isConnected) { w.removeEventListener('oest:lang', on); return; } refresh(); });
+      return {
+        klucz: k, linia: line, blad: err || '', trwa: !!s.downloading,
+        opcje: [{ v: 'E2B', t: w.OESTT('Gemma 4 E2B – mniejszy, szybszy (2,6 GB)', 'Gemma 4 E2B – smaller, faster (2.6 GB)') }, { v: 'E4B', t: w.OESTT('Gemma 4 E4B – dokładniejszy (3,7 GB)', 'Gemma 4 E4B – more accurate (3.7 GB)') }],
+        pobierz: available() && s.supported !== false && !s.ready && !s.downloading, anuluj: !!s.downloading, usun: !!s.ready
+      };
+    });
   }
-  w.OESTModel = { MODELS: MODELS, RULES: RULES, available: available, status: status, download: download, remove: remove, ready: ready, polish: polish, combine: combine, missingNumbers: missingNumbers, key: key, setKey: setKey, mount: mount };
+  // akcja przycisku panelu: 'download' albo 'remove' (usunięcie i anulowanie pobierania pytają okienkiem apki); zwraca tekst błędu albo ''
+  function akcja(a) {
+    return (a === 'remove' ? w.OESTPytaj(w.OESTT('Usunąć plik modelu z telefonu?', 'Remove the model file from the phone?')) : Promise.resolve(true)).then(function (ok) {
+      if (!ok) return '';
+      return (a === 'download' ? download() : remove()).then(function () { return ''; }, function (e) { return w.OESTBledy ? w.OESTBledy.text(e) : e.message; });
+    });
+  }
+  w.OESTModel = { MODELS: MODELS, RULES: RULES, available: available, status: status, download: download, remove: remove, ready: ready, polish: polish, combine: combine, missingNumbers: missingNumbers, key: key, setKey: setKey, panel: panel, akcja: akcja };
 })(window);
