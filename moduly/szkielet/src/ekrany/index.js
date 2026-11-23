@@ -2,4 +2,5 @@
 // „Poza Ionic/Vue” (quality/baselines/ionic.json). Przepis przenoszenia: moduly/szkielet/PRZEPIS.md.
 import Ustawienia from './Ustawienia.vue';
 import Poczta from './Poczta.vue';
-export const EKRANY_VUE = { settings: Ustawienia, 'settings/mail': Poczta };
+import Kontakty from './Kontakty.vue';
+export const EKRANY_VUE = { settings: Ustawienia, 'settings/mail': Poczta, 'settings/contacts': Kontakty };
