@@ -10,8 +10,8 @@
     if (!batch.started) batch.started = Date.now();
     var t = cur.type;
     // Bez IndexedDB zapis zniknąłby po zamknięciu apki, a obiecujemy wznowienie: nie udaję, że się zapisało
-    return dbP.then(function (db) {
-      if (!db) throw new Error(T("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji", "this browser does not keep data permanently, so the inspection cannot be paused and resumed"));
+    return bazaJest().then(function (jest) {
+      if (!jest) throw new Error(T("ta przeglądarka nie zapisuje danych na stałe, więc nie da się przerwać i wznowić inspekcji", "this browser does not keep data permanently, so the inspection cannot be paused and resumed"));
       return kvSet(batchKey(t), batch);
     }).then(function () { save("bprog_" + t.id, { n: Object.keys(batch.items).length, started: batch.started }); });
   }
