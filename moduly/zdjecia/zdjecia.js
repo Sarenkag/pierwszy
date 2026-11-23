@@ -441,7 +441,7 @@
     return api;
   }
   function createBrowser(win) {
-    function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
+    function who() { return win.OESTKonto.email(); } // moduly/konto
     function KEY() { return 'oest.zdjecia.v1.' + who(); }
     var compress = compressIn(win);
     // Zmniejszanie w tle podczas podglądu (audyt wydajności zdjęć, punkt 1; zgoda Grzegorza 08/11/2026): aparat woła prepare(blob, kind),

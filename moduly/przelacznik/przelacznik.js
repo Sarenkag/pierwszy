@@ -46,9 +46,8 @@
       items.forEach(function (i, k) { i.classList.toggle("on", k === idx); });
     });
   }
-  function lang() { try { return w.localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
-  w.addEventListener("oest:lang", function () { set("lang", lang()); });
-  w.addEventListener("storage", function (e) { if (e.key === "oest.lang") set("lang", lang()); });
+  function lang() { return w.OESTBledy.lang() === "en" ? "en" : "pl"; } // język: moduly/bledy (właściciel oest.lang)
+  w.OESTBledy.naZmianeJezyka(function () { set("lang", lang()); });
   // przełącznik zapisany wprost w HTML (np. ekran główny) – dobierz stan od razu
   function init() { css(); set("lang", lang()); }
   if (d.readyState !== "loading") init(); else d.addEventListener("DOMContentLoaded", init);

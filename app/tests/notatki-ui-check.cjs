@@ -157,13 +157,13 @@ function fakePhone() {
     check(!/Rewrite|Second check\.$/.test(await pg.locator('#mdOut').inputValue()) && /cracked gland|zone/.test(await pg.locator('#mdOut').inputValue()), 'spóźniony wynik „Ułóż” podmienił propozycję z notatek: ' + await pg.locator('#mdOut').inputValue());
     // 8. EN: te same elementy okienka
     log('8. EN: te same el');
-    await pg.evaluate(() => localStorage.setItem('oest.lang', 'en')); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
+    await pg.evaluate(() => { if (window.OESTSettings) OESTSettings.update(s => { s.appearance.language = 'en'; }); localStorage.setItem('oest.lang', 'en'); }); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
     check(/Record note/.test(await pg.locator('#ntRec').textContent()), 'EN: przycisk nagrywania po polsku: ' + await pg.locator('#ntRec').textContent());
     await popup(); const en = await notes(); R.en = en;
     check(en.length === 1 && /ready/.test(en[0].tag) && /Edit/.test(await pg.locator('.nt-pop [data-nt=edit]').textContent()), 'EN: okienko niepełne/po polsku: ' + JSON.stringify(en));
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-okienko-EN.png') });
     await close();
-    await pg.evaluate(() => localStorage.setItem('oest.lang', 'pl')); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
+    await pg.evaluate(() => { if (window.OESTSettings) OESTSettings.update(s => { s.appearance.language = 'pl'; }); localStorage.setItem('oest.lang', 'pl'); }); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
     // 9. Wyczyść inspekcję usuwa też notatki
     log('9. Wyczyść inspek');
     // błąd usuwania notatek: nic nie czyścimy i nie piszemy „Wyczyszczono” (przegląd Codex #108)
