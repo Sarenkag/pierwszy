@@ -76,7 +76,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     const vt = await pg.evaluate(() => { const a = window.__vt.find(x => x.op === 'create'); return { files: a.files.map(f => f.title + '|' + f.type + '|' + (f.b64 || '').length), btn: document.getElementById('vtBtn').textContent.trim() }; });
     check(vt.files.length === 3 && /^Generator check form 1\|image\/jpeg\|\d{3,}/.test(vt.files[0]) && /\|application\/pdf\|\d{3,}/.test(vt.files[1]) && /^Photo 1\|image\/jpeg\|\d{3,}/.test(vt.files[2]), 'Vantify: zdjęcie kartki, Basic form PDF, zdjęcie (' + vt.files.join(', ') + ')');
     check(vt.btn === '✓ Vantify #999001', 'Vantify: po założeniu „✓ Vantify #nr” (' + vt.btn + ')');
-    await pg.evaluate(() => { document.querySelectorAll('.oest-ask').forEach(e => e.remove()); window.Capacitor = window.__capOrig; }); // wtyczka LibreOffice z przeglądarki testów zostaje
+    await pg.evaluate(() => Promise.all([...document.querySelectorAll('ion-alert')].map(a => a.dismiss())).then(() => { document.querySelectorAll('.oest-ask').forEach(e => e.remove()); window.Capacitor = window.__capOrig; })); /* wynik zakładania Vantify: ion-alert (OESTOkna) */ // wtyczka LibreOffice z przeglądarki testów zostaje
     const send = await pg.evaluate(() => document.getElementById('toQueue').textContent.trim());
     check(/^Wyślij/.test(send), 'po zdjęciu kartki przycisk to „Wyślij” (' + send + ')');
     await pg.click('#toQueue');
