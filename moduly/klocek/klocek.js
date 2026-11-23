@@ -137,16 +137,15 @@
     var s = w.document.createElement("style"); s.id = "oest-klocek-ki-css"; s.textContent = CSS2;
     (w.document.head || w.document.documentElement).appendChild(s);
   }
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   function dd(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
   function termin(due, left, done) {
     if (!due) return { text: "–", date: "", rest: "", tone: "" };
     var date = dd(due), rest = "", tone = "";
     if (done || left == null) rest = "";
     else if (left < 0) { rest = "−" + (-left > 30 ? Math.floor(-left / 30) + "M" : -left + "D"); tone = "red"; }
-    else if (left === 0) { rest = T("dziś", "today"); tone = "red"; }
-    else if (left === 1) { rest = T("jutro", "tomorrow"); tone = "jutro"; }
-    else rest = T("za ", "in ") + (left > 30 ? Math.floor(left / 30) + "M" : left + "D");
+    else if (left === 0) { rest = w.OESTT("dziś", "today"); tone = "red"; }
+    else if (left === 1) { rest = w.OESTT("jutro", "tomorrow"); tone = "jutro"; }
+    else rest = w.OESTT("za ", "in ") + (left > 30 ? Math.floor(left / 30) + "M" : left + "D");
     return { text: date + (rest ? " " + rest : ""), date: date, rest: rest, tone: tone };
   }
   function czest(f) { return f === "12M" ? "Y" : String(f || "").slice(0, 3); }
@@ -205,7 +204,7 @@
     css2();
     var n = w.document.createElement("div");
     n.innerHTML = (rows || []).map(function (r) { return '<div class="kir">' + svg(r.ic) + "<span>" + r.html + "</span></div>"; }).join("") +
-      '<p class="kfoot">' + esc(T("Stuknij gdziekolwiek, aby zamknąć", "Tap anywhere to close")) + "</p>";
+      '<p class="kfoot">' + esc(w.OESTT("Stuknij gdziekolwiek, aby zamknąć", "Tap anywhere to close")) + "</p>";
     return n;
   }
   w.OESTKlocek = { html: html, esc: esc, tones: TONE, css: css, inspekcja: inspekcja, termin: termin, czest: czest, przytrzymaj: przytrzymaj, infoNode: infoNode, infoCls: "ki-info", ikony: IC };

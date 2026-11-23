@@ -67,7 +67,7 @@
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
     if (ask || quick) $("faults").closest(".panel").hidden = true;
     $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
-    $("allOk").textContent = ask ? T("Wszystko TAK", "All YES") : T("Wszystkie zaznaczone → OK", "All marked → OK");
+    $("allOk").textContent = ask ? window.OESTT("Wszystko TAK", "All YES") : window.OESTT("Wszystkie zaznaczone → OK", "All marked → OK");
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
@@ -105,7 +105,7 @@
   // „Zapisz jako domyślne” = zapamiętane dla tej inspekcji; Wyślij wysyła jednym stuknięciem wg zapisanych ustawień.
   function sendParts() { // co ta inspekcja w ogóle ma do wysłania (reszta w okienku wyszarzona)
     var F = cur.type && cur.type.flush;
-    return { q: RD.pytaniaMozliwe(cur.type) || !!F, t: !!F, qLabel: F ? (F.points ? T("Nasz raport (lista punktów)", "Our report (point list)") : T("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : T("Pytania w raporcie", "Questions in the report") };
+    return { q: RD.pytaniaMozliwe(cur.type) || !!F, t: !!F, qLabel: F ? (F.points ? window.OESTT("Nasz raport (lista punktów)", "Our report (point list)") : window.OESTT("Nasz raport (formularz elektroniczny)", "Our report (electronic form)")) : window.OESTT("Pytania w raporcie", "Questions in the report") };
   }
   function hasWord() { var F = cur.type && cur.type.flush; return !!cur.type && !cur.type.temp ? true : !!(cur.type && cur.type.temp); } // czy ta inspekcja ma raport w Wordzie
   function syncSendHint() {
@@ -113,15 +113,15 @@
     if (!n || cur.mode !== "one") { h.textContent = ""; return; }
     function txt() {
     var to = recipientsFor(n), what = [], off = [];
-    if (n.q && sendParts().q) what.push(T("raport", "report"));
-    if (n.f) what.push(T("zdjęcia formularza", "form photos"));
-    if (n.p || n.t) what.push(T("zdjęcia", "photos"));
-    if (!n.f && sheetPhotos().length) off.push(T("zdjęcia formularza", "form photos") + " (" + sheetPhotos().length + ")");
-    if (!n.p && genPhotos().length) off.push(T("zdjęcia ogólne", "general photos") + " (" + genPhotos().length + ")");
-    if (!n.t && photos.some(function (p) { return p.tap != null; })) off.push(T("zdjęcia do pytań", "question photos") + " (" + photos.filter(function (p) { return p.tap != null; }).length + ")");
-    return "⚙ " + (what.join(" + ") || T("nic", "nothing")) + " · " + (n.one ? T("jeden dokument", "one document") : T("osobne pliki", "separate files")) + " · " +
-      [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || T("brak adresata", "no recipient")) +
-      (off.length ? T(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") : "") + ".";
+    if (n.q && sendParts().q) what.push(window.OESTT("raport", "report"));
+    if (n.f) what.push(window.OESTT("zdjęcia formularza", "form photos"));
+    if (n.p || n.t) what.push(window.OESTT("zdjęcia", "photos"));
+    if (!n.f && sheetPhotos().length) off.push(window.OESTT("zdjęcia formularza", "form photos") + " (" + sheetPhotos().length + ")");
+    if (!n.p && genPhotos().length) off.push(window.OESTT("zdjęcia ogólne", "general photos") + " (" + genPhotos().length + ")");
+    if (!n.t && photos.some(function (p) { return p.tap != null; })) off.push(window.OESTT("zdjęcia do pytań", "question photos") + " (" + photos.filter(function (p) { return p.tap != null; }).length + ")");
+    return "⚙ " + (what.join(" + ") || window.OESTT("nic", "nothing")) + " · " + (n.one ? window.OESTT("jeden dokument", "one document") : window.OESTT("osobne pliki", "separate files")) + " · " +
+      [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || window.OESTT("brak adresata", "no recipient")) +
+      (off.length ? window.OESTT(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") : "") + ".";
     }
     h.textContent = txt();
     if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce(h, OESTBledy.wJezyku(OESTBledy.drugi(), txt)); // PL i EN zajmują tyle samo miejsca
@@ -131,21 +131,21 @@
     var sp = sendParts(), to = recipientsFor({ sp: 1, sm: 1, se: 1, sg: 1 });
     function cb(k, label, dis, note) { return '<label class="need' + (dis ? " dis" : "") + '"><input type="checkbox" data-sn="' + k + '"' + (n[k] && !dis ? " checked" : "") + (dis ? " disabled" : "") + "><span>" + esc(label) + (note ? " <small>" + esc(note) + "</small>" : "") + "</span></label>"; }
     var box = document.createElement("div"); box.className = "sendcfg-box";
-    box.innerHTML = '<div class="sct">' + T("Co wysłać", "What to send") + "</div>" +
-      cb("f", T("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")) +
+    box.innerHTML = '<div class="sct">' + window.OESTT("Co wysłać", "What to send") + "</div>" +
+      cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")) +
       cb("q", sp.qLabel, !sp.q) +
-      cb("p", T("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")) +
-      cb("t", T("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t) +
-      '<div class="sct">' + T("Jak", "How") + "</div>" +
-      '<label class="need"><input type="radio" name="sn-one" value="1"' + (n.one ? " checked" : "") + "><span>" + T("Scalone w jeden dokument", "Merged into one document") + "</span></label>" +
-      '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + T("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
-      '<div class="sct">' + T("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, T("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
-      '<div class="sct">' + T("Do kogo", "To") + "</div>" +
-      cb("sp", T("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || T("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("sm", T("Mój firmowy e-mail", "My work email"), !to.me, to.me || T("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("se", T("Inżynier", "Engineer"), !to.eng, to.eng || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
-      cb("sg", T("Manager", "Manager"), !to.man, to.man || T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
-    OESTPrzycisk.ask({ title: T("Ustawienia wysyłki", "Sending settings"), node: box, ok: T("Zapisz jako domyślne", "Save as default"), cancel: T("Zamknij", "Close") }).then(function (save) {
+      cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")) +
+      cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t) +
+      '<div class="sct">' + window.OESTT("Jak", "How") + "</div>" +
+      '<label class="need"><input type="radio" name="sn-one" value="1"' + (n.one ? " checked" : "") + "><span>" + window.OESTT("Scalone w jeden dokument", "Merged into one document") + "</span></label>" +
+      '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + window.OESTT("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
+      '<div class="sct">' + window.OESTT("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, window.OESTT("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
+      '<div class="sct">' + window.OESTT("Do kogo", "To") + "</div>" +
+      cb("sp", window.OESTT("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
+      cb("sm", window.OESTT("Mój firmowy e-mail", "My work email"), !to.me, to.me || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
+      cb("se", window.OESTT("Inżynier", "Engineer"), !to.eng, to.eng || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
+      cb("sg", window.OESTT("Manager", "Manager"), !to.man, to.man || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
+    OESTPrzycisk.ask({ title: window.OESTT("Ustawienia wysyłki", "Sending settings"), node: box, ok: window.OESTT("Zapisz jako domyślne", "Save as default"), cancel: window.OESTT("Zamknij", "Close") }).then(function (save) {
       if (!save || !cur.ppm || !PPM.setNeeds) return;
       var patch = {}; box.querySelectorAll("input[data-sn]:not(:disabled)").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
       var r = box.querySelector('input[name="sn-one"]:checked'); patch.one = !r || r.value === "1";

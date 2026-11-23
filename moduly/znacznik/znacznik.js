@@ -75,7 +75,6 @@
     ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.8 3L16.2 9"/>',
     blad: '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'
   };
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   var FORM_TXT = { brak: ["Zdjęcie formularza", "Form photo"], ok: ["Zdjęcie formularza dodane", "Form photo added"], blad: ["Brak zdjęcia formularza", "No form photo yet"] };
   function ikona(icon, n, tone) {
     css();
@@ -83,7 +82,7 @@
     return '<span class="oest-ic' + (svg ? " " + icon : "") + (tone ? " t" + tone : "") + '">' + (svg ? '<svg viewBox="0 0 24 24" aria-hidden="true">' + svg + "</svg>" : '<span aria-hidden="true">' + esc(icon) + "</span>") + esc(n) + "</span>";
   }
   function formularz(state) {
-    css(); state = FORM[state] ? state : "brak"; var t = T(FORM_TXT[state][0], FORM_TXT[state][1]);
+    css(); state = FORM[state] ? state : "brak"; var t = w.OESTT(FORM_TXT[state][0], FORM_TXT[state][1]);
     return '<span class="oest-rp ' + state + '" role="img" aria-label="' + esc(t) + '" title="' + esc(t) + '"><svg viewBox="0 0 24 24">' + FORM[state] + "</svg></span>";
   }
   // pigułka statusu: tryb → napis PL/EN (kolor w CSS powyżej)
@@ -91,8 +90,8 @@
   var STATUS_OPIS = { nierozpoczeta: ["Nie rozpoczęta", "Not started"] };
   function status(tryb) {
     css(); tryb = STATUS[tryb] ? tryb : "nierozpoczeta";
-    var o = STATUS_OPIS[tryb] || STATUS[tryb], opis = T(o[0], o[1]);
-    return '<span class="oest-st ' + tryb + '" role="img" aria-label="' + esc(opis) + '" title="' + esc(opis) + '">' + esc(T(STATUS[tryb][0], STATUS[tryb][1])) + "</span>";
+    var o = STATUS_OPIS[tryb] || STATUS[tryb], opis = w.OESTT(o[0], o[1]);
+    return '<span class="oest-st ' + tryb + '" role="img" aria-label="' + esc(opis) + '" title="' + esc(opis) + '">' + esc(w.OESTT(STATUS[tryb][0], STATUS[tryb][1])) + "</span>";
   }
   status.tryby = Object.keys(STATUS);
   css();
