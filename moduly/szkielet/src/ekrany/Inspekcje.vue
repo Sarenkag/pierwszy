@@ -1,12 +1,8 @@
-<!-- Inspekcje (ppm): pasek dni, filtr grup, lista klocków. Dane i reguły: OESTPpmUI.ppmDane() (app/www/ppm-ui.js) – tu tylko wspólne części. -->
+<!-- Inspekcje (ppm): pasek dni, filtr grup (czesci/Filtr.vue), lista klocków. Dane i reguły: OESTPpmUI.ppmDane() (app/www/ppm-ui.js) – tu tylko wspólne części. -->
 <template>
   <div>
     <PasekDni :dni="d.dni" @dzien="P.dzien"></PasekDni>
-    <ion-item>
-      <ion-select :label="T('Filtr', 'Filter')" :multiple="true" :value="d.wybrane" :placeholder="T('Wszystkie', 'All')" :cancel-text="T('Anuluj', 'Cancel')" ok-text="OK" @ionChange="P.filtry($event.detail.value)">
-        <ion-select-option v-for="f in d.filtry" :key="f.id" :value="f.id">{{ f.nazwa }}</ion-select-option>
-      </ion-select>
-    </ion-item>
+    <Filtr :T="T" :opcje="d.filtry" :wybrane="d.wybrane" :wiele="true" :pusty="T('Wszystkie', 'All')" @zmiana="P.filtry"></Filtr>
     <Klocek v-for="k in d.klocki" :key="(k.fam || '') + '|' + (k.id || '')" :T="T" :k="k" @wybierz="wybierz" @przytrzymaj="przytrzymaj"></Klocek>
     <ion-item v-if="!d.klocki.length" lines="none"><ion-note>{{ d.pusto }}</ion-note></ion-item>
     <div class="ion-padding">
@@ -17,7 +13,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { IonItem, IonSelect, IonSelectOption, IonNote, IonButton } from '@ionic/vue';
+import { IonItem, IonNote, IonButton } from '@ionic/vue';
+import Filtr from '../czesci/Filtr.vue';
 import PasekDni from '../czesci/PasekDni.vue';
 import Klocek from '../czesci/Klocek.vue';
 import { wybierz, przytrzymaj } from '../czesci/listaInspekcji.js';

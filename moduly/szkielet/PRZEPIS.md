@@ -38,6 +38,7 @@ Moduł ekranu (`app/www/*.js`) daje zwykłe dane; część je pokazuje. Brakuje 
 | `Pigulka.vue` | `OESTZnacznik.status` | `tryb` = zalegla/nierozpoczeta/wtrakcie/wstrzymana/gotowa/odzyskana albo `tekst` + `ton` 0–4 |
 | `Kafelki.vue` | `moduly/kafelek` | `[{ id, trasa, ikona, tytul, podpis, licznik }]`; bez `trasa` → zdarzenie `wybierz` |
 | `PasekDni.vue` | `moduly/pasek-dni` (HTML) | `[{ k, nazwa, numer, pogoda, licznik, dzis, minal, praca, wybrany }]`; zdarzenie `dzien` |
+| `Filtr.vue` | rzędy przycisków-filtrów (chipy) | `opcje [{id,nazwa}]`, `wybrane`, `wiele`, `pusty`; zdarzenie `zmiana` |
 | `Akcja.vue` | `OESTPrzycisk.start/run` | `<Akcja :T="T" :fn="async etap => …" busy="Wysyłam">Wyślij</Akcja>` |
 | `Lampka.vue` | `OESTZnacznik.lampka` | `stan` on/mid/off/na + `tekst` |
 | `Polaczenie.vue` | – | połączenie z Google (`rodzaj`) |

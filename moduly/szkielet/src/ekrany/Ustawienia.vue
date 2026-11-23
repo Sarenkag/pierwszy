@@ -16,19 +16,7 @@
     </ion-card>
     <template v-for="(g, i) in d.groups" :key="i">
       <ion-list-header>{{ g.name }}</ion-list-header>
-      <ion-grid class="oest-rowne">
-        <ion-row>
-          <ion-col size="6" v-for="it in g.items" :key="it.id">
-            <ion-card button :data-nav="it.trasa">
-              <ion-card-header>
-                <ion-icon :src="it.ikona" color="primary" size="large" aria-hidden="true"></ion-icon>
-                <ion-card-title>{{ it.title }}</ion-card-title>
-                <ion-card-subtitle>{{ it.sub }}</ion-card-subtitle>
-              </ion-card-header>
-            </ion-card>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
+      <Kafelki :lista="g.kafelki"></Kafelki>
     </template>
     <ion-note>{{ T('Ustawienia zapisują się na telefonie. Brak internetu nie blokuje edycji.', 'Settings are stored on this phone. You can edit them offline.') }}</ion-note>
   </div>
@@ -36,8 +24,14 @@
 
 <script setup>
 import { computed } from 'vue';
-import { IonCard, IonItem, IonAvatar, IonLabel, IonListHeader, IonGrid, IonRow, IonCol, IonCardHeader, IonCardTitle, IonCardSubtitle, IonIcon, IonNote } from '@ionic/vue';
+import { IonCard, IonItem, IonAvatar, IonLabel, IonListHeader, IonNote } from '@ionic/vue';
+import { personOutline, peopleOutline, calendarOutline, mailOutline, logoGoogle, imagesOutline, clipboardOutline, documentTextOutline, cloudDownloadOutline, sparklesOutline,
+  syncOutline, keyOutline, informationCircleOutline } from 'ionicons/icons';
+import Kafelki from '../czesci/Kafelki.vue';
+// ikony kafelków: tylko Ionicons (jedno źródło ikon w apce, 23/11/2026)
+const IK = { profile: personOutline, contacts: peopleOutline, calendar: calendarOutline, mail: mailOutline, drive: logoGoogle, zdjecia: imagesOutline, questions: clipboardOutline,
+  reports: documentTextOutline, vantify: cloudDownloadOutline, ai: sparklesOutline, sync: syncOutline, account: keyOutline, about: informationCircleOutline };
 const props = defineProps({ T: Function, wersja: Number });
 // PL/EN: dane liczone na nowo, ekran się nie przerysowuje (Vue podmienia tylko teksty)
-const d = computed(() => (props.wersja, window.OESTSettingsUI.hubDane()));
+const d = computed(() => (props.wersja, (h => ({ ...h, groups: h.groups.map(g => ({ name: g.name, kafelki: g.items.map(it => ({ id: it.id, trasa: it.trasa, ikona: IK[it.id] || informationCircleOutline, tytul: it.title, podpis: it.sub })) })) }))(window.OESTSettingsUI.hubDane())));
 </script>
