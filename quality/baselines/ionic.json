@@ -5,13 +5,6 @@
   "note": "„Poza Ionic/Vue” (decyzja Grzegorza 21/11/2026): ekrany, strona inspekcji i wspólne moduły jeszcze nie na Ionic + Vue oraz własne ustawienia przewijania. Lista może tylko maleć – licznik do zera; praca skończona, gdy lista jest pusta. Dodanie wpisu wymaga wyraźnej zgody właściciela.",
   "entries": [
     {
-      "id": "IONIC|ekran|cal",
-      "rule": "IONIC",
-      "detail": "Ekran cal (Kalendarz) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|handover",
       "rule": "IONIC",
       "detail": "Ekran handover (Handover) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
@@ -36,13 +29,6 @@
       "id": "IONIC|ekran|handover/shift/:id",
       "rule": "IONIC",
       "detail": "Ekran handover/shift/:id (Zmiana) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|home",
-      "rule": "IONIC",
-      "detail": "Ekran home (Ekran główny) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
@@ -113,13 +99,6 @@
       "id": "IONIC|ekran|powertrace/view/:id",
       "rule": "IONIC",
       "detail": "Ekran powertrace/view/:id (Rozdzielnica) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|ppm",
-      "rule": "IONIC",
-      "detail": "Ekran ppm (Inspekcje) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
@@ -281,13 +260,6 @@
       "id": "IONIC|modul-ui|odczyt",
       "rule": "IONIC",
       "detail": "moduly/odczyt rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranów"
-    },
-    {
-      "id": "IONIC|modul-ui|pasek-dni",
-      "rule": "IONIC",
-      "detail": "moduly/pasek-dni rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranów"
     },

@@ -34,12 +34,12 @@
     var ikony = [{ rodzaj: "zdjecia", n: Math.min(ph.filter(function (p) { return !p.sheet; }).length, 99) },
       { rodzaj: "pytania", n: used ? Math.min(ok, 99) + "/" + Math.min(used, 99) : "–", ton: used ? (ok === used ? "success" : "warning") : undefined }];
     if (n > 0) ikony.push({ rodzaj: "usterki", n: Math.min(n, 99), ton: "warning" });
-    return { id: r.id, pasek: "fioletowy", nazwa: c.name || m.code || r.name, status: { tryb: "odzyskana" }, opis: c.loc || "", czestotliwosc: c.freq === "12M" ? "Y" : String(c.freq || "").slice(0, 3),
+    return { id: r.id, grupa: "odzyskana", nazwa: c.name || m.code || r.name, status: { tryb: "odzyskana" }, opis: c.loc || "", czestotliwosc: c.freq === "12M" ? "Y" : String(c.freq || "").slice(0, 3),
       formularz: ph.some(function (p) { return p.sheet; }) ? "ok" : "brak", termin: { tekst: dz ? w.OESTKlocek.termin(new Date(+dz[1], +dz[2] - 1, +dz[3])).date : "–" }, ikony: ikony, akcja: w.OESTT("Otwórz", "Open") };
   }
   function card(R, r) {
     var f = r.folder || [], drive = r.driveId && !r.dirty;
-    return { id: r.id, pasek: drive ? "zielony" : "zolty", nazwa: r.name, znak: BLD[f[0]], status: { tekst: drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
+    return { id: r.id, grupa: drive ? "dysk" : "czeka", nazwa: r.name, znak: BLD[f[0]], status: { tekst: drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
       opis: f.join(" · ") || "—", termin: { tekst: w.OESTT("Wysłany ", "Sent ") + R.day(r) + (r.versions > 1 ? " · " + w.OESTT("wersja ", "version ") + r.versions : "") }, akcja: w.OESTT("Otwórz", "Open") };
   }
   var seq = 0;

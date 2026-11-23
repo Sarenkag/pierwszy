@@ -10,4 +10,7 @@ import Konto from './Konto.vue';
 import Ai from './Ai.vue';
 import Raporty from './Raporty.vue';
 import Zdjecia from './Zdjecia.vue';
-export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, zdjecia: Zdjecia };
+import Glowny from './Glowny.vue';
+import Inspekcje from './Inspekcje.vue';
+import Kalendarz from './Kalendarz.vue';
+export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, zdjecia: Zdjecia };

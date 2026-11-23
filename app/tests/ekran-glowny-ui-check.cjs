@@ -1,5 +1,5 @@
 // Ekran główny mieści się w całości na telefonie i się nie przewija (Grzegorz 07/11/2026):
-// - między czarnym paskiem a logo nie ma ~1 cm pustego miejsca (był podwójny odstęp: .wrap + #v-home),
+// - między czarnym paskiem a logo nie ma ~1 cm pustego miejsca (był podwójny odstęp: .wrap + #v-home); ekran główny na Ionic + Vue (Glowny.vue): #hmLogo, #hmSt, #hmTiles ion-card, treść przewija ion-content,
 // - Wi‑Fi, HDD (zamiast Dysk/Drive w obu językach) i licznik zdjęć bez słowa „Zdjęcia” (np. 13/200MB) w JEDNEJ linii,
 // - całość mieści się bez przewijania (palcem nic się nie przesuwa), PL i EN, zmiana języka niczego nie przesuwa.
 // Chrome 412×915 jak Pixel 8 Pro, pasek systemowy 48 px (na telefonie podaje go Capacitor). Wynik NIE zastępuje sprawdzenia na Pixelu.
@@ -38,14 +38,14 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       const setLang = l => p.evaluate(l => { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); }, l);
       const zmierz = () => p.evaluate(() => {
         const r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { t: Math.round(b.top), b: Math.round(b.bottom), l: Math.round(b.left), r: Math.round(b.right), h: Math.round(b.height) }; };
-        const st = document.querySelector('.hm-st'), tiles = [...document.querySelectorAll('#hmTiles .tile')].map(e => e.getBoundingClientRect());
+        const st = document.querySelector('#hmSt'), tiles = [...document.querySelectorAll('#hmTiles ion-card')].map(e => e.getBoundingClientRect());
         return {
-          logo: r('.hm-logo'), st: r('.hm-st'), net: r('#hmNet'), drv: r('#hmDrive'), ph: r('#hmPhotos'), days: r('#hmDays'),
+          logo: r('#hmLogo'), st: r('#hmSt'), net: r('#hmNet'), drv: r('#hmDrive'), ph: r('#hmPhotos'), days: r('#hmDays'),
           stPrzelewa: st.scrollWidth > st.clientWidth + 1,
-          drvTxt: document.querySelector('#hmDrive span').textContent, phTxt: document.querySelector('#hmPhotos span').textContent,
+          drvTxt: document.querySelector('#hmDrive ion-label').textContent, phTxt: document.querySelector('#hmPhotos ion-label').textContent,
           tiles: tiles.length, tilesDol: Math.round(Math.max(...tiles.map(b => b.bottom))), tileMinH: Math.round(Math.min(...tiles.map(b => b.height))),
-          tileUciete: [...document.querySelectorAll('#hmTiles .tile')].some(e => e.scrollHeight > e.clientHeight + 1),
-          pasekWysylki: (b => b && !b.hidden ? Math.round(b.getBoundingClientRect().top) : null)(document.querySelector('#oest-pasek-wysylki')), sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight, ih: innerHeight
+          tileUciete: [...document.querySelectorAll('#hmTiles ion-card')].some(e => e.scrollHeight > e.clientHeight + 1),
+          pasekWysylki: (b => b && !b.hidden ? Math.round(b.getBoundingClientRect().top) : null)(document.querySelector('#oest-pasek-wysylki')), sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight + (n => n ? Math.max(0, n.scrollHeight - n.clientHeight) : 0)(document.querySelector('ion-content') && document.querySelector('ion-content').shadowRoot && document.querySelector('ion-content').shadowRoot.querySelector('.inner-scroll')), ih: innerHeight
         };
       });
       await p.goto(url + 'index.html#home'); await p.waitForTimeout(700);
@@ -69,12 +69,12 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
         check(y === 0, `${k}: ekran przesunął się o ${y} px`);
         // najdłuższe napisy, jakie mogą się pojawić, też mieszczą się w jednej linii
         for (const t of l === 'pl' ? ['HDD · brak połączenia', 'HDD · zsynchronizowany', 'HDD · 99 w kolejce'] : ['HDD · not connected', 'HDD · 99 queued']) {
-          const o = await p.evaluate(t => { const d = document.querySelector('#hmDrive span'), f = document.querySelector('#hmPhotos span'), n = document.querySelector('#hmNet span'); const a = [d.textContent, f.textContent, n.textContent]; d.textContent = t; f.textContent = '199/200MB'; n.textContent = 'Dane komórkowe'; const st = document.querySelector('.hm-st'); const ok = st.scrollWidth <= st.clientWidth + 1 && document.querySelector('#hmNet').getBoundingClientRect().top === document.querySelector('#hmPhotos').getBoundingClientRect().top; d.textContent = a[0]; f.textContent = a[1]; n.textContent = a[2]; return ok; }, t);
+          const o = await p.evaluate(t => { const d = document.querySelector('#hmDrive ion-label'), f = document.querySelector('#hmPhotos ion-label'), n = document.querySelector('#hmNet ion-label'); const a = [d.textContent, f.textContent, n.textContent]; d.textContent = t; f.textContent = '199/200MB'; n.textContent = 'Dane komórkowe'; const st = document.querySelector('#hmSt'); const ok = st.scrollWidth <= st.clientWidth + 1 && document.querySelector('#hmNet').getBoundingClientRect().top === document.querySelector('#hmPhotos').getBoundingClientRect().top; d.textContent = a[0]; f.textContent = a[1]; n.textContent = a[2]; return ok; }, t);
           check(o, `${k}: „Dane komórkowe · ${t} · 199/200MB” nie mieści się w jednej linii`);
         }
         // na Wi‑Fi (codzienny przypadek) napis HDD jest pełny, bez „…”
         for (const t of l === 'pl' ? ['HDD · brak połączenia', 'HDD · zsynchronizowany', 'HDD · 99 w kolejce'] : ['HDD · not connected', 'HDD · 99 queued']) {
-          const o = await p.evaluate(t => { const d = document.querySelector('#hmDrive span'), f = document.querySelector('#hmPhotos span'), n = document.querySelector('#hmNet span'); const a = [d.textContent, f.textContent, n.textContent]; d.textContent = t; f.textContent = '199/200MB'; n.textContent = 'Wi‑Fi'; const ok = d.scrollWidth <= d.clientWidth + 1; d.textContent = a[0]; f.textContent = a[1]; n.textContent = a[2]; return ok; }, t);
+          const o = await p.evaluate(t => { const d = document.querySelector('#hmDrive ion-label'), f = document.querySelector('#hmPhotos ion-label'), n = document.querySelector('#hmNet ion-label'); const a = [d.textContent, f.textContent, n.textContent]; d.textContent = t; f.textContent = '199/200MB'; n.textContent = 'Wi‑Fi'; const ok = d.scrollWidth <= d.clientWidth + 1; d.textContent = a[0]; f.textContent = a[1]; n.textContent = a[2]; return ok; }, t);
           check(o, `${k}: na Wi‑Fi napis „${t}” jest ucięty`);
         }
         R[k] = { odstep: m.logo.t - PASEK, pasekWysylki: m.pasekWysylki, linia: m.st.h, hdd: m.drvTxt, zdjecia: m.phTxt, kafelekH: m.tileMinH, dolKafelkow: m.tilesDol, ekran: m.ih, tresc: m.sh };
