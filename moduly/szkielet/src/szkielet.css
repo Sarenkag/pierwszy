@@ -204,3 +204,5 @@ ion-card.oest-klocek::part(native) { background: transparent; }
 /* notatka zajmuje tyle samo miejsca po polsku i angielsku (przełączenie PL/EN nie przesuwa ekranu) */
 .oest-ekran ion-note.oest-linie3 { min-height: calc(3 * 1.45em); }
 .oest-ekran ion-note.oest-linie5 { min-height: calc(5 * 1.45em); }
+.oest-kolumna { display: flex; flex-direction: column; gap: 14px; }
+.oest-ekran ion-card-subtitle + ion-card-subtitle { color: var(--ink); }

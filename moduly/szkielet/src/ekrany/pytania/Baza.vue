@@ -41,7 +41,7 @@
               </ion-item>
               <div class="oest-rzad">
           <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.dzialEdytuj(x.id)">{{ T('Edytuj', 'Edit') }}</ion-button>
-          <ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.dzialUsun(x.id)">{{ T('Usuń pusty', 'Delete empty') }}</ion-button>
+          <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.dzialUsun(x.id)">{{ T('Usuń pusty', 'Delete empty') }}</ion-button>
         </div>
             </template>
             <ion-item>
@@ -103,11 +103,11 @@
         <p>{{ q.opis }}</p>
         <ion-chip v-for="(r, i) in q.powody" :key="i">{{ r }}</ion-chip>
       </ion-card-content>
-      <div class="oest-rzad">
+      <div class="oest-kolumna">
           <ion-button expand="block" :id="'qqEdit-' + q.id" fill="outline" :disabled="zajety" @click="U.edytuj(q.id)">{{ T('Edytuj', 'Edit') }}</ion-button>
           <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.edytuj(q.id, true)">{{ T('Duplikuj', 'Duplicate') }}</ion-button>
           <ion-button expand="block" v-if="q.propozycja" fill="outline" :disabled="zajety" @click="U.zatwierdz(q.id)">{{ T('Zatwierdź', 'Approve') }}</ion-button>
-          <ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.usun(q.id)">{{ T('Usuń', 'Delete') }}</ion-button>
+          <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.usun(q.id)">{{ T('Usuń', 'Delete') }}</ion-button>
         </div>
     </ion-card>
     <ion-item v-if="b.wiecej" lines="none">
