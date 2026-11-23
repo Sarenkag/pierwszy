@@ -17,8 +17,9 @@ const server = http.createServer((req, res) => {
 const fails = [], R = {};
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
 // okienka notatek to części szkieletu Ionic (moduly/szkielet/src/czesci): nagrywanie (ion-modal), lista notatek (OESTOkna.okno), przyciski [data-*]
-// „Na pewno?” i komunikaty: jedno okienko Ionic ze szkieletu (ion-alert, OESTOkna.pytaj) – przycisk potwierdzenia
-const ALERT_OK = 'ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive';
+// „Na pewno?” i komunikaty apki: okienko OESTPrzycisk.ask albo ion-alert ze szkieletu (OESTOkna.pytaj) – przycisk potwierdzenia
+const ALERT = '.oest-ask:not([data-wy-out]), ion-alert:not(.overlay-hidden)';
+const ALERT_OK = '.oest-ask:not([data-wy-out]) [data-a=ok], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive';
 const REC = 'ion-modal[data-oest-czesc="Nagrywanie"]', OKNO = 'ion-modal[data-oest-okno="NotatkiOkno"]', POP = '[data-nt-okno]';
 const ID = 'EFA-INS-014';
 // wtyczki telefonu: nagranie (WAV), rozpoznawanie mowy po polsku (kolejne zdania), tłumacz ML Kit (świadomie z „insulator” i bez „12”)
@@ -172,11 +173,11 @@ function fakePhone() {
     log('9. Wyczyść inspek');
     // błąd usuwania notatek: nic nie czyścimy i nie piszemy „Wyczyszczono” (przegląd Codex #108)
     await pg.evaluate(() => { const c = OESTNotatki.clear; OESTNotatki.clear = function () { OESTNotatki.clear = c; return Promise.reject(Error('transakcja przerwana')); }; window.OEST_clearInspection(); });
-    await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).click(); await pg.waitForTimeout(1500);
-    R.bladCzyszczenia = await pg.locator('ion-alert').textContent().catch(() => '');
+    await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).first().click(); await pg.waitForTimeout(1500);
+    R.bladCzyszczenia = await pg.locator(ALERT).first().textContent().catch(() => '');
     check(/nie wyczyściłem/.test(R.bladCzyszczenia) && !/Wyczyszczono/.test(await pg.locator('#formHint').textContent()) && await count() === '1', 'błąd usuwania notatek potwierdzony jako wyczyszczenie: ' + R.bladCzyszczenia + ' / ' + await pg.locator('#formHint').textContent() + ' / notatek ' + await count());
-    if (await pg.locator(ALERT_OK).count()) { await pg.locator(ALERT_OK).click(); await pg.waitForSelector('ion-alert', { state: 'detached' }); }
-    await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).click(); await pg.waitForTimeout(2500);
+    if (await pg.locator(ALERT_OK).count()) { await pg.locator(ALERT_OK).first().click(); await pg.waitForFunction(s => !document.querySelector(s), ALERT); }
+    await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).first().click(); await pg.waitForTimeout(2500);
     check(await count() === '0', 'po „Wyczyść inspekcję” zostały notatki: ' + await count());
     R.poWyczysc = await count();
     // 10. nowy termin: notatki idą z inspekcją do archiwum; nieudane przeniesienie nic nie kasuje i ponawia się przy następnym otwarciu (przegląd Codex #108)

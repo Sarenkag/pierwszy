@@ -34,9 +34,9 @@ function fakePhone() {
     await ctx.addInitScript(fakePhone);
     const pg = await ctx.newPage(); pg.setDefaultTimeout(8000); pg.on('pageerror', e => errors.push(e.message));
     const until = async (fn, arg) => { for (let i = 0; i < 25; i++) { if (await pg.evaluate(fn, arg)) return true; await pg.waitForTimeout(200); } return false; };
-    // okienka notatek: części szkieletu Ionic w ion-modal (OESTOkna.okno); „Na pewno?” apki: ion-alert (OESTOkna.pytaj); pasek notatek: [data-nt-bar]
+    // okienka notatek: części szkieletu Ionic w ion-modal (OESTOkna.okno); „Na pewno?” apki: okienko OESTPrzycisk.ask albo ion-alert (OESTOkna.pytaj); pasek notatek: [data-nt-bar]
     const okno = () => pg.locator('ion-modal[data-oest-okno]:not(.overlay-hidden)'), OKNO = 'ion-modal[data-oest-okno]';
-    const ask = () => pg.locator('ion-alert:not(.overlay-hidden)');
+    const ask = () => pg.locator('.oest-ask:not([data-wy-out]), ion-alert:not(.overlay-hidden)'); // pytanie apki: okienko OESTPrzycisk.ask albo ion-alert (OESTOkna.pytaj)
     const REC = 'ion-modal[data-oest-czesc="Nagrywanie"]', POP = '[data-nt-okno]', NOWA = '[data-nt-nowa] [data-nt-f=pl] textarea';
     // ponumerowana ikonka notatki (w stronie): rodzaj (glos = 🎤, tekst = 📝) i numer
     const draft = () => pg.evaluate(() => OESTReactiveUI.repository.get().then(d => Object.values(d.reactiveDrafts)[0]));
@@ -107,9 +107,9 @@ function fakePhone() {
     check(await ask().count() === 0, 'data: pytanie mimo tej samej daty');
     await pick('2026-11-03'); await ask().waitFor();
     check(/03\/11\/2026/.test(await ask().textContent()), 'data: w pytaniu brak daty zdjęcia');
-    await ask().locator('button.alert-button-role-cancel').click(); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2, null, { timeout: 10000 });
+    await ask().locator('[data-a=no], button.alert-button-role-cancel').click(); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2, null, { timeout: 10000 });
     check(await pg.locator('[data-rx-field=orderDate]').inputValue() === today, 'data: „Nie” zmieniło datę');
-    await pick('2026-11-05'); await ask().waitFor(); await ask().locator('button.alert-button-role-confirm, button.alert-button-role-destructive').click();
+    await pick('2026-11-05'); await ask().waitFor(); await ask().locator('[data-a=ok], button.alert-button-role-confirm, button.alert-button-role-destructive').click();
     await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 3, null, { timeout: 10000 });
     check(await pg.locator('[data-rx-field=orderDate]').inputValue() === '2026-11-05', 'data: „Tak” nie zmieniło daty w polu');
     await pg.waitForTimeout(400); check((await draft()).orderDate === '2026-11-05', 'data: „Tak” nie zapisało daty w szkicu');

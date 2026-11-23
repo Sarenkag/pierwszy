@@ -103,18 +103,18 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 4. ekran główny: okienko „Chcesz wyjść z aplikacji?” z Tak/Nie; Wstecz albo Nie = zostajemy; Tak = wyjście
     s = await back(700);
     check(/Chcesz wyjść z aplikacji\?/.test(s.ask), '4: na ekranie głównym Wstecz pokazuje „Chcesz wyjść z aplikacji?”, jest: ' + s.ask);
-    const btns = await pg.$$eval('ion-alert button', a => a.map(b => b.textContent.trim()));
+    const btns = await pg.$$eval('.oest-ask:not([data-wy-out]) button, ion-alert button', a => a.map(b => b.textContent.trim()));
     check(btns.join('/') === 'Nie/Tak', '4: przyciski okienka Nie/Tak, są ' + btns.join('/'));
     s = await back(700); check(!s.ask && s.view === 'v-home' && !s.exit, '4: Wstecz w okienku = Nie (okienko znika, apka zostaje)');
-    await back(700); await pg.click('ion-alert button.alert-button-role-cancel'); await wait(700);
+    await back(700); await pg.click('.oest-ask:not([data-wy-out]) [data-a="no"], ion-alert button.alert-button-role-cancel'); await wait(700);
     s = await where(); check(!s.ask && s.view === 'v-home' && !s.exit, '4: „Nie” zostawia apkę na ekranie głównym');
-    await back(700); await pg.click('ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive'); await wait(700);
+    await back(700); await pg.click('.oest-ask:not([data-wy-out]) [data-a="ok"], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive'); await wait(700);
     s = await where(); check(s.exit, '4: „Tak” zamyka apkę');
     await pg.evaluate(() => sessionStorage.removeItem('wstecz.wyjscie'));
     // EN
     await pg.evaluate(() => { localStorage.setItem('oest.lang', 'en'); OESTSettings.update(x => { x.appearance.language = 'en'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
     s = await back(700); check(/Do you want to exit the app\?/.test(s.ask), '4: EN: „Do you want to exit the app?”, jest: ' + s.ask);
-    const btnsEn = await pg.$$eval('ion-alert button', a => a.map(b => b.textContent.trim()));
+    const btnsEn = await pg.$$eval('.oest-ask:not([data-wy-out]) button, ion-alert button', a => a.map(b => b.textContent.trim()));
     check(btnsEn.join('/') === 'No/Yes', '4: EN: przyciski No/Yes, są ' + btnsEn.join('/'));
     await back(700); await pg.evaluate(() => { localStorage.setItem('oest.lang', 'pl'); OESTSettings.update(x => { x.appearance.language = 'pl'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
 
