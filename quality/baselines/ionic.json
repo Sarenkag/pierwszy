@@ -229,13 +229,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/mail",
-      "rule": "IONIC",
-      "detail": "Ekran settings/mail (Poczta i wysyłka) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|settings/profile",
       "rule": "IONIC",
       "detail": "Ekran settings/profile (Mój profil) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
