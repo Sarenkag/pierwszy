@@ -4,7 +4,7 @@
   <ion-header class="ion-no-border oest-glowny">
     <ion-toolbar>
       <ion-avatar slot="start" class="oest-logo" id="hmLogo"><span class="oest-inicjaly">OEST</span></ion-avatar>
-      <ion-label>
+      <ion-label class="ion-text-nowrap">
         <h2><strong>ONE EASTSIDE</strong></h2>
         <p>{{ d.data }}<template v-if="d.pogoda"> · <ion-text color="primary" id="hmWx" @click="okno('wx')"><ion-icon :icon="POGODA[d.pogoda.ikona]" aria-hidden="true"></ion-icon> {{ d.pogoda.temp }}</ion-text></template></p>
       </ion-label>
