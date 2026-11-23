@@ -1,12 +1,12 @@
 <!-- Klocek listy – JEDEN w całej apce (Grzegorz 04/11 i 07/11/2026; 23/11: linia 1 = cała nazwa, pigułka statusu w linii 2): inspekcje, dzień w Kalendarzu, Reactive, grupy, raporty.
      Każde miejsce stałe; lista tylko podaje dane (zwykły obiekt z modułu), klocek niczego nie liczy:
-       { id, nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
-         opis, termin: { tekst, ton: ''|'jutro'|'red' }, procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
+       { id, grupa (kolor paska z lewej: fire/water/elec/mech/sub – kolory w szkielet.css), nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
+         opis, termin: { tekst, ton: ''|'jutro'|'red' }, numer (zlecenie Vantify, linia 3 – Grzegorz 23/11), procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
          miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
      Stuknięcie w dowolne miejsce: zdarzenie „wybierz” (bez strzałki z prawej – Grzegorz 23/11); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
-  <ion-card button :disabled="k.wylaczony" :data-id="k.id" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
-    <ion-item lines="none" :detail="false">
+  <ion-card button :disabled="k.wylaczony"   :data-id="k.id" :aria-description="k.akcja || undefined" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
+    <ion-item lines="none" :detail="false" :data-grupa="k.grupa || undefined">
       <ion-thumbnail v-if="k.miniatura" slot="start"><img :src="k.miniatura" alt=""></ion-thumbnail>
       <ion-label :color="k.przygaszony ? 'medium' : undefined">
         <h2 class="ion-text-nowrap">{{ k.nazwa }}</h2>
@@ -17,12 +17,12 @@
           <template v-if="k.opis"> {{ k.opis }}</template>
           <template v-if="k.status"> <Pigulka :T="T" :tryb="k.status.tryb" :tekst="k.status.tekst" :ton="k.status.ton"></Pigulka></template>
         </p>
-        <p v-if="k.termin || (k.ikony && k.ikony.length)">
+        <p v-if="k.termin || (k.ikony && k.ikony.length) || k.numer">
           <template v-if="k.termin"><ion-icon :icon="I.termin" aria-hidden="true"></ion-icon> <ion-text :color="TERMIN[k.termin.ton || '']">{{ k.termin.tekst }}</ion-text></template>
           <template v-for="(x, i) in widoczne" :key="i"> · <ion-icon :icon="I[x.rodzaj] || I.punkt" :color="x.ton" aria-hidden="true"></ion-icon> {{ x.n }}</template>
+          <template v-if="k.numer"> · <ion-text color="medium">{{ k.numer }}</ion-text></template>
         </p>
       </ion-label>
-      <ion-note v-if="k.akcja" slot="end">{{ k.akcja }}</ion-note>
     </ion-item>
     <ion-progress-bar v-if="k.procent != null" :value="(k.procent || 0) / 100" :color="k.procent >= 100 ? 'success' : 'primary'"></ion-progress-bar>
   </ion-card>
@@ -30,7 +30,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { IonCard, IonItem, IonThumbnail, IonLabel, IonBadge, IonIcon, IonText, IonNote, IonProgressBar } from '@ionic/vue';
+import { IonCard, IonItem, IonThumbnail, IonLabel, IonBadge, IonIcon, IonText, IonProgressBar } from '@ionic/vue';
 import { barChartOutline, documentTextOutline, calendarOutline, imagesOutline, checkboxOutline, warningOutline, micOutline, paperPlaneOutline, ellipseOutline } from 'ionicons/icons';
 import Pigulka from './Pigulka.vue';
 const props = defineProps({ T: Function, k: Object });

@@ -134,7 +134,7 @@
       "id": "JM|naglowek|index.html",
       "rule": "JM",
       "detail": "index.html: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 5× poza właścicielem (moduly/naglowek/naglowek.js).",
-      "maks": 5,
+      "maks": 3,
       "punkt": "D11",
       "usuwa": "C1",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -329,19 +329,10 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|home.js",
-      "rule": "ZNACZNIK",
-      "detail": "home.js: 10 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 10,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|index.html",
       "rule": "ZNACZNIK",
       "detail": "index.html: 26 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 16,
+      "maks": 4,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -423,15 +414,6 @@
       "rule": "ZNACZNIK",
       "detail": "moduly/odczyt/odczyt.js: 3 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
       "maks": 3,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|moduly/pasek-dni/pasek-dni.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/pasek-dni/pasek-dni.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -531,24 +513,6 @@
       "rule": "ZNACZNIK",
       "detail": "zdjecia-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
       "maks": 6,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|home.js|data-hnews",
-      "rule": "ZNACZNIK",
-      "detail": "home.js: stary znacznik data-hnews 3×.",
-      "maks": 3,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|index.html|data-href",
-      "rule": "ZNACZNIK",
-      "detail": "index.html: stary znacznik data-href 2×.",
-      "maks": 2,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
