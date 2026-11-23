@@ -7,7 +7,6 @@
 (function (w, d) {
   "use strict";
   if (w.OESTLadowanie) return;
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var RING = "background:conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg);" +
     "-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - .17em),#000 calc(100% - .15em));mask:radial-gradient(farthest-side,transparent calc(100% - .17em),#000 calc(100% - .15em));" +
@@ -34,7 +33,7 @@
   function show(text) {
     css(); clearTimeout(hideT);
     if (!box) { box = d.createElement("div"); box.className = "oest-load"; box.setAttribute("role", "status"); d.body.appendChild(box); }
-    box.innerHTML = ring() + "<b>" + esc(text || T("Pracuję…", "Working…")) + "</b>";
+    box.innerHTML = ring() + "<b>" + esc(text || w.OESTT("Pracuję…", "Working…")) + "</b>";
     box.hidden = false; void box.offsetWidth; box.classList.add("on");
   }
   function hide() { if (!box) return; box.classList.remove("on"); var b = box; hideT = setTimeout(function () { b.hidden = true; }, 220); }

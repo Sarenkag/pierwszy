@@ -15,7 +15,6 @@
  */
 (function (w) {
   "use strict";
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var BLD = { "Tower A": "TA", "Tower B": "TB", "Pavilion": "P" };
   var ICON = '<svg class="ty" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h10l4 4v16H5zM15 2v5h4M8 11h8M8 15h8M8 18h5"/></svg>';
@@ -34,8 +33,8 @@
   function mount(el) {
     var R = w.OESTRaporty; if (!el) return;
     css();
-    if (!R) { el.textContent = T("Archiwum raportów niedostępne.", "Report archive unavailable."); return; }
-    var opts = [["", T("Wszystkie", "All")], ["Tower A", "Tower A"], ["Tower B", "Tower B"], ["Pavilion", "Pavilion"], ["General", T("Ogólne", "General")], ["Reactive", "Reactive"]];
+    if (!R) { el.textContent = w.OESTT("Archiwum raportów niedostępne.", "Report archive unavailable."); return; }
+    var opts = [["", w.OESTT("Wszystkie", "All")], ["Tower A", "Tower A"], ["Tower B", "Tower B"], ["Pavilion", "Pavilion"], ["General", w.OESTT("Ogólne", "General")], ["Reactive", "Reactive"]];
     if (!el.__rpt) {
       el.__rpt = true;
       el.innerHTML = '<div class="rpt-rec" id="rptRec" hidden><div class="rpt-sub" id="rptRecT"></div><div class="rpt-list" id="rptRecL"></div></div><div class="rpt-find"><input type="search" id="rptQ" autocomplete="off"><select id="rptB"></select></div><div class="rpt-list" id="rptList"></div>';
@@ -49,10 +48,10 @@
     }
     // język: tylko teksty, wpisane szukanie i wybór zostają (bez przerysowania pola)
     var q = el.querySelector("#rptQ"), b = el.querySelector("#rptB");
-    q.placeholder = T("Kod, budynek, data…", "Code, building, date…"); q.setAttribute("aria-label", q.placeholder); q.value = state.q;
+    q.placeholder = w.OESTT("Kod, budynek, data…", "Code, building, date…"); q.setAttribute("aria-label", q.placeholder); q.value = state.q;
     put(b, opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === state.b ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join(""));
-    b.setAttribute("aria-label", T("Budynek", "Building"));
-    el.querySelector("#rptRecT").textContent = T("Odzyskane inspekcje", "Recovered inspections");
+    b.setAttribute("aria-label", w.OESTT("Budynek", "Building"));
+    el.querySelector("#rptRecT").textContent = w.OESTT("Odzyskane inspekcje", "Recovered inspections");
     list(el);
   }
   // odzyskana inspekcja jako zwykły klocek inspekcji: dane z zapisu inspekcji w raporcie (bez nowego układu)
@@ -63,7 +62,7 @@
     return w.OESTKlocek.inspekcja({ data: { rec: r.id }, color: "#a35bff", name: c.name || m.code || r.name, status: "odzyskana",
       loc: c.loc || "", freq: c.freq || "", form: ph.some(function (p) { return p.sheet; }) ? "ok" : "brak",
       due: dz ? new Date(+dz[1], +dz[2] - 1, +dz[3]) : null, dueDone: true, photos: ph.filter(function (p) { return !p.sheet; }).length,
-      qa: used ? { ok: ok, all: used } : null, issues: st.filter(function (x) { return x === "fail"; }).length, go: T("Otwórz", "Open") });
+      qa: used ? { ok: ok, all: used } : null, issues: st.filter(function (x) { return x === "fail"; }).length, go: w.OESTT("Otwórz", "Open") });
   }
   function openRec(id) {
     // Wstecz z odzyskanej inspekcji wraca tutaj (inspekcje/index.html → #settings/reports)
@@ -83,13 +82,13 @@
     R.list().then(function (all) {
       if (my !== seq) return;
       var hit = R.find(all, state.q, { building: state.b });
-      if (!all.length) { put(box, '<div class="rpt-empty">' + esc(T("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.")) + "</div>"); return; }
-      if (!hit.length) { put(box, '<div class="rpt-empty">' + esc(T("Nic nie pasuje do szukania.", "Nothing matches your search.")) + "</div>"); return; }
+      if (!all.length) { put(box, '<div class="rpt-empty">' + esc(w.OESTT("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.")) + "</div>"); return; }
+      if (!hit.length) { put(box, '<div class="rpt-empty">' + esc(w.OESTT("Nic nie pasuje do szukania.", "Nothing matches your search.")) + "</div>"); return; }
       put(box, hit.map(function (r) {
         var f = r.folder || [], drive = r.driveId && !r.dirty;
         return w.OESTKlocek.html({ id: r.id, data: { rid: r.id }, color: drive ? "#5fd6a0" : "#f0c75e", icon: ICON, tag: BLD[f[0]] || "", name: r.name,
-          status: { text: drive ? T("Na Dysku", "On Drive") : T("Czeka na Dysk", "Waiting for Drive"), tone: drive ? 2 : 1 },
-          desc: f.join(" · ") || "—", due: esc(T("Wysłany ", "Sent ") + R.day(r)) + (r.versions > 1 ? esc(" · " + T("wersja ", "version ") + r.versions) : ""), go: T("Otwórz ›", "Open ›") });
+          status: { text: drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), tone: drive ? 2 : 1 },
+          desc: f.join(" · ") || "—", due: esc(w.OESTT("Wysłany ", "Sent ") + R.day(r)) + (r.versions > 1 ? esc(" · " + w.OESTT("wersja ", "version ") + r.versions) : ""), go: w.OESTT("Otwórz ›", "Open ›") });
       }).join(""));
     }).catch(function (e) { if (my === seq) put(box, '<div class="rpt-empty">' + esc(w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + "</div>"); });
   }
@@ -102,37 +101,37 @@
       try { pv = w.PizZip ? R.docxPreview(r.docx, w.PizZip) : null; } catch (e) { pv = null; }
       var to = S && S.recipients ? S.recipients({ sp: 1, sm: 1, se: 1, sg: 1 }) : { priv: "", me: "", eng: "", man: "" };
       // Reactive wysyłamy tylko na firmowy e-mail (PROD-025) – tak jak przy pierwszej wysyłce
-      var reactive = (r.meta && r.meta.type) === "reactive" || (r.folder || [])[0] === "Reactive", only = T("Reactive: tylko firmowy e-mail", "Reactive: work email only");
+      var reactive = (r.meta && r.meta.type) === "reactive" || (r.folder || [])[0] === "Reactive", only = w.OESTT("Reactive: tylko firmowy e-mail", "Reactive: work email only");
       function cb(k, label, addr, missing) { var off = !addr || (reactive && k !== "sm"); return "<label><input type=\"checkbox\" data-to=\"" + k + "\"" + (k === "sm" && addr ? " checked" : "") + (off ? " disabled" : "") + "><span>" + esc(label) + " <small>" + esc(reactive && k !== "sm" ? only : addr || missing) + "</small></span></label>"; }
       var pics = pv ? pv.images.map(function (i) { var u = URL.createObjectURL(new Blob([i.bytes], { type: i.type })); urls.push(u); return '<img src="' + u + '" alt="">'; }).join("") : "";
-      node.innerHTML = '<div class="rpt-meta">' + esc((r.folder || []).join(" · ") + " · " + T("wysłany ", "sent ") + R.day(r) + " · Word + PDF") + "</div>" +
-        '<div class="rpt-view">' + (pv ? pv.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("") + (pics ? '<div class="rpt-pics">' + pics + "</div>" : "") : "<p>" + esc(T("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")) + "</p>") + "</div>" +
-        (r.snap && !reactive ? '<button type="button" class="btn rpt-recb" data-a="rec">' + esc(r.rec ? T("Otwórz odzyskaną inspekcję", "Open recovered inspection") : T("Odzyskaj do edycji", "Recover for editing")) + "</button>" : "") +
-        (r.driveId ? '<a class="rpt-drive" target="_blank" rel="noopener" href="https://drive.google.com/file/d/' + encodeURIComponent(r.driveId) + '/view">' + esc(T("Otwórz na Dysku ›", "Open on Drive ›")) + "</a>" : "") +
+      node.innerHTML = '<div class="rpt-meta">' + esc((r.folder || []).join(" · ") + " · " + w.OESTT("wysłany ", "sent ") + R.day(r) + " · Word + PDF") + "</div>" +
+        '<div class="rpt-view">' + (pv ? pv.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("") + (pics ? '<div class="rpt-pics">' + pics + "</div>" : "") : "<p>" + esc(w.OESTT("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")) + "</p>") + "</div>" +
+        (r.snap && !reactive ? '<button type="button" class="btn rpt-recb" data-a="rec">' + esc(r.rec ? w.OESTT("Otwórz odzyskaną inspekcję", "Open recovered inspection") : w.OESTT("Odzyskaj do edycji", "Recover for editing")) + "</button>" : "") +
+        (r.driveId ? '<a class="rpt-drive" target="_blank" rel="noopener" href="https://drive.google.com/file/d/' + encodeURIComponent(r.driveId) + '/view">' + esc(w.OESTT("Otwórz na Dysku ›", "Open on Drive ›")) + "</a>" : "") +
         '<div class="rpt-to">' +
-        cb("sp", T("Mój prywatny e-mail", "My private email"), to.priv, T("brak adresu w Mój profil", "no address in My Profile")) +
-        cb("sm", T("Mój firmowy e-mail", "My work email"), to.me, T("brak adresu w Mój profil", "no address in My Profile")) +
-        cb("se", T("Inżynier", "Engineer"), to.eng, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
-        cb("sg", T("Manager", "Manager"), to.man, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) + "</div>";
+        cb("sp", w.OESTT("Mój prywatny e-mail", "My private email"), to.priv, w.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
+        cb("sm", w.OESTT("Mój firmowy e-mail", "My work email"), to.me, w.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
+        cb("se", w.OESTT("Inżynier", "Engineer"), to.eng, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
+        cb("sg", w.OESTT("Manager", "Manager"), to.man, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) + "</div>";
       var wantRec = false, rb = node.querySelector("[data-a=rec]");
       if (rb) rb.addEventListener("click", function () { wantRec = true; }); // okienko samo się zamyka (data-a), potem otwieramy inspekcję
-      return P.ask({ title: r.name, node: node, ok: T("Wyślij", "Send"), cancel: T("Zamknij", "Close") }).then(function (ok) {
+      return P.ask({ title: r.name, node: node, ok: w.OESTT("Wyślij", "Send"), cancel: w.OESTT("Zamknij", "Close") }).then(function (ok) {
         urls.forEach(function (u) { URL.revokeObjectURL(u); });
         if (wantRec) return R.setRec(r.id, true).then(function () { openRec(r.id); }, function (e) {
-          return P.ask({ title: T("Nie odzyskano", "Not recovered"), text: w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e), alert: true });
+          return P.ask({ title: w.OESTT("Nie odzyskano", "Not recovered"), text: w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e), alert: true });
         });
         if (!ok) return;
         var sel = {}; node.querySelectorAll("[data-to]:checked").forEach(function (c) { sel[c.getAttribute("data-to")] = true; });
         if (reactive) sel = { sm: !!sel.sm };
         var list = S && S.recipients ? S.recipients(sel).list : [];
-        if (!S || !S.active || !S.active() || !S.enqueue) return P.ask({ title: T("Wysyłka niedostępna", "Sending unavailable"), text: T("Zaloguj się do Google w apce.", "Sign in to Google in the app."), alert: true });
-        if (!list.length) return P.ask({ title: T("Brak adresata", "No recipient"), text: T("Zaznacz, do kogo wysłać.", "Tick who to send it to."), alert: true });
-        return S.enqueue({ type: "archive", code: r.name, name: r.name, subject: r.name, body: r.name + "\n" + T("Raport z archiwum OEST", "Report from the OEST archive") + " (" + R.day(r) + ")\n",
+        if (!S || !S.active || !S.active() || !S.enqueue) return P.ask({ title: w.OESTT("Wysyłka niedostępna", "Sending unavailable"), text: w.OESTT("Zaloguj się do Google w apce.", "Sign in to Google in the app."), alert: true });
+        if (!list.length) return P.ask({ title: w.OESTT("Brak adresata", "No recipient"), text: w.OESTT("Zaznacz, do kogo wysłać.", "Tick who to send it to."), alert: true });
+        return S.enqueue({ type: "archive", code: r.name, name: r.name, subject: r.name, body: r.name + "\n" + w.OESTT("Raport z archiwum OEST", "Report from the OEST archive") + " (" + R.day(r) + ")\n",
           docx: r.docx, pdf: r.pdf || new Uint8Array(0), toList: list, noArchive: true, rpt: r.folder }).then(function () {
-          return P.ask({ title: T("W kolejce", "Queued"), text: T("Raport czeka w kolejce – pasek na dole pokaże wysyłkę.", "The report is queued – the bar at the bottom shows sending."), alert: true });
+          return P.ask({ title: w.OESTT("W kolejce", "Queued"), text: w.OESTT("Raport czeka w kolejce – pasek na dole pokaże wysyłkę.", "The report is queued – the bar at the bottom shows sending."), alert: true });
         }, function (e) {
           // nie trafił do kolejki (np. brak miejsca w telefonie): mówimy wprost, nic nie udajemy; ponowienie = otworzyć raport i Wyślij jeszcze raz
-          return P.ask({ title: T("Nie wysłano", "Not sent"), text: T("Nie udało się dodać raportu do kolejki: ", "Could not add the report to the queue: ") + (w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + T("\nOtwórz raport i spróbuj ponownie.", "\nOpen the report and try again."), alert: true });
+          return P.ask({ title: w.OESTT("Nie wysłano", "Not sent"), text: w.OESTT("Nie udało się dodać raportu do kolejki: ", "Could not add the report to the queue: ") + (w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e)) + w.OESTT("\nOtwórz raport i spróbuj ponownie.", "\nOpen the report and try again."), alert: true });
         });
       });
     });

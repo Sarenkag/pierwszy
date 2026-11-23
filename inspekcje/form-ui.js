@@ -4,7 +4,6 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
   var form = $("v-form"); if (!form) return;
   var top = form.querySelector(".top"), bar = form.querySelector(".ppmbar");
 
@@ -48,7 +47,7 @@
   // ---- nagłówek: Imię ☐  Data ☐ | ile do końca, licznik ----
   var head = document.createElement("div");
   head.className = "ihead";
-  head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">' + T("Imię", "Name") + '</span></label>' +
+  head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">' + window.OESTT("Imię", "Name") + '</span></label>' +
     '<label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span></label>' +
     // odzyskana inspekcja (Grzegorz 08/11/2026 12:53): dopisek „Updated dd/mm/rrrr” przy dacie raportu – opcjonalny, domyślnie wyłączony
     '<label class="icb" id="updBox" hidden><input type="checkbox" id="updOn"><span>Updated</span></label></div>' + // i18n-ok: dopisek w raporcie (raporty po angielsku)
@@ -81,7 +80,7 @@
   if (sh) {
     var shCam = $("shCamIn").closest("label");
     shCam.querySelector("svg").outerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10l1.5 1.5 2.5-3M8.5 16l1.5 1.5 2.5-3M14.5 10h1.5M14.5 16h1.5"/></svg>'; // podkładka z kartką (inna niż „Notatka”)
-    var FL = ["Formularz", "Form"], sp = shCam.querySelector("span"); sp.textContent = T(FL[0], FL[1]); sp.dataset.en = FL[1]; sp.dataset.pl = FL[0];
+    var FL = ["Formularz", "Form"], sp = shCam.querySelector("span"); sp.textContent = window.OESTT(FL[0], FL[1]); sp.dataset.en = FL[1]; sp.dataset.pl = FL[0];
     btns.insertBefore(shCam, note);
     sh.classList.add("isheet"); ph.after(sh);
   }
@@ -107,7 +106,7 @@
     var b = bar && bar.querySelector("b");
     $("iEnds").textContent = b ? b.textContent : "";
     if (b && b.dataset.alt && window.OESTPodmien) OESTPodmien.miejsce($("iEnds"), b.dataset.alt); // termin PL/EN w tym samym miejscu: etap obok nie skacze
-    $("nameTx").textContent = $("nameOn").checked ? (pd.value || T("Imię", "Name")) : T("Imię", "Name");
+    $("nameTx").textContent = $("nameOn").checked ? (pd.value || window.OESTT("Imię", "Name")) : window.OESTT("Imię", "Name");
   }
   new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   if (bar) new MutationObserver(syncHead).observe(bar, { childList: true, subtree: true });
