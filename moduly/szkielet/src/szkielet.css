@@ -49,3 +49,20 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --ion-color-secondary: #3b82f6; --ion-color-secondary-rgb: 59, 130, 246; --ion-color-secondary-contrast: #ffffff; --ion-color-secondary-contrast-rgb: 255, 255, 255; --ion-color-secondary-shade: #3472d8; --ion-color-secondary-tint: #4f8ff7;
   --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
 }
+/* Pola formularzy na ekranach przeniesionych z dawnego wyglądu („Szkło i poświata”): ramka var(--line), zaokrąglenie, lekko rozjaśnione tło – jak dawne
+   pola tekstowe. Opt-in atrybutem fill="outline" na ion-input / ion-textarea / ion-select; tylko zmienne Ionic. */
+ion-input[fill=outline], ion-textarea[fill=outline], ion-select[fill=outline] {
+  --border-radius: 12px;
+  --border-color: var(--line);
+  --highlight-color-focused: #7c84ff;
+  --background: rgba(255, 255, 255, 0.06);
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+ion-item:has(> ion-input[fill=outline]), ion-item:has(> ion-textarea[fill=outline]), ion-item:has(> ion-select[fill=outline]) {
+  --inner-border-width: 0;
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+}
+ion-toggle { --track-background-checked: #7c84ff; }
+ion-list-header { --color: var(--ink); --background: transparent; }

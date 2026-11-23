@@ -20,7 +20,8 @@
       </ion-item>
     </ion-card>
 
-    <ion-card v-if="d.podglad" id="vtPreview">
+    <div id="vtPreview">
+    <ion-card v-if="d.podglad">
       <ion-list-header>{{ d.podglad.api ? T('Vantify, stan na ', 'Vantify as of ') : T('Eksport z ', 'Export from ') }}{{ d.podglad.dataPlanu }} · {{ d.podglad.zlecen }}{{ T(' zleceń', ' jobs') }}</ion-list-header>
       <ion-item v-if="d.podglad.starszy" lines="none">
         <ion-note color="warning">{{ T('Uwaga: najnowsze zlecenie w pliku jest z ', 'Note: the newest job in the file is from ') }}{{ d.podglad.dataPlanu }}{{ T(', a w obecnym planie z ', ', the current plan has ') }}{{ d.podglad.dataObecna }}{{ T('. Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.', '. The file may be older. Save only if it is a fresh export.') }}</ion-note>
@@ -56,6 +57,7 @@
         <ion-note id="vtResult" role="status" aria-live="polite" :color="d.wynik.ok ? 'success' : 'danger'">{{ P(d.wynik.tekst) }}</ion-note>
       </ion-item>
     </ion-card>
+    </div>
 
     <ion-card>
       <ion-list-header>{{ T('Vantify w apce', 'Vantify in the app') }}</ion-list-header>
@@ -66,10 +68,10 @@
         <ion-note>{{ T('Zmiana hasła albo loginu – wpisz nowe i zapisz.', 'Password or login changed – type the new one and save.') }}</ion-note>
       </ion-item>
       <ion-item>
-        <ion-input id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
+        <ion-input fill="outline" id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
+        <ion-input fill="outline" id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
       </ion-item>
       <ion-item lines="none">
         <ion-button id="vtLoginSave" @click="zapiszLogin">{{ T('Zapisz login i hasło', 'Save login and password') }}</ion-button>
@@ -94,7 +96,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonButton } from '@ionic/vue';
 const props = defineProps({ T: Function, wersja: Number });
 const V = window.OESTVantifyImport;
@@ -110,7 +112,10 @@ function zapiszLogin() { V.loginZapisz(login.user, login.haslo).then(stan); }
 function usunLogin() { V.loginUsun().then((s) => { if (s) { stan(s); login.user = ''; } }); }
 // „Pokaż”: wpisane hasło odsłania się w polu; zapisane pokazuje okienko Androida (ustalenie #39)
 function pokazHaslo() { if (login.pokaz) { login.pokaz = false; return; } if (login.haslo) { login.pokaz = true; return; } V.loginPokaz(); }
-watch(() => d.value.fokus, () => nextTick(() => { const el = poleHasla.value && poleHasla.value.$el; if (el) { el.scrollIntoView({ block: 'center' }); if (el.setFocus) el.setFocus(); } }));
+// odrzucone hasło: stan zapisu odczytany na nowo (komunikat przy polach), wpisane pola zostają
+function odswiezStan() { V.loginOdswiez().then((s) => { if (s) { login.zapisane = s.zapisane; if (!login.user) login.user = s.user; } }); }
+watch(() => d.value.fokus, () => { odswiezStan(); setTimeout(() => { const el = poleHasla.value && poleHasla.value.$el; if (el) { el.scrollIntoView({ block: 'center' }); if (el.setFocus) el.setFocus(); } }, 400); }); // po animacji przejścia ekranu
+
 onMounted(() => { window.addEventListener('oest:vantify-stan', nasluch); V.loginOdswiez().then(stan); V.ekran(true); });
 onBeforeUnmount(() => { window.removeEventListener('oest:vantify-stan', nasluch); V.ekran(false); });
 </script>

@@ -34,7 +34,8 @@ import { EKRANY_VUE } from './ekrany/index.js';
 import './szkielet.css';
 
 const w = window, d = document;
-const T = (pl, en) => (w.OESTT ? w.OESTT(pl, en) : pl);
+// czyta stan.wersja: każdy tekst T(…) w szablonie sam zależy od zmiany języka (komponenty w slotach ion-card nie przerysowują się inaczej)
+const T = (pl, en) => (stan.wersja, w.OESTT ? w.OESTT(pl, en) : pl);
 
 // ---------- okienka: jeden stos w pamięci (bez wpisów historii) ----------
 const stos = [];

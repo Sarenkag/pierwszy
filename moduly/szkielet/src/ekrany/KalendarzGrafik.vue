@@ -14,7 +14,7 @@
       <ion-button id="calShiftList" expand="block" fill="outline" :disabled="zajety" @click="listaGrafiku">{{ T('Wybierz kalendarz grafiku', 'Choose shift calendar') }}</ion-button>
       <template v-if="grafik">
         <ion-item v-if="grafik.length">
-          <ion-select id="shiftChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="grafikWybor" @ionChange="grafikWybor = $event.detail.value">
+          <ion-select fill="outline" id="shiftChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="grafikWybor" @ionChange="grafikWybor = $event.detail.value">
             <ion-select-option v-for="o in grafik" :key="o.id" :value="o.id">{{ o.tekst }}</ion-select-option>
           </ion-select>
         </ion-item>
@@ -40,7 +40,7 @@
       <template v-if="insp">
         <template v-if="insp.length">
           <ion-item>
-            <ion-select id="calendarChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="inspWybor" @ionChange="inspWybor = $event.detail.value">
+            <ion-select fill="outline" id="calendarChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="inspWybor" @ionChange="inspWybor = $event.detail.value">
               <ion-select-option v-for="o in insp" :key="o.id" :value="o.id">{{ o.tekst }}</ion-select-option>
             </ion-select>
           </ion-item>
@@ -60,17 +60,17 @@
         <ion-toggle :checked="f.shiftMarkers" @ionChange="zmien('shiftMarkers', $event.detail.checked)">{{ T('Znaczniki zmian z profilu (w wybranym kalendarzu)', 'Profile shift markers (in the selected calendar)') }}</ion-toggle>
       </ion-item>
       <ion-item>
-        <ion-input id="calWeeks" type="number" min="1" max="52" :label="T('Zakres tygodni', 'Weeks ahead')" label-placement="stacked" :value="f.weeks" @ionInput="zmien('weeks', $event.detail.value)"></ion-input>
+        <ion-input fill="outline" id="calWeeks" type="number" min="1" max="52" :label="T('Zakres tygodni', 'Weeks ahead')" label-placement="stacked" :value="f.weeks" @ionInput="zmien('weeks', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select id="calWorkdayMode" :label="T('Dni wolne według profilu', 'Profile days off')" label-placement="stacked" interface="popover" :value="f.workdayMode" @ionChange="zmien('workdayMode', $event.detail.value)">
+        <ion-select fill="outline" id="calWorkdayMode" :label="T('Dni wolne według profilu', 'Profile days off')" label-placement="stacked" interface="popover" :value="f.workdayMode" @ionChange="zmien('workdayMode', $event.detail.value)">
           <ion-select-option value="all">{{ T('Wszystkie dni', 'All days') }}</ion-select-option>
           <ion-select-option value="skip">{{ T('Pomiń dni wolne', 'Skip days off') }}</ion-select-option>
           <ion-select-option value="next">{{ T('Przenieś na następny dzień pracy', 'Move to next workday') }}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item>
-        <ion-select id="calGroups" :multiple="true" :label="T('Grupy inspekcji', 'Inspection groups')" label-placement="stacked" interface="popover" :value="f.groups" @ionChange="zmien('groups', $event.detail.value)">
+        <ion-select fill="outline" id="calGroups" :multiple="true" :label="T('Grupy inspekcji', 'Inspection groups')" label-placement="stacked" interface="popover" :value="f.groups" @ionChange="zmien('groups', $event.detail.value)">
           <ion-select-option value="fire">{{ T('Pożarowe', 'Fire') }}</ion-select-option>
           <ion-select-option value="water">{{ T('Woda', 'Water') }}</ion-select-option>
           <ion-select-option value="elec">{{ T('Elektryka', 'Electrical') }}</ion-select-option>

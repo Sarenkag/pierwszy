@@ -3,7 +3,7 @@
   <div>
     <ion-card>
       <ion-item>
-        <ion-select id="qqTask" :label="T('Inspekcja — katalog tylko do odczytu', 'Inspection — read-only catalogue')" label-placement="stacked" interface="popover" :value="i.zadanie" @ionChange="zadanie($event)">
+        <ion-select fill="outline" id="qqTask" :label="T('Inspekcja — katalog tylko do odczytu', 'Inspection — read-only catalogue')" label-placement="stacked" interface="popover" :value="i.zadanie" @ionChange="zadanie($event)">
           <ion-select-option v-for="t in i.zadania" :key="t.id" :value="t.id">{{ t.nazwa }}</ion-select-option>
         </ion-select>
       </ion-item>
@@ -17,19 +17,19 @@
       <ion-card>
         <ion-list-header id="qqCountHead">{{ i.status }}</ion-list-header>
         <ion-item>
-          <ion-input id="qq-title" :label="T('Tytuł raportu EN', 'EN report title')" label-placement="stacked" :maxlength="5000" :value="i.profil.title" @ionInput="U.profilPole('title', $event.detail.value)"></ion-input>
+          <ion-input fill="outline" id="qq-title" :label="T('Tytuł raportu EN', 'EN report title')" label-placement="stacked" :maxlength="5000" :value="i.profil.title" @ionInput="U.profilPole('title', $event.detail.value)"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-textarea id="qq-scope" :label="T('Scope EN — opcjonalnie', 'EN scope — optional')" label-placement="stacked" :auto-grow="true" :rows="2" :maxlength="5000" :value="i.profil.scope" @ionInput="U.profilPole('scope', $event.detail.value)"></ion-textarea>
+          <ion-textarea fill="outline" id="qq-scope" :label="T('Scope EN — opcjonalnie', 'EN scope — optional')" label-placement="stacked" :auto-grow="true" :rows="2" :maxlength="5000" :value="i.profil.scope" @ionInput="U.profilPole('scope', $event.detail.value)"></ion-textarea>
         </ion-item>
         <ion-item>
-          <ion-input id="qq-filePattern" :label="T('Wzór nazwy pliku: KOD DDMMRRRR lub {code} {date}', 'File name pattern: CODE DDMMYYYY or {code} {date}')" label-placement="stacked" :maxlength="5000" :value="i.profil.filePattern" @ionInput="U.profilPole('filePattern', $event.detail.value)"></ion-input>
+          <ion-input fill="outline" id="qq-filePattern" :label="T('Wzór nazwy pliku: KOD DDMMRRRR lub {code} {date}', 'File name pattern: CODE DDMMYYYY or {code} {date}')" label-placement="stacked" :maxlength="5000" :value="i.profil.filePattern" @ionInput="U.profilPole('filePattern', $event.detail.value)"></ion-input>
         </ion-item>
         <ion-item lines="none">
           <ion-note id="qqFilePreview">{{ i.plik }}</ion-note>
         </ion-item>
         <ion-item>
-          <ion-select id="qqCopy" :label="T('Skopiuj wybór i ustawienia z inspekcji', 'Copy selection and settings from an inspection')" label-placement="stacked" interface="popover" :value="kopia" @ionChange="kopia = $event.detail.value">
+          <ion-select fill="outline" id="qqCopy" :label="T('Skopiuj wybór i ustawienia z inspekcji', 'Copy selection and settings from an inspection')" label-placement="stacked" interface="popover" :value="kopia" @ionChange="kopia = $event.detail.value">
             <ion-select-option v-for="t in i.kopiuj" :key="t.id" :value="t.id">{{ t.nazwa }}</ion-select-option>
           </ion-select>
         </ion-item>
@@ -60,17 +60,17 @@
                 </ion-item>
                 <template v-if="r.typ === 'measure'">
                   <ion-item>
-                    <ion-input :id="'qq-unit-' + r.id" :label="T('Jednostka', 'Unit')" label-placement="stacked" :value="r.jednostka" @ionInput="U.wpis(r.id, 'unit', $event.detail.value)"></ion-input>
+                    <ion-input fill="outline" :id="'qq-unit-' + r.id" :label="T('Jednostka', 'Unit')" label-placement="stacked" :value="r.jednostka" @ionInput="U.wpis(r.id, 'unit', $event.detail.value)"></ion-input>
                   </ion-item>
                   <ion-item>
-                    <ion-input :id="'qq-min-' + r.id" type="number" label="min" label-placement="stacked" :value="r.min" @ionInput="U.wpis(r.id, 'min', $event.detail.value)"></ion-input>
+                    <ion-input fill="outline" :id="'qq-min-' + r.id" type="number" label="min" label-placement="stacked" :value="r.min" @ionInput="U.wpis(r.id, 'min', $event.detail.value)"></ion-input>
                   </ion-item>
                   <ion-item>
-                    <ion-input :id="'qq-max-' + r.id" type="number" label="max" label-placement="stacked" :value="r.max" @ionInput="U.wpis(r.id, 'max', $event.detail.value)"></ion-input>
+                    <ion-input fill="outline" :id="'qq-max-' + r.id" type="number" label="max" label-placement="stacked" :value="r.max" @ionInput="U.wpis(r.id, 'max', $event.detail.value)"></ion-input>
                   </ion-item>
                 </template>
                 <ion-item v-else>
-                  <ion-select :id="'qq-default-' + r.id" :label="T('Domyślna odpowiedź', 'Default answer')" label-placement="stacked" interface="popover" :value="r.domyslna" @ionChange="U.wpis(r.id, 'default', $event.detail.value)">
+                  <ion-select fill="outline" :id="'qq-default-' + r.id" :label="T('Domyślna odpowiedź', 'Default answer')" label-placement="stacked" interface="popover" :value="r.domyslna" @ionChange="U.wpis(r.id, 'default', $event.detail.value)">
                     <ion-select-option v-for="o in r.opcje" :key="o[0]" :value="o[0]">{{ o[0] === U.X0 ? T('Bez domyślnej', 'No default') : o[1] }}</ion-select-option>
                   </ion-select>
                 </ion-item>

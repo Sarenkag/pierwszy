@@ -20,10 +20,10 @@
         </ion-accordion>
       </ion-accordion-group>
       <ion-item>
-        <ion-input id="qqSearch" :label="T('Szukaj: tekst, tag, źródło', 'Search: text, tag, source')" label-placement="stacked" :value="b.szukaj" @ionChange="U.ustawSzukaj($event.detail.value || '')"></ion-input>
+        <ion-input fill="outline" id="qqSearch" :label="T('Szukaj: tekst, tag, źródło', 'Search: text, tag, source')" label-placement="stacked" :value="b.szukaj" @ionChange="U.ustawSzukaj($event.detail.value || '')"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select id="qqFilter" :label="T('Dział', 'Section')" label-placement="stacked" interface="popover" :value="b.filtr" @ionChange="U.ustawFiltr($event.detail.value)">
+        <ion-select fill="outline" id="qqFilter" :label="T('Dział', 'Section')" label-placement="stacked" interface="popover" :value="b.filtr" @ionChange="U.ustawFiltr($event.detail.value)">
           <ion-select-option :value="U.X0">{{ T('Wszystkie', 'All') }}</ion-select-option>
           <ion-select-option v-for="x in b.dzialy" :key="x.id" :value="x.id">{{ x.nazwa }}</ion-select-option>
         </ion-select>
@@ -45,10 +45,10 @@
               <ion-button fill="clear" color="danger" :disabled="zajety" @click="U.dzialUsun(x.id)">{{ T('Usuń pusty', 'Delete empty') }}</ion-button>
             </ion-item>
             <ion-item>
-              <ion-input id="qq-sectionName" :label="T('Nazwa działu', 'Section name')" label-placement="stacked" :maxlength="5000" :value="b.formDzial.nazwa" @ionInput="U.formDzial('name', $event.detail.value)"></ion-input>
+              <ion-input fill="outline" id="qq-sectionName" :label="T('Nazwa działu', 'Section name')" label-placement="stacked" :maxlength="5000" :value="b.formDzial.nazwa" @ionInput="U.formDzial('name', $event.detail.value)"></ion-input>
             </ion-item>
             <ion-item>
-              <ion-select id="qq-sectionParent" :label="T('Poddział należy do', 'Subsection belongs to')" label-placement="stacked" interface="popover" :value="b.formDzial.rodzic" @ionChange="U.formDzial('parentId', $event.detail.value)">
+              <ion-select fill="outline" id="qq-sectionParent" :label="T('Poddział należy do', 'Subsection belongs to')" label-placement="stacked" interface="popover" :value="b.formDzial.rodzic" @ionChange="U.formDzial('parentId', $event.detail.value)">
                 <ion-select-option :value="U.X0">{{ T('Brak — dział główny', 'None — main section') }}</ion-select-option>
                 <ion-select-option v-for="x in b.dzialy" :key="x.id" :value="x.id">{{ x.nazwa }}</ion-select-option>
               </ion-select>
@@ -69,7 +69,7 @@
           </ion-item>
           <div slot="content">
             <ion-item v-for="k in ['A', 'B', 'C', 'D', 'NA']" :key="k">
-              <ion-input :id="'qq-scale-' + k" :label="k" label-placement="stacked" :maxlength="5000" :value="b.skala[k]" @ionInput="U.skala(k, $event.detail.value)"></ion-input>
+              <ion-input fill="outline" :id="'qq-scale-' + k" :label="k" label-placement="stacked" :maxlength="5000" :value="b.skala[k]" @ionInput="U.skala(k, $event.detail.value)"></ion-input>
             </ion-item>
             <ion-item lines="none">
               <ion-button id="qqScaleSave" :disabled="zajety" @click="U.skalaZapisz()">{{ T('Zapisz nazwy skali', 'Save scale names') }}</ion-button>
@@ -87,7 +87,7 @@
           </ion-item>
           <div slot="content">
             <ion-item>
-              <ion-textarea id="qqJSON" aria-label="JSON" :rows="5" :value="b.json" @ionInput="U.ustawJson($event.detail.value || '')"></ion-textarea>
+              <ion-textarea fill="outline" id="qqJSON" aria-label="JSON" :rows="5" :value="b.json" @ionInput="U.ustawJson($event.detail.value || '')"></ion-textarea>
             </ion-item>
             <ion-item lines="none">
               <ion-button id="qqPreviewImport" :disabled="zajety" @click="U.podgladImportu()">{{ T('Podgląd importu', 'Import preview') }}</ion-button>
