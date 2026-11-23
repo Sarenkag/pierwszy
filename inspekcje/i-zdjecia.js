@@ -9,7 +9,7 @@
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
     ctx.point = tap != null ? tapName(tap) : ""; // zdjęcie przy kranie / punkcie: nazwa punktu w folderze OEST
     ctx.kind = photoKind(tap, sheet);
-    $("photoInfo").textContent = T("Zmniejszam…", "Reducing…");
+    $("photoInfo").textContent = window.OESTT("Zmniejszam…", "Reducing…");
     files.reduce(function (p, f) {
       return p.then(function () {
         return OESTZdjecia.exifDate(f).then(function (ex) {
@@ -26,8 +26,8 @@
       });
     }, Promise.resolve()).then(function () {
       if (tok === formSeq) scheduleDraft();
-      $("photoInfo").textContent = photos.length ? T("Zdjęć: ", "Photos: ") + photos.length + T(" · zapisane raz w folderze OEST.", " · saved once in the OEST folder.") : T("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
-    }).catch(function () { $("photoInfo").textContent = T("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
+      $("photoInfo").textContent = photos.length ? window.OESTT("Zdjęć: ", "Photos: ") + photos.length + window.OESTT(" · zapisane raz w folderze OEST.", " · saved once in the OEST folder.") : window.OESTT("Zdjęcia są zmniejszane od razu po dodaniu.", "Photos are reduced straight after adding.");
+    }).catch(function () { $("photoInfo").textContent = window.OESTT("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
   // Zdjęcie przez wspólny moduł aparatu (zdjęcie → podgląd OK / Edytuj / Powtórz); w przeglądarce zwykły wybór pliku
@@ -51,11 +51,11 @@
       if (p.tap != null) return; // zdjęcie kranu (Flushing): pokazane przy kranie
       var grid = p.sheet ? $("sheetPhotos") : $("photos");
       var d = document.createElement("div"); d.className = "thumb";
-      d.innerHTML = '<img alt="' + T('Zdjęcie ', 'Photo ') + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="' + T('Usuń zdjęcie ', 'Delete photo ') + (i + 1) + '">×</button>' +
+      d.innerHTML = '<img alt="' + window.OESTT('Zdjęcie ', 'Photo ') + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="' + window.OESTT('Usuń zdjęcie ', 'Delete photo ') + (i + 1) + '">×</button>' +
         (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
       d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
       if (window.OESTAparat && OESTAparat.available()) {
-        var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", T("Edytuj zdjęcie ", "Edit photo ") + (i + 1));
+        var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", window.OESTT("Edytuj zdjęcie ", "Edit photo ") + (i + 1));
         eb.addEventListener("click", function () {
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob, camOpts()).then(function (nb) {
@@ -80,7 +80,7 @@
     var fb = $("shCamIn").closest("label"), fbd = fb.querySelector(".fbadge");
     if (!fbd) { fbd = document.createElement("span"); fbd.className = "fbadge"; fb.appendChild(fbd); }
     fbd.innerHTML = Z && fst ? Z.formularz(fst) : ""; fb.classList.toggle("req", fst === "blad");
-    $("sheetInfo").textContent = shn ? T("Dodane: ", "Added: ") + shn + T(" — w raporcie na końcu.", " — at the end of the report.") : T("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
+    $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
     var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
     if (cur.type && cur.type.flush) renderFlush();
@@ -94,9 +94,9 @@
     var pd = NZ.dzienIso(p.when), today = NZ.dzienIso(new Date());
     if (!dateTouched) $("dzien").value = pd;
     box.hidden = false;
-    box.innerHTML = "<span>" + (p.exif ? T("Zdjęcie zrobione ", "Photo taken ") : T("Plik zdjęcia z ", "Photo file from ")) + esc(NZ.data(p.when) + " " + NZ.godzina(p.when)) + ".</span>" +
+    box.innerHTML = "<span>" + (p.exif ? window.OESTT("Zdjęcie zrobione ", "Photo taken ") : window.OESTT("Plik zdjęcia z ", "Photo file from ")) + esc(NZ.data(p.when) + " " + NZ.godzina(p.when)) + ".</span>" +
       ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(NZ.data(p.when)) + "</button>" : "") +
-      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">'+T('Ustaw dziś', 'Set today')+'</button>' : "");
+      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">'+window.OESTT('Ustaw dziś', 'Set today')+'</button>' : "");
     updateFormHint();
   }
   $("dateSug").addEventListener("click", function (e) {
@@ -113,7 +113,7 @@
     var ask = !!cur.type.ask, code = cur.code;
     var ids = ask ? [].concat.apply([], cur.type.checks.map(function (c) { return [c.key].concat((c.reasons || []).map(function (r) { return r.id; })); })) : RD.usterkiDla(cur.type).map(function (f) { return f.id; });
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
-    $("photoInfo").textContent = T("Sprawdzam zdjęcie…", "Checking the photo…");
+    $("photoInfo").textContent = window.OESTT("Sprawdzam zdjęcie…", "Checking the photo…");
     bitmap(ph.blob).then(function (img) {
       var c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
       return window.INSP_ANALYZE(c, cur.type.id);
@@ -127,8 +127,8 @@
         if (sg.fault !== cur.type.checks[i].key) { rsel[i] = rsel[i] || []; if (rsel[i].indexOf(sg.fault) < 0) rsel[i].push(sg.fault); }
       });
       renderPhotos(); renderSugs(); renderChecks(); updateFormHint();
-      $("photoInfo").textContent = ph.sugs.length ? T("Sprawdź sugestie pod zdjęciami.", "Check the suggestions under the photos.") : T("Na zdjęciu nic podejrzanego.", "Nothing suspicious in the photo.");
-    }).catch(function () { $("photoInfo").textContent = T("Nie udało się sprawdzić zdjęcia — zaznacz ręcznie.", "Could not check the photo — mark it by hand."); });
+      $("photoInfo").textContent = ph.sugs.length ? window.OESTT("Sprawdź sugestie pod zdjęciami.", "Check the suggestions under the photos.") : window.OESTT("Na zdjęciu nic podejrzanego.", "Nothing suspicious in the photo.");
+    }).catch(function () { $("photoInfo").textContent = window.OESTT("Nie udało się sprawdzić zdjęcia — zaznacz ręcznie.", "Could not check the photo — mark it by hand."); });
   }
   function renderSugs() {
     var open = [];
@@ -136,8 +136,8 @@
     $("sugBox").hidden = !open.length;
     $("sugBox").innerHTML = open.map(function (sg) {
       var f = FAULTS.filter(function (x) { return x.id === sg.fault; })[0];
-      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(T(f.pl, f.enl)) + '?</div><div class="row">' +
-        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">'+T('Tak', 'Yes')+'</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">'+T('Nie', 'No')+'</button></div></div>';
+      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(window.OESTT(f.pl, f.enl)) + '?</div><div class="row">' +
+        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">'+window.OESTT('Tak', 'Yes')+'</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">'+window.OESTT('Nie', 'No')+'</button></div></div>';
     }).join("");
   }
   $("sugBox").addEventListener("click", function (e) {

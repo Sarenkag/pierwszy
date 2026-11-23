@@ -348,12 +348,11 @@ window.OEST_PPM = {
     return Math.round((due - today) / 864e5);
   };
   P.endsText = function (left, t) {
-    var T = function (pl, en) { return window.OESTT ? window.OESTT(pl, en) : en; };
-    if (left === null && t && isVantify(t.id)) return T("Brak kolejnego zlecenia w Vantify", "No next Vantify job"); // po ostatnim zleceniu z importu
-    if (left === null) return T("Brak terminu – ustaw w Update", "No date – set Update");
-    if (left === 0) return T("Dziś", "Today");
-    if (left < 0) return T("Po terminie " + -left + " " + P.dni(-left)[0], "Overdue " + -left + "d");
-    return T((left === 1 ? "Został " : "Zostało ") + left + " " + P.dni(left)[0], "Ends in " + left + "d");
+    if (left === null && t && isVantify(t.id)) return window.OESTT("Brak kolejnego zlecenia w Vantify", "No next Vantify job"); // po ostatnim zleceniu z importu
+    if (left === null) return window.OESTT("Brak terminu – ustaw w Update", "No date – set Update");
+    if (left === 0) return window.OESTT("Dziś", "Today");
+    if (left < 0) return window.OESTT("Po terminie " + -left + " " + P.dni(-left)[0], "Overdue " + -left + "d");
+    return window.OESTT((left === 1 ? "Został " : "Zostało ") + left + " " + P.dni(left)[0], "Ends in " + left + "d");
   };
   // B7 (07/11/2026): odmiana „dzień/dni”, „day/days” – [pl, en]
   P.dni = function (n) { return Math.abs(n) === 1 ? ["dzień", "day"] : ["dni", "days"]; };

@@ -22,12 +22,11 @@
   }
   // ostatni komunikat pamiętamy: przełączenie PL/EN albo powrót do Ustawień rysuje panel od nowa i nie może zgubić postępu (Grzegorz 03/11)
   // komunikat trzymany jako para [pl, en]: po zmianie języka pokazuje się od razu w nowym (bez rysowania ekranu)
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   var lastStatus = ["", ""];
-  function setStatus(pl, en) { lastStatus = [pl, en == null ? pl : en]; var e = document.getElementById("updStatus"); if (e) e.textContent = T(lastStatus[0], lastStatus[1]); if (busy) changed(); }
+  function setStatus(pl, en) { lastStatus = [pl, en == null ? pl : en]; var e = document.getElementById("updStatus"); if (e) e.textContent = w.OESTT(lastStatus[0], lastStatus[1]); if (busy) changed(); }
   w.addEventListener("oest:lang", function () {
     setStatus(lastStatus[0], lastStatus[1]);
-    var i = document.getElementById("updInstall"); if (i && latest) i.textContent = T("Pobierz i zainstaluj wersję ", "Download and install version ") + latest.n;
+    var i = document.getElementById("updInstall"); if (i && latest) i.textContent = w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + latest.n;
   });
   // Nowa wersja = wpis w dzwonku ekranu głównego (home.js), nie pasek na ekranie (Grzegorz 20/11/2026: duży pasek zasłaniał kafelki,
   // nie dało się go zamknąć i wyglądał jak wymuszona aktualizacja). „Później” chowa wpis do następnej wersji; Ustawienia → Konto zawsze pozwalają zainstalować.
@@ -54,12 +53,12 @@
     }).catch(function (e) { /* błąd z każdego sprawdzenia, nie tylko ręcznego (wcześniej „if (manual) var em” zostawiało „Nie udało się sprawdzić: undefined”, 22/11/2026) */ var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
   }
   var busySince = 0;
-  function ask(t) { return w.OESTPytaj ? w.OESTPytaj(t, { ok: T("Pobierz", "Download") }) : Promise.resolve(w.confirm(t)); } // okienko apki zamiast systemowego
+  function ask(t) { return w.OESTPytaj ? w.OESTPytaj(t, { ok: w.OESTT("Pobierz", "Download") }) : Promise.resolve(w.confirm(t)); } // okienko apki zamiast systemowego
   async function install() {
     if (busy && Date.now() - busySince > 180000) busy = false; // poprzednie pobieranie utknęło (>3 min) – pozwól zacząć od nowa
     if (busy) { setStatus("Pobieranie już trwa – postęp widać w dzwonku na ekranie głównym.", "Download already running – progress is in the bell on the home screen."); return; }
     if (!latest) return; var p = api(); if (!p) return;
-    if (!(await ask(T("Pobrać i zainstalować wersję ", "Download and install version ") + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?"))) { postpone(); return; }
+    if (!(await ask(w.OESTT("Pobrać i zainstalować wersję ", "Download and install version ") + latest.n + " (" + Math.round((latest.size || 0) / 1048576) + " MB)?"))) { postpone(); return; }
     busy = true; failed = false; busySince = Date.now(); setStatus("Pobieram wersję " + latest.n + "…", "Downloading version " + latest.n + "…");
     changed();
     // procenty na pasku i w Ustawieniach (58 MB na danych mobilnych trwa – bez postępu wyglądało na zawieszone)
@@ -83,14 +82,14 @@
   function showInstallBtn(n) {
     var st = document.getElementById("updStatus"); if (!st || document.getElementById("updInstall")) return;
     var b = document.createElement("button"); b.id = "updInstall"; b.type = "button"; b.className = "btn"; b.setAttribute("data-upd", "install");
-    b.textContent = T("Pobierz i zainstaluj wersję ", "Download and install version ") + n; st.before(b);
+    b.textContent = w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + n; st.before(b);
   }
   function panelHtml() {
-    return '<div class="panel"><b>' + T("Aktualizacja aplikacji", "App update") + '</b>' +
-      '<p class="hint">' + T("Wersja w telefonie: ", "Version on the phone: ") + '<b id="updMine">' + esc(mine === null ? "…" : mine) + '</b></p>' +
-      '<button class="btn" type="button" data-upd="check">' + T("Sprawdź aktualizację", "Check for update") + '</button>' +
-      (latest && mine !== null && latest.n > mine ? '<button id="updInstall" class="btn" type="button" data-upd="install">' + T("Pobierz i zainstaluj wersję ", "Download and install version ") + esc(latest.n) + '</button>' : '') +
-      '<p class="hint" id="updStatus">' + esc(T(lastStatus[0], lastStatus[1])) + '</p></div>';
+    return '<div class="panel"><b>' + w.OESTT("Aktualizacja aplikacji", "App update") + '</b>' +
+      '<p class="hint">' + w.OESTT("Wersja w telefonie: ", "Version on the phone: ") + '<b id="updMine">' + esc(mine === null ? "…" : mine) + '</b></p>' +
+      '<button class="btn" type="button" data-upd="check">' + w.OESTT("Sprawdź aktualizację", "Check for update") + '</button>' +
+      (latest && mine !== null && latest.n > mine ? '<button id="updInstall" class="btn" type="button" data-upd="install">' + w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + esc(latest.n) + '</button>' : '') +
+      '<p class="hint" id="updStatus">' + esc(w.OESTT(lastStatus[0], lastStatus[1])) + '</p></div>';
   }
   document.addEventListener("click", function (e) {
     var t = e.target && e.target.closest && e.target.closest("[data-upd]"); if (!t) return;
