@@ -5,12 +5,12 @@
     <ion-card class="oest-panel">
       <ion-list-header class="oest-tytul">{{ d.telefon.tytul }}</ion-list-header>
       <ion-progress-bar id="zdPhoneBar" class="oest-licznik" :class="{ 'oest-pelny': d.telefon.pelny }" :value="d.telefon.procent / 100"></ion-progress-bar>
-      <ion-item lines="none"><ion-note>{{ d.telefon.tekst }}</ion-note></ion-item>
+      <ion-item lines="none"><ion-note class="oest-opis oest-dwie-linie">{{ d.telefon.tekst }}</ion-note></ion-item>
       <ion-list-header class="oest-tytul">{{ d.dysk.tytul }}</ion-list-header>
       <ion-progress-bar id="zdDriveBar" class="oest-licznik" :class="{ 'oest-pelny': d.dysk.pelny }" :value="d.dysk.procent / 100"></ion-progress-bar>
-      <ion-item lines="none"><ion-note>{{ d.dysk.tekst }}</ion-note></ion-item>
+      <ion-item lines="none"><ion-note class="oest-opis oest-dwie-linie">{{ d.dysk.tekst }}</ion-note></ion-item>
       <Akcja id="zdSync" class="oest-duzy" :T="T" expand="block" :fn="Z.wyslij" :busy="T('Sprawdzam połączenie', 'Checking connection')" :wylaczony="d.zajety" :gotowe-tekst="gotowe" @wynik="v => (gotowe = v)">{{ d.zajety ? T('Wysyłam…', 'Uploading…') : T('Wyślij teraz na Dysk', 'Upload to Drive now') }}</Akcja>
-      <ion-item v-if="d.komunikat" lines="none"><ion-note id="zdMsg" role="status" aria-live="polite">{{ d.komunikat }}</ion-note></ion-item>
+      <ion-item v-if="d.komunikat" lines="none"><ion-note id="zdMsg" class="oest-opis" role="status" aria-live="polite">{{ d.komunikat }}</ion-note></ion-item>
     </ion-card>
     <ion-card class="oest-panel">
       <ion-list-header class="oest-tytul">{{ T('Ustawienia', 'Settings') }}</ion-list-header>
@@ -29,7 +29,7 @@
         <ion-input id="zdWarn" type="number" min="10" step="10" :aria-label="T('Ostrzeżenia licznika od (MB)', 'Counter warnings from (MB)')" :value="u.warnMB" @ionInput="u.warnMB = $event.detail.value"></ion-input>
       </ion-item>
       <ion-item lines="none">
-        <ion-note>{{ T('Licznik na ekranie głównym: do połowy tej wartości zielony, od połowy pomarańczowy, od 75% czerwony, od 90% czerwony z ⚠. To tylko ostrzeżenie – nic nie blokuje i nic nie kasuje.', 'Home screen counter: green up to half of this value, orange from half, red from 75%, red with ⚠ from 90%. It is only a warning – nothing is blocked or deleted.') }}</ion-note>
+        <ion-note class="oest-opis">{{ T('Licznik na ekranie głównym: do połowy tej wartości zielony, od połowy pomarańczowy, od 75% czerwony, od 90% czerwony z ⚠. To tylko ostrzeżenie – nic nie blokuje i nic nie kasuje.', 'Home screen counter: green up to half of this value, orange from half, red from 75%, red with ⚠ from 90%. It is only a warning – nothing is blocked or deleted.') }}</ion-note>
       </ion-item>
       <ion-item lines="none"><ion-label class="oest-etykieta">{{ T('Limit na Dysku (MB)', 'Drive limit (MB)') }}</ion-label></ion-item>
       <ion-item class="oest-pole" lines="none">
@@ -39,7 +39,7 @@
         <ion-toggle id="zdWifi" :checked="u.wifiOnly" @ionChange="u.wifiOnly = $event.detail.checked">{{ T('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') }}</ion-toggle>
       </ion-item>
       <ion-item lines="none">
-        <ion-note>{{ T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych i tych w inspekcjach apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded or in inspections are never deleted. Over the Drive limit, the oldest are removed from Drive.') }}</ion-note>
+        <ion-note class="oest-opis">{{ T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych i tych w inspekcjach apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded or in inspections are never deleted. Over the Drive limit, the oldest are removed from Drive.') }}</ion-note>
       </ion-item>
       <ion-button id="zdSave" class="oest-duzy" expand="block" @click="Z.zapisz(u)">{{ T('Zapisz ustawienia', 'Save settings') }}</ion-button>
     </ion-card>
@@ -62,7 +62,7 @@
           </ion-row>
         </ion-grid>
       </template>
-      <ion-item v-if="d.pusto" lines="none"><ion-note>{{ d.pusto }}</ion-note></ion-item>
+      <ion-item v-if="d.pusto" lines="none"><ion-note class="oest-opis">{{ d.pusto }}</ion-note></ion-item>
     </ion-card>
   </div>
 </template>

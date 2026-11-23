@@ -15,7 +15,7 @@
       <ion-spinner v-if="s.ton === 'run'" slot="start" name="crescent" aria-hidden="true"></ion-spinner>
       <ion-icon v-else slot="start" :icon="ellipse" :color="KOLOR[s.ton] || 'medium'" aria-hidden="true"></ion-icon>
       <ion-label class="ion-text-nowrap">{{ s.tekst }}</ion-label>
-      <ion-icon slot="end" :icon="s.otwarty ? chevronDown : chevronUp" aria-hidden="true"></ion-icon>
+      <ion-icon slot="end" :icon="s.otwarty ? caretDown : caretUp" aria-hidden="true"></ion-icon>
     </ion-item>
   </ion-toolbar>
 </template>
@@ -23,7 +23,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { IonToolbar, IonItem, IonNote, IonButton, IonProgressBar, IonSpinner, IonIcon, IonLabel } from '@ionic/vue';
-import { ellipse, chevronUp, chevronDown } from 'ionicons/icons';
+import { ellipse, caretUp, caretDown } from 'ionicons/icons';
 import Lampka from './Lampka.vue';
 defineProps({ T: Function });
 const KOLOR = { ok: 'success', wait: 'warning', err: 'danger', run: 'primary' };
