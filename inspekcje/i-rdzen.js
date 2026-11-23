@@ -1,4 +1,7 @@
 "use strict";
+// i-rdzen.js – wspólne podstawy strony: $, stałe, stan inspekcji.
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
+// Nie ruszać: nazw globalnych – używają ich wszystkie dalsze pliki.
   var $ = function (id) { return document.getElementById(id); };
   var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 

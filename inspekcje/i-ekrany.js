@@ -1,4 +1,7 @@
 "use strict";
+// i-ekrany.js – ekrany strony i przejścia między nimi.
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
+// Nie ruszać: kolejności wczytywania w index.html.
   // ---------- ekrany ----------
   var PPM = window.OEST_PPM || null;
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };

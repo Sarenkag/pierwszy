@@ -16,7 +16,7 @@
 | PPM i Vantify | `app/www/ppm.js`, `vantify-plan.js`, `vantify-import.js`, `moduly/eksport-vantify` | lista, harmonogram i importowane zlecenia; plan wbudowany w apkę albo eksport wczytany w telefonie (Ustawienia → Vantify, 10/11/2026), jeden moduł liczy oba |
 | Reactive/Handover | `reactive*.js`, `handover*.js` | usterki, przekazanie zmiany, stan |
 | Calendar | `calendar-*.js` | grafik, zdarzenia, synchronizacja |
-| Inspekcje i raporty | `inspekcje/index.html`, `tpl-*.js`, `app/www/templates/` | formularze i DOCX/PDF |
+| Inspekcje i raporty | `inspekcje/index.html`, `inspekcje/i-*.js` (i-word, i-rdzen, i-ekrany, i-formularz, i-szkic, i-flushing, i-checklista, i-zbiorcze, i-serwer, i-zdjecia, i-zapis-zdjec, i-raport, i-ustawienia, i-kolejka, i-start – kolejność wczytywania), `tpl-*.js`, `app/www/templates/` | formularze i DOCX/PDF |
 | Aparat | `moduly/aparat`, pluginy Android | przechwytywanie i edycja |
 | Magazyn zdjęć | `moduly/zdjecia` | pojedynczy magazyn, referencje, synchronizacja |
 | Wysyłka | `moduly/wysylka`, `settings-google.js` | Gmail, kolejka, stan |

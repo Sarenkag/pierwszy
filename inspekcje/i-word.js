@@ -1,3 +1,6 @@
+// i-word.js – teksty PL/EN (T), składanie Worda raportu.
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
+// Nie ruszać: nazw T/OESTT – używa ich cała strona.
 // Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
 function T(pl, en) { return window.OESTT ? window.OESTT(pl, en) : pl; }
 // miejsce pod PL i EN (moduly/podmien + moduly/bledy): ten sam fragment w drugim języku wyznacza min. wymiary tekstów – zmiana języka nic nie przesuwa
