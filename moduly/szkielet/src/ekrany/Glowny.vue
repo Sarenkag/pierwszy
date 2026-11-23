@@ -4,7 +4,7 @@
   <ion-header class="ion-no-border oest-glowny">
     <ion-toolbar>
       <ion-avatar slot="start" class="oest-logo" id="hmLogo"><span class="oest-inicjaly">OEST</span></ion-avatar>
-      <ion-label>
+      <ion-label class="ion-text-nowrap">
         <h2><strong>ONE EASTSIDE</strong></h2>
         <p>{{ d.data }}<template v-if="d.pogoda"> · <ion-text color="primary" id="hmWx" @click="okno('wx')"><ion-icon :icon="POGODA[d.pogoda.ikona]" aria-hidden="true"></ion-icon> {{ d.pogoda.temp }}</ion-text></template></p>
       </ion-label>
@@ -52,10 +52,10 @@ function dzien(k) { window.OESTPpmUI.ustawDzien(k); window.OESTEkrany.go('ppm');
 // okienka: prognoza, powiadomienia, Dysk, sieć, nowości – jedno okienko apki (ion-modal), Wstecz telefonu je zamyka
 async function okno(rodzaj) {
   const O = window.OESTOkna;
-  if (rodzaj === 'wx') { const r = O.okno({ tytul: H.prognoza().tytul, komponent: Prognoza, wlasciwosci: { p: H.prognoza() }, bezPrzyciskow: true }); H.odswiez(true); return r; }
-  if (rodzaj === 'bell') { await H.rxCount(); const p = H.powiadomienia(); return O.okno({ tytul: p.tytul, komponent: Powiadomienia, wlasciwosci: { p }, bezPrzyciskow: true }); }
-  if (rodzaj === 'drive' || rodzaj === 'net') { const p = rodzaj === 'drive' ? H.dysk() : H.siec(); return O.okno({ tytul: p.tytul, komponent: Opcje, wlasciwosci: { p }, bezPrzyciskow: true }); }
-  if (rodzaj === 'news') { const p = H.nowosciLista(); return O.okno({ tytul: p.tytul, komponent: Nowosci, wlasciwosci: { p }, bezPrzyciskow: true }); }
+  if (rodzaj === 'wx') { const r = O.okno({ tytul: () => H.prognoza().tytul, komponent: Prognoza, wlasciwosci: { p: H.prognoza(), zrodlo: H.prognoza }, bezPrzyciskow: true }); H.odswiez(true); return r; }
+  if (rodzaj === 'bell') { await H.rxCount(); const p = H.powiadomienia(); return O.okno({ tytul: () => H.powiadomienia().tytul, komponent: Powiadomienia, wlasciwosci: { p, zrodlo: H.powiadomienia }, bezPrzyciskow: true }); }
+  if (rodzaj === 'drive' || rodzaj === 'net') { const z = rodzaj === 'drive' ? H.dysk : H.siec, p = z(); return O.okno({ tytul: () => z().tytul, komponent: Opcje, wlasciwosci: { p, zrodlo: z }, bezPrzyciskow: true }); }
+  if (rodzaj === 'news') { const p = H.nowosciLista(); return O.okno({ tytul: () => H.nowosciLista().tytul, komponent: Nowosci, wlasciwosci: { p, zrodlo: H.nowosciLista }, bezPrzyciskow: true }); }
 }
 onMounted(() => { window.addEventListener('oest:home', odswiez); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ H.odswiez(false); });
 onUnmounted(() => { window.removeEventListener('oest:home', odswiez); window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });

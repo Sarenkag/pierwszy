@@ -24,14 +24,17 @@ const fails = [], check = (ok, msg) => { if (!ok) fails.push(msg); };
     const go = async h => { await pg.evaluate(x => { location.hash = x; }, h); await pg.waitForTimeout(700); };
     const snap = () => pg.evaluate(() => {
       const key = e => e.tagName + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/).sort().join('.') : '');
-      const live = document.querySelector('.view:not([hidden])');
+      // aktywny ekran: stary widok .view albo ekran na Ionic + Vue (stary .wrap schowany – treść w ion-content ramy, id = v-<trasa>)
+      const vue = (document.querySelector('.wrap') || {}).hidden && window.OESTEkrany ? document.querySelector('#oest-szkielet ion-content') : null;
+      const live = vue || document.querySelector('.view:not([hidden])');
       const vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
       const stray = [...document.querySelectorAll('img, video, iframe, canvas')].filter(e => vis(e) && !(live && live.contains(e)) && !e.closest('.top, header, nav, footer, [data-status], .oest-status')).map(key);
-      return { body: [...document.body.children].filter(e => e.tagName !== 'SCRIPT').map(key).sort(), stray, asks: document.querySelectorAll('.oest-ask').length, live: live && live.id };
+      return { body: [...document.body.children].filter(e => e.tagName !== 'SCRIPT').map(key).sort(), stray, asks: document.querySelectorAll('.oest-ask').length, live: vue ? 'v-' + OESTEkrany.trasa().split('/')[0] : live && live.id };
     });
     await pg.goto(B + '/#home'); await pg.waitForTimeout(1200);
     const base = await snap();
-    const views = await pg.evaluate(() => [...document.querySelectorAll('.view')].map(v => v.id.replace(/^v-/, '')).filter(v => v !== 'start'));
+    // ekrany: stare widoki .view + ekrany przeniesione na Ionic + Vue (ekran główny, Inspekcje, Kalendarz – nie mają już sekcji .view)
+    const views = await pg.evaluate(() => [...new Set([...document.querySelectorAll('.view')].map(v => v.id.replace(/^v-/, '')).filter(v => v !== 'start').concat(['home', 'ppm', 'cal'].filter(t => OESTEkrany.jestVue(t))))]);
     const routes = [...views, 'settings/vantify', 'profile', 'reactive/new', 'zdjecia', 'home'];
     check(views.length >= 10, 'za mało ekranów w przejściu: ' + views.join(','));
     for (const r of routes) {

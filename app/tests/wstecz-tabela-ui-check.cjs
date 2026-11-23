@@ -38,8 +38,8 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
     const ids = await zasiej(pg);
     ids.draft = await szkic(pg, B, ids.leaf);
     for (const k of new Set([...Object.values(ID), ...Object.values(DOKLEJ)])) check(!!ids[k], 'nie udało się utworzyć rekordu „' + k + '” dla ekranów z :id');
-    // ekran na Vue (hub Ustawień) nie ma widoku v-…: jego id = v-<trasa>
-    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: (v => v || (document.querySelector('ion-content > .ion-padding') ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(',')), pytanie: !!document.querySelector('.oest-ask'), sluchaczy: window.__bb, wyjscie: window.__wyjscie }));
+    // ekran na Ionic + Vue (hub Ustawień, ekran główny, Inspekcje, Kalendarz) nie ma widoku v-…: stary .wrap jest schowany, a id = v-<trasa>
+    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: (v => v || (window.OESTEkrany && (document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(',')), pytanie: !!document.querySelector('.oest-ask'), sluchaczy: window.__bb, wyjscie: window.__wyjscie }));
     // po Wstecz: czekamy na stan (okienko pytania zniknęło z DOM albo ma zostać), nie na czas
     const wstecz = async (okienkoZnika = true) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); if (okienkoZnika) await pg.locator('.oest-ask').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {}); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150); };
     const pudelko = id => (MAPA.find(e => e.id === id) || {}).pudelko;
@@ -49,7 +49,7 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
       await idz(pg, '' + adres); await pg.waitForLoadState('networkidle');
       // ekran wczytujący dane (np. Edytor pytań: najpierw „Wczytywanie…”, potem pasek ze strzałką) – czekamy na stan, nie na czas;
       // po 3 s ocena idzie dalej tym samym warunkiem co niżej (nic nie jest luzowane, tylko nie oceniamy ekranu w trakcie wczytywania)
-      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0), vue = !!document.querySelector('ion-content > .ion-padding') && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue) && (!r || (!!b && b.getClientRects().length > 0)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
+      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0), vue = !!(document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue) && (!r || (!!b && b.getClientRects().length > 0)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
       await pg.waitForTimeout(150);
       const s0 = await stan();
       if (!check(s0.sluchaczy === 1, id + ': strona zarejestrowała ' + s0.sluchaczy + ' słuchaczy „backButton” (ma być dokładnie 1)')) continue;

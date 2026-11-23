@@ -119,6 +119,8 @@
   function dzien(k) { ppmDay = ppmDay === k ? "" : k; zmiana(); }
   function filtry(ids) { ppmSel = (ids || []).slice(); save("ppm.sel", ppmSel); zmiana(); }
   function ustawDzien(k) { ppmDay = k || ""; }
+  // powrót na ekran główny zdejmuje wybór dnia (jak renderHome na main): następne wejście w Inspekcje = wszystkie dni
+  w.document.addEventListener("oest:ekran", function (e) { if (e.detail && e.detail.trasa === "home") ppmDay = ""; });
 
   // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
   function goInsp(url) {

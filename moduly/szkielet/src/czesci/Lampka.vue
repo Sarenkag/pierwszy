@@ -2,7 +2,7 @@
 <template>
   <ion-chip :outline="true" v-bind="$attrs">
     <ion-icon :icon="ellipse" :color="KOLOR[stan] || 'medium'" aria-hidden="true"></ion-icon>
-    <ion-label>{{ tekst }}</ion-label>
+    <ion-label class="ion-text-nowrap">{{ tekst }}</ion-label>
   </ion-chip>
 </template>
 

@@ -11,13 +11,13 @@
           <ion-title>{{ stan.tytul }}</ion-title>
           <ion-buttons slot="end">
             <ion-button v-for="(a, i) in akcjeVue" :key="i" :data-nav="a.nav || undefined" :disabled="a.wylaczona" @click="!a.nav && a.fn && a.fn()" :aria-label="a.etykieta"><ion-icon slot="icon-only" :icon="a.ikona"></ion-icon></ion-button>
-            <ion-button @click="emit('jezyk')" :aria-label="T('Język: polski / angielski', 'Language: Polish / English')">{{ jezyk === 'pl' ? 'EN' : 'PL' }}</ion-button>
+            <ion-button data-jezyk-ramy @click="emit('jezyk')" :aria-label="T('Język: polski / angielski', 'Language: Polish / English')">{{ jezyk === 'pl' ? 'EN' : 'PL' }}</ion-button>
           </ion-buttons>
         </ion-toolbar>
         <div v-else class="oest-pas"></div>
       </ion-header>
       <ion-content ref="tresc">
-        <component v-if="stan.komponent" :is="stan.komponent" :key="stan.trasa" :T="T" :wersja="stan.wersja"></component>
+        <component v-if="stan.komponent" :is="stan.komponent" :key="stan.trasa" :T="Tj" :wersja="stan.wersja"></component>
       </ion-content>
       <ion-footer><div id="oest-stopka"></div></ion-footer>
     </div>
@@ -31,6 +31,9 @@ const props = defineProps({ stan: Object, T: Function, strona: Boolean });
 const emit = defineEmits(['gotowe', 'jezyk']);
 const jezyk = computed(() => (props.stan.wersja, (window.OESTBledy && window.OESTBledy.lang ? window.OESTBledy.lang() : document.documentElement.lang) === 'en' ? 'en' : 'pl'));
 const tresc = ref(null);
+// T ekranu ma nową tożsamość po każdej zmianie języka (stan.wersja): teksty T(…) w treści komponentów Ionic (sloty ion-button, ion-toggle,
+// ion-list-header…) przerysowują się w nowym języku – sam licznik wersja nie przerysowuje slotów dzieci (Vue: stabilne sloty)
+const Tj = computed(() => { const w = props.stan.wersja; return (pl, en) => (w, props.T(pl, en)); });
 // akcje paska ekranu na Vue (OESTRama.ustaw({ akcje: [{ ikona, etykieta, fn | nav }] })): ikony Ionicons; węzły DOM to akcje starych ekranów
 const akcjeVue = computed(() => (props.stan.akcje || []).filter(a => a && !(a instanceof Node)));
 onMounted(async () => {

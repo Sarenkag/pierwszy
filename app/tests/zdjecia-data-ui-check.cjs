@@ -92,25 +92,30 @@ async function settings(browser, url) {
   await pg.goto(url + '/#settings/reports'); await pg.locator('#photoStamp').waitFor();
   const box = pg.locator('#photoStamp');
   assert.equal(await box.isChecked(), false, 'domyślnie wyłączone');
-  assert.match(await pg.locator('#v-settings').textContent(), /Data i godzina na zdjęciach/);
+  // Raporty i zdjęcia na Ionic + Vue (moduly/szkielet/src/ekrany/Raporty.vue): treść w ramie, przełącznik ion-toggle w ion-item, PL/EN = przycisk w pasku ramy
+  const tresc = () => pg.evaluate(() => document.querySelector('#oest-szkielet ion-content').textContent);
+  const jezyk = () => pg.evaluate(() => [...document.querySelectorAll('ion-toolbar ion-buttons[slot=end] ion-button')].pop().click());
+  assert.match(await tresc(), /Data i godzina na zdjęciach/);
   await box.scrollIntoViewIfNeeded();
-  if (out) await pg.locator('#photoStamp').evaluate(e => e.closest('.panel').scrollIntoView({ block: 'center' }));
+  if (out) await pg.locator('#photoStamp').evaluate(e => e.closest('ion-card').scrollIntoView({ block: 'center' }));
   if (out) await pg.screenshot({ path: path.join(out, 'ustawienia-PL.png') });
   // PL/EN: napis podmieniony w miejscu (ten sam element), nic się nie przesuwa
-  const mark = await pg.evaluate(() => { const e = document.getElementById('photoStamp'); e.dataset.mark = '1'; const l = e.closest('label').getBoundingClientRect(); return [l.top, l.left, l.height, scrollY]; });
-  await pg.evaluate(() => document.querySelector('#v-settings [data-action=language]').click());
-  await pg.waitForFunction(() => /Date and time on photos/.test(document.getElementById('v-settings').textContent));
+  const mark = await pg.evaluate(() => { const e = document.getElementById('photoStamp'); e.dataset.mark = '1'; const l = e.closest('ion-item').getBoundingClientRect(); return [l.top, l.left, l.height, OESTEkrany.przewiniecie()]; });
+  await jezyk();
+  await pg.waitForFunction(() => /Date and time on photos/.test(document.querySelector('#oest-szkielet ion-content').textContent));
   assert.equal(await pg.evaluate(() => document.getElementById('photoStamp').dataset.mark), '1', 'PL/EN nie przerysowuje');
-  assert.deepEqual(await pg.evaluate(() => { const l = document.getElementById('photoStamp').closest('label').getBoundingClientRect(); return [l.top, l.left, l.height, scrollY]; }), mark, 'PL/EN nic nie przesuwa');
+  assert.deepEqual(await pg.evaluate(() => { const l = document.getElementById('photoStamp').closest('ion-item').getBoundingClientRect(); return [l.top, l.left, l.height, OESTEkrany.przewiniecie()]; }), mark, 'PL/EN nic nie przesuwa');
   if (out) await pg.screenshot({ path: path.join(out, 'ustawienia-EN.png') });
-  await pg.evaluate(() => document.querySelector('#v-settings [data-action=language]').click());
-  await pg.waitForFunction(() => /Data i godzina na zdjęciach/.test(document.getElementById('v-settings').textContent));
+  await jezyk();
+  await pg.waitForFunction(() => /Data i godzina na zdjęciach/.test(document.querySelector('#oest-szkielet ion-content').textContent));
   // włączenie: dopiero „Zapisz ustawienia” zapisuje w module zdjęć; zostaje po ponownym otwarciu apki
-  await box.check(); assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'bez Zapisz nic się nie zmienia');
+  // ion-toggle ustawia aria-checked w następnej klatce (Stencil), a locator.check() sprawdza stan od razu po kliknięciu – stuknięcie i czekanie na włączony stan (ten sam wymóg)
+  const przelacz = async (l, on) => { await l.click(); await pg.waitForFunction(v => document.getElementById('photoStamp').getAttribute('aria-checked') === v, String(on), { timeout: 3000 }); };
+  await przelacz(box, true); assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'bez Zapisz nic się nie zmienia');
   await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
   assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), true, 'zapisane w module zdjęć');
   await pg.reload(); await pg.locator('#photoStamp').waitFor(); assert.equal(await pg.locator('#photoStamp').isChecked(), true, 'po ponownym otwarciu zostaje');
-  await pg.locator('#photoStamp').uncheck(); await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
+  await przelacz(pg.locator('#photoStamp'), false); await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
   assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'wyłączenie też zapisane');
   assert.equal(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'bez przewijania w bok');
   assert.deepEqual(errs, []);
