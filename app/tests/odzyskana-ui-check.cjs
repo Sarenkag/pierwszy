@@ -129,21 +129,21 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
 
     // 6. klocek Raporty: odzyskana jak zwykły klocek inspekcji; PL/EN bez skoków
     await idz(pg, 'settings/reports'); await pg.locator('#rptRec ion-card').first().waitFor(); await pg.waitForTimeout(400);
-    // klocek = czesci/Klocek.vue (Ionic): nazwa w h2, lokalizacja w opisie linii 2, pigułka = ion-badge (kolor tła)
-    const card = await pg.evaluate(() => { const k = document.querySelector('#rptRec ion-card'), s = k.querySelector('ion-badge:not([color=light])'); return { n: document.querySelectorAll('#rptRec ion-card').length, st: s.textContent.trim(), c: getComputedStyle(s).backgroundColor, nm: k.querySelector('h2').textContent.trim(), loc: k.querySelector('ion-label p').textContent, h: Math.round(k.getBoundingClientRect().height) }; });
-    check(card.nm === q.card.name && card.loc.includes('TB/L13'), 'klocek odzyskanej: nazwa i lokalizacja jak na liście inspekcji (' + card.nm + ', ' + card.loc + ')');
+    // klocek = czesci/Klocek.vue (Ionic): nazwa w h2, lokalizacja .oest-klok w linii 2, pigułka = czesci/Pigulka.vue (ion-badge.oest-pigulka)
+    const card = await pg.evaluate(() => { const k = document.querySelector('#rptRec ion-card'), s = k.querySelector('ion-badge.oest-pigulka'); return { n: document.querySelectorAll('#rptRec ion-card').length, st: s.textContent.trim(), c: getComputedStyle(s).color, nm: k.querySelector('h2').textContent.trim(), loc: k.querySelector('.oest-klok').textContent.trim(), h: Math.round(k.getBoundingClientRect().height) }; });
+    check(card.nm === q.card.name && card.loc === 'TB/L13', 'klocek odzyskanej: nazwa i lokalizacja jak na liście inspekcji (' + card.nm + ', ' + card.loc + ')');
     check(card.n === 1 && card.st === 'Odzyskana' && card.c === 'rgb(163, 91, 255)', 'klocek Raporty: odzyskana z fioletową pigułką (' + JSON.stringify(card) + ')');
     // wszystkie listy mają JEDEN klocek (czesci/Klocek.vue): odzyskana ma tę samą wysokość co klocek z krótkim opisem na liście obok (jak dawniej klocek „TB”)
     const mainH = await pg.evaluate(() => Math.round([...document.querySelectorAll('#rptList ion-card')].reduce((m, k) => Math.min(m, k.getBoundingClientRect().height), 1e9)));
     check(card.h === mainH, 'ta sama wysokość co klocek na liście (' + card.h + ' / ' + mainH + ')');
     await shot('raporty-odzyskane-PL');
-    const pos = () => pg.evaluate(() => { const b = e => { const r = document.querySelector(e).getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(','); }; return [b('#rptRec ion-card'), b('#rptRec ion-badge:not([color=light])'), b('#rptQ')].join('|'); });
+    const pos = () => pg.evaluate(() => { const b = e => { const r = document.querySelector(e).getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(','); }; return [b('#rptRec ion-card'), b('#rptRec ion-badge.oest-pigulka'), b('#rptQ')].join('|'); });
     // ekran Ustawień wjeżdża animacją: mierzymy po jej końcu (dwa takie same pomiary pod rząd)
     const still = async () => { let a = await pos(); for (let i = 0; i < 30; i++) { await pg.waitForTimeout(120); const b = await pos(); if (b === a) return b; a = b; } return a; };
     const p1 = await still();
     const jezyk = pg.locator('ion-header ion-toolbar ion-buttons[slot=end] ion-button').last();
     await jezyk.click(); await pg.waitForTimeout(300);
-    check((await pg.locator('#rptRec ion-badge:not([color=light])').textContent()).trim() === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRec > ion-note').textContent()), 'EN: Recovered');
+    check((await pg.locator('#rptRec ion-badge.oest-pigulka').textContent()).trim() === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRec > ion-note').textContent()), 'EN: Recovered');
     const p2 = await still();
     check(p2 === p1, 'PL/EN: klocek i pigułka w tym samym miejscu (' + p1 + ' / ' + p2 + ')');
     await shot('raporty-odzyskane-EN');
