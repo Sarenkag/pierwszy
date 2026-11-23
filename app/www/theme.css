@@ -29,7 +29,7 @@ h1 span{color:inherit}
 .panel,.settings-hero{border-radius:18px!important}
 .btn,.pbtn{border-radius:14px!important;min-height:46px}
 .btn.go,button.go,.save-bar .btn{background:var(--grad)!important;border:0!important;color:#fff!important;box-shadow:0 8px 24px rgba(120,90,255,.4)}
-input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],input[type=tel],select,textarea{background:var(--field)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:12px!important}
+input[type=text]:not(:where(.native-input)),input[type=email]:not(:where(.native-input)),input[type=date]:not(:where(.native-input)),input[type=time]:not(:where(.native-input)),input[type=number]:not(:where(.native-input)),input[type=tel]:not(:where(.native-input)),select,textarea:not(:where(.native-textarea)){background:var(--field)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:12px!important}
 .field>span,.field>label{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* menu główne: siatka 2 kolumny, tylko ikona + nazwa */
 #v-home .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}

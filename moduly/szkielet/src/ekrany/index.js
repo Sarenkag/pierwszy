@@ -2,4 +2,5 @@
 // „Poza Ionic/Vue” (quality/baselines/ionic.json). Przepis przenoszenia: moduly/szkielet/PRZEPIS.md.
 import Ustawienia from './Ustawienia.vue';
 import OAplikacji from './OAplikacji.vue';
-export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji };
+import Synchronizacja from './Synchronizacja.vue';
+export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja };
