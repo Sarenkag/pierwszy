@@ -109,11 +109,13 @@ async function settings(browser, url) {
   await jezyk();
   await pg.waitForFunction(() => /Data i godzina na zdjęciach/.test(document.querySelector('#oest-szkielet ion-content').textContent));
   // włączenie: dopiero „Zapisz ustawienia” zapisuje w module zdjęć; zostaje po ponownym otwarciu apki
-  await box.check(); assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'bez Zapisz nic się nie zmienia');
+  // ion-toggle ustawia aria-checked w następnej klatce (Stencil), a locator.check() sprawdza stan od razu po kliknięciu – stuknięcie i czekanie na włączony stan (ten sam wymóg)
+  const przelacz = async (l, on) => { await l.click(); await pg.waitForFunction(v => document.getElementById('photoStamp').getAttribute('aria-checked') === v, String(on), { timeout: 3000 }); };
+  await przelacz(box, true); assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'bez Zapisz nic się nie zmienia');
   await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
   assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), true, 'zapisane w module zdjęć');
   await pg.reload(); await pg.locator('#photoStamp').waitFor(); assert.equal(await pg.locator('#photoStamp').isChecked(), true, 'po ponownym otwarciu zostaje');
-  await pg.locator('#photoStamp').uncheck(); await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
+  await przelacz(pg.locator('#photoStamp'), false); await pg.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
   assert.equal(await pg.evaluate(() => window.OESTZdjecia.settings().stamp), false, 'wyłączenie też zapisane');
   assert.equal(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'bez przewijania w bok');
   assert.deepEqual(errs, []);

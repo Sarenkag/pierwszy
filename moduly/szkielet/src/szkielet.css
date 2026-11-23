@@ -74,17 +74,15 @@ ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14
 .oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
 .oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
 .oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
-.oest-kafelki ion-card-title { font-size: .95rem; font-weight: 700; color: var(--ink); }
+.oest-kafelki ion-card-title { align-self: stretch; font-size: .95rem; font-weight: 700; color: var(--ink); }
 ion-header.oest-glowny ion-toolbar { --background: transparent; --padding-start: 16px; --padding-end: 16px; --padding-top: 6px; --padding-bottom: 6px; }
 ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-radius: 14px; }
 ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
 ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons, ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons.button-has-icon-only { width: 34px; height: 34px; min-width: 34px; margin-left: 6px; --padding-start: 4px; --padding-end: 4px; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line); --background: var(--panel); overflow: visible; }
 ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; border-radius: 10px; }
 .oest-lampki { display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; padding: 4px 10px 14px; }
-.oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
+.oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { min-width: 0; flex: 0 1 auto; --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
 .oest-lampki ion-chip:last-child { margin-left: auto; }
-.oest-lampki ion-chip { min-width: 0; flex: 0 1 auto; }
-.oest-lampki ion-chip ion-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
 .oest-jezyk { display: flex; height: 32px; padding: 2px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
 .oest-jezyk ion-button { height: 26px; margin: 0; --padding-start: 7px; --padding-end: 7px; --border-radius: 8px; --box-shadow: none; --color: var(--muted); font-weight: 700; }
@@ -107,8 +105,8 @@ ion-card.oest-klocek[data-przygaszony] { opacity: .6; }
 .oest-klocek .oest-kopis { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oest-klocek .oest-kodstep { flex: 1; }
 .oest-klocek .oest-kdt { flex: none; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.oest-klocek .oest-kdt[data-ton="red"] { color: #ff4d5e; }
-.oest-klocek .oest-kdt[data-ton="jutro"] { color: #f0c75e; }
+.oest-klocek .oest-kdt[data-ton="red"] { color: #ef3b36; }
+.oest-klocek .oest-kdt[data-ton="jutro"] { color: #ff8a3d; }
 .oest-klocek .oest-kr strong { font-size: 13px; font-weight: 700; }
 .oest-klocek .oest-ksep { flex: none; width: 1px; height: 19px; background: rgba(255,255,255,.18); }
 .oest-klocek .oest-knr { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }

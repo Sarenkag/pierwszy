@@ -4,7 +4,7 @@
   <div>
     <div class="ion-padding-horizontal">
       <div class="oest-kal">
-        <small v-for="n in d.tydzien" :key="n">{{ n }}</small>
+        <small v-for="(n, i) in d.tydzien" :key="i">{{ n }}</small>
         <ion-button v-for="x in d.kratki" :key="x.k" class="oest-cd" fill="clear" :data-cd="x.k" :data-ot="x.inny || undefined" :data-sh="x.praca || undefined" :data-td="x.dzis || undefined" :data-on="x.wybrany || undefined" @click="P.kalDzien(x.k)">
           {{ x.d }}<ion-badge v-if="x.n" :data-plan="x.plan || undefined">{{ x.n }}</ion-badge>
         </ion-button>
