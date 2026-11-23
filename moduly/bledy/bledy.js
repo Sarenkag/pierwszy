@@ -228,6 +228,17 @@
     });
     if (doc.documentElement) doc.documentElement.lang = en ? 'en' : 'pl';
   }
-  var api = { text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D, prostokat: prostokat };
+  // klucz oest.lang ma JEDNEGO właściciela – ten moduł (bramka: quality/jedno-miejsce.json „kluczeWlasciciele”).
+  // zapiszJezyk: zapis kopii języka w telefonie + zdarzenie oest:lang (tylko gdy się zmienił);
+  // naZmianeJezyka(cb): cb() po zmianie języka w tej stronie (oest:lang) albo w innej (zdarzenie storage).
+  function zapiszJezyk(next) {
+    try { if (root.localStorage.getItem('oest.lang') === next) return; root.localStorage.setItem('oest.lang', next); } catch (e) { return; }
+    try { root.dispatchEvent(new CustomEvent('oest:lang')); } catch (e) {}
+  }
+  function naZmianeJezyka(cb) {
+    root.addEventListener('oest:lang', function () { cb(); });
+    root.addEventListener('storage', function (e) { if (!e || e.key === 'oest.lang') cb(); });
+  }
+  var api = { zapiszJezyk: zapiszJezyk, naZmianeJezyka: naZmianeJezyka, text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D, prostokat: prostokat };
   if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; root.OESTTx = tx; }
 })(this);

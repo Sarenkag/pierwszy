@@ -311,6 +311,13 @@ window.OEST_PPM = {
     return s ? parse(s) : null;
   };
   P.setDue = function (t, day) { put(t.id, day); };
+  // klucz oest.ppm.due ma jednego właściciela – ten plik. Inni (calendar-sync) biorą mapę terminów { id: "rrrr-mm-dd" }
+  // przez P.dues() i słuchają zmian przez P.naZmianeTerminow(cb) (zapis w innej stronie albo import Vantify).
+  P.dues = function () { return all(); };
+  P.naZmianeTerminow = function (cb) {
+    window.addEventListener("storage", function (e) { if (e.key === "oest.ppm.due") cb(); });
+    window.addEventListener("oest:ppm-due-changed", function () { cb(); });
+  };
   // Raport wysłany (dzień raportu „day”), tylko karty BEZ zleceń Vantify: bez terminu liczy od dnia raportu,
   // z terminem przesuwa go o jeden okres. Karta ze zleceniami Vantify: nic nie zapisuje – następne zlecenie wynika
   // z pliku, a po ostatnim zleceniu z importu nie powstaje żaden termin (PROD-010).

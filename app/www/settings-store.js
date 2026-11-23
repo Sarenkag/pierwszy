@@ -5,7 +5,7 @@
   else {
     root.OESTSettingsCore = api;
     root.OESTSettings = api.createStore({storage: root.localStorage, account: function () {
-      try { return JSON.parse(root.localStorage.getItem('oest.account') || 'null'); } catch (_) { return null; }
+      return root.OESTKonto.get(); // moduly/konto
     }, changed: function () { root.dispatchEvent(new CustomEvent('oest:settings-changed')); }});
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {

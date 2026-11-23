@@ -47,6 +47,8 @@
   },
   "zasobyDynamiczne": {
     "templates/OEST-basic.docx": ["index.html"],
+    "moduly/konto/konto.js": ["index.html", "inspekcje/index.html"],
+    "moduly/powrot/powrot.js": ["index.html", "inspekcje/index.html"],
     "moduly/wzory/basic.docx": ["index.html", "inspekcje/index.html"],
     "moduly/wzory/plant.docx": ["index.html", "inspekcje/index.html"],
     "moduly/wzory/flush.docx": ["index.html", "inspekcje/index.html"],
