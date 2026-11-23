@@ -38,8 +38,8 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     const where = () => pg.evaluate(() => ({
       page: /\/inspekcje\//.test(location.pathname) ? 'inspekcja' : 'apka', hash: location.hash,
       view: (v => v || (window.OESTEkrany && document.querySelector('ion-content > .ion-padding') ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(',')), // ekran na Vue (hub Ustawień) nie ma widoku v-…: jego id = v-<trasa>
-      ask: [...document.querySelectorAll('.oest-ask')].map(a => a.textContent.trim()).join(' | '),
-      review: document.querySelectorAll('.oest-review').length, editor: document.querySelectorAll('.oest-edit-box, .oest-editor').length,
+      ask: [...document.querySelectorAll('.oest-ask, ion-alert')].map(a => a.textContent.trim()).join(' | '), // okienko pytania: ion-alert ze szkieletu (OESTOkna.pytaj)
+      review: document.querySelectorAll('ion-modal[data-oest-czesc="Aparat"]').length, editor: document.querySelectorAll('ion-modal[data-oest-czesc="EdytorZdjec"]').length, // podgląd i edytor zdjęcia: części Ionic (ion-modal)
       len: history.length, exit: sessionStorage.getItem('wstecz.wyjscie') === '1'
     }));
     const back = async (ms = 1500) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(ms); await pg.waitForLoadState('domcontentloaded'); await wait(300); return where(); };
@@ -78,7 +78,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     const inspHash = (await where()).hash;
     await pg.evaluate(b64 => { const b = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: 'image/jpeg' }); window.__rev = window.OESTAparat.review(b).then(r => (window.__revWynik = Object.keys(r).join(','))); }, JPG.toString('base64'));
     await wait(800);
-    await pg.click('.oest-review [data-r="edit"]'); await wait(1500);
+    await pg.click('ion-modal[data-oest-czesc="Aparat"] [data-r="edit"]'); await wait(1500);
     s = await where(); const edOpen = await pg.evaluate(() => document.querySelectorAll('body > div').length);
     s = await back(800);
     check(s.review === 1, '2: Wstecz w edytorze zamyka edytor i wraca do podglądu zdjęcia (podgląd: ' + s.review + ')');
@@ -101,18 +101,18 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 4. ekran główny: okienko „Chcesz wyjść z aplikacji?” z Tak/Nie; Wstecz albo Nie = zostajemy; Tak = wyjście
     s = await back(700);
     check(/Chcesz wyjść z aplikacji\?/.test(s.ask), '4: na ekranie głównym Wstecz pokazuje „Chcesz wyjść z aplikacji?”, jest: ' + s.ask);
-    const btns = await pg.$$eval('.oest-ask button', a => a.map(b => b.textContent.trim()));
+    const btns = await pg.$$eval('ion-alert button', a => a.map(b => b.textContent.trim()));
     check(btns.join('/') === 'Nie/Tak', '4: przyciski okienka Nie/Tak, są ' + btns.join('/'));
     s = await back(700); check(!s.ask && s.view === 'v-home' && !s.exit, '4: Wstecz w okienku = Nie (okienko znika, apka zostaje)');
-    await back(700); await pg.click('.oest-ask [data-a="no"]'); await wait(700);
+    await back(700); await pg.click('ion-alert button.alert-button-role-cancel'); await wait(700);
     s = await where(); check(!s.ask && s.view === 'v-home' && !s.exit, '4: „Nie” zostawia apkę na ekranie głównym');
-    await back(700); await pg.click('.oest-ask [data-a="ok"]'); await wait(700);
+    await back(700); await pg.click('ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive'); await wait(700);
     s = await where(); check(s.exit, '4: „Tak” zamyka apkę');
     await pg.evaluate(() => sessionStorage.removeItem('wstecz.wyjscie'));
     // EN
     await pg.evaluate(() => { localStorage.setItem('oest.lang', 'en'); OESTSettings.update(x => { x.appearance.language = 'en'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
     s = await back(700); check(/Do you want to exit the app\?/.test(s.ask), '4: EN: „Do you want to exit the app?”, jest: ' + s.ask);
-    const btnsEn = await pg.$$eval('.oest-ask button', a => a.map(b => b.textContent.trim()));
+    const btnsEn = await pg.$$eval('ion-alert button', a => a.map(b => b.textContent.trim()));
     check(btnsEn.join('/') === 'No/Yes', '4: EN: przyciski No/Yes, są ' + btnsEn.join('/'));
     await back(700); await pg.evaluate(() => { localStorage.setItem('oest.lang', 'pl'); OESTSettings.update(x => { x.appearance.language = 'pl'; return x; }); OESTSettingsUI.applyTheme(); window.dispatchEvent(new Event('oest:lang')); }); await wait(400);
 
