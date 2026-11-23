@@ -3,10 +3,10 @@
        { id, nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
          opis, termin: { tekst, ton: ''|'jutro'|'red' }, procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
          miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
-     Stuknięcie: zdarzenie „wybierz” (id); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
+     Stuknięcie w dowolne miejsce: zdarzenie „wybierz” (bez strzałki z prawej – Grzegorz 23/11); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
-  <ion-card button :disabled="k.wylaczony" :data-id="k.id" @click="emit('wybierz', k)" @pointerdown="wcisnij" @pointerup="pusc" @pointerleave="pusc" @contextmenu.prevent>
-    <ion-item lines="none" :detail="true">
+  <ion-card button :disabled="k.wylaczony" :data-id="k.id" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
+    <ion-item lines="none" :detail="false">
       <ion-thumbnail v-if="k.miniatura" slot="start"><img :src="k.miniatura" alt=""></ion-thumbnail>
       <ion-label :color="k.przygaszony ? 'medium' : undefined">
         <h2 class="ion-text-nowrap">{{ k.nazwa }}</h2>
@@ -39,7 +39,10 @@ const I = { czest: barChartOutline, dokument: documentTextOutline, termin: calen
 const FORM = { brak: 'medium', ok: 'success', blad: 'danger' };
 const TERMIN = { '': undefined, jutro: 'warning', red: 'danger' };
 const widoczne = computed(() => (props.k.ikony || []).filter(x => x && x.n !== '' && x.n != null));
-let zegar = null, przytrzymany = false;
-function wcisnij() { przytrzymany = false; clearTimeout(zegar); zegar = setTimeout(() => { przytrzymany = true; try { navigator.vibrate && navigator.vibrate(20); } catch (e) {} emit('przytrzymaj', props.k); }, 400); }
-function pusc() { clearTimeout(zegar); }
+// przytrzymanie ~0,4 s (bez ruchu palca > 10 px) = informacje; po nim zwykłe stuknięcie się nie liczy
+let zegar = null, przytrzymany = false, x0 = 0, y0 = 0;
+function wcisnij(e) { przytrzymany = false; x0 = e.clientX; y0 = e.clientY; clearTimeout(zegar); zegar = setTimeout(() => { zegar = null; przytrzymany = true; try { navigator.vibrate && navigator.vibrate(20); } catch (er) {} emit('przytrzymaj', props.k); }, 400); }
+function rusz(e) { if (zegar && (Math.abs(e.clientX - x0) > 10 || Math.abs(e.clientY - y0) > 10)) { clearTimeout(zegar); zegar = null; } }
+function pusc() { clearTimeout(zegar); zegar = null; }
+function klik() { if (przytrzymany) { przytrzymany = false; return; } emit('wybierz', props.k); }
 </script>
