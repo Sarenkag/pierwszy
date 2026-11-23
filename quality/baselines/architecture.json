@@ -159,20 +159,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/bledy/bledy.js|OESTSettings",
-      "rule": "UNDEFINED_GLOBAL",
-      "detail": "inspekcje/index.html: moduly/bledy/bledy.js używa OESTSettings, którego żaden skrypt strony nie tworzy",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
-      "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/naglowek/naglowek.js|OESTSettings",
-      "rule": "UNDEFINED_GLOBAL",
-      "detail": "inspekcje/index.html: moduly/naglowek/naglowek.js używa OESTSettings, którego żaden skrypt strony nie tworzy",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "UNDEFINED_GLOBAL|inspekcje/index.html|moduly/naglowek/naglowek.js|OESTSettingsUI",
       "rule": "UNDEFINED_GLOBAL",
       "detail": "inspekcje/index.html: moduly/naglowek/naglowek.js używa OESTSettingsUI, którego żaden skrypt strony nie tworzy",
