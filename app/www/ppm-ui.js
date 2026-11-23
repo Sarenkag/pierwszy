@@ -48,7 +48,7 @@
     var qa = o.qa && o.qa.all ? Math.min(o.qa.ok, 99) + "/" + Math.min(o.qa.all, 99) : "–";
     return { id: o.id, day: o.day || "", fam: o.fam || "", grupa: o.group || "", nazwa: o.name, znak: o.loc || "", czestotliwosc: czest(o.freq), formularz: o.form || "brak",
       status: { tryb: o.status }, termin: termin(o.due, o.left, o.dueDone),
-      ikony: [{ rodzaj: "zdjecia", n: Math.min(o.photos || 0, 99) }, { rodzaj: "pytania", n: qa }].concat(o.issues > 0 ? [{ rodzaj: "usterki", n: Math.min(o.issues, 99), ton: "warning" }] : []),
+      ikony: [{ rodzaj: "zdjecia", n: Math.min(o.photos || 0, 99) }, { rodzaj: "pytania", n: qa }].concat([{ rodzaj: "usterki", n: o.issues > 0 ? Math.min(o.issues, 99) : "", ton: "warning" }]) /* usterki: stałe miejsce także bez usterek */,
       numer: o.no || "", przygaszony: !!o.plan, akcja: o.go || "" };
   }
   function ppmCard(r) {

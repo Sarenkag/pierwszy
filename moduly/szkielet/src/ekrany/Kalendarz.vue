@@ -10,7 +10,8 @@
         <ion-badge v-if="x.n" :data-plan="x.plan || undefined" :data-ot="x.inny || undefined" aria-hidden="true">{{ x.n }}</ion-badge>
       </div>
       </div>
-      <p class="oest-legenda"><span data-l="sh">{{ T('Zmiana', 'Shift') }}</span><span data-l="dn">{{ T('Zlecenie Vantify', 'Vantify job') }}</span><span data-l="pl">{{ T('Planowane', 'Planned') }}</span></p>
+      <!-- legenda: napis w drugim języku zajmuje miejsce niewidocznie – PL/EN nic nie przesuwa (jak rezerwacja OESTPodmien na main) -->
+      <p class="oest-legenda"><span data-l="sh"><span>{{ T('Zmiana', 'Shift') }}</span><span aria-hidden="true">{{ inny('Zmiana', 'Shift') }}</span></span><span data-l="dn"><span>{{ T('Zlecenie Vantify', 'Vantify job') }}</span><span aria-hidden="true">{{ inny('Zlecenie Vantify', 'Vantify job') }}</span></span><span data-l="pl"><span>{{ T('Planowane', 'Planned') }}</span><span aria-hidden="true">{{ inny('Planowane', 'Planned') }}</span></span></p>
       <ion-button v-if="d.brakGrafiku" class="oest-podpowiedz" fill="clear" expand="block" data-nav="settings/profile">
         <span>{{ T('Brak grafiku – ustaw swoje zmiany w', 'No shift pattern – set your shifts in') }} <strong>{{ T('Mój profil → Mój grafik', 'My Profile → My shifts') }}</strong> ›</span>
       </ion-button>
@@ -31,6 +32,7 @@ import { caretBack, caretForward, settingsOutline } from 'ionicons/icons';
 import Klocek from '../czesci/Klocek.vue';
 import { wybierz, przytrzymaj } from '../czesci/listaInspekcji.js';
 const props = defineProps({ T: Function, wersja: Number });
+const inny = (pl, en) => (props.T(pl, en) === en ? pl : en); // napis legendy w drugim języku (niewidoczny, trzyma miejsce)
 const P = window.OESTPpmUI;
 const n = ref(0), odswiez = () => { n.value++; };
 const d = computed(() => (props.wersja, n.value, P.kalDane()));
