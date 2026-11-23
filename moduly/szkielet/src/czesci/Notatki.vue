@@ -5,11 +5,11 @@
      Stary kod: OESTNotatki.mount(box, opcje) wstawia tę samą część do elementu. Logika (licznik, stan notatek, nagrywanie) w module (kontroler paska). -->
 <template>
   <div ref="pudlo" data-nt-pasek>
-    <ion-grid>
+    <ion-grid class="ion-no-padding">
       <ion-row>
         <ion-col size="6">
-          <ion-button mode="ios" ref="nagraj" expand="block" fill="outline" color="danger" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
-            <ion-icon slot="start" :icon="mic" aria-hidden="true"></ion-icon>{{ d.ikonyTryb ? T('Głos', 'Voice') : T('Nagraj notatkę', 'Record note') }}
+          <ion-button mode="ios" ref="nagraj" expand="block" fill="outline" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
+            <ion-icon slot="start" :icon="mic" color="danger" aria-hidden="true"></ion-icon>{{ d.ikonyTryb ? T('Głos', 'Voice') : T('Nagraj notatkę', 'Record note') }}
           </ion-button>
         </ion-col>
         <ion-col size="6">
@@ -21,14 +21,16 @@
           </ion-button>
         </ion-col>
       </ion-row>
-      <ion-row v-if="d.ikonyTryb">
+      <ion-row v-if="d.ikonyTryb" class="ion-align-items-center ion-nowrap">
         <ion-col>
           <ion-chip v-for="x in d.ikony" :key="x.id" :outline="x.stan === 'ready'" :color="x.stan === 'w' ? 'warning' : undefined" :disabled="x.stan === 'busy'" :data-nt-id="x.id" :data-rodzaj="x.rodzaj" @click="k.akcja('otworz', x.id)">
             <ion-icon :icon="x.rodzaj === 'glos' ? mic : documentText" aria-hidden="true"></ion-icon><ion-label>{{ x.nr }}</ion-label>
           </ion-chip>
-          <ion-chip data-nt-bar="open" :aria-label="T('Wszystkie notatki', 'All notes')" @click="k.akcja('otworz')">
-            <ion-label>{{ T('Notatki', 'Notes') }}</ion-label><ion-badge data-nt-bar="n">{{ d.n }}</ion-badge>
-          </ion-chip>
+        </ion-col>
+        <ion-col size="auto">
+          <ion-button mode="ios" size="small" fill="solid" color="duch" data-nt-bar="open" :aria-label="T('Wszystkie notatki', 'All notes')" @click="k.akcja('otworz')">
+            {{ T('Notatki', 'Notes') }}<ion-badge slot="end" data-nt-bar="n">{{ d.n }}</ion-badge>
+          </ion-button>
         </ion-col>
       </ion-row>
       <ion-row v-if="d.polacz">

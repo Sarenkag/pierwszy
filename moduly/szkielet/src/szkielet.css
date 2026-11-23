@@ -81,7 +81,7 @@ ion-modal[data-oest-okno] ion-button:not([fill=outline]):not([fill=clear]):not(.
   --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); --border-radius: 14px; --color: #ffffff;
 }
 ion-modal[data-oest-czesc] ion-button[data-c] { --border-radius: 50%; --box-shadow: none; }
-[data-nt-pasek] ion-button[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); --color: #ffffff; --border-radius: 14px; }
+[data-nt-pasek] ion-button[data-nt-bar=rec][fill=outline] { --background: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); --color: #ffffff; --border-radius: 14px; }
 [data-nt-pasek] ion-button[data-nt-bar=join] { --border-radius: 14px; }
 [data-nt-okno] ion-card { --background: rgba(255, 255, 255, .05); --color: var(--ink); }
 [data-nt-okno] ion-item, [data-nt-propozycja] ion-item, [data-nt-nowa] ion-item {
@@ -92,7 +92,7 @@ ion-loading[data-oest-ladowanie] { --background: #161a34; --spinner-color: #a35b
    „duch” = ciemny przycisk z jasną ramką (dawne Anuluj / Powtórz / Cofnij), „poswiata” = gradient z poświatą (dawne OK / Zapisz). */
 .ion-color-duch { --ion-color-base: #222746; --ion-color-base-rgb: 34, 39, 70; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #1e223e; --ion-color-tint: #383d59; }
 .ion-color-poswiata { --ion-color-base: var(--grad); --ion-color-base-rgb: 124, 100, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: var(--grad); --ion-color-tint: var(--grad); }
-ion-button[color=duch] { --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --border-radius: 14px; --box-shadow: none; }
+ion-button[color=duch], ion-button[color=duch]:not([fill=outline]):not([fill=clear]):not(.in-buttons) { --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --border-radius: 14px; --box-shadow: none; }
 ion-button[color=poswiata] { --border-radius: 14px; --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); }
 /* Edytor zdjęć: wszystkie przyciski jednej wysokości 44 px (dotyk). Przyciski iOS rosną z odstępów (zmienne --padding-*):
    odstęp = (44 px − wysokość ikony/napisu − ramka) / 2; 1.125em to ikona w przycisku Ionic, small = 18 px, large = 32 px, ramka „outline”/„duch” 1 px. */
@@ -105,3 +105,4 @@ ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w="14"][fill=outline] { -
 ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a] { --padding-top: calc((42px - 1.35em) / 2); --padding-bottom: calc((42px - 1.35em) / 2); --padding-start: 14px; --padding-end: 14px; }
 ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a=save] { --padding-top: calc((44px - 1.35em) / 2); --padding-bottom: calc((44px - 1.35em) / 2); }
 ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a=cancel] { --padding-top: calc((44px - 1em) / 2); --padding-bottom: calc((44px - 1em) / 2); --border-color: transparent; }
+[data-nt-pasek] ion-button[data-nt-bar=open][size=small] { --border-radius: 999px; --padding-start: 12px; --padding-end: 8px; }
