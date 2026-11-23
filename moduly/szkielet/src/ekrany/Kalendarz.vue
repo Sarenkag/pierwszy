@@ -39,6 +39,6 @@ function akcje() {
   ] });
 }
 watch(() => [props.wersja, d.value.tytul], akcje);
-onMounted(() => { akcje(); window.addEventListener('oest:ppm-ui', odswiez); const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
-onUnmounted(() => window.removeEventListener('oest:ppm-ui', odswiez));
+onMounted(() => { akcje(); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
+onUnmounted(() => { window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });
 </script>

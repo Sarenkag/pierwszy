@@ -22,6 +22,6 @@ const props = defineProps({ T: Function, wersja: Number });
 const P = window.OESTPpmUI;
 const n = ref(0), odswiez = () => { n.value++; };
 const d = computed(() => (props.wersja, n.value, P.ppmDane()));
-onMounted(() => { window.addEventListener('oest:ppm-ui', odswiez); const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
-onUnmounted(() => window.removeEventListener('oest:ppm-ui', odswiez));
+onMounted(() => { window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
+onUnmounted(() => { window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });
 </script>

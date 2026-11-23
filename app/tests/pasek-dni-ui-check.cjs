@@ -36,14 +36,14 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       await p.goto(url + '/index.html#home'); await p.waitForTimeout(500);
       return { c, p };
     }
-    // pasek dni = wspólna część Ionic (czesci/PasekDni.vue): dzień = ion-button[data-day]; wygląd z atrybutów Ionic:
-    // dzień pracy = wypełniony kolorem tertiary (dawny gradient), dziś = primary, miniony = fill „clear” (przygaszony), wolny = obwódka (nieprzygaszony)
+    // pasek dni = wspólna część Ionic (czesci/PasekDni.vue): dzień = ion-button[data-day] z data-praca / data-dzis / data-minal / data-wybrany;
+    // wygląd czytany z wyrenderowanego przycisku (tło natywnego przycisku w shadow DOM, przezroczystość) – tak samo ostro jak dawne klasy sh/today/past
     const strip = (p, id) => p.evaluate(id => [...document.querySelectorAll('#' + id + ' [data-day]')].filter(b => b.getClientRects().length).map(b => {
-      const r = b.getBoundingClientRect(), g = b.closest('ion-grid').getBoundingClientRect();
-      const kol = b.getAttribute('color'), fill = b.getAttribute('fill');
-      return { k: b.dataset.day, sh: kol === 'tertiary' && fill === 'solid', today: kol === 'primary', past: fill === 'clear',
-        op: fill === 'clear' ? 'przygaszony' : '1', bg: kol === 'tertiary' && fill === 'solid' ? 'gradient' : '', h: Math.round(r.height), w: Math.round(r.width), x: Math.round(r.x - g.x) + ',' + Math.round(r.y - g.y),
-        txt: [...b.querySelectorAll('ion-label > small, ion-label > strong, ion-label > ion-icon')].map(e => e.tagName === 'ION-ICON' ? (e.getAttribute('aria-hidden') ? 'ikona' : '') : e.textContent).join('|') };
+      const r = b.getBoundingClientRect(), g = b.parentElement.getBoundingClientRect(), n = b.shadowRoot && b.shadowRoot.querySelector('.button-native');
+      const cs = getComputedStyle(b);
+      return { k: b.dataset.day, sh: b.hasAttribute('data-praca'), today: b.hasAttribute('data-dzis'), past: b.hasAttribute('data-minal'),
+        op: cs.opacity, bg: n ? getComputedStyle(n).backgroundImage : '', h: Math.round(r.height), w: Math.round(r.width), x: Math.round(r.x - g.x) + ',' + Math.round(r.y - g.y),
+        txt: [...b.querySelectorAll('ion-label > small, ion-label > strong, ion-label > ion-icon, ion-label > ion-badge')].map(e => e.tagName === 'ION-ICON' ? 'ikona' : e.textContent).join('|') };
     }), id);
 
     // ---------- grafik Grzegorza ----------

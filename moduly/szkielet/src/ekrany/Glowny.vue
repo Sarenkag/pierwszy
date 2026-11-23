@@ -57,6 +57,6 @@ async function okno(rodzaj) {
   if (rodzaj === 'drive' || rodzaj === 'net') { const p = rodzaj === 'drive' ? H.dysk() : H.siec(); return O.okno({ tytul: p.tytul, komponent: Opcje, wlasciwosci: { p }, bezPrzyciskow: true }); }
   if (rodzaj === 'news') { const p = H.nowosciLista(); return O.okno({ tytul: p.tytul, komponent: Nowosci, wlasciwosci: { p }, bezPrzyciskow: true }); }
 }
-onMounted(() => { window.addEventListener('oest:home', odswiez); window.addEventListener('oest:ppm-ui', odswiez); H.odswiez(false); });
-onUnmounted(() => { window.removeEventListener('oest:home', odswiez); window.removeEventListener('oest:ppm-ui', odswiez); });
+onMounted(() => { window.addEventListener('oest:home', odswiez); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ H.odswiez(false); });
+onUnmounted(() => { window.removeEventListener('oest:home', odswiez); window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });
 </script>
