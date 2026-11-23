@@ -2,7 +2,7 @@
 // Przeniesione 1:1 ze skryptu index.html (Grzegorz 23/11/2026: apka = moduły podpięte do wspólnych części).
 // Ekran niczego nie liczy: ten moduł daje zwykłe obiekty w kształcie wspólnych części (Klocek, PasekDni), ekran tylko je pokazuje.
 //
-//   OESTPpmUI.ppmDane()            → { dni, filtry: [{ id, nazwa }], wybrane: [id], klocki: [klocek], pusto }
+//   OESTPpmUI.ppmDane()            → { dni, filtry: [{ id, nazwa, kolor }], wybrane: [id], klocki: [klocek], pusto }
 //   OESTPpmUI.dzien(k) / filtry(ids) / wybierz(klocek) / info(klocek)
 //   OESTPpmUI.kalDane()            → { tytul, tydzien: [nazwa], kratki: [{ k, d, inny, praca, dzis, wybrany, n, plan }], klocki, brakGrafiku, wybrany }
 //   OESTPpmUI.kalMiesiac(±1) / kalDzien(k)
@@ -86,7 +86,7 @@
   }
   function ppmDane() {
     var rows = ppmRows();
-    var filtry = P.groups.map(function (g) { return { id: g.id, nazwa: w.OESTT(g.pl || g.name, g.name) }; }).concat([{ id: "started", nazwa: w.OESTT("Rozpoczęte", "Started") }]);
+    var filtry = P.groups.map(function (g) { return { id: g.id, nazwa: w.OESTT(g.pl || g.name, g.name), kolor: g.color }; }).concat([{ id: "started", nazwa: w.OESTT("Rozpoczęte", "Started") }]);
     var gs = ppmSel.filter(function (x) { return x !== "started"; }), started = ppmSel.indexOf("started") >= 0;
     var list = rows.filter(function (r) {
       if (gs.length && gs.indexOf(r.t.group) < 0) return false;

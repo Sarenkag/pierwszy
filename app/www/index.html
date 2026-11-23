@@ -305,8 +305,8 @@ input[type=text], input[type=email], input[type=date], select {
     if (keysRoute) v = "keys";
     if (settingsRoute) v = "settings";
     if (handoverRoute) v = "handover";
-    if (!$("v-" + v)) v = "home";
     if (!account()) v = "start";
+    else if (!$("v-" + v)) { window.OESTEkrany.go("home"); return; } // nieznany adres → ekran główny (na Ionic + Vue)
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
     if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
     if (v === "handover") window.OESTHandover.open(handoverRoute);
