@@ -7,8 +7,8 @@
       <p class="ion-padding-horizontal"><ion-note>{{ d.edycja.naglowek }}</ion-note></p>
       <ion-grid>
         <ion-row>
-          <ion-col size="6"><ion-button expand="block" size="small" :fill="d.edycja.tab === 'pl' ? 'solid' : 'outline'" data-nt="tab-pl" @click="k.akcja('tab', 'pl')">{{ T('Po polsku', 'Polish') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button expand="block" size="small" :fill="d.edycja.tab === 'en' ? 'solid' : 'outline'" data-nt="tab-en" @click="k.akcja('tab', 'en')">{{ T('Po angielsku', 'English') }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" expand="block" size="small" :fill="d.edycja.tab === 'pl' ? 'solid' : 'outline'" data-nt="tab-pl" @click="k.akcja('tab', 'pl')">{{ T('Po polsku', 'Polish') }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" expand="block" size="small" :fill="d.edycja.tab === 'en' ? 'solid' : 'outline'" data-nt="tab-en" @click="k.akcja('tab', 'en')">{{ T('Po angielsku', 'English') }}</ion-button></ion-col>
         </ion-row>
       </ion-grid>
       <ion-item :hidden="d.edycja.tab !== 'pl'">
@@ -20,12 +20,12 @@
       <p class="ion-padding-horizontal"><ion-note color="warning" role="status" data-nt-warn>{{ d.edycja.ostrzezenie }}</ion-note></p>
       <ion-grid>
         <ion-row>
-          <ion-col size="6"><ion-button expand="block" fill="outline" data-nt="redo" :disabled="d.edycja.uklada" @click="k.akcja('redo')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ T('Ułóż z polskiego', 'Rewrite from Polish') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button v-if="d.edycja.audio" expand="block" fill="outline" data-nt="play" @click="k.akcja('play', null)"><ion-icon slot="start" :icon="d.edycja.gra ? stop : play" aria-hidden="true"></ion-icon>{{ d.edycja.gra ? T('Stop', 'Stop') : d.edycja.czas }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" expand="block" fill="outline" data-nt="redo" :disabled="d.edycja.uklada" @click="k.akcja('redo')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ T('Ułóż z polskiego', 'Rewrite from Polish') }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" v-if="d.edycja.audio" expand="block" fill="outline" data-nt="play" @click="k.akcja('play', null)"><ion-icon slot="start" :icon="d.edycja.gra ? stop : play" aria-hidden="true"></ion-icon>{{ d.edycja.gra ? T('Stop', 'Stop') : d.edycja.czas }}</ion-button></ion-col>
         </ion-row>
         <ion-row>
-          <ion-col size="6"><ion-button expand="block" fill="clear" data-nt="cancel" @click="k.akcja('cancel')">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button expand="block" data-nt="save" :disabled="d.edycja.zapisuje" @click="k.akcja('save')">{{ T('Zapisz', 'Save') }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" expand="block" fill="clear" data-nt="cancel" @click="k.akcja('cancel')">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
+          <ion-col size="6"><ion-button mode="ios" expand="block" data-nt="save" :disabled="d.edycja.zapisuje" @click="k.akcja('save')">{{ T('Zapisz', 'Save') }}</ion-button></ion-col>
         </ion-row>
       </ion-grid>
     </template>
@@ -45,12 +45,12 @@
           <ion-grid>
             <ion-row>
               <ion-col size="4">
-                <ion-button v-if="n.audio" expand="block" fill="outline" size="small" data-nt="play" @click="k.akcja('play', n.id)"><ion-icon slot="start" :icon="n.gra ? stop : play" aria-hidden="true"></ion-icon>{{ n.gra ? T('Stop', 'Stop') : n.czas }}</ion-button>
-                <ion-button v-else expand="block" fill="outline" size="small" disabled>—</ion-button>
+                <ion-button mode="ios" v-if="n.audio" expand="block" fill="outline" size="small" data-nt="play" @click="k.akcja('play', n.id)"><ion-icon slot="start" :icon="n.gra ? stop : play" aria-hidden="true"></ion-icon>{{ n.gra ? T('Stop', 'Stop') : n.czas }}</ion-button>
+                <ion-button mode="ios" v-else expand="block" fill="outline" size="small" disabled>—</ion-button>
               </ion-col>
               <template v-if="!d.readonly">
-                <ion-col size="4"><ion-button expand="block" fill="outline" size="small" data-nt="edit" :disabled="n.zajeta" @click="k.akcja('edit', n.id)"><ion-icon slot="start" :icon="create" aria-hidden="true"></ion-icon>{{ T('Popraw', 'Edit') }}</ion-button></ion-col>
-                <ion-col size="4"><ion-button expand="block" :fill="n.pewne ? 'solid' : 'outline'" color="danger" size="small" data-nt="del" :disabled="n.zajeta" :aria-label="T('Usuń notatkę', 'Delete note')" @click="k.akcja('del', n.id)">
+                <ion-col size="4"><ion-button mode="ios" expand="block" fill="outline" size="small" data-nt="edit" :disabled="n.zajeta" @click="k.akcja('edit', n.id)"><ion-icon slot="start" :icon="create" aria-hidden="true"></ion-icon>{{ T('Popraw', 'Edit') }}</ion-button></ion-col>
+                <ion-col size="4"><ion-button mode="ios" expand="block" :fill="n.pewne ? 'solid' : 'outline'" color="danger" size="small" data-nt="del" :disabled="n.zajeta" :aria-label="T('Usuń notatkę', 'Delete note')" @click="k.akcja('del', n.id)">
                   <template v-if="n.pewne">{{ T('Usunąć?', 'Delete?') }}</template><ion-icon v-else slot="icon-only" :icon="trash" aria-hidden="true"></ion-icon>
                 </ion-button></ion-col>
               </template>

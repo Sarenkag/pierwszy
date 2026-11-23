@@ -56,3 +56,41 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
 .ion-color-ed-niebieski { --ion-color-base: #2f8bff; --ion-color-base-rgb: 47, 139, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #297ae0; --ion-color-tint: #4396ff; }
 .ion-color-ed-bialy { --ion-color-base: #ffffff; --ion-color-base-rgb: 255, 255, 255; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0e0e0; --ion-color-tint: #ffffff; }
 .ion-color-ed-czarny { --ion-color-base: #111111; --ion-color-base-rgb: 17, 17, 17; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #0e0e0e; --ion-color-tint: #282828; }
+/* Wspólne moduły (aparat, notatki, ładowanie, odczyt) – wygląd jak dawniej („Szkło i poświata”: okienko #161a34 z ramką, przyciski 14 px,
+   „duchy” #222746 z jasną ramką, główny przycisk gradientem). Tylko zmienne komponentów Ionic, kluczem są atrybuty data-* z modułów (bez własnych klas). */
+ion-modal[data-oest-okno] {
+  --width: min(calc(100% - 32px), 380px); --height: min(440px, calc(100% - 64px)); --border-radius: 18px; --background: #161a34;
+  --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid; --box-shadow: 0 16px 40px rgba(0, 0, 0, .5); --backdrop-opacity: .55;
+}
+ion-modal[data-oest-okno=NotatkiOkno] { --height: min(640px, calc(100% - 64px)); }
+ion-modal[data-oest-okno=NotatkaNowa] { --height: min(360px, calc(100% - 64px)); }
+ion-modal[data-oest-okno=OdczytArkusz] { --height: min(680px, calc(100% - 64px)); }
+ion-modal[data-oest-okno] ion-toolbar { --background: transparent; --border-width: 0; --border-color: transparent; }
+ion-modal[data-oest-czesc] ion-footer ion-toolbar { --background: transparent; --border-width: 0; --border-color: transparent; }
+ion-modal[data-oest-czesc=Aparat] { --background: #07080f; }
+ion-modal[data-oest-czesc=Aparat] ion-content { --background: #07080f; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-toolbar { --background: transparent; --border-width: 0; --border-color: transparent; }
+ion-modal[data-oest-okno] ion-button[fill=outline]:not([color]), ion-modal[data-oest-czesc] ion-button[fill=outline]:not([color]), [data-nt-pasek] ion-button[fill=outline]:not([color]) {
+  --background: #222746; --background-hover: #2a2f55; --background-activated: #2a2f55; --border-color: rgba(255, 255, 255, .18); --border-width: 1px; --color: #ffffff; --border-radius: 14px;
+}
+ion-modal[data-oest-okno] ion-button[fill=outline][color=danger], ion-modal[data-oest-okno] ion-button[fill=outline][color=primary] {
+  --background: #222746; --border-color: rgba(255, 255, 255, .18); --border-radius: 14px;
+}
+ion-modal[data-oest-okno] ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons), ion-modal[data-oest-czesc] ion-button:not([fill=outline]):not([fill=clear]):not([data-c]) {
+  --background: var(--grad); --background-hover: var(--grad); --background-activated: var(--grad); --background-focused: var(--grad);
+  --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); --border-radius: 14px; --color: #ffffff;
+}
+ion-modal[data-oest-czesc] ion-button[data-c] { --border-radius: 50%; --box-shadow: none; }
+[data-nt-pasek] ion-button[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); --color: #ffffff; --border-radius: 14px; }
+[data-nt-pasek] ion-button[data-nt-bar=join] { --border-radius: 14px; }
+[data-nt-okno] ion-card { --background: rgba(255, 255, 255, .05); --color: var(--ink); }
+[data-nt-okno] ion-item, [data-nt-propozycja] ion-item, [data-nt-nowa] ion-item {
+  --background: rgba(255, 255, 255, .07); --border-radius: 12px; --border-color: rgba(124, 132, 255, .7); --border-width: 1px; --inner-border-width: 0; --highlight-height: 0;
+}
+ion-loading[data-oest-ladowanie] { --background: #161a34; --spinner-color: #a35bff; --backdrop-opacity: .35; }
+/* Kolory przycisków wspólnych modułów jako kolory Ionic (działają też w ion-toolbar, gdzie Ionic nadpisuje tło przycisku bez koloru):
+   „duch” = ciemny przycisk z jasną ramką (dawne Anuluj / Powtórz / Cofnij), „poswiata” = gradient z poświatą (dawne OK / Zapisz). */
+.ion-color-duch { --ion-color-base: #222746; --ion-color-base-rgb: 34, 39, 70; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #1e223e; --ion-color-tint: #383d59; }
+.ion-color-poswiata { --ion-color-base: var(--grad); --ion-color-base-rgb: 124, 100, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: var(--grad); --ion-color-tint: var(--grad); }
+ion-button[color=duch] { --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --border-radius: 14px; --box-shadow: none; }
+ion-button[color=poswiata] { --border-radius: 14px; --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); }

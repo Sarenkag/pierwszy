@@ -30,7 +30,7 @@ export function zainstaluj(w, OESTOkna, T) {
   // okno na cały ekran z częścią; kończy je kontroler (dane().koniec) albo Wstecz / zmiana ekranu (wtedy kontroler.zamknij())
   async function pokaz(nazwa, kontroler, o) {
     o = o || {};
-    const m = await modalController.create({ component: czesc(nazwa), componentProps: { kontroler, T }, backdropDismiss: false });
+    const m = await modalController.create({ component: czesc(nazwa), componentProps: { kontroler, T }, backdropDismiss: false, htmlAttributes: { 'data-oest-czesc': nazwa } });
     let zwolnij = null, po = false;
     const koniec = () => { if (po) return; po = true; if (zwolnij) { zwolnij(); zwolnij = null; } };
     zwolnij = OESTOkna.open(() => { if (kontroler.zajety && kontroler.zajety()) return; m.dismiss(undefined, 'cancel'); }); // okienko zajęte (np. podgląd przy edycji) odmawia
@@ -44,7 +44,7 @@ export function zainstaluj(w, OESTOkna, T) {
 
   // OESTOkna.okno z częścią i kontrolerem: { tytul, ok, anuluj, … } → Promise<{ ok }>; po zamknięciu kontroler.zamknij()
   async function okno(nazwa, kontroler, o) {
-    const r = await OESTOkna.okno({ ...(o || {}), komponent: czesc(nazwa), wlasciwosci: { kontroler } });
+    const r = await OESTOkna.okno({ wyglad: nazwa, ...(o || {}), komponent: czesc(nazwa), wlasciwosci: { kontroler } });
     if (kontroler.zamknij) kontroler.zamknij(r);
     return r;
   }
@@ -68,7 +68,7 @@ export function zainstaluj(w, OESTOkna, T) {
       tekstLad = t || T('Pracuję…', 'Working…'); ukryj = false;
       if (ladowanie) { ladowanie.message = tekstLad; return; }
       if (czekaLad) return;
-      czekaLad = loadingController.create({ message: tekstLad, spinner: 'crescent' }).then(async l => {
+      czekaLad = loadingController.create({ message: tekstLad, spinner: 'crescent', htmlAttributes: { 'data-oest-ladowanie': '' } }).then(async l => {
         ladowanie = l; l.message = tekstLad; await l.present(); czekaLad = null;
         if (ukryj) ladowanieApi.hide();
       });

@@ -8,15 +8,15 @@
     <ion-grid>
       <ion-row>
         <ion-col size="6">
-          <ion-button ref="nagraj" expand="block" fill="outline" color="danger" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
+          <ion-button mode="ios" ref="nagraj" expand="block" fill="outline" color="danger" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
             <ion-icon slot="start" :icon="mic" aria-hidden="true"></ion-icon>{{ d.ikonyTryb ? T('Głos', 'Voice') : T('Nagraj notatkę', 'Record note') }}
           </ion-button>
         </ion-col>
         <ion-col size="6">
-          <ion-button v-if="d.ikonyTryb" expand="block" fill="outline" data-nt-bar="add" :disabled="d.dodaje" :aria-label="T('Dopisz notatkę', 'Write a note')" @click="k.akcja('dopisz')">
+          <ion-button mode="ios" v-if="d.ikonyTryb" expand="block" fill="outline" data-nt-bar="add" :disabled="d.dodaje" :aria-label="T('Dopisz notatkę', 'Write a note')" @click="k.akcja('dopisz')">
             <ion-icon slot="start" :icon="create" aria-hidden="true"></ion-icon>{{ T('Tekst', 'Text') }}
           </ion-button>
-          <ion-button v-else expand="block" fill="outline" data-nt-bar="open" @click="k.akcja('otworz')">
+          <ion-button mode="ios" v-else expand="block" fill="outline" data-nt-bar="open" @click="k.akcja('otworz')">
             <ion-icon slot="start" :icon="documentText" aria-hidden="true"></ion-icon>{{ T('Notatki', 'Notes') }}<ion-badge slot="end" data-nt-bar="n">{{ d.n }}</ion-badge>
           </ion-button>
         </ion-col>
@@ -33,7 +33,7 @@
       </ion-row>
       <ion-row v-if="d.polacz">
         <ion-col>
-          <ion-button expand="block" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ d.napisPolacz }}</ion-button>
+          <ion-button mode="ios" expand="block" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ d.napisPolacz }}</ion-button>
         </ion-col>
       </ion-row>
     </ion-grid>

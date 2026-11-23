@@ -6,7 +6,7 @@
     <h2 role="timer">{{ d.czas }}</h2>
     <ion-progress-bar :value="d.postep" color="primary"></ion-progress-bar>
     <p><ion-note>{{ d.podpowiedz }}</ion-note></p>
-    <ion-button size="large" data-nagrywanie-zakoncz @click="k.akcja('zakoncz')"><ion-icon slot="start" :icon="stop" aria-hidden="true"></ion-icon>{{ d.zakoncz }}</ion-button>
+    <ion-button mode="ios" size="large" data-nagrywanie-zakoncz @click="k.akcja('zakoncz')"><ion-icon slot="start" :icon="stop" aria-hidden="true"></ion-icon>{{ d.zakoncz }}</ion-button>
   </ion-content>
 </template>
 

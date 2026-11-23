@@ -73,10 +73,11 @@ const OESTOkna = {
     const r = (await a.onDidDismiss()).role;
     return o.tylkoOk ? true : r === 'confirm' || r === 'destructive';
   },
-  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow }) → Promise<{ ok, dane }>
+  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow, wyglad }) → Promise<{ ok, dane }>
+  // wyglad (opcjonalnie): nazwa wyglądu okienka w szkielet.css (data-oest-okno), np. wspólne moduły jako małe okienko na środku jak dawniej
   async okno(o) {
     o = o || {};
-    const m = await modalController.create({ component: Okno, componentProps: { ...o, T } });
+    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, htmlAttributes: o.wyglad ? { 'data-oest-okno': o.wyglad } : undefined });
     const zwolnij = OESTOkna.open(() => { m.dismiss(undefined, 'cancel'); }); // zmiana ekranu zamyka też to okienko (R4)
     await m.present();
     const r = await m.onDidDismiss();

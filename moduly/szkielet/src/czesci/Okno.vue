@@ -1,6 +1,7 @@
 <!-- Okienko z własną treścią (ion-modal) – JEDNO w całej apce: tytuł, treść (komponent Vue ekranu) i przyciski na dole.
      Otwiera je OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow }) → Promise<{ ok, dane }>.
      Treść oddaje dane przez zdarzenie „dane” (np. zaznaczone pola); Wstecz telefonu i „Anuluj” = { ok: false }.
+     wyglad (wspólne moduły): małe okienko na środku z dwoma równymi przyciskami na dole, jak dawne okienka (wygląd w szkielet.css, data-oest-okno).
      Treść może schować przyciski na dole zdarzeniem „przyciski” (false), np. notatki w trakcie poprawiania (własne Anuluj / Zapisz). -->
 <template>
   <ion-header>
@@ -14,7 +15,13 @@
   </ion-content>
   <ion-footer v-if="!bezPrzyciskow && przyciski">
     <ion-toolbar>
-      <ion-buttons slot="end">
+      <ion-grid v-if="wyglad">
+        <ion-row>
+          <ion-col v-if="anuluj !== false"><ion-button mode="ios" expand="block" fill="solid" color="duch" data-okno="anuluj" @click="zamknij(false)">{{ anuluj || T('Anuluj', 'Cancel') }}</ion-button></ion-col>
+          <ion-col><ion-button mode="ios" expand="block" :color="niebezpieczne ? 'danger' : 'poswiata'" data-okno="ok" @click="zamknij(true)">{{ ok || 'OK' }}</ion-button></ion-col>
+        </ion-row>
+      </ion-grid>
+      <ion-buttons v-else slot="end">
         <ion-button fill="clear" v-if="anuluj !== false" data-okno="anuluj" @click="zamknij(false)">{{ anuluj || T('Anuluj', 'Cancel') }}</ion-button>
         <ion-button fill="solid" :color="niebezpieczne ? 'danger' : 'primary'" data-okno="ok" @click="zamknij(true)">{{ ok || 'OK' }}</ion-button>
       </ion-buttons>
@@ -24,9 +31,9 @@
 
 <script setup>
 import { ref } from 'vue';
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonFooter, modalController } from '@ionic/vue';
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonFooter, IonGrid, IonRow, IonCol, modalController } from '@ionic/vue';
 import { close } from 'ionicons/icons';
-const props = defineProps({ T: Function, tytul: String, komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean });
+const props = defineProps({ T: Function, tytul: String, komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean, wyglad: String });
 const dane = ref(null), przyciski = ref(true);
 function zamknij(ok) { modalController.dismiss({ ok, dane: dane.value }, ok ? 'ok' : 'cancel'); }
 </script>
