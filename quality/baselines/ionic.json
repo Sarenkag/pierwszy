@@ -187,13 +187,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/ai",
-      "rule": "IONIC",
-      "detail": "Ekran settings/ai (OCR i modele AI) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|settings/calendar",
       "rule": "IONIC",
       "detail": "Ekran settings/calendar (Kalendarz i grafik) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
@@ -274,13 +267,6 @@
       "id": "IONIC|modul-ui|ladowanie",
       "rule": "IONIC",
       "detail": "moduly/ladowanie rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranów"
-    },
-    {
-      "id": "IONIC|modul-ui|model",
-      "rule": "IONIC",
-      "detail": "moduly/model rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranów"
     },

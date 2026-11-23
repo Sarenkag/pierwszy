@@ -239,15 +239,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|okna-systemowe|moduly/model/model.js",
-      "rule": "JM",
-      "detail": "moduly/model/model.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D17/#15",
-      "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|okna-systemowe|powertrace.js",
       "rule": "JM",
       "detail": "powertrace.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 3× poza właścicielem (zakazane).",
@@ -405,15 +396,6 @@
       "rule": "ZNACZNIK",
       "detail": "moduly/klocek/klocek.js: 2 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
       "maks": 2,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|moduly/model/model.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/model/model.js: 3 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 3,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

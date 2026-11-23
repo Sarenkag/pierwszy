@@ -7,4 +7,5 @@ import Poczta from './Poczta.vue';
 import Kontakty from './Kontakty.vue';
 import Dysk from './Dysk.vue';
 import Konto from './Konto.vue';
-export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto };
+import Ai from './Ai.vue';
+export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai };
