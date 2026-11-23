@@ -73,7 +73,7 @@ const OESTOkna = {
   // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow }) → Promise<{ ok, dane }>
   async okno(o) {
     o = o || {};
-    const m = await modalController.create({ component: Okno, componentProps: { ...o, T } });
+    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, cssClass: 'oest-okno' }); // karta na środku jak dawne okienko apki (szkielet.css)
     await m.present();
     const r = await m.onDidDismiss();
     return r.data || { ok: false, dane: null };

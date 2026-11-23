@@ -2,10 +2,11 @@
      Każde miejsce stałe; lista tylko podaje dane (zwykły obiekt z modułu), klocek niczego nie liczy:
        { id, nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
          opis, termin: { tekst, ton: ''|'jutro'|'red' }, procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
-         miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
+         miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz'),
+         pasek ('zielony'|'zolty'|'fioletowy' – kolorowy pasek z lewej, jak na main) }
      Stuknięcie: zdarzenie „wybierz” (id); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
-  <ion-card button :disabled="k.wylaczony" :data-id="k.id" @click="emit('wybierz', k)" @pointerdown="wcisnij" @pointerup="pusc" @pointerleave="pusc" @contextmenu.prevent>
+  <ion-card class="oest-klocek" :class="k.pasek ? 'oest-' + k.pasek : undefined" button :disabled="k.wylaczony" :data-id="k.id" @click="emit('wybierz', k)" @pointerdown="wcisnij" @pointerup="pusc" @pointerleave="pusc" @contextmenu.prevent>
     <ion-item lines="none" :detail="true">
       <ion-thumbnail v-if="k.miniatura" slot="start"><img :src="k.miniatura" alt=""></ion-thumbnail>
       <ion-label :color="k.przygaszony ? 'medium' : undefined">

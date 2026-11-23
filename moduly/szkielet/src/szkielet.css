@@ -49,3 +49,35 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --ion-color-secondary: #3b82f6; --ion-color-secondary-rgb: 59, 130, 246; --ion-color-secondary-contrast: #ffffff; --ion-color-secondary-contrast-rgb: 255, 255, 255; --ion-color-secondary-shade: #3472d8; --ion-color-secondary-tint: #4f8ff7;
   --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
 }
+/* ---------- Wygląd głównej apki („Szkło i poświata”, main) na komponentach Ionic – klasy oest-* (Grzegorz 23/11/2026: przeniesione
+   ekrany wyglądają tak samo jak na main). Najpierw zmienne Ionic; reszta (ramka, zaokrąglenie) tylko tam, gdzie Ionic nie ma zmiennej. ---------- */
+ion-card.oest-panel { --background: var(--panel); --color: var(--ink); margin: 0 0 14px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; }
+ion-card.oest-panel ion-item { --background: transparent; }
+ion-list-header.oest-tytul { font-size: 18px; font-weight: 700; --color: var(--ink); min-height: 44px; }
+ion-item.oest-pole { --background: var(--field); --border-color: var(--line); --border-width: 1px; --border-style: solid; --border-radius: 12px; --min-height: 48px; --padding-start: 14px; --inner-border-width: 0; margin: 0 16px 10px; }
+ion-progress-bar.oest-licznik { --background: rgba(127, 127, 127, .25); --progress-background: var(--accent); height: 10px; border-radius: 6px; margin: 0 16px; width: auto; }
+ion-progress-bar.oest-licznik.oest-pelny { --progress-background: #e5484d; }
+ion-button.oest-duzy { --border-radius: 14px; min-height: 52px; text-transform: none; font-size: 16px; font-weight: 700; letter-spacing: 0; margin: 4px 0 14px; }
+ion-card ion-button.oest-duzy { margin: 4px 16px 16px; }
+ion-col > ion-item.oest-pole { margin: 0; }
+ion-card.oest-klocek { --background: var(--panel); margin: 0 0 12px; border: 1px solid var(--line); border-left-width: 4px; border-radius: 16px; box-shadow: none; }
+ion-card.oest-klocek.oest-zielony { border-left-color: #5fd6a0; }
+ion-card.oest-klocek.oest-zolty { border-left-color: #f0c75e; }
+ion-card.oest-klocek.oest-fioletowy { border-left-color: #a35bff; }
+ion-card.oest-klocek ion-item { --background: transparent; }
+/* pasek wysyłki (czesci/PasekWysylki.vue): cienki pas na dole jak na main, rozwinięcie nad nim */
+ion-toolbar.oest-pasek { --background: rgba(14, 18, 40, .96); --min-height: 30px; --padding-top: 0; --padding-bottom: 0; --padding-start: 0; --padding-end: 0; --border-color: var(--line); font-size: 13px; }
+ion-toolbar.oest-pasek ion-item { --background: transparent; --min-height: 30px; --padding-start: 12px; --inner-padding-end: 12px; font-size: 13px; }
+ion-toolbar.oest-pasek ion-chip { height: 20px; margin: 0 8px 0 0; padding: 0 8px 0 0; border: 0; border-right: 1px solid var(--line); border-radius: 0; font-size: 13px; --background: transparent; }
+ion-toolbar.oest-pasek ion-icon { font-size: 10px; margin: 0 8px 0 0; }
+ion-toolbar.oest-pasek ion-spinner { width: 12px; height: 12px; margin: 0 8px 0 0; }
+ion-toolbar.oest-pasek ion-progress-bar { height: 2px; --background: transparent; }
+ion-toolbar.oest-pasek ion-button { flex: 1 1 auto; min-height: 40px; text-transform: none; font-size: 15px; font-weight: 600; --border-radius: 12px; }
+/* okienka OESTOkna.okno: karta na środku jak dawne okienko apki, nie cały ekran */
+ion-modal.oest-okno { --width: calc(100% - 32px); --max-width: 400px; --height: 85%; --max-height: 760px; --border-radius: 18px; --background: #161a34; --border-color: var(--line); --border-width: 1px; --border-style: solid; }
+ion-modal.oest-okno ion-button { text-transform: none; letter-spacing: 0; }
+ion-modal.oest-okno ion-footer ion-buttons { flex: 1 1 auto; gap: 10px; padding: 6px 10px 10px; }
+ion-modal.oest-okno ion-footer ion-button { flex: 1 1 0; min-height: 48px; font-size: 15px; font-weight: 700; --border-radius: 14px; }
+ion-modal.oest-okno ion-footer ion-button:not(:last-child) { --background: #222746; --color: #ffffff; --border-radius: 14px; }
+ion-item ion-label.oest-etykieta { font-size: 15px !important; color: var(--steel) !important; }
+ion-modal.oest-okno ion-footer ion-button.ion-color-primary:last-child { --ion-color-base: var(--grad) !important; --background: var(--grad); --background-activated: var(--grad); --background-hover: var(--grad); --background-focused: var(--grad); --color: #ffffff; }

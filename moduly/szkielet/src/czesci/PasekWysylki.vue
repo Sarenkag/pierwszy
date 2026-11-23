@@ -2,14 +2,14 @@
      wysłano, błąd + Ponów; stuknięcie rozwija opis i przyciski nad paskiem. Dane i logika: moduly/wysylka (OESTSender.stan() i zdarzenie
      „oest:wysylka”); przyciski wołają OESTSender.akcja(a). Pasek niczego nie liczy. -->
 <template>
-  <ion-toolbar v-if="s.widoczny" id="oest-pasek-wysylki" role="status">
+  <ion-toolbar v-if="s.widoczny" id="oest-pasek-wysylki" class="oest-pasek" role="status">
     <template v-if="s.otwarty">
       <ion-item v-if="s.opis" lines="none"><ion-note>{{ s.opis }}</ion-note></ion-item>
       <ion-item lines="full">
         <ion-button v-for="b in s.przyciski" :key="b.a" :data-a="b.a" size="small" :fill="b.glowny ? 'solid' : 'outline'" @click="akcja(b.a)">{{ b.tekst }}</ion-button>
       </ion-item>
     </template>
-    <ion-progress-bar :value="s.postep || 0" :color="KOLOR[s.ton] || 'primary'"></ion-progress-bar>
+    <ion-progress-bar v-if="s.ton === 'run'" :value="s.postep || 0" :color="KOLOR[s.ton] || 'primary'"></ion-progress-bar>
     <ion-item button lines="none" :detail="false" data-a="toggle" @click="akcja('toggle')">
       <Lampka slot="start" :stan="s.siec.stan" :tekst="s.siec.tekst"></Lampka>
       <ion-spinner v-if="s.ton === 'run'" slot="start" name="crescent" aria-hidden="true"></ion-spinner>
