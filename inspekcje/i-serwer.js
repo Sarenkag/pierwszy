@@ -1,6 +1,6 @@
 "use strict";
 // i-serwer.js – serwer Apps Script, tłumaczenie, model, notatki.
-// Korzysta z: 2, 3 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: adresów i nazw funkcji serwera.
   // ---------- serwer (Twój Google Apps Script) ----------
   function gs(fn) {

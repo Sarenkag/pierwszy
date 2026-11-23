@@ -1,6 +1,6 @@
 "use strict";
 // i-start.js – start strony, wejście z PPM, odzyskanie szkicu.
-// Korzysta z: wszystkie 2–15 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: musi być wczytany ostatni.
   // ---------- start ----------
   states = cur.type.checks.map(function (c) { return c.def; });

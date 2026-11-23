@@ -1,6 +1,6 @@
 "use strict";
 // i-checklista.js – pomiary temperatur i checklisty.
-// Korzysta z: 3–5 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: progów temperatur.
   // ---------- pomiary temperatur (wzór 024) ----------
   var temps = [];

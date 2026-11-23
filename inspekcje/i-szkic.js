@@ -1,6 +1,6 @@
 "use strict";
 // i-szkic.js – szkic inspekcji w telefonie (zapis każdej zmiany).
-// Korzysta z: 3–5 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: formatu zapisu – stare szkice muszą się otwierać.
   // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).

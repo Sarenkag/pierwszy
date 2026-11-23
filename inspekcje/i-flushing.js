@@ -1,7 +1,7 @@
 "use strict";
 // i-flushing.js – Weekly Flushing TA/TB/P: tydzień i lista kranów.
-// Korzysta z: 3–6 (numery z tabeli w docs/podzial-modulow.md).
-// Nie ruszać: listy kranów bez zgody Grzegorza.
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
+// Nie ruszać: lista kranów jest w rodzaje.js/flush.js – tu tylko wyświetlana.
   // ---------- Weekly Flushing (TA/TB/P): tydzień, formularz elektroniczny, lista kranów ----------
   var fl = { on: false, week: 0, open: {}, taps: [] };
   // zdjęcie wypełnionego formularza (osobny przycisk w inspekcji, Grzegorz 04/11) – w raporcie na końcu, po zdjęciach z inspekcji

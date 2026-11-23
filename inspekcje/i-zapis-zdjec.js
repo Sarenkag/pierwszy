@@ -1,6 +1,6 @@
 "use strict";
 // i-zapis-zdjec.js – jeden zapis zdjęcia w module zdjęć.
-// Korzysta z: 3, 11 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: zasady jednego zapisu.
   // ---------- jeden zapis zdjęcia (Grzegorz 04/11/2026: „wystarczy, że się raz zapisze”) ----------
   // Zdjęcie zapisuje się RAZ w module zdjęć (folder OEST, z nazwą kranu / punktu, trzymane przez inspekcję, więc sprzątanie

@@ -1,6 +1,6 @@
 "use strict";
 // i-formularz.js – formularz inspekcji: punkty, usterki, stan.
-// Korzysta z: 2–4 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: struktury states/override – zapisuje ją szkic.
   // ---------- formularz ----------
   var states = [], override = {}, faultsOn = {}, photos = [], built = null, trOriginal = null, dateTouched = false;

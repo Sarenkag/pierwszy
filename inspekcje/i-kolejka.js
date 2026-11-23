@@ -1,6 +1,6 @@
 "use strict";
 // i-kolejka.js – podgląd raportu, wysyłka i kolejka.
-// Korzysta z: 3, 13 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: zasad wysyłki z docs/PRODUCT.md.
   // ---------- podgląd ----------
   function freeBuilt() { if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); built = null; } }

@@ -1,6 +1,6 @@
 "use strict";
 // i-ustawienia.js – ustawienia strony inspekcji.
-// Korzysta z: 3, 4 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: kluczy ustawień w pamięci telefonu.
   // ---------- ustawienia ----------
   function fillSettings() {

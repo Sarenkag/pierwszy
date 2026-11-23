@@ -1,6 +1,6 @@
 "use strict";
 // i-raport.js – dane raportu i szablon Worda.
-// Korzysta z: 2, 3, 5, 11 (numery z tabeli w docs/podzial-modulow.md).
+// Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: wzorów – źródło to moduly/wzory.
   // ---------- dane raportu ----------
   function dateOn() { var c = document.getElementById("dateOn"); return !c || c.checked; }
