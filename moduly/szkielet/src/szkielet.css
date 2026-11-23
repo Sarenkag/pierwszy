@@ -30,3 +30,13 @@ ion-content::part(scroll) { overscroll-behavior: none; } /* bez rozciągania na 
 .oest-rowne ion-card::part(native) { height: 100%; display: flex; flex-direction: column; justify-content: flex-start; } /* reguła Grzegorza: przyciski w grupie równe – karty w wierszu siatki tej samej wysokości */
 .oest-rowne ion-card-title { min-height: 2lh; }
 .oest-rowne ion-card-subtitle { min-height: 2lh; }
+/* Przyciski: gradient z poświatą Grzegorza („Szkło i poświata”, jak dawne .btn.go) – decyzja 23/11/2026 (cmsg_01XEAk2s9PJV8mCFfCy1yHHTL8zCmDhBv4XZ6N7ZTQxy2m).
+   Tylko zmienne ion-button, jedno miejsce dla całej apki; przyciski outline/clear i przyciski paska (ion-buttons) zostają standardowe. */
+ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
+  --background: var(--grad);
+  --background-hover: var(--grad);
+  --background-activated: var(--grad);
+  --background-focused: var(--grad);
+  --box-shadow: 0 8px 24px rgba(120, 90, 255, .4);
+  --border-radius: 14px;
+}
