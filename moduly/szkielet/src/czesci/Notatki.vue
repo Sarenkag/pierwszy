@@ -5,47 +5,33 @@
      Stary kod: OESTNotatki.mount(box, opcje) wstawia tę samą część do elementu. Logika (licznik, stan notatek, nagrywanie) w module (kontroler paska). -->
 <template>
   <div ref="pudlo" data-nt-pasek>
-    <ion-grid class="ion-no-padding">
-      <ion-row>
-        <ion-col size="6">
-          <ion-button mode="ios" ref="nagraj" expand="block" fill="outline" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
-            <ion-icon slot="start" :icon="mic" color="danger" aria-hidden="true"></ion-icon>{{ d.ikonyTryb ? T('Głos', 'Voice') : T('Nagraj notatkę', 'Record note') }}
-          </ion-button>
-        </ion-col>
-        <ion-col size="6">
-          <ion-button mode="ios" v-if="d.ikonyTryb" expand="block" fill="outline" data-nt-bar="add" :disabled="d.dodaje" :aria-label="T('Dopisz notatkę', 'Write a note')" @click="k.akcja('dopisz')">
-            <ion-icon slot="start" :icon="create" aria-hidden="true"></ion-icon>{{ T('Tekst', 'Text') }}
-          </ion-button>
-          <ion-button mode="ios" v-else expand="block" fill="outline" data-nt-bar="open" @click="k.akcja('otworz')">
-            <ion-icon slot="start" :icon="documentText" aria-hidden="true"></ion-icon>{{ T('Notatki', 'Notes') }}<ion-badge slot="end" data-nt-bar="n">{{ d.n }}</ion-badge>
-          </ion-button>
-        </ion-col>
-      </ion-row>
-      <ion-row v-if="d.ikonyTryb" class="ion-align-items-center ion-nowrap">
-        <ion-col>
-          <ion-chip v-for="x in d.ikony" :key="x.id" :outline="x.stan === 'ready'" :color="x.stan === 'w' ? 'warning' : undefined" :disabled="x.stan === 'busy'" :data-nt-id="x.id" :data-rodzaj="x.rodzaj" @click="k.akcja('otworz', x.id)">
-            <ion-icon :icon="x.rodzaj === 'glos' ? mic : documentText" aria-hidden="true"></ion-icon><ion-label>{{ x.nr }}</ion-label>
-          </ion-chip>
-        </ion-col>
-        <ion-col size="auto">
-          <ion-button mode="ios" size="small" fill="solid" color="duch" data-nt-bar="open" :aria-label="T('Wszystkie notatki', 'All notes')" @click="k.akcja('otworz')">
-            {{ T('Notatki', 'Notes') }}<ion-badge slot="end" data-nt-bar="n">{{ d.n }}</ion-badge>
-          </ion-button>
-        </ion-col>
-      </ion-row>
-      <ion-row v-if="d.polacz">
-        <ion-col>
-          <ion-button mode="ios" expand="block" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ d.napisPolacz }}</ion-button>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
+    <div class="oest-ntp-2">
+      <ion-button ref="nagraj" class="oest-ntp-b" fill="outline" data-nt-bar="rec" :disabled="d.bezNagrywania" :aria-label="T('Nagraj notatkę', 'Record note')">
+        <ion-icon :icon="mic" aria-hidden="true"></ion-icon><ion-icon v-if="d.ikonyTryb" :icon="add" aria-hidden="true"></ion-icon><span v-else>&nbsp;</span>{{ d.ikonyTryb ? T('Głos', 'Voice') : T('Nagraj notatkę', 'Record note') }}
+      </ion-button>
+      <ion-button v-if="d.ikonyTryb" class="oest-ntp-b" fill="outline" data-nt-bar="add" :disabled="d.dodaje" :aria-label="T('Dopisz notatkę', 'Write a note')" @click="k.akcja('dopisz')">
+        <ion-icon :icon="documentText" aria-hidden="true"></ion-icon><ion-icon :icon="add" aria-hidden="true"></ion-icon>{{ T('Tekst', 'Text') }}
+      </ion-button>
+      <ion-button v-else class="oest-ntp-b" fill="outline" data-nt-bar="open" @click="k.akcja('otworz')">
+        <ion-icon :icon="documentText" aria-hidden="true"></ion-icon>&nbsp;{{ T('Notatki', 'Notes') }}<span class="oest-ntp-n" data-nt-bar="n">{{ d.n }}</span>
+      </ion-button>
+    </div>
+    <div v-if="d.ikonyTryb" class="oest-ntp-ikony">
+      <ion-button v-for="x in d.ikony" :key="x.id" class="oest-ntp-i" fill="outline" :data-stan="x.stan" :data-nt-id="x.id" :data-rodzaj="x.rodzaj" @click="k.akcja('otworz', x.id)">
+        <ion-icon :icon="x.rodzaj === 'glos' ? mic : documentText" aria-hidden="true"></ion-icon>{{ x.nr }}
+      </ion-button>
+      <ion-button class="oest-ntp-i" fill="outline" data-nt-bar="open" :aria-label="T('Wszystkie notatki', 'All notes')" @click="k.akcja('otworz')">
+        {{ T('Notatki', 'Notes') }}<span class="oest-ntp-n" data-nt-bar="n">{{ d.n }}</span>
+      </ion-button>
+    </div>
+    <ion-button v-if="d.polacz" class="oest-ntp-b" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon :icon="sparkles" aria-hidden="true"></ion-icon>&nbsp;{{ d.napisPolacz }}</ion-button>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonBadge, IonChip, IonLabel } from '@ionic/vue';
-import { mic, create, documentText, sparkles } from 'ionicons/icons';
+import { IonButton, IonIcon } from '@ionic/vue';
+import { mic, add, documentText, sparkles } from 'ionicons/icons';
 import { uzyjKontrolera } from './kontroler.js';
 const props = defineProps({ T: Function, kontroler: Object, opcje: Object });
 // stary kod (OESTNotatki.mount) daje gotowy kontroler; ekran Vue – opcje, z których kontroler robi moduł

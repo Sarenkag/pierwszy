@@ -69,7 +69,8 @@ export function zainstaluj(w, OESTOkna, T) {
       tekstLad = t || T('Pracuję…', 'Working…'); ukryj = false;
       if (ladowanie) { ladowanie.message = tekstLad; return; }
       if (czekaLad) return;
-      czekaLad = loadingController.create({ message: tekstLad, spinner: 'crescent', htmlAttributes: { 'data-oest-ladowanie': '' } }).then(async l => {
+      // jak na main: kółko nad tekstem, bez przyciemnienia i bez blokowania stuknięć (pointer-events w szkielet.css), bez łapania fokusu
+      czekaLad = loadingController.create({ message: tekstLad, spinner: 'crescent', showBackdrop: false, cssClass: 'ion-disable-focus-trap', htmlAttributes: { 'data-oest-ladowanie': '' } }).then(async l => {
         ladowanie = l; l.message = tekstLad; await l.present(); czekaLad = null;
         if (ukryj) ladowanieApi.hide();
       });

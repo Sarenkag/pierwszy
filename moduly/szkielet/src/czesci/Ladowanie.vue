@@ -1,12 +1,13 @@
-<!-- Kółko „pracuję” w miejscu treści (OESTLadowanie.inline(el, tekst)) – jedno w całej apce (Grzegorz 04/11/2026): ion-spinner + tekst. -->
+<!-- Kółko „pracuję” w miejscu treści (OESTLadowanie.inline(el, tekst)) – jedno w całej apce (Grzegorz 04/11/2026): ion-spinner + tekst, wygląd jak na main
+     (.oest-inline w szkielet.css: kółko 22 px z gradientem obok tekstu). -->
 <template>
-  <div class="ion-padding ion-text-center" role="status">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p><ion-note>{{ tekst }}</ion-note></p>
+  <div class="oest-inline" role="status">
+    <ion-spinner name="crescent" aria-hidden="true"></ion-spinner>
+    <span>{{ tekst }}</span>
   </div>
 </template>
 
 <script setup>
-import { IonSpinner, IonNote } from '@ionic/vue';
+import { IonSpinner } from '@ionic/vue';
 defineProps({ T: Function, tekst: String });
 </script>

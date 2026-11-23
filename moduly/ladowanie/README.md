@@ -5,8 +5,8 @@ Moduł ładowania (moduly/ladowanie) – JEDNO kółko „pracuję” w całej a
 kółko ze smugą (wzór „Zapisuję…”, Grzegorz 03/11) – w przycisku, na środku ekranu, w liście i na pasku wysyłki.
 
   OESTLadowanie.ring()             → '<ion-spinner name="crescent">' (napis do starego kodu)
-  OESTLadowanie.show("Zapisuję…")  → ion-loading na środku ekranu (od 23/11/2026 blokuje stuknięcia do hide()), hide() je chowa
-  OESTLadowanie.inline(el, "Wczytuję…") → w miejscu treści: część Ionic Ladowanie.vue (ion-spinner + tekst), dopóki ekran nie wstawi danych
+  OESTLadowanie.show("Zapisuję…")  → ion-loading na środku ekranu: kółko nad tekstem jak dawniej, nie zasłania stuknięć (jak na main), hide() je chowa
+  OESTLadowanie.inline(el, "Wczytuję…") → w miejscu treści: część Ionic Ladowanie.vue (kółko 22 px obok tekstu, jak dawniej), dopóki ekran nie wstawi danych
   Ekran Vue: <ion-spinner> / loadingController wprost albo OESTCzesci.ladowanie (to samo).
 ```
 

@@ -1,71 +1,62 @@
 <!-- Okienko „Notatki” (OESTNotatki.open) – lista notatek (godzina, miejsce, długość, EN + polski oryginał, stan), odsłuch, Popraw, usuń
      (drugie stuknięcie), a w trybie poprawiania: PL / EN, „Ułóż z polskiego”, ostrzeżenie o liczbach, Anuluj / Zapisz.
-     Logika i stan w module (kontroler); tu tylko komponenty Ionic. W trakcie poprawiania okienko chowa „Zamknij” (zdarzenie „przyciski”). -->
+     Logika i stan w module (kontroler); tu tylko komponenty Ionic, wygląd jak na main (.oest-nt-* w szkielet.css). W trakcie poprawiania okienko chowa „Zamknij” (zdarzenie „przyciski”). -->
 <template>
-  <div data-nt-okno @click="tlo">
+  <div class="oest-nt" data-nt-okno @click="tlo">
     <template v-if="d.tryb === 'edycja'">
-      <p class="ion-padding-horizontal"><ion-note>{{ d.edycja.naglowek }}</ion-note></p>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="6"><ion-button mode="ios" expand="block" size="small" :fill="d.edycja.tab === 'pl' ? 'solid' : 'outline'" data-nt="tab-pl" @click="k.akcja('tab', 'pl')">{{ T('Po polsku', 'Polish') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button mode="ios" expand="block" size="small" :fill="d.edycja.tab === 'en' ? 'solid' : 'outline'" data-nt="tab-en" @click="k.akcja('tab', 'en')">{{ T('Po angielsku', 'English') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
-      <ion-item :hidden="d.edycja.tab !== 'pl'">
-        <ion-textarea data-nt-f="pl" :value="d.edycja.pl" :maxlength="4000" :auto-grow="true" :rows="5" :label="T('Oryginał', 'Original')" label-placement="stacked" @ionInput="e => k.akcja('pole', 'pl', e.detail.value)"></ion-textarea>
+      <div class="oest-nt-h"><ion-icon :icon="createOutline" aria-hidden="true"></ion-icon> {{ d.edycja.naglowek }}</div>
+      <div class="oest-nt-tabs">
+        <ion-button class="oest-nt-b" fill="outline" :data-on="d.edycja.tab === 'pl' ? '' : undefined" data-nt="tab-pl" @click="k.akcja('tab', 'pl')">{{ T('Po polsku (oryginał)', 'Polish (original)') }}</ion-button>
+        <ion-button class="oest-nt-b" fill="outline" :data-on="d.edycja.tab === 'en' ? '' : undefined" data-nt="tab-en" @click="k.akcja('tab', 'en')">{{ T('Po angielsku (do raportu)', 'English (for the report)') }}</ion-button>
+      </div>
+      <ion-item lines="none" :hidden="d.edycja.tab !== 'pl'">
+        <ion-textarea data-nt-f="pl" :value="d.edycja.pl" :maxlength="4000" :auto-grow="true" :rows="4" :aria-label="T('Po polsku (oryginał)', 'Polish (original)')" @ionInput="e => k.akcja('pole', 'pl', e.detail.value)"></ion-textarea>
       </ion-item>
-      <ion-item :hidden="d.edycja.tab !== 'en'">
-        <ion-textarea data-nt-f="en" :value="d.edycja.en" :maxlength="4000" :auto-grow="true" :rows="5" :label="T('Do raportu', 'For the report')" label-placement="stacked" @ionInput="e => k.akcja('pole', 'en', e.detail.value)"></ion-textarea>
+      <ion-item lines="none" :hidden="d.edycja.tab !== 'en'">
+        <ion-textarea data-nt-f="en" :value="d.edycja.en" :maxlength="4000" :auto-grow="true" :rows="4" :aria-label="T('Po angielsku (do raportu)', 'English (for the report)')" @ionInput="e => k.akcja('pole', 'en', e.detail.value)"></ion-textarea>
       </ion-item>
-      <p class="ion-padding-horizontal"><ion-note color="warning" role="status" data-nt-warn>{{ d.edycja.ostrzezenie }}</ion-note></p>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="6"><ion-button mode="ios" expand="block" fill="outline" data-nt="redo" :disabled="d.edycja.uklada" @click="k.akcja('redo')"><ion-icon slot="start" :icon="sparkles" aria-hidden="true"></ion-icon>{{ T('Ułóż z polskiego', 'Rewrite from Polish') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button mode="ios" v-if="d.edycja.audio" expand="block" fill="outline" data-nt="play" @click="k.akcja('play', null)"><ion-icon slot="start" :icon="d.edycja.gra ? stop : play" aria-hidden="true"></ion-icon>{{ d.edycja.gra ? T('Stop', 'Stop') : d.edycja.czas }}</ion-button></ion-col>
-        </ion-row>
-        <ion-row>
-          <ion-col size="6"><ion-button mode="ios" expand="block" fill="clear" data-nt="cancel" @click="k.akcja('cancel')">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button mode="ios" expand="block" data-nt="save" :disabled="d.edycja.zapisuje" @click="k.akcja('save')">{{ T('Zapisz', 'Save') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
+      <div class="oest-nt-warn" role="status" data-nt-warn><template v-if="d.edycja.ostrzezenie"><ion-icon :icon="warningOutline" aria-hidden="true"></ion-icon> {{ d.edycja.ostrzezenie }}</template></div>
+      <div class="oest-nt-rzad">
+        <ion-button class="oest-nt-b" fill="outline" data-nt="redo" :disabled="d.edycja.uklada" @click="k.akcja('redo')"><ion-icon :icon="sparkles" aria-hidden="true"></ion-icon>{{ T('Ułóż z polskiego', 'Rewrite from Polish') }}</ion-button>
+        <ion-button v-if="d.edycja.audio" class="oest-nt-b" fill="outline" data-nt="play" @click="k.akcja('play', null)"><ion-icon :icon="d.edycja.gra ? stop : play" aria-hidden="true"></ion-icon>{{ d.edycja.gra ? T('Stop', 'Stop') : d.edycja.czas }}</ion-button>
+        <span v-else></span>
+      </div>
+      <div class="oest-nt-rzad">
+        <ion-button class="oest-nt-b" fill="outline" data-nt="cancel" @click="k.akcja('cancel')">{{ T('Anuluj', 'Cancel') }}</ion-button>
+        <ion-button class="oest-nt-b" data-nt="save" :disabled="d.edycja.zapisuje" @click="k.akcja('save')">{{ T('Zapisz', 'Save') }}</ion-button>
+      </div>
     </template>
     <template v-else>
-      <p v-if="d.naglowek" class="ion-padding-horizontal"><ion-note>{{ d.naglowek }}</ion-note></p>
-      <ion-item v-if="d.pusto" lines="none" data-nt-pusto><ion-label class="ion-text-center">{{ d.pusto }}</ion-label></ion-item>
-      <ion-card v-for="n in d.notatki" :key="n.id" :data-nt-note="n.id">
-        <ion-card-header>
-          <ion-card-subtitle>{{ n.meta }}</ion-card-subtitle>
-          <div><ion-badge :color="n.tag.kolor" data-nt-tag :data-stan="n.stan">{{ n.tag.tekst }}</ion-badge></div>
-        </ion-card-header>
-        <ion-card-content>
-          <p v-if="n.en" data-nt-en>{{ n.en }}</p>
-          <p v-if="n.pl" data-nt-pl><ion-note>{{ n.pl }}</ion-note></p>
-          <p v-if="n.brak"><ion-text color="warning">{{ n.brak }}</ion-text></p>
-          <p v-if="n.blad"><ion-text color="warning">{{ n.blad }}</ion-text></p>
-          <ion-grid>
-            <ion-row>
-              <ion-col size="4">
-                <ion-button mode="ios" v-if="n.audio" expand="block" fill="outline" size="small" data-nt="play" @click="k.akcja('play', n.id)"><ion-icon slot="start" :icon="n.gra ? stop : play" aria-hidden="true"></ion-icon>{{ n.gra ? T('Stop', 'Stop') : n.czas }}</ion-button>
-                <ion-button mode="ios" v-else expand="block" fill="outline" size="small" disabled>—</ion-button>
-              </ion-col>
-              <template v-if="!d.readonly">
-                <ion-col size="4"><ion-button mode="ios" expand="block" fill="outline" size="small" data-nt="edit" :disabled="n.zajeta" @click="k.akcja('edit', n.id)"><ion-icon slot="start" :icon="create" aria-hidden="true"></ion-icon>{{ T('Popraw', 'Edit') }}</ion-button></ion-col>
-                <ion-col size="4"><ion-button mode="ios" expand="block" :fill="n.pewne ? 'solid' : 'outline'" color="danger" size="small" data-nt="del" :disabled="n.zajeta" :aria-label="T('Usuń notatkę', 'Delete note')" @click="k.akcja('del', n.id)">
-                  <template v-if="n.pewne">{{ T('Usunąć?', 'Delete?') }}</template><ion-icon v-else slot="icon-only" :icon="trash" aria-hidden="true"></ion-icon>
-                </ion-button></ion-col>
-              </template>
-            </ion-row>
-          </ion-grid>
-        </ion-card-content>
-      </ion-card>
+      <div v-if="d.naglowek" class="oest-nt-h">{{ d.naglowek }}</div>
+      <div v-if="d.pusto" class="oest-nt-pusto" data-nt-pusto>{{ d.pusto }}</div>
+      <div v-for="n in d.notatki" :key="n.id" class="oest-nt-karta" :data-nt-note="n.id">
+        <div class="oest-nt-m">
+          <span>{{ n.meta }}</span>
+          <span class="oest-nt-tag" data-nt-tag :data-stan="n.stan" :data-kolor="n.tag.kolor"><ion-icon v-if="n.stan === 'ready'" :icon="checkmark" aria-hidden="true"></ion-icon><ion-icon v-else-if="n.stan === 'check'" :icon="warningOutline" aria-hidden="true"></ion-icon>{{ n.tag.tekst }}</span>
+        </div>
+        <div v-if="n.en" class="oest-nt-en" data-nt-en>{{ n.en }}</div>
+        <div v-if="n.pl" class="oest-nt-pl" data-nt-pl>{{ n.pl }}</div>
+        <div v-if="n.brak" class="oest-nt-blad">{{ n.brak }}</div>
+        <div v-if="n.blad" class="oest-nt-blad">{{ n.blad }}</div>
+        <div class="oest-nt-ic">
+          <ion-button v-if="n.audio" class="oest-nt-b" fill="outline" data-nt="play" @click="k.akcja('play', n.id)"><ion-icon :icon="n.gra ? stop : play" aria-hidden="true"></ion-icon>{{ n.gra ? T('Stop', 'Stop') : n.czas }}</ion-button>
+          <ion-button v-else class="oest-nt-b" fill="outline" disabled>—</ion-button>
+          <template v-if="!d.readonly">
+            <ion-button class="oest-nt-b" fill="outline" data-nt="edit" :disabled="n.zajeta" @click="k.akcja('edit', n.id)"><ion-icon :icon="createOutline" aria-hidden="true"></ion-icon>{{ T('Popraw', 'Edit') }}</ion-button>
+            <ion-button class="oest-nt-b" fill="outline" data-nt="del" :data-pewne="n.pewne ? '' : undefined" :disabled="n.zajeta" :aria-label="T('Usuń notatkę', 'Delete note')" @click="k.akcja('del', n.id)">
+              <template v-if="n.pewne">{{ T('Usunąć?', 'Delete?') }}</template><ion-icon v-else slot="icon-only" :icon="trash" aria-hidden="true"></ion-icon>
+            </ion-button>
+          </template>
+        </div>
+      </div>
     </template>
   </div>
 </template>
 
 <script setup>
 import { watch } from 'vue';
-import { IonItem, IonNote, IonLabel, IonGrid, IonRow, IonCol, IonButton, IonIcon, IonTextarea, IonCard, IonCardHeader, IonCardSubtitle, IonCardContent, IonBadge, IonText } from '@ionic/vue';
-import { play, stop, create, trash, sparkles } from 'ionicons/icons';
+import { IonItem, IonButton, IonIcon, IonTextarea } from '@ionic/vue';
+import { play, stop, createOutline, trash, sparkles, checkmark, warningOutline } from 'ionicons/icons';
 import { uzyjKontrolera } from './kontroler.js';
 const props = defineProps({ T: Function, kontroler: Object });
 const emit = defineEmits(['przyciski']);
