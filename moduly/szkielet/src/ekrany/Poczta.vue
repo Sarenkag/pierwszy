@@ -5,7 +5,7 @@
     <ion-card>
       <ion-list-header>{{ T('Inspekcje', 'Inspections') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-label class="ion-text-wrap"><h2>{{ d.firmowy }}</h2></ion-label>
+        <ion-label>{{ d.firmowy }}</ion-label>
       </ion-item>
       <ion-item lines="none">
         <ion-note>{{ T('Tylko Twój firmowy adres. Nadawcą jest konto Gmail używane w aplikacji.', 'Only your work address. Your signed-in Gmail account is the sender.') }}</ion-note>
