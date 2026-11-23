@@ -530,7 +530,7 @@
       "id": "ZNACZNIK|brak|settings-ui.js",
       "rule": "ZNACZNIK",
       "detail": "settings-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 5,
+      "maks": 4,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
