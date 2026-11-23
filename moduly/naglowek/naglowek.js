@@ -9,17 +9,16 @@
   if (w.OESTNaglowek) return;
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   function lang() { return w.OESTBledy.lang() === "en" ? "en" : "pl"; } // moduly/bledy
   // ekrany, które po zmianie języka same podmieniają teksty w miejscu (bez gubienia wpisanych danych)
   var LIVE = { "v-ppm": 1, "v-soon": 1, "v-appset": 1 }; // Kalendarz: brak miejsca (◀ ▶ ⚙) – język zmienia się z ekranu głównego
   function sw() {
-    return w.OESTPrzelacznik ? w.OESTPrzelacznik.html({ name: "lang", value: lang(), attrs: ' data-oest-lang="1"', label: T("Język: polski / angielski", "Language: Polish / English"), options: [{ v: "pl", t: "PL" }, { v: "en", t: "EN" }] }) : "";
+    return w.OESTPrzelacznik ? w.OESTPrzelacznik.html({ name: "lang", value: lang(), attrs: ' data-oest-lang="1"', label: w.OESTT("Język: polski / angielski", "Language: Polish / English"), options: [{ v: "pl", t: "PL" }, { v: "en", t: "EN" }] }) : "";
   }
   function html(o) {
     o = o || {};
     return '<div class="top oest-top">' +
-      (o.back !== false ? '<button class="back" type="button"' + (o.back ? ' data-nav="' + esc(o.back) + '"' : "") + ' aria-label="' + esc(T("Wstecz", "Back")) + '">' + ARROW + "</button>" : "") +
+      (o.back !== false ? '<button class="back" type="button"' + (o.back ? ' data-nav="' + esc(o.back) + '"' : "") + ' aria-label="' + esc(w.OESTT("Wstecz", "Back")) + '">' + ARROW + "</button>" : "") +
       '<div class="t"><h1>' + esc(o.title || "") + "</h1></div>" + (o.actions || "") + (o.lang ? sw() : "") + "</div>";
   }
   function setLang(next) {

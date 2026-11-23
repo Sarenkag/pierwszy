@@ -34,7 +34,7 @@
     var k = draftKey(); if (!k) return Promise.resolve();
     var snap; try { snap = draftSnap(); } catch (e) { return Promise.resolve(); }
     busySpin(true);
-    return kvSet(k, snap).catch(function (e) { $("formHint").textContent = T("Nie zapisano szkicu w telefonie (", "Draft not saved on the phone (") + gErr(e) + ")."; })
+    return kvSet(k, snap).catch(function (e) { $("formHint").textContent = window.OESTT("Nie zapisano szkicu w telefonie (", "Draft not saved on the phone (") + gErr(e) + ")."; })
       .then(function () { busySpin(pendingPh > 0 || !!restoring); });
   }
   function scheduleDraft() { if (!draftOn || cur.mode !== "one") return; clearTimeout(draftT); draftT = setTimeout(saveDraftNow, 300); }
@@ -54,10 +54,10 @@
         var arch = k + "@" + d.finPeriod;
         return Promise.all([kvSet(arch, d), window.OESTNotatki ? OESTNotatki.move(k, arch) : null]).then(function () { return dropDraft(k); }).then(function () {
           if (my === draftSeq && tok === formSeq && cur.code === code) draftReady(null, k, my, tok);
-        }, function () { if (my === draftSeq && tok === formSeq) $("formHint").textContent = T("Nie udało się przenieść poprzedniej inspekcji do archiwum. Nic nie skasowałem — otwórz inspekcję jeszcze raz.", "Could not move the previous inspection to the archive. Nothing was deleted — open the inspection again."); });
+        }, function () { if (my === draftSeq && tok === formSeq) $("formHint").textContent = window.OESTT("Nie udało się przenieść poprzedniej inspekcji do archiwum. Nic nie skasowałem — otwórz inspekcję jeszcze raz.", "Could not move the previous inspection to the archive. Nothing was deleted — open the inspection again."); });
       } }
       draftReady(d, k, my, tok);
-    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = T("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
+    }, function () { if (my === draftSeq && tok === formSeq) { $("formHint").textContent = window.OESTT("Nie udało się odczytać szkicu. Nie zapisuję zmian, żeby go nie nadpisać — otwórz inspekcję jeszcze raz.", "Could not read the draft. I am not saving changes so as not to overwrite it — open the inspection again."); } });
   }
   // szkic odczytany (albo nowy termin po archiwizacji): wypełnij formularz i włącz zapis
   function draftReady(d, k, my, tok) {
@@ -98,7 +98,7 @@
       if (my !== restoring || tok !== formSeq) { ok.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
       keptSaved = ps.filter(function (p) { return p.failed; }).map(function (p) { return p.failed; });
       photos = ok.concat(photos); restoring = 0; renderPhotos(); updateFormHint();
-      $("formHint").textContent = T("Wczytano zapisaną inspekcję (", "Saved inspection loaded (") + ok.length + " zdj.)." + (keptSaved.length ? T(" Nie udało się pokazać ", " Could not show ") + keptSaved.length + T(" zdjęć — zostają w zapisie.", " photos — they stay in the save.") : "");
+      $("formHint").textContent = window.OESTT("Wczytano zapisaną inspekcję (", "Saved inspection loaded (") + ok.length + " zdj.)." + (keptSaved.length ? window.OESTT(" Nie udało się pokazać ", " Could not show ") + keptSaved.length + window.OESTT(" zdjęć — zostają w zapisie.", " photos — they stay in the save.") : "");
     });
   }
   // ---------- odzyskanie inspekcji skasowanej przez starą wersję „Wyślij” (04/11/2026) ----------
@@ -136,7 +136,7 @@
       restoreList = photos.length ? [] : all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
         .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
       if (!restoreList.length && !restorePdf) return;
-      b.hidden = false; b.textContent = T("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + (restorePdf ? restorePdf.photos.length : restoreList.length) + ")";
+      b.hidden = false; b.textContent = window.OESTT("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + (restorePdf ? restorePdf.photos.length : restoreList.length) + ")";
       var hd = document.querySelector("#v-form .ihead"); if (hd && b.previousElementSibling !== hd) hd.after(b); // na górze, od razu widoczny (Grzegorz 04/11: „nie ma takich przycisków”)
     }).catch(function () {});
   }
@@ -160,7 +160,7 @@
       draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
       rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false); });
       var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
-      $("formHint").textContent = T("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
+      $("formHint").textContent = window.OESTT("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
         "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
       return;
     }
@@ -171,8 +171,8 @@
         if (Zd.keep) Zd.keep(ps.map(function (p) { return p.zid; }), HOLD).catch(function () {});
         draftOn = true; b.hidden = true; b.disabled = false; restoreList = [];
         if (ps.length) needOn("p"); photos = photos.concat(ps); renderPhotos(); suggestDate();
-        $("formHint").textContent = T("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + T(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
-      }, function (e) { b.disabled = false; $("formHint").textContent = T("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
+        $("formHint").textContent = window.OESTT("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + window.OESTT(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
+      }, function (e) { b.disabled = false; $("formHint").textContent = window.OESTT("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
   });
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
   // ręczne „Nie rozpoczęta” (07/11): dotknięcie, które coś w inspekcji zmieniło (odcisk przed / po), albo wpis = W trakcie
@@ -189,7 +189,7 @@
   // „Wyczyść inspekcję” (menu ⋮): kasuje szkic, zdjęcia i etap klocka
   window.OEST_clearInspection = async function () {
     if (cur.mode !== "one" || !cur.type || queueing) return; // raport właśnie się przygotowuje: nie czyścimy pod nim formularza
-    if (!(await ask(T("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos).")))) return;
+    if (!(await ask(window.OESTT("Wyczyścić tę inspekcję?\nZdjęcia, odpowiedzi i notatki z tego formularza zostaną usunięte (kopie zdjęć zostają w Settings → Zdjęcia).", "Clear this inspection?\nPhotos, answers and notes from this form will be removed (photo copies stay in Settings → Photos).")))) return;
     var k = draftKey(), code = cur.code;
     resetForm(); cur.code = "";
     // najpierw notatki; gdy ich usunięcie się nie uda, szkic zostaje, formularz wraca i nie piszemy „Wyczyszczono”
@@ -199,9 +199,9 @@
       // „Nie rozpoczęta”, więc cofamy to od razu i jeszcze raz po odroczonym liczeniu (test: app/tests/czyszczenie-ui-check.cjs)
       var t0 = cur.ppm, unstart = function () { if (t0 && cur.ppm === t0 && PPM && PPM.setStage) { var r2 = PPM.stage(t0); if (r2 && r2.s === "prog" && !r2.manual) { PPM.setStage(t0, null); renderPpmBar(); } } };
       openForm(code); unstart(); setTimeout(unstart, 0);
-      renderPpmBar(); $("formHint").textContent = T("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
+      renderPpmBar(); $("formHint").textContent = window.OESTT("Wyczyszczono. Formularz jest pusty.", "Cleared. The form is empty.");
     }); }, function () {
-      openForm(code); OESTPrzycisk.alert(T("Nie udało się usunąć notatek tej inspekcji, więc jej nie wyczyściłem. Spróbuj jeszcze raz.", "Could not delete this inspection’s notes, so it was not cleared. Try again.")); // okienko: podpowiedź pod formularzem nadpisuje wczytany szkic
+      openForm(code); OESTPrzycisk.alert(window.OESTT("Nie udało się usunąć notatek tej inspekcji, więc jej nie wyczyściłem. Spróbuj jeszcze raz.", "Could not delete this inspection’s notes, so it was not cleared. Try again.")); // okienko: podpowiedź pod formularzem nadpisuje wczytany szkic
     });
   };
 

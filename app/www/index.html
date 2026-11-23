@@ -388,7 +388,6 @@ input[type=text], input[type=email], input[type=date], select {
     .forEach(function (x) { if (x[1] && x[1].canLeave) window.OESTEkrany.straz(x[0], function () { return x[1].canLeave(); }); });
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-nav][data-title]"); if (b && $("soonTitle")) $("soonTitle").textContent = b.dataset.title; }, true);
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
-  function T(pl, en) { return uiLang() === "en" ? en : pl; }
   function uiLang() { return window.OESTBledy.lang() === "en" ? "en" : "pl"; } // moduly/bledy (właściciel oest.lang)
   function applyLang() { if (window.OESTBledy) OESTBledy.applyDom(document); } // stały HTML: data-en / data-en-aria-label …
   window.addEventListener("oest:lang", function () { applyLang(); liveRefresh(); });
@@ -420,11 +419,11 @@ input[type=text], input[type=email], input[type=date], select {
   $("googleBtn").addEventListener("click", function () {
     var b = this; b.disabled = true; $("authErr").hidden = true;
     googleReady().then(function (ok) {
-      if (!ok) throw new Error(native ? T("Logowanie Google nie jest jeszcze ustawione w tej wersji apki.", "Google sign-in is not set up in this app version yet.") : T("Logowanie Google działa tylko w apce na telefonie.", "Google sign-in works only in the phone app."));
+      if (!ok) throw new Error(native ? window.OESTT("Logowanie Google nie jest jeszcze ustawione w tej wersji apki.", "Google sign-in is not set up in this app version yet.") : window.OESTT("Logowanie Google działa tylko w apce na telefonie.", "Google sign-in works only in the phone app."));
       return Social.login({ provider: "google", options: { scopes: ["email", "profile"] } });
     }).then(function (res) {
       var p = (res && res.result && res.result.profile) || {};
-      if (!p.email) throw new Error(T("Google nie zwrócił adresu e-mail.", "Google did not return an email address."));
+      if (!p.email) throw new Error(window.OESTT("Google nie zwrócił adresu e-mail.", "Google did not return an email address."));
       setAccount({ provider: "google", id: p.id || "", email: p.email, name: p.name || "", first: p.givenName || "", last: p.familyName || "", pic: p.imageUrl || "", t: Date.now() });
       seedProfile();
       window.OESTEkrany.go("home");
@@ -469,7 +468,7 @@ input[type=text], input[type=email], input[type=date], select {
   var P = window.OEST_PPM, ppmSel = load("ppm.sel", null), ppmDay = "", ppmOpen = {};
   if (!Array.isArray(ppmSel)) { var og = load("ppm.group", "all"); ppmSel = og && og !== "all" && og !== "assets" ? [og] : []; }
   var DAYS = [["Nd", "Su"], ["Pn", "Mo"], ["Wt", "Tu"], ["Śr", "We"], ["Cz", "Th"], ["Pt", "Fr"], ["So", "Sa"]];
-  function dayName(i) { return T(DAYS[i][0], DAYS[i][1]); }
+  function dayName(i) { return window.OESTT(DAYS[i][0], DAYS[i][1]); }
   var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
   // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
@@ -479,15 +478,15 @@ input[type=text], input[type=email], input[type=date], select {
     return AS.map(function (a) {
       var tasks = a.app.map(function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
       var color = a.kind === "hvac" ? grp("mech").color : grp("elec").color;
-      var own = tasks.length ? T("Inspekcja w apce: ", "In-app inspection: ") + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : T("Tylko zlecenia Vantify — brak inspekcji w apce", "Vantify jobs only — no in-app inspection");
-      var info = ["#" + a.id, a.freq.join(" + ") || T("bez częstotliwości", "no frequency"), a.doc].filter(Boolean).join(" · ");
+      var own = tasks.length ? window.OESTT("Inspekcja w apce: ", "In-app inspection: ") + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : window.OESTT("Tylko zlecenia Vantify — brak inspekcji w apce", "Vantify jobs only — no in-app inspection");
+      var info = ["#" + a.id, a.freq.join(" + ") || window.OESTT("bez częstotliwości", "no frequency"), a.doc].filter(Boolean).join(" · ");
       return '<button class="prow as" type="button"' + (tasks.length ? ' data-id="' + esc(tasks[0].id) + '"' : " disabled") + '><span class="bar" style="background:' + color + '"></span>' +
         '<span><div class="nm">' + esc(a.name) + '</div><div class="dt">' + esc(info) + '</div><div class="dt">' + (tasks.length ? "✓ " : "○ ") + esc(own) + "</div></span></button>";
     }).join("");
   }
   // częstotliwość słownie (okno informacji klocka)
   var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "11M": ["co 11 miesięcy", "every 11 months"], "12M": ["co rok", "annual"] };
-  function freqName(f) { return FREQ[f] ? T(FREQ[f][0], FREQ[f][1]) : f; }
+  function freqName(f) { return FREQ[f] ? window.OESTT(FREQ[f][0], FREQ[f][1]) : f; }
   // klocek inspekcji (Grzegorz 07/11/2026): 3 linie, każdy element w stałym miejscu – moduly/klocek (OESTKlocek.inspekcja)
   function trybOf(st, late) { return !st ? (late ? "zalegla" : "nierozpoczeta") : st.s === "done" || st.s === "queued" || st.s === "sent" ? "gotowa" : st.s === "hold" ? "wstrzymana" : "wtrakcie"; }
   function kiData(t, due, left) {
@@ -500,7 +499,7 @@ input[type=text], input[type=email], input[type=date], select {
   }
   function ppmCard(r) {
     var t = r.t, g = grp(t.group), sh = P.short(t), k = kiData(t, r.due, r.left);
-    var go = !k.st ? T("Zacznij", "Start") : k.st.s === "prog" || k.st.s === "hold" ? T("Kontynuuj", "Continue") : T("Otwórz", "Open");
+    var go = !k.st ? window.OESTT("Zacznij", "Start") : k.st.s === "prog" || k.st.s === "hold" ? window.OESTT("Kontynuuj", "Continue") : window.OESTT("Otwórz", "Open");
     // data-day: termin tego klocka (Gotowa zostaje w swoim dniu) – okno informacji pokazuje to samo zlecenie (uwaga Codex w PR #87)
     return window.OESTKlocek.inspekcja({ id: t.id, data: r.due ? { day: P.iso(r.due) } : {}, color: g.color, name: sh.name, status: k.tryb, loc: k.loc.code, freq: k.freq, form: k.form,
       due: r.due, left: r.left, dueDone: k.done, photos: k.photos, qa: k.qa, issues: k.issues, go: go, glow: k.done /* Gotowa świeci (04/11) */ });
@@ -515,15 +514,15 @@ input[type=text], input[type=email], input[type=date], select {
     if (!cur) { k.st = null; k.photos = 0; k.qa = null; k.issues = 0; k.form = k.nd.f ? "blad" : "brak"; }
     var vt = P.vantifyTask(t, k.freq), job = due ? P.jobFor(t, P.iso(due)) : null;
     var rows = [
-      { ic: "lok", html: k.loc.full ? (k.loc.code ? "<b>" + esc(k.loc.code.split("/")[0]) + "</b>" + esc(k.loc.full.slice(k.loc.code.split("/")[0].length)) : esc(k.loc.full)) : esc(T("Lokalizacja nieprzypisana", "No location assigned")) },
+      { ic: "lok", html: k.loc.full ? (k.loc.code ? "<b>" + esc(k.loc.code.split("/")[0]) + "</b>" + esc(k.loc.full.slice(k.loc.code.split("/")[0].length)) : esc(k.loc.full)) : esc(window.OESTT("Lokalizacja nieprzypisana", "No location assigned")) },
       { ic: "czest", html: "<b>" + esc(window.OESTKlocek.czest(k.freq) || "–") + "</b>" + (k.freq ? " – " + esc(freqName(k.freq)) : "") + (vt ? " · Vantify " + esc(vt.no) : "") },
-      { ic: "termin", html: due ? T("Kończy się ", "Due ") + "<b>" + dlong(due) + "</b>" + (job ? T(" · zlecenie ", " · job ") + esc(job.no) : "") : esc(T("Brak terminu", "No due date")) },
-      { ic: "form-" + k.form, html: k.nd.f ? esc(T("Wymaga zdjęcia ręcznie wypełnionego formularza", "Requires a photo of the hand-filled form")) + " · " + (k.form === "ok" ? '<b style="color:#21c45a">' + esc(T("dodane", "added")) + "</b>" : '<b style="color:#ef3b36">' + esc(T("brak", "missing")) + "</b>")
-        : esc(T("Zdjęcie formularza niewymagane", "Form photo not required")) + (k.form === "ok" ? " · " + esc(T("dodane", "added")) : "") },
-      { ic: "zdjecia", html: esc(k.nd.p ? T("Wymaga zdjęć", "Requires photos") : T("Zdjęcia niewymagane", "Photos not required")) + " · " + esc(T("zrobiono ", "taken ")) + "<b>" + k.photos + "</b>" },
-      { ic: k.qa ? (k.qa.ok === k.qa.all ? "pytania-ok" : "pytania-mid") : "pytania", html: !k.nd.q ? esc(T("Pytania nieaktywne", "Questions not active")) : k.qa ? esc(T("Wymaga odpowiedzi na pytania", "Requires answers")) + " · OK <b>" + k.qa.ok + "</b> / <b>" + k.qa.all + "</b>" : esc(T("Wymaga odpowiedzi na pytania · jeszcze nie zaczęta", "Requires answers · not started yet")) }
+      { ic: "termin", html: due ? window.OESTT("Kończy się ", "Due ") + "<b>" + dlong(due) + "</b>" + (job ? window.OESTT(" · zlecenie ", " · job ") + esc(job.no) : "") : esc(window.OESTT("Brak terminu", "No due date")) },
+      { ic: "form-" + k.form, html: k.nd.f ? esc(window.OESTT("Wymaga zdjęcia ręcznie wypełnionego formularza", "Requires a photo of the hand-filled form")) + " · " + (k.form === "ok" ? '<b style="color:#21c45a">' + esc(window.OESTT("dodane", "added")) + "</b>" : '<b style="color:#ef3b36">' + esc(window.OESTT("brak", "missing")) + "</b>")
+        : esc(window.OESTT("Zdjęcie formularza niewymagane", "Form photo not required")) + (k.form === "ok" ? " · " + esc(window.OESTT("dodane", "added")) : "") },
+      { ic: "zdjecia", html: esc(k.nd.p ? window.OESTT("Wymaga zdjęć", "Requires photos") : window.OESTT("Zdjęcia niewymagane", "Photos not required")) + " · " + esc(window.OESTT("zrobiono ", "taken ")) + "<b>" + k.photos + "</b>" },
+      { ic: k.qa ? (k.qa.ok === k.qa.all ? "pytania-ok" : "pytania-mid") : "pytania", html: !k.nd.q ? esc(window.OESTT("Pytania nieaktywne", "Questions not active")) : k.qa ? esc(window.OESTT("Wymaga odpowiedzi na pytania", "Requires answers")) + " · OK <b>" + k.qa.ok + "</b> / <b>" + k.qa.all + "</b>" : esc(window.OESTT("Wymaga odpowiedzi na pytania · jeszcze nie zaczęta", "Requires answers · not started yet")) }
     ];
-    if (k.issues) rows.push({ ic: "usterki", html: esc(T("Usterki", "Defects")) + ": <b>" + k.issues + "</b>" });
+    if (k.issues) rows.push({ ic: "usterki", html: esc(window.OESTT("Usterki", "Defects")) + ": <b>" + k.issues + "</b>" });
     window.OESTPrzycisk.ask({ title: vt ? vt.name : t.name, node: window.OESTKlocek.infoNode(rows), bare: true, cls: window.OESTKlocek.infoCls });
   }
   function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
@@ -547,7 +546,7 @@ input[type=text], input[type=email], input[type=date], select {
   function dayStrip(selected, counts) {
     var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
     var s = new Date(t); s.setDate(s.getDate() - 1);
-    return window.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: T("Dziś", "Today"), dayName: dayName, selected: selected,
+    return window.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: window.OESTT("Dziś", "Today"), dayName: dayName, selected: selected,
       isWork: calShift, counter: function (k) { return counts[k] || null; }, icon: function (k) { return window.OESTHome && window.OESTHome.wxDay ? window.OESTHome.wxDay(k) : ""; } });
   }
   function renderPpm() {
@@ -555,7 +554,7 @@ input[type=text], input[type=email], input[type=date], select {
     // przebudowa paska nie przewija go z powrotem na początek (stuknięcie dnia/filtra za krawędzią ekranu)
     var keepX = { d: $("ppmDays").scrollLeft, c: $("ppmChips").scrollLeft };
     OESTPodmien.html($("ppmDays"), html); // bez przerysowania (moduly/podmien)
-    var chips = [{ id: "all", name: T("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: T(g.pl || g.name, g.name) }; }), [{ id: "started", name: T("◐ Rozpoczęte", "◐ Started") }]);
+    var chips = [{ id: "all", name: window.OESTT("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: window.OESTT(g.pl || g.name, g.name) }; }), [{ id: "started", name: window.OESTT("◐ Rozpoczęte", "◐ Started") }]);
     OESTPodmien.html($("ppmChips"), chips.map(function (g) {
       var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
       return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
@@ -589,10 +588,10 @@ input[type=text], input[type=email], input[type=date], select {
         var ft = gd === ks.length ? "gotowa" : ks.some(function (x) { return x.tryb === "wtrakcie"; }) ? "wtrakcie" : r.left !== null && r.left < 0 ? "zalegla" : ks.some(function (x) { return x.tryb === "wstrzymana"; }) ? "wstrzymana" : "nierozpoczeta";
         return window.OESTKlocek.inspekcja({ data: { fam: r.fam }, color: gg.color, name: r.fam + " (" + r.rows.length + ")", status: ft, loc: "", freq: P.freqNow(r.t, r.rows[0].due), form: "brak",
           due: r.rows[0].due, left: r.left, photos: ks.reduce(function (n, x) { return n + x.photos; }, 0), qa: { ok: gd, all: ks.length }, issues: ks.reduce(function (n, x) { return n + x.issues; }, 0),
-          go: ppmOpen[r.fam] ? T("Zwiń", "Collapse") : T("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
+          go: ppmOpen[r.fam] ? window.OESTT("Zwiń", "Collapse") : window.OESTT("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
       }
       return ppmCard(r);
-    }).join("") : '<p class="hint">' + T("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>');
+    }).join("") : '<p class="hint">' + window.OESTT("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>');
     var noDate = rows.filter(function (r) { return !r.due; }).length;
 
   }
@@ -648,8 +647,8 @@ input[type=text], input[type=email], input[type=date], select {
       // ten sam klocek co na liście Inspekcji (moduly/klocek); etap tylko dla bieżącego terminu
       var k = kiData(t, day, P.daysLeft(day)), tryb = cur ? k.tryb : "nierozpoczeta";
       return window.OESTKlocek.inspekcja({ id: t.id, data: { day: calSel }, color: g.color, name: P.short(t).name, status: tryb, loc: k.loc.code, freq: e.job ? (P.jobFor(t, calSel) || {}).f || k.freq : k.freq, form: cur ? k.form : (k.nd.f ? "blad" : "brak"),
-        due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: T("Otwórz", "Open"), plan: e.plan, glow: tryb === "gotowa" });
-    }).join("") : '<p class="hint">' + T("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
+        due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: window.OESTT("Otwórz", "Open"), plan: e.plan, glow: tryb === "gotowa" });
+    }).join("") : '<p class="hint">' + window.OESTT("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
     var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0 || !!window.OESTSettings.scheduleOn(P.iso(new Date())); } catch (e2) {}
     $("calNoShift").hidden = hasShift;
   }
@@ -678,7 +677,7 @@ input[type=text], input[type=email], input[type=date], select {
   if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
   if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
   if (account()) {
-    try { seedProfile(); } catch (e) { $("authErr").textContent = T("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message); $("authErr").hidden = false; }
+    try { seedProfile(); } catch (e) { $("authErr").textContent = window.OESTT("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message); $("authErr").hidden = false; }
   }
   // start: ekran z adresu (powrót z inspekcji, odzyskana z Raportów…); bez konta – logowanie. Wstecz = rodzic z mapy ekranów.
   var start = (location.hash || "").slice(1);

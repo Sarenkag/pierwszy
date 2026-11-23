@@ -62,11 +62,11 @@
   // od wyczyszczenia (Grzegorz 08/11/2026: „niech trzyma przez miesiąc”; liczone od chwili, gdy zniknęły z inspekcji) przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
   function releaseUnused() {
     if (!Zd || !Zd.release) return;
-    dbP.then(function (db) {
-      if (!db) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
+    bazaJest().then(function (jest) {
+      if (!jest) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
       // odzyskane inspekcje (klocek Raporty) trzymają swoje zdjęcia także przed pierwszym otwarciem (uwaga Codex #101)
       var R = window.OESTRaporty, rec = R && R.recovered ? R.recovered().then(function (rs) { return rs.map(function (r) { return r.snap; }); }, function () { return null; }) : Promise.resolve([]);
-      return Promise.all([idb("kv", "readonly", function (st) { return st.getAll(); }), rec]).then(function (all) {
+      return Promise.all([kvAll(), rec]).then(function (all) {
         if (all[1] === null) return; // nie odczytano archiwum: nic nie zwalniamy
         var vals = [all[0], all[1]], ids = new Set();
         (function walk(v, depth) {
@@ -92,13 +92,13 @@
   // „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie (kartka formularza bez zmian, zdjęcia w folderze bez zmian).
   var REPORT_LIMIT = 1024 * 1024, reportShrink = 1;
   function bigFile(r) { return (r && r.files || []).reduce(function (m, f) { return f.bytes && f.bytes.length > m ? f.bytes.length : m; }, 0); }
-  function mb1(n) { return (n / 1048576).toFixed(1).replace(".", T(",", ".")); }
+  function mb1(n) { return (n / 1048576).toFixed(1).replace(".", window.OESTT(",", ".")); }
   async function fitReport(r, rebuild) {
     var big = bigFile(r); if (big < REPORT_LIMIT) return r;
     var yes = window.OESTPrzycisk && OESTPrzycisk.confirm ? await OESTPrzycisk.confirm(
-      T("Plik raportu będzie miał " + mb1(big) + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
+      window.OESTT("Plik raportu będzie miał " + mb1(big) + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
         "The report file will be " + mb1(big) + " MB (limit 1 MB). Make the photos in the report smaller, or keep them as they are?"),
-      { ok: T("Zmniejsz zdjęcia", "Make smaller"), cancel: T("Zostaw tak", "Keep as is"), danger: false }) : false;
+      { ok: window.OESTT("Zmniejsz zdjęcia", "Make smaller"), cancel: window.OESTT("Zostaw tak", "Keep as is"), danger: false }) : false;
     if (!yes) return r;
     try {
       for (var i = 0; i < 4 && big >= REPORT_LIMIT; i++) {
@@ -157,9 +157,9 @@
   function say(t) { if (window.OESTKomunikat) OESTKomunikat(t); else window.alert(t); }
   function busySpin(on) {
     // jedno kółko w całej apce (moduly/ladowanie); stare #busySpin tylko jako zapas
-    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(T('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; return; }
+    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; return; }
     var el = $("busySpin");
-    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+T('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
+    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+window.OESTT('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
     el.classList.toggle("on", !!on);
   }
   function updateFormHint() { updateFormHint0(); syncFinish(); OESTVantifyKlocek.render(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
@@ -169,9 +169,9 @@
     var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null;
     var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
     f.classList.toggle("ready", ready); f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
-    f.title = ready ? T("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
-    if (ready) { f.textContent = T("✓ GOTOWA ", "✓ READY ") + NZ.data(new Date(st.at || Date.now())); return; }
-    f.textContent = T("✓ Zakończ inspekcję", "✓ Finish inspection");
+    f.title = ready ? window.OESTT("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
+    if (ready) { f.textContent = window.OESTT("✓ GOTOWA ", "✓ READY ") + NZ.data(new Date(st.at || Date.now())); return; }
+    f.textContent = window.OESTT("✓ Zakończ inspekcję", "✓ Finish inspection");
   }
   function updateFormHint0() {
     busySpin(pendingPh > 0 || !!restoring || (draftT && draftOn));
@@ -180,42 +180,42 @@
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
-      var tx = function () { return T("Wpisano ", "Filled in ") + filled + "/" + temps.length + "." + (bad ? T(" Popraw ", " Fix ") + bad + T(" pole (tylko liczba).", " field(s) (number only).") : "") +
-        (outN ? T(" Poza zakresem: ", " Out of range: ") + outN + T(" — wpis do Fault and Remedial Actions Log.", " — record in the Fault and Remedial Actions Log.") : "") + (filled < temps.length ? T(" Puste pola zostaną puste w raporcie.", " Empty fields will stay empty in the report.") : ""); };
+      var tx = function () { return window.OESTT("Wpisano ", "Filled in ") + filled + "/" + temps.length + "." + (bad ? window.OESTT(" Popraw ", " Fix ") + bad + window.OESTT(" pole (tylko liczba).", " field(s) (number only).") : "") +
+        (outN ? window.OESTT(" Poza zakresem: ", " Out of range: ") + outN + window.OESTT(" — wpis do Fault and Remedial Actions Log.", " — record in the Fault and Remedial Actions Log.") : "") + (filled < temps.length ? window.OESTT(" Puste pola zostaną puste w raporcie.", " Empty fields will stay empty in the report.") : ""); };
       $("formHint").textContent = tx();
       if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce($("formHint"), OESTBledy.wJezyku(OESTBledy.drugi(), tx)); // PL i EN w tym samym miejscu
       var blk = !filled || bad > 0;
       $("toPreview").disabled = blk; $("toQueue").disabled = blk;
-      $("toQueue").textContent = T("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
+      $("toQueue").textContent = window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
     }
     if (cur.type && cur.type.flush && fl.on) {
       var cnt = { yes: 0, no: 0, na: 0 }; fl.taps.forEach(function (t) { cnt[t.state]++; });
       var pts = !!cur.type.flush.points, fpn = sheetPhotos().length, fbk = !!restoring || pendingPh > 0 || (!pts && !fl.week);
-      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? T("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
-        (pts ? (cur.type.flush.ui === "checks" ? T("Punkty: ", "Checks: ") : T("Przyciski: ", "Call points: ")) : T("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : T(" · tydzień ", " · week ") + fl.week) + (fpn ? T(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
+      $("formHint").textContent = pendingPh ? window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…") : !pts && !fl.week ? window.OESTT("Wybierz tydzień miesiąca (1–5) — tak jak na formularzu.", "Choose the week of the month (1–5) — as on the form.") :
+        (pts ? (cur.type.flush.ui === "checks" ? window.OESTT("Punkty: ", "Checks: ") : window.OESTT("Przyciski: ", "Call points: ")) : window.OESTT("Formularz: ", "Form: ")) + cnt.yes + " Yes" + (cnt.no ? ", " + cnt.no + " No" : "") + (cnt.na ? ", " + cnt.na + " N/A" : "") + (pts ? "" : window.OESTT(" · tydzień ", " · week ") + fl.week) + (fpn ? window.OESTT(" · zdjęć kartek: ", " · form photos: ") + fpn : "") + (cnt.no ? " — wpis do Fault and Remedial Actions Log." : "");
       $("toPreview").disabled = fbk; $("toQueue").disabled = fbk;
-      $("toQueue").textContent = T("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
+      $("toQueue").textContent = window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate()); return;
     }
     if (cur.type && cur.type.folder) {
       var none = !sheetPhotos().length;
-      $("formHint").textContent = pendingPh ? T("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? T("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : T("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + T(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
+      $("formHint").textContent = pendingPh ? window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? window.OESTT("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : window.OESTT("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + window.OESTT(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? T("Dodaj zdjęcie formularza", "Add form photo") : T("Wyślij · ", "Send · ") + NZ.data(reportDate());
+      $("toQueue").textContent = none ? window.OESTT("Dodaj zdjęcie formularza", "Add form photo") : window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
       $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;
-      $("formHint").textContent = sus ? T("Odpowiedz na pytania z numerem — zdjęcie sugeruje problem.", "Answer the numbered questions — the photo suggests a problem.") : T("Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.", "Photo optional. The save stays on the phone until the job is finished.");
-      if (pendingPh) $("formHint").textContent = T("Zmniejszam zdjęcie…", "Reducing the photo…");
+      $("formHint").textContent = sus ? window.OESTT("Odpowiedz na pytania z numerem — zdjęcie sugeruje problem.", "Answer the numbered questions — the photo suggests a problem.") : window.OESTT("Zdjęcie nieobowiązkowe. Zapis zostaje w telefonie do zakończenia zlecenia.", "Photo optional. The save stays on the phone until the job is finished.");
+      if (pendingPh) $("formHint").textContent = window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…");
       $("saveItem").disabled = sus || !!restoring || pendingPh > 0;
-      $("saveItem").textContent = (failCount() ? T("Zapisz ", "Save ") : T("Wszystko OK · ", "All OK · ")) + cur.code + T(" → następny", " → next"); return;
+      $("saveItem").textContent = (failCount() ? window.OESTT("Zapisz ", "Save ") : window.OESTT("Wszystko OK · ", "All OK · ")) + cur.code + window.OESTT(" → następny", " → next"); return;
     }
-    if (restoring) h.push(T("Wczytuję zapisane zdjęcia…", "Loading saved photos…"));
+    if (restoring) h.push(window.OESTT("Wczytuję zapisane zdjęcia…", "Loading saved photos…"));
     $("formHint").textContent = h.join(" ");
-    if (pendingPh) h.push(T("Zmniejszam zdjęcie…", "Reducing the photo…"));
+    if (pendingPh) h.push(window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…"));
     var block = !!restoring || pendingPh > 0;
     $("toPreview").disabled = block; $("toQueue").disabled = block;
-    $("toQueue").textContent = block && h.length ? h[0] : T("Wyślij · ", "Send · ") + NZ.data(reportDate());
+    $("toQueue").textContent = block && h.length ? h[0] : window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
   }
 

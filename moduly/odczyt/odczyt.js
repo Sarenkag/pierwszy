@@ -20,7 +20,6 @@
     var uniq = {}; lines = lines.filter(function (l) { var k = l.toLowerCase(); if (uniq[k]) return false; uniq[k] = 1; return true; });
     return { text: lines.join('\n'), lines: lines, numbers: numbers };
   }
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   // jedyne miejsce w apce, które woła OCR telefonu (wtyczka OESTKeys.recognize) – Klucze, Power trace i pick()/read()
   function ocr(b64) { return w.Capacitor.Plugins.OESTKeys.recognize({ base64: b64 }); }
   /* tekst(canvas) – surowy tekst OCR z gotowego obrazu (bez zmiany rozmiaru i bez porządkowania linii), tak jak
@@ -30,9 +29,9 @@
       .then(function (r) { return (r && r.text) || ''; });
   }
   function read(blob) {
-    if (!available()) return Promise.reject(Error(T('Odczyt tekstu działa w apce na telefonie.', 'Text reading works in the phone app.')));
+    if (!available()) return Promise.reject(Error(w.OESTT('Odczyt tekstu działa w apce na telefonie.', 'Text reading works in the phone app.')));
     return prepare(blob).then(ocr)
-      .then(function (r) { return parse(r && r.text); }, function (e) { throw Error(T('Nie udało się odczytać: ', 'Could not read: ') + (e && e.message || e)); });
+      .then(function (r) { return parse(r && r.text); }, function (e) { throw Error(w.OESTT('Nie udało się odczytać: ', 'Could not read: ') + (e && e.message || e)); });
   }
   var css = false;
   function style() {
@@ -54,27 +53,27 @@
   function pick(blob, opts) {
     style(); var targets = (opts && opts.targets || []).filter(function (t) { return t && t.el; });
     var o = document.createElement('div'), url = URL.createObjectURL(blob), used = 0; o.className = 'oest-ocr';
-    var ttl = T('Odczyt ze zdjęcia', 'Read from photo');
-    o.innerHTML = '<div class="sh" role="dialog" aria-label="' + ttl + '"><h3>🔍 ' + ttl + '</h3><p class="hint">' + T('Czytam tekst na telefonie…', 'Reading text on the phone…') + '</p><img alt="' + T('Zdjęcie', 'Photo') + '"><div class="body"></div><button type="button" class="go">' + T('Gotowe', 'Done') + '</button></div>';
+    var ttl = w.OESTT('Odczyt ze zdjęcia', 'Read from photo');
+    o.innerHTML = '<div class="sh" role="dialog" aria-label="' + ttl + '"><h3>🔍 ' + ttl + '</h3><p class="hint">' + w.OESTT('Czytam tekst na telefonie…', 'Reading text on the phone…') + '</p><img alt="' + w.OESTT('Zdjęcie', 'Photo') + '"><div class="body"></div><button type="button" class="go">' + w.OESTT('Gotowe', 'Done') + '</button></div>';
     o.querySelector('img').src = url; document.body.appendChild(o);
     return new Promise(function (resolve) {
       function close() { URL.revokeObjectURL(url); o.remove(); resolve(used); }
       o.querySelector('.go').onclick = close; o.addEventListener('click', function (e) { if (e.target === o) close(); });
       read(blob).then(function (r) {
         var hint = o.querySelector('.hint'), body = o.querySelector('.body');
-        if (!r.lines.length) { hint.textContent = T('Nie znalazłem tekstu. Zrób zdjęcie bliżej i prosto, bez odblasków.', 'No text found. Take the photo closer and straight, without glare.'); return; }
-        hint.textContent = targets.length ? T('Stuknij to, co ma trafić do pola. Nic nie wpisuję samo.', 'Tap what should go into the field. Nothing is filled in automatically.') : T('Odczytany tekst.', 'Text read.');
+        if (!r.lines.length) { hint.textContent = w.OESTT('Nie znalazłem tekstu. Zrób zdjęcie bliżej i prosto, bez odblasków.', 'No text found. Take the photo closer and straight, without glare.'); return; }
+        hint.textContent = targets.length ? w.OESTT('Stuknij to, co ma trafić do pola. Nic nie wpisuję samo.', 'Tap what should go into the field. Nothing is filled in automatically.') : w.OESTT('Odczytany tekst.', 'Text read.');
         var h = '';
-        if (targets.length > 1) h += '<div class="lbl">' + T('Wpisz do', 'Fill in') + '</div><select>' + targets.map(function (t, i) { return '<option value="' + i + '">' + esc(t.label) + '</option>'; }).join('') + '</select>';
-        else if (targets.length) h += '<div class="lbl">' + T('Wpisz do: ', 'Fill in: ') + esc(targets[0].label) + '</div>';
-        if (r.numbers.length) h += '<div class="lbl">' + T('Liczby', 'Numbers') + '</div><div class="chips num">' + r.numbers.map(function (n, i) { return '<button type="button" data-k="n' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
-        h += '<div class="lbl">' + T('Linie tekstu', 'Text lines') + '</div><div class="chips">' + r.lines.map(function (l, i) { return '<button type="button" data-k="l' + i + '">' + esc(l) + '</button>'; }).join('') + '</div>';
+        if (targets.length > 1) h += '<div class="lbl">' + w.OESTT('Wpisz do', 'Fill in') + '</div><select>' + targets.map(function (t, i) { return '<option value="' + i + '">' + esc(t.label) + '</option>'; }).join('') + '</select>';
+        else if (targets.length) h += '<div class="lbl">' + w.OESTT('Wpisz do: ', 'Fill in: ') + esc(targets[0].label) + '</div>';
+        if (r.numbers.length) h += '<div class="lbl">' + w.OESTT('Liczby', 'Numbers') + '</div><div class="chips num">' + r.numbers.map(function (n, i) { return '<button type="button" data-k="n' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
+        h += '<div class="lbl">' + w.OESTT('Linie tekstu', 'Text lines') + '</div><div class="chips">' + r.lines.map(function (l, i) { return '<button type="button" data-k="l' + i + '">' + esc(l) + '</button>'; }).join('') + '</div>';
         body.innerHTML = h;
         body.querySelectorAll('[data-k]').forEach(function (b) {
           b.onclick = function () {
             if (!targets.length) return; var sel = body.querySelector('select'), t = targets[sel ? +sel.value : 0];
             var k = b.getAttribute('data-k'), v = k[0] === 'n' ? r.numbers[+k.slice(1)] : r.lines[+k.slice(1)];
-            if (!put(t.el, v)) { o.querySelector('.hint').textContent = T('Do tego pola stuknij jedną liczbę (z sekcji Liczby).', 'For this field tap a single number (from Numbers).'); return; } used++; b.classList.add('on');
+            if (!put(t.el, v)) { o.querySelector('.hint').textContent = w.OESTT('Do tego pola stuknij jedną liczbę (z sekcji Liczby).', 'For this field tap a single number (from Numbers).'); return; } used++; b.classList.add('on');
           };
         });
       }, function (e) { o.querySelector('.hint').textContent = e.message; });

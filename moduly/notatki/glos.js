@@ -1,7 +1,7 @@
 /* Nagrywanie notatek głosowych (OESTVoice) – część modułu moduly/notatki (08/11/2026, wcześniej app/www/handover-voice.js).
    Nagranie (Android: wtyczka HandoverTools, przeglądarka: MediaRecorder), zamiana na tekst offline (Android 13+), przycisk „przytrzymaj i mów”. */
 (function(w){
-  'use strict';const base64=blob=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(blob);});
+  'use strict';const base64=blob=>w.OESTNarzedzia.blobB64(blob); // moduly/narzedzia
   function create(o={}){const maxMs=o.maxMs||120000;let started=0,opening=false,stopping=null,recording=false,stream=null,recorder=null,chunks=[],timer;const native=()=>w.Capacitor?.isNativePlatform()&&w.Capacitor.Plugins.HandoverTools;
     async function start(){if(recording||opening)throw Error('AUDIO_ALREADY_RECORDING');opening=true;try{if(native())await native().startAudio();else{if(!navigator.mediaDevices?.getUserMedia||!w.MediaRecorder)throw Error('AUDIO_UNAVAILABLE');stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};recorder.start();}}finally{opening=false;}recording=true;started=Date.now();o.onState?.(true);timer=setTimeout(()=>stop().catch(e=>o.onError?.(e)),maxMs);}
     function stop(opt){if(stopping)return stopping;if(!recording)return Promise.resolve();stopping=doStop(!!opt?.discard).finally(()=>{stopping=null;});return stopping;}

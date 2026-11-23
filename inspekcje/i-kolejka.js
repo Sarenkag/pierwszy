@@ -6,7 +6,7 @@
   function freeBuilt() { if (built) { built.pics.forEach(function (p) { URL.revokeObjectURL(p.url); }); if (built.logoUrl) URL.revokeObjectURL(built.logoUrl); built = null; } }
   $("toPreview").addEventListener("click", function () {
     if (queueing) return;
-    var b = this; b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); queueing = true;
+    var b = this; b.disabled = true; b.textContent = window.OESTT("Przygotowuję…", "Preparing…"); queueing = true;
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
     buildAll().then(function (r) {
@@ -15,11 +15,11 @@
       if (r.bezPdf) $("fname").innerHTML = r.files.map(function (f) { return esc(f.name); }).join("<br>") + "<br><b>" + esc(gErr(new Error("REPORT_PDF_MISSING"))) + "</b>";
       show("preview");
     }).catch(function (e) {
-      $("formHint").textContent = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
-    }).then(function () { queueing = false; b.disabled = false; b.textContent = T("Podgląd raportu", "Report preview"); });
+      $("formHint").textContent = window.OESTT("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
+    }).then(function () { queueing = false; b.disabled = false; b.textContent = window.OESTT("Podgląd raportu", "Report preview"); });
   });
   // „Open Vantify” z klocka (inspekcje/vantify-klocek.js): stan strony podany jednym odczytem, raport budowany tym samym buildAll co wysyłka
-  OESTVantifyKlocek.init({ $: $, T: T, zbuduj: buildAll, dzien: NZ.dzienIso, blad: buildErr, stan: function () {
+  OESTVantifyKlocek.init({ $: $, T: window.OESTT, zbuduj: buildAll, dzien: NZ.dzienIso, blad: buildErr, stan: function () {
     return { typ: cur.type, tryb: cur.mode, ppm: cur.ppm, data: reportDate(), raport: cur.type && cur.type.flush ? flushReport(reportDate()) : null, blokada: $("toQueue").disabled, zajete: queueing }; } });
   function buildErr(e) { if (e && /^[A-Z][A-Z0-9_]{3,}$/.test(e.message || "")) return gErr(e); /* kod aplikacji (np. STORAGE_WRITE) → tekst z moduly/bledy (uwaga Codex #164) */ return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
@@ -29,18 +29,18 @@
         built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> "+T("(wzór firmy)", "(company template)")+"<br>" + esc(built.name) + "<em>.pdf</em>";
+      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>" + esc(built.name) + "<em>.pdf</em>";
       return;
     }
     if (d.folder && d.flush) {
       var ff = d.flush;
-      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + T(" · tydzień ", " · week ") + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
+      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + window.OESTT(" · tydzień ", " · week ") + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
         ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; });
           return (gname ? '<tr><td colspan="2"><b>' + esc(gname) + "</b></td></tr>" : "") + '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
         "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
         built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> "+T("(wzór firmy)", "(company template)")+"<br>") + esc(built.name) + "<em>.pdf</em>";
+      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>") + esc(built.name) + "<em>.pdf</em>";
       return;
     }
     if (d.folder) {
@@ -65,11 +65,11 @@
       '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
       '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
       '<tr><td colspan="2" style="height:44px">Signed: ' + esc(d.inspektor) + "</td></tr></table>" + foot +
-      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="' + T('Zdjęcie ', 'Photo ') + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
+      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="' + window.OESTT('Zdjęcie ', 'Photo ') + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
     $("paper").innerHTML = html;
     $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
     $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
-      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> "+T("(tylko na Drive)", "(Drive only)")+"" : "");
+      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> "+window.OESTT("(tylko na Drive)", "(Drive only)")+"" : "");
   }
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
@@ -116,12 +116,12 @@
   }
   function enqueue(r, from) {
     var d = r.data;
-    if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(T("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
+    if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(window.OESTT("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
     var it = queueItem(r, from);
-    if (sendBtn && sendBtn.step) sendBtn.step(T("Dodaję do kolejki…", "Adding to the queue…"));
-    return dbP.then(function (db) {
+    if (sendBtn && sendBtn.step) sendBtn.step(window.OESTT("Dodaję do kolejki…", "Adding to the queue…"));
+    return bazaJest().then(function (jest) {
       // bez pamięci telefonu raport nie trafia do kolejki ani nie „wychodzi od razu”: jawny błąd, formularz zostaje (D11)
-      if (!db) throw Error("STORAGE_WRITE");
+      if (!jest) throw Error("STORAGE_WRITE");
       return qPut(it);
     }).then(function () {
       queue.push(it); lastQueued = it.code;
@@ -151,34 +151,34 @@
     if (from.mode === "sum") {
       // izolatory: zlecenie musi się wyczyścić, żeby następne zaczęło się od zera
       if (from.type.ask) saveHist(from.type, d.data);
-      done = clearBatch(from.type).catch(function (e) { say(T("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + T("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
-      return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+      done = clearBatch(from.type).catch(function (e) { say(window.OESTT("Raport jest w kolejce, ale zlecenie nie wyczyściło się (", "The report is queued, but the job did not clear (") + gErr(e) + window.OESTT("). Usuń je przyciskiem „Zacznij od nowa”.", "). Remove it with the “Start again” button.")); });
+      return done.then(function () { return sendBtn ? sendBtn.ok(window.OESTT("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
     }
     if (from.ppm && from.draft) {
       var snap = null; try { snap = draftSnap(); snap.fin = Date.now(); } catch (e) {}
       if (snap) done = kvSet(from.draft, snap).catch(function () {});
-      return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () {
+      return done.then(function () { return sendBtn ? sendBtn.ok(window.OESTT("Zakończona", "Finished")) : null; }).then(function () {
         show("form"); renderPpmBar(); lastMailHint = finHint();
       });
     }
     if (from.draft) done = done.then(function () { return dropDraft(from.draft); }); // bez karty PPM: nie ma gdzie pokazać „Zakończona”
-    return done.then(function () { return sendBtn ? sendBtn.ok(T("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
+    return done.then(function () { return sendBtn ? sendBtn.ok(window.OESTT("Zakończona", "Finished")) : null; }).then(function () { freeBuilt(); resetForm(); cur.code = ""; show("list"); });
   }
   function finHint() {
     var st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null; if (!st) return "";
     if (st.s !== "queued" && st.s !== "sent" && st.s !== "done") return "";
-    return T("✓ GOTOWA od ", "✓ READY since ") + NZ.data(new Date(st.at || Date.now())) + " · " +
-      (st.s === "sent" ? T("raport wysłany.", "report sent.") : st.s === "queued" ? T("raport czeka w kolejce.", "report waiting in the queue.") : T("raport jeszcze nie wysłany.", "report not sent yet.")) +
-      T(" Wszystko zostaje w telefonie.", " Everything stays on the phone.");
+    return window.OESTT("✓ GOTOWA od ", "✓ READY since ") + NZ.data(new Date(st.at || Date.now())) + " · " +
+      (st.s === "sent" ? window.OESTT("raport wysłany.", "report sent.") : st.s === "queued" ? window.OESTT("raport czeka w kolejce.", "report waiting in the queue.") : window.OESTT("raport jeszcze nie wysłany.", "report not sent yet.")) +
+      window.OESTT(" Wszystko zostaje w telefonie.", " Everything stays on the phone.");
   }
   // stan raportu po „Wyślij”, prawdziwy — nigdy „wysłane”, dopóki mail nie wyszedł (zasada 03/11)
   function waitsWifi() { var c = navigator.connection; return gm() && cfg.wifiOnly !== false && !(c && (c.type === "wifi" || c.type === "ethernet")); }
-  function mailState(it) { return it.status === "sent" ? T("Wysłano", "Sent") : it.status === "shared" ? T("Przekazano · niepotwierdzone", "Handed over · not confirmed") : !online() ? T("W kolejce · brak sieci", "Queued · no network") : waitsWifi() ? T("W kolejce · czeka na Wi‑Fi", "Queued · waiting for Wi‑Fi") : T("W kolejce", "Queued"); }
+  function mailState(it) { return it.status === "sent" ? window.OESTT("Wysłano", "Sent") : it.status === "shared" ? window.OESTT("Przekazano · niepotwierdzone", "Handed over · not confirmed") : !online() ? window.OESTT("W kolejce · brak sieci", "Queued · no network") : waitsWifi() ? window.OESTT("W kolejce · czeka na Wi‑Fi", "Queued · waiting for Wi‑Fi") : window.OESTT("W kolejce", "Queued"); }
   function mailHint(it) {
-    var s = it.status === "sent" ? T("Raport wysłany.", "Report sent.") : it.status === "shared" ? T("Raport przekazany do wybranej apki, ale wysłania nikt nie potwierdził. Gdy mail wyjdzie: Kolejka → „Potwierdzam, wysłane”.", "Report handed over to the chosen app, but nobody confirmed it was sent. When the email goes out: Queue → “Confirm sent”.") : !online() ? T("Raport czeka w kolejce — nie ma sieci. Wyjdzie sam, gdy wróci zasięg.", "The report is waiting in the queue — no network. It goes out by itself when the signal returns.") :
-      waitsWifi() ? T("Raport czeka w kolejce na Wi‑Fi (nie jest jeszcze wysłany). Przez dane: pasek na dole → „Wyślij przez dane”.", "The report is waiting in the queue for Wi‑Fi (not sent yet). Over mobile data: bar at the bottom → “Send over data”.") : T("Raport w kolejce — stan wysyłki na pasku na dole.", "Report queued — sending status on the bar at the bottom.");
-    if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) return s + T(" Inspekcja zostaje oznaczona jako GOTOWA.", " The inspection stays marked READY.");
-    return s + T(" Inspekcja zostaje otwarta: możesz poprawić i wysłać ponownie. Gdy skończysz — „Zakończ inspekcję”.", " The inspection stays open: you can correct it and send again. When you are done — “Finish inspection”.");
+    var s = it.status === "sent" ? window.OESTT("Raport wysłany.", "Report sent.") : it.status === "shared" ? window.OESTT("Raport przekazany do wybranej apki, ale wysłania nikt nie potwierdził. Gdy mail wyjdzie: Kolejka → „Potwierdzam, wysłane”.", "Report handed over to the chosen app, but nobody confirmed it was sent. When the email goes out: Queue → “Confirm sent”.") : !online() ? window.OESTT("Raport czeka w kolejce — nie ma sieci. Wyjdzie sam, gdy wróci zasięg.", "The report is waiting in the queue — no network. It goes out by itself when the signal returns.") :
+      waitsWifi() ? window.OESTT("Raport czeka w kolejce na Wi‑Fi (nie jest jeszcze wysłany). Przez dane: pasek na dole → „Wyślij przez dane”.", "The report is waiting in the queue for Wi‑Fi (not sent yet). Over mobile data: bar at the bottom → “Send over data”.") : window.OESTT("Raport w kolejce — stan wysyłki na pasku na dole.", "Report queued — sending status on the bar at the bottom.");
+    if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) return s + window.OESTT(" Inspekcja zostaje oznaczona jako GOTOWA.", " The inspection stays marked READY.");
+    return s + window.OESTT(" Inspekcja zostaje otwarta: możesz poprawić i wysłać ponownie. Gdy skończysz — „Zakończ inspekcję”.", " The inspection stays open: you can correct it and send again. When you are done — “Finish inspection”.");
   }
   // podpis treści formularza: czy po ostatnim „Wyślij” coś się zmieniło (wtedy „Zakończ” wysyła nową wersję)
   function formSig() {
@@ -202,7 +202,7 @@
   function recMissing() {
     var miss = keptSaved.length + recLost;
     if (!REC || !miss) return false;
-    $("formHint").textContent = T("Brakuje ", "Missing ") + miss + T(" zdjęć z raportu (nie ma ich już w telefonie). Wyślij i Update nadpisałyby raport bez nich – raport w telefonie i na Dysku zostaje bez zmian.", " photos from the report (no longer on the phone). Send and Update would overwrite the report without them – the report on the phone and on Drive stays unchanged.");
+    $("formHint").textContent = window.OESTT("Brakuje ", "Missing ") + miss + window.OESTT(" zdjęć z raportu (nie ma ich już w telefonie). Wyślij i Update nadpisałyby raport bez nich – raport w telefonie i na Dysku zostaje bez zmian.", " photos from the report (no longer on the phone). Send and Update would overwrite the report without them – the report on the phone and on Drive stays unchanged.");
     return true;
   }
   async function queueBtn(b, fromPreview, finish) {
@@ -210,17 +210,17 @@
     lastMailHint = "";
     // ⚙ bez adresata: nic nie wychodzi (nigdy po cichu „do mnie”, Codex #64)
     var nS = cur.mode === "one" ? needsNow() : null;
-    if (nS && !nS.xp && !nS.xw) { say(T("Zaznacz w ⚙ obok Wyślij format: PDF albo Word.", "Tick a format in ⚙ next to Send: PDF or Word.")); return; }
-    if (nS && !recipientsFor(nS).list.length) { say(T("Nie zaznaczono, do kogo wysłać (⚙ obok Wyślij) albo zaznaczona osoba nie ma adresu w Ustawieniach.", "No recipient ticked (⚙ next to Send), or the ticked person has no address in Settings.")); return; }
+    if (nS && !nS.xp && !nS.xw) { say(window.OESTT("Zaznacz w ⚙ obok Wyślij format: PDF albo Word.", "Tick a format in ⚙ next to Send: PDF or Word.")); return; }
+    if (nS && !recipientsFor(nS).list.length) { say(window.OESTT("Nie zaznaczono, do kogo wysłać (⚙ obok Wyślij) albo zaznaczona osoba nie ma adresu w Ustawieniach.", "No recipient ticked (⚙ next to Send), or the ticked person has no address in Settings.")); return; }
     // ta inspekcja jest już wysłana / zakończona w tym okresie: ponowne wysłanie tylko jako poprawka, termin się nie przesuwa
     var fix = !!(cur.ppm && PPM.closed && PPM.closed(cur.ppm));
     // „Gotowa” to tylko znacznik Grzegorza (04/11): ponowne Wyślij bez pytań; termin się nie przesuwa (fix)
-    queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
-    if (!sendBtn) { b.disabled = true; b.textContent = T("Przygotowuję…", "Preparing…"); }
+    queueing = true; sendBtn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: window.OESTT("Przygotowuję raport", "Preparing the report"), keep: false }) : null;
+    if (!sendBtn) { b.disabled = true; b.textContent = window.OESTT("Przygotowuję…", "Preparing…"); }
     var from = fromPreview && built ? built.from : { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) }, fail = "";
     from = Object.assign({}, from, { fix: fix, finish: !!finish, sig: formSig(), draft: from.draft || (cur.mode === "one" ? draftKey() : "") });
     (fromPreview && built ? Promise.resolve(built) : (freeBuilt(), buildAll())).then(function (r) { return fitReport(r, buildAll); }).then(function (r) { return enqueue(r, from); }).catch(function (e) {
-      fail = T("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
+      fail = window.OESTT("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
       if (fromPreview) show("form");
     }).then(function () {
       queueing = false; if (sendBtn) sendBtn.restore(); sendBtn = null; b.disabled = false; b.textContent = "Do kolejki"; updateFormHint();
@@ -240,7 +240,7 @@
     if (was && was.period) PPM.setDue(t, was.period);
     PPM.setStage(t, { s: "prog", manual: true });
     var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
-    renderPpmBar(); updateFormHint(); $("formHint").textContent = T("Zdjęto znacznik Gotowa. Wszystko zostało bez zmian.", "Ready flag removed. Nothing else changed.");
+    renderPpmBar(); updateFormHint(); $("formHint").textContent = window.OESTT("Zdjęto znacznik Gotowa. Wszystko zostało bez zmian.", "Ready flag removed. Nothing else changed.");
   }
   $("finishIns").addEventListener("click", async function () {
     if (queueing) return;
@@ -253,7 +253,7 @@
     }
     markDone(cur.type, cur.code);
     if (t && cur.mode === "one" && cur.type) { var k = draftKey(); try { await kvSet(k, draftSnap()); } catch (e) {} } // szkic z oznaczeniem Gotowa (fin + termin)
-    renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || T("✓ Gotowa.", "✓ Ready.");
+    renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || window.OESTT("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {
     if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !sheetPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
@@ -268,31 +268,31 @@
   function renderNet() {
     var n = pending().length, off = !online();
     $("netbar").className = "netbar" + (off ? " off" : "");
-    $("netTxt").textContent = (off ? T("Bez sieci", "No network") : "Online") + " · " + // i18n-ok: „Online” tak samo po polsku i po angielsku
-      (n ? T("w kolejce: ", "queued: ") + n + (sending ? T(" (wysyłam…)", " (sending…)") : "") : T("kolejka pusta", "queue empty"));
+    $("netTxt").textContent = (off ? window.OESTT("Bez sieci", "No network") : "Online") + " · " + // i18n-ok: „Online” tak samo po polsku i po angielsku
+      (n ? window.OESTT("w kolejce: ", "queued: ") + n + (sending ? window.OESTT(" (wysyłam…)", " (sending…)") : "") : window.OESTT("kolejka pusta", "queue empty"));
   }
   function qBusy() { return sending || (gm() && OESTSender.busy()); }
   function renderQueue() {
     var n = pending().length, busy = qBusy();
     var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
     var nu = unconfirmed().length;
-    $("qSub").textContent = n ? T("Do wysłania: ", "To send: ") + n + (nu ? T(" · do potwierdzenia: ", " · to confirm: ") + nu : "") : nu ? T("Do potwierdzenia: ", "To confirm: ") + nu : T("Wszystko wysłane", "All sent");
+    $("qSub").textContent = n ? window.OESTT("Do wysłania: ", "To send: ") + n + (nu ? window.OESTT(" · do potwierdzenia: ", " · to confirm: ") + nu : "") : nu ? window.OESTT("Do potwierdzenia: ", "To confirm: ") + nu : window.OESTT("Wszystko wysłane", "All sent");
     $("qList").innerHTML = list.length ? list.map(function (q) {
-      var st = q.status === "sent" ? '<span class="st ok">'+T('✓ wysłane', '✓ sent')+' ' + esc(NZ.godzina(new Date(q.sentAt))) + "</span>" :
-        q.status === "sending" ? '<span class="st">'+T('wysyłam…', 'sending…')+'</span>' :
-        q.status === "err" ? '<span class="st err">'+T('błąd', 'error')+'</span>' :
-        q.status === "shared" ? '<span class="st">'+T('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
+      var st = q.status === "sent" ? '<span class="st ok">'+window.OESTT('✓ wysłane', '✓ sent')+' ' + esc(NZ.godzina(new Date(q.sentAt))) + "</span>" :
+        q.status === "sending" ? '<span class="st">'+window.OESTT('wysyłam…', 'sending…')+'</span>' :
+        q.status === "err" ? '<span class="st err">'+window.OESTT('błąd', 'error')+'</span>' :
+        q.status === "shared" ? '<span class="st">'+window.OESTT('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
       return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + NZ.kb(q.docx.length + q.pdf.length) +
         (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+T('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
-          ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+T('Wyślij ponownie', 'Send again')+'</button>' : "") +
-        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+T('Usuń', 'Delete')+'</button>' : "") +
+        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+window.OESTT('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
+          ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+window.OESTT('Wyślij ponownie', 'Send again')+'</button>' : "") +
+        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+window.OESTT('Usuń', 'Delete')+'</button>' : "") +
         "</small></div>" + st + "</div>";
-    }).join("") : '<p class="hint">'+T('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
+    }).join("") : '<p class="hint">'+window.OESTT('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
     $("qSend").disabled = busy || !n;
-    $("qSend").textContent = busy ? T("Wysyłam…", "Sending…") : T("Wyślij wszystko", "Send all");
-    $("qHint").textContent = gm() ? T("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || T("adres z Ustawień", "the address in Settings")) + T(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.") : shareApi() ? T("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.") : !cfg.email ? T("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.") :
-      (!online() ? T("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : T("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + T(" i do folderu „", " and to the folder “") + cfg.folder + T("” na Drive.", "” on Drive."));
+    $("qSend").textContent = busy ? window.OESTT("Wysyłam…", "Sending…") : window.OESTT("Wyślij wszystko", "Send all");
+    $("qHint").textContent = gm() ? window.OESTT("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || window.OESTT("adres z Ustawień", "the address in Settings")) + window.OESTT(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.") : shareApi() ? window.OESTT("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.") : !cfg.email ? window.OESTT("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.") :
+      (!online() ? window.OESTT("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : window.OESTT("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + window.OESTT(" i do folderu „", " and to the folder “") + cfg.folder + window.OESTT("” na Drive.", "” on Drive."));
     renderNet();
   }
   $("qList").addEventListener("click", async function (e) {
@@ -304,9 +304,9 @@
       return qPut(sit).then(refresh);
     }
     var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
-    if (!await ask(T("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
+    if (!await ask(window.OESTT("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
     // w czasie pytania mogła ruszyć wysyłka w tle (sieć wróciła, minutnik): wtedy nie usuwamy raportu, który już wychodzi
-    if (qBusy()) { say(T("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
+    if (qBusy()) { say(window.OESTT("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
     var id = b.getAttribute("data-del");
     var gone = queue.filter(function (q) { return q.id === id; })[0];
     qDel(id).then(function () {
@@ -353,11 +353,11 @@
     // najpierw połączenie (zasada wysyłki): bez internetu nie otwieramy wyboru apki, raport czeka w kolejce
     var net = window.OESTSender && OESTSender.reachable ? OESTSender.reachable() : Promise.resolve(online());
     return net.then(function (up) {
-      if (!up) { it.status = "wait"; say(T("Brak połączenia z internetem. Raport czeka w kolejce.", "No internet connection. The report waits in the queue.")); return qPut(it).then(refresh); }
+      if (!up) { it.status = "wait"; say(window.OESTT("Brak połączenia z internetem. Raport czeka w kolejce.", "No internet connection. The report waits in the queue.")); return qPut(it).then(refresh); }
       return shareApi().share({ subject: it.subject, body: it.body, to: to, files: files }).then(function () {
       // Android mówi tylko, że okno wyboru apki się otworzyło – nie, że mail wyszedł: nic nie kasujemy, PPM nie jest „wysłane”
       it.status = "shared"; it.sharedAt = Date.now(); it.err = ""; return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); say(T("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + T(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
+    }, function (e) { it.status = "err"; it.err = gErr(e); say(window.OESTT("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + window.OESTT(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
     }).then(function () { sending = false; refresh(); }, function (e) { sending = false; refresh(); throw e; });
   }
   function sendQueue(manual) {
@@ -381,7 +381,7 @@
         });
       });
     }, Promise.resolve(false)).catch(function (e) {
-      $("qHint").textContent = T("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e);
+      $("qHint").textContent = window.OESTT("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e);
     }).then(function () { sending = false; refresh(); });
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });

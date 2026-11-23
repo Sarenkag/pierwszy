@@ -35,7 +35,7 @@
       onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
     });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
-    return online() ? loadSetup() : tplState(T("brak sieci", "no network"));
+    return online() ? loadSetup() : tplState(window.OESTT("brak sieci", "no network"));
   }).then(function () { if (cfg.auto) sendQueue(); });
 
   // ---------- wejście z listy PPM w apce (#ppm=id) ----------
@@ -54,7 +54,7 @@
       // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
       // po ostatnim zleceniu z importu też bez ręcznej daty – apka nie tworzy terminu (PROD-010)
       var vj = (due && PPM.jobFor ? PPM.jobFor(t, NZ.dzienIso(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? NZ.dzienIso(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+T('Termin z systemu', 'Due date from the system')+'"></label>' +
+      el.innerHTML = '<label>Update <input type="date" value="' + (due ? NZ.dzienIso(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+window.OESTT('Termin z systemu', 'Due date from the system')+'"></label>' +
         '<b class="' + (left !== null && left <= 0 ? "late" : "") + '" data-alt="' + esc(window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
       el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
 
@@ -83,8 +83,8 @@
     if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
-    sel.innerHTML = [["", T("○ Nie rozpoczęta", "○ Not started")], ["prog", T("◐ W trakcie", "◐ In progress")], ["hold", T("⏸ Wstrzymana", "⏸ On hold")], ["done", T("✓ Zakończona", "✓ Completed")]]
-      .concat(s === "queued" || s === "sent" ? [[s, T("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
+    sel.innerHTML = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
+      .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
       .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
     sel.className = "ppmpill s-" + (s || "none");
   }
@@ -170,11 +170,11 @@
   // Data i termin bez zmian. Stan Dysku mówimy wprost (nic nie udajemy).
   $("recUpdate").addEventListener("click", function () {
     var b = this; if (queueing || !REC || !window.OESTSender || !OESTSender.update) return;
-    if (restoring || pendingPh > 0) { $("formHint").textContent = T("Poczekaj, aż zdjęcia się wczytają i zapiszą.", "Wait until the photos are loaded and saved."); return; } // raport bez zdjęć nie nadpisze Dysku
+    if (restoring || pendingPh > 0) { $("formHint").textContent = window.OESTT("Poczekaj, aż zdjęcia się wczytają i zapiszą.", "Wait until the photos are loaded and saved."); return; } // raport bez zdjęć nie nadpisze Dysku
     if (recMissing()) return;
     saveDraftNow();
     queueing = true;
-    var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: T("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";
+    var btn = window.OESTPrzycisk ? OESTPrzycisk.start(b, { busy: window.OESTT("Zapisuję raport", "Saving the report"), keep: false }) : null, msg = "";
     if (!btn) b.disabled = true;
     var from = { type: cur.type, mode: cur.mode, ppm: cur.ppm, day: NZ.dzienIso(reportDate()) };
     freeBuilt();
@@ -184,12 +184,12 @@
       return OESTSender.update(it).then(function () { return window.OESTRaporty.get(REC.id); }).then(function (now) {
         if (now) REC = now;
         var onDrive = now && now.driveId && !now.dirty;
-        msg = onDrive ? T("✓ Zapisano w telefonie i na Dysku (Word nadpisany). Mail nie poszedł.", "✓ Saved on the phone and on Drive (Word overwritten). No email sent.")
-          : T("✓ Zapisano w telefonie. Na Dysk pójdzie, gdy będzie połączenie z Dyskiem. Mail nie poszedł.", "✓ Saved on the phone. It goes to Drive once Drive is connected. No email sent.");
-        return btn ? btn.ok(T("Zapisano", "Saved")) : null;
+        msg = onDrive ? window.OESTT("✓ Zapisano w telefonie i na Dysku (Word nadpisany). Mail nie poszedł.", "✓ Saved on the phone and on Drive (Word overwritten). No email sent.")
+          : window.OESTT("✓ Zapisano w telefonie. Na Dysk pójdzie, gdy będzie połączenie z Dyskiem. Mail nie poszedł.", "✓ Saved on the phone. It goes to Drive once Drive is connected. No email sent.");
+        return btn ? btn.ok(window.OESTT("Zapisano", "Saved")) : null;
       });
     }).catch(function (e) {
-      msg = T("Nie zapisano: ", "Not saved: ") + (window.OESTBledy ? OESTBledy.text(e) : buildErr(e));
+      msg = window.OESTT("Nie zapisano: ", "Not saved: ") + (window.OESTBledy ? OESTBledy.text(e) : buildErr(e));
     }).then(function () {
       queueing = false; if (btn) btn.restore(); b.disabled = false; updateFormHint();
       $("formHint").textContent = msg;

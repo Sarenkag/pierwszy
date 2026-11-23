@@ -8,6 +8,8 @@ function load(store, day, plan = FIX) {
   if (day) ctx.Date = fakeDate(day); // zegar apki w teście = podany dzień
   else ctx.Date = fakeDate('2026-11-05');
   ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', '..', 'moduly', 'bledy', 'bledy.js'), 'utf8'), ctx); ctx.window.OESTT = ctx.OESTT; // jak w apce: OESTT (window = global)
+  if (!('oest.lang' in store)) store['oest.lang'] = 'en'; // teksty sprawdzane po angielsku (wcześniej ppm.js bez OESTT dawał EN)
   for (const f of [plan, path.join(__dirname, '..', 'www', 'ppm.js')]) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx);
   return ctx.window;
 }
