@@ -51,7 +51,7 @@
           <ion-label>⚙ {{ T('Google i import', 'Google & import') }}</ion-label>
         </ion-item>
         <div slot="content">
-          <component :is="Polaczenie" :T="T" :wersja="wersja" rodzaj="contacts" @wynik="wynik = $event"></component>
+          <component :is="Polaczenie" :T="T" :wersja="wersja" rodzaj="contacts" :licznik="odswiez" @wynik="wynik = $event"></component>
           <ion-card>
             <ion-list-header>{{ T('Import według etykiety', 'Import by label') }}</ion-list-header>
             <ion-item lines="none">
@@ -95,7 +95,7 @@ function przeladuj(w) { if (!w) return; wynik.value = w; if (!w.blad) { wczytaj(
 function zapisz() { const z = {}; for (const i of Object.keys(pola)) { z['contacts.' + i + '.position'] = String(pola[i].position || '').trim(); z['contacts.' + i + '.role'] = pola[i].role; } przeladuj(S.zapiszPola(z)); }
 async function usun(id) { przeladuj(await S.kontaktUsun(id)); }
 async function dodaj(rodzaj) { const w = await S.kontaktDodaj(rodzaj, nowy.value); if (w && !w.blad) nowy.value = ''; przeladuj(w); }
-async function etykiety() { const w = await S.kontaktyEtykiety(); if (!w) return; wynik.value = w; if (w.etykiety) { zaladowane.value = w.etykiety; etykieta.value = w.etykiety[0] ? w.etykiety[0].id : ''; } }
-async function importuj() { const e = listaEtykiet.value.find(x => x.id === etykieta.value); przeladuj(await S.kontaktyImport(etykieta.value, e ? e.nazwa : '')); }
+async function etykiety() { const w = await S.kontaktyEtykiety(); odswiez.value++; if (!w) return; wynik.value = w; if (w.etykiety) { zaladowane.value = w.etykiety; etykieta.value = w.etykiety[0] ? w.etykiety[0].id : ''; } }
+async function importuj() { const e = listaEtykiet.value.find(x => x.id === etykieta.value); const w = await S.kontaktyImport(etykieta.value, e ? e.nazwa : ''); odswiez.value++; przeladuj(w); } // operacje Google mogły połączyć albo unieważnić sesję – karta połączenia liczy stan na nowo
 onMounted(() => { S.zmiany(false); });
 </script>
