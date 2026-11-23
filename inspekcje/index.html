@@ -196,16 +196,11 @@
     </div>
   </section>
 
-  <!-- 5. Kolejka -->
+  <!-- 5. Kolejka: treść rysuje część Vue (KolejkaInsp), dane z kolejka-widok.js -->
   <section class="view" id="v-queue" hidden>
     <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1><span data-en="Queue">Kolejka</span><span class="dot">.</span></h1><div class="sub" id="qSub"></div></div></div>
-    <div class="panel">
-      <div id="qList"></div>
-      <button class="go" type="button" id="qSend" data-en="Send all">Wyślij wszystko</button>
-      <p class="hint" id="qHint"></p>
-    </div>
-    <button class="btn wide" type="button" id="qNext" data-en="Next device">Następne urządzenie</button>
+      <div class="t"><h1><span data-en="Queue">Kolejka</span><span class="dot">.</span></h1></div></div>
+    <div id="queueBox"></div>
   </section>
 </div>
 
@@ -264,6 +259,7 @@
 <script src="i-raport.js"></script>
 <script src="i-ustawienia.js"></script>
 <script src="i-kolejka.js"></script>
+<script src="kolejka-widok.js"></script>
 <script src="i-start.js"></script>
 <script src="form-ui.js"></script>
 </body>

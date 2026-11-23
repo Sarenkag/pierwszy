@@ -3,6 +3,7 @@
 // Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: musi być wczytany ostatni.
   // ---------- start ----------
+  OESTKolejkaWidok.montuj($("queueBox")); // ekran Kolejka: część Vue (czesci/KolejkaInsp.vue)
   states = cur.type.checks.map(function (c) { return c.def; });
   var cached = load("setup", null);
   if (cached) applySetup(cached);

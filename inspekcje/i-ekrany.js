@@ -16,7 +16,7 @@
     if (v === "home") renderHome();
     if (v === "list") renderList();
     renderPpmBar();
-    if (v === "queue") renderQueue();
+    if (v === "queue") { renderNet(); OESTKolejkaWidok.powiadom(); }
     window.scrollTo(0, 0);
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
