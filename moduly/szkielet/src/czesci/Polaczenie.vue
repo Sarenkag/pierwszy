@@ -16,11 +16,11 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { IonCard, IonItem, IonLabel, IonNote, IonButton } from '@ionic/vue';
-const props = defineProps({ T: Function, wersja: Number, rodzaj: String });
+const props = defineProps({ T: Function, wersja: Number, rodzaj: String, licznik: Number }) // licznik: ekran zwiększa go po akcji, która mogła zmienić połączenie (np. test wysyłki);
 const emit = defineEmits(['wynik']);
 const S = window.OESTSettingsUI;
 const odswiez = ref(0);
-const stan = computed(() => (props.wersja, odswiez.value, S.polaczenieStan(props.rodzaj)));
+const stan = computed(() => (props.wersja, props.licznik, odswiez.value, S.polaczenieStan(props.rodzaj)));
 async function polacz() { const w = await S.polacz(props.rodzaj); odswiez.value++; if (w) emit('wynik', w); }
 onMounted(() => { S.polaczenieSprawdz(props.rodzaj).then(() => { odswiez.value++; }); });
 </script>

@@ -1,7 +1,7 @@
 <!-- Poczta i wysyłka. Dane i reguły: OESTSettingsUI.mailDane()/zapiszPola()/mailTest() (app/www/settings-ui.js) – tu tylko komponenty Ionic. -->
 <template>
   <div class="ion-padding">
-    <component :is="Polaczenie" :T="T" :wersja="wersja" rodzaj="gmail" @wynik="wynik = $event"></component>
+    <component :is="Polaczenie" :T="T" :wersja="wersja" rodzaj="gmail" :licznik="odswiez" @wynik="wynik = $event"></component>
     <ion-card>
       <ion-list-header>{{ T('Inspekcje', 'Inspections') }}</ion-list-header>
       <ion-item lines="none">
@@ -54,6 +54,6 @@ const f = reactive({ engineerId: start.engineerId, managerId: start.managerId })
 const wynik = ref(null);
 function zmien(k, v) { if (f[k] === v) return; f[k] = v; S.zmiany(true); } // niezapisane zmiany: pytanie przy Wstecz (straż ekranu settings)
 function zapisz() { wynik.value = S.zapiszPola({ 'mail.engineerId': f.engineerId, 'mail.managerId': f.managerId }); odswiez.value++; }
-async function test() { const w = await S.mailTest(); if (w) wynik.value = w; }
+async function test() { const w = await S.mailTest(); odswiez.value++; if (w) wynik.value = w; } // test mógł połączyć Gmail albo unieważnić sesję – karta połączenia pokazuje stan na nowo
 onMounted(() => { S.zmiany(false); });
 </script>
