@@ -50,17 +50,20 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
 }
 /* Pola formularzy na ekranach przeniesionych z dawnego wyglądu („Szkło i poświata”): ramka var(--line), zaokrąglenie, lekko rozjaśnione tło – jak dawne
-   pola tekstowe. Opt-in atrybutem fill="solid" (outline zmienia rozmiar wcięcia przy zmianie etykiety PL/EN) na ion-input / ion-textarea / ion-select; tylko zmienne Ionic. */
-ion-input[fill=solid], ion-textarea[fill=solid], ion-select[fill=solid] {
+   pola tekstowe. Opt-in atrybutem fill="solid" na ion-input / ion-textarea / ion-select (Ionic dopisuje wtedy klasę *-fill-solid; outline zmienia
+   szerokość wcięcia przy zmianie etykiety PL/EN, więc nie). Tylko zmienne Ionic. */
+ion-input.input-fill-solid.input-fill-solid, ion-textarea.textarea-fill-solid.textarea-fill-solid, ion-select.select-fill-solid.select-fill-solid {
   --border-radius: 12px;
   --border-color: var(--line);
   --highlight-color-focused: #7c84ff;
-  --background: rgba(255, 255, 255, 0.06);
+  --background: rgba(255, 255, 255, 0.07);
   --padding-start: 12px;
   --padding-end: 12px;
 }
-ion-item:has(> ion-input[fill=solid]), ion-item:has(> ion-textarea[fill=solid]), ion-item:has(> ion-select[fill=solid]) {
+ion-item:has(> ion-input.input-fill-solid.input-fill-solid), ion-item:has(> ion-textarea.textarea-fill-solid.textarea-fill-solid), ion-item:has(> ion-select.select-fill-solid.select-fill-solid) {
   --inner-border-width: 0;
+  --padding-start: 0;
+  --inner-padding-end: 0;
   --padding-top: 6px;
   --padding-bottom: 6px;
 }
