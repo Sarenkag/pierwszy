@@ -208,23 +208,9 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/contacts",
-      "rule": "IONIC",
-      "detail": "Ekran settings/contacts (Zespół i kontakty) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|settings/drive",
       "rule": "IONIC",
       "detail": "Ekran settings/drive (Google Drive i kopia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|settings/mail",
-      "rule": "IONIC",
-      "detail": "Ekran settings/mail (Poczta i wysyłka) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
