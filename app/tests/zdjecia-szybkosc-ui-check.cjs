@@ -73,8 +73,9 @@ async function run(browser, url, worker) {
   async function send() {
     const d = await pg.evaluate(() => window.__dec), q = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result); }; }));
     await pg.click('#toQueue');
-    const asked = await pg.waitForSelector('.oest-ask', { timeout: 8000 }).then(() => true, () => false);
-    if (asked) await pg.click('.oest-ask [data-a="ok"]');
+    // pytanie przed wysyłką: dawne okienko (.oest-ask) albo jedno okienko Ionic ze szkieletu (ion-alert, OESTOkna.pytaj)
+    const asked = await pg.waitForSelector('.oest-ask, ion-alert', { timeout: 8000 }).then(() => true, () => false);
+    if (asked) await pg.click('.oest-ask [data-a="ok"], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive');
     // czekanie na WYNIK obietnicy (waitForFunction brał samą obietnicę za „prawdę” i nie czekał na raport)
     const ile = () => pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result); }; }));
     const t0 = Date.now(); while (!((await ile()) > q)) { if (Date.now() - t0 > 120000) throw Error('Wyślij nie dodało raportu do kolejki w 120 s'); await pg.waitForTimeout(500); }
@@ -111,15 +112,15 @@ async function editorCheck(browser, url) {
       c.toBlob(b => { window.__w = undefined; window.__t = performance.now(); const m = max < 0 ? window.OESTZdjecia.maxPx() : max;
         window.OESTAparat.edit(b, { max: m }).then(r => { window.__ms = performance.now() - window.__t; window.__w = r || null; }); ok(); }, 'image/jpeg', 0.9);
     }), [max]);
-    await pg.waitForSelector('.oest-editor canvas'); await pg.waitForTimeout(300);
-    const b = await pg.locator('.oest-editor canvas').boundingBox();
-    await pg.click('.oest-editor [data-t="arrow"]');
+    await pg.waitForSelector('ion-modal[data-oest-czesc="EdytorZdjec"] canvas'); await pg.waitForTimeout(300);
+    const b = await pg.locator('ion-modal[data-oest-czesc="EdytorZdjec"] canvas').boundingBox();
+    await pg.click('ion-modal[data-oest-czesc="EdytorZdjec"] [data-t="arrow"]');
     await pg.mouse.move(b.x + b.width * .2, b.y + b.height * .7); await pg.mouse.down(); await pg.mouse.move(b.x + b.width * .6, b.y + b.height * .35, { steps: 6 }); await pg.mouse.up();
-    if (crop) { await pg.click('.oest-editor [data-t="crop"]'); await pg.mouse.move(b.x + b.width * .1, b.y + b.height * .2); await pg.mouse.down(); await pg.mouse.move(b.x + b.width * .9, b.y + b.height * .8, { steps: 6 }); await pg.mouse.up(); }
-    await pg.click('.oest-editor [data-a="save"]');
+    if (crop) { await pg.click('ion-modal[data-oest-czesc="EdytorZdjec"] [data-t="crop"]'); await pg.mouse.move(b.x + b.width * .1, b.y + b.height * .2); await pg.mouse.down(); await pg.mouse.move(b.x + b.width * .9, b.y + b.height * .8, { steps: 6 }); await pg.mouse.up(); }
+    await pg.click('ion-modal[data-oest-czesc="EdytorZdjec"] [data-a="save"]');
     await pg.waitForFunction(() => window.__w !== undefined, null, { timeout: 30000 });
     out[name] = await pg.evaluate(async name => { const r = window.__w; if (!r) return null; window['__r_' + name] = r; const im = await createImageBitmap(r); const o = { w: im.width, h: im.height, size: r.size, ms: Math.round(window.__ms) }; im.close(); return o; }, name);
-    await pg.waitForFunction(() => !document.querySelector('.oest-editor'), null, { timeout: 3000 }).catch(() => {});
+    await pg.waitForFunction(() => !document.querySelector('ion-modal[data-oest-czesc="EdytorZdjec"]') /* edytor: część Ionic w ion-modal */, null, { timeout: 3000 }).catch(() => {});
   }
   // ten sam obraz: wynik „max” vs pełny wynik zmniejszony do tego samego rozmiaru – średnia różnica pikseli (0–255)
   out.diff = await pg.evaluate(async () => {

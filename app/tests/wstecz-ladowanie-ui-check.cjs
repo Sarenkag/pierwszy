@@ -60,12 +60,12 @@ let STEP = 'start';
       STEP = nazwa + ' Wstecz po załadowaniu';
       if (nazwa === 'apka') { // Codex PR #189: okienko zajęte (np. aparat przy edycji) odmawia zamknięcia – zostaje na stosie, Wstecz nie przechodzi pod spód
         const z = await page.evaluate(async () => { let wolno = false, zw = null; zw = OESTOkna.open(() => { if (wolno) zw(); }); document.dispatchEvent(new Event('backbutton')); await new Promise(r => setTimeout(r, 600));
-          const a = { ile: OESTOkna.ile(), pytanie: !!document.querySelector('.oest-ask') }; wolno = true; document.dispatchEvent(new Event('backbutton')); await new Promise(r => setTimeout(r, 600)); a.ilePo = OESTOkna.ile(); return a; });
+          const a = { ile: OESTOkna.ile(), pytanie: !!document.querySelector('.oest-ask, ion-alert') }; wolno = true; document.dispatchEvent(new Event('backbutton')); await new Promise(r => setTimeout(r, 600)); a.ilePo = OESTOkna.ile(); return a; });
         assert.deepEqual(z, { ile: 1, pytanie: false, ilePo: 0 }, 'apka: zajęte okienko po Wstecz zostaje na stosie, a po zwolnieniu Wstecz je zamyka');
       }
       await page.evaluate(() => document.dispatchEvent(new Event('backbutton')));
       await page.waitForTimeout(1500);
-      if (nazwa === 'apka') assert.match(await page.evaluate(() => [...document.querySelectorAll('.oest-ask')].map(a => a.textContent).join(' ')), /Chcesz wyjść z aplikacji/, 'apka: ekran główny → pytanie o wyjście');
+      if (nazwa === 'apka') assert.match(await page.evaluate(() => [...document.querySelectorAll('.oest-ask, ion-alert')].map(a => a.textContent).join(' ')), /Chcesz wyjść z aplikacji/, 'apka: ekran główny → pytanie o wyjście');
       else assert.ok(!/\/inspekcje\//.test(page.url()), 'inspekcja: Wstecz wychodzi do rodzica, jest ' + page.url());
       // Codex PR #189: wyjście z inspekcji nie może zostawić jej w historii WebView – inaczej natywny Wstecz przed startem Ionic (Capacitor goBack) wróciłby do niej
       if (nazwa === 'inspekcja') { const po = await page.evaluate(() => history.length); assert.equal(po, st.histLen, 'inspekcja: wyjście do apki dodało wpis historii (' + st.histLen + ' → ' + po + '), natywny Wstecz wróciłby do inspekcji'); }

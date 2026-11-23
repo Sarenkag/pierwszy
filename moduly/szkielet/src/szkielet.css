@@ -49,6 +49,178 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --ion-color-secondary: #3b82f6; --ion-color-secondary-rgb: 59, 130, 246; --ion-color-secondary-contrast: #ffffff; --ion-color-secondary-contrast-rgb: 255, 255, 255; --ion-color-secondary-shade: #3472d8; --ion-color-secondary-tint: #4f8ff7;
   --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
 }
+/* Kolory rysowania w edytorze zdjęć (moduly/aparat, 6 kolorów jak dawniej) jako kolory Ionic: przycisk koloru pokazuje dokładnie ten kolor. Tylko zmienne palety. */
+.ion-color-ed-czerwony { --ion-color-base: #ff2d2d; --ion-color-base-rgb: 255, 45, 45; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #e02727; --ion-color-tint: #ff4242; }
+.ion-color-ed-zolty { --ion-color-base: #ffd400; --ion-color-base-rgb: 255, 212, 0; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0ba00; --ion-color-tint: #ffd819; }
+.ion-color-ed-zielony { --ion-color-base: #21d36b; --ion-color-base-rgb: 33, 211, 107; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #1db95e; --ion-color-tint: #37d779; }
+.ion-color-ed-niebieski { --ion-color-base: #2f8bff; --ion-color-base-rgb: 47, 139, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #297ae0; --ion-color-tint: #4396ff; }
+.ion-color-ed-bialy { --ion-color-base: #ffffff; --ion-color-base-rgb: 255, 255, 255; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0e0e0; --ion-color-tint: #ffffff; }
+.ion-color-ed-czarny { --ion-color-base: #111111; --ion-color-base-rgb: 17, 17, 17; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #0e0e0e; --ion-color-tint: #282828; }
+/* Wspólne moduły (aparat, notatki, ładowanie, odczyt) – wygląd jak na main (Grzegorz 23/11/2026: przeniesione ekrany wyglądają TAK SAMO):
+   okienko #161a34 z ramką i pogrubionym tytułem, przyciski 14 px („duch” #222746 z jasną ramką, główny gradientem z poświatą),
+   karty notatek, pasek notatek ze „szkła”, ekran nagrywania z pulsującym mikrofonem, podgląd i edytor zdjęć, kółko „pracuję”.
+   Przeniesione z CSS modułów na main (moduly/przycisk .oest-ask, moduly/notatki .nt-*, .oest-rec, moduly/aparat .oest-editor / podgląd,
+   moduly/ladowanie .oest-load / .oest-inline). Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). Tryb md jak reszta apki. */
+/* okienko (OESTOkna.okno z „wyglad”): wysokość z treści, bez ✕, pogrubiony tytuł */
+ion-modal[data-oest-okno] { --width: min(calc(100% - 34px), 358px); --height: auto; --max-height: calc(100% - 32px); --border-radius: 18px; --background: #161a34;
+  --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid; --box-shadow: 0 16px 40px rgba(0, 0, 0, .5); --backdrop-opacity: .55; }
+ion-modal[data-oest-okno] .ion-page { position: relative; display: block; contain: content; }
+.oest-okno { padding: 18px; color: #fff; font: 15px/1.4 var(--font-body, system-ui), sans-serif; }
+.oest-okno-tytul { display: flex; align-items: center; gap: 5px; font-size: 17px; font-weight: 650; margin-bottom: 6px; }
+.oest-okno-tytul ion-icon { flex: none; font-size: 17px; }
+.oest-okno-tresc { max-height: 62vh; overflow: auto; margin: 0 0 14px; }
+.oest-okno-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oest-okno-rzad[data-jeden] { grid-template-columns: 1fr; }
+ion-button.oest-okno-b { height: 48px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif;
+  --border-radius: 14px; --padding-start: 10px; --padding-end: 10px; --color: #fff; }
+ion-modal[data-oest-okno] ion-button.oest-okno-b:not([fill=outline]) { --box-shadow: none; }
+ion-button.oest-okno-b[fill=outline] { --background: #222746; --background-hover: #222746; --background-activated: #2a2f55; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --box-shadow: none; }
+ion-modal[data-oest-okno] ion-button.oest-okno-b[data-zle]:not([fill=outline]) { --background: linear-gradient(90deg, #ff5d6c, #e0405a); --background-hover: linear-gradient(90deg, #ff5d6c, #e0405a); --background-activated: linear-gradient(90deg, #ff5d6c, #e0405a); }
+/* treść okienek notatek (main: .nt-pop) */
+.oest-nt { display: flex; flex-direction: column; gap: 8px; font: 15px/1.4 var(--font-body, system-ui), sans-serif; color: var(--ink, #eef1ff); }
+.oest-nt-h { color: var(--muted, #9aa3cc); font-size: 13px; margin: -2px 0 2px; }
+.oest-nt-pusto { color: var(--muted, #9aa3cc); text-align: center; padding: 14px 0; }
+.oest-nt-karta { border: 1px solid var(--line, rgba(255, 255, 255, .12)); background: rgba(255, 255, 255, .05); border-radius: 14px; padding: 10px; }
+.oest-nt-m { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted, #9aa3cc); margin-bottom: 5px; }
+.oest-nt-tag { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 1px 8px; border-radius: 9px; border: 1px solid rgba(61, 220, 132, .6); color: var(--ok, #3ddc84); }
+.oest-nt-tag[data-kolor=warning] { border-color: rgba(255, 210, 63, .6); color: var(--warn, #ffd23f); }
+.oest-nt-tag[data-kolor=medium] { border-color: var(--line, rgba(255, 255, 255, .2)); color: var(--muted, #9aa3cc); }
+.oest-nt-en { font-size: 14.5px; }
+.oest-nt-pl { font-size: 12.5px; color: var(--muted, #9aa3cc); margin-top: 4px; font-style: italic; }
+.oest-nt-blad { font-size: 12.5px; color: var(--warn, #ffd23f); margin-top: 4px; }
+.oest-nt-ic { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+.oest-nt-tabs, .oest-nt-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+ion-button.oest-nt-b { height: 48px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif; white-space: normal; opacity: 1;
+  --border-radius: 14px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --background: #222746;
+  --background-hover: #222746; --background-activated: #2a2f55; --color: #fff; --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+ion-button.oest-nt-b[data-on] { --background: rgba(124, 132, 255, .25); --border-color: rgba(124, 132, 255, .7); }
+ion-button.oest-nt-b[data-nt=del] { --color: var(--bad, #ff4d5e); }
+ion-button.oest-nt-b[data-nt=del][data-pewne] { --background: rgba(255, 77, 94, .18); --border-color: rgba(255, 77, 94, .7); }
+ion-modal[data-oest-okno] ion-button.oest-nt-b[data-nt=save]:not([fill=outline]) { --border-width: 0; --box-shadow: none; }
+ion-button.oest-nt-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-nt-b ion-icon[slot=icon-only] { margin: 0; }
+.oest-nt ion-item { --background: rgba(255, 255, 255, .07); --border-radius: 12px; --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid;
+  --inner-border-width: 0; --highlight-height: 0; --padding-start: 10px; --inner-padding-end: 10px; --min-height: 108px; }
+.oest-nt ion-item ion-textarea { font: 15px/21px var(--font-body, system-ui), sans-serif; --padding-top: 10px; --padding-bottom: 10px; min-height: 108px; }
+.oest-nt-warn { color: var(--warn, #ffd23f); font-size: 13px; min-height: 1.4em; }
+/* pasek notatek w ekranie (main: .nt-bar) – przyciski ze „szkła”, nagrywanie podbarwione na czerwono, ponumerowane ikonki, „Notatki N” */
+.oest-ntp-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+ion-button.oest-ntp-b { height: 48px; min-width: 0; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif; white-space: nowrap;
+  --border-radius: 14px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .12)); --background: var(--panel, rgba(255, 255, 255, .06));
+  --background-hover: var(--panel, rgba(255, 255, 255, .06)); --background-activated: rgba(255, 255, 255, .1); --color: var(--ink, #eef1ff); --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+ion-button.oest-ntp-b::part(native) { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+ion-button.oest-ntp-b[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --background-hover: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); touch-action: none; -webkit-user-select: none; user-select: none; }
+ion-button.oest-ntp-b ion-icon { font-size: 17px; }
+ion-button.oest-ntp-b ion-icon + ion-icon { font-size: 13px; margin-left: -3px; margin-right: 3px; }
+ion-button.oest-ntp-b[data-nt-bar=join] { width: 100%; margin-top: 8px; }
+.oest-ntp-ikony { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; }
+ion-button.oest-ntp-i { flex: none; height: 36px; min-width: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 14px var(--font-body, system-ui), sans-serif;
+  --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: rgba(255, 255, 255, .05);
+  --background-hover: rgba(255, 255, 255, .05); --color: var(--ink, #fff); --padding-start: 10px; --padding-end: 10px; --box-shadow: none; }
+ion-button.oest-ntp-i[data-stan=w] { --border-color: rgba(255, 210, 63, .6); }
+ion-button.oest-ntp-i[data-stan=busy] { opacity: .55; }
+ion-button.oest-ntp-i ion-icon { font-size: 14px; margin-right: 1px; }
+ion-button.oest-ntp-i[data-nt-bar=open] { margin-left: auto; }
+.oest-ntp-n { display: inline-block; min-width: 22px; margin-left: 4px; padding: 0 7px; box-sizing: border-box; border-radius: 11px; background: rgba(124, 132, 255, .25); border: 1px solid rgba(124, 132, 255, .6); font-size: .8rem; line-height: 20px; text-align: center; }
+/* nagrywanie notatki (main: .oest-rec) – mikrofon 170 px z pulsowaniem, czas, postęp, podpowiedź, „Zakończ” */
+ion-modal[data-oest-czesc=Nagrywanie] { --background: rgba(10, 14, 31, .86); --backdrop-opacity: 0; }
+ion-modal[data-oest-czesc=Nagrywanie]::part(content) { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.oest-rec { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 22px; color: var(--ink, #eef1ff); font: 600 20px var(--font-body, system-ui), sans-serif; touch-action: none; }
+.oest-rec-mic { width: 170px; height: 170px; border-radius: 50%; background: #e53935; display: flex; align-items: center; justify-content: center; animation: oestPulse 1s ease-in-out infinite; }
+.oest-rec-mic ion-icon { font-size: 84px; color: #fff; }
+.oest-rec-t { font-size: 34px; font-variant-numeric: tabular-nums; }
+.oest-rec ion-progress-bar { width: 70%; height: 8px; border-radius: 4px; --background: rgba(255, 255, 255, .12); --progress-background: linear-gradient(90deg, #5b7cff, #a35bff); }
+.oest-rec-h { font-weight: 400; font-size: 16px; color: var(--muted, #9aa3cc); text-align: center; padding: 0 24px; }
+ion-button.oest-rec-b { height: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 650 18px var(--font-body, system-ui), sans-serif; --padding-start: 40px; --padding-end: 40px; --border-radius: 14px; }
+@keyframes oestPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(229, 57, 53, .7); } 50% { transform: scale(1.08); box-shadow: 0 0 0 30px rgba(229, 57, 53, 0); } }
+@media (prefers-reduced-motion: reduce) { .oest-rec-mic { animation: none; } }
+/* podgląd zdjęcia (main: .oest-review) – zdjęcie na środku, komunikat, Powtórz · Edytuj · OK */
+ion-modal[data-oest-czesc=Aparat] { --background: #05070c; }
+.oest-podglad { position: absolute; inset: 0; display: flex; flex-direction: column; background: #05070c; }
+.oest-podglad-scena { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: max(44px, calc(8px + var(--oest-gora, env(safe-area-inset-top, 0px)))) 8px 8px; }
+.oest-podglad-scena img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+.oest-podglad-msg { margin: 0; padding: 0 16px; color: #f3c76b; font: 500 14px system-ui; min-height: 18px; }
+.oest-podglad-rzad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 12px 16px max(56px, calc(16px + var(--ion-safe-area-bottom, 0px))); }
+ion-button.oest-podglad-b { height: 56px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 16px system-ui; --border-radius: 14px; --padding-start: 4px; --padding-end: 4px; --color: #fff; }
+ion-button.oest-podglad-b[fill=outline] { --background: #151a22; --background-hover: #151a22; --background-activated: #1d232d; --border-width: 1px; --border-style: solid; --border-color: #3a4152; --box-shadow: none; }
+ion-modal[data-oest-czesc=Aparat] ion-button.oest-podglad-b:not([fill=outline]) { font-weight: 700; --box-shadow: none; }
+ion-button.oest-podglad-b ion-icon { font-size: 16px; margin-right: 4px; }
+/* edytor zdjęć (main: .oest-editor) – Anuluj (tekst) · Cofnij (szkło) · Zapisz (gradient), panel ze szkła z ramkami grup, kropki kolorów i grubości */
+ion-modal[data-oest-czesc=EdytorZdjec] { --background: var(--bg, #0a0e1f); }
+.oest-ed { --ed-w: clamp(30px, calc((100vw - 100px) / 7), 44px); position: absolute; inset: 0; display: flex; flex-direction: column; touch-action: none; user-select: none;
+  background: var(--bg, #0a0e1f); color: var(--ink, #eef1ff); font-family: var(--font-body, system-ui); }
+.oest-ed-top { display: flex; gap: 8px; align-items: center; padding: max(44px, calc(10px + var(--oest-gora, env(safe-area-inset-top, 0px)))) 12px 8px; }
+.oest-ed-top > span { flex: 1; }
+ion-button.oest-ed-b { height: 44px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui); --border-radius: 14px; --padding-start: min(16px, 3.6vw); --padding-end: min(16px, 3.6vw);
+  --border-width: 1px; --border-style: solid; --border-color: transparent; --color: var(--ink, #eef1ff); }
+ion-button.oest-ed-b[data-a=cancel] { --background: transparent; --background-hover: transparent; --color: var(--muted, #9aa3cc); --box-shadow: none; }
+ion-button.oest-ed-b[data-a=undo] { --background: var(--panel, rgba(255, 255, 255, .06)); --background-hover: var(--panel, rgba(255, 255, 255, .06)); --border-color: var(--line, rgba(255, 255, 255, .12)); --box-shadow: none; }
+ion-button.oest-ed-b[data-a=save] { font-weight: 700; --color: #fff; --padding-start: min(20px, 4.5vw); --padding-end: min(20px, 4.5vw); --box-shadow: 0 4px 18px rgba(124, 132, 255, .35); }
+ion-button.oest-ed-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-ed-b ion-spinner { width: 16px; height: 16px; margin-right: 6px; color: #fff; }
+.oest-ed-scena { flex: 1; min-height: 0; } /* odstęp 6 px wokół zdjęcia liczy moduł (fit), zdjęcie na środku sceny */
+.oest-ed-scena canvas { border-radius: 10px; }
+.oest-ed-panel { margin: 6px 12px max(44px, calc(14px + var(--ion-safe-area-bottom, 0px))); padding: 10px 10px 12px; border: 1px solid var(--line, rgba(255, 255, 255, .12)); border-radius: 18px; background: rgba(255, 255, 255, .04); }
+.oest-ed-rzad { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.oest-ed-rzad[data-styl] { align-items: center; }
+.oest-ed-grp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.oest-ed-grp > small { font-size: 12px; color: var(--muted, #9aa3cc); font-weight: 600; }
+.oest-ed-seg { display: flex; gap: 2px; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line, rgba(255, 255, 255, .12)); }
+.oest-ed-sep { height: 1px; background: var(--line, rgba(255, 255, 255, .12)); margin: 10px 2px; }
+.oest-ed-kolory { display: flex; gap: 2px; }
+ion-button.oest-ed-t { width: var(--ed-w); height: 44px; margin: 0; font: 600 18px var(--font-body, system-ui); line-height: 1;
+  --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --border-radius: 11px; --border-width: 1px; --border-style: solid; --border-color: transparent;
+  --background: transparent; --background-hover: transparent; --background-activated: rgba(124, 132, 255, .1); --color: var(--steel, #b9c2f0); --box-shadow: none; }
+ion-button.oest-ed-t[data-on] { --background: rgba(124, 132, 255, .18); --background-hover: rgba(124, 132, 255, .18); --border-color: rgba(124, 132, 255, .55); --color: #fff; --box-shadow: 0 0 14px rgba(124, 132, 255, .30); }
+ion-button.oest-ed-t ion-icon { font-size: 18px; }
+ion-button.oest-ed-t[data-t=arrow] ion-icon { font-size: 16px; transform: rotate(-45deg); }
+ion-button.oest-ed-t[data-t=line] ion-icon { font-size: 28px; transform: rotate(-60deg); }
+ion-button.oest-ed-t[data-t=rect] ion-icon { font-size: 17px; }
+ion-button.oest-ed-t[data-t=c1] ion-icon { font-size: calc(var(--ed-w) * .45); }
+ion-button.oest-ed-t[data-t=c2] ion-icon { font-size: calc(var(--ed-w) * .61); }
+ion-button.oest-ed-t[data-t=c3] ion-icon { font-size: calc(var(--ed-w) * .84); }
+ion-button.oest-ed-t[data-w], ion-button.oest-ed-c { width: calc(var(--ed-w) * .78); }
+ion-button.oest-ed-c { height: 44px; margin: 0; --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --border-width: 0; --border-color: transparent;
+  --background: transparent; --background-hover: transparent; --background-activated: transparent; --box-shadow: none; --border-radius: 11px; }
+.oest-ed-kropka { display: block; width: 24px; height: 24px; border-radius: 50%; background: var(--ion-color-base); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35); transition: transform .24s ease, box-shadow .24s; }
+ion-button.oest-ed-c[data-on] .oest-ed-kropka { transform: scale(1.08); box-shadow: 0 0 0 2px var(--bg, #0a0e1f), 0 0 0 4px #fff; }
+.oest-ed-gr { display: block; border-radius: 50%; background: var(--steel, #b9c2f0); transition: background-color .24s; }
+ion-button.oest-ed-t[data-on] .oest-ed-gr { background: var(--ion-color-base, #fff); }
+ion-button[data-w="4"] .oest-ed-gr { width: 6px; height: 6px; }
+ion-button[data-w="8"] .oest-ed-gr { width: 10px; height: 10px; }
+ion-button[data-w="14"] .oest-ed-gr { width: 16px; height: 16px; }
+/* kółko „pracuję” (main: .oest-load) – nad tekstem, nie zasłania stuknięć, pierścień z gradientem */
+ion-loading[data-oest-ladowanie] { pointer-events: none; --background: rgba(14, 18, 40, .9); --spinner-color: transparent; }
+ion-loading[data-oest-ladowanie] ion-backdrop { opacity: 0; }
+ion-loading[data-oest-ladowanie] .loading-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 22px; border-radius: 18px; color: #fff;
+  font: 600 14px/1.3 var(--font-body, system-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); margin-top: -10vh; }
+ion-loading[data-oest-ladowanie] .loading-wrapper .loading-spinner + .loading-content { margin: 0; }
+ion-loading[data-oest-ladowanie] .loading-spinner { display: flex; }
+ion-loading[data-oest-ladowanie] .loading-spinner ion-spinner, .oest-inline ion-spinner { border-radius: 50%; animation: oest-spin .9s linear infinite;
+  background: conic-gradient(from 0deg, rgba(124, 132, 255, 0) 0deg, rgba(124, 132, 255, .15) 120deg, #7c84ff 300deg, #c58bff 360deg); }
+ion-loading[data-oest-ladowanie] .loading-spinner ion-spinner { width: 46px; height: 46px;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.oest-inline ion-spinner { color: transparent; width: 22px; height: 22px; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.7px), #000 calc(100% - 3.3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3.7px), #000 calc(100% - 3.3px)); }
+.oest-inline { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 0; color: var(--muted, #9aa3cc); font-size: 13px; }
+@keyframes oest-spin { to { transform: rotate(360deg); } }
+/* arkusz „Odczyt ze zdjęcia” (main: .oest-ocr) – zdjęcie, podpowiedź, liczby i linie do stuknięcia */
+ion-modal[data-oest-okno=OdczytArkusz] { align-items: flex-end; --width: min(100%, 560px); --max-height: 88vh; --border-radius: 18px 18px 0 0; --background: #14202a; --border-width: 0; --backdrop-opacity: .6; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno { padding: 16px 16px calc(16px + var(--ion-safe-area-bottom, 0px)); font: 16px system-ui; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul ion-icon { font-size: 19px; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tresc { max-height: none; margin: 0; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-rzad { margin-top: 16px; }
+ion-modal[data-oest-okno=OdczytArkusz] ion-button.oest-okno-b[data-okno=ok] { height: 56px; font: 700 18px system-ui; --background: #fff; --background-hover: #fff; --background-activated: #e8e8e8; --color: #14202a; --box-shadow: none; }
+.oest-ocr ion-item { --background: #0d161d; --border-radius: 10px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .3); --min-height: 46px; }
+.oest-ocr img { display: block; width: 100%; max-height: 28vh; object-fit: contain; border-radius: 10px; background: #000; }
+.oest-ocr-hint { opacity: .7; font-size: 14px; margin: 0 0 10px; }
+.oest-ocr-lbl { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin: 14px 0 6px; }
+.oest-ocr-chipy { display: flex; flex-wrap: wrap; gap: 8px; }
+ion-button.oest-ocr-b { height: auto; margin: 0; text-transform: none; letter-spacing: 0; font: 600 16px var(--font-body, system-ui); --padding-top: 10px; --padding-bottom: 10px; --padding-start: 12px; --padding-end: 12px;
+  --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .3); --background: rgba(255, 255, 255, .06); --background-hover: rgba(255, 255, 255, .06); --color: #fff; --box-shadow: none; }
+ion-button.oest-ocr-b[data-liczba] { font-family: ui-monospace, monospace; }
+ion-button.oest-ocr-b[data-on] { --background: #2e7d32; --border-color: #2e7d32; }
 ion-toggle { --track-background-checked: #7c84ff; }
 ion-list-header { --color: var(--ink); --background: transparent; }
 /* Kolor grupy inspekcji = pasek z lewej klocka (Grzegorz 04/11/2026). Te same kolory co grupy w app/www/ppm.js (OEST_PPM.groups) – zmiana grupy = zmiana w obu miejscach. */
