@@ -4,6 +4,10 @@
   "note": "Plan audytu 19/11/2026 punkt 1.6: ekrany, których wygląd ZMIENIA bieżący PR (zrzuty-ui-check.cjs porównuje piksel w piksel z main). Wpis tylko za zgodą właściciela na zmianę wyglądu tego ekranu (DESIGN-SYSTEM.md: żadnego samowolnego przeprojektowania). Po scaleniu następny PR musi wpisy usunąć – lista dotyczy tylko jednej zmiany.",
   "entries": [
     {
+      "id": "settings/mail",
+      "reason": "Ekran Poczta i wysyłka przeniesiony na Ionic + Vue (decyzja Grzegorza 21/11/2026: cała apka na Ionic + Vue, wątek „Oprzeć apkę na Ionic i Vue”); scalenie tylko po jego „tak” do tego PR."
+    },
+    {
       "id": "settings/contacts",
       "reason": "Ekran Zespół i kontakty przeniesiony na Ionic + Vue (decyzja Grzegorza 21/11/2026: cała apka na Ionic + Vue, wątek „Oprzeć apkę na Ionic i Vue”); scalenie tylko po jego „tak” do tego PR."
     }

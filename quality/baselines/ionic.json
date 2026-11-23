@@ -187,13 +187,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/about",
-      "rule": "IONIC",
-      "detail": "Ekran settings/about (O aplikacji) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|settings/account",
       "rule": "IONIC",
       "detail": "Ekran settings/account (Konto) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
@@ -232,13 +225,6 @@
       "id": "IONIC|ekran|settings/reports",
       "rule": "IONIC",
       "detail": "Ekran settings/reports (Raporty i zdjęcia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|settings/sync",
-      "rule": "IONIC",
-      "detail": "Ekran settings/sync (Synchronizacja) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
