@@ -51,30 +51,9 @@
   function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
   function online() { return navigator.onLine !== false; }
 
-  // ---------- baza w telefonie (IndexedDB): kolejka raportów + szablon ----------
-  var mem = { queue: {}, kv: {} }; // bez IndexedDB: odczyt = pusto; zapis = jawny błąd STORAGE_WRITE (audyt 19/11/2026 nr 21, D11 – nie cichy zapas w pamięci)
-  var dbP = new Promise(function (res) {
-    try {
-      var rq = indexedDB.open("inspekcje", 1);
-      rq.onupgradeneeded = function () { var db = rq.result; db.createObjectStore("queue", { keyPath: "id" }); db.createObjectStore("kv"); };
-      rq.onsuccess = function () { res(rq.result); };
-      rq.onerror = function () { res(null); };
-    } catch (e) { res(null); }
-  });
-  function idb(store, mode, fn) {
-    return dbP.then(function (db) {
-      if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return fn(null, mem[store]); }
-      return new Promise(function (res, rej) {
-        var tx = db.transaction(store, mode), out = fn(tx.objectStore(store));
-        tx.oncomplete = function () { res(out instanceof IDBRequest ? out.result : out); };
-        tx.onerror = tx.onabort = function () { rej(tx.error); };
-      });
-    });
-  }
-  function kvGet(k) { return idb("kv", "readonly", function (s, m) { return m ? m[k] : s.get(k); }); }
-  function kvSet(k, v) { return idb("kv", "readwrite", function (s, m) { if (m) m[k] = v; else s.put(v, k); }); }
-  function qAll() { return idb("queue", "readonly", function (s, m) { return m ? Object.keys(m).map(function (k) { return m[k]; }) : s.getAll(); }); }
-  function qPut(it) { return idb("queue", "readwrite", function (s, m) { if (m) m[it.id] = it; else s.put(it); }); }
-  function qDel(id) { return idb("queue", "readwrite", function (s, m) { if (m) delete m[id]; else s.delete(id); }); }
+  // ---------- baza w telefonie (IndexedDB „inspekcje”): kolejka raportów + szablon ----------
+  // jeden właściciel bazy: moduly/wysylka (OESTSender.baza, karta K10) – strona nie otwiera jej sama
+  var BAZA = window.OESTSender.baza;
+  var kvGet = BAZA.kvGet, kvAll = BAZA.kvAll, kvSet = BAZA.kvSet, qAll = BAZA.qAll, qPut = BAZA.qPut, qDel = BAZA.qDel, bazaJest = BAZA.dostepna;
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
 

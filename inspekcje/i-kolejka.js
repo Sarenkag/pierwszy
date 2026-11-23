@@ -119,9 +119,9 @@
     if (Array.isArray(r.files) && !r.files.length) return Promise.reject(new Error(window.OESTT("w ⚙ obok Wyślij nic nie jest zaznaczone do wysłania (albo zaznaczone części są puste)", "nothing to send is ticked in ⚙ next to Send (or the ticked parts are empty)")));
     var it = queueItem(r, from);
     if (sendBtn && sendBtn.step) sendBtn.step(window.OESTT("Dodaję do kolejki…", "Adding to the queue…"));
-    return dbP.then(function (db) {
+    return bazaJest().then(function (jest) {
       // bez pamięci telefonu raport nie trafia do kolejki ani nie „wychodzi od razu”: jawny błąd, formularz zostaje (D11)
-      if (!db) throw Error("STORAGE_WRITE");
+      if (!jest) throw Error("STORAGE_WRITE");
       return qPut(it);
     }).then(function () {
       queue.push(it); lastQueued = it.code;

@@ -62,11 +62,11 @@
   // od wyczyszczenia (Grzegorz 08/11/2026: „niech trzyma przez miesiąc”; liczone od chwili, gdy zniknęły z inspekcji) przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
   function releaseUnused() {
     if (!Zd || !Zd.release) return;
-    dbP.then(function (db) {
-      if (!db) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
+    bazaJest().then(function (jest) {
+      if (!jest) return; // bez bazy nie wiemy, co jest w szkicach: nic nie zwalniamy
       // odzyskane inspekcje (klocek Raporty) trzymają swoje zdjęcia także przed pierwszym otwarciem (uwaga Codex #101)
       var R = window.OESTRaporty, rec = R && R.recovered ? R.recovered().then(function (rs) { return rs.map(function (r) { return r.snap; }); }, function () { return null; }) : Promise.resolve([]);
-      return Promise.all([idb("kv", "readonly", function (st) { return st.getAll(); }), rec]).then(function (all) {
+      return Promise.all([kvAll(), rec]).then(function (all) {
         if (all[1] === null) return; // nie odczytano archiwum: nic nie zwalniamy
         var vals = [all[0], all[1]], ids = new Set();
         (function walk(v, depth) {
