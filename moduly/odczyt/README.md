@@ -11,6 +11,8 @@ OESTOdczyt.read(blob).then(r => r.lines /* r.numbers, r.text */);
 ```
 `OESTOdczyt.tekst(canvas)` – surowy tekst z gotowego obrazu (bez zmiany rozmiaru i porządkowania linii); używają go Klucze (numer klucza) i Power trace (OCR → szkic). Nikt poza tym modułem nie woła wtyczki `recognize` (test M1 w `app/tests/moduly-zasady.test.cjs`).
 
+Arkusz to część Ionic szkieletu `moduly/szkielet/src/czesci/OdczytArkusz.vue` w `OESTOkna.okno` (od 23/11/2026; zdjęcie, podpowiedź, ion-select „Wpisz do”, liczby i linie jako ion-chip, „Gotowe”); moduł trzyma OCR i wpisywanie (kontroler). `pick` → liczba wpisanych pozycji.
+
 `OESTOdczyt.available()` = apka Android. W przeglądarce przycisk się nie pokazuje.
 
 Strona: `<script src="moduly/odczyt/odczyt.js"></script>` (w inspekcjach `../moduly/odczyt/odczyt.js`).

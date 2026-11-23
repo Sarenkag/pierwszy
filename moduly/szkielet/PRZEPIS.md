@@ -41,7 +41,14 @@ Moduł ekranu (`app/www/*.js`) daje zwykłe dane; część je pokazuje. Brakuje 
 | `Akcja.vue` | `OESTPrzycisk.start/run` | `<Akcja :T="T" :fn="async etap => …" busy="Wysyłam">Wyślij</Akcja>` |
 | `Lampka.vue` | `OESTZnacznik.lampka` | `stan` on/mid/off/na + `tekst` |
 | `Polaczenie.vue` | – | połączenie z Google (`rodzaj`) |
-| `Okno.vue` | `OESTPrzycisk.ask({ node })` | przez `OESTOkna.okno(...)` |
+| `Okno.vue` | `OESTPrzycisk.ask({ node })` | przez `OESTOkna.okno(...)`; `wyglad: '<nazwa>'` = małe okienko na środku z dwoma równymi przyciskami (wspólne moduły) |
+| `Notatki.vue` | `OESTNotatki.mount` (pasek notatek) | `<Notatki :T="T" :opcje="{ scope: () => klucz, ctx: () => miejsce, title: () => tytuł, join: 'Połącz notatki w opis', ok: 'Wstaw', icons: true, onJoin: tekst => …, onSaved: n => …, onError: e => … }" />` |
+| `Aparat.vue`, `EdytorZdjec.vue` | podgląd i edytor `moduly/aparat` | same z modułu: `OESTAparat.take(opts)` / `edit(blob, opts)` / `available()` – ekran nic nie montuje |
+| `NotatkiOkno.vue`, `NotatkiPropozycja.vue`, `NotatkaNowa.vue`, `Nagrywanie.vue` | okienka `moduly/notatki` | same z modułu: `OESTNotatki.open/offer/write`, przytrzymanie przycisku nagrywania (`OESTVoice`) |
+| `OdczytArkusz.vue` | arkusz `moduly/odczyt` | sam z modułu: `OESTOdczyt.pick(blob, { targets })` |
+| `Ladowanie.vue` | `OESTLadowanie.inline` | `OESTLadowanie.show(t)/hide()` = ion-loading, `inline(el, t)` = ion-spinner + tekst, `ring()` = `<ion-spinner>` |
+
+Wspólne moduły (aparat, notatki, ładowanie, odczyt) trzymają logikę i dane w „kontrolerze”: `{ dane() → zwykły obiekt, na(fn) → wyłącz, akcja(nazwa, …), zamknij() }`; część Vue tylko go pokazuje (`src/czesci/kontroler.js`: `uzyjKontrolera(k)`). Szkielet daje im `window.OESTCzesci`: `pokaz(nazwa, kontroler)` (ion-modal na cały ekran), `okno(nazwa, kontroler, o)` (`OESTOkna.okno` z częścią), `montuj(el, nazwa, wl)` (część w elemencie starego ekranu), `plotno(w, h)` (płótno w pamięci), `sluchacze(dane)` (`{ na, emit }`), `ladowanie`. Wygląd „Szkło i poświata” tych części: tylko zmienne Ionic w `src/szkielet.css`, kluczem atrybuty `data-oest-czesc` / `data-oest-okno` / `data-nt-*` (bez własnych klas); kolory przycisków `duch` (ciemny z ramką) i `poswiata` (gradient) jako kolory Ionic (`color="duch"`).
 
 Okienka (ze szkieletu, `window.OESTOkna`): `pytaj({ tytul, tresc, ok, anuluj, niebezpieczne, tylkoOk })` → `true/false` (ion-alert; zastępuje `OESTPytaj`, `OESTKomunikat`, `OESTPrzycisk.confirm/alert/ask`), `okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow })` → `{ ok, dane }` (ion-modal z treścią Vue), `wybor({ tytul, opcje })` (ion-action-sheet).
 Akcje paska ekranu: `OESTRama.ustaw({ akcje: [{ ikona, etykieta, fn | nav }] })` – ikony tylko z `ionicons/icons`.
