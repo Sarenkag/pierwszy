@@ -10,6 +10,7 @@
           <ion-buttons slot="start"><ion-back-button default-href="#" data-nav="up" :text="''" :aria-label="T('Wstecz', 'Back')"></ion-back-button></ion-buttons>
           <ion-title>{{ stan.tytul }}</ion-title>
           <ion-buttons slot="end">
+            <ion-button v-for="(a, i) in akcjeVue" :key="i" :data-nav="a.nav || undefined" :disabled="a.wylaczona" @click="!a.nav && a.fn && a.fn()" :aria-label="a.etykieta"><ion-icon slot="icon-only" :icon="a.ikona"></ion-icon></ion-button>
             <ion-button @click="emit('jezyk')" :aria-label="T('Język: polski / angielski', 'Language: Polish / English')">{{ jezyk === 'pl' ? 'EN' : 'PL' }}</ion-button>
           </ion-buttons>
         </ion-toolbar>
@@ -25,11 +26,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { IonApp, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonContent, IonFooter } from '@ionic/vue';
+import { IonApp, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent, IonFooter } from '@ionic/vue';
 const props = defineProps({ stan: Object, T: Function, strona: Boolean });
 const emit = defineEmits(['gotowe', 'jezyk']);
 const jezyk = computed(() => (props.stan.wersja, (window.OESTBledy && window.OESTBledy.lang ? window.OESTBledy.lang() : document.documentElement.lang) === 'en' ? 'en' : 'pl'));
 const tresc = ref(null);
+// akcje paska ekranu na Vue (OESTRama.ustaw({ akcje: [{ ikona, etykieta, fn | nav }] })): ikony Ionicons; węzły DOM to akcje starych ekranów
+const akcjeVue = computed(() => (props.stan.akcje || []).filter(a => a && !(a instanceof Node)));
 onMounted(async () => {
   if (props.strona) return; // osobna strona (inspekcje): tylko Wstecz i okienka, bez ramy
   const wrap = document.querySelector('body > .wrap');

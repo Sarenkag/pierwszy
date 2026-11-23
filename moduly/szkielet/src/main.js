@@ -15,6 +15,9 @@
 //   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
 //   OESTOkna.open(zamknij) → zwolnij               okienko na wierzchu: Wstecz woła zamknij(); okienko po zamknięciu woła zwolnij()
 //   OESTOkna.ile() / .zamknijGorne() / .zamknijWszystkie()
+//   OESTOkna.pytaj({ tytul, tresc, ok, anuluj, niebezpieczne, tylkoOk }) → Promise<bool>   „Na pewno?” / komunikat (ion-alert)
+//   OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj }) → Promise<{ ok, dane }>   okienko z treścią Vue (ion-modal)
+//   OESTOkna.wybor({ tytul, opcje: [{ tekst, wartosc }] }) → Promise<wartosc|null>      wybór akcji (ion-action-sheet)
 import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { IonicVue, alertController, modalController, actionSheetController } from '@ionic/vue';
@@ -26,6 +29,7 @@ import '@ionic/vue/css/text-alignment.css';
 import '@ionic/vue/css/palettes/dark.always.css'; // apka jest ciemna (motyw „Szkło i poświata”): ciemna paleta Ionic
 import mapa from '../../ekrany/ekrany.json';
 import Rama from './Rama.vue';
+import Okno from './czesci/Okno.vue';
 import { EKRANY_VUE } from './ekrany/index.js';
 import './szkielet.css';
 
@@ -54,6 +58,33 @@ const OESTOkna = {
     const a = await alertController.create({ header: o.tytul || '', message: o.tresc || '', backdropDismiss: false, buttons: o.przyciski || [{ text: 'OK', role: 'ok' }] });
     await a.present();
     return (await a.onDidDismiss()).role;
+  },
+  // JEDNO okienko „Na pewno?” w całej apce (Grzegorz 04/11/2026) na ion-alert: stuknięcie obok i Wstecz = Anuluj.
+  // OESTOkna.pytaj({ tytul, tresc, ok, anuluj, niebezpieczne, tylkoOk }) → Promise<true|false>
+  async pytaj(o) {
+    o = o || {};
+    const przyciski = o.tylkoOk ? [{ text: o.ok || 'OK', role: 'confirm' }]
+      : [{ text: o.anuluj || T('Anuluj', 'Cancel'), role: 'cancel' }, { text: o.ok || T('Tak', 'Yes'), role: o.niebezpieczne ? 'destructive' : 'confirm' }];
+    const a = await alertController.create({ header: o.tytul || undefined, message: o.tresc || undefined, buttons: przyciski });
+    await a.present();
+    const r = (await a.onDidDismiss()).role;
+    return o.tylkoOk ? true : r === 'confirm' || r === 'destructive';
+  },
+  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow }) → Promise<{ ok, dane }>
+  async okno(o) {
+    o = o || {};
+    const m = await modalController.create({ component: Okno, componentProps: { ...o, T } });
+    await m.present();
+    const r = await m.onDidDismiss();
+    return r.data || { ok: false, dane: null };
+  },
+  // wybór jednej z kilku akcji (ion-action-sheet): OESTOkna.wybor({ tytul, opcje: [{ tekst, wartosc, niebezpieczne }] }) → Promise<wartosc|null>
+  async wybor(o) {
+    o = o || {};
+    const a = await actionSheetController.create({ header: o.tytul || undefined, buttons: [...(o.opcje || []).map(x => ({ text: x.tekst, role: x.niebezpieczne ? 'destructive' : undefined, data: x.wartosc })), { text: T('Anuluj', 'Cancel'), role: 'cancel' }] });
+    await a.present();
+    const r = await a.onDidDismiss();
+    return r.role === 'cancel' || r.role === 'backdrop' ? null : (r.data === undefined ? null : r.data);
   }
 };
 

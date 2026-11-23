@@ -52,7 +52,10 @@
   //   ask({ title, node, bare: true, cls: "ki-info" }) → samo okienko bez przycisków (np. informacje o inspekcji, 07/11/2026):
   //        stuknięcie gdziekolwiek (także w okienko) albo Wstecz zamyka; cls = dodatkowa klasa do własnego wyglądu treści
   function ask(o) {
-    o = o || {}; css();
+    o = o || {};
+    // okienka bez własnej treści: JEDNO okienko Ionic ze szkieletu (ion-alert, OESTOkna.pytaj); własna treść (node) – do przeniesienia ekranu na Vue
+    if (!o.node && w.OESTOkna && w.OESTOkna.pytaj) return w.OESTOkna.pytaj({ tytul: o.title, tresc: o.text, ok: o.ok || (o.alert ? "OK" : w.OESTT("Połącz ponownie", "Reconnect")), anuluj: o.cancel, niebezpieczne: !!o.danger, tylkoOk: !!o.alert });
+    css();
     return new Promise(function (done) {
       var box = document.createElement("div"); box.className = "oest-ask" + (o.cls ? " " + o.cls : ""); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
       var okTxt = o.ok || (o.alert ? "OK" : w.OESTT("Połącz ponownie", "Reconnect"));
