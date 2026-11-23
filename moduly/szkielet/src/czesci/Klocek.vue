@@ -5,7 +5,7 @@
          miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
      Wygląd jak dotąd (szkielet.css, .oest-klocek: szkło, pasek grupy z lewej, odstępy i separatory jak w moduly/klocek). Stuknięcie w dowolne miejsce: zdarzenie „wybierz” (bez strzałki z prawej – Grzegorz 23/11); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
-  <ion-card button class="oest-klocek" :disabled="k.wylaczony" :data-id="k.id" :data-grupa="k.grupa || undefined" :data-przygaszony="k.przygaszony || undefined" :aria-description="k.akcja || undefined" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
+  <ion-card button class="oest-klocek" :disabled="k.wylaczony" :data-id="k.id" :data-day="k.day || undefined" :data-grupa="k.grupa || undefined" :data-przygaszony="k.przygaszony || undefined" :aria-description="k.akcja || undefined" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
     <div class="oest-kr">
       <img v-if="k.miniatura" :src="k.miniatura" alt="">
       <h2>{{ k.nazwa }}</h2>
@@ -20,7 +20,7 @@
     </div>
     <div v-if="k.termin || widoczne.length || k.numer" class="oest-kr">
       <template v-if="k.termin"><ion-icon :icon="I.termin" aria-hidden="true"></ion-icon><span class="oest-kdt" :data-ton="k.termin.ton || undefined">{{ k.termin.tekst }}</span></template>
-      <template v-for="(x, i) in widoczne" :key="i"><span class="oest-ksep"></span><ion-icon :icon="I[x.rodzaj] || I.punkt" :data-ton="x.ton || undefined" aria-hidden="true"></ion-icon><strong>{{ x.n }}</strong></template>
+      <template v-for="(x, i) in widoczne" :key="i"><span class="oest-ksep"></span><ion-icon :icon="I[x.rodzaj] || I.punkt" :data-ton="x.ton || undefined" aria-hidden="true"></ion-icon><strong :data-rodzaj="x.rodzaj">{{ x.n }}</strong></template>
       <template v-if="k.numer"><span class="oest-ksep"></span><span class="oest-knr">{{ k.numer }}</span></template>
     </div>
     <ion-progress-bar v-if="k.procent != null" :value="(k.procent || 0) / 100" :color="k.procent >= 100 ? 'success' : 'primary'"></ion-progress-bar>

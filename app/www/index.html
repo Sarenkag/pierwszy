@@ -133,7 +133,6 @@ input[type=text], input[type=email], input[type=date], select {
 <link rel="stylesheet" href="handover.css">
 <link rel="stylesheet" href="keys.css">
 <link rel="stylesheet" href="powertrace.css">
-<link rel="stylesheet" href="questions.css">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="home.css">
 <link rel="stylesheet" href="moduly/wyglad/wyglad.css"><!-- jedna skala czcionek i przycisków: zawsze ostatni -->
@@ -141,23 +140,9 @@ input[type=text], input[type=email], input[type=date], select {
 <body>
 <div class="wrap">
 
-  <!-- Start: nazwa, logo, obiekt, logowanie -->
-  <section class="view" id="v-start" hidden><!-- ekran wybiera render() – bez tego przy powrocie z inspekcji migał ekran logowania (09/11/2026) -->
-    <div class="brand">
-      <p class="appname">OEST</p>
-      <div class="logo" aria-hidden="true">OEST</div>
-      <div class="site">One East Side Tower</div>
-    </div>
-    <div class="auth">
-      <button class="btn go" type="button" id="googleBtn">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" opacity=".75" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="currentColor" opacity=".55" d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="currentColor" opacity=".9" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z"/></svg>
-        <span data-en="Sign in with Google">Zaloguj przez Google</span>
-      </button>
-      <p class="hint" data-en="Registration and password recovery go through your Google account. After the first sign-in the app also opens without internet.">Rejestracja i odzyskiwanie hasła odbywają się przez konto Google. Po pierwszym logowaniu apka otwiera się także bez internetu.</p>
-      <p class="err" id="authErr" hidden></p>
-      <button class="linkish" type="button" id="skipBtn" hidden data-en="Enter without signing in (until Google is set up)">Wejdź bez logowania (do czasu ustawienia Google)</button>
-    </div>
-  </section>
+  <!-- Pudełka ekranów Start i Pytania zostają puste: ekrany rysuje rama Ionic + Vue; ekrany.json wymaga istniejącego #v-… -->
+  <section class="view" id="v-start" hidden></section>
+  <section class="view" id="v-questions" hidden></section>
 
   <!-- Menu główne -->
 
@@ -202,8 +187,7 @@ input[type=text], input[type=email], input[type=date], select {
     </div>
   </section>
 
-  <section class="view" id="v-questions" hidden></section>
-  <section class="view" id="v-powertrace" hidden></section>
+    <section class="view" id="v-powertrace" hidden></section>
   <section class="view" id="v-keys" hidden></section>
   <section class="view" id="v-reactive" hidden></section>
   <section class="view" id="v-handover" hidden></section>
@@ -236,6 +220,7 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="calendar-core.js"></script>
 <script src="calendar-sync.js"></script>
 <script src="calendar-ui.js"></script>
+<script src="start-ui.js"></script>
 <script src="wersja.js"></script>
 <script src="update.js"></script>
 <script src="moduly/zdjecia/zdjecia.js"></script>
@@ -294,7 +279,8 @@ input[type=text], input[type=email], input[type=date], select {
   var renderedRoute = "";
   function render(v) {
     // ekran przeniesiony na Ionic + Vue rysuje rama (moduly/szkielet) – stary kod tylko się chowa
-    if (account() && window.OESTEkrany.jestVue(v)) { document.querySelectorAll(".view").forEach(function (s) { s.hidden = true; }); renderedRoute = v; return; }
+    if (!account() && v !== "start") { window.OESTEkrany.go("start"); return; } // bez konta tylko ekran Start
+    if (window.OESTEkrany.jestVue(v)) { document.querySelectorAll(".view").forEach(function (s) { s.hidden = true; }); renderedRoute = v; return; }
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
     var reactiveRoute = v === "reactive" || v.indexOf("reactive/") === 0 ? v : null;
@@ -308,11 +294,9 @@ input[type=text], input[type=email], input[type=date], select {
     if (!account()) v = "start";
     else if (!$("v-" + v)) { window.OESTEkrany.go("home"); return; } // nieznany adres → ekran główny (na Ionic + Vue)
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
-    if (v === "settings") window.OESTSettingsUI.open(settingsRoute || "settings");
     if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
-    if (v === "questions") window.OESTQuestionsUI.open();
     if (v === "reactive" || v.indexOf("reactive/") === 0) window.OESTReactiveUI.open(reactiveRoute);
     if (v === "zdjecia" && window.OESTZdjeciaUI) window.OESTZdjeciaUI.open();
     if (v === "appset") renderAccount();
@@ -322,7 +306,7 @@ input[type=text], input[type=email], input[type=date], select {
   // Nawigacja i Wstecz: JEDEN moduł – moduly/szkielet (Ionic + Vue, Grzegorz 21/11/2026). Tu tylko: co narysować dla trasy
   // i kto pilnuje niezapisanych zmian przy wyjściu w górę (canLeave ekranu). Historia przeglądarki nie jest stanem.
   function show(v) { window.OESTEkrany.go(v); }
-  [window.OESTSettingsUI, window.OESTHandover, window.OESTKeys, window.OESTPowerTrace, window.OESTQuestionsUI, window.OESTReactiveUI, window.OESTZdjeciaUI]
+  [window.OESTHandover, window.OESTKeys, window.OESTPowerTrace, window.OESTReactiveUI, window.OESTZdjeciaUI]
     .forEach(function (m) { if (m && m.setNavigate) m.setNavigate(show); });
   [["reactive", window.OESTReactiveUI], ["settings", window.OESTSettingsUI], ["profile", window.OESTSettingsUI], ["appset", window.OESTSettingsUI], ["questions", window.OESTQuestionsUI],
    ["powertrace", window.OESTPowerTrace], ["keys", window.OESTKeys], ["handover", window.OESTHandover]]
@@ -340,31 +324,6 @@ input[type=text], input[type=email], input[type=date], select {
   function account() { return window.OESTKonto.get(); } // moduly/konto
   function setAccount(a) { window.OESTKonto.set(a); }
 
-  function googleReady() {
-    if (!Social || !CONF.googleWebClientId) return Promise.resolve(false);
-    return Social.initialize({ google: { webClientId: CONF.googleWebClientId } }).then(function () { return true; });
-  }
-  $("googleBtn").addEventListener("click", function () {
-    var b = this; b.disabled = true; $("authErr").hidden = true;
-    googleReady().then(function (ok) {
-      if (!ok) throw new Error(native ? window.OESTT("Logowanie Google nie jest jeszcze ustawione w tej wersji apki.", "Google sign-in is not set up in this app version yet.") : window.OESTT("Logowanie Google działa tylko w apce na telefonie.", "Google sign-in works only in the phone app."));
-      return Social.login({ provider: "google", options: { scopes: ["email", "profile"] } });
-    }).then(function (res) {
-      var p = (res && res.result && res.result.profile) || {};
-      if (!p.email) throw new Error(window.OESTT("Google nie zwrócił adresu e-mail.", "Google did not return an email address."));
-      setAccount({ provider: "google", id: p.id || "", email: p.email, name: p.name || "", first: p.givenName || "", last: p.familyName || "", pic: p.imageUrl || "", t: Date.now() });
-      seedProfile();
-      window.OESTEkrany.go("home");
-    }).catch(function (e) {
-      $("authErr").textContent = window.OESTBledy ? OESTBledy.text(e) : (e && e.message) || String(e); $("authErr").hidden = false;
-      $("skipBtn").hidden = false; // gdy Google zawiedzie, zawsze da się wejść bez logowania (praca nie może stanąć)
-    }).then(function () { b.disabled = false; });
-  });
-  // Tymczasowe wejście, dopóki nie ma identyfikatora Google (żeby dało się sprawdzić resztę apki)
-  $("skipBtn").addEventListener("click", function () {
-    setAccount({ provider: "local", id: "", email: "", name: "", t: Date.now() });
-    window.OESTEkrany.go("home");
-  });
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
@@ -392,10 +351,9 @@ input[type=text], input[type=email], input[type=date], select {
   }
 
   // ---------- start ----------
-  if (!native && !CONF.googleWebClientId) $("skipBtn").hidden = false; // podgląd w przeglądarce
-  if (native && !CONF.googleWebClientId) $("skipBtn").hidden = false;
+  window.OESTStart.init({ conf: CONF, native: native, social: Social, seed: seedProfile, wejdz: function () { window.OESTEkrany.go("home"); } });
   if (account()) {
-    try { seedProfile(); } catch (e) { $("authErr").textContent = window.OESTT("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message); $("authErr").hidden = false; }
+    try { seedProfile(); } catch (e) { window.OESTStart.blad(window.OESTT("Ustawienia: ", "Settings: ") + (window.OESTBledy ? OESTBledy.text(e) : e.message)); }
   }
   // start: ekran z adresu (powrót z inspekcji, odzyskana z Raportów…); bez konta – logowanie. Wstecz = rodzic z mapy ekranów.
   var start = (location.hash || "").slice(1);

@@ -33,31 +33,33 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
   }
   async function close(app) { state = await app.ctx.storageState(); await app.ctx.close(); }
   const lang = p => p.evaluate(() => ({ ui: localStorage.getItem('oest.lang'), cur: OESTSettings.get().appearance.language, def: OESTSettings.get().profile.language }));
-  const homeText = p => p.locator('#v-home').innerText();
+  const sel = (p, v) => p.evaluate(v => document.querySelector('ion-select#profile-language').dispatchEvent(new CustomEvent('ionChange', { detail: { value: v } })), v);
+  const HL = '.oest-jezyk ion-button.button-clear'; // nieaktywny język w przełączniku ekranu głównego (Vue)
+  const homeText = p => p.locator('#oest-szkielet ion-content').innerText();
   let passed = 0; const ok = (c, m) => { assert.ok(c, m); passed++; };
   try {
     // 1. Pierwsze uruchomienie: domyślnie PL. W profilu ustawiam PL i zapisuję.
     let app = await launch(), p = app.p;
-    await p.goto(url + '/#settings/profile'); await p.locator('[data-path="profile.language"]').waitFor();
+    await p.goto(url + '/#settings/profile'); await p.locator('ion-select#profile-language').waitFor();
     ok((await lang(p)).def === 'pl', 'domyślny język profilu = PL');
-    await p.locator('[data-path="profile.language"]').selectOption('pl');
+    await sel(p,'pl');
     await p.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
-    ok(/Zapisano/.test(await p.locator('#settingsMessage').textContent()), 'profil zapisany');
+    ok(/Zapisano/.test(await p.locator('#oest-szkielet ion-content ion-note[role=status]').textContent()), 'profil zapisany');
 
     // 2. Na ekranie głównym przełączam u góry na EN.
-    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('#hmLang').waitFor();
-    await p.locator('#hmLang').click(); await p.waitForTimeout(150);
+    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('.oest-jezyk').waitFor();
+    await p.locator(HL).click(); await p.waitForTimeout(150);
     let l = await lang(p); ok(l.ui === 'en' && l.cur === 'en', 'przełącznik u góry: EN'); ok(l.def === 'pl', 'przełącznik nie zmienia języka w profilu');
     ok(/Settings/.test(await homeText(p)), 'ekran główny po angielsku');
 
     // 3. Wejście do inspekcji i powrót (przeładowanie strony w tej samej sesji): zostaje EN.
     await p.goto(url + '/inspekcje/index.html'); await p.waitForLoadState('load');
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor(); await p.waitForTimeout(150);
+    await p.goto(url + '/#home'); await p.locator('.oest-jezyk').waitFor(); await p.waitForTimeout(150);
     ok((await lang(p)).ui === 'en', 'po powrocie z inspekcji nadal EN (bez restartu)');
 
     // 4. Ustawienia w EN: przełącznik nie rusza wyboru w profilu, klocki się nie przesuwają przy zmianie PL/EN.
-    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.language"]').waitFor();
-    ok(await p.locator('[data-path="profile.language"]').inputValue() === 'pl', 'w profilu nadal Polski, choć apka w EN');
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('ion-select#profile-language').waitFor();
+    ok(await p.evaluate(() => document.querySelector('ion-select#profile-language').value) === 'pl', 'w profilu nadal Polski, choć apka w EN');
     await p.evaluate(() => OESTEkrany.go('settings')); await p.locator('ion-card[data-nav]').first().waitFor();
     const boxes = () => p.evaluate(() => [...document.querySelectorAll('ion-card[data-nav]')].map(e => { let x = 0, y = 0; for (let n = e; n; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return [x, y, e.offsetWidth, e.offsetHeight, getComputedStyle(e).height].join(','); }) /* układ (bez chwilowej animacji dotyku) */);
     const enBoxes = await boxes();
@@ -70,27 +72,27 @@ const ACCOUNT = { provider: 'local', id: 'test', email: 'demo@example.com', firs
 
     // 5. Restart apki: wraca język z profilu (PL).
     app = await launch(); p = app.p;
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor();
+    await p.goto(url + '/#home'); await p.locator('.oest-jezyk').waitFor();
     l = await lang(p); ok(l.ui === 'pl' && l.cur === 'pl', 'po restarcie: PL z profilu');
     ok(/Ustawienia/.test(await homeText(p)), 'ekran główny po polsku po restarcie');
 
     // 6. Profil na EN + zapis: od razu cała apka EN; restart dalej EN; przełącznik na PL działa do zamknięcia.
-    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.language"]').waitFor();
-    await p.locator('[data-path="profile.language"]').selectOption('en');
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('ion-select#profile-language').waitFor();
+    await sel(p,'en');
     await p.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click(); await p.waitForTimeout(150);
     l = await lang(p); ok(l.def === 'en' && l.ui === 'en', 'zapis profilu z EN: apka od razu EN');
-    ok(/My Profile/.test(await p.locator('#v-settings h1').textContent()), 'nagłówek profilu po angielsku');
-    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('#hmLang').waitFor(); await p.locator('#hmLang').click(); await p.waitForTimeout(150);
+    ok(/My Profile/.test(await p.locator('ion-toolbar ion-title').textContent()), 'nagłówek profilu po angielsku');
+    await p.evaluate(() => OESTEkrany.go('home')); await p.locator('.oest-jezyk').waitFor(); await p.locator(HL).click(); await p.waitForTimeout(150);
     ok((await lang(p)).ui === 'pl', 'w trakcie pracy przełączone na PL');
     await close(app);
     app = await launch(); p = app.p;
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor();
+    await p.goto(url + '/#home'); await p.locator('.oest-jezyk').waitFor();
     ok((await lang(p)).ui === 'en', 'po restarcie: EN z profilu');
 
     // 7. Zapis profilu bez zmiany języka (np. stanowisko) nie przestawia bieżącego języka.
-    await p.locator('#hmLang').click(); await p.waitForTimeout(150);
-    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('[data-path="profile.position"]').waitFor();
-    await p.locator('[data-path="profile.position"]').fill('Shift Engineer');
+    await p.locator(HL).click(); await p.waitForTimeout(150);
+    await p.evaluate(() => OESTEkrany.go('settings/profile')); await p.locator('#profile-position input').waitFor();
+    await p.locator('#profile-position input').fill('Shift Engineer');
     await p.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click(); await p.waitForTimeout(150);
     l = await lang(p); ok(l.ui === 'pl' && l.def === 'en', 'zapis innego pola: bieżący PL zostaje, domyślny EN');
     await close(app);

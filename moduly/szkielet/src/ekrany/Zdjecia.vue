@@ -16,7 +16,7 @@
       <ion-list-header class="oest-tytul">{{ T('Ustawienia', 'Settings') }}</ion-list-header>
       <div class="oest-pole-blok">
         <ion-note class="oest-etykieta">{{ T('Jakość zdjęć w folderze', 'Photo quality in the folder') }}</ion-note>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-select id="zdPreset" :aria-label="T('Jakość zdjęć w folderze', 'Photo quality in the folder')" interface="popover" :value="u.preset" @ionChange="u.preset = $event.detail.value">
             <ion-select-option v-for="o in d.presety" :key="o.v" :value="o.v">{{ o.t }}</ion-select-option>
           </ion-select>
@@ -24,20 +24,20 @@
       </div>
       <div class="oest-pole-blok">
         <ion-note class="oest-etykieta">{{ T('Maksymalny rozmiar folderu OEST na telefonie (MB)', 'Maximum OEST folder size on the phone (MB)') }}</ion-note>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-input id="zdPhone" type="number" min="100" step="50" :aria-label="T('Maksymalny rozmiar folderu OEST na telefonie (MB)', 'Maximum OEST folder size on the phone (MB)')" :value="u.phoneLimitMB" @ionInput="u.phoneLimitMB = $event.detail.value"></ion-input>
         </ion-item>
       </div>
       <div class="oest-pole-blok">
         <ion-note class="oest-etykieta">{{ T('Ostrzeżenia licznika od (MB)', 'Counter warnings from (MB)') }}</ion-note>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-input id="zdWarn" type="number" min="10" step="10" :aria-label="T('Ostrzeżenia licznika od (MB)', 'Counter warnings from (MB)')" :value="u.warnMB" @ionInput="u.warnMB = $event.detail.value"></ion-input>
         </ion-item>
       </div>
       <ion-note class="oest-opis">{{ T('Licznik na ekranie głównym: do połowy tej wartości zielony, od połowy pomarańczowy, od 75% czerwony, od 90% czerwony z ⚠. To tylko ostrzeżenie – nic nie blokuje i nic nie kasuje.', 'Home screen counter: green up to half of this value, orange from half, red from 75%, red with ⚠ from 90%. It is only a warning – nothing is blocked or deleted.') }}</ion-note>
       <div class="oest-pole-blok">
         <ion-note class="oest-etykieta">{{ T('Limit na Dysku (MB)', 'Drive limit (MB)') }}</ion-note>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-input id="zdDrive" type="number" min="100" step="100" :aria-label="T('Limit na Dysku (MB)', 'Drive limit (MB)')" :value="u.driveLimitMB" @ionInput="u.driveLimitMB = $event.detail.value"></ion-input>
         </ion-item>
       </div>
@@ -50,7 +50,7 @@
     <ion-card class="oest-panel">
       <div class="oest-pole-blok">
         <ion-note class="oest-etykieta">{{ T('Szukaj: dzień (2026-11-01), kod, miejsce, rodzaj', 'Search: day (2026-11-01), code, place, type') }}</ion-note>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-input id="zdSearch" type="search" inputmode="search" :debounce="300" :aria-label="T('Szukaj: dzień (2026-11-01), kod, miejsce, rodzaj', 'Search: day (2026-11-01), code, place, type')" :placeholder="T('np. ISO-027 albo 2026-11-01', 'e.g. ISO-027 or 2026-11-01')" :value="d.szukaj" @ionInput="Z.szukaj($event.detail.value)"></ion-input>
         </ion-item>
       </div>

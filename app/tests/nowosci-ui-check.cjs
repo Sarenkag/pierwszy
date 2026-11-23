@@ -54,7 +54,9 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await p.goto(url + '#home');
     await p.waitForFunction(() => { const c = window.OESTNowosci && OESTNowosci.cache(); return c && c.items.length; });
     // N1
-    const tiles = await p.evaluate(() => [...document.querySelectorAll('#hmTiles .tile')].map(e => ({ t: e.querySelector('b').textContent, news: !!e.dataset.hnews })));
+    // ekran główny na Ionic + Vue: kafelki = #hmTiles ion-card[data-id] (czesci/Kafelki.vue), okienko = ion-modal (czesci/Okno.vue + ekrany/glowny/Nowosci.vue)
+    const NEWS = '#hmTiles ion-card[data-id="news"]', OKNO = 'ion-modal.show-modal';
+    const tiles = await p.evaluate(() => [...document.querySelectorAll('#hmTiles ion-card')].map(e => ({ t: e.querySelector('ion-card-title').textContent, news: e.dataset.id === 'news' })));
     check(tiles.length === 8, 'N1: kafelków ' + tiles.length + ' zamiast 8');
     check(tiles[6] && tiles[6].news && tiles[6].t === 'Nowości firm', 'N1: „Nowości firm” nie stoi na miejscu Statystyk: ' + JSON.stringify(tiles[6]));
     check(!tiles.some(t => t.t === 'Statystyki'), 'N1: Statystyki nadal na ekranie');
@@ -62,13 +64,13 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(scroll <= 0, 'N1: ekran główny przewija się o ' + scroll + ' px');
     check(calls === 4, 'N2: pierwsze pobranie = 4 zapytania (3 × Google News + oferty pracy), było ' + calls);
     // N5 znaczek
-    const badge = await p.evaluate(() => { const b = document.querySelector('#hmTiles [data-hnews] .kf-n'); return b && !b.hidden ? b.textContent : ''; });
+    const badge = await p.evaluate(() => { const b = document.querySelector('#hmTiles ion-card[data-id="news"] ion-badge'); return b && !b.hidden ? b.textContent : ''; });
     check(badge === '5', 'N5: znaczek nowych „' + badge + '” zamiast 5');
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'ekran-glowny-PL.png') });
     // N4 okienko
-    await p.click('#hmTiles [data-hnews]');
-    await p.waitForSelector('#hmPop.in .hm-nw');
-    const all = await p.evaluate(() => [...document.querySelectorAll('#hmPop .hm-nw')].map(a => ({ f: a.querySelector('.hm-nf').textContent, t: a.querySelector('b').textContent, s: a.querySelector('small').textContent, href: a.getAttribute('href') })));
+    await p.click(NEWS);
+    await p.waitForSelector(OKNO + ' ion-item');
+    const all = await p.evaluate(OKNO => [...document.querySelectorAll(OKNO + ' ion-item')].map(a => ({ f: a.querySelector('ion-badge').textContent, t: a.querySelector('h2').textContent, s: a.querySelector('p').textContent, href: a.href || a.getAttribute('href') })), OKNO);
     const rows = all.slice(0, 5), sum = all[5];
     check(all.length === 6, 'N4: wierszy ' + all.length + ' zamiast 5 + 1 zbiorczy ofert pracy');
     check(sum && sum.f === 'Smart' && /4 ofert pracy/.test(sum.t) && /teamtailor\.com\/jobs$/.test(sum.href), 'N4: brak wiersza zbiorczego ofert pracy: ' + JSON.stringify(sum));
@@ -83,17 +85,18 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     check(rows.every(r => /^https:\/\/(news\.google\.com|smartmanagedsolutions-1734694596\.teamtailor\.com)\//.test(r.href)), 'N4: link nie do artykułu/oferty');
     check(rows.every(r => /\d{2}\/\d{2}\/\d{4}$/.test(r.s)), 'N4b: data nie w formacie DD/MM/YYYY: ' + rows.map(r => r.s).join(' | '));
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'okno-PL.png') });
-    const before = await p.evaluate(() => document.querySelector('#hmPop .hm-nw'));
+    const before = await p.evaluate(OKNO => document.querySelector(OKNO + ' ion-item'), OKNO);
     await p.evaluate(() => { OESTSettings.update(s => { s.appearance.language = 'en'; }); OESTSettingsUI.applyTheme(); });
-    const ttl = await p.evaluate(() => document.querySelector('#hmPop .hm-ph b').textContent);
+    await p.waitForTimeout(100); // przerysowanie Vue po zmianie języka (następna klatka)
+    const ttl = await p.evaluate(OKNO => document.querySelector(OKNO + ' ion-header ion-title').textContent, OKNO);
     check(/Company news/.test(ttl), 'N5: tytuł okienka po EN „' + ttl + '”');
     if (SHOT) await p.screenshot({ path: path.join(SHOT, 'okno-EN.png') });
-    await p.click('#hmPop [data-hx]');
-    await p.waitForFunction(() => document.getElementById('hmPop').hidden);
-    const badge2 = await p.evaluate(() => { const b = document.querySelector('#hmTiles [data-hnews] .kf-n'); return b && !b.hidden ? b.textContent : ''; });
+    await p.click(OKNO + ' ion-header ion-button'); // ✕ okienka
+    await p.waitForFunction(() => !document.querySelector('ion-modal'));
+    const badge2 = await p.evaluate(() => { const b = document.querySelector('#hmTiles ion-card[data-id="news"] ion-badge'); return b && !b.hidden ? b.textContent : ''; });
     check(badge2 === '', 'N5: znaczek po otwarciu nadal „' + badge2 + '”');
     // N2 ta sama doba – zero nowych zapytań
-    await p.reload(); await p.waitForFunction(() => window.OESTNowosci && document.querySelector('#hmTiles [data-hnews]'));
+    await p.reload(); await p.waitForFunction(() => window.OESTNowosci && document.querySelector('#hmTiles ion-card[data-id="news"]'));
     await p.evaluate(() => OESTNowosci.load(false));
     check(calls === 4, 'N2: w tej samej dobie kolejne zapytania (' + calls + ')');
     // N4b 45 nowszych zwykłych (Smart) + 1 starszy One Eastside → One Eastside zostaje w pamięci i na górze
@@ -137,9 +140,9 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const n0 = calls;
     await p.evaluate(() => OESTNowosci.load(true));
     check(calls === n0, 'N3: bez sieci poszło zapytanie');
-    await p.click('#hmTiles [data-hnews]');
-    await p.waitForSelector('#hmPop.in');
-    const note = await p.evaluate(() => document.querySelector('#hmPop .hm-note').textContent);
+    await p.click(NEWS);
+    await p.waitForSelector(OKNO + ' ion-content');
+    const note = await p.evaluate(OKNO => [...document.querySelectorAll(OKNO + ' ion-content ion-note')].map(n => n.textContent).join(' '), OKNO);
     check(/No network|Brak sieci/.test(note), 'N3: brak komunikatu o sieci: „' + note + '”');
     check(!errors.length, 'błędy JS: ' + errors.join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }

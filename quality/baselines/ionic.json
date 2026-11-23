@@ -103,13 +103,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|questions",
-      "rule": "IONIC",
-      "detail": "Ekran questions (Edytor pytań) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|reactive",
       "rule": "IONIC",
       "detail": "Ekran reactive (Reactive) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
@@ -166,37 +159,9 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/calendar",
-      "rule": "IONIC",
-      "detail": "Ekran settings/calendar (Kalendarz i grafik) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|settings/profile",
-      "rule": "IONIC",
-      "detail": "Ekran settings/profile (Mój profil) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|settings/vantify",
-      "rule": "IONIC",
-      "detail": "Ekran settings/vantify (Vantify) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|soon",
       "rule": "IONIC",
       "detail": "Ekran soon (Wkrótce) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|start",
-      "rule": "IONIC",
-      "detail": "Ekran start (Logowanie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },

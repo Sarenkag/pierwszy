@@ -9,10 +9,10 @@
         <Klocek v-for="k in odzyskane" :key="k.id" :T="T" :k="k" @wybierz="R.otworzOdzyskana(k.id)"></Klocek>
       </div>
       <div class="oest-szukaj">
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-input id="rptQ" type="search" autocomplete="off" :aria-label="T('Kod, budynek, data…', 'Code, building, date…')" :placeholder="T('Kod, budynek, data…', 'Code, building, date…')" :value="szuk.q" :debounce="0" @ionInput="szukaj({ q: $event.detail.value })"></ion-input>
         </ion-item>
-        <ion-item class="oest-pole" lines="none">
+        <ion-item class="oest-ramka-pola" lines="none">
           <ion-select id="rptB" :aria-label="T('Budynek', 'Building')" interface="popover" :value="szuk.b" @ionChange="szukaj({ b: $event.detail.value })">
             <ion-select-option v-for="o in budynki" :key="o.v" :value="o.v">{{ o.t }}</ion-select-option>
           </ion-select>

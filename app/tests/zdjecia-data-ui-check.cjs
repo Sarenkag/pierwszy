@@ -89,9 +89,9 @@ async function photos(browser, url, worker) {
 async function settings(browser, url) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await account(ctx, true);
   const pg = await ctx.newPage(), errs = []; pg.on('pageerror', e => errs.push(e.message));
-  await pg.goto(url + '/#settings/reports'); await pg.locator('ion-toggle#photoStamp').waitFor(); await pg.waitForTimeout(500);
-  // przełącznik Ionic (ion-toggle): stan z właściwości checked, kliknięcie jak użytkownik
-  const box = pg.locator('ion-toggle#photoStamp'), on = () => pg.evaluate(() => !!document.getElementById('photoStamp').checked);
+  await pg.goto(url + '/#settings/reports'); await pg.locator('ion-checkbox#photoStamp').waitFor(); await pg.waitForTimeout(500);
+  // pole wyboru Ionic (ion-checkbox w ion-item, jak checkbox na main): stan z właściwości checked, kliknięcie jak użytkownik
+  const box = pg.locator('ion-checkbox#photoStamp'), on = () => pg.evaluate(() => !!document.getElementById('photoStamp').checked);
   const jezyk = pg.locator('ion-header ion-toolbar ion-buttons[slot=end] ion-button').last(), tresc = () => pg.evaluate(() => document.querySelector('#oest-szkielet ion-content').textContent);
   assert.equal(await on(), false, 'domyślnie wyłączone');
   assert.match(await tresc(), /Data i godzina na zdjęciach/);

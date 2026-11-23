@@ -5,13 +5,6 @@
   "note": "Lista może tylko maleć. Dodanie wpisu wymaga wyraźnej zgody właściciela (QUALITY.md, QG-014).",
   "entries": [
     {
-      "id": "LOAD_ORDER|index.html|calendar-ui.js|OESTPrzycisk",
-      "rule": "LOAD_ORDER",
-      "detail": "index.html: calendar-ui.js (poz. 18) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 46, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|index.html|handover.js|OESTAparat",
       "rule": "LOAD_ORDER",
       "detail": "index.html: handover.js (poz. 26) używa OESTAparat z moduly/aparat/aparat.js (poz. 44, ładowany później)",

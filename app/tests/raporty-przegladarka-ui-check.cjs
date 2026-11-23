@@ -29,7 +29,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 1 });
     await ctx.addInitScript(a => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', a); }, JSON.stringify(ACCOUNT));
     const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor();
+    await p.goto(url + '/#home'); await p.locator('#oest-szkielet .oest-jezyk ion-button').first().waitFor(); // ekran główny (Ionic + Vue) gotowy
     // dane jak po wysłaniu: profil z adresami, 3 raporty (Word z tekstem i zdjęciem) + 1 cudzy
     await p.evaluate(async png => {
       OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; s.profile.privateEmail = 'me@home.com'; return s; });
