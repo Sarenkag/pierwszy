@@ -35,7 +35,7 @@
       <ion-card v-for="n in d.notatki" :key="n.id" :data-nt-note="n.id">
         <ion-card-header>
           <ion-card-subtitle>{{ n.meta }}</ion-card-subtitle>
-          <div><ion-badge :color="n.tag.kolor" data-nt-tag>{{ n.tag.tekst }}</ion-badge></div>
+          <div><ion-badge :color="n.tag.kolor" data-nt-tag :data-stan="n.stan">{{ n.tag.tekst }}</ion-badge></div>
         </ion-card-header>
         <ion-card-content>
           <p v-if="n.en" data-nt-en>{{ n.en }}</p>
