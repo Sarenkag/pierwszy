@@ -167,27 +167,9 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|naglowek|questions-ui.js",
-      "rule": "JM",
-      "detail": "questions-ui.js: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 1× poza właścicielem (moduly/naglowek/naglowek.js).",
-      "maks": 1,
-      "punkt": "D11",
-      "usuwa": "C1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|naglowek|reactive.js",
       "rule": "JM",
       "detail": "reactive.js: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 1× poza właścicielem (moduly/naglowek/naglowek.js).",
-      "maks": 1,
-      "punkt": "D11",
-      "usuwa": "C1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|naglowek|settings-ui.js",
-      "rule": "JM",
-      "detail": "settings-ui.js: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 1× poza właścicielem (moduly/naglowek/naglowek.js).",
       "maks": 1,
       "punkt": "D11",
       "usuwa": "C1",
@@ -200,15 +182,6 @@
       "maks": 1,
       "punkt": "D11",
       "usuwa": "C1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|okna-systemowe|calendar-ui.js",
-      "rule": "JM",
-      "detail": "calendar-ui.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D17/#15",
-      "usuwa": "O2",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
@@ -248,19 +221,10 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|okna-systemowe|questions-ui.js",
-      "rule": "JM",
-      "detail": "questions-ui.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D17/#15",
-      "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|okna-systemowe|settings-ui.js",
       "rule": "JM",
       "detail": "settings-ui.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 2× poza właścicielem (zakazane).",
-      "maks": 2,
+      "maks": 1,
       "punkt": "D17/#15",
       "usuwa": "O2",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -311,15 +275,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|calendar-ui.js",
-      "rule": "ZNACZNIK",
-      "detail": "calendar-ui.js: 8 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 8,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|handover.js",
       "rule": "ZNACZNIK",
       "detail": "handover.js: 5 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
@@ -332,7 +287,7 @@
       "id": "ZNACZNIK|brak|index.html",
       "rule": "ZNACZNIK",
       "detail": "index.html: 26 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 4,
+      "maks": 2,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -464,15 +419,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|questions-ui.js",
-      "rule": "ZNACZNIK",
-      "detail": "questions-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 6,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|reactive-vantify.js",
       "rule": "ZNACZNIK",
       "detail": "reactive-vantify.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
@@ -486,24 +432,6 @@
       "rule": "ZNACZNIK",
       "detail": "reactive.js: 16 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
       "maks": 16,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|settings-ui.js",
-      "rule": "ZNACZNIK",
-      "detail": "settings-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 4,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|vantify-import.js",
-      "rule": "ZNACZNIK",
-      "detail": "vantify-import.js: 9 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 9,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -558,15 +486,6 @@
       "rule": "ZNACZNIK",
       "detail": "powertrace.js: stary znacznik data-pt-action 7×.",
       "maks": 7,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|questions-ui.js|data-qq",
-      "rule": "ZNACZNIK",
-      "detail": "questions-ui.js: stary znacznik data-qq 3×.",
-      "maks": 3,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

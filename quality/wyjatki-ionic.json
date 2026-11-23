@@ -201,7 +201,9 @@
         "klasa:oest-rowne",
         "klasa:oest-rzad",
         "klasa:oest-start",
-        "klasa:oest-status"
+        "klasa:oest-status",
+        "css:.oest-lampki ion-chip",
+        "css:.oest-lampki ion-chip ion-label"
       ],
       "powod": "Wygląd jak na main (styl Grzegorza „Szkło i poświata”: pasek dni, kafelki, nagłówek ekranu głównego, klocek, pigułka statusu, filtr, Kalendarz) przeniesiony na komponenty Ionic – przeniesienie nie zmienia wyglądu.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTFMSn9553K3t71DGQ2tRCDD"
