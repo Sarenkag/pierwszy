@@ -80,9 +80,11 @@ ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-r
 ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
 ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons, ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons.button-has-icon-only { height: 44px; min-width: 44px; margin-left: 6px; --padding-start: 8px; --padding-end: 8px; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line); --background: var(--panel); overflow: visible; }
 ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; border-radius: 10px; }
-.oest-lampki { display: flex; align-items: center; flex-wrap: wrap; padding: 4px 10px 14px; }
+.oest-lampki { display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; padding: 4px 10px 14px; }
 .oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
 .oest-lampki ion-chip:last-child { margin-left: auto; }
+.oest-lampki ion-chip { min-width: 0; flex: 0 1 auto; }
+.oest-lampki ion-chip ion-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
 .oest-jezyk { display: flex; height: 44px; padding: 3px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
 .oest-jezyk ion-button { height: 36px; margin: 0; --padding-start: 10px; --padding-end: 10px; --border-radius: 11px; --box-shadow: none; --color: var(--muted); font-weight: 700; }

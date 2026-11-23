@@ -3,7 +3,7 @@
 <template>
   <ion-header class="ion-no-border oest-glowny">
     <ion-toolbar>
-      <ion-avatar slot="start" class="oest-logo"><span class="oest-inicjaly">OEST</span></ion-avatar>
+      <ion-avatar slot="start" class="oest-logo" id="hmLogo"><span class="oest-inicjaly">OEST</span></ion-avatar>
       <ion-label>
         <h2><strong>ONE EASTSIDE</strong></h2>
         <p>{{ d.data }}<template v-if="d.pogoda"> · <ion-text color="primary" id="hmWx" @click="okno('wx')"><ion-icon :icon="POGODA[d.pogoda.ikona]" aria-hidden="true"></ion-icon> {{ d.pogoda.temp }}</ion-text></template></p>
@@ -19,7 +19,7 @@
       </ion-buttons>
     </ion-toolbar>
   </ion-header>
-  <div class="oest-lampki">
+  <div class="oest-lampki" id="hmSt">
     <Lampka id="hmNet" :stan="d.siec.stan" :tekst="d.siec.tekst" @click="okno('net')"></Lampka>
     <Lampka id="hmDrive" :stan="d.dysk.stan" :tekst="d.dysk.tekst" @click="okno('drive')"></Lampka>
     <ion-chip id="hmPhotos" :color="KOL[d.zdjecia.poziom]" data-nav="zdjecia" :aria-label="T('Folder zdjęć OEST', 'OEST photo folder')">
