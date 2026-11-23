@@ -83,11 +83,11 @@
         var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
           '<div class="chips rs">' + c.reasons.map(function (r) {
             var prev = last && last.r.indexOf(r.id) >= 0;
-            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(T(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl)) + "</button>";
+            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(window.OESTT(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl)) + "</button>";
           }).join("") + "</div>" : "";
-        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(T(c.q, c.qen || c.q)) +
+        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(window.OESTT(c.q, c.qen || c.q)) +
           (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
-          '<div class="seg" role="group" aria-label="' + esc(T(c.q, c.qen || c.q)) + '">' +
+          '<div class="seg" role="group" aria-label="' + esc(window.OESTT(c.q, c.qen || c.q)) + '">' +
           '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
           '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
           "</div>" + rs + "</div>";
@@ -99,12 +99,12 @@
       var s = states[i], head = "", tail = "";
       if (c.room && (!i || cks[i - 1].room !== c.room)) head = '<div class="room-h"><b>' + esc(c.roomName) + "</b><span>" + esc(c.roomLoc) + "</span></div>";
       if (c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length)
-        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="'+T('Co jest nie tak? (trafi do raportu)', 'What is wrong? (goes to the report)')+'" aria-label="' + T('Uwagi: ', 'Remarks: ') + esc(c.roomName) + '">';
+        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="'+window.OESTT('Co jest nie tak? (trafi do raportu)', 'What is wrong? (goes to the report)')+'" aria-label="' + window.OESTT('Uwagi: ', 'Remarks: ') + esc(c.roomName) + '">';
       return head + '<div class="ck-row ' + s + '"><div class="txt">' + esc(c.room ? c.cp : s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
         '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
         '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
-        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="'+T('Nie OK', 'Not OK')+'" aria-pressed="' + (s === "fail") + '">✗</button>' +
-        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="'+T('Pomiń', 'Skip')+'" aria-pressed="' + (s === "na") + '">–</button>' +
+        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="'+window.OESTT('Nie OK', 'Not OK')+'" aria-pressed="' + (s === "fail") + '">✗</button>' +
+        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="'+window.OESTT('Pomiń', 'Skip')+'" aria-pressed="' + (s === "na") + '">–</button>' +
         "</div></div>" + tail;
     }).join("");
   }
@@ -115,7 +115,7 @@
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
     $("faults").innerHTML = RD.usterkiDla(cur.type).map(function (f) {
-      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(T(f.pl, f.enl)) + "</button>";
+      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(window.OESTT(f.pl, f.enl)) + "</button>";
     }).join("");
   }
   $("faults").addEventListener("click", function (e) {

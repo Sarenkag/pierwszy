@@ -14,7 +14,7 @@
   function en() { return w.OESTBledy ? w.OESTBledy.lang() === "en" : false; }
   function loc() { return en() ? "en-GB" : "pl-PL"; }
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
-  function iso(x) { return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
+  var iso = w.OESTNarzedzia.dzienIso; // moduly/narzedzia
   function today() { var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
 
   // ---------- pogoda (Open-Meteo, bez klucza; bez sieci ostatnia zapisana) ----------
