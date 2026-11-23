@@ -40,3 +40,34 @@ test('Udostępnij: raport „shared” nie jest do wysłania, ale czeka na potwi
   await S.enqueue({type:'ppm',code:'C'}); await S.refresh().catch(()=>{});
   assert.equal(S.count(),1); assert.equal(S.toConfirm(),1);
 });
+
+// Karta K10 (audyt 19/11/2026 nr 21–22, D4): baza „inspekcje” ma JEDNEGO właściciela – moduly/wysylka (OESTSender.baza).
+// Strona inspekcji nie otwiera jej sama; te same magazyny queue i kv, ta sama nazwa i wersja.
+function fullIDB(){
+  const stores={queue:new Map(),kv:new Map()},opened=[];
+  return {stores,opened,open(name,ver){opened.push(name+'@'+ver);const rq={result:{createObjectStore(){},transaction(name){const t={};const map=stores[name];
+    const req=v=>{const r={result:v,readyState:'done'};return r;};
+    const st={put(v,k){map.set(k===undefined?v.id:k,structuredClone(v));return req(undefined);},get(k){return req(map.has(k)?structuredClone(map.get(k)):undefined);},
+      getAll(){return req([...map.values()].map(x=>structuredClone(x)));},delete(k){map.delete(k);return req(undefined);}};
+    t.objectStore=()=>st;setTimeout(()=>t.oncomplete&&t.oncomplete());return t;}}};setTimeout(()=>{rq.onupgradeneeded&&rq.onupgradeneeded();rq.onsuccess&&rq.onsuccess();});return rq;}};
+}
+test('K10: OESTSender.baza – kv i kolejka w tej samej bazie „inspekcje” v1, jedno otwarcie', async()=>{
+  const idb=fullIDB(),B=load(idb).baza;
+  await B.kvSet('tpl',{name:'x'}); assert.deepEqual(await B.kvGet('tpl'),{name:'x'});
+  assert.equal(await B.kvGet('brak'),undefined,'brak klucza = undefined, nie obiekt żądania');
+  assert.deepEqual(await B.kvAll(),[{name:'x'}]);
+  await B.qPut({id:'a',status:'wait'}); await B.qPut({id:'b',status:'sent'});
+  assert.deepEqual((await B.qAll()).map(q=>q.id).sort(),['a','b']);
+  await B.qDel('a'); assert.deepEqual((await B.qAll()).map(q=>q.id),['b']);
+  assert.equal(await B.dostepna(),true);
+  assert.deepEqual(idb.opened,['inspekcje@1']);
+});
+test('K10: bez magazynu odczyt = pusto, zapis = STORAGE_WRITE (nie cichy zapas w pamięci)', async()=>{
+  const B=load({open(){const rq={};setTimeout(()=>rq.onerror&&rq.onerror());return rq;}}).baza;
+  assert.equal(await B.dostepna(),false); assert.deepEqual(await B.qAll(),[]); assert.deepEqual(await B.kvAll(),[]); assert.equal(await B.kvGet('x'),undefined);
+  await assert.rejects(B.kvSet('x',1),/STORAGE_WRITE/); await assert.rejects(B.qPut({id:'a'}),/STORAGE_WRITE/); await assert.rejects(B.qDel('a'),/STORAGE_WRITE/);
+});
+test('K10: strona inspekcji nie otwiera bazy sama (jeden właściciel)', ()=>{
+  const dir=__dirname+'/../../inspekcje/';
+  for(const f of fs.readdirSync(dir).filter(f=>/\.(js|html)$/.test(f))) assert.doesNotMatch(fs.readFileSync(dir+f,'utf8'),/indexedDB\.open/,f);
+});

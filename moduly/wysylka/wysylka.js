@@ -8,7 +8,10 @@
   var opts = { onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
   var sending = false, pos = null, flash = "", flashT = null, skipWifi = false, open = false, idle = [], items = [], loginErr = "", lock = null;
 
-  // ---------- kolejka (IndexedDB, ta sama co w inspekcje/index.html) ----------
+  // ---------- baza „inspekcje” (IndexedDB): JEDYNY właściciel w apce (karta K10, audyt 19/11/2026 nr 21–22, D4) ----------
+  // magazyny: queue (kolejka raportów, klucz id) i kv (szablon, szkice, ustawienia strony inspekcji). Strona inspekcji
+  // nie otwiera bazy sama – używa OESTSender.baza. Bez magazynu: odczyt = pusto, zapis = jawny błąd STORAGE_WRITE
+  // (przegląd ChatGPT 09/11/2026 pkt 4, D11 – zapis NIE może udawać sukcesu).
   var dbP = new Promise(function (res) {
     try {
       var rq = root.indexedDB.open("inspekcje", 1);
@@ -17,18 +20,26 @@
       rq.onerror = function () { res(null); };
     } catch (e) { res(null); }
   });
-  function tx(mode, fn) {
+  function sklep(store, mode, fn) {
     return dbP.then(function (db) {
-      // przegląd ChatGPT 09/11/2026, pkt 4: bez magazynu zapis NIE może udawać sukcesu (raport nie trafiłby do kolejki);
-      // odczyt bez magazynu = pusta kolejka jak dawniej
-      if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return null; }
+      if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return undefined; }
       return new Promise(function (res, rej) {
-        var t = db.transaction("queue", mode), out = fn(t.objectStore("queue"));
-        t.oncomplete = function () { res(out && out.result !== undefined ? out.result : out); };
+        var t = db.transaction(store, mode), out = fn(t.objectStore(store));
+        t.oncomplete = function () { res(out && out.result !== undefined ? out.result : (out && typeof out.readyState === "string" ? undefined : out)); };
         t.onerror = t.onabort = function () { rej(t.error); };
       });
     });
   }
+  function tx(mode, fn) { return sklep("queue", mode, fn).then(function (r) { return r === undefined && mode === "readonly" ? null : r; }); }
+  var baza = {
+    dostepna: function () { return dbP.then(function (db) { return !!db; }); }, // czy telefon zapisuje dane na stałe
+    kvGet: function (k) { return sklep("kv", "readonly", function (s) { return s.get(k); }); },
+    kvAll: function () { return sklep("kv", "readonly", function (s) { return s.getAll(); }).then(function (a) { return a || []; }); },
+    kvSet: function (k, v) { return sklep("kv", "readwrite", function (s) { s.put(v, k); }); },
+    qAll: function () { return sklep("queue", "readonly", function (s) { return s.getAll(); }).then(function (a) { return a || []; }); },
+    qPut: function (it) { return sklep("queue", "readwrite", function (s) { s.put(it); }); },
+    qDel: function (id) { return sklep("queue", "readwrite", function (s) { s.delete(id); }); }
+  };
   function loadAll() { return tx("readonly", function (s) { return s.getAll(); }).then(function (a) { items = a || []; return items; }); }
   function put(it) { return tx("readwrite", function (s) { s.put(it); }); }
   function mine(q) { var me = ((account() || {}).email || "").toLowerCase(); return !q.acct || q.acct.toLowerCase() === me; }
@@ -326,5 +337,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, reachable: reachable, syncReports: syncReports, update: update };
+  root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, reachable: reachable, syncReports: syncReports, update: update };
 })(window);
