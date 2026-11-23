@@ -47,10 +47,12 @@
       <ion-item v-if="d.podglad.pominiete" lines="none">
         <ion-note>{{ T('Bez karty w apce (pominięte): ', 'No card in the app (skipped): ') }}{{ d.podglad.pominiete }}</ion-note>
       </ion-item>
-      <ion-item lines="none">
-        <ion-button id="vtSave" @click="V.zapiszPodglad()">{{ T('Zapisz w apce', 'Save in the app') }}</ion-button>
-        <ion-button id="vtCancel" fill="outline" @click="V.anulujPodglad()">{{ T('Anuluj', 'Cancel') }}</ion-button>
-      </ion-item>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="12"><ion-button expand="block" id="vtSave" @click="V.zapiszPodglad()">{{ T('Zapisz w apce', 'Save in the app') }}</ion-button></ion-col>
+          <ion-col size="12"><ion-button expand="block" id="vtCancel" fill="outline" @click="V.anulujPodglad()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
+        </ion-row>
+      </ion-grid>
     </ion-card>
     <ion-card v-if="d.wynik">
       <ion-item lines="none">
@@ -62,29 +64,39 @@
     <ion-card>
       <ion-list-header>{{ T('Vantify w apce', 'Vantify in the app') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-note>{{ T('Login i hasło do Vantify zapisane w telefonie (zaszyfrowane): gdy logowanie wygaśnie (po 24 h), apka zaloguje się sama.', 'Vantify sign-in saved on this phone (encrypted): when the sign-in expires (after 24 h) the app signs in by itself.') }}</ion-note>
+        <ion-note>{{ T('Login i hasło do Vantify:', 'Vantify sign-in:') }}</ion-note>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-note>{{ T('zapisane w telefonie (zaszyfrowane).', 'saved on this phone (encrypted).') }}</ion-note>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-note>{{ T('Gdy logowanie wygaśnie (po 24 h), apka zaloguje się sama.', 'When the sign-in expires (after 24 h) the app signs in by itself.') }}</ion-note>
       </ion-item>
       <ion-item lines="none">
         <ion-note>{{ T('Zmiana hasła albo loginu – wpisz nowe i zapisz.', 'Password or login changed – type the new one and save.') }}</ion-note>
       </ion-item>
       <ion-item>
-        <ion-input fill="outline" id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
+        <ion-input fill="solid" id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="outline" id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
+        <ion-input fill="solid" id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
       </ion-item>
-      <ion-item lines="none">
-        <ion-button id="vtLoginSave" @click="zapiszLogin">{{ T('Zapisz login i hasło', 'Save login and password') }}</ion-button>
-        <ion-button id="vtLoginShow" fill="outline" @click="pokazHaslo">{{ login.pokaz ? T('Ukryj', 'Hide') : T('Pokaż', 'Show') }}</ion-button>
-        <ion-button id="vtLoginClear" fill="outline" @click="usunLogin">{{ T('Usuń', 'Remove') }}</ion-button>
-      </ion-item>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="12"><ion-button expand="block" id="vtLoginSave" @click="zapiszLogin">{{ T('Zapisz login i hasło', 'Save login and password') }}</ion-button></ion-col>
+          <ion-col size="12"><ion-button expand="block" id="vtLoginShow" fill="outline" @click="pokazHaslo">{{ login.pokaz ? T('Ukryj', 'Hide') : T('Pokaż', 'Show') }}</ion-button></ion-col>
+          <ion-col size="12"><ion-button expand="block" id="vtLoginClear" fill="outline" @click="usunLogin">{{ T('Usuń', 'Remove') }}</ion-button></ion-col>
+        </ion-row>
+      </ion-grid>
       <ion-item v-if="d.login" lines="none">
         <ion-note id="vtLoginMsg" role="status" aria-live="polite">{{ P(d.login) }}</ion-note>
       </ion-item>
-      <ion-item lines="none">
-        <ion-button id="vtOpen" @click="V.otworz()">{{ T('Otwórz Vantify w apce', 'Open Vantify in the app') }}</ion-button>
-        <ion-button id="vtExplore" fill="outline" :disabled="d.trwaZbadaj" @click="V.zbadaj()">{{ T('Zbadaj automatycznie', 'Explore automatically') }}</ion-button>
-      </ion-item>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="12"><ion-button expand="block" id="vtOpen" @click="V.otworz()">{{ T('Otwórz Vantify w apce', 'Open Vantify in the app') }}</ion-button></ion-col>
+          <ion-col size="12"><ion-button expand="block" id="vtExplore" fill="outline" :disabled="d.trwaZbadaj" @click="V.zbadaj()">{{ T('Zbadaj automatycznie', 'Explore automatically') }}</ion-button></ion-col>
+        </ion-row>
+      </ion-grid>
       <ion-item v-if="d.zapis" lines="none">
         <ion-button id="vtShare" fill="outline" @click="V.udostepnij()">{{ T('Udostępnij zapis „Zbadaj” (', 'Share the “Explore” log (') }}{{ d.zapis }})</ion-button>
       </ion-item>
@@ -97,7 +109,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonButton } from '@ionic/vue';
+import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
 const props = defineProps({ T: Function, wersja: Number });
 const V = window.OESTVantifyImport;
 const odswiez = ref(0);

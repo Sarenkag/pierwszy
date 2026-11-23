@@ -10,10 +10,12 @@
     </ion-item>
     <template v-else>
       <ion-card>
-        <ion-item lines="none">
-          <ion-button id="qqTabBase" :fill="d.zakladka === 'base' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('base')">{{ T('Baza pytań', 'Question library') }}</ion-button>
-          <ion-button id="qqTabTasks" :fill="d.zakladka === 'tasks' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('tasks')">{{ T('Inspekcje', 'Inspections') }}</ion-button>
-        </ion-item>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="12"><ion-button expand="block" id="qqTabBase" :fill="d.zakladka === 'base' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('base')">{{ T('Baza pytań', 'Question library') }}</ion-button></ion-col>
+            <ion-col size="12"><ion-button expand="block" id="qqTabTasks" :fill="d.zakladka === 'tasks' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('tasks')">{{ T('Inspekcje', 'Inspections') }}</ion-button></ion-col>
+          </ion-row>
+        </ion-grid>
       </ion-card>
       <component v-if="d.edytor" :is="Edytor" :T="T" :e="U.edytor()" :zajety="d.zajety"></component>
       <component v-else-if="d.zakladka === 'base'" :is="Baza" :T="T" :b="U.baza()" :zajety="d.zajety"></component>
@@ -35,20 +37,24 @@
               <ion-note>{{ p.tresc }}</ion-note>
             </ion-item>
           </template>
-          <ion-item lines="none">
-            <ion-button id="qqImportCommit" :disabled="d.zajety" @click="U.importPropozycje()">{{ T('Importuj zaznaczone jako propozycje', 'Import selected as proposals') }}</ion-button>
-            <ion-button fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button>
-          </ion-item>
+          <ion-grid>
+            <ion-row>
+              <ion-col size="12"><ion-button expand="block" id="qqImportCommit" :disabled="d.zajety" @click="U.importPropozycje()">{{ T('Importuj zaznaczone jako propozycje', 'Import selected as proposals') }}</ion-button></ion-col>
+              <ion-col size="12"><ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
+            </ion-row>
+          </ion-grid>
         </template>
         <template v-else>
           <ion-list-header>{{ T('Kopia: ', 'Backup: ') }}{{ d.import.pytan }} {{ T('pytań,', 'questions,') }} {{ d.import.dzialow }} {{ T('działów', 'sections') }}</ion-list-header>
           <ion-item>
             <ion-toggle id="qqReplace" :checked="d.import.zastap" @ionChange="U.importZastap($event.detail.checked)">{{ T('Zastąp całą bazę tego konta (inaczej scalaj ID, obecne dane wygrywają)', 'Replace this account\'s whole library (otherwise merge by ID, current data wins)') }}</ion-toggle>
           </ion-item>
-          <ion-item lines="none">
-            <ion-button id="qqBackupCommit" :disabled="d.zajety" @click="U.importKopia()">{{ T('Zatwierdź import kopii', 'Approve backup import') }}</ion-button>
-            <ion-button fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button>
-          </ion-item>
+          <ion-grid>
+            <ion-row>
+              <ion-col size="12"><ion-button expand="block" id="qqBackupCommit" :disabled="d.zajety" @click="U.importKopia()">{{ T('Zatwierdź import kopii', 'Approve backup import') }}</ion-button></ion-col>
+              <ion-col size="12"><ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
+            </ion-row>
+          </ion-grid>
         </template>
       </ion-card>
       <ion-card v-if="d.raport !== null">
@@ -66,7 +72,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import { IonCard, IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToggle, IonListHeader } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToggle, IonListHeader, IonGrid, IonRow, IonCol } from '@ionic/vue';
 import Edytor from './pytania/Edytor.vue';
 import Baza from './pytania/Baza.vue';
 import Inspekcje from './pytania/Inspekcje.vue';
