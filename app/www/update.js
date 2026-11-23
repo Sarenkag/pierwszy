@@ -5,7 +5,6 @@
   var plugin = null, mine = null, latest = null, busy = false;
   function native() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform()); }
   function api() { if (!plugin && native()) plugin = w.Capacitor.registerPlugin ? w.Capacitor.registerPlugin("AppUpdate") : w.Capacitor.Plugins.AppUpdate; return plugin; }
-  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function current() {
     if (mine !== null) return Promise.resolve(mine);
     var p = api(); if (!p) return Promise.resolve(0);
@@ -23,11 +22,9 @@
   // ostatni komunikat pamiętamy: przełączenie PL/EN albo powrót do Ustawień rysuje panel od nowa i nie może zgubić postępu (Grzegorz 03/11)
   // komunikat trzymany jako para [pl, en]: po zmianie języka pokazuje się od razu w nowym (bez rysowania ekranu)
   var lastStatus = ["", ""];
-  function setStatus(pl, en) { lastStatus = [pl, en == null ? pl : en]; var e = document.getElementById("updStatus"); if (e) e.textContent = w.OESTT(lastStatus[0], lastStatus[1]); if (busy) changed(); }
-  w.addEventListener("oest:lang", function () {
-    setStatus(lastStatus[0], lastStatus[1]);
-    var i = document.getElementById("updInstall"); if (i && latest) i.textContent = w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + latest.n;
-  });
+  // panel w Ustawieniach → Konto (moduly/szkielet/src/ekrany/Konto.vue) czyta dane() i odświeża się po zdarzeniu „oest:update-stan”
+  function stan() { try { w.dispatchEvent(new CustomEvent("oest:update-stan")); } catch (e) {} }
+  function setStatus(pl, en) { lastStatus = [pl, en == null ? pl : en]; stan(); if (busy) changed(); }
   // Nowa wersja = wpis w dzwonku ekranu głównego (home.js), nie pasek na ekranie (Grzegorz 20/11/2026: duży pasek zasłaniał kafelki,
   // nie dało się go zamknąć i wyglądał jak wymuszona aktualizacja). „Później” chowa wpis do następnej wersji; Ustawienia → Konto zawsze pozwalają zainstalować.
   var LATER = "oest.update.later", avail = false, failed = false; // failed: ostatnie pobieranie przerwane – wpis pokazuje błąd, nie „dotknij, żeby pobrać”
@@ -48,7 +45,7 @@
     return Promise.all([current(), fetchLatest()]).then(function (r) {
       var have = r[0], l = r[1];
       if (!l) { if (manual) setStatus("Nie znalazłem pliku APK w najnowszym wydaniu.", "No APK file in the latest release."); return; }
-      if (l.n > have) { offer(true); if (manual) { setStatus("Jest nowa wersja " + l.n + " (masz " + have + ").", "New version " + l.n + " available (you have " + have + ")."); showInstallBtn(l.n); install(); } }
+      if (l.n > have) { offer(true); if (manual) { setStatus("Jest nowa wersja " + l.n + " (masz " + have + ").", "New version " + l.n + " available (you have " + have + ")."); showInstallBtn(); install(); } }
       else { offer(false); if (manual) setStatus("Masz najnowszą wersję (" + have + ").", "You have the latest version (" + have + ")."); }
     }).catch(function (e) { /* błąd z każdego sprawdzenia, nie tylko ręcznego (wcześniej „if (manual) var em” zostawiało „Nie udało się sprawdzić: undefined”, 22/11/2026) */ var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
   }
@@ -79,24 +76,14 @@
     }).then(function () { busy = false; changed(); });
   }
   // w Ustawieniach: osobny przycisk „Pobierz i zainstaluj”, żeby po anulowaniu/błędzie dało się ponowić bez szukania paska
-  function showInstallBtn(n) {
-    var st = document.getElementById("updStatus"); if (!st || document.getElementById("updInstall")) return;
-    var b = document.createElement("button"); b.id = "updInstall"; b.type = "button"; b.className = "btn"; b.setAttribute("data-upd", "install");
-    b.textContent = w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + n; st.before(b);
+  var pokazInstaluj = false, mojaTekst = "…";
+  function showInstallBtn() { pokazInstaluj = true; stan(); }
+  // dane panelu „Aktualizacja aplikacji”: wersja w telefonie, numer do zainstalowania (albo null) i ostatni komunikat w bieżącym języku
+  function dane() {
+    return { wersja: mojaTekst, nowa: latest && (pokazInstaluj || (mine !== null && latest.n > mine)) ? latest.n : null, status: w.OESTT(lastStatus[0], lastStatus[1]) };
   }
-  function panelHtml() {
-    return '<div class="panel"><b>' + w.OESTT("Aktualizacja aplikacji", "App update") + '</b>' +
-      '<p class="hint">' + w.OESTT("Wersja w telefonie: ", "Version on the phone: ") + '<b id="updMine">' + esc(mine === null ? "…" : mine) + '</b></p>' +
-      '<button class="btn" type="button" data-upd="check">' + w.OESTT("Sprawdź aktualizację", "Check for update") + '</button>' +
-      (latest && mine !== null && latest.n > mine ? '<button id="updInstall" class="btn" type="button" data-upd="install">' + w.OESTT("Pobierz i zainstaluj wersję ", "Download and install version ") + esc(latest.n) + '</button>' : '') +
-      '<p class="hint" id="updStatus">' + esc(w.OESTT(lastStatus[0], lastStatus[1])) + '</p></div>';
-  }
-  document.addEventListener("click", function (e) {
-    var t = e.target && e.target.closest && e.target.closest("[data-upd]"); if (!t) return;
-    e.preventDefault(); if (t.getAttribute("data-upd") === "install") install(); else check(true);
-  });
-  current().then(function (v) { var e = document.getElementById("updMine"); if (e) e.textContent = v || "?"; });
+  current().then(function (v) { mojaTekst = String(v || "?"); stan(); });
   // przy starcie: ciche sprawdzenie (raz na uruchomienie); nowsza wersja = wpis w dzwonku
   if (native()) setTimeout(function () { check(false); }, 4000);
-  w.OESTUpdate = { check: check, install: install, panelHtml: panelHtml, note: note, postpone: postpone };
+  w.OESTUpdate = { check: check, install: install, dane: dane, note: note, postpone: postpone };
 })(window);

@@ -82,8 +82,10 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(500);
 
     // 5. Ustawienia → Konto: instalacja nadal dostępna ręcznie
-    const panel = await p.evaluate(() => OESTUpdate.panelHtml());
-    check(/Pobierz i zainstaluj wersję 672/.test(panel), 'w Ustawieniach brak przycisku „Pobierz i zainstaluj wersję 672”');
+    await p.evaluate(() => OESTEkrany.go('settings/account')); await p.waitForTimeout(1500);
+    const panel = await p.evaluate(() => [...document.querySelectorAll('#oest-szkielet ion-content ion-button')].map(b => b.textContent).join(' | '));
+    check(/Pobierz i zainstaluj wersję 672/.test(panel), 'w Ustawieniach brak przycisku „Pobierz i zainstaluj wersję 672”: ' + panel);
+    await p.evaluate(() => OESTEkrany.go('home')); await p.waitForTimeout(500);
 
     // 6. przerwane pobieranie: wpis w dzwonku pokazuje błąd i „spróbuj jeszcze raz” (nie udaje zwykłego „dotknij, żeby pobrać”) – uwaga Codex #184
     await p.evaluate(() => { localStorage.removeItem('oest.update.later'); window.__failNext = true; }); await p.reload(); await p.waitForTimeout(5200);
