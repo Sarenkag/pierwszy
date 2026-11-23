@@ -11,7 +11,7 @@
           <ion-title>{{ stan.tytul }}</ion-title>
           <ion-buttons slot="end">
             <ion-button v-for="(a, i) in akcjeVue" :key="i" :data-nav="a.nav || undefined" :disabled="a.wylaczona" @click="!a.nav && a.fn && a.fn()" :aria-label="a.etykieta"><ion-icon slot="icon-only" :icon="a.ikona"></ion-icon></ion-button>
-            <ion-button @click="emit('jezyk')" :aria-label="T('Język: polski / angielski', 'Language: Polish / English')">{{ jezyk === 'pl' ? 'EN' : 'PL' }}</ion-button>
+            <ion-button data-oest-lang @click="emit('jezyk')" :aria-label="T('Język: polski / angielski', 'Language: Polish / English')">{{ jezyk === 'pl' ? 'EN' : 'PL' }}</ion-button>
           </ion-buttons>
         </ion-toolbar>
         <div v-else class="oest-pas"></div>
