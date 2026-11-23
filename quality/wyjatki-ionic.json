@@ -144,8 +144,6 @@
         "css:ion-badge.oest-pigulka[data-kolor=\"tertiary\"]",
         "css:ion-badge.oest-pigulka[data-kolor=\"warning\"]",
         "css:ion-button.oest-cd",
-        "css:ion-button.oest-cd ion-badge",
-        "css:ion-button.oest-cd ion-badge[data-plan]",
         "css:ion-button.oest-cd[data-ot]",
         "css:ion-button.oest-dzien",
         "css:ion-button.oest-dzien ion-badge",
@@ -201,7 +199,12 @@
         "klasa:oest-rowne",
         "klasa:oest-rzad",
         "klasa:oest-start",
-        "klasa:oest-status"
+        "klasa:oest-status",
+        "css:.oest-cdk",
+        "css:.oest-cdk > ion-badge",
+        "css:.oest-cdk > ion-badge[data-ot]",
+        "css:.oest-cdk > ion-badge[data-plan]",
+        "klasa:oest-cdk"
       ],
       "powod": "Wygląd jak na main (styl Grzegorza „Szkło i poświata”: pasek dni, kafelki, nagłówek ekranu głównego, klocek, pigułka statusu, filtr, Kalendarz) przeniesiony na komponenty Ionic – przeniesienie nie zmienia wyglądu.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTFMSn9553K3t71DGQ2tRCDD"

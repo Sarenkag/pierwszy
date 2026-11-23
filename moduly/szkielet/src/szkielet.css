@@ -133,14 +133,16 @@ ion-badge.oest-pigulka[data-kolor="tertiary"] { color: #a35bff; }
 .oest-chipy ion-icon[data-grupa="sub"] { color: #a371f7; }
 .oest-kal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .oest-kal > small { font-size: .75rem; color: var(--muted); text-align: center; font-weight: 600; }
-ion-button.oest-cd { position: relative; aspect-ratio: 1; height: auto; margin: 0; font-size: .9rem; font-weight: 400; text-transform: none; letter-spacing: 0;
+.oest-cdk { position: relative; }
+ion-button.oest-cd { position: relative; display: block; width: 100%; aspect-ratio: 1; height: auto; margin: 0; font-size: .9rem; font-weight: 400; text-transform: none; letter-spacing: 0;
   --padding-start: 0; --padding-end: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: rgba(255,255,255,.24); --background: rgba(255,255,255,.08); --background-hover: rgba(255,255,255,.08); --color: var(--ink); --box-shadow: none; }
 ion-button.oest-cd[data-ot] { opacity: .38; }
 ion-button.oest-cd[data-sh] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
 ion-button.oest-cd[data-td] { --box-shadow: 0 0 0 2px #b9a8ff inset; }
 ion-button.oest-cd[data-on] { --box-shadow: 0 0 14px rgba(124,132,255,.7); --border-color: #fff; }
-ion-button.oest-cd ion-badge { position: absolute; bottom: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; line-height: 16px; font-size: 10px; border-radius: 8px; --background: #ff8a3d; --color: #1a0d00; }
-ion-button.oest-cd ion-badge[data-plan] { --background: transparent; border: 1.5px dashed #ff8a3d; --color: #ff8a3d; line-height: 13px; }
+.oest-cdk > ion-badge { pointer-events: none; position: absolute; bottom: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; line-height: 16px; font-size: 10px; border-radius: 8px; --background: #ff8a3d; --color: #1a0d00; }
+.oest-cdk > ion-badge[data-plan] { --background: transparent; border: 1.5px dashed #ff8a3d; --color: #ff8a3d; line-height: 13px; }
+.oest-cdk > ion-badge[data-ot] { opacity: .38; }
 .oest-legenda { display: flex; gap: 14px; margin: 10px 0 0; font-size: .8rem; color: var(--muted); }
 .oest-legenda span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .oest-legenda [data-l="sh"]::before { background: linear-gradient(135deg, #5b7cff, #a35bff); }

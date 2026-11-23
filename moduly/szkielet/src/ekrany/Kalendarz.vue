@@ -5,9 +5,10 @@
     <div class="ion-padding-horizontal">
       <div class="oest-kal">
         <small v-for="(n, i) in d.tydzien" :key="i">{{ n }}</small>
-        <ion-button v-for="x in d.kratki" :key="x.k" class="oest-cd" fill="clear" :data-cd="x.k" :data-ot="x.inny || undefined" :data-sh="x.praca || undefined" :data-td="x.dzis || undefined" :data-on="x.wybrany || undefined" @click="P.kalDzien(x.k)">
-          {{ x.d }}<ion-badge v-if="x.n" :data-plan="x.plan || undefined">{{ x.n }}</ion-badge>
-        </ion-button>
+        <div v-for="x in d.kratki" :key="x.k" class="oest-cdk">
+        <ion-button class="oest-cd" fill="clear" :data-cd="x.k" :data-ot="x.inny || undefined" :data-sh="x.praca || undefined" :data-td="x.dzis || undefined" :data-on="x.wybrany || undefined" @click="P.kalDzien(x.k)">{{ x.d }}</ion-button>
+        <ion-badge v-if="x.n" :data-plan="x.plan || undefined" :data-ot="x.inny || undefined" aria-hidden="true">{{ x.n }}</ion-badge>
+      </div>
       </div>
       <p class="oest-legenda"><span data-l="sh">{{ T('Zmiana', 'Shift') }}</span><span data-l="dn">{{ T('Zlecenie Vantify', 'Vantify job') }}</span><span data-l="pl">{{ T('Planowane', 'Planned') }}</span></p>
       <ion-button v-if="d.brakGrafiku" class="oest-podpowiedz" fill="clear" expand="block" data-nav="settings/profile">
