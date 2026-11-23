@@ -103,15 +103,30 @@ ion-card.oest-klocek[data-przygaszony] { opacity: .6; }
 .oest-klocek ion-icon[data-ton="blad"], .oest-klocek ion-icon[data-ton="danger"] { color: #ef3b36; }
 .oest-klocek ion-icon[data-ton="brak"] { color: #9097a6; }
 .oest-klocek .oest-klok { flex: none; width: 51px; height: 24px; box-sizing: border-box; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.12); font-size: 11px; font-weight: 800; color: var(--steel); white-space: nowrap; overflow: hidden; }
-.oest-klocek .oest-kcz { flex: none; font-size: 13px; font-weight: 700; }
+.oest-klocek .oest-kcz { flex: none; width: 34px; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; }
 .oest-klocek .oest-kopis { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oest-klocek .oest-kodstep { flex: 1; }
-.oest-klocek .oest-kdt { flex: none; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oest-klocek .oest-kdt { flex: none; width: 118px; overflow: hidden; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .oest-klocek .oest-kdt[data-ton="red"] { color: #ef3b36; }
 .oest-klocek .oest-kdt[data-ton="jutro"] { color: #ff8a3d; }
 .oest-klocek .oest-kr strong { font-size: 13px; font-weight: 700; }
 .oest-klocek .oest-ksep { flex: none; width: 1px; height: 19px; background: rgba(255,255,255,.18); }
-.oest-klocek .oest-knr { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.oest-klocek .oest-knr { flex: none; font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Linia 3 inspekcji – stałe miejsca jak na main (Grzegorz 23/11: „Stałe miejsca, numer w 1. linii”): termin 118, zdjęcia 20, pytania 44, usterki 44 (miejsce także bez usterek) */
+.oest-klocek .oest-kr3 { gap: 6px; }
+.oest-klocek .oest-kr3 strong { flex: none; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.oest-klocek strong[data-rodzaj="zdjecia"] { width: 20px; }
+.oest-klocek strong[data-rodzaj="pytania"] { width: 44px; }
+.oest-klocek .oest-kus { flex: none; display: flex; align-items: center; gap: 4px; width: 44px; height: 21px; overflow: hidden; color: #ff8a3d; }
+.oest-klocek .oest-kus[data-pusty] { visibility: hidden; }
+@media (max-width: 399px) {
+  .oest-klocek .oest-kr3 { gap: 3px; }
+  .oest-klocek .oest-kr3 .oest-kdt, .oest-klocek .oest-kr3 strong { font-size: 12px; }
+  .oest-klocek .oest-kr3 .oest-kdt { width: 108px; }
+  .oest-klocek strong[data-rodzaj="zdjecia"] { width: 18px; }
+  .oest-klocek strong[data-rodzaj="pytania"] { width: 40px; }
+  .oest-klocek .oest-kus { width: 40px; }
+}
 ion-badge.oest-pigulka { flex: none; box-sizing: border-box; width: 98px; padding: 5px 6px; border-radius: 999px; border: 1px solid currentColor; --background: color-mix(in srgb, currentColor 16%, transparent); --color: currentColor;
   font: 700 12px/1 var(--font-body, system-ui); text-align: center; white-space: nowrap; overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.45); text-shadow: 0 1px 1px rgba(0,0,0,.4); }
@@ -142,7 +157,10 @@ ion-button.oest-cd[data-on] { --box-shadow: 0 0 14px rgba(124,132,255,.7); --bor
 ion-button.oest-cd ion-badge { position: absolute; bottom: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; line-height: 16px; font-size: 10px; border-radius: 8px; --background: #ff8a3d; --color: #1a0d00; }
 ion-button.oest-cd ion-badge[data-plan] { --background: transparent; border: 1.5px dashed #ff8a3d; --color: #ff8a3d; line-height: 13px; }
 .oest-legenda { display: flex; gap: 14px; margin: 10px 0 0; font-size: .8rem; color: var(--muted); }
-.oest-legenda span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.oest-legenda > [data-l] { display: inline-grid; grid-template-columns: auto auto; align-items: center; }
+.oest-legenda > [data-l]::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+.oest-legenda > [data-l] > span { grid-area: 1 / 2; }
+.oest-legenda > [data-l] > [aria-hidden] { visibility: hidden; }
 .oest-legenda [data-l="sh"]::before { background: linear-gradient(135deg, #5b7cff, #a35bff); }
 .oest-legenda [data-l="dn"]::before { background: #ff8a3d; border-radius: 50%; }
 .oest-legenda [data-l="pl"]::before { background: transparent; border: 1.5px dashed #ff8a3d; border-radius: 50%; }
