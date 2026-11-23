@@ -38,7 +38,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     const where = () => pg.evaluate(() => ({
       page: /\/inspekcje\//.test(location.pathname) ? 'inspekcja' : 'apka', hash: location.hash,
       view: (v => v || (window.OESTEkrany && (document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(',')), // ekran na Vue (hub Ustawień, ekran główny, Inspekcje, Kalendarz – stary .wrap schowany) nie ma widoku v-…: jego id = v-<trasa>
-      ask: [...document.querySelectorAll('.oest-ask, ion-alert')].map(a => a.textContent.trim()).join(' | '), // okienko pytania: ion-alert ze szkieletu (OESTOkna.pytaj)
+      ask: [...document.querySelectorAll('.oest-ask, ion-alert, ion-modal.oest-karta')].map(a => a.textContent.trim()).join(' | '), // okienko pytania: ion-alert ze szkieletu (OESTOkna.pytaj); podgląd raportu: ion-modal.oest-karta (OESTOkna.okno({ karta: true }))
       review: document.querySelectorAll('ion-modal[data-oest-czesc="Aparat"]').length, editor: document.querySelectorAll('ion-modal[data-oest-czesc="EdytorZdjec"]').length, // podgląd i edytor zdjęcia: części Ionic (ion-modal)
       len: history.length, exit: sessionStorage.getItem('wstecz.wyjscie') === '1'
     }));
@@ -136,11 +136,11 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     await pg.click('ion-card[data-nav="settings/reports"]'); await wait(1500);
     s = await where(); check(/settings\/reports/.test(s.hash), '5: otwarta przeglądarka raportów, jest ' + s.hash);
-    await pg.locator('#rptList .k2').first().click(); await wait(1200);
+    await pg.locator('#rptList ion-card.oest-klocek').first().click(); await wait(1200);
     s = await where(); check(!!s.ask, '5: podgląd raportu otwarty');
     s = await back(1000); check(!s.ask && /settings\/reports/.test(s.hash), '5: Wstecz zamyka podgląd raportu i zostaje w Raportach, jest ' + s.hash + ' okienko: ' + s.ask.slice(0, 40));
     // odzyskana inspekcja z klocka Raporty → Wstecz wraca do Raportów
-    await pg.locator('#rptRec .ki').first().click(); await wait(3000);
+    await pg.locator('#rptRec ion-card.oest-klocek').first().click(); await wait(3000);
     s = await where(); check(s.page === 'inspekcja' && /#rec=/.test(s.hash), '6: odzyskana inspekcja otwarta, jest ' + s.page + s.hash);
     s = await back(2500); check(s.page === 'apka' && /settings\/reports/.test(s.hash), '6: Wstecz z odzyskanej inspekcji → klocek Raporty, jest ' + s.page + s.hash);
     s = await back(); check(s.hash === '#settings', '6: Wstecz z Raportów → Ustawienia, jest ' + s.hash);

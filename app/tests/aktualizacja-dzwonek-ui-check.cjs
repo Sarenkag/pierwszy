@@ -60,7 +60,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     // 3. stuknięcie wpisu: najpierw pytanie (Pobierz / Anuluj), nic bez zgody
     await setLang('pl'); await p.click('#hmBell'); await p.waitForTimeout(800);
     await p.click('[data-hgo="update"]'); await p.waitForTimeout(900);
-    const ask = await p.evaluate(() => ({ ask: [...document.querySelectorAll('ion-alert')].map(a => a.textContent.replace(/\s+/g, ' ').trim()).join('|'), installs: window.__installs })); // „Na pewno?” = ion-alert (OESTOkna.pytaj)
+    const ask = await p.evaluate(() => ({ ask: [...document.querySelectorAll('.oest-ask')].map(a => a.textContent.replace(/\s+/g, ' ').trim()).join('|'), installs: window.__installs }));
     check(/Pobrać i zainstalować wersję 672/.test(ask.ask), 'stuknięcie wpisu nie pyta o pobranie: ' + ask.ask);
     check(ask.installs === 0, 'pobieranie ruszyło przed zgodą');
     await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(700); // = Anuluj, działa jak „Później”
@@ -92,7 +92,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     await p.evaluate(() => { localStorage.removeItem('oest.update.later'); window.__failNext = true; }); await p.reload(); await p.waitForTimeout(5200);
     await p.evaluate(() => { window.__failNext = true; });
     await p.click('#hmBell'); await p.waitForTimeout(800); await p.click('[data-hgo="update"]'); await p.waitForTimeout(900);
-    await p.locator('ion-alert .alert-button').last().click(); await p.waitForTimeout(800); // „Pobierz” w ion-alert
+    await p.click('.oest-ask .ok'); await p.waitForTimeout(800);
     await p.click('#hmBell'); await p.waitForTimeout(800);
     const err = await p.evaluate(() => { const r = document.querySelector('[data-hgo="update"]'); return r && r.textContent.replace(/\s+/g, ' ').trim(); });
     check(err && /Nie udało się pobrać/.test(err) && /spróbować jeszcze raz/.test(err), 'po przerwanym pobieraniu wpis nie mówi o błędzie: ' + err);

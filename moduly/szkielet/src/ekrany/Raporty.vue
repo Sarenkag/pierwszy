@@ -70,7 +70,7 @@ function rysuj() { lista(); S.raportyLicznik().then((d) => { licznik.value = d; 
 function szukaj(o) { R.szukaj(o); szuk.value = R.szukanie(); lista(); } // szukanie to nie zmiana ustawień (bez „niezapisanych zmian”)
 async function pokaz(id) {
   const p = await R.podglad(id); if (!p) return;
-  const w = await window.OESTOkna.okno({ tytul: p.tytul, komponent: RaportPodglad, wlasciwosci: { p }, ok: p.ok, anuluj: p.anuluj });
+  const w = await window.OESTOkna.okno({ tytul: p.tytul, komponent: RaportPodglad, wlasciwosci: { p }, ok: p.ok, anuluj: p.anuluj, karta: true });
   p.zwolnij();
   await R.wynik(id, w);
 }

@@ -74,12 +74,12 @@ const OESTOkna = {
     const r = (await a.onDidDismiss()).role;
     return o.tylkoOk ? true : r === 'confirm' || r === 'destructive';
   },
-  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow, wyglad, pelny }) → Promise<{ ok, dane }>
+  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow, wyglad, pelny, karta }) → Promise<{ ok, dane }>
   // wyglad (opcjonalnie): nazwa wyglądu okienka w szkielet.css (data-oest-okno), np. wspólne moduły jako małe okienko na środku jak dawniej
-  //   pelny: podgląd na cały ekran bez paska tytułu (ciemne tło, treść na środku) – jak dawny podgląd zdjęcia; bez wyglad: karta na środku jak dawne okienko apki (szkielet.css, .oest-karta)
+  //   pelny: podgląd na cały ekran bez paska tytułu (ciemne tło, treść na środku) – jak dawny podgląd zdjęcia; karta: karta na środku jak dawne okienko apki (szkielet.css, .oest-karta)
   async okno(o) {
     o = o || {};
-    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, htmlAttributes: o.wyglad ? { 'data-oest-okno': o.wyglad } : undefined, cssClass: o.wyglad ? undefined : o.pelny ? 'oest-karta oest-podglad' : 'oest-karta' });
+    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, htmlAttributes: o.wyglad ? { 'data-oest-okno': o.wyglad } : undefined, cssClass: o.wyglad ? undefined : o.pelny ? 'oest-karta oest-podglad' : o.karta ? 'oest-karta' : undefined });
     const zwolnij = OESTOkna.open(() => { m.dismiss(undefined, 'cancel'); }); // zmiana ekranu zamyka też to okienko (R4)
     await m.present();
     const r = await m.onDidDismiss();

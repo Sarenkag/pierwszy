@@ -1,6 +1,6 @@
 <!-- Okienko z własną treścią (ion-modal) – JEDNO w całej apce: tytuł, treść (komponent Vue ekranu) i przyciski na dole.
-     Otwiera je OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow, pelny }) → Promise<{ ok, dane }>.
-     Wygląd jak dawne okienko apki na main (.oest-ask): karta 360 px na środku, wysokość według treści, tytuł 17 px, dwa równe przyciski.
+     Otwiera je OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow, pelny, karta }) → Promise<{ ok, dane }>.
+     karta: wygląd jak dawne okienko apki na main (.oest-ask): karta 360 px na środku, wysokość według treści, tytuł 17 px, dwa równe przyciski.
      ✕ tylko w okienku bez przycisków (inaczej zamyka „Anuluj”/„Zamknij”, Wstecz telefonu albo stuknięcie obok).
      pelny: podgląd na cały ekran bez tytułu (np. zdjęcie) – treść na środku czarnego tła.
      tytul może być funkcją (np. OESTHome.prognoza().tytul) – po zmianie PL/EN okienko pokazuje tytuł i swoje przyciski w nowym języku.
@@ -22,7 +22,7 @@
   <ion-content v-else-if="pelny">
     <component :is="komponent" v-bind="wlasciwosci || {}" :T="t" @dane="v => (dane = v)" @zamknij="v => zamknij(v !== false)"></component>
   </ion-content>
-  <template v-else>
+  <template v-else-if="karta">
     <ion-header>
       <ion-toolbar>
         <ion-title>{{ naglowek }}</ion-title>
@@ -39,13 +39,32 @@
       </div>
     </ion-footer>
   </template>
+  <template v-else>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ naglowek }}</ion-title>
+        <ion-buttons slot="end"><ion-button data-okno="zamknij" @click="zamknij(false)" :aria-label="t('Zamknij', 'Close')"><ion-icon slot="icon-only" :icon="close"></ion-icon></ion-button></ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <component :is="komponent" v-bind="wlasciwosci || {}" :T="t" @dane="v => (dane = v)" @zamknij="v => zamknij(v !== false)" @przyciski="v => (przyciski = v !== false)"></component>
+    </ion-content>
+    <ion-footer v-if="!bezPrzyciskow && przyciski">
+      <ion-toolbar>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" v-if="anuluj !== false" data-okno="anuluj" @click="zamknij(false)">{{ anuluj || t('Anuluj', 'Cancel') }}</ion-button>
+          <ion-button fill="solid" :color="niebezpieczne ? 'danger' : 'primary'" data-okno="ok" @click="zamknij(true)">{{ ok || 'OK' }}</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-footer>
+  </template>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonFooter, modalController } from '@ionic/vue';
 import { close, documentText, sparkles, search } from 'ionicons/icons';
-const props = defineProps({ T: Function, tytul: [String, Function], komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean, wyglad: String, pelny: Boolean });
+const props = defineProps({ T: Function, tytul: [String, Function], komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean, wyglad: String, pelny: Boolean, karta: Boolean });
 // ikona przed tytułem w miejscu dawnego emoji (📝 Notatki / Nowa notatka, ✨ Połącz notatki, 🔍 Odczyt ze zdjęcia)
 const IKONY = { NotatkiOkno: documentText, NotatkaNowa: documentText, NotatkiPropozycja: sparkles, OdczytArkusz: search };
 const dane = ref(null), przyciski = ref(true);
