@@ -69,3 +69,103 @@ ion-item:has(> ion-input.input-fill-solid.input-fill-solid), ion-item:has(> ion-
 }
 ion-toggle { --track-background-checked: #7c84ff; }
 ion-list-header { --color: var(--ink); --background: transparent; }
+/* Kolor grupy inspekcji = pasek z lewej klocka (Grzegorz 04/11/2026). Te same kolory co grupy w app/www/ppm.js (OEST_PPM.groups) – zmiana grupy = zmiana w obu miejscach. */
+ion-card[data-grupa="fire"] { --oest-grupa: #e5534b; }
+ion-card[data-grupa="water"] { --oest-grupa: #3b8eea; }
+ion-card[data-grupa="elec"] { --oest-grupa: #e3b341; }
+ion-card[data-grupa="mech"] { --oest-grupa: #3fb27f; }
+ion-card[data-grupa="sub"] { --oest-grupa: #a371f7; }
+/* Wygląd ekranu głównego i paska dni jak dotąd (Grzegorz 23/11/2026: „brzydziej się nie dało”) – „Szkło i poświata” z app/www/theme.css
+   na komponentach Ionic. Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). */
+.oest-dni { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px 8px; scrollbar-width: none; }
+ion-button.oest-dzien { flex: none; width: 50px; height: auto; margin: 0; text-transform: none; letter-spacing: 0; font-weight: 400;
+  --padding-start: 0; --padding-end: 0; --padding-top: 7px; --padding-bottom: 5px; --border-radius: 14px; --border-width: 1px; --border-style: solid;
+  --border-color: var(--line); --background: var(--panel); --background-hover: var(--panel); --color: var(--ink); --box-shadow: none; }
+ion-button.oest-dzien ion-label { text-align: center; }
+ion-button.oest-dzien small { display: block; font-size: .72rem; text-transform: uppercase; color: var(--muted); }
+ion-button.oest-dzien strong { display: block; font-size: 1.1rem; }
+ion-button.oest-dzien ion-icon { display: block; margin: 0 auto; height: 1.2em; font-size: .8rem; }
+ion-button.oest-dzien ion-badge { display: block; min-width: 26px; width: max-content; margin: 3px auto 0; border-radius: 7px; font-size: .72rem; --background: rgba(255,255,255,.1); --color: var(--muted); }
+ion-button.oest-dzien[data-minal] { opacity: .4; }
+ion-button.oest-dzien[data-praca] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
+ion-button.oest-dzien[data-dzis] { --border-color: var(--accent); --box-shadow: 0 0 12px rgba(124,132,255,.5); }
+ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14px rgba(124,132,255,.7); }
+.oest-kafelki { --ion-grid-column-padding: 0; padding: 0 11px; }
+.oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
+.oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
+.oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
+.oest-kafelki ion-card-title { font-size: .95rem; font-weight: 700; color: var(--ink); }
+ion-header.oest-glowny ion-toolbar { --background: transparent; --padding-start: 16px; --padding-end: 16px; --padding-top: 12px; --padding-bottom: 8px; }
+ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-radius: 14px; }
+ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
+ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons, ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons.button-has-icon-only { height: 44px; min-width: 44px; margin-left: 6px; --padding-start: 8px; --padding-end: 8px; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line); --background: var(--panel); overflow: visible; }
+ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; border-radius: 10px; }
+.oest-lampki { display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; padding: 4px 10px 14px; }
+.oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
+.oest-lampki ion-chip:last-child { margin-left: auto; }
+.oest-lampki ion-chip { min-width: 0; flex: 0 1 auto; }
+.oest-lampki ion-chip ion-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
+.oest-jezyk { display: flex; height: 44px; padding: 3px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.oest-jezyk ion-button { height: 36px; margin: 0; --padding-start: 10px; --padding-end: 10px; --border-radius: 11px; --box-shadow: none; --color: var(--muted); font-weight: 700; }
+.oest-jezyk ion-button[fill=solid] { --color: #fff; }
+ion-button.oest-ja::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid #0a0e1f; }
+/* Klocek listy i pigułka statusu – wygląd jak dotąd (moduly/klocek .k2.ki i moduly/znacznik .oest-st na main 23/11/2026). */
+ion-card.oest-klocek { position: relative; margin: 0 16px 8px; padding: 12px 18px 12px 18px; border-radius: 16px; border: 1px solid var(--line); box-shadow: none; color: var(--ink); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+ion-card.oest-klocek::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--oest-grupa, transparent); }
+ion-card.oest-klocek[data-przygaszony] { opacity: .6; }
+.oest-klocek .oest-kr { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.oest-klocek .oest-kr + .oest-kr { margin-top: 9px; }
+.oest-klocek h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-klocek .oest-kr > img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; border: 1px solid rgba(255,255,255,.2); flex: none; }
+.oest-klocek ion-icon { flex: none; width: 21px; height: 21px; color: var(--steel); --ionicon-stroke-width: 36px; }
+.oest-klocek ion-icon[data-ton="ok"] { color: #21c45a; }
+.oest-klocek ion-icon[data-ton="blad"], .oest-klocek ion-icon[data-ton="danger"] { color: #ef3b36; }
+.oest-klocek ion-icon[data-ton="brak"] { color: #9097a6; }
+.oest-klocek .oest-klok { flex: none; width: 51px; height: 24px; box-sizing: border-box; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.12); font-size: 11px; font-weight: 800; color: var(--steel); white-space: nowrap; overflow: hidden; }
+.oest-klocek .oest-kcz { flex: none; font-size: 13px; font-weight: 700; }
+.oest-klocek .oest-kopis { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-klocek .oest-kodstep { flex: 1; }
+.oest-klocek .oest-kdt { flex: none; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oest-klocek .oest-kdt[data-ton="red"] { color: #ff4d5e; }
+.oest-klocek .oest-kdt[data-ton="jutro"] { color: #f0c75e; }
+.oest-klocek .oest-kr strong { font-size: 13px; font-weight: 700; }
+.oest-klocek .oest-ksep { flex: none; width: 1px; height: 19px; background: rgba(255,255,255,.18); }
+.oest-klocek .oest-knr { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+ion-badge.oest-pigulka { flex: none; box-sizing: border-box; width: 98px; padding: 5px 6px; border-radius: 999px; border: 1px solid currentColor; --background: color-mix(in srgb, currentColor 16%, transparent); --color: currentColor;
+  font: 700 12px/1 var(--font-body, system-ui); text-align: center; white-space: nowrap; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.45); text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+ion-badge.oest-pigulka[data-kolor="danger"] { color: #ef3b36; }
+ion-badge.oest-pigulka[data-kolor="medium"] { color: #c3c9e8; }
+ion-badge.oest-pigulka[data-kolor="warning"] { color: #f0c75e; }
+ion-badge.oest-pigulka[data-kolor="secondary"] { color: #79b8ff; }
+ion-badge.oest-pigulka[data-kolor="success"] { color: #00d84a; }
+ion-badge.oest-pigulka[data-kolor="tertiary"] { color: #a35bff; }
+/* Filtr listy (pigułki) i Kalendarz miesiąca – wygląd jak dotąd (theme.css .chip/.chip.on, .calgrid/.cd na main 23/11/2026). */
+.oest-chipy { display: flex; gap: 8px; overflow-x: auto; padding: 6px 16px 12px; scrollbar-width: none; }
+.oest-chipy ion-chip { flex: none; margin: 0; min-height: 32px; font-size: .85rem; border-radius: 999px; border: 1px solid var(--line); --background: var(--panel); --color: var(--ink); transition: transform .12s, box-shadow .12s; }
+.oest-chipy ion-chip[data-on] { --background: var(--grad); border-color: transparent; --color: #fff; transform: translateY(1px) scale(.97); box-shadow: inset 0 2px 6px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.12); filter: brightness(.92); }
+.oest-chipy ion-icon { width: 10px; height: 10px; margin: 0 6px 0 0; }
+.oest-chipy ion-icon[data-grupa="fire"] { color: #e5534b; }
+.oest-chipy ion-icon[data-grupa="water"] { color: #3b8eea; }
+.oest-chipy ion-icon[data-grupa="elec"] { color: #e3b341; }
+.oest-chipy ion-icon[data-grupa="mech"] { color: #3fb27f; }
+.oest-chipy ion-icon[data-grupa="sub"] { color: #a371f7; }
+.oest-kal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.oest-kal > small { font-size: .75rem; color: var(--muted); text-align: center; font-weight: 600; }
+ion-button.oest-cd { position: relative; aspect-ratio: 1; height: auto; margin: 0; font-size: .9rem; font-weight: 400; text-transform: none; letter-spacing: 0;
+  --padding-start: 0; --padding-end: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: rgba(255,255,255,.24); --background: rgba(255,255,255,.08); --background-hover: rgba(255,255,255,.08); --color: var(--ink); --box-shadow: none; }
+ion-button.oest-cd[data-ot] { opacity: .38; }
+ion-button.oest-cd[data-sh] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
+ion-button.oest-cd[data-td] { --box-shadow: 0 0 0 2px #b9a8ff inset; }
+ion-button.oest-cd[data-on] { --box-shadow: 0 0 14px rgba(124,132,255,.7); --border-color: #fff; }
+ion-button.oest-cd ion-badge { position: absolute; bottom: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; line-height: 16px; font-size: 10px; border-radius: 8px; --background: #ff8a3d; --color: #1a0d00; }
+ion-button.oest-cd ion-badge[data-plan] { --background: transparent; border: 1.5px dashed #ff8a3d; --color: #ff8a3d; line-height: 13px; }
+.oest-legenda { display: flex; gap: 14px; margin: 10px 0 0; font-size: .8rem; color: var(--muted); }
+.oest-legenda span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.oest-legenda [data-l="sh"]::before { background: linear-gradient(135deg, #5b7cff, #a35bff); }
+.oest-legenda [data-l="dn"]::before { background: #ff8a3d; border-radius: 50%; }
+.oest-legenda [data-l="pl"]::before { background: transparent; border: 1.5px dashed #ff8a3d; border-radius: 50%; }
+ion-button.oest-podpowiedz { height: auto; margin: 12px 0 0; white-space: normal; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .85rem; text-align: left;
+  --padding-top: 10px; --padding-bottom: 10px; --padding-start: 12px; --padding-end: 12px; --border-radius: 10px; --border-width: 1px; --border-style: dashed; --border-color: var(--line); --color: var(--muted); }
+ion-card.oest-klocek::part(native) { background: transparent; }

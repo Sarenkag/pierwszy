@@ -1,9 +1,9 @@
 <!-- Pigułka statusu – JEDNA w całej apce (Grzegorz 07/11/2026): ten sam kształt, różni się tylko kolor i napis.
-     Kolory w jednym miejscu motywu (szkielet.css, zmienne --ion-color-*): Zaległa danger, Nie rozpoczęta medium, W trakcie warning,
+     Wygląd jak dotąd (98 px, obwódka + tło stanu, 3D) i kolory w jednym miejscu: szkielet.css (.oest-pigulka): Zaległa danger, Nie rozpoczęta medium, W trakcie warning,
      Wstrzymana secondary (niebieski), Gotowa success, Odzyskana tertiary. tryb = 'zalegla'|'nierozpoczeta'|'wtrakcie'|'wstrzymana'|'gotowa'|'odzyskana'
      albo tekst + ton (0 szary, 1 żółty, 2 zielony, 3 czerwony, 4 niebieski) dla list spoza inspekcji. -->
 <template>
-  <ion-badge v-if="p" :color="p.kolor">{{ p.tekst }}</ion-badge>
+  <ion-badge v-if="p" class="oest-pigulka" :data-kolor="p.kolor">{{ p.tekst }}</ion-badge>
 </template>
 
 <script setup>

@@ -145,49 +145,6 @@ input[type=text], input[type=email], input[type=date], select {
   <section class="view" id="v-questions" hidden></section>
 
   <!-- Menu główne -->
-  <section class="view" id="v-home" hidden>
-    <!-- Nagłówek ekranu głównego (Grzegorz 03/11, makieta „Home experience”); logika w home.js -->
-    <header class="hm-head">
-      <div class="hm-logo" aria-hidden="true">OEST</div>
-      <div class="hm-name"><b>ONE EASTSIDE</b><span><span id="hmDate"></span><button class="hm-wx" id="hmWx" type="button" hidden aria-label="Prognoza pogody" data-en-aria-label="Weather forecast"><span class="i"></span><span class="v"></span></button></span></div>
-      <div class="hm-icons">
-        <button class="oest-sw" data-sw="lang" id="hmLang" type="button" aria-label="Język" data-en-aria-label="Language"><span class="th" aria-hidden="true"></span><i data-v="pl">PL</i><i data-v="en">EN</i></button>
-        <button class="hm-sq" id="hmBell" type="button" aria-label="Powiadomienia" data-en-aria-label="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><span class="hm-badge" hidden></span></button>
-        <button class="hm-sq hm-me" type="button" data-nav="profile" aria-label="Mój profil" data-en-aria-label="My Profile"><span id="hmIni"></span></button>
-      </div>
-    </header>
-    <div class="hm-st">
-      <button type="button" id="hmNet" aria-label="Połączenie" data-en-aria-label="Connection"><i class="l"></i><span></span></button>
-      <button type="button" id="hmDrive" aria-label="Google Drive"><i class="l"></i><span></span></button>
-      <button type="button" id="hmPhotos" class="hm-ph-size" aria-label="Folder zdjęć OEST" data-en-aria-label="OEST photo folder"><span></span><b class="hm-warn" aria-hidden="true">⚠</b></button>
-    </div>
-    <div class="days hm-days" id="hmDays"></div>
-    <div class="tiles kf-grid" id="hmTiles"></div>
-  </section>
-
-  <div class="hm-pop" id="hmPop" hidden><div class="hm-card" role="dialog"><div class="hm-pc"></div></div></div>
-
-  <!-- Inspections -->
-  <section class="view" id="v-ppm" hidden>
-    <div class="top"><button class="back" type="button" data-nav="up" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1 data-en="Inspections">Inspekcje</h1></div></div>
-    <div class="days" id="ppmDays"></div>
-    <div class="chips" id="ppmChips"></div>
-    <div class="ppm" id="ppmList"></div>
-    <button class="btn" type="button" data-href="inspekcje/index.html#queue" data-en="Report queue and sending">Kolejka raportów i wysyłka</button>
-  </section>
-
-  <!-- Kalendarz: miesiąc, zmiany z grafiku, inspekcje do zrobienia -->
-  <section class="view" id="v-cal" hidden>
-    <div class="top"><button class="back" type="button" data-nav="up" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1 id="calTitle" data-en="Calendar">Kalendarz</h1></div>
-      <button class="calnav" type="button" data-cm="-1" aria-label="Poprzedni miesiąc" data-en-aria-label="Previous month">◀</button><button class="calnav" type="button" data-cm="1" aria-label="Następny miesiąc" data-en-aria-label="Next month">▶</button>
-      <button class="calnav" type="button" data-nav="profile" aria-label="Mój grafik" data-en-aria-label="My shifts">⚙</button></div>
-    <div class="calgrid" id="calGrid"></div>
-    <div class="callegend"><span class="sh" data-en="Shift">Zmiana</span><span class="dn" data-en="Vantify job">Zlecenie Vantify</span><span class="dn pl" data-en="Planned">Planowane</span></div>
-    <button class="calhint" id="calNoShift" type="button" data-nav="profile" hidden><span data-en="No shift pattern – set your shifts in ">Brak grafiku – ustaw swoje zmiany w </span><b data-en="My Profile → My shifts">Mój profil → Mój grafik</b> ›</button>
-    <div class="ppm" id="calDay"></div>
-  </section>
 
   <!-- Zdjęcia (moduł moduly/zdjecia) -->
   <section class="view" id="v-zdjecia" hidden></section>
@@ -245,7 +202,6 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/powrot/powrot.js"></script><!-- konto zalogowanego (oest.account) – jeden właściciel -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
-<script src="moduly/pasek-dni/pasek-dni.js"></script>
 <script src="moduly/klocek/klocek.js"></script>
 <script src="moduly/kafelek/kafelek.js"></script>
 <script src="moduly/przelacznik/przelacznik.js"></script>
@@ -304,6 +260,8 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/pole-email/pole-email.js"></script>
 <script src="zdjecia-ui.js"></script>
 <script src="moduly/nowosci/nowosci.js"></script>
+<script src="pogoda.js"></script>
+<script src="ppm-ui.js"></script>
 <script src="home.js"></script>
 <script src="vantify-auto.js"></script>
 <script>
@@ -315,20 +273,6 @@ input[type=text], input[type=email], input[type=date], select {
   var CONF = window.OEST_CONFIG || {};
   var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   var Social = native && window.Capacitor.Plugins ? window.Capacitor.Plugins.SocialLogin : null;
-
-    // kafelki ekranu głównego: jeden kafelek (moduly/kafelek) powielony z listy – dodanie modułu = jedna linia
-    var HOME_TILES = [
-      { go: "ppm", t: ["Inspekcje", "Inspections"], icon: '<rect x="10" y="6" width="28" height="36" rx="2"/><path d="M16 16l3 3 6-6M16 27l3 3 6-6M29 17h4M29 28h4"/>' },
-      { go: "reactive", t: ["Reactive", "Reactive"], icon: '<path d="M24 6l18 32H6z"/><path d="M24 19v9M24 33v1"/>' },
-      { go: "powertrace", t: ["Power trace", "Power trace"], icon: '<path d="M27 5L13 27h10l-3 16 15-23H25z"/>' },
-      { go: "cal", t: ["Kalendarz", "Calendar"], icon: '<rect x="7" y="10" width="34" height="31" rx="2"/><path d="M7 19h34M16 6v8M32 6v8"/>' },
-      { go: "keys", t: ["Klucze", "Keys"], icon: '<circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v6M41 24v4"/>' },
-      { go: "handover", t: ["Handover", "Handover"], icon: '<rect x="9" y="6" width="30" height="36" rx="2"/><path d="M15 15h18M15 22h18M15 29h11M30 34l4 4 6-8"/>' },
-      // nowości firm (moduly/nowosci, 18/11/2026): na miejscu „Statystyk” (jeszcze niezrobione) – siatka 2×4 zostaje, ekran się nie przewija
-      { data: { hnews: "1" }, t: ["Nowości firm", "Company news"], icon: '<rect x="6" y="9" width="30" height="30" rx="2"/><path d="M36 17h6v18a4 4 0 0 1-4 4H10M12 16h18M12 23h18M12 30h11"/>' },
-      { go: "settings", t: ["Ustawienia", "Settings"], icon: '<circle cx="24" cy="24" r="6"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/>' }
-    ];
-    $("hmTiles").innerHTML = HOME_TILES.map(function (t) { return window.OESTKafelek.html({ name: t.t[0], en: t.t[1], icon: t.icon, sub: t.sub, cls: t.cls, data: t.data || { nav: t.go } }); }).join("");
 
   // ---------- widoki ----------
   // Każdy ekran to wpis w historii (#nazwa), więc systemowy „wstecz” na Androidzie cofa o jeden ekran
@@ -347,18 +291,15 @@ input[type=text], input[type=email], input[type=date], select {
     if (keysRoute) v = "keys";
     if (settingsRoute) v = "settings";
     if (handoverRoute) v = "handover";
-    if (!$("v-" + v)) v = "home";
     if (!account()) v = "start";
+    else if (!$("v-" + v)) { window.OESTEkrany.go("home"); return; } // nieznany adres → ekran główny (na Ionic + Vue)
     document.querySelectorAll(".view").forEach(function (s) { s.hidden = s.id !== "v-" + v; });
-    if (v === "home") renderHome();
     if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
     if (v === "reactive" || v.indexOf("reactive/") === 0) window.OESTReactiveUI.open(reactiveRoute);
     if (v === "zdjecia" && window.OESTZdjeciaUI) window.OESTZdjeciaUI.open();
     if (v === "appset") renderAccount();
-    if (v === "ppm") renderPpm();
-    if (v === "cal") renderCal();
     renderedRoute = reactiveRoute && v === "reactive" ? reactiveRoute : powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.OESTEkrany.naGore();
   }
@@ -372,22 +313,9 @@ input[type=text], input[type=email], input[type=date], select {
     .forEach(function (x) { if (x[1] && x[1].canLeave) window.OESTEkrany.straz(x[0], function () { return x[1].canLeave(); }); });
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-nav][data-title]"); if (b && $("soonTitle")) $("soonTitle").textContent = b.dataset.title; }, true);
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
-  function uiLang() { return window.OESTBledy.lang() === "en" ? "en" : "pl"; } // moduly/bledy (właściciel oest.lang)
   function applyLang() { if (window.OESTBledy) OESTBledy.applyDom(document); } // stały HTML: data-en / data-en-aria-label …
-  window.addEventListener("oest:lang", function () { applyLang(); liveRefresh(); });
+  window.addEventListener("oest:lang", function () { applyLang(); });
   applyLang();
-  // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
-  function goInsp(url) {
-    window.OESTPowrot.zapisz({ h: "#" + window.OESTEkrany.trasa(), day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.OESTEkrany.przewiniecie() }); // moduly/powrot
-    window.OESTEkrany.otworzStrone(url);
-  }
-  function restoreBack() {
-    var b = window.OESTPowrot.odczytaj(true); // moduly/powrot
-    if (!b || b.h !== "#" + window.OESTEkrany.trasa()) return;
-    ppmDay = b.day || ""; calSel = b.cs || ""; if (b.cm) calMonth = new Date(b.cm);
-    liveRefresh(); setTimeout(function () { window.OESTEkrany.przewin(b.y || 0); }, 0);
-  }
-  document.querySelectorAll("[data-href]").forEach(function (b) { b.addEventListener("click", function () { if (/^inspekcje\//.test(b.dataset.href)) goInsp(b.dataset.href); else window.OESTEkrany.otworzStrone(b.dataset.href); }); });
   document.querySelectorAll("[data-open]").forEach(function (b) {
     b.addEventListener("click", function () { window.OESTEkrany.otworzStrone(b.dataset.open + "/index.html"); });
   });
@@ -422,216 +350,6 @@ input[type=text], input[type=email], input[type=date], select {
     window.OESTSettingsUI.applyTheme();
   }
 
-  // ---------- PPM: lista inspekcji ----------
-  // filtry (Grzegorz 03/11): kilka grup naraz + „Rozpoczęte”; włączone wyglądają na wciśnięte; „All” = brak filtra; bez „Aktywa”
-  var P = window.OEST_PPM, ppmSel = load("ppm.sel", null), ppmDay = "", ppmOpen = {};
-  if (!Array.isArray(ppmSel)) { var og = load("ppm.group", "all"); ppmSel = og && og !== "all" && og !== "assets" ? [og] : []; }
-  var DAYS = [["Nd", "Su"], ["Pn", "Mo"], ["Wt", "Tu"], ["Śr", "We"], ["Cz", "Th"], ["Pt", "Fr"], ["So", "Sa"]];
-  function dayName(i) { return window.OESTT(DAYS[i][0], DAYS[i][1]); }
-  var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
-  function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
-  // status: n = brak terminu, g = dużo czasu, r = 2 dni lub mniej, x = dziś albo po terminie
-  // aktywo Vantify przypięte do karty PPM (aktywa.js): numer + nazwa na karcie, lista „Aktywa”
-  var AS = window.OEST_ASSETS || [];
-  function assetRows() {
-    return AS.map(function (a) {
-      var tasks = a.app.map(function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
-      var color = a.kind === "hvac" ? grp("mech").color : grp("elec").color;
-      var own = tasks.length ? window.OESTT("Inspekcja w apce: ", "In-app inspection: ") + tasks.map(function (t) { var sh = P.short(t); return sh.name + (sh.bld ? " (" + sh.bld + ")" : ""); }).join(", ") : window.OESTT("Tylko zlecenia Vantify — brak inspekcji w apce", "Vantify jobs only — no in-app inspection");
-      var info = ["#" + a.id, a.freq.join(" + ") || window.OESTT("bez częstotliwości", "no frequency"), a.doc].filter(Boolean).join(" · ");
-      return '<button class="prow as" type="button"' + (tasks.length ? ' data-id="' + esc(tasks[0].id) + '"' : " disabled") + '><span class="bar" style="background:' + color + '"></span>' +
-        '<span><div class="nm">' + esc(a.name) + '</div><div class="dt">' + esc(info) + '</div><div class="dt">' + (tasks.length ? "✓ " : "○ ") + esc(own) + "</div></span></button>";
-    }).join("");
-  }
-  // częstotliwość słownie (okno informacji klocka)
-  var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "11M": ["co 11 miesięcy", "every 11 months"], "12M": ["co rok", "annual"] };
-  function freqName(f) { return FREQ[f] ? window.OESTT(FREQ[f][0], FREQ[f][1]) : f; }
-  // klocek inspekcji (Grzegorz 07/11/2026): 3 linie, każdy element w stałym miejscu – moduly/klocek (OESTKlocek.inspekcja)
-  function trybOf(st, late) { return !st ? (late ? "zalegla" : "nierozpoczeta") : st.s === "done" || st.s === "queued" || st.s === "sent" ? "gotowa" : st.s === "hold" ? "wstrzymana" : "wtrakcie"; }
-  function kiData(t, due, left) {
-    var st = P.stage ? P.stage(t) : null, nd = P.needs ? P.needs(t) : { q: true, p: true, f: false };
-    var tryb = trybOf(st, left !== null && left < 0);
-    var used = st && st.used != null ? st.used : st && st.total || 0, ok = st && st.ok != null ? st.ok : 0;
-    return { st: st, nd: nd, tryb: tryb, done: tryb === "gotowa", loc: P.loc(t), freq: P.freqNow(t, due), photos: st ? st.photos || 0 : 0,
-      qa: nd.q && st && used ? { ok: ok, all: used } : null, issues: nd.q && st && st.issues ? st.issues : 0,
-      form: st && st.sheet ? "ok" : nd.f ? "blad" : "brak" };
-  }
-  function ppmCard(r) {
-    var t = r.t, g = grp(t.group), sh = P.short(t), k = kiData(t, r.due, r.left);
-    var go = !k.st ? window.OESTT("Zacznij", "Start") : k.st.s === "prog" || k.st.s === "hold" ? window.OESTT("Kontynuuj", "Continue") : window.OESTT("Otwórz", "Open");
-    // data-day: termin tego klocka (Gotowa zostaje w swoim dniu) – okno informacji pokazuje to samo zlecenie (uwaga Codex w PR #87)
-    return window.OESTKlocek.inspekcja({ id: t.id, data: r.due ? { day: P.iso(r.due) } : {}, color: g.color, name: sh.name, status: k.tryb, loc: k.loc.code, freq: k.freq, form: k.form,
-      due: r.due, left: r.left, dueDone: k.done, photos: k.photos, qa: k.qa, issues: k.issues, go: go, glow: k.done /* Gotowa świeci (04/11) */ });
-  }
-  // okno informacji po przytrzymaniu klocka (Grzegorz 07/11/2026 19:36–19:40)
-  function dlong(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear(); }
-  function ppmInfo(id, dayIso) {
-    var t = P.byId(id); if (!t) return;
-    var due = dayIso ? new Date(+dayIso.slice(0, 4), +dayIso.slice(5, 7) - 1, +dayIso.slice(8, 10)) : P.due(t), k = kiData(t, due, P.daysLeft(due));
-    // inny termin niż bieżąca inspekcja (np. grudzień w Kalendarzu): bez jej zdjęć, odpowiedzi i usterek – jak na klocku (uwaga Codex w PR #87)
-    var now = P.due(t), cur = !dayIso || (k.st && k.st.period === dayIso) || (now && P.iso(now) === dayIso);
-    if (!cur) { k.st = null; k.photos = 0; k.qa = null; k.issues = 0; k.form = k.nd.f ? "blad" : "brak"; }
-    var vt = P.vantifyTask(t, k.freq), job = due ? P.jobFor(t, P.iso(due)) : null;
-    var rows = [
-      { ic: "lok", html: k.loc.full ? (k.loc.code ? "<b>" + esc(k.loc.code.split("/")[0]) + "</b>" + esc(k.loc.full.slice(k.loc.code.split("/")[0].length)) : esc(k.loc.full)) : esc(window.OESTT("Lokalizacja nieprzypisana", "No location assigned")) },
-      { ic: "czest", html: "<b>" + esc(window.OESTKlocek.czest(k.freq) || "–") + "</b>" + (k.freq ? " – " + esc(freqName(k.freq)) : "") + (vt ? " · Vantify " + esc(vt.no) : "") },
-      { ic: "termin", html: due ? window.OESTT("Kończy się ", "Due ") + "<b>" + dlong(due) + "</b>" + (job ? window.OESTT(" · zlecenie ", " · job ") + esc(job.no) : "") : esc(window.OESTT("Brak terminu", "No due date")) },
-      { ic: "form-" + k.form, html: k.nd.f ? esc(window.OESTT("Wymaga zdjęcia ręcznie wypełnionego formularza", "Requires a photo of the hand-filled form")) + " · " + (k.form === "ok" ? '<b style="color:#21c45a">' + esc(window.OESTT("dodane", "added")) + "</b>" : '<b style="color:#ef3b36">' + esc(window.OESTT("brak", "missing")) + "</b>")
-        : esc(window.OESTT("Zdjęcie formularza niewymagane", "Form photo not required")) + (k.form === "ok" ? " · " + esc(window.OESTT("dodane", "added")) : "") },
-      { ic: "zdjecia", html: esc(k.nd.p ? window.OESTT("Wymaga zdjęć", "Requires photos") : window.OESTT("Zdjęcia niewymagane", "Photos not required")) + " · " + esc(window.OESTT("zrobiono ", "taken ")) + "<b>" + k.photos + "</b>" },
-      { ic: k.qa ? (k.qa.ok === k.qa.all ? "pytania-ok" : "pytania-mid") : "pytania", html: !k.nd.q ? esc(window.OESTT("Pytania nieaktywne", "Questions not active")) : k.qa ? esc(window.OESTT("Wymaga odpowiedzi na pytania", "Requires answers")) + " · OK <b>" + k.qa.ok + "</b> / <b>" + k.qa.all + "</b>" : esc(window.OESTT("Wymaga odpowiedzi na pytania · jeszcze nie zaczęta", "Requires answers · not started yet")) }
-    ];
-    if (k.issues) rows.push({ ic: "usterki", html: esc(window.OESTT("Usterki", "Defects")) + ": <b>" + k.issues + "</b>" });
-    window.OESTPrzycisk.ask({ title: vt ? vt.name : t.name, node: window.OESTKlocek.infoNode(rows), bare: true, cls: window.OESTKlocek.infoCls });
-  }
-  function stOf(left) { return left === null ? "n" : left <= 0 ? "x" : left <= 2 ? "r" : "g"; }
-  // wiersze listy Inspekcji: termin i dzień w pasku (Gotowa zostaje w swoim dniu, zaległe na dziś)
-  function ppmRows() {
-    var today = new Date(); today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return P.tasks.map(function (t) {
-      var due = P.due(t), next = due, st = P.stage && P.stage(t);
-      // Gotowa (04/11): klocek zostaje w swoim dniu, zielony; następny termin pokaże się dopiero, gdy ten minie
-      if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
-      var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? today : due) : "" };
-    });
-  }
-  // licznik pod dniem (Grzegorz 05/11): zakończone przez Grzegorza / wszystkie na ten dzień – ten sam na głównej i w Inspekcjach
-  function ppmDayCounts(rows) {
-    var out = {};
-    rows.forEach(function (r) { if (!r.day) return; var c = out[r.day] = out[r.day] || { done: 0, all: 0 }; c.all++; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) c.done++; });
-    return out;
-  }
-  // jeden pasek dni (moduly/pasek-dni, Grzegorz 07/11): wczoraj + 13 dni, dni pracy z grafiku, pogoda z ekranu głównego
-  function dayStrip(selected, counts) {
-    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
-    var s = new Date(t); s.setDate(s.getDate() - 1);
-    return window.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: window.OESTT("Dziś", "Today"), dayName: dayName, selected: selected,
-      isWork: calShift, counter: function (k) { return counts[k] || null; }, icon: function (k) { return window.OESTHome && window.OESTHome.wxDay ? window.OESTHome.wxDay(k) : ""; } });
-  }
-  function renderPpm() {
-    var rows = ppmRows(), html = dayStrip(ppmDay, ppmDayCounts(rows));
-    // przebudowa paska nie przewija go z powrotem na początek (stuknięcie dnia/filtra za krawędzią ekranu)
-    var keepX = { d: $("ppmDays").scrollLeft, c: $("ppmChips").scrollLeft };
-    OESTPodmien.html($("ppmDays"), html); // bez przerysowania (moduly/podmien)
-    var chips = [{ id: "all", name: window.OESTT("Wszystkie", "All") }].concat(P.groups.map(function (g) { return { id: g.id, color: g.color, name: window.OESTT(g.pl || g.name, g.name) }; }), [{ id: "started", name: window.OESTT("◐ Rozpoczęte", "◐ Started") }]);
-    OESTPodmien.html($("ppmChips"), chips.map(function (g) {
-      var on = g.id === "all" ? !ppmSel.length : ppmSel.indexOf(g.id) >= 0;
-      return '<button class="chip' + (on ? " on" : "") + '" type="button" aria-pressed="' + on + '" data-g="' + g.id + '">' + (g.color ? '<span class="dot" style="background:' + g.color + '"></span>' : "") + esc(g.name) + "</button>";
-    }).join(""));
-    $("ppmDays").scrollLeft = keepX.d; $("ppmChips").scrollLeft = keepX.c;
-    var gs = ppmSel.filter(function (x) { return x !== "started"; }), started = ppmSel.indexOf("started") >= 0;
-    var list = rows.filter(function (r) {
-      if (gs.length && gs.indexOf(r.t.group) < 0) return false;
-      if (started) { var x = P.stage && P.stage(r.t); if (!x || (x.s !== "prog" && x.s !== "hold")) return false; }
-      return !ppmDay || r.day === ppmDay;
-    });
-    // najpierw po terminie i najbliższe, na końcu bez daty
-    var doneOf = function (r) { var x = P.stage && P.stage(r.t); return x && x.s === "sent" ? 1 : 0; };
-    list.sort(function (a, b) { return doneOf(a) - doneOf(b) || (a.left === null) - (b.left === null) || (a.left || 0) - (b.left || 0) || a.t.name.localeCompare(b.t.name); });
-    // rodzina (np. 18 DB): jedna karta grupy w miejscu najpilniejszej, rozwijana dotknięciem
-    var fams = {}, out = [];
-    list.forEach(function (r) {
-      var f = r.t.fam; if (!f) { out.push(r); return; }
-      if (!fams[f]) { fams[f] = { fam: f, rows: [], left: r.left, t: r.t }; out.push(fams[f]); }
-      fams[f].rows.push(r);
-    });
-    list = [];
-    out.forEach(function (r) { if (!r.fam) { list.push(r); return; } list.push(r); if (ppmOpen[r.fam]) list = list.concat(r.rows); });
-    OESTPodmien.html($("ppmList"), list.length ? list.map(function (r) {
-      if (r.fam) {
-        var gg = grp(r.t.group);
-        // grupa (np. 18 DB) – ten sam klocek, w miejscu akcji „rozwiń / zwiń”
-        var fl = r.left;
-        // grupa (np. 18 DB) – ten sam klocek: status z urządzeń, ☑ = gotowe / wszystkie urządzenia
-        var ks = r.rows.map(function (x) { return kiData(x.t, x.due, x.left); }), gd = ks.filter(function (x) { return x.done; }).length;
-        var ft = gd === ks.length ? "gotowa" : ks.some(function (x) { return x.tryb === "wtrakcie"; }) ? "wtrakcie" : r.left !== null && r.left < 0 ? "zalegla" : ks.some(function (x) { return x.tryb === "wstrzymana"; }) ? "wstrzymana" : "nierozpoczeta";
-        return window.OESTKlocek.inspekcja({ data: { fam: r.fam }, color: gg.color, name: r.fam + " (" + r.rows.length + ")", status: ft, loc: "", freq: P.freqNow(r.t, r.rows[0].due), form: "brak",
-          due: r.rows[0].due, left: r.left, photos: ks.reduce(function (n, x) { return n + x.photos; }, 0), qa: { ok: gd, all: ks.length }, issues: ks.reduce(function (n, x) { return n + x.issues; }, 0),
-          go: ppmOpen[r.fam] ? window.OESTT("Zwiń", "Collapse") : window.OESTT("Rozwiń", "Expand"), open: !!ppmOpen[r.fam] });
-      }
-      return ppmCard(r);
-    }).join("") : '<p class="hint">' + window.OESTT("Brak inspekcji dla tego filtra.", "No inspections for this filter.") + '</p>');
-    var noDate = rows.filter(function (r) { return !r.due; }).length;
-
-  }
-  // dynamicznie (Grzegorz 02/11): lista i kalendarz odświeżają się same po powrocie z inspekcji, wysłaniu i zmianie etapu/terminu
-  function liveRefresh() { if (!$("v-ppm").hidden) renderPpm(); if (!$("v-cal").hidden) renderCal(); }
-  ["oest:ppm-stage", "oest:ppm-due-changed", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, liveRefresh); });
-  // grafik odczytany z kalendarza Google („SMART WORK”) → odśwież zaznaczenie dni pracy
-  window.addEventListener("oest:shifts-changed", function () { liveRefresh(); if ($("v-home") && !$("v-home").hidden) renderHome(); });
-  window.addEventListener("storage", function (e) { if (!e.key || /^oest\.ppm\./.test(e.key)) liveRefresh(); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) liveRefresh(); });
-  $("ppmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (!b) return; ppmDay = ppmDay === b.dataset.day ? "" : b.dataset.day; renderPpm(); });
-  $("ppmChips").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-g]"); if (!b) return; var g = b.dataset.g, i = ppmSel.indexOf(g);
-    if (g === "all") ppmSel = []; else if (i >= 0) ppmSel.splice(i, 1); else ppmSel.push(g);
-    save("ppm.sel", ppmSel); renderPpm();
-  });
-  window.OESTKlocek.przytrzymaj($("ppmList"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id, el.dataset.day); });
-  $("ppmList").addEventListener("click", function (e) { var f = e.target.closest("[data-fam]"); if (f) { ppmOpen[f.dataset.fam] = !ppmOpen[f.dataset.fam]; renderPpm(); return; } var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
-
-
-  // ---------- Kalendarz (widok miesiąca) ----------
-  var calMonth = new Date(), calSel = "";
-  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
-  function calShift(iso) {
-    try {
-      // jedno źródło: Ustawienia (kalendarz Google „SMART WORK”, zapasowo wersje grafiku)
-      var sc = window.OESTSettings.scheduleOn(iso);
-      if (!sc) return false;
-      return window.OESTCalendarCore.isWorkday(iso, function () { return sc; });
-    } catch (e) { return false; }
-  }
-  // Dzień → lista {t, job, plan} (P.occurrences: zlecenia Vantify, bieżący termin, dalej planowane)
-  function calDue(from, to) {
-    var by = {};
-    P.tasks.forEach(function (t) { P.occurrences(t, from, to).forEach(function (e) { e.t = t; (by[e.d] = by[e.d] || []).push(e); }); });
-    return by;
-  }
-  function renderCal() {
-    // zawsze 6 pełnych tygodni (42 kratki): dni sąsiednich miesięcy przygaszone
-    var y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), lead = (first.getDay() + 6) % 7;
-    var start = new Date(y, m, 1 - lead), end = new Date(y, m, 42 - lead);
-    var from = P.iso(start), to = P.iso(end), today = P.iso(new Date()), by = calDue(from, to);
-    $("calTitle").textContent = first.toLocaleDateString(uiLang() === "en" ? "en-GB" : "pl-PL", { month: "long", year: "numeric" });
-    var h = [1, 2, 3, 4, 5, 6, 0].map(function (d) { return '<b class="cw">' + dayName(d) + "</b>"; }).join("");
-    for (var k = 0; k < 42; k++) {
-      var day = new Date(y, m, 1 - lead + k), d = day.getDate(), iso = P.iso(day), n = (by[iso] || []).length, pl = n && (by[iso] || []).every(function (e) { return e.plan; });
-      h += '<button type="button" class="cd' + (day.getMonth() !== m ? " ot" : "") + (calShift(iso) ? " sh" : "") + (iso === today ? " td" : "") + (iso === calSel ? " on" : "") + '" data-cd="' + iso + '">' + d + (n ? "<i" + (pl ? ' class="pl"' : "") + ">" + n + "</i>" : "") + "</button>";
-    }
-    $("calGrid").innerHTML = h;
-    var list = by[calSel] || [];
-    $("calDay").innerHTML = calSel ? (list.length ? list.map(function (e) {
-      var t = e.t, g = grp(t.group), due = P.due(t), cur = due && P.iso(due) === calSel, cd = calSel.split("-"), day = new Date(+cd[0], +cd[1] - 1, +cd[2]);
-      // ten sam klocek co na liście Inspekcji (moduly/klocek); etap tylko dla bieżącego terminu
-      var k = kiData(t, day, P.daysLeft(day)), tryb = cur ? k.tryb : "nierozpoczeta";
-      return window.OESTKlocek.inspekcja({ id: t.id, data: { day: calSel }, color: g.color, name: P.short(t).name, status: tryb, loc: k.loc.code, freq: e.job ? (P.jobFor(t, calSel) || {}).f || k.freq : k.freq, form: cur ? k.form : (k.nd.f ? "blad" : "brak"),
-        due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: window.OESTT("Otwórz", "Open"), plan: e.plan, glow: tryb === "gotowa" });
-    }).join("") : '<p class="hint">' + window.OESTT("Brak inspekcji tego dnia.", "No inspections on this day.") + '</p>') : "";
-    var hasShift = false; try { hasShift = window.OESTSettings.get().schedules.length > 0 || !!window.OESTSettings.scheduleOn(P.iso(new Date())); } catch (e2) {}
-    $("calNoShift").hidden = hasShift;
-  }
-  document.querySelectorAll("[data-cm]").forEach(function (b) { b.addEventListener("click", function () { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + +b.dataset.cm, 1); calSel = ""; renderCal(); }); });
-  $("calGrid").addEventListener("click", function (e) { var b = e.target.closest("[data-cd]"); if (!b) return; calSel = calSel === b.dataset.cd ? "" : b.dataset.cd; renderCal(); });
-  window.OESTKlocek.przytrzymaj($("calDay"), function (el) { if (el.dataset.id) ppmInfo(el.dataset.id, el.dataset.day); });
-  $("calDay").addEventListener("click", function (e) { var b = e.target.closest("[data-id]"); if (b) goInsp("inspekcje/index.html#ppm=" + encodeURIComponent(b.dataset.id)); });
-
-  // Ekran główny: home.js (pasek dni liczy tak samo jak lista Inspekcji: zaległe na dziś)
-  function ppmCounts() {
-    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
-    var out = {}, late = 0, k0 = P.iso(t);
-    P.tasks.forEach(function (x) { var due = P.due(x); if (!due) return; var left = P.daysLeft(due), k = P.iso(left < 0 ? t : due); out[k] = (out[k] || 0) + 1; if (left < 0) late++; });
-    return { by: out, late: late, today: out[k0] || 0 };
-  }
-  window.OESTHome.init({
-    show: show, dayName: dayName,
-    dayCounts: function () { return ppmDayCounts(ppmRows()); },
-    inspToday: function () { var c = ppmCounts(); return { today: c.today, late: c.late }; },
-    isWorkday: calShift,
-    openDay: function (k) { ppmDay = k; show("ppm"); }
-  });
-  function renderHome() { ppmDay = ""; window.OESTHome.render(); } // powrót na ekran główny zdejmuje wybór dnia
-
   // ---------- start ----------
   window.OESTStart.init({ conf: CONF, native: native, social: Social, seed: seedProfile, wejdz: function () { window.OESTEkrany.go("home"); } });
   if (account()) {
@@ -641,7 +359,6 @@ input[type=text], input[type=email], input[type=date], select {
   var start = (location.hash || "").slice(1);
   if (!account()) start = "start"; else if (!start || start === "start") start = "home";
   window.OESTEkrany.start({ naEkran: render, trasa: start });
-  restoreBack();
 })();
 </script>
 <script>if (window.OESTSender) OESTSender.init({ ustawienia: function () { return OESTSettings.get(); } }); // pasek wysyłki raportów na dole, wysyła kolejkę z inspekcji w tle</script>

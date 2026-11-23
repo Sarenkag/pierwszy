@@ -119,7 +119,10 @@ function analyse(www, opts) {
     const pudelka = new Set([...ids.values()].map(e => e.pudelko));
     for (const s of new Set(sekcje.filter((x, i) => sekcje.indexOf(x) !== i))) add('EKRANY|sekcja-podwojna|' + s, 'EKRANY', `index.html: sekcja #${s} występuje ${sekcje.filter(x => x === s).length}× (apka pokazałaby je naraz).`);
     for (const s of sekcje) if (!pudelka.has(s)) add('EKRANY|sekcja-bez-wpisu|' + s, 'EKRANY', `index.html: sekcja #${s} nie ma wpisu w ekrany.json.`);
-    for (const p of pudelka) if (!sekcje.includes(p)) add('EKRANY|wpis-bez-sekcji|' + p, 'EKRANY', `ekrany.json: pudełko #${p} nie istnieje w index.html.`);
+    // ekran na Ionic + Vue (moduly/szkielet/src/ekrany/index.js) nie ma sekcji w index.html – rysuje go rama; pudełko bez sekcji tylko dla starych ekranów
+    const idxVue = (() => { try { return fs.readFileSync(path.resolve(www, '../../moduly/szkielet/src/ekrany/index.js'), 'utf8'); } catch (e) { return ''; } })();
+    const mVue = idxVue.match(/EKRANY_VUE\s*=\s*\{([^}]*)\}/), naVue = new Set(mVue ? [...mVue[1].matchAll(/['"]?([\w/:-]+)['"]?\s*:/g)].map(x => x[1]) : []);
+    for (const p of pudelka) if (!sekcje.includes(p) && [...ids.values()].some(e => e.pudelko === p && !naVue.has(e.id))) add('EKRANY|wpis-bez-sekcji|' + p, 'EKRANY', `ekrany.json: pudełko #${p} nie istnieje w index.html.`);
     // strzałka ‹ wpisana w sekcję index.html: data-go = rodzic ekranu tej sekcji (ekran z id równym nazwie sekcji)
     const bez = index.replace(/<!--[\s\S]*?-->/g, ' ');
     const starty = [...bez.matchAll(/<section\b[^>]*\bid=["'](v-[\w-]+)["']/g)];
