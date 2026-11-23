@@ -46,7 +46,7 @@
   // ---------- nagłówek, lampki, pasek dni ----------
   function initials() {
     var p = {}; try { p = w.OESTSettings.get().profile || {}; } catch (e) {}
-    var a = {}; try { a = JSON.parse(w.localStorage.getItem("oest.account") || "{}") || {}; } catch (e) {}
+    var a = {}; try { a = w.OESTKonto.get() || {}; } catch (e) {}
     var f = p.first || a.first || "", l = p.last || a.last || "";
     var s = (f.charAt(0) + l.charAt(0)) || (a.name || a.email || "").charAt(0);
     return (s || "?").toUpperCase();
@@ -289,7 +289,7 @@
     $("hmLang").addEventListener("click", function () {
       var next = en() ? "pl" : "en";
       try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
-      catch (e) { try { w.localStorage.setItem("oest.lang", next); w.dispatchEvent(new CustomEvent("oest:lang")); } catch (e2) {} }
+      catch (e) { w.OESTBledy.zapiszJezyk(next); } // klucz oest.lang: moduly/bledy
     });
     $("hmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (b) deps.openDay(b.dataset.day); });
     $("hmPop").addEventListener("click", function (e) {

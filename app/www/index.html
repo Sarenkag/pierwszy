@@ -257,6 +257,8 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/podmien/podmien.js"></script>
 <!-- wspólne elementy całej apki (Grzegorz 04/11): jeden wzór, ekrany tylko podstawiają treść -->
 <script src="moduly/narzedzia/narzedzia.js"></script><!-- narzędzia (esc, pad, daty) – przed modułami, które z nich korzystają (audyt nr 53) -->
+<script src="moduly/konto/konto.js"></script>
+<script src="moduly/powrot/powrot.js"></script><!-- konto zalogowanego (oest.account) – jeden właściciel -->
 <script src="moduly/ladowanie/ladowanie.js"></script>
 <script src="moduly/znacznik/znacznik.js"></script>
 <script src="moduly/pasek-dni/pasek-dni.js"></script>
@@ -387,17 +389,17 @@ input[type=text], input[type=email], input[type=date], select {
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-nav][data-title]"); if (b && $("soonTitle")) $("soonTitle").textContent = b.dataset.title; }, true);
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
   function T(pl, en) { return uiLang() === "en" ? en : pl; }
-  function uiLang() { try { return localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
+  function uiLang() { return window.OESTBledy.lang() === "en" ? "en" : "pl"; } // moduly/bledy (właściciel oest.lang)
   function applyLang() { if (window.OESTBledy) OESTBledy.applyDom(document); } // stały HTML: data-en / data-en-aria-label …
   window.addEventListener("oest:lang", function () { applyLang(); liveRefresh(); });
   applyLang();
   // Wstecz wraca tam, skąd przyszedłem (Grzegorz 03/11): przed wejściem do inspekcji zapamiętujemy ekran, wybrany dzień i przewinięcie
   function goInsp(url) {
-    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: "#" + window.OESTEkrany.trasa(), day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.OESTEkrany.przewiniecie() })); } catch (e) {}
+    window.OESTPowrot.zapisz({ h: "#" + window.OESTEkrany.trasa(), day: ppmDay, cs: calSel, cm: calMonth && calMonth.getTime(), y: window.OESTEkrany.przewiniecie() }); // moduly/powrot
     window.OESTEkrany.otworzStrone(url);
   }
   function restoreBack() {
-    var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); sessionStorage.removeItem("oest.back"); } catch (e) {}
+    var b = window.OESTPowrot.odczytaj(true); // moduly/powrot
     if (!b || b.h !== "#" + window.OESTEkrany.trasa()) return;
     ppmDay = b.day || ""; calSel = b.cs || ""; if (b.cm) calMonth = new Date(b.cm);
     liveRefresh(); setTimeout(function () { window.OESTEkrany.przewin(b.y || 0); }, 0);
@@ -408,8 +410,8 @@ input[type=text], input[type=email], input[type=date], select {
   });
 
   // ---------- konto (logowanie raz; potem apka otwiera się bez sieci) ----------
-  function account() { return load("account", null); }
-  function setAccount(a) { save("account", a); }
+  function account() { return window.OESTKonto.get(); } // moduly/konto
+  function setAccount(a) { window.OESTKonto.set(a); }
 
   function googleReady() {
     if (!Social || !CONF.googleWebClientId) return Promise.resolve(false);
@@ -440,7 +442,7 @@ input[type=text], input[type=email], input[type=date], select {
     var a = account();
     if (Social && a && a.provider === "google") Social.logout({ provider: "google" }).catch(function () {});
     window.OESTGoogle.disconnect();
-    localStorage.removeItem("oest.account");
+    window.OESTKonto.clear();
     window.OESTEkrany.go("start");
   });
   function renderAccount() {
@@ -685,6 +687,6 @@ input[type=text], input[type=email], input[type=date], select {
   restoreBack();
 })();
 </script>
-<script>if (window.OESTSender) OESTSender.init(); // pasek wysyłki raportów na dole, wysyła kolejkę z inspekcji w tle</script>
+<script>if (window.OESTSender) OESTSender.init({ ustawienia: function () { return OESTSettings.get(); } }); // pasek wysyłki raportów na dole, wysyła kolejkę z inspekcji w tle</script>
 </body>
 </html>

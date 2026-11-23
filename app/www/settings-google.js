@@ -11,7 +11,7 @@
     nativeFetch:(function(){var cap=root.Capacitor,h=cap&&cap.isNativePlatform&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.CapacitorHttp;if(!h)return null;
       return function(url,o){return h.request({url:url,method:o.method||'GET',headers:o.headers||{},data:o.body,connectTimeout:30000,readTimeout:o.timeout||30000}).then(function(r){
         return {ok:r.status>=200&&r.status<300,status:r.status,json:function(){return Promise.resolve(typeof r.data==='string'?JSON.parse(r.data||'{}'):r.data||{});}};
-      },function(e){var t=new TypeError(e&&e.message||'native http failed');throw t;});};})(),account:function(){return JSON.parse(root.localStorage.getItem('oest.account')||'null');},login:async function(scopes){
+      },function(e){var t=new TypeError(e&&e.message||'native http failed');throw t;});};})(),account:function(){return root.OESTKonto.get();},login:async function(scopes){
       var cap=root.Capacitor,config=root.OEST_CONFIG||{};
       if(!cap||!cap.isNativePlatform()||!cap.Plugins.SocialLogin||!config.googleWebClientId)throw Error('GOOGLE_SETUP');
       var social=cap.Plugins.SocialLogin;

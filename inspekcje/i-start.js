@@ -24,6 +24,7 @@
     if (location.hash === "#queue") show("queue");
     if (!REC_ID && !cur.ppm && !document.querySelector(".view:not([hidden])")) show("home"); // nie ma takiej karty PPM – lista inspekcji (karta otwiera swój ekran sama, też z opóźnieniem, np. izolatory)
     if (window.OESTSender) OESTSender.init({
+      ustawienia: function () { return OESTSettings.get(); }, // settings-store.js (właściciel oest.settings.v1)
       onChange: function (it) { // moduł wysyłki zmienił raport w bazie: ta sama zmiana w kolejce na tym ekranie
         var q = queue.filter(function (x) { return x.id === it.id; })[0]; if (!q) return;
         q.status = it.status; q.err = it.err || ""; if (it.status === "sent") { q.sentAt = it.sentAt; q.docx = new Uint8Array(0); q.photos = []; }

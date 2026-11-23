@@ -113,7 +113,7 @@
     // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
     var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
     var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
-      var me = (function () { try { return ((JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || "").toLowerCase(); } catch (e) { return ""; } })(); // tylko raporty tego konta
+      var me = OESTKonto.email(); // tylko raporty tego konta
       var since = Date.parse(from + "T00:00:00"); // tylko raport z tego okresu (od dnia etapu / wczoraj), nigdy zeszłotygodniowy
       var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length && q.created >= since && (!q.acct || q.acct.toLowerCase() === me); }).sort(function (a, c) { return c.created - a.created; })[0];
       var rr = it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;

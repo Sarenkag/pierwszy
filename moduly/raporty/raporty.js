@@ -194,7 +194,7 @@
   }
 
   function createBrowser(win) {
-    function who() { try { var a = JSON.parse(win.localStorage.getItem('oest.account') || 'null'); return a && a.email ? String(a.email).toLowerCase() : ''; } catch (_) { return ''; } }
+    function who() { return win.OESTKonto.email(); } // moduly/konto
     var dbP = null;
     function open() {
       if (!dbP) dbP = new Promise(function (res, rej) {

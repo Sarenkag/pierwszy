@@ -10,7 +10,7 @@
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
   function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
-  function lang() { try { return w.localStorage.getItem("oest.lang") === "en" ? "en" : "pl"; } catch (e) { return "pl"; } }
+  function lang() { return w.OESTBledy.lang() === "en" ? "en" : "pl"; } // moduly/bledy
   // ekrany, które po zmianie języka same podmieniają teksty w miejscu (bez gubienia wpisanych danych)
   var LIVE = { "v-ppm": 1, "v-soon": 1, "v-appset": 1 }; // Kalendarz: brak miejsca (◀ ▶ ⚙) – język zmienia się z ekranu głównego
   function sw() {
@@ -24,7 +24,7 @@
   }
   function setLang(next) {
     try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
-    catch (e) { try { w.localStorage.setItem("oest.lang", next); w.dispatchEvent(new CustomEvent("oest:lang")); } catch (e2) {} }
+    catch (e) { w.OESTBledy.zapiszJezyk(next); } // klucz oest.lang: moduly/bledy
   }
   d.addEventListener("click", function (e) {
     var b = e.target.closest("[data-oest-lang]"); if (!b) return;

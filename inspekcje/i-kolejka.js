@@ -88,7 +88,7 @@
     var d = r.data;
     var it = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (function () { try { return (JSON.parse(localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) { return ""; } })(), type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
+      ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (OESTKonto.get() || {}).email || "", type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: d.folder ? r.name : "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
       body: d.folder ? d.tytul + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") + "\n" :
         d.tytul + "\n\n" + d.urzadzenie + " in " + d.lokalizacja + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") +
@@ -338,13 +338,7 @@
   }
   function myEmail() {
     if (cfg.email) return cfg.email;
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k.indexOf("oest.settings.v1.") === 0) { var s = JSON.parse(localStorage.getItem(k)); if (s && s.profile && s.profile.companyEmail) return s.profile.companyEmail; }
-      }
-    } catch (e) {}
-    return "";
+    return OESTSender.myEmail(); // adres firmowy obecnego konta (moduly/wysylka; nigdy adres innego konta)
   }
   function shareSend(it) {
     if (sending || !it) return Promise.resolve(); // jedno przekazanie naraz

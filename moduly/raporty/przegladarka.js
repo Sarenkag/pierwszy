@@ -67,7 +67,7 @@
   }
   function openRec(id) {
     // Wstecz z odzyskanej inspekcji wraca tutaj (inspekcje/index.html → #settings/reports)
-    try { sessionStorage.setItem("oest.back", JSON.stringify({ h: location.hash || "#settings/reports" })); } catch (e) {}
+    w.OESTPowrot.zapisz({ h: location.hash || "#settings/reports" }); // moduly/powrot
     (w.OESTEkrany ? w.OESTEkrany.otworzStrone : function (u) { location.href = u; })("inspekcje/index.html#rec=" + encodeURIComponent(id));
   }
   // treść bez przerysowania (moduly/podmien): zmiana języka zmienia tylko teksty
