@@ -63,22 +63,20 @@
   }
   function info() { var c = cur(); return { date: String(c.exported || "").slice(0, 10), source: c.source || "app", importedAt: c.importedAt || null, jobs: count(c.jobs) }; }
 
-  // Komunikat w obu językach: ekran wybiera język (T), więc zmiana PL/EN podmienia tekst bez ponownego rysowania
-  // T: para {pl,en} (ekran wybiera język); L zwraca od razu napis
-  function T(pl, en) { return { pl: pl, en: en }; }
-  function errPair(e) {
+  // Komunikaty ekranu: tekst w języku z chwili zdarzenia (jak dotąd – po zmianie PL/EN ekran odświeżał się bez komunikatów)
+  function errText(e) {
     var m = e && e.message;
-    if (m === "VANTIFY_FORMAT") return T("To nie jest eksport Job z Vantify (brak kolumn zleceń).", "This is not a Vantify Job export (job columns missing).");
-    if (m === "VANTIFY_EMPTY") return T("W pliku nie ma zleceń planowych (Planned).", "The file has no Planned jobs.");
-    if (m === "VANTIFY_BAD_LOGIN") return T("Vantify nie przyjął zapisanego hasła. Wpisz aktualne hasło w „Vantify w apce” i zapisz.", "Vantify did not accept the saved password. Type the current password under “Vantify in the app” and save.");
-    if (m === "VANTIFY_EMPTY_LIST") return T("Lista Jobs w Vantify nie pokazuje zleceń planowych (Planned). Otwórz Vantify w apce i na liście Jobs ustaw filtr ze zleceniami PPM One Eastside – apka bierze listę z tym filtrem.", "The Jobs list in Vantify shows no Planned jobs. Open Vantify in the app and set the Jobs list filter to show One Eastside PPM jobs – the app uses the list with that filter.");
-    if (m === "VANTIFY_LOGIN") return T("Vantify prosi o zalogowanie. Otwórz Vantify w apce, zaloguj się i spróbuj jeszcze raz.", "Vantify asks you to sign in. Open Vantify in the app, sign in and try again.");
-    if (m === "VANTIFY_SYNC") return T("Nie udało się pobrać zleceń z Vantify (brak sieci albo Vantify nie odpowiada). Spróbuj później albo wczytaj eksport.", "Could not get jobs from Vantify (no network or Vantify not responding). Try later or load an export.");
-    if (m === "VANTIFY_NATIVE") return T("Pobieranie z Vantify działa w aplikacji Android.", "Getting jobs from Vantify works in the Android app.");
-    if (m === "VANTIFY_SAVE") return T("Telefon nie zapisał planu. Nic nie zmieniono.", "The phone did not save the plan. Nothing changed.");
-    return T("Nie udało się odczytać pliku.", "Could not read the file.");
+    if (m === "VANTIFY_FORMAT") return L("To nie jest eksport Job z Vantify (brak kolumn zleceń).", "This is not a Vantify Job export (job columns missing).");
+    if (m === "VANTIFY_EMPTY") return L("W pliku nie ma zleceń planowych (Planned).", "The file has no Planned jobs.");
+    if (m === "VANTIFY_BAD_LOGIN") return L("Vantify nie przyjął zapisanego hasła. Wpisz aktualne hasło w „Vantify w apce” i zapisz.", "Vantify did not accept the saved password. Type the current password under “Vantify in the app” and save.");
+    if (m === "VANTIFY_EMPTY_LIST") return L("Lista Jobs w Vantify nie pokazuje zleceń planowych (Planned). Otwórz Vantify w apce i na liście Jobs ustaw filtr ze zleceniami PPM One Eastside – apka bierze listę z tym filtrem.", "The Jobs list in Vantify shows no Planned jobs. Open Vantify in the app and set the Jobs list filter to show One Eastside PPM jobs – the app uses the list with that filter.");
+    if (m === "VANTIFY_LOGIN") return L("Vantify prosi o zalogowanie. Otwórz Vantify w apce, zaloguj się i spróbuj jeszcze raz.", "Vantify asks you to sign in. Open Vantify in the app, sign in and try again.");
+    if (m === "VANTIFY_SYNC") return L("Nie udało się pobrać zleceń z Vantify (brak sieci albo Vantify nie odpowiada). Spróbuj później albo wczytaj eksport.", "Could not get jobs from Vantify (no network or Vantify not responding). Try later or load an export.");
+    if (m === "VANTIFY_NATIVE") return L("Pobieranie z Vantify działa w aplikacji Android.", "Getting jobs from Vantify works in the Android app.");
+    if (m === "VANTIFY_SAVE") return L("Telefon nie zapisał planu. Nic nie zmieniono.", "The phone did not save the plan. Nothing changed.");
+    return L("Nie udało się odczytać pliku.", "Could not read the file.");
   }
-  var BRAK_MIEJSCA = T("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app.");
+  function brakMiejsca() { return L("Telefon nie zapisał zapisu „Zbadaj” (brak miejsca). Udostępnij go teraz, zanim zamkniesz apkę.", "The phone could not store the “Explore” log (no space). Share it now, before closing the app."); }
   // Zapis „Zbadaj” z ostatnich wizyt w Vantify (vantify-rejestr.js): tylko w telefonie, do udostępnienia przez Grzegorza
   var ZKEY = "oest.vantify.zapis";
   var inMemory = null; // kopia w pamięci, gdy telefon nie zapisał (np. brak miejsca): do udostępnienia w tej sesji
@@ -145,33 +143,33 @@
   // „Vantify w apce” (PROD-035): okno Vantify; pobrany eksport idzie do podglądu, zapis „Zbadaj” do udostępnienia
   function otworz(po) {
     var V = plugin("Vantify");
-    if (!V) { ui.vantify = T("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app."); zmiana(); return Promise.resolve(); }
+    if (!V) { ui.vantify = L("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app."); zmiana(); return Promise.resolve(); }
     return V.open({ lang: lang() }).then(function (r) {
       var kept = keepLog(r && r.log);
-      ui.pobierz = null; ui.vantify = kept === "memory" ? BRAK_MIEJSCA : null;
-      if (r && r.csv) { try { pokaz(preview(r.csv)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errPair(e) }; } }
+      ui.pobierz = null; ui.vantify = kept === "memory" ? brakMiejsca() : null;
+      if (r && r.csv) { try { pokaz(preview(r.csv)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errText(e) }; } }
       else if (po) po();
-      else if (kept !== "memory") ui.vantify = T("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone.");
+      else if (kept !== "memory") ui.vantify = L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone.");
       zmiana();
-    }).catch(function () { ui.vantify = T("Nie udało się otworzyć Vantify.", "Could not open Vantify."); zmiana(); });
+    }).catch(function () { ui.vantify = L("Nie udało się otworzyć Vantify.", "Could not open Vantify."); zmiana(); });
   }
   // „Zbadaj automatycznie” (Grzegorz 10/11/2026): ukryte okno Vantify samo czyta listy i szczegóły (tylko GET, vantify-sync.js
   // tryb explore) i kod strony; wynik dopisuje się do zapisu „Zbadaj” – udostępnia Grzegorz.
   function zbadaj() {
     var V = plugin("Vantify");
-    if (!V || !V.sync) { ui.vantify = T("Zbadaj automatycznie działa w aplikacji Android.", "Explore automatically works in the Android app."); zmiana(); return Promise.resolve(); }
-    ui.vantify = T("Badam Vantify – tylko odczyt, do 10 minut. Zostaw ten ekran otwarty.", "Exploring Vantify – read only, up to 10 minutes. Keep this screen open."); ui.zbadaj = true; zmiana();
+    if (!V || !V.sync) { ui.vantify = L("Zbadaj automatycznie działa w aplikacji Android.", "Explore automatically works in the Android app."); zmiana(); return Promise.resolve(); }
+    ui.vantify = L("Badam Vantify – tylko odczyt, do 10 minut. Zostaw ten ekran otwarty.", "Exploring Vantify – read only, up to 10 minutes. Keep this screen open."); ui.zbadaj = true; zmiana();
     return V.sync({ mode: "explore" }).then(function (r) {
       ui.zbadaj = false;
       if (r && r.status === "ok") {
         var kept = keepLog(r.log, true);
-        ui.vantify = kept === "memory" ? BRAK_MIEJSCA
-          : T("Gotowe: " + (r.count || 0) + " odczytów z Vantify. Dotknij „Udostępnij zapis „Zbadaj”” i wyślij mi plik.", "Done: " + (r.count || 0) + " reads from Vantify. Tap “Share the Explore log” and send me the file.");
+        ui.vantify = kept === "memory" ? brakMiejsca()
+          : L("Gotowe: " + (r.count || 0) + " odczytów z Vantify. Dotknij „Udostępnij zapis „Zbadaj”” i wyślij mi plik.", "Done: " + (r.count || 0) + " reads from Vantify. Tap “Share the Explore log” and send me the file.");
         zmiana(); return;
       }
       if (r && r.status === "login" && r.log && r.log.length) keepLog(r.log, true); // częściowy zapis zostaje
-      ui.vantify = errPair(new Error(r && r.status === "login" ? (r.code === "bad" ? "VANTIFY_BAD_LOGIN" : "VANTIFY_LOGIN") : "VANTIFY_SYNC")); zmiana();
-    }).catch(function (e) { ui.zbadaj = false; ui.vantify = e && e.message === "VANTIFY_BUSY" ? T("Vantify jest teraz sprawdzany. Spróbuj za chwilę.", "Vantify is being checked right now. Try again in a moment.") : errPair(new Error("VANTIFY_SYNC")); zmiana(); });
+      ui.vantify = errText(new Error(r && r.status === "login" ? (r.code === "bad" ? "VANTIFY_BAD_LOGIN" : "VANTIFY_LOGIN") : "VANTIFY_SYNC")); zmiana();
+    }).catch(function (e) { ui.zbadaj = false; ui.vantify = e && e.message === "VANTIFY_BUSY" ? L("Vantify jest teraz sprawdzany. Spróbuj za chwilę.", "Vantify is being checked right now. Try again in a moment.") : errText(new Error("VANTIFY_SYNC")); zmiana(); });
   }
   function udostepnij() {
     var z = zapis().z, S = plugin("ReportShare");
@@ -180,32 +178,32 @@
     if (!S) { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click(); return; }
     var b64 = btoa(unescape(encodeURIComponent(json)));
     S.share({ subject: "Vantify – zapis Zbadaj", body: L("Zapis bez haseł, tokenów i danych osób.", "Log without passwords, tokens or personal data."), files: [{ name: name, data: b64 }] })
-      .then(function () { ui.vantify = T("Przekazano do udostępnienia.", "Handed over for sharing."); zmiana(); })
-      .catch(function () { ui.vantify = T("Nie udało się udostępnić zapisu.", "Could not share the log."); zmiana(); });
+      .then(function () { ui.vantify = L("Przekazano do udostępnienia.", "Handed over for sharing."); zmiana(); })
+      .catch(function () { ui.vantify = L("Nie udało się udostępnić zapisu.", "Could not share the log."); zmiana(); });
   }
   // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń; podgląd i zapis jak przy pliku.
   // Gdy Vantify prosi o logowanie: otwiera okno Vantify, a po „Zakończ” pobiera jeszcze raz (raz, bez pętli).
   function pobierz(retried) {
-    ui.pobierz = T("Łączę z Vantify…", "Connecting to Vantify…"); ui.pobieranie = true; zmiana();
+    ui.pobierz = L("Łączę z Vantify…", "Connecting to Vantify…"); ui.pobieranie = true; zmiana();
     return sync().then(function (r) {
       ui.pobieranie = false;
-      if (r.status === "ok") { ui.pobierz = null; try { pokaz(apiPreview(r)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errPair(e) }; } zmiana(); return; }
+      if (r.status === "ok") { ui.pobierz = null; try { pokaz(apiPreview(r)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errText(e) }; } zmiana(); return; }
       // zapisane hasło odrzucone: nie otwieraj logowania w kółko, poproś o aktualne hasło
-      if (r.status === "login" && r.code === "bad") { ui.pobierz = errPair(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; zmiana(); return; }
+      if (r.status === "login" && r.code === "bad") { ui.pobierz = errText(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; zmiana(); return; }
       if (r.status === "login" && !retried) {
-        ui.pobierz = T("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."); zmiana();
+        ui.pobierz = L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."); zmiana();
         return otworz(function () { pobierz(true); });
       }
-      ui.pobierz = errPair(new Error(r.status === "login" ? "VANTIFY_LOGIN" : "VANTIFY_SYNC")); zmiana();
-    }).catch(function (e) { ui.pobieranie = false; ui.pobierz = errPair(e); zmiana(); });
+      ui.pobierz = errText(new Error(r.status === "login" ? "VANTIFY_LOGIN" : "VANTIFY_SYNC")); zmiana();
+    }).catch(function (e) { ui.pobieranie = false; ui.pobierz = errText(e); zmiana(); });
   }
   // podgląd: „Zapisz w apce” zapisuje plan (każdy zapis, z API albo z pliku, unieważnia odłożony podgląd); „Anuluj” go porzuca
   function zapiszPodglad() {
     var r = pending; if (!r) return;
     try {
       save(r.plan); dropNew(); pending = null;
-      ui.wynik = { ok: true, tekst: r.api ? T("Zapisano. Terminy z Vantify z dnia " + dmy(r.plan.date) + ".", "Saved. Due dates from Vantify as of " + dmy(r.plan.date) + ".") : T("Zapisano. Terminy z eksportu " + dmy(r.plan.date) + ".", "Saved. Due dates from the export of " + dmy(r.plan.date) + ".") };
-    } catch (e) { ui.wynik = { ok: false, tekst: errPair(e) }; }
+      ui.wynik = { ok: true, tekst: r.api ? L("Zapisano. Terminy z Vantify z dnia " + dmy(r.plan.date) + ".", "Saved. Due dates from Vantify as of " + dmy(r.plan.date) + ".") : L("Zapisano. Terminy z eksportu " + dmy(r.plan.date) + ".", "Saved. Due dates from the export of " + dmy(r.plan.date) + ".") };
+    } catch (e) { ui.wynik = { ok: false, tekst: errText(e) }; }
     zmiana();
   }
   function anulujPodglad() { if (pending && pending.api) dropNew(); pending = null; ui.wynik = null; zmiana(); }
@@ -213,8 +211,8 @@
   // Po wejściu na ekran: podgląd z wejścia „Pokaż” (goAfter) albo nowe terminy znalezione przy starcie apki (czekają tu na „Zapisz”/„Anuluj”)
   function wejdz() {
     if (pending) { /* podgląd zostaje */ }
-    else if (goAfter === "haslo") { goAfter = null; ui.pobierz = errPair(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; }
-    else if (goAfter === "login") { goAfter = null; ui.pobierz = T("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."); otworz(function () { pobierz(true); }); }
+    else if (goAfter === "haslo") { goAfter = null; ui.pobierz = errText(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; }
+    else if (goAfter === "login") { goAfter = null; ui.pobierz = L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."); otworz(function () { pobierz(true); }); }
     else {
       goAfter = null; var nw = memNew || getJson(NKEY);
       if (nw && nw.jobs) { try { var pv = apiPreview(nw, nw.day); if (pv.changes.added.length || pv.changes.closed.length) pokaz(pv); else dropNew(); } catch (e) { dropNew(); } }
@@ -232,21 +230,21 @@
   // Pola (login, hasło) trzyma ekran; moduł oddaje stan zapisu {user, zapisane} i komunikat.
   function loginStan(r) {
     r = r || {};
-    ui.login = r.bad ? T("Vantify nie przyjął zapisanego hasła. Wpisz aktualne hasło i zapisz – do tego czasu apka nie loguje się sama.", "Vantify did not accept the saved password. Type the current password and save – until then the app does not sign in by itself.")
-      : r.saved ? T("Zapisane. Apka zaloguje się sama, gdy logowanie wygaśnie.", "Saved. The app signs in by itself when the sign-in expires.") : T("Nic nie zapisano.", "Nothing saved.");
+    ui.login = r.bad ? L("Vantify nie przyjął zapisanego hasła. Wpisz aktualne hasło i zapisz – do tego czasu apka nie loguje się sama.", "Vantify did not accept the saved password. Type the current password and save – until then the app does not sign in by itself.")
+      : r.saved ? L("Zapisane. Apka zaloguje się sama, gdy logowanie wygaśnie.", "Saved. The app signs in by itself when the sign-in expires.") : L("Nic nie zapisano.", "Nothing saved.");
     zmiana();
     return { user: r.user || "", zapisane: !!r.saved };
   }
   function loginOdswiez() {
     var V = plugin("Vantify");
-    if (!V || !V.loginInfo) { ui.login = T("Zapis loginu działa w aplikacji Android.", "Saving the login works in the Android app."); zmiana(); return Promise.resolve(null); }
+    if (!V || !V.loginInfo) { ui.login = L("Zapis loginu działa w aplikacji Android.", "Saving the login works in the Android app."); zmiana(); return Promise.resolve(null); }
     return V.loginInfo().then(loginStan).catch(function () { return null; });
   }
   function loginZapisz(user, pass) {
     var V = plugin("Vantify");
     if (!V || !V.loginInfo) return Promise.resolve(null);
-    if (!String(user || "").trim() || !pass) { ui.login = T("Wpisz login i hasło.", "Type the login and password."); zmiana(); return Promise.resolve(null); }
-    return V.saveLogin({ user: String(user).trim(), pass: pass }).then(loginStan).catch(function () { ui.login = T("Nie udało się zapisać. Spróbuj jeszcze raz.", "Could not save. Try again."); zmiana(); return null; });
+    if (!String(user || "").trim() || !pass) { ui.login = L("Wpisz login i hasło.", "Type the login and password."); zmiana(); return Promise.resolve(null); }
+    return V.saveLogin({ user: String(user).trim(), pass: pass }).then(loginStan).catch(function () { ui.login = L("Nie udało się zapisać. Spróbuj jeszcze raz.", "Could not save. Try again."); zmiana(); return null; });
   }
   function loginUsun() {
     var V = plugin("Vantify");
@@ -257,7 +255,7 @@
   function loginPokaz() {
     var V = plugin("Vantify");
     if (!V || !V.showLogin) return Promise.resolve();
-    return V.showLogin({ lang: L("pl", "en") }).then(function (r) { if (!r || !r.ok) { ui.login = T("Nie ma zapisanego hasła.", "No saved password."); zmiana(); } }).catch(function () {});
+    return V.showLogin({ lang: L("pl", "en") }).then(function (r) { if (!r || !r.ok) { ui.login = L("Nie ma zapisanego hasła.", "No saved password."); zmiana(); } }).catch(function () {});
   }
   function ekran(jest) { zywy = !!jest; if (zywy) wejdz(); }
   w.document.addEventListener("oest:ekran", function (e) { if (!/vantify/.test(e.detail.trasa)) zeruj(); });

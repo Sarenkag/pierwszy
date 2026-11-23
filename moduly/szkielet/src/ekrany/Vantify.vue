@@ -100,7 +100,7 @@ const props = defineProps({ T: Function, wersja: Number });
 const V = window.OESTVantifyImport;
 const odswiez = ref(0);
 const d = computed(() => (props.wersja, odswiez.value, V.dane()));
-const P = (x) => (x ? props.T(x.pl, x.en) : '');
+const P = (x) => x || ''; // komunikaty moduł oddaje gotowe, w języku z chwili zdarzenia
 // wpisane, a jeszcze niezapisane pola żyją tu (zmiana PL/EN nie przerysowuje ekranu)
 const login = reactive({ user: '', haslo: '', pokaz: false, zapisane: false });
 const poleHasla = ref(null);
