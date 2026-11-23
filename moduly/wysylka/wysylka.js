@@ -4,7 +4,7 @@
 (function (root) {
   "use strict";
   var doc = root.document, G = function () { return root.OESTGoogle; };
-  var opts = { onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
+  var opts = { ustawienia: null, onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
   var sending = false, pos = null, flash = "", flashT = null, skipWifi = false, open = false, idle = [], items = [], loginErr = "", lock = null;
 
   // ---------- baza „inspekcje” (IndexedDB): JEDYNY właściciel w apce (karta K10, audyt 19/11/2026 nr 21–22, D4) ----------
@@ -48,7 +48,7 @@
   // ---------- warunki ----------
   function cfg() { try { return JSON.parse(root.localStorage.getItem("insp.cfg") || "{}"); } catch (e) { return {}; } }
   function wifiOnly() { return cfg().wifiOnly !== false; } // domyślnie czekamy na Wi‑Fi (Grzegorz 01/11)
-  function account() { try { return JSON.parse(root.localStorage.getItem("oest.account") || "null"); } catch (e) { return null; } }
+  function account() { return root.OESTKonto.get(); } // moduly/konto
   function active() {
     var cap = root.Capacitor, c = cfg();
     return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && (root.OEST_CONFIG || {}).googleWebClientId && !c.api && account() && account().email);
@@ -62,19 +62,19 @@
       .then(function () { return true; }, function () { return false; }).then(function (ok) { clearTimeout(t); return ok; });
   }
   function onWifi() { var c = root.navigator.connection; return !!(c && (c.type === "wifi" || c.type === "ethernet")); } // nieznana sieć = jak komórkowa (czeka na kliknięcie)
+  // ustawienia obecnego konta (Mój profil, kontakty, Wysyłka) podaje strona w init({ ustawienia }) – właścicielem zapisu
+  // jest settings-store.js (klucz oest.settings.v1.*), moduł nie czyta go sam
+  function ustawienia() { try { return opts.ustawienia ? opts.ustawienia() : null; } catch (e) { return null; } }
   function myEmail() { // tylko z ustawień obecnego konta; brak adresu = raport czeka (nigdy adres innego konta)
     var c = cfg(); if (c.email) return c.email;
-    try {
-      var a = account() || {}, k = "oest.settings.v1." + encodeURIComponent(String(a.id || a.email || "")), st = JSON.parse(root.localStorage.getItem(k) || "null");
-      return st && st.profile && st.profile.companyEmail || "";
-    } catch (e) { return ""; }
+    var st = ustawienia(); return st && st.profile && st.profile.companyEmail || "";
   }
   // adresaci raportu (Grzegorz 04/11 11:34): Ja = adres firmowy, Inżynier / Manager = kontakty z Ustawień → Wysyłka (te same co w Handover)
   // Prywatny e-mail (Grzegorz 05/11): sp = mój prywatny adres z Mój profil, sm = firmowy
   // sel: { sp, sm, se, sg } → { list: [adresy], priv, me, eng, man }
   function recipients(sel) {
     sel = sel || { sm: true };
-    var st = null; try { var a = account() || {}; st = JSON.parse(root.localStorage.getItem("oest.settings.v1." + encodeURIComponent(String(a.id || a.email || ""))) || "null"); } catch (e) {}
+    var st = ustawienia();
     function contact(id) { var c = st && id ? (st.contacts || []).filter(function (x) { return x.id === id && x.active !== false; })[0] : null; return c && c.email || ""; }
     var mail = (st && st.mail) || {}, out = { priv: st && st.profile && st.profile.privateEmail || "", me: myEmail(), eng: contact(mail.engineerId), man: contact(mail.managerId) };
     out.list = [sel.sp && out.priv, sel.sm && out.me, sel.se && out.eng, sel.sg && out.man].filter(function (x, i, a) { return x && a.indexOf(x) === i; });
@@ -332,9 +332,9 @@
 
   // Dodanie raportu do kolejki z dowolnego miejsca apki (np. Reactive): uzupełnia id, konto i status, potem wysyła w tle
   function enqueue(it) {
-    var acct = ""; try { acct = (JSON.parse(root.localStorage.getItem("oest.account") || "null") || {}).email || ""; } catch (e) {}
+    var acct = (account() || {}).email || "";
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, reachable: reachable, syncReports: syncReports, update: update };
+  root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, myEmail: myEmail, reachable: reachable, syncReports: syncReports, update: update };
 })(window);

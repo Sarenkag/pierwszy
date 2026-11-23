@@ -8,8 +8,8 @@ function both(el, html) { if (window.OESTPodmien && window.OESTBledy && OESTBled
 (function () {
   function lang() { if (window.OESTBledy) OESTBledy.applyDom(document); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", lang); else lang();
-  window.addEventListener("oest:lang", lang);
-  window.addEventListener("storage", function (e) { if (!e || e.key === "oest.lang" || e.key === "oest.settings") lang(); });
+  if (window.OESTBledy) OESTBledy.naZmianeJezyka(lang); // oest:lang i zmiana w innej stronie (moduly/bledy)
+  window.addEventListener("storage", function (e) { if (e && e.key === "oest.settings") lang(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) lang(); });
 })();
 // Wypełnia szablon .docx: znaczniki {nazwa} -> tekst, {%zdjecie} / {%zdjecia} -> zdjęcia JPEG.

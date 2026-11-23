@@ -21,7 +21,7 @@
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
   // powrót tam, skąd przyszedłem (lista PPM, kalendarz, kolejka…) – zapisane przez app/www/index.html goInsp()
-  function backUrl() { if (REC_ID) return "../index.html#settings/reports"; var b = null; try { b = JSON.parse(sessionStorage.getItem("oest.back") || "null"); } catch (e) {} return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
+  function backUrl() { if (REC_ID) return "../index.html#settings/reports"; var b = OESTPowrot.odczytaj(false); return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
   function leave(url) { saveDraftNow().then(function () { return gm() ? OESTSender.whenIdle() : null; }).then(function () { location.replace(url); }); } // replace: strona inspekcji nie zostaje w historii (Wstecz telefonu przed startem Ionic nie wróci do niej); szkic zapisany, zanim strona zniknie
   // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }

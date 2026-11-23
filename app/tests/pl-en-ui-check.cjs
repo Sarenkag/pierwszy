@@ -86,7 +86,8 @@ function quiet(n) {
       let prev = null; for (let k = 0; k < 12; k++) { await pg.evaluate(quiet, 6); await pg.evaluate(koniecAnimacji); const g = JSON.stringify(await pg.evaluate(snap, false)); if (g === prev) return; prev = g; } };
     const lang = () => pg.evaluate(() => { try { return localStorage.getItem('oest.lang') === 'en' ? 'en' : 'pl'; } catch (e) { return 'pl'; } });
     // język ustawiony tak, jak robi to apka (Mój profil / ustawienia), bez klikania na badanym ekranie
-    const ustawJezyk = l => pg.evaluate(l => { if (window.OESTSettings && window.OESTSettingsUI) { OESTSettings.update(s => { s.appearance.language = l; }); OESTSettingsUI.applyTheme(); } localStorage.setItem('oest.lang', l); }, l);
+    // język ustawiony tak jak w apce: w ustawieniach konta (źródło prawdy, także na stronie inspekcji – settings-store.js) i w kopii oest.lang
+    const ustawJezyk = l => pg.evaluate(l => { if (window.OESTSettings) { try { OESTSettings.update(s => { s.appearance.language = l; }); } catch (e) {} if (window.OESTSettingsUI) OESTSettingsUI.applyTheme(); } localStorage.setItem('oest.lang', l); }, l);
     const SW = '#hmLang:visible, .view:not([hidden]) .oest-sw[data-sw="lang"]:visible, .view:not([hidden]) [data-oest-lang]:visible, ion-toolbar ion-buttons[slot="end"] ion-button:visible'; // ostatni: przełącznik EN/PL w pasku ekranu na Ionic + Vue
     const ruch = (x, y) => { const out = []; x.forEach((e, i) => { const f = y[i]; if (!f || f.hidden || e.sw) return; if (f.y !== e.y || f.h !== e.h || (e.blok && !e.row && f.x !== e.x)) out.push(`${e.d} ${e.w}×${e.h} @${e.x},${e.y} → ${f.w}×${f.h} @${f.x},${f.y}`); }); return out; };
     const sprawdz = async (ekran, adres) => {
