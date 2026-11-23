@@ -3,11 +3,11 @@
    → model układa zdanie (gdy pobrany) → sprawdzenie liczb. Notatki leżą w telefonie (IndexedDB „oest-notatki”), osobno dla
    każdego miejsca (scope, np. szkic inspekcji). Okienko „Notatki”: lista, odsłuchanie, poprawa PL/EN, usunięcie.
    Nic nie trafia do raportu samo – „Połącz notatki” daje tylko propozycję tekstu.
-   Zależności: OESTVoice (moduly/notatki/glos.js), OESTPrzycisk (okienko), opcjonalnie OESTModel i wtyczka Translate. */
+   Zależności: OESTVoice (moduly/notatki/glos.js), szkielet Ionic (OESTCzesci – okienka i pasek z moduly/szkielet/src/czesci/Notatki*.vue),
+   opcjonalnie OESTModel i wtyczka Translate. Ten plik nie rysuje HTML-a: wygląd daje szkielet, tu logika i dane (kontrolery). */
 (function (w) {
   'use strict';
-  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
-
+  
   // ---------- jakość tekstu: słowa branżowe (rozpoznawanie mowy i tłumacz mylą je najczęściej) ----------
   // PL: po rozpoznaniu mowy, przed tłumaczeniem. EN: po tłumaczeniu i po modelu. Dopisuj tu kolejne pary.
   var WORDS = {
@@ -205,56 +205,79 @@
       return list(scope).then(function (a) { var src = a.map(function (n) { return (n.pl || '') + '\n' + (n.en || ''); }).join('\n'); return { text: text, miss: missing(src, text), src: src }; });
     });
   }
-  // okienko z propozycją: można poprawić; „Wstaw” oddaje tekst (nic nie wstawia samo), „Anuluj” = null
+  // kontroler dla części Vue (szkielet Ionic): dane() → zwykły obiekt, na(fn) → wyłącz; fn dostaje dane() po każdej zmianie
+  function sluchacze(dane) { var subs = []; return { na: function (fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; }, emit: function () { var x = dane(); subs.slice().forEach(function (f) { try { f(x); } catch (e) { console.error(e); } }); } }; }
+  function UI() { if (!w.OESTCzesci) throw Error(w.OESTT('Brak szkieletu apki (moduly/szkielet).', 'App skeleton missing (moduly/szkielet).')); return w.OESTCzesci; }
+  // okienko z propozycją (część NotatkiPropozycja.vue): można poprawić; „Wstaw” oddaje tekst (nic nie wstawia samo), „Anuluj” = null
   function offer(scope, o) {
     o = o || {};
     return propose(scope, o.ctx).then(function (r) {
       if (o.alive && !o.alive()) return null; // ekran zmienił się w trakcie (np. zapisany wpis, nowy formularz) – propozycja nieaktualna
-      css(); var node = document.createElement('div'); node.className = 'nt-pop';
-      node.innerHTML = '<div class="nt-h">' + w.OESTT('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
-      var ta = node.querySelector('textarea'), wb = node.querySelector('.nt-warn'); ta.value = r.text;
-      var warnNow = function () { var m = missing(r.src, ta.value); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ wb.textContent = m.length ? w.OESTT('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + w.OESTT(' — sprawdź.', ' — check.') : ''; };
-      ta.addEventListener('input', warnNow); warnNow();
-      return w.OESTPrzycisk.ask({ title: o.title || w.OESTT('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || w.OESTT('Wstaw', 'Insert'), cancel: w.OESTT('Anuluj', 'Cancel'), cls: 'nt-ask' })
-        .then(function (yes) { return yes && (!o.alive || o.alive()) ? ta.value.trim() : null; });
+      var tekst = r.text, ostrz = '';
+      var warnNow = function () { var m = missing(r.src, tekst); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ ostrz = m.length ? w.OESTT('W propozycji brakuje: ', 'Missing in the suggestion: ') + m.join(', ') + w.OESTT(' — sprawdź.', ' — check.') : ''; };
+      warnNow();
+      var dane = function () { return { naglowek: w.OESTT('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.'), tekst: tekst, ostrzezenie: ostrz }; };
+      var S = sluchacze(dane);
+      var ctrl = { dane: dane, na: S.na, akcja: function (a, v) { if (a === 'tekst') { tekst = String(v == null ? '' : v); warnNow(); S.emit(); } } };
+      return UI().okno('NotatkiPropozycja', ctrl, { tytul: o.title || w.OESTT('Połącz notatki', 'Combine notes'), ok: o.ok || w.OESTT('Wstaw', 'Insert'), anuluj: w.OESTT('Anuluj', 'Cancel') })
+        .then(function (res) { return res && res.ok && (!o.alive || o.alive()) ? tekst.trim() : null; });
     });
   }
 
-  // ---------- gotowy pasek notatek dla ekranu (Reactive, Hand over): 🎤 Nagraj · 📝 Notatki N · ✨ Połącz ----------
-  // mount(box, { scope(), ctx(), title(), join: napis, ok: napis „Wstaw…”, onJoin(tekst), onSaved(note), onError(err) })
-  // box jest wypełniany przyciskami; pasek ukryty, gdy scope() puste; licznik odświeża się sam po każdej zmianie notatek
+  // ---------- gotowy pasek notatek dla ekranu (Reactive, Hand over): Nagraj · Notatki N · Połącz ----------
+  // pasek(o) → kontroler paska dla części Notatki.vue (ekrany Vue: <Notatki :T="T" :opcje="o" />)
+  // mount(box, o) → to samo w elemencie starego kodu (część Vue wstawia szkielet); zwraca kontroler { box, scope(), refresh() }
+  // o: { scope(), ctx(), title(), join: napis, ok: napis „Wstaw…”, icons, onJoin(tekst), onSaved(note), onError(err) }
+  // pasek ukryty (box.hidden), gdy scope() puste; licznik odświeża się sam po każdej zmianie notatek
   var mounts = [], watching = false;
-  function mount(box, o) {
-    if (!box) return null; o = o || {}; css();
-    box.classList.add('nt-bar');
-    // icons: układ „Voice / Text” (Reactive, Grzegorz 18/11): 🎤+ nagranie, 📝+ notatka pisana, rząd ponumerowanych ikonek (stuknięcie = ta jedna notatka)
-    box.innerHTML = (o.icons ? '<div class="nt-btns2"><button type="button" class="btn nt-rec" aria-label="' + w.OESTT('Nagraj notatkę', 'Record note') + '">' + w.OESTT('🎤+ Głos', '🎤+ Voice') + '</button>' +
-      '<button type="button" class="btn nt-add" aria-label="' + w.OESTT('Dopisz notatkę', 'Write a note') + '">' + w.OESTT('📝+ Tekst', '📝+ Text') + '</button></div><div class="nt-icons"><span class="nt-list"></span>' +
-      '<button type="button" class="nt-i nt-open" aria-label="' + w.OESTT('Wszystkie notatki', 'All notes') + '">' + w.OESTT('Notatki', 'Notes') + ' <span class="nt-n">0</span></button></div>'
-      : '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + w.OESTT('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
-      '<button type="button" class="btn nt-open">' + w.OESTT('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>') +
-      '<button type="button" class="btn nt-join" hidden>' + esc(o.join || w.OESTT('✨ Połącz notatki', '✨ Combine notes')) + '</button>';
-    var rec = box.querySelector('.nt-rec'), opn = box.querySelector('.nt-open'), join = box.querySelector('.nt-join'), num = box.querySelector('.nt-n'), row = box.querySelector('.nt-list'), add = box.querySelector('.nt-add');
+  function pasek(o) {
+    o = o || {};
     var ctx = function () { return o.ctx ? o.ctx() || '' : ''; };
-    var m = { box: box, scope: function () { return o.scope ? o.scope() || '' : ''; } };
-    m.refresh = function () {
-      var k = m.scope(); box.hidden = !k; if (!k) return Promise.resolve();
-      return summary(k).then(function (r) { if (k !== m.scope()) return; num.textContent = r.all; join.hidden = r.ready < 1; return row ? list(k) : null; })
-        .then(function (a) { if (!a || k !== m.scope()) return; row.innerHTML = a.map(function (n, i) { var s = state(n); return '<button type="button" class="nt-i' + (s === 'busy' ? ' busy' : s === 'ready' ? '' : ' w') + '" data-nt-id="' + esc(n.id) + '">' + (n.audio && n.audio.length ? '🎤' : '📝') + (i + 1) + '</button>'; }).join(''); }, function () {});
+    var st = { n: 0, polacz: false, ikony: [], dodaje: false, laczy: false, bezNagrywania: false };
+    var m = { box: null, scope: function () { return o.scope ? o.scope() || '' : ''; } };
+    m.dane = function () {
+      return { ikonyTryb: !!o.icons, widoczny: !!m.scope(), n: st.n, polacz: st.polacz, ikony: st.ikony, dodaje: st.dodaje, laczy: st.laczy, bezNagrywania: st.bezNagrywania,
+        napisPolacz: String(o.join || w.OESTT('Połącz notatki', 'Combine notes')).replace(/^✨\s*/, '') }; // ikona zamiast emoji (część Vue)
     };
-    if (row) row.addEventListener('click', function (e) { var b = e.target.closest('[data-nt-id]'), k = m.scope(); if (b && k) open(k, { title: o.title ? o.title() : ctx(), only: b.getAttribute('data-nt-id') }); });
-    if (add) add.addEventListener('click', function () { var k = m.scope(); if (!k || add.disabled) return; add.disabled = true; write(k, ctx()).then(function (n) { if (n && o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); }).then(function () { add.disabled = false; }); });
-    mounts = mounts.filter(function (x) { return x.box !== box && x.box.isConnected; }); mounts.push(m);
-    if (!watching) { watching = true; on(function (k) { mounts = mounts.filter(function (x) { return x.box.isConnected; }); mounts.forEach(function (x) { if (x.scope() === k) x.refresh(); }); }); }
-    if (!bind(rec, { scope: m.scope, ctx: ctx, onSaved: function (n) { m.refresh(); if (o.onSaved) o.onSaved(n); }, onError: o.onError })) rec.disabled = true;
-    opn.addEventListener('click', function () { var k = m.scope(); if (k) open(k, { title: o.title ? o.title() : ctx() }); });
-    join.addEventListener('click', function () {
-      var k = m.scope(); if (!k || join.disabled) return; join.disabled = true;
-      var alive = function () { return box.isConnected && !box.closest('[hidden]') && k === m.scope(); }; // ten sam, nadal widoczny formularz co przy stuknięciu (apka ukrywa nieaktywne ekrany atrybutem hidden)
-      offer(k, { ctx: ctx(), ok: o.ok, alive: alive }).then(function (t) { if (t && alive() && o.onJoin) return o.onJoin(t); })
-        .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { join.disabled = false; });
-    });
+    var S = sluchacze(m.dane); m.na = S.na;
+    m.refresh = function () {
+      var k = m.scope(); if (m.box) m.box.hidden = !k; S.emit(); if (!k) return Promise.resolve();
+      return summary(k).then(function (r) { if (k !== m.scope()) return; st.n = r.all; st.polacz = r.ready > 0; S.emit(); return o.icons ? list(k) : null; })
+        .then(function (a) {
+          if (!a || k !== m.scope()) return;
+          // ponumerowane ikonki notatek: rodzaj (nagranie / pisana) i stan (busy = zamieniam, ready = gotowa, w = do sprawdzenia)
+          st.ikony = a.map(function (n, i) { var s = state(n); return { id: n.id, nr: i + 1, rodzaj: n.audio && n.audio.length ? 'glos' : 'tekst', stan: s === 'busy' ? 'busy' : s === 'ready' ? 'ready' : 'w' }; });
+          S.emit();
+        }, function () {});
+    };
+    var zywy = function () { return !m.box || m.box.isConnected; };
+    m.akcja = function (a, x) {
+      var k = m.scope();
+      if (a === 'podlacz') { m.box = x; m.refresh(); return; } // część Vue podaje swój element (widoczność, „ten sam ekran” przy Połącz)
+      if (a === 'nagraj') { if (!bind(x, { scope: m.scope, ctx: ctx, onSaved: function (n) { m.refresh(); if (o.onSaved) o.onSaved(n); }, onError: o.onError })) { st.bezNagrywania = true; S.emit(); } return; }
+      if (!k) return;
+      if (a === 'otworz') { open(k, x ? { title: o.title ? o.title() : ctx(), only: x } : { title: o.title ? o.title() : ctx() }); return; }
+      if (a === 'dopisz') {
+        if (st.dodaje) return; st.dodaje = true; S.emit();
+        write(k, ctx()).then(function (n) { if (n && o.onSaved) o.onSaved(n); }, function (e) { if (o.onError) o.onError(e); }).then(function () { st.dodaje = false; S.emit(); });
+        return;
+      }
+      if (a === 'polacz') {
+        if (st.laczy) return; st.laczy = true; S.emit();
+        var alive = function () { return zywy() && !(m.box && m.box.closest('[hidden]')) && k === m.scope(); }; // ten sam, nadal widoczny formularz co przy stuknięciu (apka ukrywa nieaktywne ekrany atrybutem hidden)
+        offer(k, { ctx: ctx(), ok: o.ok, alive: alive }).then(function (t) { if (t && alive() && o.onJoin) return o.onJoin(t); })
+          .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { st.laczy = false; S.emit(); });
+      }
+    };
+    mounts = mounts.filter(function (x) { return !x.box || x.box.isConnected; }); mounts.push(m);
+    if (!watching) { watching = true; on(function (k) { mounts = mounts.filter(function (x) { return !x.box || x.box.isConnected; }); mounts.forEach(function (x) { if (x.scope() === k) x.refresh(); }); }); }
     m.refresh();
+    return m;
+  }
+  function mount(box, o) {
+    if (!box) return null;
+    mounts = mounts.filter(function (x) { return x.box !== box; });
+    var m = pasek(o); m.box = box; UI().montuj(box, 'Notatki', { kontroler: m }); m.refresh(); // i18n-ok: nazwa części Vue
     return m;
   }
   // 📝+ notatka pisana: okienko z polem; tekst (po polsku albo po angielsku) → angielski w tle jak przy nagraniu; Anuluj = null
@@ -268,13 +291,14 @@
     }, function (e) { delete running[id]; throw e; });
   }
   function retext(n) { return english(n.pl, n.ctx).then(function (en) { n.en = en || ''; }, function () {}).then(function () { n.st = ''; return keep(n); }); }
+  // okienko „Nowa notatka” (część NotatkaNowa.vue): tekst po polsku albo po angielsku → angielski w tle jak przy nagraniu; Anuluj = null
   function write(scope, ctx) {
-    css(); var node = document.createElement('div'); node.className = 'nt-pop';
-    node.innerHTML = '<div class="nt-h">' + w.OESTT('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.') + '</div><textarea data-nt-f="pl" maxlength="4000"></textarea>';
-    var ta = node.querySelector('textarea');
-    setTimeout(function () { try { ta.focus(); } catch (e) {} }, 50);
-    return w.OESTPrzycisk.ask({ title: w.OESTT('📝 Nowa notatka', '📝 New note'), node: node, ok: w.OESTT('Zapisz', 'Save'), cancel: w.OESTT('Anuluj', 'Cancel'), cls: 'nt-ask' })
-      .then(function (yes) { var t = ta.value.trim(); return yes && t ? addText(scope, ctx, t) : null; });
+    var tekst = '';
+    var dane = function () { return { naglowek: w.OESTT('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.'), tekst: tekst }; };
+    var S = sluchacze(dane);
+    var ctrl = { dane: dane, na: S.na, akcja: function (a, v) { if (a === 'tekst') { tekst = String(v == null ? '' : v); S.emit(); } } };
+    return UI().okno('NotatkaNowa', ctrl, { tytul: w.OESTT('Nowa notatka', 'New note'), ok: w.OESTT('Zapisz', 'Save'), anuluj: w.OESTT('Anuluj', 'Cancel') })
+      .then(function (r) { var t = tekst.trim(); return r && r.ok && t ? addText(scope, ctx, t) : null; });
   }
   // nagrania notatek jako dowody (Hand over: wpis zachowuje oryginalne audio, jak dawniej) → [{ id, kind:'audio', blob, name, mime, size, ms }]
   function media(scope) {
@@ -286,147 +310,122 @@
   // trwa nagrywanie albo jego zamykanie (ekran nie powinien się wtedy zamykać)
   function busy() { return !!(voice && voice.busy); }
 
-  // ---------- okienko „Notatki” ----------
-  var CSS = '.nt-pop{display:flex;flex-direction:column;gap:8px;font:15px/1.4 var(--font-body,system-ui),sans-serif;color:var(--ink,#eef1ff)}' +
-    '.nt-pop .nt-h{color:var(--muted,#9aa3cc);font-size:13px;margin:-2px 0 2px}' +
-    '.nt-note{border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(255,255,255,.05);border-radius:14px;padding:10px}' +
-    '.nt-m{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted,#9aa3cc);margin-bottom:5px}' +
-    '.nt-tag{flex:none;font-size:11px;padding:1px 8px;border-radius:9px;border:1px solid rgba(61,220,132,.6);color:var(--ok,#3ddc84)}.nt-tag.w{border-color:rgba(255,210,63,.6);color:var(--warn,#ffd23f)}.nt-tag.g{border-color:var(--line,rgba(255,255,255,.2));color:var(--muted,#9aa3cc)}' +
-    '.nt-en{font-size:14.5px}.nt-pl{font-size:12.5px;color:var(--muted,#9aa3cc);margin-top:4px;font-style:italic}.nt-err{font-size:12.5px;color:var(--warn,#ffd23f);margin-top:4px}' +
-    '.nt-ic{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}.nt-ic button,.nt-tabs button,.nt-row button{min-height:40px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.18));background:rgba(255,255,255,.05);color:var(--ink,#fff);font:600 14px var(--font-body,system-ui),sans-serif}' +
-    '.nt-ic button.del{color:var(--bad,#ff4d5e)}.nt-ic button.del.sure{background:rgba(255,77,94,.18);border-color:rgba(255,77,94,.7)}' +
-    '.nt-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nt-tabs button.on{background:rgba(124,132,255,.25);border-color:rgba(124,132,255,.7)}' +
-    '.nt-pop textarea{width:100%;box-sizing:border-box;min-height:110px;border-radius:12px;padding:10px;background:rgba(255,255,255,.07);border:1px solid rgba(124,132,255,.7);color:var(--ink,#fff);font:15px/1.4 var(--font-body,system-ui),sans-serif;resize:vertical}' +
-    '.nt-warn{color:var(--warn,#ffd23f);font-size:13px;min-height:1.4em}.nt-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nt-row button.go{border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff}' +
-    '.nt-empty{color:var(--muted,#9aa3cc);text-align:center;padding:14px 0}' +
-    '.nt-bar .nt-btns2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.nt-bar .btn{min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px;margin:0}.nt-bar .nt-join{width:100%;margin-top:8px}' +
-    '.nt-bar .nt-rec{border-color:rgba(255,77,94,.7)!important;background:rgba(255,77,94,.12)!important;touch-action:none;-webkit-user-select:none;user-select:none}' +
-    '.nt-bar .nt-add{touch-action:manipulation}.nt-icons{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch}.nt-icons .nt-list{display:contents}' +
-    '.nt-i{flex:none;min-height:36px;min-width:52px;padding:0 10px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.18));background:rgba(255,255,255,.05);color:var(--ink,#fff);font:600 14px var(--font-body,system-ui),sans-serif}.nt-i.w{border-color:rgba(255,210,63,.6)}.nt-i.busy{opacity:.55}.nt-icons .nt-open{margin-left:auto}' +
-    '.nt-bar .nt-n{display:inline-block;min-width:22px;padding:0 7px;border-radius:11px;background:rgba(124,132,255,.25);border:1px solid rgba(124,132,255,.6);font-size:.8rem;line-height:20px;text-align:center}';
-  function css() { if (document.getElementById('oest-notatki-css')) return; var s = document.createElement('style'); s.id = 'oest-notatki-css'; s.textContent = CSS; document.head.appendChild(s); }
+  // ---------- okienko „Notatki” (część NotatkiOkno.vue przez OESTCzesci.okno) ----------
   function clock(ms) { var s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function hhmm(t) { var d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  // znacznik stanu notatki: tekst + kolor Ionic (success = gotowa, warning = do sprawdzenia, medium = w toku)
   function tag(s) {
-    if (s === 'ready') return '<span class="nt-tag">' + w.OESTT('✓ gotowa', '✓ ready') + '</span>';
-    if (s === 'check') return '<span class="nt-tag w">' + w.OESTT('⚠ sprawdź liczby', '⚠ check numbers') + '</span>';
-    if (s === 'busy') return '<span class="nt-tag g">' + w.OESTT('zamieniam na tekst…', 'turning into text…') + '</span>';
-    if (s === 'pl') return '<span class="nt-tag w">' + w.OESTT('tylko po polsku', 'Polish only') + '</span>';
-    return '<span class="nt-tag w">' + w.OESTT('bez tekstu', 'no text') + '</span>';
+    if (s === 'ready') return { tekst: w.OESTT('gotowa', 'ready'), kolor: 'success' };
+    if (s === 'check') return { tekst: w.OESTT('sprawdź liczby', 'check numbers'), kolor: 'warning' };
+    if (s === 'busy') return { tekst: w.OESTT('zamieniam na tekst…', 'turning into text…'), kolor: 'medium' };
+    if (s === 'pl') return { tekst: w.OESTT('tylko po polsku', 'Polish only'), kolor: 'warning' };
+    return { tekst: w.OESTT('bez tekstu', 'no text'), kolor: 'warning' };
   }
-  // open(scope, { title }) → Promise (zamknięcie okienka)
+  /* open(scope, { title, only, readonly }) → Promise (zamknięcie okienka). Logika okienka (lista, odsłuch, poprawianie, usuwanie) tu;
+     kontroler dla części: dane() → { tryb: 'lista'|'edycja', readonly, naglowek, pusto, notatki:[…], edycja:{…} };
+     akcja('edit'|'del'|'play', id) · ('tab', 'pl'|'en') · ('pole', 'pl'|'en', tekst) · ('cancel') · ('save') · ('redo') · ('tlo') */
   function open(scope, o) {
-    o = o || {}; css();
-    var node = document.createElement('div'); node.className = 'nt-pop';
-    var editing = null, tab = 'en', player = null, playing = '', sure = '';
+    o = o || {};
+    var editing = null, tab = 'en', player = null, playing = '', sure = '', notes = [], warnTxt = '', saving = false, redoing = false, redoTok = 0;
     function stop() { if (player) { try { player.pause(); } catch (e) {} URL.revokeObjectURL(player.src); player = null; } playing = ''; }
+    function dane() {
+      var d = { tryb: editing ? 'edycja' : 'lista', readonly: !!o.readonly, koniec: false };
+      if (editing) {
+        var n = editing;
+        d.edycja = { naglowek: w.OESTT('Popraw notatkę', 'Edit note') + ' · ' + hhmm(n.at) + (n.ctx ? ' · ' + n.ctx : ''), tab: tab, pl: n.pl || '', en: n.en || '', ostrzezenie: warnTxt,
+          audio: !!(n.audio && n.audio.length), gra: playing === n.id, czas: clock(n.ms), zapisuje: saving, uklada: redoing };
+        return d;
+      }
+      d.naglowek = (o.title || '') + (notes.length && !o.readonly ? ' · ' + w.OESTT('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '');
+      d.pusto = notes.length ? '' : w.OESTT('Brak notatek. Przytrzymaj „Nagraj notatkę” i mów.', 'No notes yet. Hold “Record note” and speak.');
+      d.notatki = notes.map(function (n) {
+        var s = state(n), miss = s === 'check' ? missing(n.pl, n.en) : [];
+        return { id: n.id, meta: hhmm(n.at) + (n.ctx ? ' · ' + n.ctx : '') + (n.audio && n.audio.length ? ' · ' + clock(n.ms) : ''), stan: s, tag: tag(s), en: n.en || '', pl: n.pl ? '„' + n.pl + '”' : '',
+          brak: miss.length ? w.OESTT('W oryginale jest: ', 'The original has: ') + miss.join(', ') + w.OESTT(' – w tekście EN tego brak.', ' – missing in the English text.') : '',
+          blad: n.err && !n.pl ? n.err : '', audio: !!(n.audio && n.audio.length), gra: playing === n.id, czas: clock(n.ms), pewne: sure === n.id, zajeta: s === 'busy' };
+      });
+      return d;
+    }
+    var S = sluchacze(dane);
     function draw() {
-      if (editing) return drawEdit();
-      foot(true);
+      if (editing) { S.emit(); return; }
+      S.emit();
       list(scope).then(resume).then(function (a) {
         if (editing) return;
         if (o.only) a = a.filter(function (n) { return n.id === o.only; }); // stuknięta ikonka: tylko ta jedna notatka
-        var h = '<div class="nt-h">' + esc(o.title || '') + (a.length && !o.readonly ? ' · ' + w.OESTT('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
-        if (!a.length) h += '<div class="nt-empty">' + w.OESTT('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
-        a.forEach(function (n) {
-          var s = state(n), miss = s === 'check' ? missing(n.pl, n.en) : [];
-          h += '<div class="nt-note" data-id="' + esc(n.id) + '"><div class="nt-m"><span>' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + (n.audio && n.audio.length ? ' · ' + clock(n.ms) : '') + '</span>' + tag(s) + '</div>' +
-            (n.en ? '<div class="nt-en">' + esc(n.en) + '</div>' : '') +
-            (n.pl ? '<div class="nt-pl">„' + esc(n.pl) + '”</div>' : '') +
-            (miss.length ? '<div class="nt-err">' + w.OESTT('W oryginale jest: ', 'The original has: ') + esc(miss.join(', ')) + w.OESTT(' – w tekście EN tego brak.', ' – missing in the English text.') + '</div>' : '') +
-            (n.err && !n.pl ? '<div class="nt-err">' + esc(n.err) + '</div>' : '') +
-            '<div class="nt-ic">' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + w.OESTT('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<button type="button" disabled>—</button>') +
-            (o.readonly ? '' : // tylko odczyt (archiwum): bez poprawiania i usuwania
-            '<button type="button" data-nt="edit"' + (s === 'busy' ? ' disabled' : '') + '>' + w.OESTT('✎ Popraw', '✎ Edit') + '</button>' +
-            '<button type="button" class="del' + (sure === n.id ? ' sure' : '') + '" data-nt="del" aria-label="' + w.OESTT('Usuń notatkę', 'Delete note') + '"' + (s === 'busy' ? ' disabled' : '') + '>' + (sure === n.id ? w.OESTT('Usunąć?', 'Delete?') : '🗑') + '</button>') + '</div></div>';
-        });
-        node.innerHTML = h;
+        notes = a; S.emit();
       });
     }
-    // w trakcie poprawiania okienko ma tylko Anuluj/Zapisz (bez „Zamknij”, które zgubiłoby poprawkę)
-    function foot(show) { var box = node.closest('.oest-ask'), r = box && box.querySelector(':scope>div>.row'); if (r) r.style.display = show ? '' : 'none'; }
-    function drawEdit() {
-      var n = editing; foot(false);
-      // przerysowanie (odsłuch, stop) nie gubi tego, co już wpisane
-      var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]'); if (fp && fe) { n.pl = fp.value; n.en = fe.value; }
-      node.innerHTML = '<div class="nt-h">' + w.OESTT('✎ Popraw notatkę', '✎ Edit note') + ' · ' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + '</div>' +
-        '<div class="nt-tabs"><button type="button" data-nt="tab-pl"' + (tab === 'pl' ? ' class="on"' : '') + '>' + w.OESTT('Po polsku (oryginał)', 'Polish (original)') + '</button><button type="button" data-nt="tab-en"' + (tab === 'en' ? ' class="on"' : '') + '>' + w.OESTT('Po angielsku (do raportu)', 'English (for the report)') + '</button></div>' +
-        '<textarea data-nt-f="pl" maxlength="4000"' + (tab === 'pl' ? '' : ' hidden') + '></textarea><textarea data-nt-f="en" maxlength="4000"' + (tab === 'en' ? '' : ' hidden') + '></textarea>' +
-        '<div class="nt-warn"></div>' +
-        '<div class="nt-row"><button type="button" data-nt="redo">' + w.OESTT('✨ Ułóż z polskiego', '✨ Rewrite from Polish') + '</button>' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + w.OESTT('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<span></span>') + '</div>' +
-        '<div class="nt-row"><button type="button" data-nt="cancel">' + w.OESTT('Anuluj', 'Cancel') + '</button><button type="button" class="go" data-nt="save">' + w.OESTT('Zapisz', 'Save') + '</button></div>';
-      node.querySelector('[data-nt-f=pl]').value = n.pl || ''; node.querySelector('[data-nt-f=en]').value = n.en || '';
-      warn();
-    }
     function warn() {
-      var pl = node.querySelector('[data-nt-f=pl]'), en = node.querySelector('[data-nt-f=en]'), box = node.querySelector('.nt-warn'); if (!pl || !box) return;
-      var m = en.value.trim() ? missing(pl.value, en.value) : [];
-      box.textContent = m.length ? w.OESTT('⚠ W oryginale jest „', '⚠ The original has “') + m.join('”, „') + w.OESTT('”, a w tekście EN nie ma. Dopisz albo zostaw.', '” but the English text does not. Add it or leave it.') : '';
+      if (!editing) return;
+      var m = String(editing.en || '').trim() ? missing(editing.pl || '', editing.en || '') : [];
+      warnTxt = m.length ? w.OESTT('W oryginale jest „', 'The original has “') + m.join('”, „') + w.OESTT('”, a w tekście EN nie ma. Dopisz albo zostaw.', '” but the English text does not. Add it or leave it.') : '';
     }
-    node.addEventListener('input', warn);
-    node.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-nt]'); if (!b) { if (sure) { sure = ''; draw(); } return; }
-      var a = b.getAttribute('data-nt'), card = b.closest('[data-id]'), id = editing ? editing.id : card && card.getAttribute('data-id');
-      if (o.readonly && a !== 'play') return; // tylko odczyt (historia, archiwum): żadnej akcji zapisującej
+    function drawEdit() { warn(); S.emit(); }
+    function akcja(a, id, v) {
+      if (o.readonly && a !== 'play' && a !== 'tlo') return; // tylko odczyt (historia, archiwum): żadnej akcji zapisującej
+      if (a === 'tlo') { if (sure) { sure = ''; draw(); } return; } // stuknięcie obok przycisków: pytanie „Usunąć?” znika
       if (a !== 'del' && sure) sure = '';
-      if (a === 'tab-pl' || a === 'tab-en') { var pl = node.querySelector('[data-nt-f=pl]').value, en = node.querySelector('[data-nt-f=en]').value; editing.pl = pl; editing.en = en; tab = a.slice(4); drawEdit(); return; }
-      if (a === 'cancel') { editing = null; delete szkice[scope]; stop(); draw(); return; }
+      if (a === 'pole') { if (!editing) return; editing[id] = String(v == null ? '' : v); warn(); S.emit(); return; }
+      if (a === 'tab') { if (!editing) return; tab = id === 'pl' ? 'pl' : 'en'; drawEdit(); return; }
+      if (a === 'cancel') { editing = null; redoing = false; redoTok++; delete szkice[scope]; stop(); draw(); return; }
       if (a === 'save') {
         // edycja kończy się dopiero po udanym zapisie; błąd zapisu = komunikat i formularz zostaje do ponowienia
-        var n = editing, c = Object.assign({}, n, { pl: node.querySelector('[data-nt-f=pl]').value.trim(), en: node.querySelector('[data-nt-f=en]').value.trim(), err: '', st: '' });
-        b.disabled = true;
-        put(c).then(function () { if (editing !== n) return; editing = null; delete szkice[scope]; stop(); draw(); }, function (e) {
-          b.disabled = false; var box = node.querySelector('.nt-warn');
-          if (box) box.textContent = w.OESTT('⚠ Nie zapisano: ', '⚠ Not saved: ') + (e && e.message || String(e)) + w.OESTT(' Stuknij „Zapisz” jeszcze raz.', ' Tap “Save” again.');
+        if (!editing || saving) return;
+        var n = editing, c = Object.assign({}, n, { pl: String(n.pl || '').trim(), en: String(n.en || '').trim(), err: '', st: '' });
+        saving = true; S.emit();
+        put(c).then(function () { saving = false; if (editing !== n) return; editing = null; delete szkice[scope]; stop(); draw(); }, function (e) {
+          saving = false; warnTxt = w.OESTT('Nie zapisano: ', 'Not saved: ') + (e && e.message || String(e)) + w.OESTT(' Stuknij „Zapisz” jeszcze raz.', ' Tap “Save” again.'); S.emit();
         });
         return;
       }
       if (a === 'redo') {
-        var plv = fix(node.querySelector('[data-nt-f=pl]').value, 'pl'), box = node.querySelector('.nt-warn');
-        if (!plv) { box.textContent = w.OESTT('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); return; }
-        if (!translator()) { box.textContent = w.OESTT('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); return; }
-        b.disabled = true; box.textContent = w.OESTT('Układam po angielsku…', 'Writing in English…');
-        var ed = editing, plIn = node.querySelector('[data-nt-f=pl]').value, enIn = node.querySelector('[data-nt-f=en]').value; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
+        if (!editing || redoing) return;
+        var plv = fix(editing.pl, 'pl');
+        if (!plv) { warnTxt = w.OESTT('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); S.emit(); return; }
+        if (!translator()) { warnTxt = w.OESTT('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); S.emit(); return; }
+        redoing = true; warnTxt = w.OESTT('Układam po angielsku…', 'Writing in English…'); S.emit();
+        var ed = editing, plIn = ed.pl, enIn = ed.en, tok = ++redoTok; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
         english(plv, ed.ctx).then(function (out) {
-          if (editing !== ed || !node.isConnected) return;
+          if (tok !== redoTok || editing !== ed || zamkniete) return;
+          redoing = false;
           // w trakcie dopisano poprawki: nie nadpisujemy ich wynikiem
-          if (node.querySelector('[data-nt-f=pl]').value !== plIn || node.querySelector('[data-nt-f=en]').value !== enIn) { var bx = node.querySelector('.nt-warn'), rb = node.querySelector('[data-nt=redo]'); if (rb) rb.disabled = false; if (bx) bx.textContent = w.OESTT('Tekst zmieniony w trakcie – nie podmieniam. Stuknij „Ułóż” jeszcze raz.', 'Text changed meanwhile – not replaced. Tap “Rewrite” again.'); return; }
-          node.querySelector('[data-nt-f=pl]').value = plv; node.querySelector('[data-nt-f=en]').value = out || node.querySelector('[data-nt-f=en]').value;
-          tab = 'en'; editing.pl = plv; editing.en = node.querySelector('[data-nt-f=en]').value; drawEdit();
-          if (!out) node.querySelector('.nt-warn').textContent = w.OESTT('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.');
+          if (ed.pl !== plIn || ed.en !== enIn) { warnTxt = w.OESTT('Tekst zmieniony w trakcie – nie podmieniam. Stuknij „Ułóż” jeszcze raz.', 'Text changed meanwhile – not replaced. Tap “Rewrite” again.'); S.emit(); return; }
+          ed.pl = plv; ed.en = out || ed.en; tab = 'en'; drawEdit();
+          if (!out) { warnTxt = w.OESTT('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.'); S.emit(); }
         });
         return;
       }
+      if (a === 'play' && editing && editing.id === id) return graj(editing);
       list(scope).then(function (all) {
         var n = all.filter(function (x) { return x.id === id; })[0]; if (!n) return;
         if (o.readonly && a !== 'play') return;
-        if (a === 'edit') { stop(); editing = n; tab = n.en ? 'en' : 'pl'; drawEdit(); return; }
+        if (a === 'edit') { stop(); redoing = false; redoTok++; editing = n; tab = n.en ? 'en' : 'pl'; drawEdit(); return; }
         if (a === 'del') { if (sure !== n.id) { sure = n.id; draw(); return; } sure = ''; if (playing === n.id) stop(); remove(n).then(draw); return; }
-        if (a === 'play') {
-          if (playing === n.id) { stop(); editing ? drawEdit() : draw(); return; }
-          stop();
-          audioGet(n.audio[0]).then(function (blob) {
-            if (!blob) return;
-            player = new Audio(URL.createObjectURL(blob)); playing = n.id;
-            player.onended = function () { stop(); editing ? drawEdit() : draw(); };
-            player.play().catch(function () { stop(); });
-            editing ? drawEdit() : draw();
-          });
-        }
+        if (a === 'play') graj(n);
       });
-    });
-    var off = on(function (s) { if (s === scope && !editing && node.isConnected) draw(); });
+    }
+    function graj(n) {
+      if (playing === n.id) { stop(); editing ? drawEdit() : draw(); return; }
+      stop();
+      audioGet(n.audio && n.audio[0]).then(function (blob) {
+        if (!blob || zamkniete) return;
+        player = new Audio(URL.createObjectURL(blob)); playing = n.id;
+        player.onended = function () { stop(); editing ? drawEdit() : draw(); };
+        player.play().catch(function () { stop(); });
+        editing ? drawEdit() : draw();
+      });
+    }
+    var zamkniete = false;
+    var off = on(function (s) { if (s === scope && !editing && !zamkniete) draw(); });
+    var ctrl = { dane: dane, na: S.na, akcja: akcja,
+      // zamknięte w trakcie poprawiania (Wstecz, stuknięcie obok): poprawka nie ginie – przy następnym otwarciu wraca edycja
+      zamknij: function () { if (zamkniete) return; zamkniete = true; if (editing) szkice[scope] = { id: editing.id, pl: editing.pl || '', en: editing.en || '', tab: tab }; off(); stop(); } };
     var sz = o.readonly ? null : szkice[scope]; if (sz && o.only && sz.id !== o.only) sz = null; // ikonka innej notatki: przerwana poprawka czeka na swoją notatkę (Codex #144) // tylko odczyt: nie wracamy do przerwanej poprawki
     if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
     else draw();
-    return w.OESTPrzycisk.ask({ title: w.OESTT('📝 Notatki', '📝 Notes'), node: node, ok: w.OESTT('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
-      .then(function () {
-        // zamknięte w trakcie poprawiania (Wstecz, stuknięcie obok): poprawka nie ginie – przy następnym otwarciu wraca edycja
-        var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]');
-        if (editing && fp && fe) szkice[scope] = { id: editing.id, pl: fp.value, en: fe.value, tab: tab };
-        off(); stop();
-      });
+    return UI().okno('NotatkiOkno', ctrl, { tytul: w.OESTT('Notatki', 'Notes'), ok: w.OESTT('Zamknij', 'Close'), anuluj: false }).then(function () {});
   }
 
-  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, addText: addText, write: write, english: english };
+  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, pasek: pasek, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, addText: addText, write: write, english: english };
 })(window);

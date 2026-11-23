@@ -36,6 +36,9 @@ fs.rmSync(modDst, { recursive: true, force: true });
 fs.cpSync(modSrc, modDst, { recursive: true, filter: (f) => !/\.md$/i.test(f) && !/[\\/]szkielet[\\/]src([\\/]|$)/.test(f) });
 // szkielet apki (Ionic + Vue, moduly/szkielet/src) → www/moduly/szkielet/lib/szkielet.js + .css, lokalnie, bez internetu
 require("child_process").execFileSync(process.execPath, [path.join(__dirname, "..", "node_modules", "vite", "bin", "vite.js"), "build", "--config", path.join(__dirname, "..", "vite.szkielet.config.mjs"), "--logLevel", "warn"], { stdio: "inherit" });
+// układ ramy Ionic (structure.css: body na cały ekran, przewija tylko ion-content) – osobny plik, tylko dla apki z ramą (index.html);
+// strona inspekcji (OESTEkrany.strona, bez ramy) bierze szkielet.css bez niego, bo przewija się jeszcze sama (do przeniesienia na ramę)
+fs.copyFileSync(path.join(__dirname, "..", "node_modules", "@ionic", "vue", "css", "structure.css"), path.join(__dirname, "..", "www", "moduly", "szkielet", "lib", "struktura.css"));
 // teksty ekranów z app/teksty/*.json → www/teksty.js (Grzegorz 09/11/2026)
 const tekstow = require("./teksty").zbuduj();
 console.log("inspekcje → www/inspekcje (biblioteki raportu lokalnie), moduly → www/moduly, teksty → www/teksty.js (" + tekstow + ")");

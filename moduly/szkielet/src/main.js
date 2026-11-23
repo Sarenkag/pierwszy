@@ -18,20 +18,23 @@
 //   OESTOkna.pytaj({ tytul, tresc, ok, anuluj, niebezpieczne, tylkoOk }) → Promise<bool>   „Na pewno?” / komunikat (ion-alert)
 //   OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj }) → Promise<{ ok, dane }>   okienko z treścią Vue (ion-modal)
 //   OESTOkna.wybor({ tytul, opcje: [{ tekst, wartosc }] }) → Promise<wartosc|null>      wybór akcji (ion-action-sheet)
+//   OESTCzesci.pokaz / okno / montuj / plotno / ladowanie    wygląd wspólnych modułów (aparat, notatki, ładowanie, odczyt) – src/czesci.js
 import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { IonicVue, alertController, modalController, actionSheetController } from '@ionic/vue';
 import '@ionic/vue/css/core.css';
-import '@ionic/vue/css/structure.css';
+// structure.css (rama na cały ekran) – osobno: lib/struktura.css tylko na stronie z ramą (app/www/index.html), patrz app/scripts/copy-web.js
 import '@ionic/vue/css/padding.css';
 import '@ionic/vue/css/display.css';
 import '@ionic/vue/css/text-alignment.css';
+import '@ionic/vue/css/flex-utils.css'; // ion-justify-content-* (wiersze przycisków edytora zdjęć)
 import '@ionic/vue/css/palettes/dark.always.css'; // apka jest ciemna (motyw „Szkło i poświata”): ciemna paleta Ionic
 import mapa from '../../ekrany/ekrany.json';
 import Rama from './Rama.vue';
 import Okno from './czesci/Okno.vue';
 import { EKRANY_VUE } from './ekrany/index.js';
 import './szkielet.css';
+import { zainstaluj as zainstalujCzesci } from './czesci.js';
 
 const w = window, d = document;
 const T = (pl, en) => (w.OESTT ? w.OESTT(pl, en) : pl);
@@ -74,8 +77,10 @@ const OESTOkna = {
   async okno(o) {
     o = o || {};
     const m = await modalController.create({ component: Okno, componentProps: { ...o, T } });
+    const zwolnij = OESTOkna.open(() => { m.dismiss(undefined, 'cancel'); }); // zmiana ekranu zamyka też to okienko (R4)
     await m.present();
     const r = await m.onDidDismiss();
+    zwolnij();
     return r.data || { ok: false, dane: null };
   },
   // wybór jednej z kilku akcji (ion-action-sheet): OESTOkna.wybor({ tytul, opcje: [{ tekst, wartosc, niebezpieczne }] }) → Promise<wartosc|null>
@@ -109,7 +114,12 @@ function rodzic(t) {
 
 // ---------- stan ramy ----------
 // komponent: ekran przeniesiony na Ionic + Vue (moduly/szkielet/src/ekrany); null = ekran jeszcze w starym kodzie (.wrap, licznik bramki)
-const stan = reactive({ trasa: '', glowny: true, meta: {}, nad: '', tytul: '', akcje: [], jezyk: false, jezykFn: null, wersja: 0, komponent: null });
+const stan = reactive({ trasa: '', glowny: true, meta: {}, nad: '', tytul: '', akcje: [], jezyk: false, jezykFn: null, wersja: 0, komponent: null, okna: 0 });
+// otwarte okienka Ionic (ion-modal, ion-alert, …): strona bez ramy (inspekcje) pokazuje ion-app tylko na ich czas
+for (const n of ['Modal', 'Alert', 'ActionSheet', 'Loading', 'Popover', 'Picker']) {
+  d.addEventListener('ion' + n + 'WillPresent', () => { stan.okna++; });
+  d.addEventListener('ion' + n + 'DidDismiss', () => { stan.okna = Math.max(0, stan.okna - 1); });
+}
 let naEkran = null, czeka = null, pytam = false, tryb = '', stronaUp = null, scrollEl = null;
 const straze = [];
 function straz(t) { const s = straze.filter(x => t === x.p || t.indexOf(x.p + '/') === 0).sort((a, b) => b.p.length - a.p.length)[0]; return s && s.fn; }
@@ -233,3 +243,4 @@ const OESTRama = {
   stan: () => ({ nad: stan.nad, tytul: stan.tytul, jezyk: stan.jezyk, akcje: stan.akcje.length })
 };
 w.OESTEkrany = OESTEkrany; w.OESTRama = OESTRama; w.OESTOkna = OESTOkna;
+zainstalujCzesci(w, OESTOkna, T); // OESTCzesci: wygląd wspólnych modułów (aparat, notatki, ładowanie, odczyt) – src/czesci.js

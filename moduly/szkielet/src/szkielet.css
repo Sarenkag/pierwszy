@@ -49,3 +49,10 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --ion-color-secondary: #3b82f6; --ion-color-secondary-rgb: 59, 130, 246; --ion-color-secondary-contrast: #ffffff; --ion-color-secondary-contrast-rgb: 255, 255, 255; --ion-color-secondary-shade: #3472d8; --ion-color-secondary-tint: #4f8ff7;
   --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
 }
+/* Kolory rysowania w edytorze zdjęć (moduly/aparat, 6 kolorów jak dawniej) jako kolory Ionic: przycisk koloru pokazuje dokładnie ten kolor. Tylko zmienne palety. */
+.ion-color-ed-czerwony { --ion-color-base: #ff2d2d; --ion-color-base-rgb: 255, 45, 45; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #e02727; --ion-color-tint: #ff4242; }
+.ion-color-ed-zolty { --ion-color-base: #ffd400; --ion-color-base-rgb: 255, 212, 0; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0ba00; --ion-color-tint: #ffd819; }
+.ion-color-ed-zielony { --ion-color-base: #21d36b; --ion-color-base-rgb: 33, 211, 107; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #1db95e; --ion-color-tint: #37d779; }
+.ion-color-ed-niebieski { --ion-color-base: #2f8bff; --ion-color-base-rgb: 47, 139, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #297ae0; --ion-color-tint: #4396ff; }
+.ion-color-ed-bialy { --ion-color-base: #ffffff; --ion-color-base-rgb: 255, 255, 255; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0e0e0; --ion-color-tint: #ffffff; }
+.ion-color-ed-czarny { --ion-color-base: #111111; --ion-color-base-rgb: 17, 17, 17; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #0e0e0e; --ion-color-tint: #282828; }
