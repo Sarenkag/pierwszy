@@ -140,15 +140,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|naglowek|reactive.js",
-      "rule": "JM",
-      "detail": "reactive.js: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 1× poza właścicielem (moduly/naglowek/naglowek.js).",
-      "maks": 1,
-      "punkt": "D11",
-      "usuwa": "C1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|naglowek|zdjecia-ui.js",
       "rule": "JM",
       "detail": "zdjecia-ui.js: własny nagłówek ekranu (class=\"top\") poza modułem nagłówka – 1× poza właścicielem (moduly/naglowek/naglowek.js).",
@@ -356,24 +347,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|reactive-vantify.js",
-      "rule": "ZNACZNIK",
-      "detail": "reactive-vantify.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|reactive.js",
-      "rule": "ZNACZNIK",
-      "detail": "reactive.js: 16 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 16,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|zdjecia-ui.js",
       "rule": "ZNACZNIK",
       "detail": "zdjecia-ui.js: 6 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
@@ -423,24 +396,6 @@
       "rule": "ZNACZNIK",
       "detail": "powertrace.js: stary znacznik data-pt-action 7×.",
       "maks": 7,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|reactive-vantify.js|data-rx",
-      "rule": "ZNACZNIK",
-      "detail": "reactive-vantify.js: stary znacznik data-rx 1×.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|stary|reactive.js|data-rx",
-      "rule": "ZNACZNIK",
-      "detail": "reactive.js: stary znacznik data-rx 17×.",
-      "maks": 17,
       "punkt": "R26/D12",
       "usuwa": "N1–N3",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."

@@ -21,16 +21,16 @@
   }
   /* zdjęcia przed wysłane przy zakładaniu, a niewidoczne przy zleceniu (przegląd Codex #166): {hrefs, seen} na karcie */
   function photosMissing(d) { const p = d?.vantify?.photos; return p && Array.isArray(p.hrefs) ? p.hrefs.filter(h => !(p.seen || []).includes(h)).length : 0; }
-  /* rząd przycisków nad „Wyślij / Zakończ” – ta sama wielkość co reszta (klasa btn) */
-  function html(d, L) {
-    const s = state(d), v = d?.vantify || {}, b = (label, act, cls) => '<button type="button" class="btn rx-vt' + (cls ? ' ' + cls : '') + '" data-rx="' + act + '">' + esc(label) + '</button>';
-    const open = s === 'none' || s === 'pending' ? b('Open Vantify', 'vt-open', s === 'pending' ? 'rx-vt-off' : '') : photosMissing(d) ? b('⚠ Vantify #' + v.id + ' · ' + L('zdjęcia ', 'photos ') + (v.photos.seen || []).length + '/' + v.photos.hrefs.length, 'vt-check', 'rx-vt-off') : b('✓ Vantify #' + v.id, 'vt-check', 'rx-vt-done');
-    const close = s === 'none' || s === 'pending' ? b('Close Vantify', 'vt-close', 'rx-vt-off') : s === 'approval' ? b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'rx-vt-off') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'rx-vt-done') : s === 'nofile' ? b(L('⚠ Brak pliku w Vantify', '⚠ No file in Vantify'), 'vt-check', 'rx-vt-off') : b('Close Vantify', 'vt-close', 'go');
+  /* rząd przycisków nad „Wyślij / Zakończ” (ekran Vue rysuje je tą samą wielkością co resztę): { rzad: [{ tekst, rx, ton }], update }
+     ton: '' zwykły, 'off' przygaszony, 'done' zielony ✓, 'go' główny */
+  function przyciski(d, L) {
+    const s = state(d), v = d?.vantify || {}, b = (tekst, rx, ton) => ({ tekst, rx, ton: ton || '' });
+    const open = s === 'none' || s === 'pending' ? b('Open Vantify', 'vt-open', s === 'pending' ? 'off' : '') : photosMissing(d) ? b('⚠ Vantify #' + v.id + ' · ' + L('zdjęcia ', 'photos ') + (v.photos.seen || []).length + '/' + v.photos.hrefs.length, 'vt-check', 'off') : b('✓ Vantify #' + v.id, 'vt-check', 'done');
+    const close = s === 'none' || s === 'pending' ? b('Close Vantify', 'vt-close', 'off') : s === 'approval' ? b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'off') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'done') : s === 'nofile' ? b(L('⚠ Brak pliku w Vantify', '⚠ No file in Vantify'), 'vt-check', 'off') : b('Close Vantify', 'vt-close', 'go');
     /* klocek 2 „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie czeka na zatwierdzenie; ręcznie, nie przy każdym Reactive */
     /* ✓ tylko po potwierdzonym odczycie (updateAt); wysłany bez potwierdzenia = updateSentAt, ⚠ i stuknięcie sprawdza ponownie */
     const uLab = v.updateAt ? L('✓ Update wysłany', '✓ Update sent') : v.updateSentAt ? L('⚠ Update niepotwierdzony', '⚠ Update unconfirmed') : 'Send update';
-    const upd = s === 'approval' ? '<div class="rx-row rx-vt-upd">' + b(uLab, 'vt-update', v.updateAt ? 'rx-vt-done' : v.updateSentAt ? 'rx-vt-off' : '') + '</div>' : '';
-    return '<div class="rx-row rx-vt-row">' + open + close + '</div>' + upd;
+    return { rzad: [open, close], update: s === 'approval' ? b(uLab, 'vt-update', v.updateAt ? 'done' : v.updateSentAt ? 'off' : '') : null };
   }
   function why(r, L) {
     const c = r?.code || r?.status || '';
@@ -277,5 +277,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { html, open, close, check, update: sendUpdate, state, photosMissing, clampDay, ymd, UPDATE_TEXT };
+  w.OESTReactiveVantify = { przyciski, open, close, check, update: sendUpdate, state, photosMissing, clampDay, ymd, UPDATE_TEXT };
 })(window);

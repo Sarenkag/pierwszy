@@ -13,7 +13,7 @@
     </div>
     <div v-if="k.znak !== undefined || k.czestotliwosc || k.formularz || k.opis || k.status" class="oest-kr">
       <span v-if="k.znak !== undefined" class="oest-klok">{{ k.znak }}</span>
-      <template v-if="k.czestotliwosc"><ion-icon :icon="I.czest" aria-hidden="true"></ion-icon><strong class="oest-kcz">{{ k.czestotliwosc }}</strong></template>
+      <template v-if="k.czestotliwosc != null"><ion-icon :icon="I.czest" aria-hidden="true"></ion-icon><strong class="oest-kcz">{{ k.czestotliwosc }}</strong></template>
       <ion-icon v-if="k.formularz" :icon="I.dokument" :data-ton="k.formularz" :aria-label="T('Zdjęcie formularza', 'Form photo')"></ion-icon>
       <span v-if="k.opis" class="oest-kopis">{{ k.opis }}</span>
       <span class="oest-kodstep"></span>

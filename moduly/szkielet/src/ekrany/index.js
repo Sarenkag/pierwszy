@@ -17,4 +17,5 @@ import KalendarzGrafik from './KalendarzGrafik.vue';
 import Vantify from './Vantify.vue';
 import Start from './Start.vue';
 import Pytania from './Pytania.vue';
-export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, 'settings/profile': Profil, 'settings/calendar': KalendarzGrafik, 'settings/vantify': Vantify, start: Start, questions: Pytania };
+import Reactive from './Reactive.vue';
+export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, 'settings/profile': Profil, 'settings/calendar': KalendarzGrafik, 'settings/vantify': Vantify, start: Start, questions: Pytania, reactive: Reactive, 'reactive/new/:id': Reactive, 'reactive/draft/:id': Reactive, 'reactive/job/:id': Reactive, 'reactive/complete/:id': Reactive, 'reactive/tree/:id': Reactive, 'reactive/history': Reactive, 'reactive/config': Reactive };
