@@ -48,10 +48,10 @@ await page.evaluate(()=>{window.__seq=[{status:'ok',count:1,jobs:[{id:1,type:'re
 await page.waitForFunction(()=>/nie pokazuje zleceń planowych[\s\S]*ustaw filtr/.test(document.getElementById('vtPreview')?.textContent||''));assert.equal(await page.locator('#vtSave').count(),0);
 // przy starcie: Vantify ma nowe zlecenie → pytanie „Pokazać?” → Ustawienia → Vantify z podglądem; nic nie zapisuje samo
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__jobs.push({id:3070001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-01T23:59:59+00:00',frequency:'1W'});window.__calls={sync:0,open:0};OESTEkrany.go('#home');});
-await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('ion-alert').waitFor();
-assert.match(await page.locator('ion-alert').textContent(),/Są nowe terminy PPM z Vantify: nowe zlecenia 1, zamknięte 0[\s\S]*Później[\s\S]*Pokaż/);
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();
+assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/Są nowe terminy PPM z Vantify: nowe zlecenia 1, zamknięte 0[\s\S]*Później[\s\S]*Pokaż/);
 const before=await page.evaluate(()=>localStorage.getItem('oest.vantify.plan'));
-await page.locator('ion-alert .alert-button:not(.alert-button-role-cancel)').click();await page.waitForFunction(()=>location.hash==='#settings/vantify');await page.locator('#vtSave').waitFor();
+await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await page.waitForFunction(()=>location.hash==='#settings/vantify');await page.locator('#vtSave').waitFor();
 assert.match(await page.locator('#vtPreview').textContent(),/Nowe zlecenia: 1[\s\S]*01\/01\/2027 · AOV Operation Test \(TA\) · 3070001/);
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),before,'samo sprawdzenie niczego nie zapisuje');
 // podgląd czeka też po wyjściu i powrocie; Anuluj go usuwa
@@ -68,21 +68,21 @@ await page.locator('#vtCancel').click();assert.equal(await page.evaluate(()=>loc
 await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>window.__calls.sync),1,'drugie sprawdzenie dopiero po 4 h');
 // bez zmian → bez pytania
 await page.evaluate(()=>{window.__jobs.pop();localStorage.removeItem('oest.vantify.auto');OESTEkrany.go('#home');});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
-await page.waitForFunction(()=>window.__calls.sync===2);await page.waitForTimeout(400);assert.equal(await page.locator('ion-alert').count(),0,'bez zmian nie pyta');
+await page.waitForFunction(()=>window.__calls.sync===2);await page.waitForTimeout(400);assert.equal(await page.locator('.oest-ask:not([data-wy-out])').count(),0,'bez zmian nie pyta');
 // wygasłe logowanie przy starcie: pytanie raz na dobę; „Zaloguj” otwiera Vantify i potem pobiera
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login'}];});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
-await page.locator('ion-alert').waitFor();assert.match(await page.locator('ion-alert').textContent(),/Logowanie do Vantify wygasło/);
-await page.locator('ion-alert .alert-button-role-cancel').click();await page.waitForFunction(()=>!document.querySelector('ion-alert'));
+await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/Logowanie do Vantify wygasło/);
+await page.locator('.oest-ask:not([data-wy-out]) [data-a=no]').click();await page.waitForFunction(()=>!document.querySelector('.oest-ask:not([data-wy-out])'));
 await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.auto'));a.at=0;localStorage.setItem('oest.vantify.auto',JSON.stringify(a));window.__seq=[{status:'login'}];});await page.evaluate(()=>{window.OESTVantifyAuto.check();});
-await page.waitForFunction(()=>window.__calls.sync===4);await page.waitForTimeout(400);assert.equal(await page.locator('ion-alert').count(),0,'o logowanie pyta najwyżej raz na dobę');
+await page.waitForFunction(()=>window.__calls.sync===4);await page.waitForTimeout(400);assert.equal(await page.locator('.oest-ask:not([data-wy-out])').count(),0,'o logowanie pyta najwyżej raz na dobę');
 await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('oest.vantify.auto'));a.at=0;a.askedLogin=0;localStorage.setItem('oest.vantify.auto',JSON.stringify(a));window.__seq=[{status:'login'}];window.__calls.open=0;OESTEkrany.go('#home');});
-await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('ion-alert .alert-button:not(.alert-button-role-cancel)').click();
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();
 await page.waitForFunction(()=>window.__calls.open===1);await page.locator('#vtSave').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#settings/vantify','„Zaloguj” → okno Vantify, potem podgląd');
 await page.locator('#vtCancel').click();
 // już na Ustawienia → Vantify: „Pokaż” rysuje podgląd od razu (ten sam adres nie przerysowuje widoku)
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__jobs.push({id:3080001,type:'planned',summary:'AOV Operation Testing (Tower A)',status:'acknowledged',completionDueAt:'2027-01-08T23:59:59+00:00',frequency:'1W'});});
 assert.equal(await page.evaluate(()=>location.hash),'#settings/vantify');assert.equal(await page.locator('#vtSave').count(),0);
-await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('ion-alert .alert-button:not(.alert-button-role-cancel)').click();
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();
 await page.locator('#vtSave').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/3080001/,'podgląd bez zmiany adresu');
 // zapis pliku CSV unieważnia odłożony podgląd z Vantify (inaczej stara lista pokazałaby nowe zlecenia jako „zamknięte”)
 await page.locator('#vtCancel').click();await page.evaluate(()=>window.OESTVantifyImport.keepNew({jobs:window.__jobs}));
@@ -126,8 +126,8 @@ await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.g
 await page.waitForFunction(()=>/nie przyjął zapisanego hasła/.test(document.getElementById('vtLoginMsg')?.textContent||''));
 // przy starcie: pytanie „Wpisać aktualne hasło?” → Ustawienia → Vantify, pole hasła
 await page.evaluate(()=>{localStorage.removeItem('oest.vantify.auto');window.__seq=[{status:'login',code:'bad'}];OESTEkrany.go('#home');});await page.waitForFunction(()=>location.hash==='#home');
-await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('ion-alert').waitFor();assert.match(await page.locator('ion-alert').textContent(),/nie przyjął zapisanego hasła/);
-await page.locator('ion-alert .alert-button:not(.alert-button-role-cancel)').click();await page.waitForFunction(()=>location.hash==='#settings/vantify'&&document.activeElement&&document.activeElement.closest('ion-input')?.id==='vtPass');assert.equal(await page.evaluate(()=>window.__calls.open),0);
+await page.evaluate(()=>{window.OESTVantifyAuto.check();});await page.locator('.oest-ask:not([data-wy-out])').waitFor();assert.match(await page.locator('.oest-ask:not([data-wy-out])').textContent(),/nie przyjął zapisanego hasła/);
+await page.locator('.oest-ask:not([data-wy-out]) [data-a=ok]').click();await page.waitForFunction(()=>location.hash==='#settings/vantify'&&document.activeElement&&document.activeElement.closest('ion-input')?.id==='vtPass');assert.equal(await page.evaluate(()=>window.__calls.open),0);
 await page.locator('#vtLoginClear').click();await page.waitForFunction(()=>/Nic nie zapisano/.test(document.getElementById('vtLoginMsg')?.textContent||''));assert.equal(await page.evaluate(()=>window.__login),null);
 // „Zbadaj automatycznie”: ukryte okno w trybie explore, wynik dopisany do zapisu „Zbadaj” (do udostępnienia), nic więcej się nie zmienia
 await page.evaluate(()=>{const V=window.Capacitor.Plugins.Vantify,old=V.sync;window.__modes=[];V.sync=async o=>{window.__modes.push(o&&o.mode||'');if(o&&o.mode==='explore')return {status:'ok',count:5,log:[{t:1,k:'auto',m:'GET',u:'https://savillsuk-api.cafm.vantify.com/sites/6324/meters',st:200,res:{n:3}},{t:2,k:'code',m:'POST',u:'"/jobs/"+j+"/complete"'}]};return old(o);};});

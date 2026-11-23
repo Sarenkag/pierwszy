@@ -1,6 +1,6 @@
 <!-- Edytor inspekcji i pytań. Dane i akcje: OESTQuestionsUI (app/www/questions-ui.js); stan odświeża zdarzenie oest:pytania-stan. Tu tylko komponenty Ionic. -->
 <template>
-  <div class="ion-padding">
+  <div class="ion-padding oest-ekran">
     <ion-item v-if="d.ladowanie" lines="none">
       <ion-spinner slot="start"></ion-spinner>
       <ion-label role="status">{{ T('Wczytywanie pytań…', 'Loading questions…') }}</ion-label>
@@ -9,14 +9,10 @@
       <ion-note color="danger">{{ d.blad }}</ion-note>
     </ion-item>
     <template v-else>
-      <ion-card>
-        <ion-grid>
-          <ion-row>
-            <ion-col size="12"><ion-button expand="block" id="qqTabBase" :fill="d.zakladka === 'base' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('base')">{{ T('Baza pytań', 'Question library') }}</ion-button></ion-col>
-            <ion-col size="12"><ion-button expand="block" id="qqTabTasks" :fill="d.zakladka === 'tasks' ? 'solid' : 'outline'" :disabled="d.zajety" @click="U.zakladka('tasks')">{{ T('Inspekcje', 'Inspections') }}</ion-button></ion-col>
-          </ion-row>
-        </ion-grid>
-      </ion-card>
+      <div class="oest-chipy">
+        <ion-chip id="qqTabBase" :data-on="d.zakladka === 'base' || undefined" :disabled="d.zajety" @click="U.zakladka('base')"><ion-label>{{ T('Baza pytań', 'Question library') }}</ion-label></ion-chip>
+        <ion-chip id="qqTabTasks" :data-on="d.zakladka === 'tasks' || undefined" :disabled="d.zajety" @click="U.zakladka('tasks')"><ion-label>{{ T('Inspekcje', 'Inspections') }}</ion-label></ion-chip>
+      </div>
       <component v-if="d.edytor" :is="Edytor" :T="T" :e="U.edytor()" :zajety="d.zajety"></component>
       <component v-else-if="d.zakladka === 'base'" :is="Baza" :T="T" :b="U.baza()" :zajety="d.zajety"></component>
       <component v-else :is="Inspekcje" :T="T" :i="U.inspekcje()" :zajety="d.zajety"></component>
@@ -37,24 +33,20 @@
               <ion-note>{{ p.tresc }}</ion-note>
             </ion-item>
           </template>
-          <ion-grid>
-            <ion-row>
-              <ion-col size="12"><ion-button expand="block" id="qqImportCommit" :disabled="d.zajety" @click="U.importPropozycje()">{{ T('Importuj zaznaczone jako propozycje', 'Import selected as proposals') }}</ion-button></ion-col>
-              <ion-col size="12"><ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
-            </ion-row>
-          </ion-grid>
+          <div class="oest-rzad">
+          <ion-button expand="block" id="qqImportCommit" :disabled="d.zajety" @click="U.importPropozycje()">{{ T('Importuj zaznaczone jako propozycje', 'Import selected as proposals') }}</ion-button>
+          <ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button>
+        </div>
         </template>
         <template v-else>
           <ion-list-header>{{ T('Kopia: ', 'Backup: ') }}{{ d.import.pytan }} {{ T('pytań,', 'questions,') }} {{ d.import.dzialow }} {{ T('działów', 'sections') }}</ion-list-header>
           <ion-item>
             <ion-toggle id="qqReplace" :checked="d.import.zastap" @ionChange="U.importZastap($event.detail.checked)">{{ T('Zastąp całą bazę tego konta (inaczej scalaj ID, obecne dane wygrywają)', 'Replace this account\'s whole library (otherwise merge by ID, current data wins)') }}</ion-toggle>
           </ion-item>
-          <ion-grid>
-            <ion-row>
-              <ion-col size="12"><ion-button expand="block" id="qqBackupCommit" :disabled="d.zajety" @click="U.importKopia()">{{ T('Zatwierdź import kopii', 'Approve backup import') }}</ion-button></ion-col>
-              <ion-col size="12"><ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
-            </ion-row>
-          </ion-grid>
+          <div class="oest-rzad">
+          <ion-button expand="block" id="qqBackupCommit" :disabled="d.zajety" @click="U.importKopia()">{{ T('Zatwierdź import kopii', 'Approve backup import') }}</ion-button>
+          <ion-button expand="block" fill="outline" @click="U.importAnuluj()">{{ T('Anuluj', 'Cancel') }}</ion-button>
+        </div>
         </template>
       </ion-card>
       <ion-card v-if="d.raport !== null">
@@ -72,7 +64,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import { IonCard, IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToggle, IonListHeader, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToggle, IonListHeader, IonChip } from '@ionic/vue';
 import Edytor from './pytania/Edytor.vue';
 import Baza from './pytania/Baza.vue';
 import Inspekcje from './pytania/Inspekcje.vue';

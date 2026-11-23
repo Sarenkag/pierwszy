@@ -1,20 +1,15 @@
 <!-- Terminy PPM z Vantify. Dane i akcje: OESTVantifyImport (app/www/vantify-import.js); stan odświeża zdarzenie oest:vantify-stan. Tu tylko komponenty Ionic. -->
 <template>
-  <div class="ion-padding">
+  <div class="ion-padding oest-ekran">
     <ion-card>
       <ion-list-header>{{ T('Terminy PPM z Vantify', 'PPM due dates from Vantify') }}</ion-list-header>
-      <ion-item lines="none">
+      <ion-item lines="none" class="oest-ramka">
         <ion-label id="vtNow">{{ T('Eksport z ', 'Export from ') }}{{ d.teraz.data }} · {{ d.teraz.zlecen }}{{ T(' zleceń', ' jobs') }} · {{ d.teraz.telefon ? T('wczytany w telefonie ', 'loaded on this phone ') + d.teraz.wczytano : T('wbudowany w apkę', 'built into the app') }}</ion-label>
       </ion-item>
       <ion-item lines="none">
-        <ion-note>{{ T('„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h).', '“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h).') }}</ion-note>
+        <ion-note>{{ T('„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h). Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Po pobraniu dotknij „Zapisz w apce” pod listą.', '“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h). The app also checks on start, at most every 4 h. Due dates exactly from Vantify. After getting them, tap “Save in the app” below the list.') }}</ion-note>
       </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Po pobraniu dotknij „Zapisz w apce” pod listą.', 'The app also checks on start, at most every 4 h. Due dates exactly from Vantify. After getting them, tap “Save in the app” below the list.') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-button id="vtPull" :disabled="d.trwaPobierz" @click="V.pobierz()">{{ T('Pobierz z Vantify', 'Get from Vantify') }}</ion-button>
-      </ion-item>
+      <ion-button id="vtPull" expand="block" :disabled="d.trwaPobierz" @click="V.pobierz()">{{ T('Pobierz z Vantify', 'Get from Vantify') }}</ion-button>
       <ion-item v-if="d.pobierz" lines="none">
         <ion-note id="vtPullMsg" role="status" aria-live="polite">{{ P(d.pobierz) }}</ion-note>
       </ion-item>
@@ -47,12 +42,10 @@
       <ion-item v-if="d.podglad.pominiete" lines="none">
         <ion-note>{{ T('Bez karty w apce (pominięte): ', 'No card in the app (skipped): ') }}{{ d.podglad.pominiete }}</ion-note>
       </ion-item>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12"><ion-button expand="block" id="vtSave" @click="V.zapiszPodglad()">{{ T('Zapisz w apce', 'Save in the app') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" id="vtCancel" fill="outline" @click="V.anulujPodglad()">{{ T('Anuluj', 'Cancel') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
+      <div class="oest-rzad">
+          <ion-button expand="block" id="vtSave" @click="V.zapiszPodglad()">{{ T('Zapisz w apce', 'Save in the app') }}</ion-button>
+          <ion-button expand="block" id="vtCancel" fill="outline" @click="V.anulujPodglad()">{{ T('Anuluj', 'Cancel') }}</ion-button>
+        </div>
     </ion-card>
     <ion-card v-if="d.wynik">
       <ion-item lines="none">
@@ -64,42 +57,27 @@
     <ion-card>
       <ion-list-header>{{ T('Vantify w apce', 'Vantify in the app') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-note>{{ T('Login i hasło do Vantify:', 'Vantify sign-in:') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('zapisane w telefonie (zaszyfrowane).', 'saved on this phone (encrypted).') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('Gdy logowanie wygaśnie (po 24 h), apka zaloguje się sama.', 'When the sign-in expires (after 24 h) the app signs in by itself.') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('Zmiana hasła albo loginu – wpisz nowe i zapisz.', 'Password or login changed – type the new one and save.') }}</ion-note>
+        <ion-note>{{ T('Login i hasło do Vantify zapisane w telefonie (zaszyfrowane). Gdy logowanie wygaśnie (po 24 h), apka zaloguje się sama. Zmiana hasła albo loginu – wpisz nowe i zapisz.', 'Vantify sign-in saved on this phone (encrypted). When the sign-in expires (after 24 h) the app signs in by itself. Password or login changed – type the new one and save.') }}</ion-note>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
+        <ion-input id="vtUser" type="text" autocomplete="username" autocapitalize="off" :spellcheck="false" :label="T('Login', 'Login')" label-placement="stacked" :value="login.user" @ionInput="login.user = $event.detail.value"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
+        <ion-input id="vtPass" ref="poleHasla" :type="login.pokaz ? 'text' : 'password'" autocomplete="current-password" :placeholder="login.zapisane ? '••••••••' : ''" :label="T('Hasło', 'Password')" label-placement="stacked" :value="login.haslo" @ionInput="login.haslo = $event.detail.value"></ion-input>
       </ion-item>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12"><ion-button expand="block" id="vtLoginSave" @click="zapiszLogin">{{ T('Zapisz login i hasło', 'Save login and password') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" id="vtLoginShow" fill="outline" @click="pokazHaslo">{{ login.pokaz ? T('Ukryj', 'Hide') : T('Pokaż', 'Show') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" id="vtLoginClear" fill="outline" @click="usunLogin">{{ T('Usuń', 'Remove') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
+      <div class="oest-rzad">
+          <ion-button expand="block" id="vtLoginSave" @click="zapiszLogin">{{ T('Zapisz login i hasło', 'Save login and password') }}</ion-button>
+          <ion-button expand="block" id="vtLoginShow" fill="outline" @click="pokazHaslo">{{ login.pokaz ? T('Ukryj', 'Hide') : T('Pokaż', 'Show') }}</ion-button>
+          <ion-button class="oest-pelny" expand="block" id="vtLoginClear" fill="outline" @click="usunLogin">{{ T('Usuń', 'Remove') }}</ion-button>
+        </div>
       <ion-item v-if="d.login" lines="none">
         <ion-note id="vtLoginMsg" role="status" aria-live="polite">{{ P(d.login) }}</ion-note>
       </ion-item>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12"><ion-button expand="block" id="vtOpen" @click="V.otworz()">{{ T('Otwórz Vantify w apce', 'Open Vantify in the app') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" id="vtExplore" fill="outline" :disabled="d.trwaZbadaj" @click="V.zbadaj()">{{ T('Zbadaj automatycznie', 'Explore automatically') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
-      <ion-item v-if="d.zapis" lines="none">
-        <ion-button id="vtShare" fill="outline" @click="V.udostepnij()">{{ T('Udostępnij zapis „Zbadaj” (', 'Share the “Explore” log (') }}{{ d.zapis }})</ion-button>
-      </ion-item>
+      <div class="oest-rzad">
+          <ion-button expand="block" id="vtOpen" @click="V.otworz()">{{ T('Otwórz Vantify w apce', 'Open Vantify in the app') }}</ion-button>
+          <ion-button expand="block" id="vtExplore" fill="outline" :disabled="d.trwaZbadaj" @click="V.zbadaj()">{{ T('Zbadaj automatycznie', 'Explore automatically') }}</ion-button>
+        </div>
+      <ion-button v-if="d.zapis" id="vtShare" expand="block" fill="outline" @click="V.udostepnij()">{{ T('Udostępnij zapis „Zbadaj” (', 'Share the “Explore” log (') }}{{ d.zapis }})</ion-button>
       <ion-item v-if="d.vantify" lines="none">
         <ion-note id="vtMsg" role="status" aria-live="polite">{{ P(d.vantify) }}</ion-note>
       </ion-item>
@@ -109,7 +87,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonButton  } from '@ionic/vue';
 const props = defineProps({ T: Function, wersja: Number });
 const V = window.OESTVantifyImport;
 const odswiez = ref(0);

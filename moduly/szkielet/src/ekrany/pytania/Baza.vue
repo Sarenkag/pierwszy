@@ -2,30 +2,26 @@
 <template>
   <div>
     <ion-card>
-      <ion-item lines="none">
-        <ion-button id="qqNew" :disabled="zajety" @click="U.nowe()">{{ T('Dodaj pytanie', 'Add question') }}</ion-button>
-      </ion-item>
+      <ion-button expand="block" id="qqNew" :disabled="zajety" @click="U.nowe()">{{ T('Dodaj pytanie', 'Add question') }}</ion-button>
       <ion-accordion-group>
-        <ion-accordion value="kopia">
+        <ion-accordion toggle-icon-slot="start" value="kopia">
           <ion-item slot="header">
             <ion-icon slot="start" :icon="settingsOutline"></ion-icon>
             <ion-label>{{ T('Kopia zapasowa / import', 'Backup / import') }}</ion-label>
           </ion-item>
           <div slot="content">
-            <ion-grid>
-              <ion-row>
-                <ion-col size="12"><ion-button expand="block" id="qqExport" :disabled="zajety" @click="U.eksport()">{{ T('Zapisz kopię', 'Save backup') }}</ion-button></ion-col>
-                <ion-col size="12"><ion-button expand="block" id="qqFile" fill="outline" :disabled="zajety" @click="U.plikWybierz()">{{ T('Wczytaj plik (kopia / propozycje)', 'Load file (backup / proposals)') }}</ion-button></ion-col>
-              </ion-row>
-            </ion-grid>
+            <div class="oest-rzad">
+          <ion-button expand="block" id="qqExport" :disabled="zajety" @click="U.eksport()">{{ T('Zapisz kopię', 'Save backup') }}</ion-button>
+          <ion-button expand="block" id="qqFile" fill="outline" :disabled="zajety" @click="U.plikWybierz()">{{ T('Wczytaj plik (kopia / propozycje)', 'Load file (backup / proposals)') }}</ion-button>
+        </div>
           </div>
         </ion-accordion>
       </ion-accordion-group>
       <ion-item>
-        <ion-input fill="solid" id="qqSearch" :label="T('Szukaj: tekst, tag, źródło', 'Search: text, tag, source')" label-placement="stacked" :value="b.szukaj" @ionChange="U.ustawSzukaj($event.detail.value || '')"></ion-input>
+        <ion-input id="qqSearch" :label="T('Szukaj: tekst, tag, źródło', 'Search: text, tag, source')" label-placement="stacked" :value="b.szukaj" @ionChange="U.ustawSzukaj($event.detail.value || '')"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select fill="solid" id="qqFilter" :label="T('Dział', 'Section')" label-placement="stacked" interface="popover" :value="b.filtr" @ionChange="U.ustawFiltr($event.detail.value)">
+        <ion-select id="qqFilter" :label="T('Dział', 'Section')" label-placement="stacked" interface="popover" :value="b.filtr" @ionChange="U.ustawFiltr($event.detail.value)">
           <ion-select-option :value="U.X0">{{ T('Wszystkie', 'All') }}</ion-select-option>
           <ion-select-option v-for="x in b.dzialy" :key="x.id" :value="x.id">{{ x.nazwa }}</ion-select-option>
         </ion-select>
@@ -34,7 +30,7 @@
 
     <ion-card>
       <ion-accordion-group>
-        <ion-accordion value="dzialy">
+        <ion-accordion toggle-icon-slot="start" value="dzialy">
           <ion-item slot="header">
             <ion-label>{{ T('Działy i poddziały', 'Sections and subsections') }}</ion-label>
           </ion-item>
@@ -43,27 +39,21 @@
               <ion-item lines="none">
                 <ion-label>{{ x.nazwa }}</ion-label>
               </ion-item>
-              <ion-grid>
-                <ion-row>
-                  <ion-col size="3"><ion-button expand="block" fill="outline" :aria-label="T('W górę', 'Move up')" :disabled="zajety" @click="U.dzialRuch(x.id, true)"><ion-icon slot="icon-only" :icon="arrowUp"></ion-icon></ion-button></ion-col>
-                  <ion-col size="3"><ion-button expand="block" fill="outline" :aria-label="T('W dół', 'Move down')" :disabled="zajety" @click="U.dzialRuch(x.id, false)"><ion-icon slot="icon-only" :icon="arrowDown"></ion-icon></ion-button></ion-col>
-                  <ion-col size="12"><ion-button expand="block" fill="outline" :disabled="zajety" @click="U.dzialEdytuj(x.id)">{{ T('Edytuj', 'Edit') }}</ion-button></ion-col>
-                  <ion-col size="12"><ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.dzialUsun(x.id)">{{ T('Usuń pusty', 'Delete empty') }}</ion-button></ion-col>
-                </ion-row>
-              </ion-grid>
+              <div class="oest-rzad">
+          <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.dzialEdytuj(x.id)">{{ T('Edytuj', 'Edit') }}</ion-button>
+          <ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.dzialUsun(x.id)">{{ T('Usuń pusty', 'Delete empty') }}</ion-button>
+        </div>
             </template>
             <ion-item>
-              <ion-input fill="solid" id="qq-sectionName" :label="T('Nazwa działu', 'Section name')" label-placement="stacked" :maxlength="5000" :value="b.formDzial.nazwa" @ionInput="U.formDzial('name', $event.detail.value)"></ion-input>
+              <ion-input id="qq-sectionName" :label="T('Nazwa działu', 'Section name')" label-placement="stacked" :maxlength="5000" :value="b.formDzial.nazwa" @ionInput="U.formDzial('name', $event.detail.value)"></ion-input>
             </ion-item>
             <ion-item>
-              <ion-select fill="solid" id="qq-sectionParent" :label="T('Poddział należy do', 'Subsection belongs to')" label-placement="stacked" interface="popover" :value="b.formDzial.rodzic" @ionChange="U.formDzial('parentId', $event.detail.value)">
+              <ion-select id="qq-sectionParent" :label="T('Poddział należy do', 'Subsection belongs to')" label-placement="stacked" interface="popover" :value="b.formDzial.rodzic" @ionChange="U.formDzial('parentId', $event.detail.value)">
                 <ion-select-option :value="U.X0">{{ T('Brak — dział główny', 'None — main section') }}</ion-select-option>
                 <ion-select-option v-for="x in b.dzialy" :key="x.id" :value="x.id">{{ x.nazwa }}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item lines="none">
-              <ion-button id="qqSectionSave" :disabled="zajety" @click="U.dzialZapisz()">{{ T('Zapisz dział', 'Save section') }}</ion-button>
-            </ion-item>
+            <ion-button expand="block" id="qqSectionSave" :disabled="zajety" @click="U.dzialZapisz()">{{ T('Zapisz dział', 'Save section') }}</ion-button>
           </div>
         </ion-accordion>
       </ion-accordion-group>
@@ -71,17 +61,15 @@
 
     <ion-card>
       <ion-accordion-group>
-        <ion-accordion value="skala">
+        <ion-accordion toggle-icon-slot="start" value="skala">
           <ion-item slot="header">
             <ion-label>{{ T('Nazwy poziomów skali', 'Scale level names') }}</ion-label>
           </ion-item>
           <div slot="content">
             <ion-item v-for="k in ['A', 'B', 'C', 'D', 'NA']" :key="k">
-              <ion-input fill="solid" :id="'qq-scale-' + k" :label="k" label-placement="stacked" :maxlength="5000" :value="b.skala[k]" @ionInput="U.skala(k, $event.detail.value)"></ion-input>
+              <ion-input :id="'qq-scale-' + k" :label="k" label-placement="stacked" :maxlength="5000" :value="b.skala[k]" @ionInput="U.skala(k, $event.detail.value)"></ion-input>
             </ion-item>
-            <ion-item lines="none">
-              <ion-button id="qqScaleSave" :disabled="zajety" @click="U.skalaZapisz()">{{ T('Zapisz nazwy skali', 'Save scale names') }}</ion-button>
-            </ion-item>
+            <ion-button expand="block" id="qqScaleSave" :disabled="zajety" @click="U.skalaZapisz()">{{ T('Zapisz nazwy skali', 'Save scale names') }}</ion-button>
           </div>
         </ion-accordion>
       </ion-accordion-group>
@@ -89,17 +77,15 @@
 
     <ion-card>
       <ion-accordion-group>
-        <ion-accordion value="json">
+        <ion-accordion toggle-icon-slot="start" value="json">
           <ion-item slot="header">
             <ion-label>{{ T('Wklej propozycje lub kopię JSON', 'Paste proposals or a JSON backup') }}</ion-label>
           </ion-item>
           <div slot="content">
             <ion-item>
-              <ion-textarea fill="solid" id="qqJSON" aria-label="JSON" :rows="5" :value="b.json" @ionInput="U.ustawJson($event.detail.value || '')"></ion-textarea>
+              <ion-textarea id="qqJSON" aria-label="JSON" :rows="5" :value="b.json" @ionInput="U.ustawJson($event.detail.value || '')"></ion-textarea>
             </ion-item>
-            <ion-item lines="none">
-              <ion-button id="qqPreviewImport" :disabled="zajety" @click="U.podgladImportu()">{{ T('Podgląd importu', 'Import preview') }}</ion-button>
-            </ion-item>
+            <ion-button expand="block" id="qqPreviewImport" :disabled="zajety" @click="U.podgladImportu()">{{ T('Podgląd importu', 'Import preview') }}</ion-button>
           </div>
         </ion-accordion>
       </ion-accordion-group>
@@ -117,14 +103,12 @@
         <p>{{ q.opis }}</p>
         <ion-chip v-for="(r, i) in q.powody" :key="i">{{ r }}</ion-chip>
       </ion-card-content>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12"><ion-button expand="block" :id="'qqEdit-' + q.id" fill="outline" :disabled="zajety" @click="U.edytuj(q.id)">{{ T('Edytuj', 'Edit') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" fill="outline" :disabled="zajety" @click="U.edytuj(q.id, true)">{{ T('Duplikuj', 'Duplicate') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" v-if="q.propozycja" fill="outline" :disabled="zajety" @click="U.zatwierdz(q.id)">{{ T('Zatwierdź', 'Approve') }}</ion-button></ion-col>
-          <ion-col size="12"><ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.usun(q.id)">{{ T('Usuń', 'Delete') }}</ion-button></ion-col>
-        </ion-row>
-      </ion-grid>
+      <div class="oest-rzad">
+          <ion-button expand="block" :id="'qqEdit-' + q.id" fill="outline" :disabled="zajety" @click="U.edytuj(q.id)">{{ T('Edytuj', 'Edit') }}</ion-button>
+          <ion-button expand="block" fill="outline" :disabled="zajety" @click="U.edytuj(q.id, true)">{{ T('Duplikuj', 'Duplicate') }}</ion-button>
+          <ion-button expand="block" v-if="q.propozycja" fill="outline" :disabled="zajety" @click="U.zatwierdz(q.id)">{{ T('Zatwierdź', 'Approve') }}</ion-button>
+          <ion-button expand="block" fill="outline" color="danger" :disabled="zajety" @click="U.usun(q.id)">{{ T('Usuń', 'Delete') }}</ion-button>
+        </div>
     </ion-card>
     <ion-item v-if="b.wiecej" lines="none">
       <ion-note>{{ T('Doprecyzuj filtr — pokazano 200 pytań.', 'Narrow the filter — 200 questions shown.') }}</ion-note>
@@ -133,7 +117,7 @@
 </template>
 
 <script setup>
-import { IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent, IonItem, IonLabel, IonNote, IonInput, IonTextarea, IonSelect, IonSelectOption, IonButton, IonIcon, IonChip, IonAccordionGroup, IonAccordion, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent, IonItem, IonLabel, IonNote, IonInput, IonTextarea, IonSelect, IonSelectOption, IonButton, IonIcon, IonChip, IonAccordionGroup, IonAccordion  } from '@ionic/vue';
 import { settingsOutline, arrowUp, arrowDown } from 'ionicons/icons';
 defineProps({ T: Function, b: Object, zajety: Boolean });
 const U = window.OESTQuestionsUI;

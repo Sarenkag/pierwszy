@@ -1,46 +1,47 @@
 <!-- Mój profil: dane, zdjęcie, podpis i grafik 4 on / 4 off z datą odniesienia (edytowalne dane profilu, nie stałe w kodzie).
      Dane i reguły: OESTSettingsUI.profilDane()/zapiszPola()/obrazWybierz()/obrazUsun()/grafikDane()/grafikDodaj() (app/www/settings-ui.js) – tu tylko komponenty Ionic. -->
 <template>
-  <div class="ion-padding">
+  <div class="ion-padding oest-ekran">
     <ion-card>
+      <div class="oest-rzad">
       <ion-item>
-        <ion-input fill="solid" id="profile-first" :label="T('Imię', 'First name')" label-placement="stacked" :value="f.first" @ionInput="zmien('first', $event.detail.value)"></ion-input>
+        <ion-input id="profile-first" :label="T('Imię', 'First name')" label-placement="stacked" :value="f.first" @ionInput="zmien('first', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="profile-last" :label="T('Nazwisko', 'Last name')" label-placement="stacked" :value="f.last" @ionInput="zmien('last', $event.detail.value)"></ion-input>
+        <ion-input id="profile-last" :label="T('Nazwisko', 'Last name')" label-placement="stacked" :value="f.last" @ionInput="zmien('last', $event.detail.value)"></ion-input>
+      </ion-item>
+      </div>
+      <div class="oest-rzad">
+      <ion-item>
+        <ion-input id="profile-title" :label="T('Tytuł', 'Title')" label-placement="stacked" :placeholder="T('Mr, Mrs, Dr…', 'Mr, Mrs, Dr…')" :value="f.title" @ionInput="zmien('title', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="profile-title" :label="T('Tytuł', 'Title')" label-placement="stacked" :placeholder="T('Mr, Mrs, Dr…', 'Mr, Mrs, Dr…')" :value="f.title" @ionInput="zmien('title', $event.detail.value)"></ion-input>
+        <ion-input id="profile-position" :label="T('Stanowisko', 'Position')" label-placement="stacked" :value="f.position" @ionInput="zmien('position', $event.detail.value)"></ion-input>
+      </ion-item>
+      </div>
+      <ion-item>
+        <ion-input id="profile-workplace" :label="T('Główne miejsce pracy', 'Main workplace')" label-placement="stacked" :value="f.workplace" @ionInput="zmien('workplace', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="profile-position" :label="T('Stanowisko', 'Position')" label-placement="stacked" :value="f.position" @ionInput="zmien('position', $event.detail.value)"></ion-input>
+        <ion-input id="profile-companyEmail" type="email" :label="T('Mój firmowy e-mail', 'My work email')" label-placement="stacked" :value="f.companyEmail" @ionInput="zmien('companyEmail', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="profile-workplace" :label="T('Główne miejsce pracy', 'Main workplace')" label-placement="stacked" :value="f.workplace" @ionInput="zmien('workplace', $event.detail.value)"></ion-input>
+        <ion-input id="profile-privateEmail" type="email" :label="T('Mój prywatny e-mail', 'My private email')" label-placement="stacked" :value="f.privateEmail" @ionInput="zmien('privateEmail', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="profile-companyEmail" type="email" :label="T('Mój firmowy e-mail', 'My work email')" label-placement="stacked" :value="f.companyEmail" @ionInput="zmien('companyEmail', $event.detail.value)"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input fill="solid" id="profile-privateEmail" type="email" :label="T('Mój prywatny e-mail', 'My private email')" label-placement="stacked" :value="f.privateEmail" @ionInput="zmien('privateEmail', $event.detail.value)"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input fill="solid" id="profile-formSignature" :label="T('Podpis tekstowy w formularzach', 'Printed name in forms')" label-placement="stacked" :value="f.formSignature" @ionInput="zmien('formSignature', $event.detail.value)"></ion-input>
+        <ion-input id="profile-formSignature" :label="T('Podpis tekstowy w formularzach', 'Printed name in forms')" label-placement="stacked" :value="f.formSignature" @ionInput="zmien('formSignature', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item lines="none">
-        <ion-note>{{ T('Wpisz dokładnie np. G. S., G Sarna', 'Type exactly how it should appear,') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('lub pełne imię i nazwisko.', 'e.g. G. S. or G Sarna.') }}</ion-note>
+        <ion-note>{{ T('Wpisz dokładnie np. G. S., G Sarna lub pełne imię i nazwisko.', 'Type exactly how it should appear, e.g. G. S. or G Sarna.') }}</ion-note>
       </ion-item>
       <ion-item>
-        <ion-select fill="solid" id="profile-language" :label="T('Język apki (domyślny)', 'App language (default)')" label-placement="stacked" interface="popover" :value="f.language" @ionChange="zmien('language', $event.detail.value)">
+        <ion-select id="profile-language" :label="T('Język apki (domyślny)', 'App language (default)')" label-placement="stacked" interface="popover" :value="f.language" @ionChange="zmien('language', $event.detail.value)">
           <ion-select-option value="pl">Polski</ion-select-option>
           <ion-select-option value="en">English</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item lines="none">
-        <ion-note>{{ T('Po zapisaniu profilu to język całej apki. PL/EN u góry przełącza tylko do zamknięcia apki.', 'After saving your profile this is the language of the whole app. PL/EN at the top switches only until the app is closed.') }}</ion-note>
+        <ion-note class="oest-linie3">{{ T('Po zapisaniu profilu to język całej apki. PL/EN u góry przełącza tylko do zamknięcia apki.', 'After saving your profile this is the language of the whole app. PL/EN at the top switches only until the app is closed.') }}</ion-note>
       </ion-item>
     </ion-card>
     <ion-card>
@@ -54,7 +55,7 @@
     <ion-card>
       <ion-list-header>{{ T('Podpis odręczny — opcjonalnie', 'Handwritten signature — optional') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-note>{{ T('Na przyszłość; nie jest automatycznie dodawany do formularzy. Przyjmujemy PNG z przezroczystym tłem.', 'For future use; not automatically added to forms. Use a PNG with a transparent background.') }}</ion-note>
+        <ion-note class="oest-linie3">{{ T('Na przyszłość; nie jest automatycznie dodawany do formularzy. Przyjmujemy PNG z przezroczystym tłem.', 'For future use; not automatically added to forms. Use a PNG with a transparent background.') }}</ion-note>
       </ion-item>
       <ion-item v-if="d.podpis" lines="none">
         <ion-img :src="d.podpis" :alt="T('Podpis', 'Signature')"></ion-img>
@@ -77,26 +78,25 @@
           </ion-label>
         </ion-item>
       </template>
-      <template v-else>
-      <ion-item lines="none">
-        <ion-note>{{ T('Nie ustawiono grafiku.', 'No schedule yet.') }}</ion-note>
+      <ion-item v-else lines="none">
+        <ion-note>{{ T('Nie ustawiono grafiku. Każda zmiana dostaje własną datę obowiązywania.', 'No schedule yet. Each change has its own effective date.') }}</ion-note>
       </ion-item>
-      <ion-item lines="none">
-        <ion-note>{{ T('Każda zmiana dostaje własną datę obowiązywania.', 'Each change has its own effective date.') }}</ion-note>
-      </ion-item>
-      </template>
       <ion-list-header>{{ T('Dodaj nową wersję grafiku', 'Add a schedule version') }}</ion-list-header>
-      <component :is="PoleDaty" :T="T" id="shiftEffective" :label="T('Obowiązuje od', 'Effective from')" :value="ng.od" @zmiana="ng.od = $event"></component>
+      <div class="oest-rzad">
+        <component :is="PoleDaty" :T="T" id="shiftEffective" :label="T('Obowiązuje od', 'Effective from')" :value="ng.od" @zmiana="ng.od = $event"></component>
       <component :is="PoleDaty" :T="T" id="shiftAnchor" :label="T('Początek cyklu', 'Cycle anchor')" :value="ng.cykl" @zmiana="ng.cykl = $event"></component>
+      </div>
       <ion-item>
-        <ion-select fill="solid" id="shiftKind" :label="T('Układ pracy', 'Pattern')" label-placement="stacked" interface="popover" :value="ng.uklad" @ionChange="ng.uklad = $event.detail.value">
+        <ion-select id="shiftKind" :label="T('Układ pracy', 'Pattern')" label-placement="stacked" interface="popover" :value="ng.uklad" @ionChange="ng.uklad = $event.detail.value">
           <ion-select-option value="weekdays">{{ T('Poniedziałek–piątek', 'Monday–Friday') }}</ion-select-option>
           <ion-select-option value="weekends">{{ T('Weekendy', 'Weekends') }}</ion-select-option>
           <ion-select-option value="4on4">4 on / 4 off</ion-select-option>
         </ion-select>
       </ion-item>
-      <component :is="PoleDaty" :T="T" id="shiftFrom" rodzaj="godzina" :label="T('Od godziny', 'Start time')" :value="ng.start" @zmiana="ng.start = $event"></component>
+      <div class="oest-rzad">
+        <component :is="PoleDaty" :T="T" id="shiftFrom" rodzaj="godzina" :label="T('Od godziny', 'Start time')" :value="ng.start" @zmiana="ng.start = $event"></component>
       <component :is="PoleDaty" :T="T" id="shiftTo" rodzaj="godzina" :label="T('Do godziny', 'End time')" :value="ng.koniec" @zmiana="ng.koniec = $event"></component>
+      </div>
       <ion-item>
         <ion-toggle id="shiftNextDay" :checked="ng.nastepny" @ionChange="ng.nastepny = $event.detail.checked">{{ T('Koniec następnego dnia', 'Ends on the following day') }}</ion-toggle>
       </ion-item>

@@ -4,8 +4,10 @@
      Wartość: 'RRRR-MM-DD' (rodzaj „data”, domyślny) albo 'GG:MM' (rodzaj „godzina”). Zdarzenie „zmiana” dostaje ten sam format. -->
 <template>
   <ion-item>
-    <ion-label>{{ label }}</ion-label>
-    <ion-datetime-button :datetime="id"></ion-datetime-button>
+    <div class="oest-pole">
+      <ion-label>{{ label }}</ion-label>
+      <ion-datetime-button :datetime="id"></ion-datetime-button>
+    </div>
     <ion-modal ref="okno" :keep-contents-mounted="true">
       <ion-datetime :id="id" :presentation="rodzaj === 'godzina' ? 'time' : 'date'" :value="wartosc" :locale="T('pl-PL', 'en-GB')" :first-day-of-week="1" :show-default-buttons="true" :done-text="T('Gotowe', 'Done')" :cancel-text="T('Anuluj', 'Cancel')" @ionChange="zmien($event.detail.value)" @ionCancel="zamknij"></ion-datetime>
     </ion-modal>

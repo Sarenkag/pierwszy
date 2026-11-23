@@ -1,8 +1,8 @@
 <!-- Kalendarz i grafik (Ustawienia): kalendarz grafiku (SMART WORK), odczyt grafiku, kalendarz inspekcji PPM, synchronizacja.
      Dane i akcje: OESTCalendarUI.* (app/www/calendar-ui.js), zapis pól: OESTSettingsUI.zapiszPola() – tu tylko komponenty Ionic. -->
 <template>
-  <div class="ion-padding">
-    <ion-note>{{ T('Grafik zmian ustawiasz w Mój profil → Mój grafik.', 'Set your shifts in My profile → My shifts.') }}</ion-note>
+  <div class="ion-padding oest-ekran">
+    <ion-note class="oest-status">{{ T('Grafik zmian ustawiasz w Mój profil → Mój grafik.', 'Set your shifts in My profile → My shifts.') }}</ion-note>
     <ion-card>
       <ion-list-header>{{ T('Grafik zmian · SMART WORK', 'Shifts · SMART WORK') }}</ion-list-header>
       <ion-item lines="none">
@@ -14,7 +14,7 @@
       <ion-button id="calShiftList" expand="block" fill="outline" :disabled="zajety" @click="listaGrafiku">{{ T('Wybierz kalendarz grafiku', 'Choose shift calendar') }}</ion-button>
       <template v-if="grafik">
         <ion-item v-if="grafik.length">
-          <ion-select fill="solid" id="shiftChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="grafikWybor" @ionChange="grafikWybor = $event.detail.value">
+          <ion-select id="shiftChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="grafikWybor" @ionChange="grafikWybor = $event.detail.value">
             <ion-select-option v-for="o in grafik" :key="o.id" :value="o.id">{{ o.tekst }}</ion-select-option>
           </ion-select>
         </ion-item>
@@ -31,7 +31,7 @@
     <ion-card>
       <ion-list-header>{{ T('Inspekcje PPM · Google Calendar', 'PPM inspections · Google Calendar') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-note>{{ T('Wybierz kalendarz na terminy inspekcji, np. „OEST Inspekcje”. Apka dodaje tam tylko swoje wpisy i nigdy nie zmienia Twoich. Przy zmianie kalendarza wpisy apki znikają ze starego.', 'Choose a calendar for inspection dates, e.g. “OEST Inspekcje”. The app adds only its own entries and never changes yours. When you switch calendars, the app’s entries are removed from the old one.') }}</ion-note>
+        <ion-note class="oest-linie5">{{ T('Wybierz kalendarz na terminy inspekcji, np. „OEST Inspekcje”. Apka dodaje tam tylko swoje wpisy i nigdy nie zmienia Twoich. Przy zmianie kalendarza wpisy apki znikają ze starego.', 'Choose a calendar for inspection dates, e.g. “OEST Inspekcje”. The app adds only its own entries and never changes yours. When you switch calendars, the app’s entries are removed from the old one.') }}</ion-note>
       </ion-item>
       <ion-item lines="none">
         <ion-label>{{ T('Synchronizacja:', 'Sync:') }} {{ d.inspekcje.wlaczona ? T('włączona', 'enabled') : T('wyłączona', 'disabled') }} · {{ d.inspekcje.konto }}<template v-if="d.inspekcje.nazwa"> · {{ d.inspekcje.nazwa }}</template></ion-label>
@@ -40,7 +40,7 @@
       <template v-if="insp">
         <template v-if="insp.length">
           <ion-item>
-            <ion-select fill="solid" id="calendarChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="inspWybor" @ionChange="inspWybor = $event.detail.value">
+            <ion-select id="calendarChoice" :label="T('Konto / kalendarz', 'Account / calendar')" label-placement="stacked" interface="popover" :value="inspWybor" @ionChange="inspWybor = $event.detail.value">
               <ion-select-option v-for="o in insp" :key="o.id" :value="o.id">{{ o.tekst }}</ion-select-option>
             </ion-select>
           </ion-item>
@@ -60,17 +60,17 @@
         <ion-toggle :checked="f.shiftMarkers" @ionChange="zmien('shiftMarkers', $event.detail.checked)">{{ T('Znaczniki zmian z profilu (w wybranym kalendarzu)', 'Profile shift markers (in the selected calendar)') }}</ion-toggle>
       </ion-item>
       <ion-item>
-        <ion-input fill="solid" id="calWeeks" type="number" min="1" max="52" :label="T('Zakres tygodni', 'Weeks ahead')" label-placement="stacked" :value="f.weeks" @ionInput="zmien('weeks', $event.detail.value)"></ion-input>
+        <ion-input id="calWeeks" type="number" min="1" max="52" :label="T('Zakres tygodni', 'Weeks ahead')" label-placement="stacked" :value="f.weeks" @ionInput="zmien('weeks', $event.detail.value)"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select fill="solid" id="calWorkdayMode" :label="T('Dni wolne według profilu', 'Profile days off')" label-placement="stacked" interface="popover" :value="f.workdayMode" @ionChange="zmien('workdayMode', $event.detail.value)">
+        <ion-select id="calWorkdayMode" :label="T('Dni wolne według profilu', 'Profile days off')" label-placement="stacked" interface="popover" :value="f.workdayMode" @ionChange="zmien('workdayMode', $event.detail.value)">
           <ion-select-option value="all">{{ T('Wszystkie dni', 'All days') }}</ion-select-option>
           <ion-select-option value="skip">{{ T('Pomiń dni wolne', 'Skip days off') }}</ion-select-option>
           <ion-select-option value="next">{{ T('Przenieś na następny dzień pracy', 'Move to next workday') }}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item>
-        <ion-select fill="solid" id="calGroups" :multiple="true" :label="T('Grupy inspekcji', 'Inspection groups')" label-placement="stacked" interface="popover" :value="f.groups" @ionChange="zmien('groups', $event.detail.value)">
+        <ion-select id="calGroups" :multiple="true" :label="T('Grupy inspekcji', 'Inspection groups')" label-placement="stacked" interface="popover" :value="f.groups" @ionChange="zmien('groups', $event.detail.value)">
           <ion-select-option value="fire">{{ T('Pożarowe', 'Fire') }}</ion-select-option>
           <ion-select-option value="water">{{ T('Woda', 'Water') }}</ion-select-option>
           <ion-select-option value="elec">{{ T('Elektryka', 'Electrical') }}</ion-select-option>
