@@ -29,7 +29,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 1 });
     await ctx.addInitScript(a => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', a); }, JSON.stringify(ACCOUNT));
     const p = await ctx.newPage(); p.on('pageerror', e => errors.push(e.message));
-    await p.goto(url + '/#home'); await p.locator('#hmLang').waitFor();
+    await p.goto(url + '/#home'); await p.locator('#oest-szkielet .oest-jezyk ion-button').first().waitFor(); // ekran główny (Ionic + Vue) gotowy
     // dane jak po wysłaniu: profil z adresami, 3 raporty (Word z tekstem i zdjęciem) + 1 cudzy
     await p.evaluate(async png => {
       OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; s.profile.privateEmail = 'me@home.com'; return s; });
@@ -73,11 +73,11 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     // PL/EN: tekst się zmienia, wpisane szukanie zostaje, układ nie skacze
     const box = () => p.evaluate(() => { const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)].join(','); }; return [r('#rptQ'), r('#rptB'), r('#rptList .k2')].join('|'); });
     const plBox = await box();
-    await p.locator('#v-settings [data-action=language]').click(); await p.waitForTimeout(250);
+    await p.locator('ion-toolbar ion-buttons[slot=end] ion-button').last().click(); /* PL/EN w pasku ramy (Raporty na Ionic + Vue) */ await p.waitForTimeout(250);
     ok(await p.inputValue('#rptQ') === 'ats', 'EN: wpisane szukanie zostaje');
     ok(/Code, building/.test(await p.getAttribute('#rptQ', 'placeholder')) && /Waiting for Drive/.test(await p.locator('#rptList').innerText()), 'EN: teksty po angielsku');
     ok(await box() === plBox, 'PL/EN: pole szukania, wybór budynku i klocek w tym samym miejscu');
-    await p.locator('#v-settings [data-action=language]').click(); await p.waitForTimeout(250);
+    await p.locator('ion-toolbar ion-buttons[slot=end] ion-button').last().click(); /* PL/EN w pasku ramy (Raporty na Ionic + Vue) */ await p.waitForTimeout(250);
     await p.fill('#rptQ', '');  await p.waitForTimeout(80);
 
     // podgląd i Wyślij
@@ -112,7 +112,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     await p.locator('.oest-ask [data-a=no]').click();
     ok((await p.evaluate(() => window.__q.length)) === 2, 'Zamknij nic nie wysyła');
     // szukanie to nie zmiana ustawień: Wstecz bez pytania o niezapisane zmiany
-    await p.fill('#rptQ', 'flush'); await p.locator('#v-settings .top .back').click(); await p.waitForTimeout(250);
+    await p.fill('#rptQ', 'flush'); await p.locator('ion-back-button[data-nav="up"]').click(); /* strzałka ‹ ramy */ await p.waitForTimeout(250);
     ok(await p.locator('.oest-ask').count() === 0 && /#settings$/.test(p.url()), 'po szukaniu Wstecz bez „niezapisanych zmian”');
 
     assert.deepEqual(errors, [], 'błędy strony');
