@@ -31,7 +31,6 @@
     [['Kadruj', 'Crop'], [['crop', ['Kadruj', 'Crop']]]]];
   function UI() { if (!root.OESTCzesci) throw Error(root.OESTT('Brak szkieletu apki (moduly/szkielet).', 'App skeleton missing (moduly/szkielet).')); return root.OESTCzesci; }
   // kontroler dla części Vue: dane() → zwykły obiekt, na(fn) → wyłącz; fn dostaje dane() po każdej zmianie
-  function sluchacze(dane) { var subs = []; return { na: function (fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; }, emit: function () { var x = dane(); subs.slice().forEach(function (f) { try { f(x); } catch (e) { console.error(e); } }); } }; }
 
   /* Rysuje jeden kształt na kontekście g; k = skala z „współrzędnych zdjęcia” do pikseli płótna. */
   function drawShape(g, sh, k) {
@@ -90,7 +89,7 @@
             grupy: TOOL_GROUPS.map(function (gr) { return { podpis: TT(gr[0]), narzedzia: gr[1].map(function (t) { return { k: t[0], etykieta: TT(t[1]) }; }) }; }),
             kolory: COLORS.slice(), grubosci: WIDTHS.map(function (w) { return { k: w.k, v: w.v, etykieta: root.OESTT('Grubość', 'Width') + ' ' + w.k }; }), etykietaKoloru: root.OESTT('Kolor', 'Colour') };
         }
-        var S = sluchacze(dane);
+        var S = UI().sluchacze(dane);
         function fit() {
           if (!cv || !stage) return;
           var r = stage.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -225,7 +224,7 @@
       return new Promise(function (done) {
         var cur = blob, url = '', msg = '', busy = false, koniec = false;
         function dane() { return { url: url, komunikat: msg, zajety: busy, koniec: koniec }; }
-        var S = sluchacze(dane);
+        var S = UI().sluchacze(dane);
         function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); if (opts && typeof opts.prepare === 'function') try { opts.prepare(cur); } catch (_) {} S.emit(); }
         function close(r) { if (koniec) return; koniec = true; if (url) URL.revokeObjectURL(url); S.emit(); done(r); }
         var ctrl = {

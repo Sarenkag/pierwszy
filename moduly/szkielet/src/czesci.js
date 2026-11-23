@@ -8,6 +8,7 @@
 //   OESTCzesci.plotno(w, h)                          niewidoczne płótno do obróbki zdjęcia w pamięci (aparat, odczyt)
 //   OESTCzesci.ladowanie.show(tekst) / .hide() / .inline(el, tekst) / .ring()   kółko „pracuję” (ion-loading / ion-spinner)
 //   OESTCzesci.okno(nazwa, kontroler, o)             OESTOkna.okno z częścią i kontrolerem (lista notatek, propozycja, odczyt)
+//   OESTCzesci.sluchacze(dane)                       { na, emit } dla kontrolera modułu (emit = powiadom część Vue o nowych danych)
 import { createApp, h, markRaw } from 'vue';
 import { modalController, loadingController, IonSpinner } from '@ionic/vue';
 import Aparat from './czesci/Aparat.vue';
@@ -81,7 +82,15 @@ export function zainstaluj(w, OESTOkna, T) {
     css() {}
   };
 
-  const OESTCzesci = { pokaz, okno, montuj, plotno, ladowanie: ladowanieApi };
+  // słuchacze kontrolera: { na(fn) → wyłącz, emit() } – emit podaje słuchaczom świeże dane() (jedno miejsce dla wszystkich modułów)
+  function sluchacze(dane) {
+    let subs = [];
+    return {
+      na(fn) { subs.push(fn); return () => { subs = subs.filter(f => f !== fn); }; },
+      emit() { const x = dane(); subs.slice().forEach(f => { try { f(x); } catch (e) { console.error(e); } }); }
+    };
+  }
+  const OESTCzesci = { pokaz, okno, montuj, plotno, sluchacze, ladowanie: ladowanieApi };
   w.OESTCzesci = OESTCzesci;
   return OESTCzesci;
 }

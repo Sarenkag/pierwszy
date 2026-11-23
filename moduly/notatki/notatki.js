@@ -206,7 +206,6 @@
     });
   }
   // kontroler dla części Vue (szkielet Ionic): dane() → zwykły obiekt, na(fn) → wyłącz; fn dostaje dane() po każdej zmianie
-  function sluchacze(dane) { var subs = []; return { na: function (fn) { subs.push(fn); return function () { subs = subs.filter(function (f) { return f !== fn; }); }; }, emit: function () { var x = dane(); subs.slice().forEach(function (f) { try { f(x); } catch (e) { console.error(e); } }); } }; }
   function UI() { if (!w.OESTCzesci) throw Error(w.OESTT('Brak szkieletu apki (moduly/szkielet).', 'App skeleton missing (moduly/szkielet).')); return w.OESTCzesci; }
   // okienko z propozycją (część NotatkiPropozycja.vue): można poprawić; „Wstaw” oddaje tekst (nic nie wstawia samo), „Anuluj” = null
   function offer(scope, o) {
@@ -217,7 +216,7 @@
       var warnNow = function () { var m = missing(r.src, tekst); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ ostrz = m.length ? w.OESTT('W propozycji brakuje: ', 'Missing in the suggestion: ') + m.join(', ') + w.OESTT(' — sprawdź.', ' — check.') : ''; };
       warnNow();
       var dane = function () { return { naglowek: w.OESTT('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.'), tekst: tekst, ostrzezenie: ostrz }; };
-      var S = sluchacze(dane);
+      var S = UI().sluchacze(dane);
       var ctrl = { dane: dane, na: S.na, akcja: function (a, v) { if (a === 'tekst') { tekst = String(v == null ? '' : v); warnNow(); S.emit(); } } };
       return UI().okno('NotatkiPropozycja', ctrl, { tytul: o.title || w.OESTT('Połącz notatki', 'Combine notes'), ok: o.ok || w.OESTT('Wstaw', 'Insert'), anuluj: w.OESTT('Anuluj', 'Cancel') })
         .then(function (res) { return res && res.ok && (!o.alive || o.alive()) ? tekst.trim() : null; });
@@ -239,7 +238,7 @@
       return { ikonyTryb: !!o.icons, widoczny: !!m.scope(), n: st.n, polacz: st.polacz, ikony: st.ikony, dodaje: st.dodaje, laczy: st.laczy, bezNagrywania: st.bezNagrywania,
         napisPolacz: String(o.join || w.OESTT('Połącz notatki', 'Combine notes')).replace(/^✨\s*/, '') }; // ikona zamiast emoji (część Vue)
     };
-    var S = sluchacze(m.dane); m.na = S.na;
+    var S = UI().sluchacze(m.dane); m.na = S.na;
     m.refresh = function () {
       var k = m.scope(); if (m.box) m.box.hidden = !k; S.emit(); if (!k) return Promise.resolve();
       return summary(k).then(function (r) { if (k !== m.scope()) return; st.n = r.all; st.polacz = r.ready > 0; S.emit(); return o.icons ? list(k) : null; })
@@ -295,7 +294,7 @@
   function write(scope, ctx) {
     var tekst = '';
     var dane = function () { return { naglowek: w.OESTT('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.'), tekst: tekst }; };
-    var S = sluchacze(dane);
+    var S = UI().sluchacze(dane);
     var ctrl = { dane: dane, na: S.na, akcja: function (a, v) { if (a === 'tekst') { tekst = String(v == null ? '' : v); S.emit(); } } };
     return UI().okno('NotatkaNowa', ctrl, { tytul: w.OESTT('Nowa notatka', 'New note'), ok: w.OESTT('Zapisz', 'Save'), anuluj: w.OESTT('Anuluj', 'Cancel') })
       .then(function (r) { var t = tekst.trim(); return r && r.ok && t ? addText(scope, ctx, t) : null; });
@@ -346,7 +345,7 @@
       });
       return d;
     }
-    var S = sluchacze(dane);
+    var S = UI().sluchacze(dane);
     function draw() {
       if (editing) { S.emit(); return; }
       S.emit();
