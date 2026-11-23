@@ -5,4 +5,5 @@ import OAplikacji from './OAplikacji.vue';
 import Synchronizacja from './Synchronizacja.vue';
 import Poczta from './Poczta.vue';
 import Kontakty from './Kontakty.vue';
-export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty };
+import Dysk from './Dysk.vue';
+export const EKRANY_VUE = { settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk };

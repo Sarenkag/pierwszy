@@ -4,16 +4,8 @@
   "note": "Plan audytu 19/11/2026 punkt 1.6: ekrany, których wygląd ZMIENIA bieżący PR (zrzuty-ui-check.cjs porównuje piksel w piksel z main). Wpis tylko za zgodą właściciela na zmianę wyglądu tego ekranu (DESIGN-SYSTEM.md: żadnego samowolnego przeprojektowania). Po scaleniu następny PR musi wpisy usunąć – lista dotyczy tylko jednej zmiany.",
   "entries": [
     {
-      "id": "settings/sync",
-      "reason": "Przycisk główny (ion-button) w gradiencie z poświatą Grzegorza – jego wybór na karcie 23/11/2026 (cmsg_01XEAk2s9PJV8mCFfCy1yHHTL8zCmDhBv4XZ6N7ZTQxy2m); scalenie tylko po jego „tak” do tego PR."
-    },
-    {
-      "id": "settings/mail",
-      "reason": "Przycisk główny (ion-button) w gradiencie z poświatą Grzegorza – jego wybór na karcie 23/11/2026 (cmsg_01XEAk2s9PJV8mCFfCy1yHHTL8zCmDhBv4XZ6N7ZTQxy2m); scalenie tylko po jego „tak” do tego PR."
-    },
-    {
-      "id": "settings/contacts",
-      "reason": "Przycisk główny (ion-button) w gradiencie z poświatą Grzegorza – jego wybór na karcie 23/11/2026 (cmsg_01XEAk2s9PJV8mCFfCy1yHHTL8zCmDhBv4XZ6N7ZTQxy2m); scalenie tylko po jego „tak” do tego PR."
+      "id": "settings/drive",
+      "reason": "Ekran Google Drive i kopia przeniesiony na Ionic + Vue (decyzja Grzegorza 21/11/2026: cała apka na Ionic + Vue, wątek „Oprzeć apkę na Ionic i Vue”); scalenie tylko po jego „tak” do tego PR."
     }
   ]
 }
