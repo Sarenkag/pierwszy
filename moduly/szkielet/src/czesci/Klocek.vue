@@ -1,4 +1,4 @@
-<!-- Klocek listy – JEDEN w całej apce (Grzegorz 04/11 i 07/11/2026): inspekcje, dzień w Kalendarzu, Reactive, grupy, raporty.
+<!-- Klocek listy – JEDEN w całej apce (Grzegorz 04/11 i 07/11/2026; 23/11: linia 1 = cała nazwa, pigułka statusu w linii 2): inspekcje, dzień w Kalendarzu, Reactive, grupy, raporty.
      Każde miejsce stałe; lista tylko podaje dane (zwykły obiekt z modułu), klocek niczego nie liczy:
        { id, nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
          opis, termin: { tekst, ton: ''|'jutro'|'red' }, procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
@@ -10,11 +10,12 @@
       <ion-thumbnail v-if="k.miniatura" slot="start"><img :src="k.miniatura" alt=""></ion-thumbnail>
       <ion-label :color="k.przygaszony ? 'medium' : undefined">
         <h2 class="ion-text-nowrap">{{ k.nazwa }}</h2>
-        <p v-if="k.znak || k.czestotliwosc || k.formularz || k.opis">
+        <p v-if="k.znak !== undefined || k.czestotliwosc || k.formularz || k.opis || k.status">
           <ion-badge v-if="k.znak !== undefined" color="light">{{ k.znak || '—' }}</ion-badge>
           <template v-if="k.czestotliwosc"> <ion-icon :icon="I.czest" aria-hidden="true"></ion-icon> {{ k.czestotliwosc }}</template>
           <template v-if="k.formularz"> <ion-icon :icon="I.dokument" :color="FORM[k.formularz]" :aria-label="T('Zdjęcie formularza', 'Form photo')"></ion-icon></template>
           <template v-if="k.opis"> {{ k.opis }}</template>
+          <template v-if="k.status"> <Pigulka :T="T" :tryb="k.status.tryb" :tekst="k.status.tekst" :ton="k.status.ton"></Pigulka></template>
         </p>
         <p v-if="k.termin || (k.ikony && k.ikony.length)">
           <template v-if="k.termin"><ion-icon :icon="I.termin" aria-hidden="true"></ion-icon> <ion-text :color="TERMIN[k.termin.ton || '']">{{ k.termin.tekst }}</ion-text></template>
@@ -22,7 +23,6 @@
         </p>
       </ion-label>
       <ion-note v-if="k.akcja" slot="end">{{ k.akcja }}</ion-note>
-      <Pigulka v-if="k.status" slot="end" :T="T" :tryb="k.status.tryb" :tekst="k.status.tekst" :ton="k.status.ton"></Pigulka>
     </ion-item>
     <ion-progress-bar v-if="k.procent != null" :value="(k.procent || 0) / 100" :color="k.procent >= 100 ? 'success' : 'primary'"></ion-progress-bar>
   </ion-card>
