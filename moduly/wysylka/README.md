@@ -9,6 +9,9 @@ Samodzielny moduł do każdej apki OEST. Wysyła raporty z kolejki prosto z Gmai
    `{ id, created, acct, code, name, to, subject, body, pdf: Uint8Array, docx: Uint8Array, status: "wait" }`.
    Po zapisaniu wywołaj `OESTSender.run({ login: true })`.
    Prościej: `OESTSender.enqueue({ type, code, name, subject, body, pdf, docx })` — sam uzupełni id, konto i status i uruchomi wysyłkę.
+4. Pasek na dole rysuje szkielet Ionic (`moduly/szkielet/src/czesci/PasekWysylki.vue`, w stopce ramy; na osobnej stronie w `<div id="oest-stopka">`).
+   Moduł daje tylko dane: `OESTSender.stan()` → `{ widoczny, ton, tekst, opis, przyciski: [{ a, tekst, glowny }], postep, siec: { stan, tekst }, otwarty }`
+   i zdarzenie window `oest:wysylka` (detail = ten obiekt) po każdej zmianie. Przyciski paska: `OESTSender.akcja(a)` (`toggle`, `send`, `data`, `retry`, `share`, `queue`).
 
 ## Wymagania po stronie Google Cloud
 - Gmail API włączone; klient OAuth (Android + Web) jak w `app/README.md`.

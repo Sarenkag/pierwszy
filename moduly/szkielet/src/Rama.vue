@@ -1,7 +1,7 @@
 <!-- Rama ekranu OEST (standard Ionic md): nagłówek pod paskiem telefonu (edge-to-edge), jedna przewijana treść, stopka z paskiem
      wysyłki poza przewijaniem. Ekran na Vue dostaje pasek narzędzi Ionic; ekran jeszcze w starym kodzie – sam pas pod godziną
      (jego nagłówek .top zostaje do przeniesienia); ekran główny i logowanie – bez pasa, tło apki pod godziną.
-     Osobna strona (inspekcje, strona: true): tylko niewidoczny ion-app – Wstecz Androida i okienka, bez ramy. -->
+     Osobna strona (inspekcje, strona: true): tylko niewidoczny ion-app – Wstecz Androida i okienka, bez ramy; pasek wysyłki w #oest-stopka strony. -->
 <template>
   <ion-app :class="{ 'ion-hide': strona }">
     <div v-if="!strona" class="ion-page">
@@ -19,18 +19,22 @@
       <ion-content ref="tresc">
         <component v-if="stan.komponent" :is="stan.komponent" :key="stan.trasa" :T="T" :wersja="stan.wersja"></component>
       </ion-content>
-      <ion-footer><div id="oest-stopka"></div></ion-footer>
+      <ion-footer><div id="oest-stopka"><PasekWysylki :T="T"></PasekWysylki></div></ion-footer>
     </div>
   </ion-app>
+  <Teleport v-if="stopkaStrony" :to="stopkaStrony"><ion-footer><PasekWysylki :T="T"></PasekWysylki></ion-footer></Teleport>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import PasekWysylki from './czesci/PasekWysylki.vue';
 import { IonApp, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent, IonFooter } from '@ionic/vue';
 const props = defineProps({ stan: Object, T: Function, strona: Boolean });
 const emit = defineEmits(['gotowe', 'jezyk']);
 const jezyk = computed(() => (props.stan.wersja, (window.OESTBledy && window.OESTBledy.lang ? window.OESTBledy.lang() : document.documentElement.lang) === 'en' ? 'en' : 'pl'));
 const tresc = ref(null);
+// osobna strona (inspekcje): pasek wysyłki w miejscu, które strona daje na dole (<div id="oest-stopka">), bo rama jest tam schowana
+const stopkaStrony = props.strona ? document.getElementById('oest-stopka') : null;
 // akcje paska ekranu na Vue (OESTRama.ustaw({ akcje: [{ ikona, etykieta, fn | nav }] })): ikony Ionicons; węzły DOM to akcje starych ekranów
 const akcjeVue = computed(() => (props.stan.akcje || []).filter(a => a && !(a instanceof Node)));
 onMounted(async () => {

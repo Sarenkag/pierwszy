@@ -57,7 +57,7 @@
   function polacz(kind){return akcja(async function(){await google.connect(kind);return {tekst:L('Połączono.','Connected.'),blad:false};});}
   function polaczenieSprawdz(kind){return google.ready?google.ready(kind).catch(function(){}):Promise.resolve();}
   function mailTest(){return akcja(async function(){var address=state().profile.companyEmail;if(!address)throw Error('EMAIL_INVALID');if(!await w.OESTPytaj(L('Wysłać jedną wiadomość TEST na ','Send one TEST message to ')+address+'?'))return null;var sent=await google.testMail(address);return {tekst:L('Gmail przyjął wiadomość TEST. ID: ','Gmail accepted the TEST message. ID: ')+sent.id,blad:false};});}
-  /* Raporty i zdjęcia (moduly/szkielet/src/ekrany/Raporty.vue): licznik archiwum raportów (moduly/raporty) i data na zdjęciach (moduly/zdjecia). Przeglądarkę raportów rysuje jej moduł (zdarzenie oest:raporty-ui). */
+  /* Raporty i zdjęcia (moduly/szkielet/src/ekrany/Raporty.vue): licznik archiwum raportów (moduly/raporty) i data na zdjęciach (moduly/zdjecia). Przeglądarka raportów: dane i akcje OESTRaportyUI (moduly/raporty/przegladarka.js). */
   // licznik archiwum: MB z limitu, ile czeka na Dysk; od progu ostrzeżenie (jak zdjęcia)
   function raportyLicznik(){var R=w.OESTRaporty;if(!R)return Promise.resolve({tekst:L('Archiwum raportów niedostępne.','Report archive unavailable.'),ostrzezenie:false});return R.stats().then(function(s){var mb=(s.bytes/1048576).toFixed(1);return {tekst:mb+' MB '+L('z','of')+' '+s.limitMB+' MB · '+s.count+L(' raportów',' reports')+' · '+L('czeka na Dysk: ','waiting for Drive: ')+s.pending+(s.warn?L(' · ponad '+s.warnMB+' MB',' · over '+s.warnMB+' MB'):''),ostrzezenie:!!s.warn};},function(e){return {tekst:err(e),ostrzezenie:false};});}
   function zdjeciaStempel(){var Z=w.OESTZdjecia;return Z?{jest:true,stempel:!!Z.settings().stamp}:{jest:false,stempel:false};}
@@ -120,8 +120,6 @@
     
     if(page==='vantify')vantifyPage();
   }
-  // licznik archiwum raportów (moduly/raporty): MB z limitu, ile czeka na Dysk; od 100 MB ostrzeżenie (jak zdjęcia)
-  // przeglądarka raportów (moduly/raporty/przegladarka.js) + licznik archiwum
   // Vantify (app/www/vantify-import.js rysuje się sam, także po zmianie języka; Ustawienia nie zależą od tego pliku)
   function vantifyPage(){try{w.dispatchEvent(new CustomEvent('oest:vantify-ui',{detail:document.getElementById('vantifyBox')}));}catch(e){}}
   function canLeave(){return !dirty||(w.OESTPrzycisk&&w.OESTPrzycisk.leave?w.OESTPrzycisk.leave(L('Masz niezapisane zmiany. Opuścić ekran?','You have unsaved changes. Leave this screen?'),()=>{dirty=false;}):w.confirm(L('Masz niezapisane zmiany. Opuścić ekran?','You have unsaved changes. Leave this screen?')));}

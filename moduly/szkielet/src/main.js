@@ -199,7 +199,9 @@ w.addEventListener('oest:lang', () => { if (!tryb) return; const t = stan.tytul,
 function montuj(zRama) {
   const host = d.createElement('div'); host.id = 'oest-szkielet';
   d.body.insertBefore(host, d.body.firstChild);
-  const app = createApp({ render: () => h(Rama, { stan, strona: !zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T }) });
+  // T dla ekranów Vue czyta stan.wersja: każdy tekst T('…','…') (także w slotach komponentów Ionic) odświeża się po zmianie PL/EN
+  const Tv = (pl, en) => (stan.wersja, T(pl, en));
+  const app = createApp({ render: () => h(Rama, { stan, strona: !zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T: Tv }) });
   app.use(IonicVue, { mode: 'md', hardwareBackButton: true, animated: true, swipeBackEnabled: false });
   app.use(router);
   app.mount(host);

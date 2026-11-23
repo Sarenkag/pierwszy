@@ -1,4 +1,4 @@
-/* Wysyłka raportów z kolejki prosto z Gmaila + pasek stanu na dole ekranu.
+/* Wysyłka raportów z kolejki prosto z Gmaila + stan paska na dole ekranu (pasek rysuje szkielet Ionic: czesci/PasekWysylki.vue).
    Działa na liście PPM i w inspekcjach (ta sama kolejka w IndexedDB „inspekcje”), więc raport leci dalej po powrocie do listy.
    Bez logowania Google w apce nic nie robi (wtedy inspekcje wysyłają przez „Udostępnij”). */
 (function (root) {
@@ -233,85 +233,56 @@
   function whenIdle() { return lock ? new Promise(function (r) { idle.push(r); }) : Promise.resolve(); }
   function say(t) { flash = t; clearTimeout(flashT); flashT = setTimeout(function () { flash = ""; render(); }, 4000); render(); }
 
-  // ---------- pasek ----------
-  // cienki pełny pasek przyklejony do dołu ekranu (pod appką, nieprzezroczysty); rozwinięcie otwiera się nad nim
-  var css = ":root{--oest-sbar-h:calc(30px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))}" +
-    ".oest-sbar{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-direction:column-reverse;background:rgba(14,18,40,.96);color:var(--ink,#eef1ff);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);" +
-    "border-top:1px solid var(--line,rgba(255,255,255,.12));padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));font:13px/1.2 var(--font-body,system-ui),sans-serif}" +
-    ".oest-sbar .r{display:flex;align-items:center;gap:8px;height:29px;padding:0 12px;cursor:pointer;white-space:nowrap}" +
-    ".oest-sbar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.oest-sbar .r>span:last-child{opacity:.6;font-size:11px}" +
-    ".oest-sbar .i{width:10px;height:10px;flex:none;border-radius:50%;box-sizing:border-box}" +
-    // to samo kółko co w całej apce (moduly/ladowanie)
-    ".oest-sbar.run .i{width:12px;height:12px;background:conic-gradient(from 0deg,rgba(124,132,255,0) 0deg,rgba(124,132,255,.15) 120deg,#7c84ff 300deg,#c58bff 360deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));animation:oest-spin .9s linear infinite}" +
-    ".oest-sbar.ok .i{background:#3fb27f}.oest-sbar.wait .i{background:#e3b341}.oest-sbar.err .i{background:#e5534b}" +
-    ".oest-sbar .p{height:2px;background:var(--grad,linear-gradient(90deg,#5b7cff,#a35bff));transition:width .3s;align-self:flex-start}" +
-    ".oest-sbar .m{display:none;padding:10px 12px 6px;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line,rgba(255,255,255,.12))}.oest-sbar.open .m{display:flex}" +
-    ".oest-sbar .m button{flex:1 1 auto;min-height:40px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.18));background:var(--panel,rgba(255,255,255,.06));color:inherit;font:inherit;font-size:15px;font-weight:600;padding:8px 12px}" +
-    ".oest-sbar .m button.go{background:var(--grad,linear-gradient(90deg,#5b7cff,#a35bff));color:#fff;border-color:transparent}.oest-sbar .m small{flex:1 1 100%;opacity:.75;font-size:12px}" +
-    ".oest-sbar .n{display:flex;align-items:center;gap:5px;padding-right:8px;margin-right:2px;border-right:1px solid var(--line,rgba(255,255,255,.12));opacity:.85}" +
-    // lampka sieci: moduly/znacznik (ten sam wzór co na ekranie głównym)
-    "@keyframes oest-spin{to{transform:rotate(360deg)}}body.oest-sbar-on{padding-bottom:var(--oest-sbar-h)}" +
-    "body.oest-sbar-on #v-reactive{bottom:var(--oest-sbar-h)}#oest-stopka .oest-sbar{position:static}"; // w stopce ramy (moduly/szkielet) pasek stoi w miejscu
-  var el = null;
-  function mount() {
-    if (el || !doc.body) return;
-    var st = doc.createElement("style"); st.textContent = css; doc.head.appendChild(st);
-    el = doc.createElement("div"); el.className = "oest-sbar"; el.hidden = true; el.setAttribute("role", "status");
-    el.innerHTML = '<div class="r"><span class="n"><i></i><span></span></span><span class="i"></span><span class="t"></span><span aria-hidden="true">▴</span></div><div class="p"></div><div class="m"></div>';
-    // w apce pasek stoi w stopce ramy (moduly/szkielet: ion-footer, poza przewijaniem – nie drga); osobna strona (inspekcje) – na dole strony
-    var stopka = doc.getElementById("oest-stopka"); (stopka || doc.body).appendChild(el);
-    el.querySelector(".r").addEventListener("click", function () { open = !open; render(); });
-    el.querySelector(".m").addEventListener("click", function (e) {
-      var b = e.target.closest("button"); if (!b) return;
-      var a = b.getAttribute("data-a");
-      if (a === "data") { skipWifi = true; run({ login: true, anyNet: true }); }
-      else if (a === "send") run({ login: true });
-      else if (a === "retry") retry();
-      else if (a === "share" && opts.onShare) opts.onShare();
-      else if (a === "queue") { open = false; if (opts.onQueue) opts.onQueue(); else whenIdle().then(function () { root.location.href = opts.queueUrl; }); }
-      render();
-    });
+  // ---------- pasek (stan dla paska na dole ekranu) ----------
+  // Pasek rysuje szkielet Ionic (moduly/szkielet/src/czesci/PasekWysylki.vue w stopce ramy). Moduł podaje tylko zwykły obiekt
+  // OESTSender.stan() i zdarzenie window „oest:wysylka” (detail = ten sam obiekt) po każdej zmianie; przyciski wołają OESTSender.akcja(a).
+  //   { widoczny, ton: 'run'|'ok'|'wait'|'err', tekst, opis, przyciski: [{ a, tekst, glowny }], postep 0–1, siec: { stan: 'on'|'mid'|'off', tekst }, otwarty }
+  var stan = { widoczny: false, ton: "", tekst: "", opis: "", przyciski: [], postep: 0, siec: { stan: "na", tekst: "" }, otwarty: false };
+  function akcja(a) {
+    if (a === "toggle") open = !open;
+    else if (a === "data") { skipWifi = true; run({ login: true, anyNet: true }); }
+    else if (a === "send") run({ login: true });
+    else if (a === "retry") retry();
+    else if (a === "share" && opts.onShare) opts.onShare();
+    else if (a === "queue") { open = false; if (opts.onQueue) opts.onQueue(); else whenIdle().then(function () { root.location.href = opts.queueUrl; }); }
+    render();
   }
   function retry() {
     loadAll().then(function () {
       return Promise.all(pending().filter(function (q) { return q.status === "err"; }).map(function (q) { q.status = "wait"; q.err = ""; changed(q); return put(q); }));
     }).then(function () { run({ login: true, anyNet: true }); }); // Ponów = świadoma decyzja, także przez dane
   }
-  var esc = root.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function render() {
-    mount(); if (!el) return;
     var p = pending(), n = p.length, err = p.filter(function (q) { return q.status === "err"; })[0];
-    var cls = "", txt = "", more = "", prog = 0;
-    var b = function (a, t, go) { return '<button type="button" data-a="' + a + '"' + (go ? ' class="go"' : "") + ">" + t + "</button>"; };
+    var cls = "", txt = "", opis = "", more = [], prog = 0;
+    var b = function (a, t, go) { return { a: a, tekst: t, glowny: !!go }; };
     var qb = b("queue", root.OESTT("Pokaż kolejkę", "Show queue"));
-    var cap = root.Capacitor; if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { el.hidden = true; doc.body.classList.remove("oest-sbar-on"); return; } // pasek stale w apce
+    var cap = root.Capacitor;
+    if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { stan = { widoczny: false, ton: "", tekst: "", opis: "", przyciski: [], postep: 0, siec: { stan: "na", tekst: "" }, otwarty: false }; emit(); return; } // pasek stale w apce
     if (!active()) { cls = "err"; txt = n ? root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · Gmail niepołączony", " · Gmail not connected") : root.OESTT("Gmail niepołączony", "Gmail not connected");
-      more = "<small>" + root.OESTT("Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.", "To send reports automatically: Settings → Account → Sign out and sign in with Google, then add your work email in My Profile.") + "</small>" + qb; }
+      opis = root.OESTT("Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.", "To send reports automatically: Settings → Account → Sign out and sign in with Google, then add your work email in My Profile."); more = [qb]; }
     else
     if (sending) {
       cls = "run"; prog = pos ? (pos.i - 0.5) / pos.n : 0.05;
       txt = pos ? root.OESTT("Wysyłam raport ", "Sending report ") + (pos.n > 1 ? pos.i + "/" + pos.n + " " : "") + "· " + pos.code + "…" : root.OESTT("Łączę z Gmailem…", "Connecting to Gmail…");
-      more = "<small>" + root.OESTT("Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.", "You can keep working. Do not close the app until the bar shows “Sent”.") + "</small>" + qb;
-    } else if (flash) { cls = "ok"; txt = flash; prog = 1; more = qb; }
-    else if (!n && unconfirmed().length) { cls = "wait"; txt = root.OESTT("Do potwierdzenia: ", "To confirm: ") + unconfirmed().length; more = "<small>" + root.OESTT("Przekazane przez Udostępnij – potwierdź w kolejce, czy mail wyszedł.", "Handed over via Share – confirm in the queue whether the email went out.") + "</small>" + qb; }
-    else if (!n) { cls = "ok"; txt = root.OESTT("Wszystko wysłane", "All sent"); more = qb; }
+      opis = root.OESTT("Możesz dalej pracować. Nie zamykaj apki, dopóki pasek nie pokaże „Wysłano”.", "You can keep working. Do not close the app until the bar shows “Sent”."); more = [qb];
+    } else if (flash) { cls = "ok"; txt = flash; prog = 1; more = [qb]; }
+    else if (!n && unconfirmed().length) { cls = "wait"; txt = root.OESTT("Do potwierdzenia: ", "To confirm: ") + unconfirmed().length; opis = root.OESTT("Przekazane przez Udostępnij – potwierdź w kolejce, czy mail wyszedł.", "Handed over via Share – confirm in the queue whether the email went out."); more = [qb]; }
+    else if (!n) { cls = "ok"; txt = root.OESTT("Wszystko wysłane", "All sent"); more = [qb]; }
     else if (err || loginErr) {
       cls = "err"; txt = root.OESTT("Nie wysłano: ", "Not sent: ") + (err ? err.err : loginErr);
-      more = b("retry", root.OESTT("Ponów", "Retry"), true) + (opts.onShare ? b("share", root.OESTT("Wyślij przez Udostępnij", "Send via Share")) : "") + qb;
-    } else if (!online()) { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · czekam na sieć", " · waiting for network"); more = "<small>" + root.OESTT("Wyślę sam, gdy wróci zasięg (apka musi być otwarta).", "I will send it when the signal returns (the app must be open).") + "</small>" + qb; }
+      more = [b("retry", root.OESTT("Ponów", "Retry"), true)].concat(opts.onShare ? [b("share", root.OESTT("Wyślij przez Udostępnij", "Send via Share"))] : [], [qb]);
+    } else if (!online()) { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · czekam na sieć", " · waiting for network"); opis = root.OESTT("Wyślę sam, gdy wróci zasięg (apka musi być otwarta).", "I will send it when the signal returns (the app must be open)."); more = [qb]; }
     else if (wifiOnly() && !onWifi() && !skipWifi) {
       cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · czekam na Wi‑Fi", " · waiting for Wi‑Fi");
-      more = "<small>" + root.OESTT("Wyślę sam po połączeniu z Wi‑Fi.", "I will send it once on Wi‑Fi.") + "</small>" + b("data", root.OESTT("Wyślij teraz przez dane komórkowe", "Send now over mobile data"), true) + qb;
-    } else if (!G().connected("gmail")) { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · dotknij, aby wysłać", " · tap to send"); more = b("send", root.OESTT("Wyślij teraz", "Send now"), true) + qb; }
-    else { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n; more = b("send", root.OESTT("Wyślij teraz", "Send now"), true) + qb; }
-    el.className = "oest-sbar " + cls + (open ? " open" : "");
-    el.querySelector(".t").textContent = txt;
+      opis = root.OESTT("Wyślę sam po połączeniu z Wi‑Fi.", "I will send it once on Wi‑Fi."); more = [b("data", root.OESTT("Wyślij teraz przez dane komórkowe", "Send now over mobile data"), true), qb];
+    } else if (!G().connected("gmail")) { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · dotknij, aby wysłać", " · tap to send"); more = [b("send", root.OESTT("Wyślij teraz", "Send now"), true), qb]; }
+    else { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n; more = [b("send", root.OESTT("Wyślij teraz", "Send now"), true), qb]; }
     var net = !online() ? ["off", root.OESTT("Brak sieci", "No network")] : onWifi() ? ["on", "Wi‑Fi"] : ["mid", root.OESTT("Dane", "Data")]; // lampka sieci
-    var nb = el.querySelector(".n"); nb.className = "n " + net[0]; nb.lastChild.textContent = net[1];
-    el.querySelector(".m").innerHTML = more;
-    el.querySelector(".p").style.width = Math.round(prog * 100) + "%";
-    el.hidden = false; if (!el.closest("#oest-stopka")) doc.body.classList.add("oest-sbar-on");
+    stan = { widoczny: true, ton: cls, tekst: txt, opis: opis, przyciski: more, postep: prog, siec: { stan: net[0], tekst: net[1] }, otwarty: open };
+    emit();
   }
+  function emit() { try { root.dispatchEvent(new root.CustomEvent("oest:wysylka", { detail: stan })); } catch (e) {} }
   function refresh() { return loadAll().then(render, render); }
 
   function auto() { return cfg().auto !== false ? run() : Promise.resolve(); } // „Wysyłaj kolejkę sama” z Ustawień inspekcji
@@ -324,7 +295,7 @@
   var readyOk, ready = new Promise(function (r) { readyOk = r; }); // wysyłka startuje dopiero po sprzątnięciu przerwanych
   function init(o) { Object.assign(opts, o || {}); return refresh().then(orphans).catch(function () {}).then(function () { readyOk(); render(); }).then(auto); }
   var kick = function () { refresh().then(auto); };
-  root.addEventListener("oest:lang", function () { if (el) render(); }); // zmiana języka: tylko nowy tekst paska
+  root.addEventListener("oest:lang", function () { render(); }); // zmiana języka: tylko nowy tekst paska
   root.addEventListener("online", kick); root.addEventListener("offline", render);
   if (root.navigator.connection && root.navigator.connection.addEventListener) root.navigator.connection.addEventListener("change", kick);
   doc.addEventListener("visibilitychange", function () { if (!doc.hidden) kick(); });
@@ -336,5 +307,5 @@
     var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
-  root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, myEmail: myEmail, reachable: reachable, syncReports: syncReports, update: update };
+  root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, stan: function () { return stan; }, akcja: akcja, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, myEmail: myEmail, reachable: reachable, syncReports: syncReports, update: update };
 })(window);

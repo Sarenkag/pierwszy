@@ -1,10 +1,26 @@
-<!-- Raporty i zdjęcia. Licznik i opcja zdjęć: OESTSettingsUI.raportyLicznik()/zdjeciaStempel()/zapiszStempel() (app/www/settings-ui.js). Przeglądarkę raportów rysuje jej moduł (moduly/raporty/przegladarka.js, zdarzenie oest:raporty-ui) – tu tylko komponenty Ionic i miejsce na nią. -->
+<!-- Raporty i zdjęcia. Licznik i opcja zdjęć: OESTSettingsUI.raportyLicznik()/zdjeciaStempel()/zapiszStempel() (app/www/settings-ui.js).
+     „Moje raporty”: dane i akcje OESTRaportyUI (moduly/raporty/przegladarka.js) – lista z klocków (czesci/Klocek.vue), podgląd w OESTOkna.okno (RaportPodglad.vue). -->
 <template>
   <div class="ion-padding">
-    <ion-card>
-      <ion-list-header>{{ T('Moje raporty', 'My reports') }}</ion-list-header>
-      <div ref="przegladarka" id="rptBrowser"></div>
-    </ion-card>
+    <ion-list-header>{{ T('Moje raporty', 'My reports') }}</ion-list-header>
+    <div v-if="odzyskane.length" id="rptRec">
+      <ion-list-header>{{ T('Odzyskane inspekcje', 'Recovered inspections') }}</ion-list-header>
+      <Klocek v-for="k in odzyskane" :key="k.id" :T="T" :k="k" @wybierz="R.otworzOdzyskana(k.id)"></Klocek>
+    </div>
+    <ion-list>
+      <ion-item>
+        <ion-input id="rptQ" type="search" autocomplete="off" :label="T('Szukaj', 'Search')" label-placement="stacked" :placeholder="T('Kod, budynek, data…', 'Code, building, date…')" :value="szuk.q" :debounce="0" @ionInput="szukaj({ q: $event.detail.value })"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-select id="rptB" :label="T('Budynek', 'Building')" label-placement="stacked" interface="popover" :value="szuk.b" @ionChange="szukaj({ b: $event.detail.value })">
+          <ion-select-option v-for="o in budynki" :key="o.v" :value="o.v">{{ o.t }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+    </ion-list>
+    <div id="rptList">
+      <Klocek v-for="k in raporty" :key="k.id" :T="T" :k="k" @wybierz="pokaz(k.id)"></Klocek>
+      <ion-item v-if="pusto" lines="none"><ion-note>{{ pusto }}</ion-note></ion-item>
+    </div>
     <ion-card>
       <ion-list-header>{{ T('Raporty w telefonie', 'Reports on this phone') }}</ion-list-header>
       <ion-item lines="none">
@@ -38,19 +54,34 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
-import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonToggle, IonButton } from '@ionic/vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { IonCard, IonListHeader, IonList, IonItem, IonLabel, IonNote, IonToggle, IonButton, IonInput, IonSelect, IonSelectOption } from '@ionic/vue';
+import Klocek from '../czesci/Klocek.vue';
+import RaportPodglad from './RaportPodglad.vue';
 const props = defineProps({ T: Function, wersja: Number });
 const S = window.OESTSettingsUI;
-const przegladarka = ref(null);
+const R = window.OESTRaportyUI;
+const szuk = ref(R.szukanie());
+const budynki = computed(() => (props.wersja, R.budynki()));
+const odzyskane = ref([]), raporty = ref([]), pusto = ref('');
 const licznik = ref({ tekst: '', ostrzezenie: false });
 const z = S.zdjeciaStempel();
 const stempel = ref(z.stempel);
 const wynik = ref(null);
-// przeglądarka raportów rysuje się sama w podanym miejscu – także po zmianie języka; licznik liczy moduł raportów
-function rysuj() { try { window.dispatchEvent(new CustomEvent('oest:raporty-ui', { detail: przegladarka.value })); } catch (e) {} S.raportyLicznik().then((d) => { licznik.value = d; }); }
+// lista i licznik z modułu raportów – także po zmianie języka i po każdej zmianie archiwum
+function lista() { R.lista().then(d => { if (d.aktualne === false) return; odzyskane.value = d.odzyskane; raporty.value = d.raporty; pusto.value = d.pusto; }); }
+function rysuj() { lista(); S.raportyLicznik().then((d) => { licznik.value = d; }); }
+function szukaj(o) { R.szukaj(o); szuk.value = R.szukanie(); lista(); } // szukanie to nie zmiana ustawień (bez „niezapisanych zmian”)
+async function pokaz(id) {
+  const p = await R.podglad(id); if (!p) return;
+  const w = await window.OESTOkna.okno({ tytul: p.tytul, komponent: RaportPodglad, wlasciwosci: { p }, ok: p.ok, anuluj: p.anuluj });
+  p.zwolnij();
+  await R.wynik(id, w);
+}
+let odpisz = null;
 function zmienStempel(v) { if (stempel.value === v) return; stempel.value = v; S.zmiany(true); } // dopiero „Zapisz ustawienia” zapisuje w module zdjęć
 function zapisz() { const w = S.zapiszStempel(stempel.value); if (w) wynik.value = w; else { S.zmiany(false); wynik.value = S.zapiszPola({}); } }
 watch(() => props.wersja, rysuj);
-onMounted(() => { S.zmiany(false); rysuj(); });
+onMounted(() => { S.zmiany(false); rysuj(); odpisz = R.zmiany(rysuj); });
+onUnmounted(() => { if (odpisz) odpisz(); });
 </script>
