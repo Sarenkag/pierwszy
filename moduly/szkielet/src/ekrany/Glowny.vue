@@ -52,10 +52,10 @@ function dzien(k) { window.OESTPpmUI.ustawDzien(k); window.OESTEkrany.go('ppm');
 // okienka: prognoza, powiadomienia, Dysk, sieć, nowości – jedno okienko apki (ion-modal), Wstecz telefonu je zamyka
 async function okno(rodzaj) {
   const O = window.OESTOkna;
-  if (rodzaj === 'wx') { const r = O.okno({ tytul: H.prognoza().tytul, komponent: Prognoza, wlasciwosci: { p: H.prognoza() }, bezPrzyciskow: true }); H.odswiez(true); return r; }
-  if (rodzaj === 'bell') { await H.rxCount(); const p = H.powiadomienia(); return O.okno({ tytul: p.tytul, komponent: Powiadomienia, wlasciwosci: { p }, bezPrzyciskow: true }); }
-  if (rodzaj === 'drive' || rodzaj === 'net') { const p = rodzaj === 'drive' ? H.dysk() : H.siec(); return O.okno({ tytul: p.tytul, komponent: Opcje, wlasciwosci: { p }, bezPrzyciskow: true }); }
-  if (rodzaj === 'news') { const p = H.nowosciLista(); return O.okno({ tytul: p.tytul, komponent: Nowosci, wlasciwosci: { p }, bezPrzyciskow: true }); }
+  if (rodzaj === 'wx') { const r = O.okno({ tytul: H.prognoza().tytul, komponent: Prognoza, wlasciwosci: { p: H.prognoza(), zrodlo: H.prognoza }, bezPrzyciskow: true }); H.odswiez(true); return r; }
+  if (rodzaj === 'bell') { await H.rxCount(); const p = H.powiadomienia(); return O.okno({ tytul: p.tytul, komponent: Powiadomienia, wlasciwosci: { p, zrodlo: H.powiadomienia }, bezPrzyciskow: true }); }
+  if (rodzaj === 'drive' || rodzaj === 'net') { const z = rodzaj === 'drive' ? H.dysk : H.siec, p = z(); return O.okno({ tytul: p.tytul, komponent: Opcje, wlasciwosci: { p, zrodlo: z }, bezPrzyciskow: true }); }
+  if (rodzaj === 'news') { const p = H.nowosciLista(); return O.okno({ tytul: p.tytul, komponent: Nowosci, wlasciwosci: { p, zrodlo: H.nowosciLista }, bezPrzyciskow: true }); }
 }
 onMounted(() => { window.addEventListener('oest:home', odswiez); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ H.odswiez(false); });
 onUnmounted(() => { window.removeEventListener('oest:home', odswiez); window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });

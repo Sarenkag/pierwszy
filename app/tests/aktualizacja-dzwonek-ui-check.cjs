@@ -39,7 +39,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     // 1. ekran główny: żadnego paska, kafelki niczym nie przykryte
     const home = await p.evaluate(() => {
       const fixed = [...document.body.querySelectorAll('body > *')].filter(e => getComputedStyle(e).position === 'fixed' && !e.hidden && e.offsetParent !== null && /aktualiz|update|wersja|version/i.test(e.textContent));
-      return { banner: !!document.getElementById('updBanner'), fixed: fixed.map(e => e.textContent.trim().slice(0, 60)), badge: document.querySelector('#hmBell .hm-badge').textContent, installs: window.__installs };
+      return { banner: !!document.getElementById('updBanner'), fixed: fixed.map(e => e.textContent.trim().slice(0, 60)), badge: (document.querySelector('#hmBell ion-badge') || {}).textContent || '', installs: window.__installs };
     });
     check(!home.banner && !home.fixed.length, 'na ekranie głównym jest pasek nowej wersji: ' + home.fixed.join(' | '));
     check(home.installs === 0, 'apka sama zaczęła pobierać/instalować');
@@ -49,7 +49,7 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     for (const l of ['pl', 'en']) {
       await setLang(l); await p.waitForTimeout(300);
       await p.click('#hmBell'); await p.waitForTimeout(900);
-      const b = await p.evaluate(() => { const r = document.querySelector('[data-hgo="update"]'); const later = document.querySelector('[data-hlater]'); return { row: r && r.textContent.replace(/\s+/g, ' ').trim(), later: later && later.textContent.trim() }; });
+      const b = await p.evaluate(() => { const r = document.querySelector('[data-hgo="update"]'); const later = document.querySelector('[data-hgo="update"] [data-akcja="pozniej"]'); return { row: r && r.textContent.replace(/\s+/g, ' ').trim(), later: later && later.textContent.trim() }; });
       const want = l === 'pl' ? ['Nowa wersja apki', 'Wersja 672', 'Później'] : ['New app version', 'Version 672', 'Later'];
       check(b.row && b.row.includes(want[0]) && b.row.includes(want[1]), `${l}: w dzwonku brak wpisu o wersji 672 (${b.row})`);
       check(b.later === want[2], `${l}: przycisk odłożenia to „${b.later}” zamiast „${want[2]}”`);
@@ -68,11 +68,12 @@ const RELEASE = { tag_name: 'apk-672', assets: [{ name: 'OEST-672.apk', browser_
     await p.evaluate(() => localStorage.removeItem('oest.update.later')); await p.reload(); await p.waitForTimeout(5200);
 
     // 4. „Później”: wpis znika, licznik maleje, po ponownym uruchomieniu nie wraca (ta sama wersja)
-    const przed = await p.evaluate(() => +document.querySelector('#hmBell .hm-badge').textContent || 0);
+    const przed = await p.evaluate(() => +(document.querySelector('#hmBell ion-badge') || {}).textContent || 0); // licznik dzwonka = ion-badge (nie ma go przy 0)
     await p.click('#hmBell'); await p.waitForTimeout(800);
-    check(!!(await p.$('[data-hlater]')), 'po ponownym uruchomieniu brak wpisu z „Później”');
-    if (await p.$('[data-hlater]')) { await p.click('[data-hlater]'); await p.waitForTimeout(400); }
-    const po = await p.evaluate(() => ({ row: !!document.querySelector('[data-hgo="update"]'), n: +document.querySelector('#hmBell .hm-badge').textContent || 0, hid: document.querySelector('#hmBell .hm-badge').hidden }));
+    const LATER = '[data-hgo="update"] [data-akcja="pozniej"]';
+    check(!!(await p.$(LATER)), 'po ponownym uruchomieniu brak wpisu z „Później”');
+    if (await p.$(LATER)) { await p.click(LATER); await p.waitForTimeout(400); }
+    const po = await p.evaluate(() => { const b = document.querySelector('#hmBell ion-badge'); return { row: !!document.querySelector('[data-hgo="update"]'), n: b ? +b.textContent || 0 : 0, hid: !b || b.hidden }; });
     check(!po.row, '„Później” nie schował wpisu');
     check((po.hid ? 0 : po.n) === przed - 1, `licznik dzwonka po „Później” ${po.hid ? 0 : po.n}, a powinien ${przed - 1}`);
     await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(500);

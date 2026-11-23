@@ -76,7 +76,7 @@ await page.evaluate(()=>{window.__askMode='once-ok'});await page.locator(ai+' io
 await page.evaluate(()=>{delete window.Capacitor;localStorage.removeItem('oest.model.text');OESTEkrany.go('settings');});
 if(out)await page.screenshot({path:path.join(out,'16_SETTINGS_AI_PL.png')});
 // App shell and PPM survive integration.
-await page.evaluate(()=>OESTEkrany.go('home'));await page.locator('[data-nav=ppm]').click();assert.ok(await page.locator('.prow').count()>=28);
+/* lista Inspekcji na Ionic + Vue: klocki = ion-card.oest-klocek */await page.evaluate(()=>OESTEkrany.go('home'));await page.locator('[data-nav=ppm]').click();await page.locator('ion-card.oest-klocek').first().waitFor();assert.ok(await page.locator('ion-card.oest-klocek').count()>=28);
 assert.deepEqual(errors,[]);console.log('UI PASS: 13 tiles (+ O aplikacji: twórca, wersja, historia zmian, PL/EN bez drgań) (bez Wygląd, Temperatury; Dysk+kopia; Edytor inspekcji), all subpages, profile + bridge + reload, schedule history (profile), PL/EN, offline save, honest OAuth state, existing PPM.');
 }finally{if(browser)await browser.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
 
