@@ -389,6 +389,14 @@
       ],
       "powod": "Wygląd jak na main (styl Grzegorza „Szkło i poświata”: pasek dni, kafelki, nagłówek ekranu głównego, klocek, pigułka statusu, filtr, Kalendarz) przeniesiony na komponenty Ionic – przeniesienie nie zmienia wyglądu.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTFMSn9553K3t71DGQ2tRCDD"
+    },
+    {
+      "co": [
+        "element:canvas"
+      ],
+      "plik": "moduly/szkielet/src/czesci/EdytorZdjec.vue",
+      "powod": "Edytor zdjęć rysuje strzałki, linie i kółka po zdjęciu – Ionic nie ma komponentu do rysowania; canvas tylko w tym jednym pliku.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT2qJsdqyBpVabsBBLFtj7ru"
     }
   ]
 }
