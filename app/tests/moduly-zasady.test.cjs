@@ -83,6 +83,7 @@ function app(o = {}) {
   globalThis.OEST_PPM = root.OEST_PPM; // wysylka.js woła OEST_PPM.markSent bez „window.” (w przeglądarce to ten sam obiekt)
   new Function('module', fs.readFileSync(path.join(REPO, 'moduly/bledy/bledy.js'), 'utf8')).call(root, undefined); // jak w apce: moduly/bledy (OESTT) przed modułami
   new Function('window', fs.readFileSync(path.join(REPO, 'moduly/narzedzia/narzedzia.js'), 'utf8'))(root); // jak w apce: narzędzia (esc) przed modułem
+  new Function('window', require('node:fs').readFileSync(path.join(REPO, 'moduly/konto/konto.js'), 'utf8'))(root); // jak w apce: moduly/konto przed modułem wysyłki
   new Function('window', 'setInterval', fs.readFileSync(path.join(REPO, 'moduly/wysylka/wysylka.js'), 'utf8'))(root, () => 0);
   // raport zapisany wprost do kolejki (tak jak robi to inspekcja), bez uruchamiania wysyłki
   const putRaw = rec => new Promise(res => { const rq = root.indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const t = rq.result.transaction('queue', 'readwrite'); t.objectStore('queue').put(rec); t.oncomplete = res; }; });

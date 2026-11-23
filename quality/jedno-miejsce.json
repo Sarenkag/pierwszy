@@ -159,6 +159,12 @@
     }
   ],
   "kluczeWlasciciele": {
-    "oest.lang": "moduly/bledy/bledy.js"
+    "oest.lang": "moduly/bledy/bledy.js",
+    "oest.account": "moduly/konto/konto.js",
+    "oest.back": "moduly/powrot/powrot.js",
+    "oest.ppm.due": "ppm.js",
+    "oest.settings.v1": "settings-store.js",
+    "oest.questions": "questions-core.js",
+    "oest.questions.proposal": "questions-core.js"
   }
 }
