@@ -6,7 +6,6 @@
    Zależności: OESTVoice (moduly/notatki/glos.js), OESTPrzycisk (okienko), opcjonalnie OESTModel i wtyczka Translate. */
 (function (w) {
   'use strict';
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
 
   // ---------- jakość tekstu: słowa branżowe (rozpoznawanie mowy i tłumacz mylą je najczęściej) ----------
@@ -73,7 +72,7 @@
   function tx(store, mode, fn) {
     return db().then(function (d) {
       // bez bazy w telefonie nic nie udajemy: zapis = błąd (pamięć RAM tylko w testach, notatkiPamiecTestowa)
-      if (!d) { if (w.notatkiPamiecTestowa) return fn(null, mem[store]); throw Error(T('Nie udało się zapisać notatki w telefonie (pamięć apki niedostępna). Spróbuj jeszcze raz.', 'Could not save the note on the phone (app storage unavailable). Try again.')); }
+      if (!d) { if (w.notatkiPamiecTestowa) return fn(null, mem[store]); throw Error(w.OESTT('Nie udało się zapisać notatki w telefonie (pamięć apki niedostępna). Spróbuj jeszcze raz.', 'Could not save the note on the phone (app storage unavailable). Try again.')); }
       return new Promise(function (res, rej) {
         var t = d.transaction(store, mode), out = fn(t.objectStore(store));
         t.oncomplete = function () { res(w.IDBRequest && out instanceof w.IDBRequest ? out.result : out); };
@@ -105,7 +104,7 @@
       if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
       queue = queue.then(function () { if (!(n.audio && n.audio.length)) return retext(n); /* notatka pisana: tylko tłumaczenie od nowa */ return audioGet(n.audio && n.audio[0]).then(function (blob) {
         if (blob) return transcribe(n, blob);
-        n.st = ''; n.err = T('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
+        n.st = ''; n.err = w.OESTT('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
       }); }).catch(function () {}).then(function () { delete running[n.id]; });
     });
     return a;
@@ -154,9 +153,9 @@
   function idle(v) { return new Promise(function (r) { (function t() { if (!v || !v.busy) r(); else setTimeout(t, 50); })(); }); }
   function transcribe(n, blob) {
     var v = vc();
-    var p = native() && v ? idle(v).then(function () { return v.transcribe(blob); }).then(function (r) { return fix(r && r.text, 'pl'); }) : Promise.reject(Error(T('Zamiana nagrania na tekst działa w apce na telefonie. Możesz wpisać tekst w „Popraw”.', 'Turning a recording into text works in the phone app. You can type the text in “Edit”.')));
+    var p = native() && v ? idle(v).then(function () { return v.transcribe(blob); }).then(function (r) { return fix(r && r.text, 'pl'); }) : Promise.reject(Error(w.OESTT('Zamiana nagrania na tekst działa w apce na telefonie. Możesz wpisać tekst w „Popraw”.', 'Turning a recording into text works in the phone app. You can type the text in “Edit”.')));
     return p.then(function (pl) {
-      n.pl = pl; n.err = pl ? '' : T('Nie rozpoznano słów. Odsłuchaj nagranie i wpisz tekst w „Popraw”.', 'No words recognised. Listen to the recording and type the text in “Edit”.');
+      n.pl = pl; n.err = pl ? '' : w.OESTT('Nie rozpoznano słów. Odsłuchaj nagranie i wpisz tekst w „Popraw”.', 'No words recognised. Listen to the recording and type the text in “Edit”.');
       return english(pl, n.ctx);
     }).then(function (en) { n.en = en || ''; }, function (e) { n.err = e && e.message || String(e); })
       .then(function () { n.st = ''; return keep(n); });
@@ -178,7 +177,7 @@
     // notatka trafia tam, gdzie zaczęto nagrywać (nie tam, dokąd przejdzie się w trakcie zatrzymywania)
     pending = function (media) {
       var at = started || capture(), b = at.b; started = null;
-      var scope = at.scope; if (!scope) { if (b.onError) b.onError(Error(T('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
+      var scope = at.scope; if (!scope) { if (b.onError) b.onError(Error(w.OESTT('Najpierw otwórz inspekcję.', 'Open an inspection first.'))); return; }
       return addAudio(scope, at.ctx, media).then(function (n) { if (b.onSaved) b.onSaved(n); }, function (e) { if (b.onError) b.onError(e); });
     };
     pendingErr = function (e) { var b = active || me; if (b.onError) b.onError(e); };
@@ -189,7 +188,7 @@
   function combine(scope, ctx) {
     return list(scope).then(function (a) {
       var ens = a.filter(function (n) { return state(n) === 'ready' || state(n) === 'check'; }).map(function (n) { return n.en.trim(); });
-      if (!ens.length) throw Error(T('Brak notatek z tekstem po angielsku.', 'No notes with English text.'));
+      if (!ens.length) throw Error(w.OESTT('Brak notatek z tekstem po angielsku.', 'No notes with English text.'));
       var plain = ens.map(function (s) { return /[.!?]$/.test(s) ? s : s + '.'; }).join(' ');
       if (ens.length < 2) return plain;
       return modelReady().then(function (ok) {
@@ -212,11 +211,11 @@
     return propose(scope, o.ctx).then(function (r) {
       if (o.alive && !o.alive()) return null; // ekran zmienił się w trakcie (np. zapisany wpis, nowy formularz) – propozycja nieaktualna
       css(); var node = document.createElement('div'); node.className = 'nt-pop';
-      node.innerHTML = '<div class="nt-h">' + T('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
+      node.innerHTML = '<div class="nt-h">' + w.OESTT('Propozycja z notatek — sprawdź i popraw. Nic nie wstawiam samo.', 'Suggestion from the notes — check and edit. Nothing is inserted automatically.') + '</div><textarea data-nt-f="en" maxlength="8000"></textarea><div class="nt-warn"></div>';
       var ta = node.querySelector('textarea'), wb = node.querySelector('.nt-warn'); ta.value = r.text;
-      var warnNow = function () { var m = missing(r.src, ta.value); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ wb.textContent = m.length ? T('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + T(' — sprawdź.', ' — check.') : ''; };
+      var warnNow = function () { var m = missing(r.src, ta.value); /* po każdej zmianie: wszystkie liczby z notatek, nie tylko brakujące na starcie */ wb.textContent = m.length ? w.OESTT('⚠ W propozycji brakuje: ', '⚠ Missing in the suggestion: ') + m.join(', ') + w.OESTT(' — sprawdź.', ' — check.') : ''; };
       ta.addEventListener('input', warnNow); warnNow();
-      return w.OESTPrzycisk.ask({ title: o.title || T('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || T('Wstaw', 'Insert'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
+      return w.OESTPrzycisk.ask({ title: o.title || w.OESTT('✨ Połącz notatki', '✨ Combine notes'), node: node, ok: o.ok || w.OESTT('Wstaw', 'Insert'), cancel: w.OESTT('Anuluj', 'Cancel'), cls: 'nt-ask' })
         .then(function (yes) { return yes && (!o.alive || o.alive()) ? ta.value.trim() : null; });
     });
   }
@@ -229,12 +228,12 @@
     if (!box) return null; o = o || {}; css();
     box.classList.add('nt-bar');
     // icons: układ „Voice / Text” (Reactive, Grzegorz 18/11): 🎤+ nagranie, 📝+ notatka pisana, rząd ponumerowanych ikonek (stuknięcie = ta jedna notatka)
-    box.innerHTML = (o.icons ? '<div class="nt-btns2"><button type="button" class="btn nt-rec" aria-label="' + T('Nagraj notatkę', 'Record note') + '">' + T('🎤+ Głos', '🎤+ Voice') + '</button>' +
-      '<button type="button" class="btn nt-add" aria-label="' + T('Dopisz notatkę', 'Write a note') + '">' + T('📝+ Tekst', '📝+ Text') + '</button></div><div class="nt-icons"><span class="nt-list"></span>' +
-      '<button type="button" class="nt-i nt-open" aria-label="' + T('Wszystkie notatki', 'All notes') + '">' + T('Notatki', 'Notes') + ' <span class="nt-n">0</span></button></div>'
-      : '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + T('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
-      '<button type="button" class="btn nt-open">' + T('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>') +
-      '<button type="button" class="btn nt-join" hidden>' + esc(o.join || T('✨ Połącz notatki', '✨ Combine notes')) + '</button>';
+    box.innerHTML = (o.icons ? '<div class="nt-btns2"><button type="button" class="btn nt-rec" aria-label="' + w.OESTT('Nagraj notatkę', 'Record note') + '">' + w.OESTT('🎤+ Głos', '🎤+ Voice') + '</button>' +
+      '<button type="button" class="btn nt-add" aria-label="' + w.OESTT('Dopisz notatkę', 'Write a note') + '">' + w.OESTT('📝+ Tekst', '📝+ Text') + '</button></div><div class="nt-icons"><span class="nt-list"></span>' +
+      '<button type="button" class="nt-i nt-open" aria-label="' + w.OESTT('Wszystkie notatki', 'All notes') + '">' + w.OESTT('Notatki', 'Notes') + ' <span class="nt-n">0</span></button></div>'
+      : '<div class="nt-btns2"><button type="button" class="btn nt-rec">' + w.OESTT('🎤 Nagraj notatkę', '🎤 Record note') + '</button>' +
+      '<button type="button" class="btn nt-open">' + w.OESTT('📝 Notatki', '📝 Notes') + ' <span class="nt-n">0</span></button></div>') +
+      '<button type="button" class="btn nt-join" hidden>' + esc(o.join || w.OESTT('✨ Połącz notatki', '✨ Combine notes')) + '</button>';
     var rec = box.querySelector('.nt-rec'), opn = box.querySelector('.nt-open'), join = box.querySelector('.nt-join'), num = box.querySelector('.nt-n'), row = box.querySelector('.nt-list'), add = box.querySelector('.nt-add');
     var ctx = function () { return o.ctx ? o.ctx() || '' : ''; };
     var m = { box: box, scope: function () { return o.scope ? o.scope() || '' : ''; } };
@@ -271,10 +270,10 @@
   function retext(n) { return english(n.pl, n.ctx).then(function (en) { n.en = en || ''; }, function () {}).then(function () { n.st = ''; return keep(n); }); }
   function write(scope, ctx) {
     css(); var node = document.createElement('div'); node.className = 'nt-pop';
-    node.innerHTML = '<div class="nt-h">' + T('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.') + '</div><textarea data-nt-f="pl" maxlength="4000"></textarea>';
+    node.innerHTML = '<div class="nt-h">' + w.OESTT('Wpisz notatkę — po polsku albo po angielsku. Angielski tekst do raportu zrobi się sam.', 'Type a note — Polish or English. The English text for the report is made automatically.') + '</div><textarea data-nt-f="pl" maxlength="4000"></textarea>';
     var ta = node.querySelector('textarea');
     setTimeout(function () { try { ta.focus(); } catch (e) {} }, 50);
-    return w.OESTPrzycisk.ask({ title: T('📝 Nowa notatka', '📝 New note'), node: node, ok: T('Zapisz', 'Save'), cancel: T('Anuluj', 'Cancel'), cls: 'nt-ask' })
+    return w.OESTPrzycisk.ask({ title: w.OESTT('📝 Nowa notatka', '📝 New note'), node: node, ok: w.OESTT('Zapisz', 'Save'), cancel: w.OESTT('Anuluj', 'Cancel'), cls: 'nt-ask' })
       .then(function (yes) { var t = ta.value.trim(); return yes && t ? addText(scope, ctx, t) : null; });
   }
   // nagrania notatek jako dowody (Hand over: wpis zachowuje oryginalne audio, jak dawniej) → [{ id, kind:'audio', blob, name, mime, size, ms }]
@@ -309,11 +308,11 @@
   function clock(ms) { var s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function hhmm(t) { var d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
   function tag(s) {
-    if (s === 'ready') return '<span class="nt-tag">' + T('✓ gotowa', '✓ ready') + '</span>';
-    if (s === 'check') return '<span class="nt-tag w">' + T('⚠ sprawdź liczby', '⚠ check numbers') + '</span>';
-    if (s === 'busy') return '<span class="nt-tag g">' + T('zamieniam na tekst…', 'turning into text…') + '</span>';
-    if (s === 'pl') return '<span class="nt-tag w">' + T('tylko po polsku', 'Polish only') + '</span>';
-    return '<span class="nt-tag w">' + T('bez tekstu', 'no text') + '</span>';
+    if (s === 'ready') return '<span class="nt-tag">' + w.OESTT('✓ gotowa', '✓ ready') + '</span>';
+    if (s === 'check') return '<span class="nt-tag w">' + w.OESTT('⚠ sprawdź liczby', '⚠ check numbers') + '</span>';
+    if (s === 'busy') return '<span class="nt-tag g">' + w.OESTT('zamieniam na tekst…', 'turning into text…') + '</span>';
+    if (s === 'pl') return '<span class="nt-tag w">' + w.OESTT('tylko po polsku', 'Polish only') + '</span>';
+    return '<span class="nt-tag w">' + w.OESTT('bez tekstu', 'no text') + '</span>';
   }
   // open(scope, { title }) → Promise (zamknięcie okienka)
   function open(scope, o) {
@@ -327,19 +326,19 @@
       list(scope).then(resume).then(function (a) {
         if (editing) return;
         if (o.only) a = a.filter(function (n) { return n.id === o.only; }); // stuknięta ikonka: tylko ta jedna notatka
-        var h = '<div class="nt-h">' + esc(o.title || '') + (a.length && !o.readonly ? ' · ' + T('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
-        if (!a.length) h += '<div class="nt-empty">' + T('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
+        var h = '<div class="nt-h">' + esc(o.title || '') + (a.length && !o.readonly ? ' · ' + w.OESTT('stuknij „Popraw”, żeby zmienić tekst', 'tap “Edit” to change the text') : '') + '</div>';
+        if (!a.length) h += '<div class="nt-empty">' + w.OESTT('Brak notatek. Przytrzymaj „🎤 Nagraj notatkę” i mów.', 'No notes yet. Hold “🎤 Record note” and speak.') + '</div>';
         a.forEach(function (n) {
           var s = state(n), miss = s === 'check' ? missing(n.pl, n.en) : [];
           h += '<div class="nt-note" data-id="' + esc(n.id) + '"><div class="nt-m"><span>' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + (n.audio && n.audio.length ? ' · ' + clock(n.ms) : '') + '</span>' + tag(s) + '</div>' +
             (n.en ? '<div class="nt-en">' + esc(n.en) + '</div>' : '') +
             (n.pl ? '<div class="nt-pl">„' + esc(n.pl) + '”</div>' : '') +
-            (miss.length ? '<div class="nt-err">' + T('W oryginale jest: ', 'The original has: ') + esc(miss.join(', ')) + T(' – w tekście EN tego brak.', ' – missing in the English text.') + '</div>' : '') +
+            (miss.length ? '<div class="nt-err">' + w.OESTT('W oryginale jest: ', 'The original has: ') + esc(miss.join(', ')) + w.OESTT(' – w tekście EN tego brak.', ' – missing in the English text.') + '</div>' : '') +
             (n.err && !n.pl ? '<div class="nt-err">' + esc(n.err) + '</div>' : '') +
-            '<div class="nt-ic">' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + T('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<button type="button" disabled>—</button>') +
+            '<div class="nt-ic">' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + w.OESTT('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<button type="button" disabled>—</button>') +
             (o.readonly ? '' : // tylko odczyt (archiwum): bez poprawiania i usuwania
-            '<button type="button" data-nt="edit"' + (s === 'busy' ? ' disabled' : '') + '>' + T('✎ Popraw', '✎ Edit') + '</button>' +
-            '<button type="button" class="del' + (sure === n.id ? ' sure' : '') + '" data-nt="del" aria-label="' + T('Usuń notatkę', 'Delete note') + '"' + (s === 'busy' ? ' disabled' : '') + '>' + (sure === n.id ? T('Usunąć?', 'Delete?') : '🗑') + '</button>') + '</div></div>';
+            '<button type="button" data-nt="edit"' + (s === 'busy' ? ' disabled' : '') + '>' + w.OESTT('✎ Popraw', '✎ Edit') + '</button>' +
+            '<button type="button" class="del' + (sure === n.id ? ' sure' : '') + '" data-nt="del" aria-label="' + w.OESTT('Usuń notatkę', 'Delete note') + '"' + (s === 'busy' ? ' disabled' : '') + '>' + (sure === n.id ? w.OESTT('Usunąć?', 'Delete?') : '🗑') + '</button>') + '</div></div>';
         });
         node.innerHTML = h;
       });
@@ -350,19 +349,19 @@
       var n = editing; foot(false);
       // przerysowanie (odsłuch, stop) nie gubi tego, co już wpisane
       var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]'); if (fp && fe) { n.pl = fp.value; n.en = fe.value; }
-      node.innerHTML = '<div class="nt-h">' + T('✎ Popraw notatkę', '✎ Edit note') + ' · ' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + '</div>' +
-        '<div class="nt-tabs"><button type="button" data-nt="tab-pl"' + (tab === 'pl' ? ' class="on"' : '') + '>' + T('Po polsku (oryginał)', 'Polish (original)') + '</button><button type="button" data-nt="tab-en"' + (tab === 'en' ? ' class="on"' : '') + '>' + T('Po angielsku (do raportu)', 'English (for the report)') + '</button></div>' +
+      node.innerHTML = '<div class="nt-h">' + w.OESTT('✎ Popraw notatkę', '✎ Edit note') + ' · ' + hhmm(n.at) + (n.ctx ? ' · ' + esc(n.ctx) : '') + '</div>' +
+        '<div class="nt-tabs"><button type="button" data-nt="tab-pl"' + (tab === 'pl' ? ' class="on"' : '') + '>' + w.OESTT('Po polsku (oryginał)', 'Polish (original)') + '</button><button type="button" data-nt="tab-en"' + (tab === 'en' ? ' class="on"' : '') + '>' + w.OESTT('Po angielsku (do raportu)', 'English (for the report)') + '</button></div>' +
         '<textarea data-nt-f="pl" maxlength="4000"' + (tab === 'pl' ? '' : ' hidden') + '></textarea><textarea data-nt-f="en" maxlength="4000"' + (tab === 'en' ? '' : ' hidden') + '></textarea>' +
         '<div class="nt-warn"></div>' +
-        '<div class="nt-row"><button type="button" data-nt="redo">' + T('✨ Ułóż z polskiego', '✨ Rewrite from Polish') + '</button>' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + T('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<span></span>') + '</div>' +
-        '<div class="nt-row"><button type="button" data-nt="cancel">' + T('Anuluj', 'Cancel') + '</button><button type="button" class="go" data-nt="save">' + T('Zapisz', 'Save') + '</button></div>';
+        '<div class="nt-row"><button type="button" data-nt="redo">' + w.OESTT('✨ Ułóż z polskiego', '✨ Rewrite from Polish') + '</button>' + (n.audio && n.audio.length ? '<button type="button" data-nt="play">' + (playing === n.id ? '■ ' + w.OESTT('Stop', 'Stop') : '▶ ' + clock(n.ms)) + '</button>' : '<span></span>') + '</div>' +
+        '<div class="nt-row"><button type="button" data-nt="cancel">' + w.OESTT('Anuluj', 'Cancel') + '</button><button type="button" class="go" data-nt="save">' + w.OESTT('Zapisz', 'Save') + '</button></div>';
       node.querySelector('[data-nt-f=pl]').value = n.pl || ''; node.querySelector('[data-nt-f=en]').value = n.en || '';
       warn();
     }
     function warn() {
       var pl = node.querySelector('[data-nt-f=pl]'), en = node.querySelector('[data-nt-f=en]'), box = node.querySelector('.nt-warn'); if (!pl || !box) return;
       var m = en.value.trim() ? missing(pl.value, en.value) : [];
-      box.textContent = m.length ? T('⚠ W oryginale jest „', '⚠ The original has “') + m.join('”, „') + T('”, a w tekście EN nie ma. Dopisz albo zostaw.', '” but the English text does not. Add it or leave it.') : '';
+      box.textContent = m.length ? w.OESTT('⚠ W oryginale jest „', '⚠ The original has “') + m.join('”, „') + w.OESTT('”, a w tekście EN nie ma. Dopisz albo zostaw.', '” but the English text does not. Add it or leave it.') : '';
     }
     node.addEventListener('input', warn);
     node.addEventListener('click', function (e) {
@@ -378,23 +377,23 @@
         b.disabled = true;
         put(c).then(function () { if (editing !== n) return; editing = null; delete szkice[scope]; stop(); draw(); }, function (e) {
           b.disabled = false; var box = node.querySelector('.nt-warn');
-          if (box) box.textContent = T('⚠ Nie zapisano: ', '⚠ Not saved: ') + (e && e.message || String(e)) + T(' Stuknij „Zapisz” jeszcze raz.', ' Tap “Save” again.');
+          if (box) box.textContent = w.OESTT('⚠ Nie zapisano: ', '⚠ Not saved: ') + (e && e.message || String(e)) + w.OESTT(' Stuknij „Zapisz” jeszcze raz.', ' Tap “Save” again.');
         });
         return;
       }
       if (a === 'redo') {
         var plv = fix(node.querySelector('[data-nt-f=pl]').value, 'pl'), box = node.querySelector('.nt-warn');
-        if (!plv) { box.textContent = T('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); return; }
-        if (!translator()) { box.textContent = T('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); return; }
-        b.disabled = true; box.textContent = T('Układam po angielsku…', 'Writing in English…');
+        if (!plv) { box.textContent = w.OESTT('Najpierw wpisz tekst po polsku.', 'Type the Polish text first.'); return; }
+        if (!translator()) { box.textContent = w.OESTT('Tłumacz działa w apce na telefonie.', 'The translator works in the phone app.'); return; }
+        b.disabled = true; box.textContent = w.OESTT('Układam po angielsku…', 'Writing in English…');
         var ed = editing, plIn = node.querySelector('[data-nt-f=pl]').value, enIn = node.querySelector('[data-nt-f=en]').value; // wynik tylko do tej samej edycji tej samej notatki (nie po Anuluj ani do innej notatki)
         english(plv, ed.ctx).then(function (out) {
           if (editing !== ed || !node.isConnected) return;
           // w trakcie dopisano poprawki: nie nadpisujemy ich wynikiem
-          if (node.querySelector('[data-nt-f=pl]').value !== plIn || node.querySelector('[data-nt-f=en]').value !== enIn) { var bx = node.querySelector('.nt-warn'), rb = node.querySelector('[data-nt=redo]'); if (rb) rb.disabled = false; if (bx) bx.textContent = T('Tekst zmieniony w trakcie – nie podmieniam. Stuknij „Ułóż” jeszcze raz.', 'Text changed meanwhile – not replaced. Tap “Rewrite” again.'); return; }
+          if (node.querySelector('[data-nt-f=pl]').value !== plIn || node.querySelector('[data-nt-f=en]').value !== enIn) { var bx = node.querySelector('.nt-warn'), rb = node.querySelector('[data-nt=redo]'); if (rb) rb.disabled = false; if (bx) bx.textContent = w.OESTT('Tekst zmieniony w trakcie – nie podmieniam. Stuknij „Ułóż” jeszcze raz.', 'Text changed meanwhile – not replaced. Tap “Rewrite” again.'); return; }
           node.querySelector('[data-nt-f=pl]').value = plv; node.querySelector('[data-nt-f=en]').value = out || node.querySelector('[data-nt-f=en]').value;
           tab = 'en'; editing.pl = plv; editing.en = node.querySelector('[data-nt-f=en]').value; drawEdit();
-          if (!out) node.querySelector('.nt-warn').textContent = T('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.');
+          if (!out) node.querySelector('.nt-warn').textContent = w.OESTT('Tłumaczenie nie wyszło – popraw ręcznie.', 'Translation failed – edit by hand.');
         });
         return;
       }
@@ -420,7 +419,7 @@
     var sz = o.readonly ? null : szkice[scope]; if (sz && o.only && sz.id !== o.only) sz = null; // ikonka innej notatki: przerwana poprawka czeka na swoją notatkę (Codex #144) // tylko odczyt: nie wracamy do przerwanej poprawki
     if (sz) list(scope).then(function (all) { var n = all.filter(function (x) { return x.id === sz.id; })[0]; if (!n) { delete szkice[scope]; draw(); return; } n.pl = sz.pl; n.en = sz.en; editing = n; tab = sz.tab; drawEdit(); });
     else draw();
-    return w.OESTPrzycisk.ask({ title: T('📝 Notatki', '📝 Notes'), node: node, ok: T('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
+    return w.OESTPrzycisk.ask({ title: w.OESTT('📝 Notatki', '📝 Notes'), node: node, ok: w.OESTT('Zamknij', 'Close'), alert: true, cls: 'nt-ask' })
       .then(function () {
         // zamknięte w trakcie poprawiania (Wstecz, stuknięcie obok): poprawka nie ginie – przy następnym otwarciu wraca edycja
         var fp = node.querySelector('[data-nt-f=pl]'), fe = node.querySelector('[data-nt-f=en]');

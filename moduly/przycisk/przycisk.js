@@ -3,7 +3,6 @@
 // Wygląd przycisku zostaje z ekranu; moduł zmienia tylko to, co dzieje się w środku w trakcie akcji.
 (function (w) {
   "use strict";
-  function T(pl, en) { return w.OESTT ? w.OESTT(pl, en) : pl; }
   // kółko ze smugą (ten sam wzór co „Zapisuję…” na środku ekranu, Grzegorz 03/11) + tekst etapu obok
   var CSS = ".oest-busy{opacity:1!important;transform:scale(.97);transition:transform .2s}" +
     ".oest-busy .oest-step{display:inline-flex;align-items:center;justify-content:center;gap:.55em;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -56,9 +55,9 @@
     o = o || {}; css();
     return new Promise(function (done) {
       var box = document.createElement("div"); box.className = "oest-ask" + (o.cls ? " " + o.cls : ""); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
-      var okTxt = o.ok || (o.alert ? "OK" : T("Połącz ponownie", "Reconnect"));
+      var okTxt = o.ok || (o.alert ? "OK" : w.OESTT("Połącz ponownie", "Reconnect"));
       box.innerHTML = "<div>" + (o.title ? "<b>" + esc(o.title) + "</b>" : "") + (o.text ? "<p>" + esc(o.text).replace(/\n/g, "<br>") + "</p>" : "") + (o.node ? '<div class="oest-ask-body"' + (o.bare ? ' style="margin:0"' : "") + "></div>" : "") + (o.bare ? "</div>" : '<div class="row' + (o.alert ? " one" : "") + '">' +
-        (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || T("Anuluj", "Cancel")) + "</button>") +
+        (o.alert ? "" : '<button type="button" data-a="no">' + esc(o.cancel || w.OESTT("Anuluj", "Cancel")) + "</button>") +
         '<button type="button" class="ok' + (o.danger ? " danger" : "") + '" data-a="ok">' + esc(okTxt) + "</button></div></div>");
       if (o.node) box.querySelector(".oest-ask-body").appendChild(o.node); // własna treść okienka (np. tick boxy ustawień wysyłki)
       var res = !!(o.alert || o.bare), over = false, zw = null; // stos okienek apki (moduly/szkielet: OESTOkna)
@@ -81,7 +80,7 @@
   // pytanie o usunięcie/wyczyszczenie samo dostaje czerwony przycisk „Usuń”
   function confirmAsk(text, o) {
     o = o || {}; var del = /^(Usunąć|Wyczyścić|Zastąpić|Delete|Remove|Clear|Replace)/i.test(String(text || "").trim());
-    return ask({ title: o.title || "", text: text, ok: o.ok || (del ? (/^(Zastąpić|Replace)/i.test(text) ? T("Zastąp", "Replace") : T("Usuń", "Delete")) : T("Tak", "Yes")), cancel: o.cancel || T("Anuluj", "Cancel"), danger: o.danger != null ? o.danger : del });
+    return ask({ title: o.title || "", text: text, ok: o.ok || (del ? (/^(Zastąpić|Replace)/i.test(text) ? w.OESTT("Zastąp", "Replace") : w.OESTT("Usuń", "Delete")) : w.OESTT("Tak", "Yes")), cancel: o.cancel || w.OESTT("Anuluj", "Cancel"), danger: o.danger != null ? o.danger : del });
   }
   // „Niezapisane zmiany – opuścić ekran?” dla ekranów, które pytają w chwili wyjścia (synchronicznie):
   //   canLeave(){ return !dirty || OESTPrzycisk.leave(tekst, () => { dirty = false; }); }  → od razu false,
@@ -91,7 +90,7 @@
     if (leaving) return false; leaving = true;
     var ev = w.event, el = ev && ev.type === "click" && ev.target && ev.target.closest ? ev.target.closest("button,a,[role=button],[data-route],[data-nav]") : null;
     setTimeout(function () {
-      ask({ title: T("Niezapisane zmiany", "Unsaved changes"), text: text, ok: T("Opuść", "Leave"), cancel: T("Zostań", "Stay"), danger: true }).then(function (yes) {
+      ask({ title: w.OESTT("Niezapisane zmiany", "Unsaved changes"), text: text, ok: w.OESTT("Opuść", "Leave"), cancel: w.OESTT("Zostań", "Stay"), danger: true }).then(function (yes) {
         leaving = false; if (!yes) return;
         try { if (onYes) onYes(); } catch (e) {}
         setTimeout(function () { if (el && el.isConnected) el.click(); else if (w.OESTEkrany) w.OESTEkrany.ponow(); }, 30); // Wstecz telefonu: szkielet kończy wyjście w górę
@@ -119,13 +118,13 @@
     }
     btn.disabled = true; btn.classList.add("oest-busy"); btn.setAttribute("aria-busy", "true");
     function show(t) { if (over) return; btn.innerHTML = '<span class="oest-step" role="status"><span class="oest-spin" aria-hidden="true"></span><span>' + esc(t) + "</span></span>"; }
-    show(opts.busy ? opts.busy + "…" : T("Pracuję…", "Working…"));
+    show(opts.busy ? opts.busy + "…" : w.OESTT("Pracuję…", "Working…"));
     function restore() { if (over) return; over = true; btn.innerHTML = html; btn.disabled = dis; btn.classList.remove("oest-busy"); btn.removeAttribute("aria-busy"); LOCK.forEach(function (k) { btn.style[k] = kept[k]; }); }
     return {
       // etap pracy na przycisku: „Sprawdzam połączenie…” → „Wysyłam 1/2…” (Grzegorz 03/11)
       step: function (text) { show(text); },
       ok: function (text) {
-        btn.innerHTML = '<span class="oest-done">✓ ' + (text || opts.done || T("Gotowe", "Done")) + "</span>";
+        btn.innerHTML = '<span class="oest-done">✓ ' + (text || opts.done || w.OESTT("Gotowe", "Done")) + "</span>";
         return wait(opts.hold || 900).then(function () { if (opts.keep !== false) restore(); });
       },
       fail: restore,

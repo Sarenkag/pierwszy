@@ -16,8 +16,7 @@
  */
 (function (root) {
   'use strict';
-  function T(pl, en) { return root.OESTT ? root.OESTT(pl, en) : pl; }
-  function TT(p) { return p ? T(p[0], p[1]) : ''; } // para [pl, en] → tekst
+  function TT(p) { return p ? root.OESTT(p[0], p[1]) : ''; } // para [pl, en] → tekst
   function plugin() { var C = root.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.OESTPhotoEdit; }
   /* ---------- edytor w apce ---------- */
   var COLORS = ['#ff2d2d', '#ffd400', '#21d36b', '#2f8bff', '#ffffff', '#111111'];
@@ -115,14 +114,14 @@
         css();
         var box = document.createElement('div'); box.className = 'oest-editor';
         box.innerHTML =
-          '<div class="ed-top"><button type="button" class="ed-b ed-ghost" data-a="cancel">' + T('Anuluj', 'Cancel') + '</button><span style="flex:1"></span>' +
-          '<button type="button" class="ed-b ed-sec" data-a="undo">' + T('↶ Cofnij', '↶ Undo') + '</button><button type="button" class="ed-b ed-main" data-a="save">' + T('✓ Zapisz', '✓ Save') + '</button></div>' +
+          '<div class="ed-top"><button type="button" class="ed-b ed-ghost" data-a="cancel">' + root.OESTT('Anuluj', 'Cancel') + '</button><span style="flex:1"></span>' +
+          '<button type="button" class="ed-b ed-sec" data-a="undo">' + root.OESTT('↶ Cofnij', '↶ Undo') + '</button><button type="button" class="ed-b ed-main" data-a="save">' + root.OESTT('✓ Zapisz', '✓ Save') + '</button></div>' +
           '<div class="ed-stage"><canvas style="touch-action:none;max-width:100%;max-height:100%"></canvas></div>' +
           '<div class="ed-panel"><div class="ed-row ed-tools">' + TOOL_GROUPS.map(function (gr) {
             return '<div class="ed-grp"><div class="ed-seg">' + gr[1].map(function (t) { return '<button type="button" class="ed-tool" data-t="' + t[0] + '" aria-label="' + TT(t[2]) + '">' + t[1] + '</button>'; }).join('') + '</div><small>' + TT(gr[0]) + '</small></div>';
           }).join('') + '</div><div class="ed-sep"></div>' +
-          '<div class="ed-row ed-style"><div class="ed-colors">' + COLORS.map(function (c) { return '<button type="button" class="ed-col" data-c="' + c + '" aria-label="' + T('Kolor', 'Colour') + '"><i style="background:' + c + '"></i></button>'; }).join('') + '</div>' +
-          '<div class="ed-seg ed-widths">' + WIDTHS.map(function (w) { return '<button type="button" class="ed-tool" data-w="' + w.v + '" aria-label="' + T('Grubość', 'Width') + ' ' + w.k + '"><i style="width:' + (w.v + 2) + 'px;height:' + (w.v + 2) + 'px"></i></button>'; }).join('') + '</div></div></div>';
+          '<div class="ed-row ed-style"><div class="ed-colors">' + COLORS.map(function (c) { return '<button type="button" class="ed-col" data-c="' + c + '" aria-label="' + root.OESTT('Kolor', 'Colour') + '"><i style="background:' + c + '"></i></button>'; }).join('') + '</div>' +
+          '<div class="ed-seg ed-widths">' + WIDTHS.map(function (w) { return '<button type="button" class="ed-tool" data-w="' + w.v + '" aria-label="' + root.OESTT('Grubość', 'Width') + ' ' + w.k + '"><i style="width:' + (w.v + 2) + 'px;height:' + (w.v + 2) + 'px"></i></button>'; }).join('') + '</div></div></div>';
         var cv = box.querySelector('canvas'), g = cv.getContext('2d'), stage = box.querySelector('.ed-stage'), k = 1;
         function fit() {
           var r = stage.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -204,7 +203,7 @@
           } else if (b.getAttribute('data-a') === 'cancel') return close(null);
           else if (b.getAttribute('data-a') === 'save') {
             if (!realShapes().length && !normCrop(crop, W, H)) return close(null);
-            b.disabled = true; b.innerHTML = (root.OESTLadowanie ? root.OESTLadowanie.ring() + ' ' : '') + T('Zapisuję…', 'Saving…');
+            b.disabled = true; b.innerHTML = (root.OESTLadowanie ? root.OESTLadowanie.ring() + ' ' : '') + root.OESTT('Zapisuję…', 'Saving…');
             return renderFinal(bmp, realShapes(), crop, max).then(function (out) { close(out || null); }, function () { close(null); });
           }
           mark();
@@ -223,13 +222,13 @@
     _drawShape: drawShape, _normCrop: normCrop,
     take: function (opts) {
       var C = root.Capacitor, cam = C && C.Plugins && C.Plugins.OESTKeys;
-      if (!api.available() || !cam) return Promise.reject(new Error(T('Aparat działa w aplikacji na telefonie.', 'The camera works in the phone app.')));
+      if (!api.available() || !cam) return Promise.reject(new Error(root.OESTT('Aparat działa w aplikacji na telefonie.', 'The camera works in the phone app.')));
       function shot() {
         // Audyt zdjęć, punkt 2 (zgoda Grzegorza 09/11/2026): Java zmniejsza 12 MP już przy odczycie z aparatu (dekodowanie 1/2, 1/4…),
         // ale nigdy poniżej opts.max – do WebView idzie ok. 0,5 MB zamiast 1,3–6 MB. Data i obrót z EXIF zostają. Bez opts.max: pełne zdjęcie.
         var max = opts && opts.max > 0 ? Math.round(opts.max) : 0;
         return cam.capture(max ? { max: max } : {}).then(function (r) {
-          return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error(T('Nie udało się odczytać zdjęcia.', 'Could not read the photo.')); return res.blob(); })
+          return fetch(C.convertFileSrc(r.path)).then(function (res) { if (!res.ok) throw new Error(root.OESTT('Nie udało się odczytać zdjęcia.', 'Could not read the photo.')); return res.blob(); })
             .then(function (b) { return cam.release({ path: r.path }).catch(function () {}).then(function () { return b; }); },
               function (e) { return cam.release({ path: r.path }).catch(function () {}).then(function () { throw e; }); });
         }, function (e) { if (/CANCELLED/.test(String(e && e.message || e))) return null; throw e; });
@@ -244,11 +243,11 @@
         var cur = blob, url = '', box = document.createElement('div');
         box.className = 'oest-review';
         box.setAttribute('style', 'position:fixed;inset:0;z-index:2147483000;background:#05070c;display:flex;flex-direction:column');
-        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + var(--oest-gora,env(safe-area-inset-top,0px)))) 8px 8px"><img alt="' + T('Podgląd zdjęcia', 'Photo preview') + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
+        box.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:max(44px, calc(8px + var(--oest-gora,env(safe-area-inset-top,0px)))) 8px 8px"><img alt="' + root.OESTT('Podgląd zdjęcia', 'Photo preview') + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px"></div>' +
           '<p class="oest-review-msg" role="status" style="margin:0;padding:0 16px;color:#f3c76b;font:500 14px system-ui;min-height:18px"></p>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 16px max(56px, calc(16px + env(safe-area-inset-bottom, 0px)), calc(16px + var(--safe-area-inset-bottom, 0px)))">' +
-          '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + T('↺ Powtórz', '↺ Retake') + '</button>' +
-          '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + T('✏️ Edytuj', '✏️ Edit') + '</button>' +
+          '<button type="button" data-r="retake" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + root.OESTT('↺ Powtórz', '↺ Retake') + '</button>' +
+          '<button type="button" data-r="edit" style="min-height:56px;border-radius:14px;border:1px solid #3a4152;background:#151a22;color:#fff;font:600 16px system-ui">' + root.OESTT('✏️ Edytuj', '✏️ Edit') + '</button>' +
           '<button type="button" data-r="ok" style="min-height:56px;border-radius:14px;border:0;background:linear-gradient(90deg,#5b7cff,#a35bff);color:#fff;font:700 16px system-ui">✓ OK</button></div>';
         var img = box.querySelector('img'), msg = box.querySelector('.oest-review-msg'), busy = false;
         function show() { if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(cur); img.src = url; if (opts && typeof opts.prepare === 'function') try { opts.prepare(cur); } catch (_) {} }
@@ -260,12 +259,12 @@
           var r = b.getAttribute('data-r');
           if (r === 'ok') close({ blob: cur });
           else if (r === 'retake') close({ retake: true });
-          else { busy = true; msg.textContent = ''; api.edit(cur, opts).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? T('Zapisano zmiany.', 'Changes saved.') : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
+          else { busy = true; msg.textContent = ''; api.edit(cur, opts).then(function (nb) { if (nb) { cur = nb; show(); } msg.textContent = nb ? root.OESTT('Zapisano zmiany.', 'Changes saved.') : ''; }, function (e) { msg.textContent = e.message; }).then(function () { busy = false; }); }
         });
         show(); document.body.appendChild(box);
       });
     },
-    button: function (label) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn oest-edit'; b.textContent = label || T('✏️ Edytuj', '✏️ Edit'); return b; }
+    button: function (label) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn oest-edit'; b.textContent = label || root.OESTT('✏️ Edytuj', '✏️ Edit'); return b; }
   };
   root.OESTAparat = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -7,6 +7,7 @@
 //   OESTNarzedzia.dzienIso(d)         → "rrrr-mm-dd" (czas lokalny)
 //   OESTNarzedzia.b64ToBytes(b64)     → Uint8Array;  bytesToB64(u8) → base64 (w kawałkach po 32 KB)
 //   OESTNarzedzia.kb(n)               → "2 KB" / "3.0 MB"
+//   OESTNarzedzia.blobB64(blob)      → Promise<base64 bez nagłówka data:> (FileReader)
 //   OESTNarzedzia.esc(s)              → tekst bezpieczny w HTML (& < > " ' → encje; null/undefined → "")
 // esc: jedno miejsce dla całej apki (audyt nr 53, 22/11/2026) – zastąpiła 27 kopii w ekranach i modułach.
 (function (w) {
@@ -19,5 +20,6 @@
   function bytesToB64(u8) { var s = "", C = 0x8000; for (var i = 0; i < u8.length; i += C) s += String.fromCharCode.apply(null, u8.subarray(i, i + C)); return btoa(s); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function kb(n) { return n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
-  w.OESTNarzedzia = { pad: pad, data: data, godzina: godzina, dzienIso: dzienIso, b64ToBytes: b64ToBytes, bytesToB64: bytesToB64, kb: kb, esc: esc };
+  function blobB64(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = rej; r.readAsDataURL(blob); }); }
+  w.OESTNarzedzia = { blobB64: blobB64, pad: pad, data: data, godzina: godzina, dzienIso: dzienIso, b64ToBytes: b64ToBytes, bytesToB64: bytesToB64, kb: kb, esc: esc };
 })(typeof window !== "undefined" ? window : globalThis);

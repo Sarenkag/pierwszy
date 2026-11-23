@@ -124,11 +124,11 @@
   function tplState(err) {
     var n = $("tplNotice");
     if (serverTpl) {
-      n.hidden = !err; if (err) n.innerHTML = "<b>"+T("Bez połączenia z Google:", "No Google connection:")+"</b> " + esc(err) + T(". Działam na zapisanym szablonie.", ". Working with the saved template.");
-      $("tplName").textContent = T("Używany: ", "In use: ") + serverTpl.name + T(" (kopia z Google Drive)", " (copy from Google Drive)");
+      n.hidden = !err; if (err) n.innerHTML = "<b>"+window.OESTT("Bez połączenia z Google:", "No Google connection:")+"</b> " + esc(err) + window.OESTT(". Działam na zapisanym szablonie.", ". Working with the saved template.");
+      $("tplName").textContent = window.OESTT("Używany: ", "In use: ") + serverTpl.name + window.OESTT(" (kopia z Google Drive)", " (copy from Google Drive)");
       return;
     }
-    if (err) { n.hidden = false; n.innerHTML = "<b>" + T("Szablon:", "Template:") + "</b> " + esc(err); $("tplName").textContent = T("Brak — używany przykładowy wzór.", "None — the sample template is used."); }
+    if (err) { n.hidden = false; n.innerHTML = "<b>" + window.OESTT("Szablon:", "Template:") + "</b> " + esc(err); $("tplName").textContent = window.OESTT("Brak — używany przykładowy wzór.", "None — the sample template is used."); }
   }
   function applySetup(r) {
     if (!cfg.email) cfg.email = r.email || "";
@@ -164,7 +164,7 @@
     });
   }
   function loadSetup() {
-    $("tplName").textContent = T("Ładuję z Google Drive…", "Loading from Google Drive…");
+    $("tplName").textContent = window.OESTT("Ładuję z Google Drive…", "Loading from Google Drive…");
     return api("getSetup", cfg.folder || "").then(function (r) {
       applySetup(r);
       save("cfg", cfg); fillSettings();
