@@ -1,4 +1,4 @@
-// Pasek dni (Grzegorz 07/11/2026): ekran główny i lista Inspekcji = jeden moduł (moduly/pasek-dni),
+// Pasek dni (Grzegorz 07/11/2026): ekran główny i lista Inspekcji = jedna wspólna część (moduly/szkielet/src/czesci/PasekDni.vue),
 // dni pracy z grafiku w profilu wyróżnione, wolne nieprzygaszone, oba paski identyczne, PL/EN bez skoków.
 // Scenariusz Grzegorza: dziś 07/11/2026, grafik zapisany w profilu: od 02/11/2026, 4 on / 4 off, 08:00–20:00, początek cyklu 02/11/2026.
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/pasek-dni-ui-check.cjs  (po npm run copy-web)
@@ -36,11 +36,14 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       await p.goto(url + '/index.html#home'); await p.waitForTimeout(500);
       return { c, p };
     }
-    const strip = (p, id) => p.evaluate(id => [...document.querySelectorAll('#' + id + ' [data-day]')].map(b => {
-      const r = b.getBoundingClientRect();
-      return { k: b.dataset.day, sh: b.classList.contains('sh'), today: b.classList.contains('today'), past: b.classList.contains('past'),
-        op: getComputedStyle(b).opacity, bg: getComputedStyle(b).backgroundImage.slice(0, 40), h: Math.round(r.height), w: Math.round(r.width), x: Math.round(r.x - b.parentNode.getBoundingClientRect().x + b.parentNode.scrollLeft),
-        txt: [...b.children].map(e => e.textContent).join('|') };
+    // pasek dni = wspólna część Ionic (czesci/PasekDni.vue): dzień = ion-button[data-day]; wygląd z atrybutów Ionic:
+    // dzień pracy = wypełniony kolorem tertiary (dawny gradient), dziś = primary, miniony = fill „clear” (przygaszony), wolny = obwódka (nieprzygaszony)
+    const strip = (p, id) => p.evaluate(id => [...document.querySelectorAll('#' + id + ' [data-day]')].filter(b => b.getClientRects().length).map(b => {
+      const r = b.getBoundingClientRect(), g = b.closest('ion-grid').getBoundingClientRect();
+      const kol = b.getAttribute('color'), fill = b.getAttribute('fill');
+      return { k: b.dataset.day, sh: kol === 'tertiary' && fill === 'solid', today: kol === 'primary', past: fill === 'clear',
+        op: fill === 'clear' ? 'przygaszony' : '1', bg: kol === 'tertiary' && fill === 'solid' ? 'gradient' : '', h: Math.round(r.height), w: Math.round(r.width), x: Math.round(r.x - g.x) + ',' + Math.round(r.y - g.y),
+        txt: [...b.querySelectorAll('ion-label > small, ion-label > strong, ion-label > ion-icon')].map(e => e.tagName === 'ION-ICON' ? (e.getAttribute('aria-hidden') ? 'ikona' : '') : e.textContent).join('|') };
     }), id);
 
     // ---------- grafik Grzegorza ----------
@@ -48,9 +51,9 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     const lang = {};
     for (const L of ['pl', 'en']) {
       await p.evaluate(L => { window.OESTSettings.update(s => { s.appearance.language = L; }); window.OESTSettingsUI.applyTheme(); }, L);
-      await p.evaluate(() => { OESTEkrany.go('home'); }); await p.waitForTimeout(400);
+      await p.evaluate(() => { OESTEkrany.go('home'); }); await p.waitForTimeout(900);
       const home = await strip(p, 'hmDays');
-      await p.evaluate(() => { OESTEkrany.go('ppm'); }); await p.waitForTimeout(400);
+      await p.evaluate(() => { OESTEkrany.go('ppm'); }); await p.waitForTimeout(900);
       const ppm = await strip(p, 'ppmDays');
       lang[L] = { home, ppm };
     }
@@ -88,7 +91,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     {
       const { c: c2, p: p2 } = await open(false);
       const h = await strip(p2, 'hmDays');
-      await p2.evaluate(() => { OESTEkrany.go('ppm'); }); await p2.waitForTimeout(400);
+      await p2.evaluate(() => { OESTEkrany.go('ppm'); }); await p2.waitForTimeout(900);
       const q = await strip(p2, 'ppmDays');
       check(!h.some(x => x.sh) && !q.some(x => x.sh), 'bez grafiku: pasek wyróżnia dni pracy');
       check(h.concat(q).filter(x => !x.past).every(x => x.op === '1'), 'bez grafiku: dni przygaszone');

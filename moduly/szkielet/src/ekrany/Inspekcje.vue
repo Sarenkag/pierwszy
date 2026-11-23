@@ -1,7 +1,7 @@
 <!-- Inspekcje (ppm): pasek dni, filtr grup (czesci/Filtr.vue), lista klocków. Dane i reguły: OESTPpmUI.ppmDane() (app/www/ppm-ui.js) – tu tylko wspólne części. -->
 <template>
   <div>
-    <PasekDni :dni="d.dni" @dzien="P.dzien"></PasekDni>
+    <PasekDni id="ppmDays" :dni="d.dni" @dzien="P.dzien"></PasekDni>
     <Filtr :T="T" :opcje="d.filtry" :wybrane="d.wybrane" :wiele="true" :pusty="T('Wszystkie', 'All')" @zmiana="P.filtry"></Filtr>
     <Klocek v-for="k in d.klocki" :key="(k.fam || '') + '|' + (k.id || '')" :T="T" :k="k" @wybierz="wybierz" @przytrzymaj="przytrzymaj"></Klocek>
     <ion-item v-if="!d.klocki.length" lines="none"><ion-note>{{ d.pusto }}</ion-note></ion-item>

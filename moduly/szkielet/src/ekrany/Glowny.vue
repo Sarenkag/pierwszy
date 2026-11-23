@@ -1,31 +1,33 @@
 <!-- Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”): nagłówek (logo, ONE EASTSIDE, data, pogoda, PL/EN, dzwonek, profil),
      lampki sieci i Dysku, licznik folderu zdjęć, pasek dni, kafelki modułów. Dane: OESTHome.dane() (app/www/home.js) – tu tylko wspólne części. -->
 <template>
-  <ion-header>
+  <ion-header class="ion-no-border oest-glowny">
     <ion-toolbar>
-      <ion-avatar slot="start"><span class="oest-inicjaly">OEST</span></ion-avatar>
+      <ion-avatar slot="start" class="oest-logo"><span class="oest-inicjaly">OEST</span></ion-avatar>
       <ion-label>
         <h2><strong>ONE EASTSIDE</strong></h2>
         <p>{{ d.data }}<template v-if="d.pogoda"> · <ion-text color="primary" id="hmWx" @click="okno('wx')"><ion-icon :icon="POGODA[d.pogoda.ikona]" aria-hidden="true"></ion-icon> {{ d.pogoda.temp }}</ion-text></template></p>
       </ion-label>
       <ion-buttons slot="end">
-        <ion-button @click="H.jezyk()" :aria-label="T('Język', 'Language')">{{ T('EN', 'PL') }}</ion-button>
-        <ion-button id="hmBell" @click="okno('bell')" :aria-label="T('Powiadomienia', 'Notifications')">
+        <div class="oest-jezyk" role="group" :aria-label="T('Język', 'Language')">
+          <ion-button v-for="j in ['pl', 'en']" :key="j" :fill="T('pl', 'en') === j ? 'solid' : 'clear'" :aria-pressed="T('pl', 'en') === j" @click="T('pl', 'en') !== j && H.jezyk()">{{ j.toUpperCase() }}</ion-button>
+        </div>
+        <ion-button class="oest-ikona" id="hmBell" @click="okno('bell')" :aria-label="T('Powiadomienia', 'Notifications')">
           <ion-icon slot="icon-only" :icon="notificationsOutline"></ion-icon><ion-badge v-if="d.dzwonek" color="danger">{{ d.dzwonek }}</ion-badge>
         </ion-button>
-        <ion-button data-nav="settings/profile" :aria-label="T('Mój profil', 'My Profile')"><ion-avatar><span class="oest-inicjaly">{{ d.inicjaly }}</span></ion-avatar></ion-button>
+        <ion-button class="oest-ikona oest-ja" data-nav="settings/profile" :aria-label="T('Mój profil', 'My Profile')">{{ d.inicjaly }}</ion-button>
       </ion-buttons>
     </ion-toolbar>
   </ion-header>
-  <div>
+  <div class="oest-lampki">
     <Lampka id="hmNet" :stan="d.siec.stan" :tekst="d.siec.tekst" @click="okno('net')"></Lampka>
     <Lampka id="hmDrive" :stan="d.dysk.stan" :tekst="d.dysk.tekst" @click="okno('drive')"></Lampka>
-    <ion-chip id="hmPhotos" :outline="true" :color="KOL[d.zdjecia.poziom]" data-nav="zdjecia" :aria-label="T('Folder zdjęć OEST', 'OEST photo folder')">
+    <ion-chip id="hmPhotos" :color="KOL[d.zdjecia.poziom]" data-nav="zdjecia" :aria-label="T('Folder zdjęć OEST', 'OEST photo folder')">
       <ion-icon v-if="d.zdjecia.poziom === 'full'" :icon="warningOutline" aria-hidden="true"></ion-icon><ion-label>{{ d.zdjecia.tekst }}</ion-label>
     </ion-chip>
   </div>
-  <PasekDni :dni="d.dni" @dzien="dzien"></PasekDni>
-  <Kafelki :lista="kafelki" @wybierz="it => it.id === 'news' && okno('news')"></Kafelki>
+  <PasekDni id="hmDays" :dni="d.dni" @dzien="dzien"></PasekDni>
+  <Kafelki id="hmTiles" :lista="kafelki" @wybierz="it => it.id === 'news' && okno('news')"></Kafelki>
 </template>
 
 <script setup>

@@ -56,3 +56,36 @@ ion-item[data-grupa="water"] { --border-color: #3b8eea; }
 ion-item[data-grupa="elec"] { --border-color: #e3b341; }
 ion-item[data-grupa="mech"] { --border-color: #3fb27f; }
 ion-item[data-grupa="sub"] { --border-color: #a371f7; }
+/* Wygląd ekranu głównego i paska dni jak dotąd (Grzegorz 23/11/2026: „brzydziej się nie dało”) – „Szkło i poświata” z app/www/theme.css
+   na komponentach Ionic. Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). */
+.oest-dni { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px 8px; scrollbar-width: none; }
+ion-button.oest-dzien { flex: none; width: 50px; height: auto; margin: 0; text-transform: none; letter-spacing: 0; font-weight: 400;
+  --padding-start: 0; --padding-end: 0; --padding-top: 7px; --padding-bottom: 5px; --border-radius: 14px; --border-width: 1px; --border-style: solid;
+  --border-color: var(--line); --background: var(--panel); --background-hover: var(--panel); --color: var(--ink); --box-shadow: none; }
+ion-button.oest-dzien ion-label { text-align: center; }
+ion-button.oest-dzien small { display: block; font-size: .72rem; text-transform: uppercase; color: var(--muted); }
+ion-button.oest-dzien strong { display: block; font-size: 1.1rem; }
+ion-button.oest-dzien ion-icon { display: block; margin: 0 auto; height: 1.2em; font-size: .8rem; }
+ion-button.oest-dzien ion-badge { display: block; min-width: 26px; width: max-content; margin: 3px auto 0; border-radius: 7px; font-size: .72rem; --background: rgba(255,255,255,.1); --color: var(--muted); }
+ion-button.oest-dzien[data-minal] { opacity: .4; }
+ion-button.oest-dzien[data-praca] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
+ion-button.oest-dzien[data-dzis] { --border-color: var(--accent); --box-shadow: 0 0 12px rgba(124,132,255,.5); }
+ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14px rgba(124,132,255,.7); }
+.oest-kafelki { --ion-grid-column-padding: 0; padding: 0 11px; }
+.oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
+.oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
+.oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
+.oest-kafelki ion-card-title { font-size: .95rem; font-weight: 700; color: var(--ink); }
+ion-header.oest-glowny ion-toolbar { --background: transparent; --padding-start: 16px; --padding-end: 16px; --padding-top: 12px; --padding-bottom: 8px; }
+ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-radius: 14px; }
+ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
+ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons, ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons.button-has-icon-only { height: 44px; min-width: 44px; margin-left: 6px; --padding-start: 8px; --padding-end: 8px; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line); --background: var(--panel); overflow: visible; }
+ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; border-radius: 10px; }
+.oest-lampki { display: flex; align-items: center; flex-wrap: wrap; padding: 4px 10px 14px; }
+.oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
+.oest-lampki ion-chip:last-child { margin-left: auto; }
+.oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
+.oest-jezyk { display: flex; height: 44px; padding: 3px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.oest-jezyk ion-button { height: 36px; margin: 0; --padding-start: 10px; --padding-end: 10px; --border-radius: 11px; --box-shadow: none; --color: var(--muted); font-weight: 700; }
+.oest-jezyk ion-button[fill=solid] { --color: #fff; }
+ion-button.oest-ja::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid #0a0e1f; }
