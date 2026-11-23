@@ -201,13 +201,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|settings/reports",
-      "rule": "IONIC",
-      "detail": "Ekran settings/reports (Raporty i zdjęcia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|settings/vantify",
       "rule": "IONIC",
       "detail": "Ekran settings/vantify (Vantify) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
