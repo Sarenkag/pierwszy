@@ -249,7 +249,6 @@
 <script src="i-word.js"></script>
 <script>
 
-(function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -2712,7 +2711,6 @@
         try { if (stale && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); } } catch (e) {}
       }).catch(function () {});
   }
-})();
 </script>
 <script src="form-ui.js"></script>
 </body>
