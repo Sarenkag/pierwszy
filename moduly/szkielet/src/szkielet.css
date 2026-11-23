@@ -151,46 +151,111 @@ ion-button.oest-podpowiedz { height: auto; margin: 12px 0 0; white-space: normal
 ion-card.oest-klocek::part(native) { background: transparent; }
 /* ---------- Wygląd głównej apki („Szkło i poświata”, main) na komponentach Ionic – klasy oest-* (Grzegorz 23/11/2026: przeniesione
    ekrany wyglądają tak samo jak na main). Najpierw zmienne Ionic; reszta (ramka, zaokrąglenie) tylko tam, gdzie Ionic nie ma zmiennej. ---------- */
-ion-card.oest-panel { --background: var(--panel); --color: var(--ink); margin: 0 0 14px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; }
+ion-card.oest-panel { --background: var(--panel); --color: var(--ink); margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-size: 15px; }
 ion-card.oest-panel ion-item { --background: transparent; }
-ion-list-header.oest-tytul { font-size: 18px; font-weight: 700; --color: var(--ink); min-height: 44px; }
-ion-item.oest-pole { --background: var(--field); --border-color: var(--line); --border-width: 1px; --border-style: solid; --border-radius: 12px; --min-height: 48px; --padding-start: 14px; --inner-border-width: 0; margin: 0 16px 10px; }
-ion-progress-bar.oest-licznik { --background: rgba(127, 127, 127, .25); --progress-background: var(--accent); height: 10px; border-radius: 6px; margin: 0 16px; width: auto; }
+ion-list-header.oest-tytul { padding: 0; min-height: 0; margin: 0; font-size: 1.05rem; font-weight: 650; line-height: 1.45; letter-spacing: 0; --color: var(--ink); --inner-padding-end: 0; }
+ion-item.oest-pole { --background: var(--field); --border-color: var(--line); --border-width: 1px; --border-style: solid; --border-radius: 12px; --min-height: 46px; --padding-start: 12px; --inner-padding-end: 12px; --inner-border-width: 0; margin: 0; font-size: 15px; }
+ion-item.oest-wybrane { --background: var(--field); --border-color: var(--accent); --border-width: 1px; --border-style: solid; --border-radius: 9px; --min-height: 42px; --padding-start: 12px; --inner-padding-end: 12px; --inner-border-width: 0; margin: 0; font-size: 15px; }
+ion-item.oest-wybrane ion-label { margin: 10px 0; white-space: normal; }
+ion-item.oest-check { --background: transparent; --padding-start: 0; --inner-padding-end: 0; --min-height: 48px; --inner-border-width: 0; font-size: 15px; }
+ion-item.oest-check ion-checkbox { --size: 22px; --border-radius: 5px; --border-width: 1px; --border-color: rgba(255, 255, 255, .55); --checkbox-background: transparent; --checkbox-background-checked: var(--accent); --border-color-checked: var(--accent); }
+ion-item.oest-check ion-checkbox::part(label) { margin-inline-start: 10px; }
+.oest-szukaj { display: flex; gap: 8px; margin-bottom: -2px; }
+.oest-szukaj > ion-item { flex: 1 1 auto; min-width: 0; }
+.oest-szukaj > ion-item:last-child { flex: 0 0 34%; }
+.oest-lista { display: flex; flex-direction: column; gap: 10px; }
+.oest-lista ion-card.oest-klocek { margin: 0 0 8px; }
+ion-note.oest-pod { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin: 0 0 -2px; }
+ion-progress-bar.oest-licznik { --background: rgba(127, 127, 127, .25); --progress-background: var(--accent); height: 10px; border-radius: 6px; overflow: hidden; width: auto; }
 ion-progress-bar.oest-licznik.oest-pelny { --progress-background: #e5484d; }
-ion-button.oest-duzy { --border-radius: 14px; min-height: 52px; text-transform: none; font-size: 16px; font-weight: 700; letter-spacing: 0; margin: 4px 0 14px; }
-ion-card ion-button.oest-duzy { margin: 4px 16px 16px; }
-ion-col > ion-item.oest-pole { margin: 0; }
-/* pasek wysyłki (czesci/PasekWysylki.vue): cienki pas na dole jak na main, rozwinięcie nad nim */
-ion-toolbar.oest-pasek { --background: rgba(14, 18, 40, .96); border-top: 1px solid var(--line); --min-height: 30px; --padding-top: 0; --padding-bottom: 0; --padding-start: 0; --padding-end: 0; --border-color: var(--line); font-size: 13px; }
-ion-toolbar.oest-pasek ion-item { --background: transparent; --min-height: 30px; --padding-start: 12px; --inner-padding-end: 12px; font-size: 13px; }
-ion-toolbar.oest-pasek ion-chip { height: 20px; margin: 0 8px 0 0; padding: 0 8px 0 0; border: 0; border-right: 1px solid var(--line); border-radius: 0; font-size: 13px; --background: transparent; }
-ion-toolbar.oest-pasek ion-icon { font-size: 10px; margin: 0 8px 0 0; }
-ion-toolbar.oest-pasek ion-icon[slot=end] { font-size: 11px; opacity: .6; margin: 0; }
-/* kolory kropek jak dawny pasek na main (ok #3fb27f, czekam #e3b341, błąd #e5534b) */
-ion-toolbar.oest-pasek .ion-color-success { --ion-color-base: #3fb27f !important; }
-ion-toolbar.oest-pasek .ion-color-warning { --ion-color-base: #e3b341 !important; }
-ion-toolbar.oest-pasek .ion-color-danger { --ion-color-base: #e5534b !important; }
-ion-toolbar.oest-pasek ion-spinner { width: 12px; height: 12px; margin: 0 8px 0 0; }
-ion-toolbar.oest-pasek ion-progress-bar { height: 2px; --background: transparent; }
-ion-toolbar.oest-pasek ion-button { flex: 1 1 auto; min-height: 40px; text-transform: none; font-size: 15px; font-weight: 600; --border-radius: 12px; }
-/* okienka OESTOkna.okno: karta na środku jak dawne okienko apki, nie cały ekran */
-ion-modal.oest-okno { --width: calc(100% - 32px); --max-width: 400px; --height: 85%; --max-height: 760px; --border-radius: 18px; --background: #161a34; --border-color: var(--line); --border-width: 1px; --border-style: solid; }
-ion-modal.oest-okno ion-button { text-transform: none; letter-spacing: 0; }
-ion-modal.oest-okno ion-footer ion-buttons { flex: 1 1 auto; gap: 10px; padding: 6px 10px 10px; }
-ion-modal.oest-okno ion-footer ion-button { flex: 1 1 0; min-height: 48px; font-size: 15px; font-weight: 700; --border-radius: 14px; }
-ion-modal.oest-okno ion-footer ion-button:not(:last-child) { --background: #222746; --color: #ffffff; --border-radius: 14px; }
-/* podgląd na cały ekran (OESTOkna.okno({ pelny: true }), np. zdjęcie): ciemne tło bez ramki, treść na środku – jak dawny podgląd na main */
-ion-modal.oest-okno.oest-podglad { --width: 100%; --height: 100%; --max-width: none; --max-height: none; --border-radius: 0; --border-width: 0; --background: rgba(6, 8, 20, 0.94); }
-ion-modal.oest-podglad ion-content { --background: transparent; }
-ion-modal.oest-podglad ion-label p { color: #9aa6ff !important; }
+ion-button.oest-duzy { --border-radius: 14px; min-height: 52px; text-transform: none; font-size: 16px; font-weight: 700; letter-spacing: 0; margin: 14px 0; }
+ion-card.oest-panel ion-button.oest-duzy { margin: 0; }
+/* pasek wysyłki (czesci/PasekWysylki.vue) – piksel w piksel jak dawny .oest-sbar na main (moduly/wysylka + lampka z moduly/znacznik) */
+.oest-sbar { display: flex; flex-direction: column; background: rgba(14, 18, 40, .96); color: var(--ink, #eef1ff); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line, rgba(255, 255, 255, .12)); padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)); font: 13px/1.2 var(--font-body, system-ui), sans-serif; }
+.oest-sbar-r { display: flex; align-items: center; gap: 8px; height: 29px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+.oest-sbar-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.oest-sbar-r > span:last-child { opacity: .6; font-size: 11px; will-change: opacity; }
+.oest-sbar-i { width: 10px; height: 10px; flex: none; border-radius: 50%; box-sizing: border-box; }
+.oest-sbar.run .oest-sbar-i { width: 12px; height: 12px; background: conic-gradient(from 0deg, rgba(124, 132, 255, 0) 0deg, rgba(124, 132, 255, .15) 120deg, #7c84ff 300deg, #c58bff 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px)); animation: oest-sbar-kolo .9s linear infinite; }
+@keyframes oest-sbar-kolo { to { transform: rotate(360deg); } }
+.oest-sbar.ok .oest-sbar-i { background: #3fb27f; }
+.oest-sbar.wait .oest-sbar-i { background: #e3b341; }
+.oest-sbar.err .oest-sbar-i { background: #e5534b; }
+.oest-sbar-n { display: flex; align-items: center; gap: 5px; padding-right: 8px; margin-right: 2px; border-right: 1px solid var(--line, rgba(255, 255, 255, .12)); opacity: .852; will-change: opacity; } /* .852 zamiast .85 z main: w osobnej warstwie Chromium zaokrągla .85 o 1 jednostkę niżej niż main – .851–.853 daje piksel w piksel */
+.oest-sbar-l { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok, #3ddc84); box-shadow: 0 0 6px var(--ok, #3ddc84); transition: background .3s, box-shadow .3s; }
+.oest-sbar-n.mid .oest-sbar-l { background: var(--warn, #ffd23f); box-shadow: 0 0 6px var(--warn, #ffd23f); }
+.oest-sbar-n.off .oest-sbar-l { background: var(--bad, #ff4d5e); box-shadow: 0 0 6px var(--bad, #ff4d5e); }
+ion-progress-bar.oest-sbar-p { height: 2px; --background: transparent; --progress-background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); }
+.oest-sbar-m { display: flex; padding: 10px 12px 6px; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line, rgba(255, 255, 255, .12)); }
+.oest-sbar-m small { flex: 1 1 100%; opacity: .75; font-size: 12px; }
+.oest-sbar-m ion-button { flex: 1 1 auto; height: auto; min-height: 40px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: var(--panel, rgba(255, 255, 255, .06)); --color: var(--ink); --padding-top: 8px; --padding-bottom: 8px; --padding-start: 12px; --padding-end: 12px; --box-shadow: none; }
+.oest-sbar-m ion-button.oest-sbar-go { --background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); --color: #fff; --border-color: transparent; }
+/* podgląd na cały ekran (OESTOkna.okno({ pelny: true }), np. zdjęcie) – jak dawny .zd-full na main: czarne tło .92, odstęp 12 px, treść na środku */
+ion-modal.oest-okno.oest-podglad { --width: 100%; --height: 100%; --max-width: none; --max-height: none; --border-radius: 0; --border-width: 0; --background: rgba(0, 0, 0, .92); --backdrop-opacity: 0; }
+ion-modal.oest-podglad ion-content { --background: transparent; --color: #fff; --padding-start: 12px; --padding-end: 12px; --padding-top: 12px; --padding-bottom: 12px; padding: 0; }
 ion-modal.oest-podglad ion-content::part(scroll) { display: flex; flex-direction: column; justify-content: center; }
-ion-button.oest-szary { --background: #222746; --background-activated: #2a3058; --background-hover: #2a3058; --color: #ffffff; --color-activated: #ffffff; text-transform: none; letter-spacing: 0; --border-radius: 14px; --border-color: var(--line); --border-width: 1px; --border-style: solid; min-height: 48px; min-width: 120px; font-size: 15px; font-weight: 700; }
-/* opis pod polem / licznik (dawne .hint na main): 13 px, kolor --muted; .oest-dwie-linie rezerwuje 2 linie, żeby PL/EN nie przesuwał ekranu */
-ion-note.oest-opis { font-size: 13px; line-height: 1.4; color: var(--muted); display: block; }
-ion-note.oest-opis.oest-dwie-linie { min-height: 2.8em; }
-ion-item ion-label.oest-etykieta { font-size: 13px !important; color: var(--steel) !important; }
-ion-modal.oest-okno ion-footer ion-button.ion-color-primary:last-child { --ion-color-base: var(--grad) !important; --background: var(--grad); --background-activated: var(--grad); --background-hover: var(--grad); --background-focused: var(--grad); --color: #ffffff; }
+.oest-podglad-tresc { display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; font-size: 15px; }
+.oest-podglad-tresc ion-img::part(image) { width: auto; max-width: 100%; max-height: 72vh; object-fit: contain; }
+.oest-podglad-tresc p { margin: 15px 0; line-height: 1.45; }
+.oest-podpis { font-size: 13px; color: var(--muted); }
+.oest-akcje { display: flex; gap: 10px; margin-top: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+ion-button.oest-szary { --background: var(--panel); --background-activated: var(--panel); --background-hover: var(--panel); --color: var(--ink); --border-radius: 14px; --border-color: var(--line); --border-width: 1px; --border-style: solid; --padding-start: 16px; --padding-end: 16px; --box-shadow: none; margin: 0; height: 48px; min-width: 120px; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+/* Zdjęcia (ekrany/Zdjecia.vue) – jak dawny #v-zdjecia na main */
+.oest-panele > ion-card.oest-panel { margin-bottom: 14px; }
+ion-note.oest-opis.oest-rezerwa { display: grid; }
+.oest-rezerwa > span { grid-area: 1 / 1; }
+.oest-rezerwa > span + span { visibility: hidden; } /* niewidoczny tekst w drugim języku trzyma wysokość: PL/EN nie przesuwa treści (jak rezerwa OESTBledy na main) */
+.oest-panele { padding-bottom: 34px; } /* jak main: 48 px od ostatniego panelu do paska wysyłki */
+.oest-panele ion-list-header.oest-tytul { font-size: 15px; font-weight: 700; line-height: 22px; }
+.oest-panele ion-button.oest-duzy { min-height: 48px; height: 48px; font-size: 15px; font-weight: 600; margin: 0; }
+.oest-pole-blok { display: flex; flex-direction: column; gap: 6px; }
+ion-note.oest-etykieta { display: block; font-size: 13px; line-height: 19px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-panele ion-item.oest-check { --min-height: 40px; }
+.oest-panele ion-item.oest-check ion-checkbox { height: 40px; min-height: 0; }
+.oest-dzien-zdjec { margin-top: 6px; }
+.oest-siatka { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-top: 6px; }
+ion-card.oest-zdjecie { position: relative; aspect-ratio: 1; margin: 0; border: 1px solid var(--line); border-radius: 10px; box-shadow: none; --background: #222; overflow: hidden; }
+ion-card.oest-zdjecie ion-img { position: absolute; inset: 0; }
+ion-card.oest-zdjecie ion-img::part(image) { width: 100%; height: 100%; object-fit: cover; }
+ion-card.oest-zdjecie small { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; font-size: .7rem; background: rgba(0, 0, 0, .6); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.oest-chmura { position: absolute; top: 4px; right: 4px; font-size: .7rem; background: rgba(0, 0, 0, .6); color: #fff; padding: 1px 5px; border-radius: 6px; }
+/* opis pod polem / licznik (dawne .hint na main): 13 px, kolor --muted */
+ion-note.oest-opis { display: block; padding: 0; font-size: 13px; line-height: 1.4; color: var(--muted); }
 /* raporty w „Moje raporty” (moduly/raporty/przegladarka.js): kolor paska z lewej jak na main – na Dysku zielony, czeka żółty, odzyskana fioletowy */
 ion-card[data-grupa="dysk"] { --oest-grupa: #5fd6a0; }
 ion-card[data-grupa="czeka"] { --oest-grupa: #f0c75e; }
 ion-card[data-grupa="odzyskana"] { --oest-grupa: #a35bff; }
+/* „Zapisz ustawienia” przyklejony na dole jak .settings-page .save-bar na main */
+.oest-zapisz { position: sticky; bottom: 8px; z-index: 2; background: var(--bg); padding: 8px 0; display: flex; gap: 8px; flex-direction: column; }
+.oest-zapisz ion-button.oest-duzy { margin: 4px 0; }
+ion-item.oest-pole ion-input, ion-item.oest-pole ion-select { min-height: 46px; --padding-top: 0; --padding-bottom: 0; }
+ion-item.oest-check ion-checkbox { margin: 0; }
+/* globalne pole z moduly/wyglad (min-height var(--h-field)) nie rozpycha pola Ionic – wysokość daje ion-item */
+ion-item.oest-pole { --h-field: 0px; }
+/* okienka OESTOkna.okno – jak dawne okienko apki na main (.oest-ask): tło .55, karta 360 px na środku, wysokość według treści, odstęp 18 px */
+ion-modal.oest-okno { --width: 360px; --max-width: calc(100% - 32px); --height: auto; --max-height: calc(100% - 32px); --border-radius: 18px; --background: #161a34; --border-color: var(--line); --border-width: 1px; --border-style: solid; --backdrop-opacity: .55; --box-shadow: none; }
+ion-modal.oest-okno:not(.oest-podglad) .ion-page { position: relative; display: block; contain: content; padding: 18px; color: #fff; font-size: 15px; }
+ion-modal.oest-okno ion-header { box-shadow: none; }
+ion-modal.oest-okno ion-header ion-toolbar, ion-modal.oest-okno ion-footer ion-toolbar { --background: transparent; --min-height: 0; --padding-top: 0; --padding-bottom: 0; --padding-start: 0; --padding-end: 0; --border-width: 0; }
+ion-modal.oest-okno ion-title { padding: 0; margin: 0 0 6px; font-size: 17px; font-weight: 650; line-height: 24px; text-align: left; color: #fff; }
+.oest-okno-tresc { max-height: 60vh; overflow: auto; margin: 0 0 14px; }
+ion-modal.oest-okno ion-footer { box-shadow: none; }
+.oest-okno-przyciski { display: flex; gap: 10px; }
+.oest-okno-przyciski ion-button { --box-shadow: none !important; flex: 1 1 0; height: 48px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 14px; --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+.oest-okno-przyciski ion-button[fill=outline] { --background: #222746; --background-hover: #222746; --background-activated: #222746; --color: #fff; --border-color: rgba(255, 255, 255, .18); --border-width: 1px; --border-style: solid; }
+/* treść podglądu raportu (ekrany/RaportPodglad.vue) – jak .rpt-meta / .rpt-view / .rpt-pics / .rpt-drive / .rpt-to na main */
+.oest-raport-meta { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); }
+.oest-raport-tresc { margin: 0 0 10px; font-size: 13px; line-height: 1.35; }
+.oest-raport-tresc p { margin: 0 0 6px; }
+.oest-raport-zdjecia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 0; }
+.oest-raport-zdjecia ion-img::part(image) { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+ion-button.oest-szeroki { width: 100%; margin: 10px 0 0; }
+ion-button.oest-link { height: auto; min-height: 0; margin: 6px 0 0; font-size: 14px; font-weight: 400; text-transform: none; letter-spacing: 0; text-decoration: underline; --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --color: var(--accent); --background-hover: transparent; }
+.oest-adresaci { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 0; }
+ion-item.oest-adresat { --background: transparent; --min-height: 20px; --padding-start: 0; --inner-padding-end: 0; --inner-border-width: 0; font-size: 14px; }
+ion-item.oest-adresat ion-checkbox { --size: 17px; --border-radius: 4px; --border-width: 1px; --border-color: rgba(255, 255, 255, .55); --checkbox-background: transparent; --checkbox-background-checked: var(--accent); --border-color-checked: var(--accent); margin: 0; min-height: 0; }
+ion-item.oest-adresat ion-checkbox::part(label) { margin-inline-start: 10px; }
+ion-item.oest-adresat small { font-size: 11.67px; color: var(--muted); }
+ion-item.oest-adresat ion-checkbox { height: 20px; }
+ion-item.oest-adresat ion-checkbox.checkbox-disabled { opacity: 1; }
+ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(container) { opacity: 1; }

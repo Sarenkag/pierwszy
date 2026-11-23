@@ -77,8 +77,7 @@
         linie: pv ? pv.lines : [w.OESTT("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")],
         zdjecia: zdjecia,
         odzyskaj: r.snap && !reactive ? (r.rec ? w.OESTT("Otwórz odzyskaną inspekcję", "Open recovered inspection") : w.OESTT("Odzyskaj do edycji", "Recover for editing")) : "",
-        dysk: r.driveId ? { adres: "https://drive.google.com/file/d/" + encodeURIComponent(r.driveId) + "/view", tekst: w.OESTT("Otwórz na Dysku", "Open on Drive") } : null,
-        adresaciTytul: w.OESTT("Do kogo", "Send to"),
+        dysk: r.driveId ? { adres: "https://drive.google.com/file/d/" + encodeURIComponent(r.driveId) + "/view", tekst: w.OESTT("Otwórz na Dysku ›", "Open on Drive ›") } : null,
         adresaci: [
           cb("sp", w.OESTT("Mój prywatny e-mail", "My private email"), to.priv, w.OESTT("brak adresu w Mój profil", "no address in My Profile")),
           cb("sm", w.OESTT("Mój firmowy e-mail", "My work email"), to.me, w.OESTT("brak adresu w Mój profil", "no address in My Profile")),

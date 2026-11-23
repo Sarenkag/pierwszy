@@ -1,32 +1,28 @@
 <!-- Pasek wysyłki raportów – JEDEN w całej apce, w stopce ramy (poza przewijaniem): lampka sieci, „Wysyłam raport 1/2”, czekam na Wi‑Fi,
      wysłano, błąd + Ponów; stuknięcie rozwija opis i przyciski nad paskiem. Dane i logika: moduly/wysylka (OESTSender.stan() i zdarzenie
-     „oest:wysylka”); przyciski wołają OESTSender.akcja(a). Pasek niczego nie liczy. -->
+     „oest:wysylka”); przyciski wołają OESTSender.akcja(a). Pasek niczego nie liczy.
+     Wygląd piksel w piksel jak dawny pasek na main (.oest-sbar w moduly/wysylka i lampka z moduly/znacznik) – pasek jest na ~40 ekranach,
+     więc ten sam układ: rząd 29 px, lampka 8 px z poświatą, kropka stanu 10 px, ▴ jako znak; style: szkielet.css (.oest-sbar*). -->
 <template>
-  <ion-toolbar v-if="s.widoczny" id="oest-pasek-wysylki" class="oest-pasek" role="status">
-    <template v-if="s.otwarty">
-      <ion-item v-if="s.opis" lines="none"><ion-note>{{ s.opis }}</ion-note></ion-item>
-      <ion-item lines="full">
-        <ion-button v-for="b in s.przyciski" :key="b.a" :data-a="b.a" size="small" :fill="b.glowny ? 'solid' : 'outline'" @click="akcja(b.a)">{{ b.tekst }}</ion-button>
-      </ion-item>
-    </template>
-    <ion-progress-bar v-if="s.ton === 'run'" :value="s.postep || 0" :color="KOLOR[s.ton] || 'primary'"></ion-progress-bar>
-    <ion-item button lines="none" :detail="false" data-a="toggle" @click="akcja('toggle')">
-      <Lampka slot="start" :stan="s.siec.stan" :tekst="s.siec.tekst"></Lampka>
-      <ion-spinner v-if="s.ton === 'run'" slot="start" name="crescent" aria-hidden="true"></ion-spinner>
-      <ion-icon v-else slot="start" :icon="ellipse" :color="KOLOR[s.ton] || 'medium'" aria-hidden="true"></ion-icon>
-      <ion-label class="ion-text-nowrap">{{ s.tekst }}</ion-label>
-      <ion-icon slot="end" :icon="s.otwarty ? caretDown : caretUp" aria-hidden="true"></ion-icon>
-    </ion-item>
-  </ion-toolbar>
+  <div v-if="s.widoczny" id="oest-pasek-wysylki" class="oest-sbar" :class="[s.ton, s.otwarty ? 'open' : '']" role="status">
+    <div v-if="s.otwarty" class="oest-sbar-m">
+      <small v-if="s.opis">{{ s.opis }}</small>
+      <ion-button v-for="b in s.przyciski" :key="b.a" :data-a="b.a" :class="b.glowny ? 'oest-sbar-go' : 'oest-sbar-b'" fill="outline" @click="akcja(b.a)">{{ b.tekst }}</ion-button>
+    </div>
+    <ion-progress-bar class="oest-sbar-p" :value="s.postep || 0"></ion-progress-bar>
+    <div class="oest-sbar-r" data-a="toggle" role="button" tabindex="0" @click="akcja('toggle')" @keydown.enter="akcja('toggle')">
+      <span class="oest-sbar-n" :class="s.siec.stan"><span class="oest-sbar-l"></span><span>{{ s.siec.tekst }}</span></span>
+      <span class="oest-sbar-i"></span>
+      <span class="oest-sbar-t">{{ s.tekst }}</span>
+      <span aria-hidden="true">▴</span>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { IonToolbar, IonItem, IonNote, IonButton, IonProgressBar, IonSpinner, IonIcon, IonLabel } from '@ionic/vue';
-import { ellipse, caretUp, caretDown } from 'ionicons/icons';
-import Lampka from './Lampka.vue';
+import { IonButton, IonProgressBar } from '@ionic/vue';
 defineProps({ T: Function });
-const KOLOR = { ok: 'success', wait: 'warning', err: 'danger', run: 'primary' };
 const PUSTY = { widoczny: false, siec: {}, przyciski: [] };
 const s = ref(PUSTY);
 const S = () => window.OESTSender;

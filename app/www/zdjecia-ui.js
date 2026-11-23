@@ -53,6 +53,7 @@
     var s = Z.settings(), all = await Z.list(), st = Z.stats(all), found = Z.search(all, query).slice(0, 120);
     var days = {}, kolej = []; found.forEach(function (r) { if (!days[r.day]) { days[r.day] = []; kolej.push(r.day); } days[r.day].push(r); });
     var last = s.lastSync ? new Date(s.lastSync).toLocaleString(loc()) : w.OESTT('jeszcze nie', 'not yet');
+    var pusto = found.length ? null : all.length ? ['Nic nie pasuje do wyszukiwania.', 'Nothing matches the search.'] : ['Brak zdjęć. Zdjęcia z inspekcji i Reactive pojawią się tutaj.', 'No photos. Photos from inspections and Reactive will appear here.'];
     return {
       telefon: Object.assign(pasek(st.phoneBytes, s.phoneLimitMB * MB), { tytul: w.OESTT('Telefon (folder OEST w apce)', 'Phone (OEST folder in the app)'),
         tekst: mb(st.phoneBytes) + w.OESTT(' z ', ' of ') + mb(s.phoneLimitMB * MB) + ' · ' + st.phoneCount + w.OESTT(' zdjęć · czeka na wysłanie: ', ' photos · waiting to upload: ') + st.pending + ' (' + mb(st.pendingBytes) + ')' }),
@@ -62,7 +63,8 @@
       ustawienia: { preset: s.preset, phoneLimitMB: s.phoneLimitMB, warnMB: s.warnMB, driveLimitMB: s.driveLimitMB, wifiOnly: !!s.wifiOnly },
       presety: Object.keys(Z.PRESETS).map(function (k) { return { v: k, t: w.OESTT(Z.PRESETS[k].pl, Z.PRESETS[k].en) }; }),
       dni: kolej.map(function (d) { return { dzien: d, n: days[d].length, zdjecia: days[d].map(function (r) { return { id: r.id, nazwa: r.name, opis: [r.category, r.code || r.location].filter(Boolean).join(' · '), tylkoDysk: !r.hasBlob }; }) }; }),
-      pusto: found.length ? '' : all.length ? w.OESTT('Nic nie pasuje do wyszukiwania.', 'Nothing matches the search.') : w.OESTT('Brak zdjęć. Zdjęcia z inspekcji i Reactive pojawią się tutaj.', 'No photos. Photos from inspections and Reactive will appear here.')
+      pusto: pusto ? w.OESTT(pusto[0], pusto[1]) : '',
+      pustoRezerwa: pusto ? (w.OESTT(pusto[0], pusto[1]) === pusto[0] ? pusto[1] : pusto[0]) : '' // tekst w drugim języku: ekran rezerwuje wyższy z dwóch (PL/EN nie przesuwa treści, jak OESTBledy na main)
     };
   }
   function szukaj(v) { query = String(v || ''); render(); }
