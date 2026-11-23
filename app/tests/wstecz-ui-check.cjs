@@ -37,11 +37,13 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // stan ekranu: strona, widoczny widok, otwarte okienka
     const where = () => pg.evaluate(() => ({
       page: /\/inspekcje\//.test(location.pathname) ? 'inspekcja' : 'apka', hash: location.hash,
-      view: (v => v || (window.OESTEkrany && document.querySelector('ion-content > .ion-padding') ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(',')), // ekran na Vue (hub Ustawień) nie ma widoku v-…: jego id = v-<trasa>
+      view: (v => v || (window.OESTEkrany && (document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('[id^="v-"]')].filter(e => !e.hidden && e.offsetParent !== null).map(e => e.id).join(',')), // ekran na Vue (hub Ustawień, ekran główny, Inspekcje, Kalendarz – stary .wrap schowany) nie ma widoku v-…: jego id = v-<trasa>
       ask: [...document.querySelectorAll('.oest-ask, ion-alert')].map(a => a.textContent.trim()).join(' | '), // okienko pytania: ion-alert ze szkieletu (OESTOkna.pytaj)
       review: document.querySelectorAll('ion-modal[data-oest-czesc="Aparat"]').length, editor: document.querySelectorAll('ion-modal[data-oest-czesc="EdytorZdjec"]').length, // podgląd i edytor zdjęcia: części Ionic (ion-modal)
       len: history.length, exit: sessionStorage.getItem('wstecz.wyjscie') === '1'
     }));
+    // ekran na Ionic + Vue: treść = dzieci ion-content poza starym .wrap (ekran główny: nagłówek, lampki, pasek dni, kafelki)
+    const HOME = '#oest-szkielet ion-content > :not(.wrap)', KLOCEK = 'ion-card.oest-klocek[data-id]';
     const back = async (ms = 1500) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(ms); await pg.waitForLoadState('domcontentloaded'); await wait(300); return where(); };
     const toHome = async (label, max = 3) => { // z każdego miejsca: najwyżej `max` naciśnięć do ekranu głównego
       let n = 0, s = await where();
@@ -53,16 +55,16 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 1. Grzegorz chodzi po klockach: Ustawienia, kalendarz, lista PPM, dwie inspekcje (każda zamknięta strzałką ‹)
     const log = m => process.env.OEST_DEBUG && console.log(((Date.now() - T0) / 1000).toFixed(1) + 's ' + m);
     log('start'); await pg.goto(B + '/index.html'); await wait(1500); log('home');
-    for (const go of ['settings', 'cal', 'ppm']) { log(go); await pg.click('#v-home [data-nav="' + go + '"]').catch(() => {}); await wait(900); await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(900); }
+    for (const go of ['settings', 'cal', 'ppm']) { log(go); await pg.click(HOME + ' [data-nav="' + go + '"]').catch(() => {}); await wait(900); await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await wait(900); }
     let s = await where(); check(s.view === 'v-home', '1: po Ustawieniach/kalendarzu/liście Wstecz wraca na ekran główny, jest ' + s.view);
-    await pg.click('#v-home [data-nav="ppm"]'); await wait(1200);
+    await pg.click(HOME + ' [data-nav="ppm"]'); await wait(1200);
     // wybrany dzień na pasku dni (lista „tam, skąd przyszedłem” = ten sam dzień)
-    const day = await pg.evaluate(() => { const n = e => +(((e.querySelector('i.n') || {}).textContent || '').split('/')[1] || 0), d = [...document.querySelectorAll('#v-ppm [data-day]')].sort((a, b) => n(b) - n(a))[0]; if (d) d.click(); return d ? d.getAttribute('data-day') : ''; }); await wait(700);
-    const dayCls = day ? await pg.$eval('#v-ppm [data-day="' + day + '"]', e => e.classList.contains('on')) : false;
-    const ids = await pg.$$eval('#v-ppm #ppmList [data-id]', a => a.map(e => e.getAttribute('data-id')).filter(Boolean).slice(0, 2));
+    const day = await pg.evaluate(() => { const n = e => +(((e.querySelector('ion-badge') || {}).textContent || '').split('/')[1] || 0), d = [...document.querySelectorAll('#ppmDays [data-day]')].sort((a, b) => n(b) - n(a))[0]; if (d) d.click(); return d ? d.getAttribute('data-day') : ''; }); await wait(700); // pasek dni (czesci/PasekDni.vue): licznik w ion-badge, wybrany = data-wybrany
+    const dayCls = day ? await pg.$eval('#ppmDays [data-day="' + day + '"]', e => e.hasAttribute('data-wybrany')) : false;
+    const ids = await pg.$$eval(KLOCEK, a => a.map(e => e.getAttribute('data-id')).filter(Boolean).slice(0, 2));
     check(ids.length === 2, '1: na liście PPM są co najmniej 2 klocki, jest ' + ids.length);
     for (const id of ids) {
-      await pg.click('#v-ppm #ppmList [data-id="' + id + '"]'); await wait(3000);
+      await pg.click('ion-card.oest-klocek[data-id="' + id + '"]'); await wait(3000);
       s = await where(); check(s.page === 'inspekcja', '1: klocek ' + id + ' otwiera inspekcję, jest ' + s.page + s.hash);
       await pg.locator('.top .back:visible').first().click(); await wait(2500);
       s = await where(); check(s.page === 'apka' && s.view === 'v-ppm', '1: strzałka ‹ z inspekcji ' + id + ' wraca na listę, jest ' + s.page + ' ' + s.view);
@@ -71,10 +73,10 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await back(2000); check(s.page === 'apka' && s.view === 'v-home', '1: Wstecz z listy PPM → ekran główny (nie poprzednia inspekcja), jest ' + s.page + s.hash + ' ' + s.view);
 
     // 2. lista → inspekcja → aparat: podgląd zdjęcia i edytor zamyka Wstecz, zostajemy w tej samej inspekcji
-    await pg.click('#v-home [data-nav="ppm"]'); await wait(1200);
-    if (day) { await pg.evaluate(d => { const e = document.querySelector('#v-ppm [data-day="' + d + '"]'); if (e) e.click(); }, day); await wait(700); }
-    const id = await pg.$eval('#v-ppm #ppmList [data-id]', e => e.getAttribute('data-id'));
-    await pg.click('#v-ppm #ppmList [data-id="' + id + '"]'); await wait(3000);
+    await pg.click(HOME + ' [data-nav="ppm"]'); await wait(1200);
+    if (day) { await pg.evaluate(d => { const e = document.querySelector('#ppmDays [data-day="' + d + '"]'); if (e) e.click(); }, day); await wait(700); }
+    const id = await pg.$eval(KLOCEK, e => e.getAttribute('data-id'));
+    await pg.click('ion-card.oest-klocek[data-id="' + id + '"]'); await wait(3000);
     const inspHash = (await where()).hash;
     await pg.evaluate(b64 => { const b = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: 'image/jpeg' }); window.__rev = window.OESTAparat.review(b).then(r => (window.__revWynik = Object.keys(r).join(','))); }, JPG.toString('base64'));
     await wait(800);
@@ -94,7 +96,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 3. inspekcja → lista, z której przyszedł (ten sam dzień) → ekran główny
     s = await back(2500);
     check(s.page === 'apka' && s.view === 'v-ppm', '3: Wstecz z inspekcji → lista PPM, jest ' + s.page + s.hash + ' ' + s.view);
-    if (day) { const on = await pg.$eval('#v-ppm [data-day="' + day + '"]', e => e.classList.contains('on')).catch(() => false); check(dayCls && on, '3: lista wraca na ten sam wybrany dzień ' + day); }
+    if (day) { const on = await pg.$eval('#ppmDays [data-day="' + day + '"]', e => e.hasAttribute('data-wybrany')).catch(() => false); check(dayCls && on, '3: lista wraca na ten sam wybrany dzień ' + day); }
     s = await back();
     check(s.view === 'v-home', '3: Wstecz z listy → ekran główny, jest ' + s.view);
 
@@ -131,7 +133,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     }, q);
     await pg.goto(B + '/index.html#home'); await wait(1200);
     // Ustawienia → Raporty (przeglądarka raportów) → podgląd raportu (okienko) → Wstecz zamyka podgląd
-    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     await pg.click('ion-card[data-nav="settings/reports"]'); await wait(1500);
     s = await where(); check(/settings\/reports/.test(s.hash), '5: otwarta przeglądarka raportów, jest ' + s.hash);
     await pg.locator('#rptList .k2').first().click(); await wait(1200);
@@ -145,23 +147,24 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     s = await back(); check(s.view === 'v-home', '6: Wstecz z Ustawień → ekran główny, jest ' + s.view);
 
     // 7. z każdego ekranu z kafelka ekranu głównego: najwyżej 3 naciśnięcia do ekranu głównego
-    const tiles = await pg.$$eval('#v-home [data-nav]', a => [...new Set(a.map(e => e.getAttribute('data-nav')))]);
-    for (const t of tiles) { await pg.click('#v-home [data-nav="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
+    const tiles = await pg.$$eval(HOME + ' [data-nav]', a => [...new Set(a.map(e => e.getAttribute('data-nav')))]);
+    check(tiles.length >= 7, '7: cele ekranu głównego: ' + tiles.join(','));
+    for (const t of tiles) { await pg.click(HOME + ' [data-nav="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
     // 8. Strzałka ‹ u góry = zawsze poziom wyżej, nigdy po historii (Grzegorz 18/11/2026: krążyła Ustawienia ↔ Vantify, „na każdej stronie”)
     const arrow = async () => { await pg.locator('ion-back-button[data-nav="up"]:visible, .view:not([hidden]) .top .back:visible').first().click(); await wait(900); return where(); };
     await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#home'); }); await pg.reload(); await wait(1500);
-    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     await pg.evaluate(() => { OESTEkrany.go('#settings/vantify'); }); await wait(1200); // wejście z okienka „Nowe terminy → Pokaż” (zmiana adresu, bez wpisu n)
     s = await where(); check(s.hash === '#settings/vantify', '8: Vantify otwarte z okienka, jest ' + s.hash);
     s = await arrow(); check(s.hash === '#settings', '8: ‹ z Vantify → Ustawienia, jest ' + s.hash);
     s = await arrow(); check(s.view === 'v-home', '8: ‹ z Ustawień → ekran główny (nie z powrotem do Vantify), jest ' + s.view + s.hash);
     // to samo Wstecz telefonu
-    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     await pg.evaluate(() => { OESTEkrany.go('#settings/vantify'); }); await wait(1200);
     s = await back(); check(s.hash === '#settings', '8: Wstecz z Vantify → Ustawienia, jest ' + s.hash);
     s = await back(); check(s.view === 'v-home', '8: Wstecz z Ustawień → ekran główny, jest ' + s.view + s.hash);
     // każdy klocek Ustawień: ‹ → Ustawienia → ekran główny, także po krążeniu między klockami
-    await pg.click('#v-home [data-nav="settings"]'); await wait(1200);
+    await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     const routes = await pg.$$eval('ion-card[data-nav]', a => [...new Set(a.map(e => e.dataset.nav).filter(Boolean))]);
     check(routes.length > 3, '8: klocki Ustawień: ' + routes.length);
     for (const r of routes) {

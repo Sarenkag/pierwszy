@@ -88,7 +88,7 @@ function quiet(n) {
     // język ustawiony tak, jak robi to apka (Mój profil / ustawienia), bez klikania na badanym ekranie
     // język ustawiony tak jak w apce: w ustawieniach konta (źródło prawdy, także na stronie inspekcji – settings-store.js) i w kopii oest.lang
     const ustawJezyk = l => pg.evaluate(l => { if (window.OESTSettings) { try { OESTSettings.update(s => { s.appearance.language = l; }); } catch (e) {} if (window.OESTSettingsUI) OESTSettingsUI.applyTheme(); } localStorage.setItem('oest.lang', l); }, l);
-    const SW = '#hmLang:visible, .view:not([hidden]) .oest-sw[data-sw="lang"]:visible, .view:not([hidden]) [data-oest-lang]:visible, ion-toolbar ion-buttons[slot="end"] ion-button:visible'; // ostatni: przełącznik EN/PL w pasku ekranu na Ionic + Vue
+    const SW = '.oest-jezyk ion-button.button-clear:visible, #hmLang:visible, .view:not([hidden]) .oest-sw[data-sw="lang"]:visible, .view:not([hidden]) [data-oest-lang]:visible, ion-toolbar ion-buttons[slot="end"] ion-button:visible'; // ostatni: przełącznik EN/PL w pasku ekranu na Ionic + Vue
     const ruch = (x, y) => { const out = []; x.forEach((e, i) => { const f = y[i]; if (!f || f.hidden || e.sw) return; if (f.y !== e.y || f.h !== e.h || (e.blok && !e.row && f.x !== e.x)) out.push(`${e.d} ${e.w}×${e.h} @${e.x},${e.y} → ${f.w}×${f.h} @${f.x},${f.y}`); }); return out; };
     const sprawdz = async (ekran, adres) => {
       await pg.goto(url + adres); await settle(); await ustawJezyk('pl'); await pg.reload(); await settle();

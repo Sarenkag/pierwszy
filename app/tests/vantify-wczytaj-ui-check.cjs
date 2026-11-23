@@ -24,12 +24,12 @@ const rows=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PP
 const now=rows.filter(r=>r.id!=='3000623').map(r=>job(r.id,r.task,r.due,'2026-11-10 08:00:00',r.f));now.push(job('3060001','AOV Operation Testing (Tower A)','2026-12-25'));now.push(job('9999','(Sub) Monthly Spa Sampling','2026-11-30'));
 // plik z wcześniejszym najnowszym zleceniem: tylko ostrzeżenie (data pliku = najnowsze createdAt, nie dzień eksportu), Anuluj nic nie zmienia
 await loadCsv(page,csv([job('1','AOV Operation Test (TA)','2026-11-06','2026-11-01 08:00:00')]));
-await page.locator('#vtPreview .warn').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/najnowsze zlecenie w pliku jest z 01\/11\/2026.*09\/11\/2026.*może być starszy/);
+await page.locator('#vtPreview ion-note[color=warning]').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/najnowsze zlecenie w pliku jest z 01\/11\/2026.*09\/11\/2026.*może być starszy/);
 assert.equal(await page.locator('#vtSave').count(),1,'świeży eksport po zamknięciu najnowszego zlecenia da się zapisać');
 await page.locator('#vtCancel').click();assert.equal(await page.locator('#vtPreview').textContent(),'');
 // wybór pliku to nie niezapisana zmiana Ustawień: wyjście z ekranu bez okienka „Masz niezapisane zmiany”
 await page.evaluate(()=>{OESTEkrany.go('#settings');});await page.waitForFunction(()=>location.hash==='#settings');
-assert.equal(await page.locator('.oest-ask').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtNow').waitFor();
+assert.equal(await page.locator('ion-alert').count(),0,'bez pytania o niezapisane zmiany');await page.evaluate(()=>{OESTEkrany.go('#settings/vantify');});await page.locator('#vtNow').waitFor();
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null);
 // zły plik: komunikat, bez zapisu
 await loadCsv(page,'a,b\n1,2\n');
@@ -42,10 +42,10 @@ assert.match(pv,/Zamknięte w Vantify \(znikną z apki\): 1/);assert.match(pv,/2
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null,'podgląd niczego nie zapisuje');
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_PODGLAD_PL.png'),fullPage:true});
 // zmiana języka: podgląd zostaje (w drugim języku), nic się nie zapisuje
-await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/New jobs: 1/.test(document.getElementById('vtPreview')?.textContent||''));await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Nowe zlecenia: 1/.test(document.getElementById('vtPreview')?.textContent||''));
+await page.locator('ion-toolbar ion-buttons[slot=end] ion-button').click();await page.waitForFunction(()=>/New jobs: 1/.test(document.getElementById('vtPreview')?.textContent||''));await page.locator('ion-toolbar ion-buttons[slot=end] ion-button').click();await page.waitForFunction(()=>/Nowe zlecenia: 1/.test(document.getElementById('vtPreview')?.textContent||''));
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null);
 await page.evaluate(()=>{window.__due=0;addEventListener('oest:ppm-due-changed',()=>window.__due++);});
-await page.locator('#vtSave').click();await page.locator('#vtPreview .ok').waitFor();
+await page.locator('#vtSave').click();await page.locator('#vtResult[color=success]').waitFor();
 assert.equal(await page.evaluate(()=>window.__due),1,'zapis zgłasza zmianę terminów (kalendarz telefonu, ekran główny)');
 assert.match(await page.locator('#vtNow').textContent(),/Eksport z 10\/11\/2026 · \d+ zleceń · wczytany w telefonie 10\/11\/2026|Eksport z 10\/11\/2026 · \d+ zleceń · wczytany w telefonie \d\d\/\d\d\/\d{4}/);
 const st=await page.evaluate(()=>JSON.parse(localStorage.getItem('oest.vantify.plan')));assert.equal(st.date,'2026-11-10');assert.doesNotMatch(JSON.stringify(st),/Kowalski/);
@@ -75,9 +75,9 @@ assert.match(sh.name,/^vantify-zbadaj-\d{8}\.json$/);assert.match(sh.text,/api\/
 await loadCsv(page,csv(now));await page.locator('#vtSave').waitFor();
 await page.evaluate(()=>{window.Capacitor.Plugins.Vantify.open=async()=>({csv:'id,jobType,task,completeBy,frequency,createdAt\n1,Reactive,X,2026-11-20,,2026-11-10\n',name:'job.csv',log:[]});});
 await page.locator('#vtOpen').click();await page.waitForFunction(()=>/Planned/.test(document.getElementById('vtPreview')?.textContent||''));
-await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from/.test(document.getElementById('vtNow')?.textContent||''));
+await page.locator('ion-toolbar ion-buttons[slot=end] ion-button').click();await page.waitForFunction(()=>/Export from/.test(document.getElementById('vtNow')?.textContent||''));
 assert.equal(await page.locator('#vtSave').count(),0,'po błędzie nie wraca poprzedni podgląd z „Zapisz”');
-await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Eksport z/.test(document.getElementById('vtNow')?.textContent||''));
+await page.locator('ion-toolbar ion-buttons[slot=end] ion-button').click();await page.waitForFunction(()=>/Eksport z/.test(document.getElementById('vtNow')?.textContent||''));
 // brak miejsca w telefonie (przegląd Codex #132): zapis „Zbadaj” nie ginie – komunikat i udostępnienie z pamięci
 await page.evaluate(()=>{const S=Storage.prototype.setItem;window.__S=S;Storage.prototype.setItem=function(k,v){if(k==='oest.vantify.zapis')throw new DOMException('full','QuotaExceededError');return S.call(this,k,v);};window.Capacitor.Plugins.Vantify.open=async()=>({log:[{k:'xhr',m:'GET',u:'https://savillsuk.cafm.vantify.com/api/nowe',st:200}]});window.__shared=null;});
 await page.locator('#vtOpen').click();await page.waitForFunction(()=>/nie zapisał zapisu „Zbadaj”/.test(document.getElementById('vtMsg')?.textContent||''));
@@ -88,7 +88,7 @@ await page.evaluate(()=>{Storage.prototype.setItem=window.__S;});
 await page.evaluate(()=>{delete window.Capacitor;});
 // EN, bez przewijania w bok
 await page.evaluate(()=>OESTEkrany.go('settings/vantify'));await page.locator('#vtNow').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-await page.locator('[data-action=language]').first().click();await page.waitForFunction(()=>/Export from 10\/11\/2026/.test(document.getElementById('vtNow')?.textContent||''));
+await page.locator('ion-toolbar ion-buttons[slot=end] ion-button').click();await page.waitForFunction(()=>/Export from 10\/11\/2026/.test(document.getElementById('vtNow')?.textContent||''));
 assert.match(await page.locator('#vtNow').textContent(),/loaded on this phone/);
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_EN.png'),fullPage:true});
 assert.deepEqual(errors,[]);console.log('VANTIFY WCZYTAJ UI PASS: klocek, ostrzeżenie przy starszym pliku, zły plik bez zmian, historia kart, sygnał terminów, podgląd nowych/zamkniętych, zapis + odczyt, restart, PPM i inspekcja, Vantify w apce (komunikat, eksport do podglądu, zapis Zbadaj, brak miejsca), EN');

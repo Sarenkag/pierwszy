@@ -37,7 +37,8 @@ import './szkielet.css';
 import { zainstaluj as zainstalujCzesci } from './czesci.js';
 
 const w = window, d = document;
-const T = (pl, en) => (w.OESTT ? w.OESTT(pl, en) : pl);
+// czyta stan.wersja: każdy tekst T(…) w szablonie sam zależy od zmiany języka (komponenty w slotach ion-card nie przerysowują się inaczej)
+const T = (pl, en) => (stan.wersja, w.OESTT ? w.OESTT(pl, en) : pl);
 
 // ---------- okienka: jeden stos w pamięci (bez wpisów historii) ----------
 const stos = [];

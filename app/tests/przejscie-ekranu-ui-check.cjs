@@ -91,7 +91,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
       await krokApki(`${go} → Wstecz telefonu`, () => p.evaluate(() => document.dispatchEvent(new Event('backbutton'))), 'v-home', true);
     }
     await p.click('#hmTiles [data-nav="ppm"]'); await klatki();
-    await krokApki('ppm → strzałka ‹', () => p.click('#v-ppm .top .back'), 'v-home', true);
+    await krokApki('ppm → strzałka ‹', () => p.click('ion-back-button[data-nav="up"]'), 'v-home', true); // strzałka ‹ ramy (Ionic + Vue)
 
     // ---------- Z4: nowa strona – lista PPM → inspekcja i Wstecz z inspekcji ----------
     await p.click('#hmTiles [data-nav="ppm"]'); await klatki();
@@ -108,16 +108,17 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
       check(!spadek && koniec === 1, `Z4 ${nazwa}: jasność ekranu ${cel} nie rośnie równo do 1 (spadek: ${spadek}, koniec: ${koniec})`);
     };
     try {
-      await nowaStrona('lista → inspekcja', () => p.click('#ppmList [data-id]'), /inspekcje\//, 'v-form');
+      await nowaStrona('lista → inspekcja', () => p.click('ion-card.oest-klocek[data-id]'), /inspekcje\//, 'v-form');
       await nowaStrona('inspekcja → Wstecz', () => p.evaluate(() => [...document.querySelectorAll('.view:not([hidden]) .back')].find(b => b.offsetParent).click()), /:\d+\/index\.html/, 'v-ppm');
     } catch (e) { check(false, 'Z4: przejście między stronami się nie udało: ' + e.message.split('\n')[0]); await p.waitForLoadState('load').catch(() => {}); await p.goto(url + '/index.html#ppm'); await klatki(); }
 
     // ---------- Z5: przebudowa ekranu w miejscu (schowany i pokazany w jednym kroku) ----------
     R.przebudowa = await p.evaluate(async () => {
-      const v = [...document.querySelectorAll('.view')].find(x => !x.hidden); window.__anim = [];
-      v.hidden = true; v.hidden = false; // jak render() tego samego ekranu
+      // ekran na Ionic + Vue: przebudowa = ponowne narysowanie z nowymi danymi (odświeżenie listy); stary .view: schowany i pokazany
+      const vue = document.querySelector('ion-content > :not(.wrap)'), v = vue || [...document.querySelectorAll('.view')].find(x => !x.hidden); window.__anim = [];
+      if (vue) window.dispatchEvent(new CustomEvent('oest:ppm-ui')); else { v.hidden = true; v.hidden = false; } // jak render() tego samego ekranu
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-      return { ekran: v.id, animacje: window.__anim.slice() };
+      return { ekran: vue ? 'v-' + OESTEkrany.trasa() : v.id, animacje: window.__anim.slice() };
     });
     check(!R.przebudowa.animacje.length, `Z5: przebudowa ${R.przebudowa.ekran} w miejscu uruchomiła animację: ${R.przebudowa.animacje}`);
 
@@ -125,7 +126,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     R.tabela = await p.evaluate(async () => {
       const W = OESTWyglad.ruch, out = { warianty: W.warianty('ekran'), pola: Object.keys(W.pobierz('ekran')) };
       W.ustaw('ekran', 'zanikanie'); OESTEkrany.up(); await new Promise(r => setTimeout(r, 50));
-      const v = [...document.querySelectorAll('.view')].find(x => !x.hidden); out.poPodmianie = getComputedStyle(v).animationName;
+      const v = document.querySelector('ion-content > :not(.wrap)') || [...document.querySelectorAll('.view')].find(x => !x.hidden); out.poPodmianie = getComputedStyle(v).animationName;
       W.domyslne(); out.poPowrocie = getComputedStyle(document.documentElement).getPropertyValue('--ruch-ekran-efekt').trim();
       return out;
     });
@@ -152,8 +153,8 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     check(!R.okienko.animacje.length && !R.okienko.wstecz, `Z8: zamknięcie okienka animuje ekran pod spodem: ${JSON.stringify(R.okienko)}`);
     await p.goto(url + '/index.html?z9#home'); await klatki(); // świeża strona: sama zmiana ekranu bez historii
     R.bezHistorii = await p.evaluate(async () => {
-      window.__anim = []; const a = document.getElementById('v-home'), b = document.getElementById('v-cal');
-      a.hidden = true; b.hidden = false;
+      // ekrany na Ionic + Vue: zmiana ekranu bez historii = OESTEkrany.go (historia przeglądarki nie jest stanem)
+      window.__anim = []; OESTEkrany.go('cal');
       // start animacji (opacity/transform) potwierdza kompozytor – na obciążonej maszynie CI zdarzenie animationstart przychodzi później niż po 2 klatkach;
       // czekamy na nie najwyżej 1 s, potem jeszcze 3 klatki, żeby złapać ewentualną drugą animację (warunek „dokładnie jedna Poświata” bez zmian)
       const t0 = performance.now(); while (!window.__anim.length && performance.now() - t0 < 1000) await new Promise(r => requestAnimationFrame(r));

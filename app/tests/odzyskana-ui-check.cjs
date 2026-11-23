@@ -139,12 +139,12 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     // ekran Ustawień wjeżdża animacją: mierzymy po jej końcu (dwa takie same pomiary pod rząd)
     const still = async () => { let a = await pos(); for (let i = 0; i < 30; i++) { await pg.waitForTimeout(120); const b = await pos(); if (b === a) return b; a = b; } return a; };
     const p1 = await still();
-    await pg.locator('#v-settings [data-action=language]').click(); await pg.waitForTimeout(300);
+    await pg.locator('ion-toolbar ion-buttons[slot=end] ion-button').last().click(); /* PL/EN w pasku ramy (Raporty na Ionic + Vue) */ await pg.waitForTimeout(300);
     check((await pg.locator('#rptRec .oest-st').textContent()) === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRecT').textContent()), 'EN: Recovered');
     const p2 = await still();
     check(p2 === p1, 'PL/EN: klocek i pigułka w tym samym miejscu (' + p1 + ' / ' + p2 + ')');
     await shot('raporty-odzyskane-EN');
-    await pg.locator('#v-settings [data-action=language]').click(); await pg.waitForTimeout(300);
+    await pg.locator('ion-toolbar ion-buttons[slot=end] ion-button').last().click(); /* PL/EN w pasku ramy (Raporty na Ionic + Vue) */ await pg.waitForTimeout(300);
 
     // 7. ponowne otwarcie z klocka = poprawiona wersja (własny szkic odzyskanej)
     await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);

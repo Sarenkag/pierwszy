@@ -37,11 +37,12 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       const norm = c => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = '#123456'; k.fillStyle = c; return k.fillStyle; }; // '#rrggbb' = nieprzezroczysty, 'rgba(…)' = z przezroczystością
       const pas = document.querySelector('ion-header .oest-pas'), tb = document.querySelector('ion-header ion-toolbar');
       const tlo = pas ? getComputedStyle(pas).backgroundColor : tb ? getComputedStyle(tb).getPropertyValue('--background').trim() : '';
-      const wrap = document.querySelector('.wrap');
+      // treść ekranu bez nagłówka ramy: stary .wrap (padding-top) albo ekran na Ionic + Vue z własnym ion-header w treści (ekran główny) – dopełnienie jego paska
+      const wrap = document.querySelector('.wrap'), wlasny = wrap && wrap.hidden ? document.querySelector('ion-content ion-header ion-toolbar') : null;
       return { jestHeader: !!hdr, top: r ? Math.round(r.top) : null, szerHeader: r ? Math.round(r.width) : null, wysHeader: r ? Math.round(r.height) : null, szer: innerWidth,
         pokryte: pts.filter(el => el && el.closest('ion-header')).length, punkty: pts.length,
         pasH: pas ? Math.round(pas.getBoundingClientRect().height) : null, toolbarPad: tb ? parseFloat(getComputedStyle(tb).paddingTop) || parseFloat(getComputedStyle(tb).getPropertyValue('--padding-top')) || 0 : null,
-        tlo, tloOpak: !!tlo && /^#[0-9a-f]{6}$/i.test(norm(tlo)), wrapPad: wrap ? parseFloat(getComputedStyle(wrap).paddingTop) : null,
+        tlo, tloOpak: !!tlo && /^#[0-9a-f]{6}$/i.test(norm(tlo)), wrapPad: wlasny ? parseFloat(getComputedStyle(wlasny).paddingTop) : wrap ? parseFloat(getComputedStyle(wrap).paddingTop) : null,
         czarnyPas: getComputedStyle(document.documentElement, '::after').content };
     }, PASEK);
     for (const e of EKRANY) {
@@ -89,8 +90,9 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
     await c2.addInitScript(() => { if (location.protocol !== 'http:') return; if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 'test', email: '', name: 'Test', t: 1 })); });
     const q = await c2.newPage(); await q.goto(url + 'index.html#ppm'); await q.waitForTimeout(500);
-    R.bezPaska = await q.evaluate(() => { const pas = document.querySelector('ion-header .oest-pas'); return pas ? pas.getBoundingClientRect().height : null; });
-    check(R.bezPaska === 0, 'bez paska systemowego pas pod godziną (.oest-pas) ma ' + R.bezPaska + ' px (powinno 0)');
+    // stary ekran: .oest-pas; ekran na Ionic + Vue: dopełnienie ion-toolbar pod godziną
+    R.bezPaska = await q.evaluate(() => { const pas = document.querySelector('ion-header .oest-pas'), tb = document.querySelector('ion-header ion-toolbar'); return pas ? pas.getBoundingClientRect().height : tb ? parseFloat(getComputedStyle(tb).paddingTop) : null; });
+    check(R.bezPaska === 0, 'bez paska systemowego pas pod godziną (.oest-pas / ion-toolbar) ma ' + R.bezPaska + ' px (powinno 0)');
     if (process.env.OEST_PASEK_ZRZUT) { await p.goto('about:blank'); await p.goto(url + 'index.html#ppm'); await p.waitForTimeout(600); await p.evaluate(() => { if (window.OESTEkrany) OESTEkrany.przewin(140); scrollTo(0, 140); }); await p.waitForTimeout(200); await p.screenshot({ path: process.env.OEST_PASEK_ZRZUT }); }
     check(errors.length === 0, 'błędy JS: ' + errors.slice(0, 3).join(' | '));
   } finally { if (browser) await browser.close(); server.close(); }
