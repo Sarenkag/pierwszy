@@ -23,11 +23,9 @@
   "use strict";
   var BLD = { "Tower A": "TA", "Tower B": "TB", "Pavilion": "P" };
   var state = { q: "", b: "" };
-  function T(pl, en) { return w.OESTT(pl, en); }
   function blad(e) { return w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e); }
   function komunikat(tytul, tresc) { return w.OESTOkna && w.OESTOkna.pytaj ? w.OESTOkna.pytaj({ tytul: tytul, tresc: tresc, tylkoOk: true }) : Promise.resolve(true); }
-  function budynki() { return [["", T("Wszystkie", "All")], ["Tower A", "Tower A"], ["Tower B", "Tower B"], ["Pavilion", "Pavilion"], ["General", T("Ogólne", "General")], ["Reactive", "Reactive"]].map(function (o) { return { v: o[0], t: o[1] }; }); }
-  function dd(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function budynki() { return [["", w.OESTT("Wszystkie", "All")], ["Tower A", "Tower A"], ["Tower B", "Tower B"], ["Pavilion", "Pavilion"], ["General", w.OESTT("Ogólne", "General")], ["Reactive", "Reactive"]].map(function (o) { return { v: o[0], t: o[1] }; }); }
   // odzyskana inspekcja jako zwykły klocek inspekcji: dane z zapisu inspekcji w raporcie (bez nowego układu)
   function recCard(r) {
     var m = r.meta || {}, c = m.card || {}, s = r.snap || {}, f = s.fields || {}; // c: opis klocka zapisany przez apkę przy wysyłce
@@ -37,22 +35,22 @@
       { rodzaj: "pytania", n: used ? Math.min(ok, 99) + "/" + Math.min(used, 99) : "–", ton: used ? (ok === used ? "success" : "warning") : undefined }];
     if (n > 0) ikony.push({ rodzaj: "usterki", n: Math.min(n, 99), ton: "warning" });
     return { id: r.id, pasek: "fioletowy", nazwa: c.name || m.code || r.name, status: { tryb: "odzyskana" }, opis: c.loc || "", czestotliwosc: c.freq === "12M" ? "Y" : String(c.freq || "").slice(0, 3),
-      formularz: ph.some(function (p) { return p.sheet; }) ? "ok" : "brak", termin: { tekst: dz ? dd(new Date(+dz[1], +dz[2] - 1, +dz[3])) : "–" }, ikony: ikony, akcja: T("Otwórz", "Open") };
+      formularz: ph.some(function (p) { return p.sheet; }) ? "ok" : "brak", termin: { tekst: dz ? w.OESTKlocek.termin(new Date(+dz[1], +dz[2] - 1, +dz[3])).date : "–" }, ikony: ikony, akcja: w.OESTT("Otwórz", "Open") };
   }
   function card(R, r) {
     var f = r.folder || [], drive = r.driveId && !r.dirty;
-    return { id: r.id, pasek: drive ? "zielony" : "zolty", nazwa: r.name, znak: BLD[f[0]], status: { tekst: drive ? T("Na Dysku", "On Drive") : T("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
-      opis: f.join(" · ") || "—", termin: { tekst: T("Wysłany ", "Sent ") + R.day(r) + (r.versions > 1 ? " · " + T("wersja ", "version ") + r.versions : "") }, akcja: T("Otwórz", "Open") };
+    return { id: r.id, pasek: drive ? "zielony" : "zolty", nazwa: r.name, znak: BLD[f[0]], status: { tekst: drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
+      opis: f.join(" · ") || "—", termin: { tekst: w.OESTT("Wysłany ", "Sent ") + R.day(r) + (r.versions > 1 ? " · " + w.OESTT("wersja ", "version ") + r.versions : "") }, akcja: w.OESTT("Otwórz", "Open") };
   }
   var seq = 0;
   function lista() {
     var R = w.OESTRaporty, my = ++seq;
-    if (!R) return Promise.resolve({ odzyskane: [], raporty: [], pusto: T("Archiwum raportów niedostępne.", "Report archive unavailable.") });
+    if (!R) return Promise.resolve({ odzyskane: [], raporty: [], pusto: w.OESTT("Archiwum raportów niedostępne.", "Report archive unavailable.") });
     var rec = R.recovered ? R.recovered().catch(function () { return []; }) : Promise.resolve([]);
     return Promise.all([rec, R.list()]).then(function (x) {
       var all = x[1], hit = R.find(all, state.q, { building: state.b });
       return { aktualne: my === seq, odzyskane: x[0].map(recCard), raporty: hit.map(function (r) { return card(R, r); }),
-        pusto: !all.length ? T("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.") : !hit.length ? T("Nic nie pasuje do szukania.", "Nothing matches your search.") : "" };
+        pusto: !all.length ? w.OESTT("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.") : !hit.length ? w.OESTT("Nic nie pasuje do szukania.", "Nothing matches your search.") : "" };
     }, function (e) { return { aktualne: my === seq, odzyskane: [], raporty: [], pusto: blad(e) }; });
   }
   function otworzOdzyskana(id) {
@@ -70,23 +68,23 @@
       try { pv = w.PizZip ? R.docxPreview(r.docx, w.PizZip) : null; } catch (e) { pv = null; }
       var to = S && S.recipients ? S.recipients({ sp: 1, sm: 1, se: 1, sg: 1 }) : { priv: "", me: "", eng: "", man: "" };
       // Reactive wysyłamy tylko na firmowy e-mail (PROD-025) – tak jak przy pierwszej wysyłce
-      var reactive = reactiveR(r), only = T("Reactive: tylko firmowy e-mail", "Reactive: work email only");
+      var reactive = reactiveR(r), only = w.OESTT("Reactive: tylko firmowy e-mail", "Reactive: work email only");
       function cb(k, label, addr, missing) { var off = !addr || (reactive && k !== "sm"); return { k: k, tekst: label, adres: reactive && k !== "sm" ? only : addr || missing, wylaczony: off, zaznaczony: k === "sm" && !!addr }; }
       var zdjecia = pv ? pv.images.map(function (i) { var u = URL.createObjectURL(new Blob([i.bytes], { type: i.type })); urls.push(u); return u; }) : [];
       return {
         tytul: r.name,
-        meta: (r.folder || []).join(" · ") + " · " + T("wysłany ", "sent ") + R.day(r) + " · Word + PDF",
-        linie: pv ? pv.lines : [T("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")],
+        meta: (r.folder || []).join(" · ") + " · " + w.OESTT("wysłany ", "sent ") + R.day(r) + " · Word + PDF",
+        linie: pv ? pv.lines : [w.OESTT("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")],
         zdjecia: zdjecia,
-        odzyskaj: r.snap && !reactive ? (r.rec ? T("Otwórz odzyskaną inspekcję", "Open recovered inspection") : T("Odzyskaj do edycji", "Recover for editing")) : "",
-        dysk: r.driveId ? { adres: "https://drive.google.com/file/d/" + encodeURIComponent(r.driveId) + "/view", tekst: T("Otwórz na Dysku", "Open on Drive") } : null,
-        adresaciTytul: T("Do kogo", "Send to"),
+        odzyskaj: r.snap && !reactive ? (r.rec ? w.OESTT("Otwórz odzyskaną inspekcję", "Open recovered inspection") : w.OESTT("Odzyskaj do edycji", "Recover for editing")) : "",
+        dysk: r.driveId ? { adres: "https://drive.google.com/file/d/" + encodeURIComponent(r.driveId) + "/view", tekst: w.OESTT("Otwórz na Dysku", "Open on Drive") } : null,
+        adresaciTytul: w.OESTT("Do kogo", "Send to"),
         adresaci: [
-          cb("sp", T("Mój prywatny e-mail", "My private email"), to.priv, T("brak adresu w Mój profil", "no address in My Profile")),
-          cb("sm", T("Mój firmowy e-mail", "My work email"), to.me, T("brak adresu w Mój profil", "no address in My Profile")),
-          cb("se", T("Inżynier", "Engineer"), to.eng, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")),
-          cb("sg", T("Manager", "Manager"), to.man, T("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"))],
-        ok: T("Wyślij", "Send"), anuluj: T("Zamknij", "Close"),
+          cb("sp", w.OESTT("Mój prywatny e-mail", "My private email"), to.priv, w.OESTT("brak adresu w Mój profil", "no address in My Profile")),
+          cb("sm", w.OESTT("Mój firmowy e-mail", "My work email"), to.me, w.OESTT("brak adresu w Mój profil", "no address in My Profile")),
+          cb("se", w.OESTT("Inżynier", "Engineer"), to.eng, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")),
+          cb("sg", w.OESTT("Manager", "Manager"), to.man, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"))],
+        ok: w.OESTT("Wyślij", "Send"), anuluj: w.OESTT("Zamknij", "Close"),
         zwolnij: function () { urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; }
       };
     });
@@ -96,19 +94,19 @@
     var R = w.OESTRaporty, S = w.OESTSender, d = (o && o.dane) || {};
     return R.get(id).then(function (r) {
       if (!r) return;
-      if (d.odzyskaj) return R.setRec(r.id, true).then(function () { otworzOdzyskana(r.id); }, function (e) { return komunikat(T("Nie odzyskano", "Not recovered"), blad(e)); });
+      if (d.odzyskaj) return R.setRec(r.id, true).then(function () { otworzOdzyskana(r.id); }, function (e) { return komunikat(w.OESTT("Nie odzyskano", "Not recovered"), blad(e)); });
       if (!o || !o.ok) return;
       var sel = {}, a = d.adresaci || { sm: true }; Object.keys(a).forEach(function (k) { if (a[k]) sel[k] = true; });
       if (reactiveR(r)) sel = { sm: !!sel.sm };
       var list = S && S.recipients ? S.recipients(sel).list : [];
-      if (!S || !S.active || !S.active() || !S.enqueue) return komunikat(T("Wysyłka niedostępna", "Sending unavailable"), T("Zaloguj się do Google w apce.", "Sign in to Google in the app."));
-      if (!list.length) return komunikat(T("Brak adresata", "No recipient"), T("Zaznacz, do kogo wysłać.", "Tick who to send it to."));
-      return S.enqueue({ type: "archive", code: r.name, name: r.name, subject: r.name, body: r.name + "\n" + T("Raport z archiwum OEST", "Report from the OEST archive") + " (" + R.day(r) + ")\n",
+      if (!S || !S.active || !S.active() || !S.enqueue) return komunikat(w.OESTT("Wysyłka niedostępna", "Sending unavailable"), w.OESTT("Zaloguj się do Google w apce.", "Sign in to Google in the app."));
+      if (!list.length) return komunikat(w.OESTT("Brak adresata", "No recipient"), w.OESTT("Zaznacz, do kogo wysłać.", "Tick who to send it to."));
+      return S.enqueue({ type: "archive", code: r.name, name: r.name, subject: r.name, body: r.name + "\n" + w.OESTT("Raport z archiwum OEST", "Report from the OEST archive") + " (" + R.day(r) + ")\n",
         docx: r.docx, pdf: r.pdf || new Uint8Array(0), toList: list, noArchive: true, rpt: r.folder }).then(function () {
-        return komunikat(T("W kolejce", "Queued"), T("Raport czeka w kolejce – pasek na dole pokaże wysyłkę.", "The report is queued – the bar at the bottom shows sending."));
+        return komunikat(w.OESTT("W kolejce", "Queued"), w.OESTT("Raport czeka w kolejce – pasek na dole pokaże wysyłkę.", "The report is queued – the bar at the bottom shows sending."));
       }, function (e) {
         // nie trafił do kolejki (np. brak miejsca w telefonie): mówimy wprost, nic nie udajemy; ponowienie = otworzyć raport i Wyślij jeszcze raz
-        return komunikat(T("Nie wysłano", "Not sent"), T("Nie udało się dodać raportu do kolejki: ", "Could not add the report to the queue: ") + blad(e) + T("\nOtwórz raport i spróbuj ponownie.", "\nOpen the report and try again."));
+        return komunikat(w.OESTT("Nie wysłano", "Not sent"), w.OESTT("Nie udało się dodać raportu do kolejki: ", "Could not add the report to the queue: ") + blad(e) + w.OESTT("\nOtwórz raport i spróbuj ponownie.", "\nOpen the report and try again."));
       });
     });
   }

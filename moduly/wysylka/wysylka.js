@@ -253,12 +253,12 @@
     }).then(function () { run({ login: true, anyNet: true }); }); // Ponów = świadoma decyzja, także przez dane
   }
   function render() {
+    var cap = root.Capacitor;
+    if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { stan = { widoczny: false, ton: "", tekst: "", opis: "", przyciski: [], postep: 0, siec: { stan: "na", tekst: "" }, otwarty: false }; emit(); return; } // pasek stale w apce
     var p = pending(), n = p.length, err = p.filter(function (q) { return q.status === "err"; })[0];
     var cls = "", txt = "", opis = "", more = [], prog = 0;
     var b = function (a, t, go) { return { a: a, tekst: t, glowny: !!go }; };
     var qb = b("queue", root.OESTT("Pokaż kolejkę", "Show queue"));
-    var cap = root.Capacitor;
-    if (!(cap && cap.isNativePlatform && cap.isNativePlatform())) { stan = { widoczny: false, ton: "", tekst: "", opis: "", przyciski: [], postep: 0, siec: { stan: "na", tekst: "" }, otwarty: false }; emit(); return; } // pasek stale w apce
     if (!active()) { cls = "err"; txt = n ? root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · Gmail niepołączony", " · Gmail not connected") : root.OESTT("Gmail niepołączony", "Gmail not connected");
       opis = root.OESTT("Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google, uzupełnij firmowy e-mail w Mój profil.", "To send reports automatically: Settings → Account → Sign out and sign in with Google, then add your work email in My Profile."); more = [qb]; }
     else

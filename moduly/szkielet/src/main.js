@@ -70,10 +70,11 @@ const OESTOkna = {
     const r = (await a.onDidDismiss()).role;
     return o.tylkoOk ? true : r === 'confirm' || r === 'destructive';
   },
-  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow }) → Promise<{ ok, dane }>
+  // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow, pelny }) → Promise<{ ok, dane }>
+  //   pelny: podgląd na cały ekran bez paska tytułu (ciemne tło, treść na środku) – jak dawny podgląd zdjęcia
   async okno(o) {
     o = o || {};
-    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, cssClass: 'oest-okno' }); // karta na środku jak dawne okienko apki (szkielet.css)
+    const m = await modalController.create({ component: Okno, componentProps: { ...o, T }, cssClass: o.pelny ? 'oest-okno oest-podglad' : 'oest-okno' }); // karta na środku jak dawne okienko apki (szkielet.css)
     await m.present();
     const r = await m.onDidDismiss();
     return r.data || { ok: false, dane: null };

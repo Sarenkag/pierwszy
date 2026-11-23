@@ -45,7 +45,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
           drvTxt: document.querySelector('#hmDrive span').textContent, phTxt: document.querySelector('#hmPhotos span').textContent,
           tiles: tiles.length, tilesDol: Math.round(Math.max(...tiles.map(b => b.bottom))), tileMinH: Math.round(Math.min(...tiles.map(b => b.height))),
           tileUciete: [...document.querySelectorAll('#hmTiles .tile')].some(e => e.scrollHeight > e.clientHeight + 1),
-          pasekWysylki: (b => b && !b.hidden ? Math.round(b.getBoundingClientRect().top) : null)(document.querySelector('.oest-sbar')), sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight, ih: innerHeight
+          pasekWysylki: (b => b && !b.hidden ? Math.round(b.getBoundingClientRect().top) : null)(document.querySelector('#oest-pasek-wysylki')), sh: document.documentElement.scrollHeight, bsh: document.body.scrollHeight, wsh: document.querySelector('.wrap').scrollHeight - document.querySelector('.wrap').clientHeight, ih: innerHeight
         };
       });
       await p.goto(url + 'index.html#home'); await p.waitForTimeout(700);

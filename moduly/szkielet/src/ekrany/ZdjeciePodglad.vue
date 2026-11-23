@@ -1,12 +1,14 @@
-<!-- Podgląd zdjęcia z folderu OEST (treść okienka OESTOkna.okno): zdjęcie, nazwa, folder i rozmiar; „Usuń” (po pytaniu) i „Zamknij”.
+<!-- Podgląd zdjęcia z folderu OEST (treść okienka OESTOkna.okno({ pelny: true })): zdjęcie, nazwa, folder i rozmiar; „Usuń” (po pytaniu) i „Zamknij”.
      Dane: OESTZdjeciaUI.podglad(id); usunięcie: OESTZdjeciaUI.usun(id) – błąd zostaje w okienku. -->
 <template>
   <div id="zdView">
     <ion-img :src="p.adres" alt=""></ion-img>
-    <ion-item lines="none"><ion-label class="ion-text-wrap">{{ p.nazwa }}<p>{{ p.opis }}</p></ion-label></ion-item>
+    <ion-item lines="none"><ion-label class="ion-text-wrap ion-text-center">{{ p.nazwa }}<p>{{ p.opis }}</p></ion-label></ion-item>
     <ion-item v-if="blad" lines="none"><ion-note color="danger" role="alert">{{ blad }}</ion-note></ion-item>
-    <ion-button data-a="del" expand="block" fill="outline" color="danger" @click="usunTo"><ion-icon slot="start" :icon="trashOutline" aria-hidden="true"></ion-icon>{{ p.usun }}</ion-button>
-    <ion-button data-a="close" expand="block" fill="outline" @click="emit('zamknij', false)">{{ p.zamknij }}</ion-button>
+    <div class="ion-text-center">
+      <ion-button data-a="del" fill="outline" class="oest-szary" @click="usunTo"><ion-icon slot="start" :icon="trashOutline" aria-hidden="true"></ion-icon>{{ p.usun }}</ion-button>
+      <ion-button data-a="close" fill="outline" class="oest-szary" @click="emit('zamknij', false)">{{ p.zamknij }}</ion-button>
+    </div>
   </div>
 </template>
 

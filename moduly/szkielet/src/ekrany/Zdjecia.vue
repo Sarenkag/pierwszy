@@ -85,7 +85,7 @@ async function odswiez() {
 }
 async function pokaz(id) {
   const p = await Z.podglad(id); if (!p) return;
-  await window.OESTOkna.okno({ tytul: p.nazwa, komponent: ZdjeciePodglad, wlasciwosci: { p, usun: Z.usun }, bezPrzyciskow: true });
+  await window.OESTOkna.okno({ tytul: p.nazwa, komponent: ZdjeciePodglad, wlasciwosci: { p, usun: Z.usun }, bezPrzyciskow: true, pelny: true });
 }
 let odpisz = null;
 watch(() => props.wersja, odswiez);

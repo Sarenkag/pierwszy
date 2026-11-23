@@ -1,8 +1,8 @@
 <!-- Okienko z własną treścią (ion-modal) – JEDNO w całej apce: tytuł, treść (komponent Vue ekranu) i przyciski na dole.
-     Otwiera je OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow }) → Promise<{ ok, dane }>.
+     Otwiera je OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, bezPrzyciskow, pelny }) → Promise<{ ok, dane }>.
      Treść oddaje dane przez zdarzenie „dane” (np. zaznaczone pola); Wstecz telefonu i „Anuluj” = { ok: false }. -->
 <template>
-  <ion-header>
+  <ion-header v-if="!pelny">
     <ion-toolbar>
       <ion-title>{{ tytul }}</ion-title>
       <ion-buttons slot="end"><ion-button @click="zamknij(false)" :aria-label="T('Zamknij', 'Close')"><ion-icon slot="icon-only" :icon="close"></ion-icon></ion-button></ion-buttons>
@@ -25,7 +25,7 @@
 import { ref } from 'vue';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonContent, IonFooter, modalController } from '@ionic/vue';
 import { close } from 'ionicons/icons';
-const props = defineProps({ T: Function, tytul: String, komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean });
+const props = defineProps({ T: Function, tytul: String, komponent: Object, wlasciwosci: Object, ok: String, anuluj: [String, Boolean], niebezpieczne: Boolean, bezPrzyciskow: Boolean, pelny: Boolean });
 const dane = ref(null);
 function zamknij(ok) { modalController.dismiss({ ok, dane: dane.value }, ok ? 'ok' : 'cancel'); }
 </script>
