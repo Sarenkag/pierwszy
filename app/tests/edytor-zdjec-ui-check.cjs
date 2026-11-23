@@ -1,5 +1,5 @@
 // Edytor zdjęć – lifting wyglądu (Grzegorz 07/11/2026: „tylko lifting UI/UX, bez zmian logiki i przepływu Cancel/Undo/Save”).
-// Sprawdza w Chrome (412×915 jak Pixel 8 Pro), PL i EN, na prawdziwym OESTAparat.edit():
+// Sprawdza w Chrome (412×915 jak Pixel 8 Pro), PL i EN, na prawdziwym OESTAparat.edit() (od 23/11/2026 część Ionic + Vue w ion-modal):
 //  – wszystkie narzędzia, kolory i grubości widoczne na ekranie bez przewijania (wcześniej „Linia”/„Kadruj” ucięte – „samotne L”), także przy 360 i 320 px,
 //  – jedna wysokość przycisków (44 px), hierarchia: Zapisz (gradient) > Cofnij (ramka) > Anuluj (bez tła i ramki),
 //  – PL↔EN: panel narzędzi w identycznym miejscu, przyciski na górze na tej samej wysokości,
@@ -19,6 +19,8 @@ const server = http.createServer((req, res) => {
 const W = 412, H = 915;
 const fails = [], R = {};
 function check(ok, msg) { if (!ok) fails.push(msg); }
+// edytor to część szkieletu Ionic (moduly/szkielet/src/czesci/EdytorZdjec.vue) w ion-modal; przyciski to ion-button (wygląd w cieniu: .button-native)
+const ED = 'ion-modal[data-oest-czesc="EdytorZdjec"]';
 
 // otwiera edytor na sztucznym zdjęciu 1600×1200; wynik edit() trafia do window.__wynik
 async function otworz(p) {
@@ -27,16 +29,16 @@ async function otworz(p) {
     g.fillStyle = '#8a8f99'; g.fillRect(0, 0, 1600, 1200); g.fillStyle = '#d6d8dc'; g.fillRect(300, 150, 1000, 900);
     c.toBlob(b => { window.__wynik = undefined; window.OESTAparat.edit(b).then(r => { window.__wynik = r ? { type: r.type, size: r.size } : null; }); ok(); }, 'image/jpeg', 0.9);
   }));
-  await p.waitForSelector('.oest-editor canvas'); await p.waitForTimeout(300);
+  await p.waitForSelector(ED + ' canvas'); await p.waitForFunction(s => { const m = document.querySelector(s); return m && m.classList.contains('show-modal'); }, ED); await p.waitForTimeout(300);
 }
 // edytor zamyka się płynnie (moduly/wyglad: pomniejszenie okienka), więc czekamy aż zniknie
 async function wynik(p) {
   await p.waitForFunction(() => window.__wynik !== undefined, null, { timeout: 10000 });
-  await p.waitForFunction(() => !document.querySelector('.oest-editor'), null, { timeout: 3000 }).catch(() => {});
+  await p.waitForFunction(s => !document.querySelector(s), ED, { timeout: 3000 }).catch(() => {});
   return p.evaluate(() => window.__wynik);
 }
 async function rysuj(p) {
-  const b = await p.locator('.oest-editor canvas').boundingBox();
+  const b = await p.locator(ED + ' canvas').boundingBox();
   await p.mouse.move(b.x + b.width * .2, b.y + b.height * .7); await p.mouse.down();
   await p.mouse.move(b.x + b.width * .5, b.y + b.height * .4, { steps: 6 }); await p.mouse.up();
 }
@@ -58,16 +60,16 @@ async function rysuj(p) {
       // 1. wygląd
       await openAndMeasure(p, lang);
       // 2. przepływ: Anuluj → null
-      await p.click('.oest-editor [data-a="cancel"]');
+      await p.click(ED + ' [data-a="cancel"]');
       check((await wynik(p)) === null, `${lang}: Anuluj nie zwrócił null`);
-      check(await p.locator('.oest-editor').count() === 0, `${lang}: edytor nie zamknął się po Anuluj`);
+      check(await p.locator(ED).count() === 0, `${lang}: edytor nie zamknął się po Anuluj`);
       // 3. rysunek + Cofnij + Zapisz → bez zmian (null)
-      await otworz(p); await rysuj(p); await p.click('.oest-editor [data-a="undo"]'); await p.click('.oest-editor [data-a="save"]');
+      await otworz(p); await rysuj(p); await p.click(ED + ' [data-a="undo"]'); await p.click(ED + ' [data-a="save"]');
       check((await wynik(p)) === null, `${lang}: Cofnij nie usunął rysunku (Zapisz zwrócił zdjęcie)`);
       // 4. kółko + strzałka + Zapisz → JPEG
-      await otworz(p); await p.click('.oest-editor [data-t="c2"]');
-      const cb = await p.locator('.oest-editor canvas').boundingBox(); await p.mouse.click(cb.x + cb.width * .6, cb.y + cb.height * .3);
-      await p.click('.oest-editor [data-t="arrow"]'); await rysuj(p); await p.click('.oest-editor [data-a="save"]');
+      await otworz(p); await p.click(ED + ' [data-t="c2"]');
+      const cb = await p.locator(ED + ' canvas').boundingBox(); await p.mouse.click(cb.x + cb.width * .6, cb.y + cb.height * .3);
+      await p.click(ED + ' [data-t="arrow"]'); await rysuj(p); await p.click(ED + ' [data-a="save"]');
       const w = await wynik(p);
       check(!!w && w.type === 'image/jpeg' && w.size > 1000, `${lang}: Zapisz po rysunku nie dał zdjęcia JPEG (${JSON.stringify(w)})`);
       await c.close();
@@ -80,12 +82,12 @@ async function rysuj(p) {
       await c.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       const p = await c.newPage(); p.on('pageerror', e => errors.push(sz + ': ' + e.message));
       await p.goto(url + '/index.html'); await p.waitForTimeout(400); await otworz(p);
-      const m = await p.evaluate(() => {
-        const box = document.querySelector('.oest-editor'), out = [];
-        box.querySelectorAll('button').forEach(b => { const r = b.getBoundingClientRect(); out.push({ k: b.dataset.a || b.dataset.t || b.dataset.c || ('w' + b.dataset.w), x: r.x, r: r.right, h: Math.round(r.height), w: r.width }); });
-        const pan = box.querySelector('.ed-panel').getBoundingClientRect();
-        return { out, pan: { x: pan.x, r: pan.right }, przewijanie: [...box.querySelectorAll('.ed-panel *')].some(e => e.scrollWidth > e.clientWidth + 1) };
-      });
+      const m = await p.evaluate(ED => {
+        const box = document.querySelector(ED), out = [];
+        box.querySelectorAll('ion-button').forEach(b => { const r = b.getBoundingClientRect(); out.push({ k: b.dataset.a || b.dataset.t || b.dataset.c || ('w' + b.dataset.w), x: r.x, r: r.right, h: Math.round(r.height), w: r.width }); });
+        const pan = box.querySelector('[data-ed-panel]').getBoundingClientRect();
+        return { out, pan: { x: pan.x, r: pan.right }, przewijanie: [...box.querySelectorAll('[data-ed-panel] *')].some(e => e.scrollWidth > e.clientWidth + 1) };
+      }, ED);
       check(m.out.length === 19, `${sz} px: ${m.out.length} przycisków zamiast 19`);
       for (const v of m.out) {
         check(v.x >= 0 && v.r <= sz, `${sz} px/${v.k}: poza ekranem (x ${v.x.toFixed(1)}–${v.r.toFixed(1)})`);
@@ -116,17 +118,17 @@ async function rysuj(p) {
 
   async function openAndMeasure(p, lang) {
     await otworz(p);
-    await p.click('.oest-editor [data-t="c3"]'); await p.click('.oest-editor [data-c="#2f8bff"]'); await p.click('.oest-editor [data-w="14"]');
+    await p.click(ED + ' [data-t="c3"]'); await p.click(ED + ' [data-c="#2f8bff"]'); await p.click(ED + ' [data-w="14"]');
     await p.waitForTimeout(350);
-    const m = await p.evaluate(() => {
-      const box = document.querySelector('.oest-editor'), out = {};
-      box.querySelectorAll('button').forEach(b => { const r = b.getBoundingClientRect(), s = getComputedStyle(b);
+    const m = await p.evaluate(ED => {
+      const box = document.querySelector(ED), out = {};
+      box.querySelectorAll('ion-button').forEach(b => { const r = b.getBoundingClientRect(), s = getComputedStyle(b.shadowRoot.querySelector('.button-native'));
         out[b.dataset.a || b.dataset.t || b.dataset.c || ('w' + b.dataset.w)] = { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height),
-          tlo: s.backgroundImage !== 'none' ? 'gradient' : s.backgroundColor, ramka: s.borderTopColor, radius: s.borderTopLeftRadius, on: b.classList.contains('on') }; });
-      const pan = box.querySelector('.ed-panel'), ps = getComputedStyle(pan);
-      return { przyciski: out, przewijanie: [...box.querySelectorAll('.ed-panel *')].some(e => e.scrollWidth > e.clientWidth + 1), panelTlo: ps.backgroundColor,
-        aktywne: { t: box.querySelectorAll('[data-t].on').length, c: box.querySelectorAll('[data-c].on').length, w: box.querySelectorAll('[data-w].on').length } };
-    });
+          tlo: s.backgroundImage !== 'none' ? 'gradient' : s.backgroundColor, ramka: s.borderTopColor, radius: s.borderTopLeftRadius, on: b.getAttribute('aria-pressed') === 'true' }; });
+      const pan = box.querySelector('[data-ed-panel]'), ps = getComputedStyle(pan);
+      return { przyciski: out, przewijanie: [...box.querySelectorAll('[data-ed-panel] *')].some(e => e.scrollWidth > e.clientWidth + 1), panelTlo: ps.backgroundColor,
+        aktywne: { t: box.querySelectorAll('[data-t][aria-pressed="true"]').length, c: box.querySelectorAll('[data-c][aria-pressed="true"]').length, w: box.querySelectorAll('[data-w][aria-pressed="true"]').length } };
+    }, ED);
     R[lang] = m;
     for (const [k, v] of Object.entries(m.przyciski)) {
       check(v.x >= 0 && v.x + v.w <= W && v.y >= 0 && v.y + v.h <= H, `${lang}/${k}: poza ekranem (${JSON.stringify(v)})`);

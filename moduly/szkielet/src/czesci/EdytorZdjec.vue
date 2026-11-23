@@ -6,13 +6,13 @@
   <ion-header>
     <ion-toolbar>
       <ion-grid>
-        <ion-row class="ion-justify-content-between ion-align-items-center">
+        <ion-row class="ion-justify-content-between ion-align-items-center ion-nowrap">
           <ion-col size="auto">
-            <ion-button mode="ios" fill="clear" data-a="cancel" @click="k.akcja('anuluj')">{{ T('Anuluj', 'Cancel') }}</ion-button>
+            <ion-button mode="ios" size="small" fill="clear" data-a="cancel" @click="k.akcja('anuluj')">{{ T('Anuluj', 'Cancel') }}</ion-button>
           </ion-col>
           <ion-col size="auto">
-            <ion-button mode="ios" fill="solid" color="duch" data-a="undo" @click="k.akcja('cofnij')"><ion-icon slot="start" :icon="arrowUndo" aria-hidden="true"></ion-icon>{{ T('Cofnij', 'Undo') }}</ion-button>
-            <ion-button mode="ios" color="poswiata" data-a="save" :disabled="d.zapisuje" @click="k.akcja('zapisz')">
+            <ion-button mode="ios" size="small" fill="solid" color="duch" data-a="undo" @click="k.akcja('cofnij')"><ion-icon slot="start" :icon="arrowUndo" aria-hidden="true"></ion-icon>{{ T('Cofnij', 'Undo') }}</ion-button>
+            <ion-button mode="ios" size="small" color="poswiata" data-a="save" :disabled="d.zapisuje" @click="k.akcja('zapisz')">
               <ion-spinner v-if="d.zapisuje" slot="start" name="crescent"></ion-spinner><ion-icon v-else slot="start" :icon="checkmark" aria-hidden="true"></ion-icon>{{ d.zapisuje ? T('Zapisuję…', 'Saving…') : T('Zapisz', 'Save') }}
             </ion-button>
           </ion-col>
@@ -27,7 +27,7 @@
     <ion-toolbar>
       <ion-grid class="ion-no-padding" data-ed-panel>
         <ion-row class="ion-justify-content-around">
-          <ion-col v-for="(g, i) in d.grupy" :key="i" size="auto" class="ion-text-center ion-no-padding">
+          <ion-col v-for="(g, i) in d.grupy" :key="i" :size="g.narzedzia.length > 1 ? 5 : 2" class="ion-text-center ion-no-padding">
             <div>
               <ion-button mode="ios" v-for="t in g.narzedzia" :key="t.k" color="primary" :fill="t.k === d.narzedzie ? 'solid' : 'clear'" :aria-pressed="t.k === d.narzedzie ? 'true' : 'false'" :data-t="t.k" :aria-label="t.etykieta" @click="k.akcja('narzedzie', t.k)">
                 <ion-icon slot="icon-only" :icon="IKONY[t.k]" :size="ROZMIAR[t.k]"></ion-icon>

@@ -94,3 +94,14 @@ ion-loading[data-oest-ladowanie] { --background: #161a34; --spinner-color: #a35b
 .ion-color-poswiata { --ion-color-base: var(--grad); --ion-color-base-rgb: 124, 100, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: var(--grad); --ion-color-tint: var(--grad); }
 ion-button[color=duch] { --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --border-radius: 14px; --box-shadow: none; }
 ion-button[color=poswiata] { --border-radius: 14px; --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); }
+/* Edytor zdjęć: wszystkie przyciski jednej wysokości 44 px (dotyk). Przyciski iOS rosną z odstępów (zmienne --padding-*):
+   odstęp = (44 px − wysokość ikony/napisu − ramka) / 2; 1.125em to ikona w przycisku Ionic, small = 18 px, large = 32 px, ramka „outline”/„duch” 1 px. */
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button { --border-radius: 14px; --padding-top: calc((44px - 1.125em) / 2); --padding-bottom: calc((44px - 1.125em) / 2); --padding-start: 8px; --padding-end: 8px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-t=c1], ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w="4"] { --padding-top: 13px; --padding-bottom: 13px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-t=c3], ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w="14"] { --padding-top: 6px; --padding-bottom: 6px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w][fill=outline] { --padding-top: calc((42px - 1.125em) / 2); --padding-bottom: calc((42px - 1.125em) / 2); }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w="4"][fill=outline] { --padding-top: 12px; --padding-bottom: 12px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-w="14"][fill=outline] { --padding-top: 5px; --padding-bottom: 5px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a] { --padding-top: calc((42px - 1.35em) / 2); --padding-bottom: calc((42px - 1.35em) / 2); --padding-start: 14px; --padding-end: 14px; }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a=save] { --padding-top: calc((44px - 1.35em) / 2); --padding-bottom: calc((44px - 1.35em) / 2); }
+ion-modal[data-oest-czesc=EdytorZdjec] ion-button[data-a=cancel] { --padding-top: calc((44px - 1em) / 2); --padding-bottom: calc((44px - 1em) / 2); --border-color: transparent; }
