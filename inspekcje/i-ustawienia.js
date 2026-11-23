@@ -1,4 +1,7 @@
 "use strict";
+// i-ustawienia.js – ustawienia strony inspekcji.
+// Korzysta z: 3, 4 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: kluczy ustawień w pamięci telefonu.
   // ---------- ustawienia ----------
   function fillSettings() {
     $("s-email").value = cfg.email; $("s-folder").value = cfg.folder; $("s-pattern").value = cfg.pattern;

@@ -1,4 +1,7 @@
 "use strict";
+// i-rdzen.js – wspólne podstawy strony: $, stałe, stan inspekcji.
+// Korzysta z: 2 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: nazw globalnych – używają ich wszystkie dalsze pliki.
   var $ = function (id) { return document.getElementById(id); };
   var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 

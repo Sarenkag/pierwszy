@@ -1,4 +1,7 @@
 "use strict";
+// i-szkic.js – szkic inspekcji w telefonie (zapis każdej zmiany).
+// Korzysta z: 3–5 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: formatu zapisu – stare szkice muszą się otwierać.
   // ---------- szkic inspekcji (Grzegorz 03/11): każda zmiana od razu w telefonie, po ponownym otwarciu wszystko wraca ----------
   // Dotyczy inspekcji „jeden formularz” (AOV, Flush, DB, plant…). Izolatory mają własny zapis zlecenia (batch).
   // Szkic znika dopiero po wysłaniu raportu albo po „Wyczyść inspekcję” w menu ⋮.

@@ -1,4 +1,7 @@
 "use strict";
+// i-checklista.js – pomiary temperatur i checklisty.
+// Korzysta z: 3–5 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: progów temperatur.
   // ---------- pomiary temperatur (wzór 024) ----------
   var temps = [];
   var KIND = { hot: "Hot outlet", cold: "Cold outlet", tmv: "TMV outlet (mixed)" };

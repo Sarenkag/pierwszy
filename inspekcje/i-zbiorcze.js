@@ -1,4 +1,7 @@
 "use strict";
+// i-zbiorcze.js – zlecenie zbiorcze (izolatory), jeden raport na koniec.
+// Korzysta z: 3–5 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: zapisu zlecenia (batch).
   // ---------- zlecenie zbiorcze (izolatory): każde urządzenie domyślnie OK, jeden raport na koniec ----------
   var batch = { items: {} };
   function batchKey(t) { return "batch_" + t.id; }

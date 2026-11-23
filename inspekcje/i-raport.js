@@ -1,4 +1,7 @@
 "use strict";
+// i-raport.js – dane raportu i szablon Worda.
+// Korzysta z: 2, 3, 5, 11 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: wzorów – źródło to moduly/wzory.
   // ---------- dane raportu ----------
   function dateOn() { var c = document.getElementById("dateOn"); return !c || c.checked; }
   // data w raporcie; odzyskana inspekcja z zaznaczonym „Updated” (Grzegorz 08/11/2026 12:53, domyślnie wyłączone): „06/11/2026 (Updated 08/11/2026)”

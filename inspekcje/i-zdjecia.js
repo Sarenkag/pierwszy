@@ -1,4 +1,7 @@
 "use strict";
+// i-zdjecia.js – dodawanie zdjęć i sugestie.
+// Korzysta z: 3, 5 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: rozmiarów zdjęć (800/1600/2560).
   // ---------- zdjęcia ----------
   function addFiles(input, tap, sheet) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";

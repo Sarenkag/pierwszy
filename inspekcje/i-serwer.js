@@ -1,4 +1,7 @@
 "use strict";
+// i-serwer.js – serwer Apps Script, tłumaczenie, model, notatki.
+// Korzysta z: 2, 3 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: adresów i nazw funkcji serwera.
   // ---------- serwer (Twój Google Apps Script) ----------
   function gs(fn) {
     var args = Array.prototype.slice.call(arguments, 1);

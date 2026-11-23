@@ -1,4 +1,7 @@
 "use strict";
+// i-ekrany.js – ekrany strony i przejścia między nimi.
+// Korzysta z: 2, 3 (numery z tabeli w docs/podzial-modulow.md).
+// Nie ruszać: kolejności wczytywania w index.html.
   // ---------- ekrany ----------
   var PPM = window.OEST_PPM || null;
   var cur = { type: TYPES[0], code: "", mode: "one", ppm: null };
