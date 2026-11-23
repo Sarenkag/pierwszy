@@ -44,7 +44,7 @@
         </ion-item>
       </ion-card>
 
-      <ion-accordion-group :multiple="true" :value="otwarte" @ionChange="otwarte = $event.detail.value">
+      <ion-accordion-group :multiple="true" :value="otwarte" @ionChange="$event.target === $event.currentTarget && (otwarte = $event.detail.value)">
         <ion-accordion v-for="d in i.dzialy" :key="d.id" :value="d.id">
           <ion-item slot="header">
             <ion-label>{{ d.nazwa }} ({{ d.wybrano }})</ion-label>
