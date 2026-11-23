@@ -189,7 +189,7 @@ const OKNO_INFO = () => { const m = document.querySelector('ion-modal.show-modal
     // Kalendarz: ten sam klocek
     await p.goto(url + '/index.html#cal'); await p.locator('ion-button.oest-cd[data-cd]').first().waitFor(); await p.waitForTimeout(500);
     // dzień z inspekcjami: kratka miesiąca z licznikiem (ion-badge); klocki dnia pod siatką
-    await p.locator('ion-button.oest-cd[data-cd]:has(ion-badge)').first().click(); await p.locator(KLOCEK).first().waitFor({ timeout: 3000 }).catch(() => {});
+    await p.locator('.oest-cdk:has(> ion-badge) > ion-button.oest-cd[data-cd]').first().click(); await p.locator(KLOCEK).first().waitFor({ timeout: 3000 }).catch(() => {});
     R.kalendarz = await p.evaluate(KLOCEK => { const k = document.querySelector(KLOCEK); return k ? { linie: k.querySelectorAll(':scope > .oest-kr').length, st: !!k.querySelector('ion-badge.oest-pigulka'), dzien: k.dataset.day } : null; }, KLOCEK);
     // przyszły termin w Kalendarzu: okno bez postępu bieżącej inspekcji (uwaga Codex w PR #87)
     // klocek Kalendarza na przyszły termin (data-day) → okno informacji: przytrzymanie klocka dnia przekazuje { id, day } do OESTPpmUI.info (czesci/listaInspekcji.js),
