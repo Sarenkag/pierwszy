@@ -16,6 +16,11 @@ const server = http.createServer((req, res) => {
 });
 const fails = [], R = {};
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
+// okienka notatek to części szkieletu Ionic (moduly/szkielet/src/czesci): nagrywanie (ion-modal), lista notatek (OESTOkna.okno), przyciski [data-*]
+// „Na pewno?” i komunikaty apki: okienko OESTPrzycisk.ask albo ion-alert ze szkieletu (OESTOkna.pytaj) – przycisk potwierdzenia
+const ALERT = '.oest-ask:not([data-wy-out]), ion-alert:not(.overlay-hidden)';
+const ALERT_OK = '.oest-ask:not([data-wy-out]) [data-a=ok], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive';
+const REC = 'ion-modal[data-oest-czesc="Nagrywanie"]', OKNO = 'ion-modal[data-oest-okno="NotatkiOkno"]', POP = '[data-nt-okno]';
 const ID = 'EFA-INS-014';
 // wtyczki telefonu: nagranie (WAV), rozpoznawanie mowy po polsku (kolejne zdania), tłumacz ML Kit (świadomie z „insulator” i bez „12”)
 function fakePhone() {
@@ -48,18 +53,18 @@ function fakePhone() {
     const stage = () => pg.evaluate(i => { const a = JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}'); return a[i] ? a[i].s : 'none'; }, ID);
     const open = async () => { await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => window.OESTNotatki && document.querySelector('#ntRec')); await pg.waitForTimeout(1500); };
     const record = async (n, wstecz) => {
-      await pg.locator('#ntRec').click(); await pg.waitForSelector('.oest-rec'); await pg.waitForTimeout(1200);
+      await pg.locator('#ntRec').click(); await pg.waitForSelector(REC); await pg.waitForTimeout(1200);
       if (wstecz) { // Wstecz telefonu w trakcie nagrywania = Zakończ i zapis, strona zostaje (przegląd Codex #108)
         const u = pg.url(), okien0 = await pg.evaluate(() => OESTOkna.ile()); await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await pg.waitForTimeout(300);
         R.wsteczPrzyNagrywaniu = okien0 > (await pg.evaluate(() => OESTOkna.ile())) ? 'okno' : 'nie zamknął okna (' + okien0 + ' okien)'; // Wstecz zamyka okno nagrywania (nie wychodzi z inspekcji)
         check(pg.url() === u && R.wsteczPrzyNagrywaniu === 'okno', 'Wstecz przy nagrywaniu opuścił inspekcję: ' + R.wsteczPrzyNagrywaniu + ' ' + pg.url());
-      } else await pg.locator('.oest-rec button').click();
+      } else await pg.locator(REC + ' [data-nagrywanie-zakoncz]').click();
       await pg.waitForFunction(n => document.querySelector('#ntN').textContent === String(n), n, { timeout: 10000 });
-      await pg.waitForFunction(() => !document.querySelector('.nt-tag.g'), null, { timeout: 10000 }).catch(() => {});
+      await pg.waitForFunction(() => !document.querySelector('[data-nt-tag][data-stan="busy"]'), null, { timeout: 10000 }).catch(() => {});
     };
-    const popup = async () => { await pg.locator('#ntOpen').click(); await pg.waitForSelector('.nt-pop .nt-note, .nt-pop .nt-empty'); await pg.waitForTimeout(300); };
-    const notes = () => pg.$$eval('.nt-pop .nt-note', a => a.map(n => ({ en: (n.querySelector('.nt-en') || {}).textContent || '', pl: (n.querySelector('.nt-pl') || {}).textContent || '', tag: n.querySelector('.nt-tag').textContent })));
-    const close = async () => { await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); };
+    const popup = async () => { await pg.locator('#ntOpen').click(); await pg.waitForSelector(POP + ' [data-nt-note], ' + POP + ' [data-nt-pusto]'); await pg.waitForTimeout(300); };
+    const notes = () => pg.$$eval(POP + ' [data-nt-note]', a => a.map(n => ({ en: (n.querySelector('[data-nt-en]') || {}).textContent || '', pl: (n.querySelector('[data-nt-pl]') || {}).textContent || '', tag: n.querySelector('[data-nt-tag]').textContent })));
+    const close = async () => { await pg.locator(OKNO + ' [data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' }); };
 
     await open();
     // 1. przycisk „Notatka” u góry rozwija pole notatki z 🎤 i „📝 Notatki”
@@ -71,7 +76,7 @@ function fakePhone() {
     log('2. nagranie → not');
     await record(1);
     check(await stage() === 'prog', 'notatka nie zmieniła statusu na „W trakcie” (' + await stage() + ')');
-    if (SHOTS) { await pg.waitForSelector('.oest-rec', { state: 'detached' }).catch(() => {}); await pg.locator('#ntRec').scrollIntoViewIfNeeded(); await pg.waitForTimeout(600); await pg.screenshot({ path: path.join(SHOTS, 'notatki-inspekcja-PL.png') }); }
+    if (SHOTS) { await pg.waitForSelector(REC, { state: 'detached' }).catch(() => {}); await pg.locator('#ntRec').scrollIntoViewIfNeeded(); await pg.waitForTimeout(600); await pg.screenshot({ path: path.join(SHOTS, 'notatki-inspekcja-PL.png') }); }
     await popup(); let a = await notes(); R.po1 = a;
     check(a.length === 1, 'w okienku ' + a.length + ' notatek zamiast 1');
     check(/isolator/.test(a[0].en) && !/insulator/i.test(a[0].en), 'EN bez poprawy „insulator” → „isolator”: ' + a[0].en);
@@ -80,19 +85,19 @@ function fakePhone() {
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-okienko-PL.png') });
     // 3. Popraw → zmiana tekstu EN → Zapisz
     log('3. Popraw → zmian');
-    await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
-    check(!(await pg.locator('.oest-ask [data-a=ok]').isVisible()), 'w trakcie poprawiania widać „Zamknij” (zgubiłby poprawkę)');
+    await pg.locator(POP + ' [data-nt=edit]').first().click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea');
+    check(!(await pg.locator(OKNO + ' [data-okno=ok]').isVisible()), 'w trakcie poprawiania widać „Zamknij” (zgubiłby poprawkę)');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-popraw-PL.png') });
-    await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('The isolator next to the AOV on level 13 has a cracked gland; temperature 54 °C.');
+    await pg.locator(POP + ' [data-nt-f=en] textarea').fill('The isolator next to the AOV on level 13 has a cracked gland; temperature 54 °C.');
     // odsłuch w trakcie poprawiania nie gubi wpisanego tekstu (przegląd Codex #108)
-    await pg.locator('.nt-pop [data-nt=play]').click(); await pg.waitForTimeout(400);
-    check(/level 13 has a cracked gland/.test(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue()), 'odsłuch w edycji skasował wpisaną poprawkę');
+    await pg.locator(POP + ' [data-nt=play]').click(); await pg.waitForTimeout(400);
+    check(/level 13 has a cracked gland/.test(await pg.locator(POP + ' [data-nt-f=en] textarea').inputValue()), 'odsłuch w edycji skasował wpisaną poprawkę');
     // zapis w telefonie się nie udał (np. brak miejsca): poprawka zostaje w formularzu, komunikat, drugie „Zapisz” działa (przegląd Codex #108)
     await pg.evaluate(() => { const o = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function () { IDBObjectStore.prototype.put = o; throw new DOMException('Brak miejsca w pamięci telefonu.', 'QuotaExceededError'); }; });
-    await pg.locator('.nt-pop [data-nt=save]').click(); await pg.waitForTimeout(400);
-    R.bladZapisu = await pg.locator('.nt-pop .nt-warn').textContent().catch(() => '');
-    check(/Nie zapisano/.test(R.bladZapisu) && /level 13 has a cracked gland/.test(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue()), 'nieudany zapis zgubił poprawkę albo nie pokazał komunikatu: ' + R.bladZapisu);
-    await pg.locator('.nt-pop [data-nt=save]').click(); await pg.waitForSelector('.nt-pop .nt-note');
+    await pg.locator(POP + ' [data-nt=save]').click(); await pg.waitForTimeout(400);
+    R.bladZapisu = await pg.locator(POP + ' [data-nt-warn]').textContent().catch(() => '');
+    check(/Nie zapisano/.test(R.bladZapisu) && /level 13 has a cracked gland/.test(await pg.locator(POP + ' [data-nt-f=en] textarea').inputValue()), 'nieudany zapis zgubił poprawkę albo nie pokazał komunikatu: ' + R.bladZapisu);
+    await pg.locator(POP + ' [data-nt=save]').click(); await pg.waitForSelector(POP + ' [data-nt-note]');
     a = await notes(); check(/level 13 has a cracked gland/.test(a[0].en), 'poprawka EN nie zapisana: ' + a[0].en);
     await close();
     // 4. druga notatka: tłumacz zgubił „12” → „sprawdź liczby” + ostrzeżenie w edycji
@@ -100,27 +105,27 @@ function fakePhone() {
     await record(2, true);
     await popup(); a = await notes(); R.po2 = a;
     check(a.length === 2 && /sprawdź liczby/.test(a[1].tag), 'druga notatka bez ostrzeżenia o liczbie: ' + JSON.stringify(a[1]));
-    await pg.locator('.nt-pop [data-nt=edit]').nth(1).click(); await pg.waitForSelector('.nt-pop .nt-warn');
-    check(/12/.test(await pg.locator('.nt-pop .nt-warn').textContent()), 'edycja nie pokazuje brakującej liczby 12');
+    await pg.locator(POP + ' [data-nt=edit]').nth(1).click(); await pg.waitForSelector(POP + ' [data-nt-warn]');
+    check(/12/.test(await pg.locator(POP + ' [data-nt-warn]').textContent()), 'edycja nie pokazuje brakującej liczby 12');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-liczby-PL.png') });
     // „Ułóż z polskiego” dla notatki 2 → Anuluj → Popraw notatki 1: spóźniony wynik nie trafia do notatki 1 (przegląd Codex #108)
     await pg.evaluate(() => { window.__ntSlow = 600; });
-    await pg.locator('.nt-pop [data-nt=redo]').click(); await pg.locator('.nt-pop [data-nt=cancel]').click(); await pg.waitForSelector('.nt-pop .nt-note');
-    await pg.locator('.nt-pop [data-nt=edit]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]'); await pg.waitForTimeout(900);
+    await pg.locator(POP + ' [data-nt=redo]').click(); await pg.locator(POP + ' [data-nt=cancel]').click(); await pg.waitForSelector(POP + ' [data-nt-note]');
+    await pg.locator(POP + ' [data-nt=edit]').first().click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea'); await pg.waitForTimeout(900);
     await pg.evaluate(() => { window.__ntSlow = 0; });
-    R.poSpoznionymTlumaczeniu = await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue();
+    R.poSpoznionymTlumaczeniu = await pg.locator(POP + ' [data-nt-f=en] textarea').inputValue();
     check(/level 13 has a cracked gland/.test(R.poSpoznionymTlumaczeniu), 'wynik „Ułóż” notatki 2 nadpisał edycję notatki 1: ' + R.poSpoznionymTlumaczeniu);
     // poprawka dopisana w trakcie „Ułóż z polskiego” nie znika po wyniku (przegląd Codex #108)
-    await pg.evaluate(() => { window.__ntSlow = 600; }); await pg.locator('.nt-pop [data-nt=redo]').click();
-    await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('Typed while translating.'); await pg.waitForTimeout(900); await pg.evaluate(() => { window.__ntSlow = 0; });
-    R.poprawkaWTrakcie = await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue();
+    await pg.evaluate(() => { window.__ntSlow = 600; }); await pg.locator(POP + ' [data-nt=redo]').click();
+    await pg.locator(POP + ' [data-nt-f=en] textarea').fill('Typed while translating.'); await pg.waitForTimeout(900); await pg.evaluate(() => { window.__ntSlow = 0; });
+    R.poprawkaWTrakcie = await pg.locator(POP + ' [data-nt-f=en] textarea').inputValue();
     check(R.poprawkaWTrakcie === 'Typed while translating.', 'wynik „Ułóż” nadpisał poprawkę wpisaną w trakcie: ' + R.poprawkaWTrakcie);
     // zamknięcie okienka w trakcie poprawiania (Wstecz / Escape / obok): poprawka wraca przy następnym otwarciu (przegląd Codex #108)
-    await pg.locator('.nt-pop textarea[data-nt-f=en]').fill('Draft kept after closing.');
-    await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
-    await pg.locator('#ntOpen').click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]'); await pg.waitForTimeout(300);
-    check(await pg.locator('.nt-pop textarea[data-nt-f=en]').inputValue() === 'Draft kept after closing.', 'poprawka zgubiona po zamknięciu okienka w trakcie edycji');
-    await pg.locator('.nt-pop [data-nt=cancel]').click(); await pg.waitForSelector('.nt-pop .nt-note');
+    await pg.locator(POP + ' [data-nt-f=en] textarea').fill('Draft kept after closing.');
+    await pg.keyboard.press('Escape'); await pg.waitForSelector(OKNO, { state: 'detached' });
+    await pg.locator('#ntOpen').click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea'); await pg.waitForTimeout(300);
+    check(await pg.locator(POP + ' [data-nt-f=en] textarea').inputValue() === 'Draft kept after closing.', 'poprawka zgubiona po zamknięciu okienka w trakcie edycji');
+    await pg.locator(POP + ' [data-nt=cancel]').click(); await pg.waitForSelector(POP + ' [data-nt-note]');
     check(/level 13 has a cracked gland/.test((await notes())[0].en), 'Anuluj po przywróconej poprawce zmienił zapisaną notatkę');
     await close();
     // 5. Połącz notatki → propozycja → Wstaw: komentarz ma oba zdania, nic nie wstawia się samo
@@ -143,9 +148,9 @@ function fakePhone() {
     check(await pg.locator('#ntRec').isVisible(), 'po restarcie pole notatek zwinięte, choć są notatki');
     // 7. usuń: pierwsze stuknięcie pyta, drugie usuwa
     log('7. usuń: pierwsze');
-    await popup(); await pg.locator('.nt-pop [data-nt=del]').nth(1).click(); await pg.waitForTimeout(200);
-    check((await notes()).length === 2 && /Usunąć/.test(await pg.locator('.nt-pop [data-nt=del]').nth(1).textContent()), 'pierwsze stuknięcie 🗑 nie pyta');
-    await pg.locator('.nt-pop [data-nt=del]').nth(1).click(); await pg.waitForTimeout(400);
+    await popup(); await pg.locator(POP + ' [data-nt=del]').nth(1).click(); await pg.waitForTimeout(200);
+    check((await notes()).length === 2 && /Usunąć/.test(await pg.locator(POP + ' [data-nt=del]').nth(1).textContent()), 'pierwsze stuknięcie 🗑 nie pyta');
+    await pg.locator(POP + ' [data-nt=del]').nth(1).click(); await pg.waitForTimeout(400);
     check((await notes()).length === 1, 'drugie stuknięcie nie usunęło notatki');
     await close(); check(await count() === '1', 'licznik po usunięciu ' + await count());
     // trwające „✨ Ułóż” przejęte przez „Połącz notatki” (jedna notatka = bez modelu, od razu): „Ułóż” nie zostaje wyłączony (przegląd Codex #108)
@@ -160,7 +165,7 @@ function fakePhone() {
     await pg.evaluate(() => { if (window.OESTSettings) OESTSettings.update(s => { s.appearance.language = 'en'; }); localStorage.setItem('oest.lang', 'en'); }); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
     check(/Record note/.test(await pg.locator('#ntRec').textContent()), 'EN: przycisk nagrywania po polsku: ' + await pg.locator('#ntRec').textContent());
     await popup(); const en = await notes(); R.en = en;
-    check(en.length === 1 && /ready/.test(en[0].tag) && /Edit/.test(await pg.locator('.nt-pop [data-nt=edit]').textContent()), 'EN: okienko niepełne/po polsku: ' + JSON.stringify(en));
+    check(en.length === 1 && /ready/.test(en[0].tag) && /Edit/.test(await pg.locator(POP + ' [data-nt=edit]').textContent()), 'EN: okienko niepełne/po polsku: ' + JSON.stringify(en));
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'notatki-okienko-EN.png') });
     await close();
     await pg.evaluate(() => { if (window.OESTSettings) OESTSettings.update(s => { s.appearance.language = 'pl'; }); localStorage.setItem('oest.lang', 'pl'); }); await pg.reload(); await pg.waitForFunction(() => window.OESTNotatki); await pg.waitForTimeout(2000);
@@ -168,11 +173,11 @@ function fakePhone() {
     log('9. Wyczyść inspek');
     // błąd usuwania notatek: nic nie czyścimy i nie piszemy „Wyczyszczono” (przegląd Codex #108)
     await pg.evaluate(() => { const c = OESTNotatki.clear; OESTNotatki.clear = function () { OESTNotatki.clear = c; return Promise.reject(Error('transakcja przerwana')); }; window.OEST_clearInspection(); });
-    await pg.waitForSelector('.oest-ask [data-a=ok]'); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForTimeout(1500);
-    R.bladCzyszczenia = await pg.locator('.oest-ask').textContent().catch(() => '');
+    await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).first().click(); await pg.waitForTimeout(1500);
+    R.bladCzyszczenia = await pg.locator(ALERT).first().textContent().catch(() => '');
     check(/nie wyczyściłem/.test(R.bladCzyszczenia) && !/Wyczyszczono/.test(await pg.locator('#formHint').textContent()) && await count() === '1', 'błąd usuwania notatek potwierdzony jako wyczyszczenie: ' + R.bladCzyszczenia + ' / ' + await pg.locator('#formHint').textContent() + ' / notatek ' + await count());
-    if (await pg.locator('.oest-ask [data-a=ok]').count()) { await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' }); }
-    await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector('.oest-ask [data-a=ok]'); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForTimeout(2500);
+    if (await pg.locator(ALERT_OK).count()) { await pg.locator(ALERT_OK).first().click(); await pg.waitForFunction(s => !document.querySelector(s), ALERT); }
+    await pg.evaluate(() => { window.OEST_clearInspection(); }); await pg.waitForSelector(ALERT_OK); await pg.locator(ALERT_OK).first().click(); await pg.waitForTimeout(2500);
     check(await count() === '0', 'po „Wyczyść inspekcję” zostały notatki: ' + await count());
     R.poWyczysc = await count();
     // 10. nowy termin: notatki idą z inspekcją do archiwum; nieudane przeniesienie nic nie kasuje i ponawia się przy następnym otwarciu (przegląd Codex #108)

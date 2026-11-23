@@ -34,7 +34,11 @@ function fakePhone() {
     await ctx.addInitScript(fakePhone);
     const pg = await ctx.newPage(); pg.setDefaultTimeout(8000); pg.on('pageerror', e => errors.push(e.message));
     const until = async (fn, arg) => { for (let i = 0; i < 25; i++) { if (await pg.evaluate(fn, arg)) return true; await pg.waitForTimeout(200); } return false; };
-    const ask = () => pg.locator('.oest-ask:not([data-wy-out])');
+    // okienka notatek: części szkieletu Ionic w ion-modal (OESTOkna.okno); „Na pewno?” apki: okienko OESTPrzycisk.ask albo ion-alert (OESTOkna.pytaj); pasek notatek: [data-nt-bar]
+    const okno = () => pg.locator('ion-modal[data-oest-okno]:not(.overlay-hidden)'), OKNO = 'ion-modal[data-oest-okno]';
+    const ask = () => pg.locator('.oest-ask:not([data-wy-out]), ion-alert:not(.overlay-hidden)'); // pytanie apki: okienko OESTPrzycisk.ask albo ion-alert (OESTOkna.pytaj)
+    const REC = 'ion-modal[data-oest-czesc="Nagrywanie"]', POP = '[data-nt-okno]', NOWA = '[data-nt-nowa] [data-nt-f=pl] textarea';
+    // ponumerowana ikonka notatki (w stronie): rodzaj (glos = 🎤, tekst = 📝) i numer
     const draft = () => pg.evaluate(() => OESTReactiveUI.repository.get().then(d => Object.values(d.reactiveDrafts)[0]));
     const saved = () => pg.waitForFunction(() => document.querySelector('#rxMessage')?.textContent.includes('Szkic zapisany'));
 
@@ -50,44 +54,44 @@ function fakePhone() {
     check(Math.abs(pb.y - pa.y) < 2 && pa.x > pb.x, 'PRZED i PO nie obok siebie');
     check(await pg.locator('[data-rx=row][data-id=status]').count() === 0, 'Status nadal na ekranie zamiast pod ⋮');
     // ---------- info na start: otwarte od razu, 🎤+ 📝+, pole tylko wydłużane ----------
-    check(await pg.locator('#rxNotes .nt-rec').isVisible() && await pg.locator('#rxNotes .nt-add').isVisible(), 'start: brak 🎤+ / 📝+');
+    check(await pg.locator('#rxNotes [data-nt-bar=rec]').isVisible() && await pg.locator('#rxNotes [data-nt-bar=add]').isVisible(), 'start: brak 🎤+ / 📝+');
     const css = await pg.locator('.rx-info-t').evaluate(e => { const c = getComputedStyle(e); return c.resize + '|' + (e.getBoundingClientRect().width >= e.parentElement.getBoundingClientRect().width - 12) + '|' + c.minWidth; });
     check(/^vertical\|true\|/.test(css), 'start: pole nie jest „tylko wydłużane” na całą szerokość: ' + css);
     // wolny tłumacz + odświeżanie paska w trakcie: wynik tłumaczenia nie może zostać nadpisany drugim przetwarzaniem (Codex #144 P1)
     await pg.evaluate(() => { const t = window.Capacitor.Plugins.Translate, f = t.plToEn; t.plToEn = a => new Promise(r => setTimeout(() => r(f(a)), 900)); });
-    await pg.locator('#rxNotes .nt-add').click(); await pg.waitForSelector('.nt-pop textarea');
-    await pg.locator('.nt-pop textarea').fill('pompa numer 12 cieknie'); await ask().locator('[data-a=ok]').click();
-    await pg.waitForFunction(() => document.querySelector('#rxNotes .nt-list [data-nt-id]')?.textContent === '📝1', null, { timeout: 10000 });
+    await pg.locator('#rxNotes [data-nt-bar=add]').click(); await pg.waitForSelector(NOWA);
+    await pg.locator(NOWA).fill('pompa numer 12 cieknie'); await okno().locator('[data-okno=ok]').click();
+    await pg.waitForFunction(() => (e => !!e && e.dataset.rodzaj === 'tekst' && e.textContent.trim() === '1')(document.querySelector('#rxNotes [data-nt-id]')), null, { timeout: 10000 });
     await pg.evaluate(k => Promise.all([OESTNotatki.summary(k), OESTNotatki.summary(k)]), scope);
     check(await until(k => OESTNotatki.list(k).then(a => a.length === 1 && /Pump number 12/.test(a[0].en) && a[0].pl === 'pompa numer 12 cieknie'), scope), 'start: notatka pisana bez tekstu EN');
     await pg.waitForTimeout(1200); check(await pg.evaluate(k => OESTNotatki.list(k).then(a => a.length === 1 && /Pump number 12/.test(a[0].en) && !a[0].err && a[0].st !== 'busy'), scope), 'start: tłumaczenie notatki pisanej nadpisane drugim przetwarzaniem');
-    await pg.locator('#rxNotes .nt-rec').click(); await pg.waitForSelector('.oest-rec'); await pg.waitForTimeout(1200); await pg.locator('.oest-rec button').click();
-    await pg.waitForFunction(() => document.querySelectorAll('#rxNotes .nt-list [data-nt-id]').length === 2 && document.querySelectorAll('#rxNotes .nt-list [data-nt-id]')[1].textContent === '🎤2', null, { timeout: 10000 });
-    await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.waitForSelector('.nt-pop .nt-note');
-    check(await pg.locator('.nt-pop .nt-note').count() === 1 && await pg.locator('.nt-pop [data-nt=edit]').count() === 1 && await pg.locator('.nt-pop .nt-del, .nt-pop [data-nt=del]').count() === 1, 'ikonka: okienko nie z tą jedną notatką (edycja/usuwanie)');
-    await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('#rxNotes [data-nt-bar=rec]').click(); await pg.waitForSelector(REC); await pg.waitForTimeout(1200); await pg.locator(REC + ' [data-nagrywanie-zakoncz]').click();
+    await pg.waitForFunction(() => document.querySelectorAll('#rxNotes [data-nt-id]').length === 2 && (e => !!e && e.dataset.rodzaj === 'glos' && e.textContent.trim() === '2')(document.querySelectorAll('#rxNotes [data-nt-id]')[1]), null, { timeout: 10000 });
+    await pg.locator('#rxNotes [data-nt-id]').first().click(); await pg.waitForSelector(POP + ' [data-nt-note]');
+    check(await pg.locator(POP + ' [data-nt-note]').count() === 1 && await pg.locator(POP + ' [data-nt=edit]').count() === 1 && await pg.locator(POP + ' [data-nt=del]').count() === 1, 'ikonka: okienko nie z tą jedną notatką (edycja/usuwanie)');
+    await okno().locator('[data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' });
     // przerwana poprawka notatki 1 (Popraw → Wstecz) nie otwiera się po stuknięciu ikonki 2 (Codex #144)
-    await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.locator('.nt-pop [data-nt=edit]').click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
-    await pg.keyboard.press('Escape'); await pg.waitForSelector('.nt-pop', { state: 'detached' });
-    await pg.locator('#rxNotes .nt-list [data-nt-id]').nth(1).click(); await pg.waitForSelector('.nt-pop .nt-note');
-    check(await pg.locator('.nt-pop textarea').count() === 0 && await pg.locator('.nt-pop [data-nt=play]').count() === 1, 'ikonka 2: otwarła się przerwana poprawka notatki 1');
-    await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
-    await pg.locator('#rxNotes .nt-list [data-nt-id]').first().click(); await pg.waitForSelector('.nt-pop textarea[data-nt-f=en]');
-    await ask().locator('[data-nt=cancel]').click(); await ask().locator('[data-a=ok]').click(); await pg.waitForSelector('.oest-ask', { state: 'detached' });
+    await pg.locator('#rxNotes [data-nt-id]').first().click(); await pg.locator(POP + ' [data-nt=edit]').click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea');
+    await pg.keyboard.press('Escape'); await pg.waitForSelector(OKNO, { state: 'detached' });
+    await pg.locator('#rxNotes [data-nt-id]').nth(1).click(); await pg.waitForSelector(POP + ' [data-nt-note]');
+    check(await pg.locator(POP + ' textarea').count() === 0 && await pg.locator(POP + ' [data-nt=play]').count() === 1, 'ikonka 2: otwarła się przerwana poprawka notatki 1');
+    await okno().locator('[data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' });
+    await pg.locator('#rxNotes [data-nt-id]').first().click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea');
+    await okno().locator('[data-nt=cancel]').click(); await okno().locator('[data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' });
     await pg.locator('[data-rx-field=note]').fill('Leak at pump 12.'); await saved();
     if (SHOTS) { await pg.locator('#rxNotes').scrollIntoViewIfNeeded(); await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-notatki.png') }); }
     // ---------- info na koniec: osobne notatki ----------
-    await pg.locator('[data-rx=row][data-id=end]').click(); await pg.locator('#rxNotesEnd .nt-add').waitFor();
+    await pg.locator('[data-rx=row][data-id=end]').click(); await pg.locator('#rxNotesEnd [data-nt-bar=add]').waitFor();
     // sekcje niezależne (Grzegorz 22/11/2026 „tak”): otwarcie „na koniec” nie zwija „na start” z 🎤 i notatkami
-    check(await pg.locator('#rxNotes .nt-rec').isVisible() && await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'otwarcie „na koniec” zwinęło „na start” (mikrofon zniknął)');
+    check(await pg.locator('#rxNotes [data-nt-bar=rec]').isVisible() && await pg.locator('#rxNotesEnd [data-nt-bar=rec]').isVisible(), 'otwarcie „na koniec” zwinęło „na start” (mikrofon zniknął)');
     await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes').waitFor({ state: 'detached' });
     check(await until(() => (document.querySelector('[data-ntc=start]') || {}).hidden === false && /^🎤 2( · 📷 \d+)?$/.test(document.querySelector('[data-ntc=start]').textContent)), 'zwinięte „na start”: brak licznika 🎤 2 na nagłówku');
     check(await pg.evaluate(() => { const n = document.querySelectorAll('#rx-before img').length, t = document.querySelector('[data-ntc=start]').textContent; return n ? t.endsWith('📷 ' + n) : !/📷/.test(t); }), 'zwinięte „na start”: liczba zdjęć przed nie zgadza się z kartą');
-    check(await pg.locator('#rxNotesEnd .nt-rec').isVisible(), 'zwinięcie „na start” zwinęło też „na koniec”');
-    await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes .nt-rec').waitFor();
-    await pg.locator('#rxNotesEnd .nt-add').click(); await pg.waitForSelector('.nt-pop textarea');
-    await pg.locator('.nt-pop textarea').fill('wymieniono uszczelkę'); await ask().locator('[data-a=ok]').click();
-    await pg.waitForFunction(() => document.querySelector('#rxNotesEnd .nt-list [data-nt-id]')?.textContent === '📝1', null, { timeout: 10000 });
+    check(await pg.locator('#rxNotesEnd [data-nt-bar=rec]').isVisible(), 'zwinięcie „na start” zwinęło też „na koniec”');
+    await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes [data-nt-bar=rec]').waitFor();
+    await pg.locator('#rxNotesEnd [data-nt-bar=add]').click(); await pg.waitForSelector(NOWA);
+    await pg.locator(NOWA).fill('wymieniono uszczelkę'); await okno().locator('[data-okno=ok]').click();
+    await pg.waitForFunction(() => (e => !!e && e.dataset.rodzaj === 'tekst' && e.textContent.trim() === '1')(document.querySelector('#rxNotesEnd [data-nt-id]')), null, { timeout: 10000 });
     check(await until(k => Promise.all([OESTNotatki.list(k), OESTNotatki.list(k + '|end')]).then(([a, b]) => a.length === 2 && b.length === 1), scope), 'start/koniec: notatki pomieszane');
     await pg.locator('[data-rx-field=endNote]').fill('Seal replaced.'); await saved();
     { const x = await draft(); check(x.note === 'Leak at pump 12.' && x.endNote === 'Seal replaced.', 'szkic: brak note/endNote'); }
@@ -103,15 +107,15 @@ function fakePhone() {
     check(await ask().count() === 0, 'data: pytanie mimo tej samej daty');
     await pick('2026-11-03'); await ask().waitFor();
     check(/03\/11\/2026/.test(await ask().textContent()), 'data: w pytaniu brak daty zdjęcia');
-    await ask().locator('[data-a=no]').click(); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2, null, { timeout: 10000 });
+    await ask().locator('[data-a=no], button.alert-button-role-cancel').click(); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2, null, { timeout: 10000 });
     check(await pg.locator('[data-rx-field=orderDate]').inputValue() === today, 'data: „Nie” zmieniło datę');
-    await pick('2026-11-05'); await ask().waitFor(); await ask().locator('[data-a=ok]').click();
+    await pick('2026-11-05'); await ask().waitFor(); await ask().locator('[data-a=ok], button.alert-button-role-confirm, button.alert-button-role-destructive').click();
     await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 3, null, { timeout: 10000 });
     check(await pg.locator('[data-rx-field=orderDate]').inputValue() === '2026-11-05', 'data: „Tak” nie zmieniło daty w polu');
     await pg.waitForTimeout(400); check((await draft()).orderDate === '2026-11-05', 'data: „Tak” nie zapisało daty w szkicu');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-end.png'), fullPage: true });
     // ---------- EN ----------
-    await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.reload(); await pg.locator('#rxNotes .nt-add').waitFor();
+    await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.reload(); await pg.locator('#rxNotes [data-nt-bar=add]').waitFor();
     const en = await pg.locator('#v-reactive .rx-body').innerText();
     check(/Add info on start/.test(en) && /Add info on end/.test(en) && /Voice/.test(en) && !/[ąćęłńóśźż]/i.test(en.replace(/pompa.*|wymieniono.*/g, '')), 'EN: ekran nie po angielsku');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }

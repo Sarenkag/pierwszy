@@ -33,7 +33,7 @@ const LIBS = {
   'pizzip.min.js': { name: 'PizZip', use: /\bPizZip\b/ },
   'docxtemplater.min.js': { name: 'docxtemplater', use: /\bnew\s+(?:window\.)?docxtemplater\b|\bwindow\.docxtemplater\b/i },
   // szkielet Ionic + Vue (moduly/szkielet, paczka Vite): tworzy API dla reszty apki; z apki czyta dopiero w działaniu (nie przy ładowaniu)
-  'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna'], use: /(?!)/ }
+  'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna', 'OESTCzesci'], use: /(?!)/ }
 };
 const TRACKED = /^(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)$/;
 const USE_RE = /\b(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)\b/g;

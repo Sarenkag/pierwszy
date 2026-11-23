@@ -9,7 +9,7 @@
 //     inspekcja się nie otwiera; krótkie stuknięcie dalej otwiera inspekcję.
 // Ionic + Vue (23/11/2026): klocek = czesci/Klocek.vue (ion-card.oest-klocek), pigułka statusu w linii 2 (ion-badge.oest-pigulka), bez strzałki z prawej,
 //  numer zlecenia Vantify w linii 3, stuknięcie w dowolne miejsce otwiera, okno informacji = ion-modal (czesci/InfoInspekcji.vue, krzyżyk w pasku okna,
-//  bez przycisków na dole). Pola: nazwa h2, pigułka, .oest-klok, .oest-kcz, .oest-kdt, liczniki strong[data-rodzaj=zdjecia|pytania|usterki].
+//  bez przycisków na dole). Pola: nazwa h2, pigułka, .oest-klok, .oest-kcz, .oest-kdt, liczniki strong[data-rodzaj=zdjecia|pytania], miejsce na usterki .oest-kus (jak .kus na main); numer zlecenia w linii 1 (Grzegorz 23/11).
 // Uruchomienie: OEST_PLAYWRIGHT_PATH=… OEST_BROWSER_PATH=… node app/tests/klocek-inspekcji-ui-check.cjs  (po npm run copy-web)
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require('./przegladarka.cjs');
@@ -31,7 +31,7 @@ const STAGE = now => ({
 });
 const POLA = ['knm', 'oest-st', 'klok', 'kcz', 'kdt', 'kn2', 'kn5', 'kus'];
 // pola starego klocka → elementy klocka Ionic (te same nazwy w komunikatach)
-const SEL = { knm: 'h2', 'oest-st': 'ion-badge.oest-pigulka', klok: '.oest-klok', kcz: '.oest-kcz', kdt: '.oest-kdt', kn2: 'strong[data-rodzaj="zdjecia"]', kn5: 'strong[data-rodzaj="pytania"]', kus: 'strong[data-rodzaj="usterki"]' };
+const SEL = { knm: 'h2', 'oest-st': 'ion-badge.oest-pigulka', klok: '.oest-klok', kcz: '.oest-kcz', kdt: '.oest-kdt', kn2: 'strong[data-rodzaj="zdjecia"]', kn5: 'strong[data-rodzaj="pytania"]', kus: '.oest-kus' };
 const KLOCEK = '#oest-szkielet ion-content ion-card.oest-klocek[data-id]', OKNO = 'ion-modal.show-modal';
 const OKNO_INFO = () => { const m = document.querySelector('ion-modal.show-modal'); return m && m.querySelector('ion-list') ? m : null; };
 
@@ -107,7 +107,7 @@ const OKNO_INFO = () => { const m = document.querySelector('ion-modal.show-modal
         window.OESTSettings.update(s => { s.appearance.language = l; }); window.OESTSettingsUI.applyTheme();
         out[l] = [-3, -45, 0, 1, 4, 30, 31, 40].map(n => { const x = K.termin(d, n); return x.text + '|' + x.tone; }).concat([K.termin(d, 9, true).text, K.termin(null, null).text]);
         const kl = (id, status, loc, freq, form, left, photos, qa, issues) => ({ id, nazwa: id.toUpperCase(), znak: loc, czestotliwosc: U.czest(freq), formularz: form, status: { tryb: status }, termin: U.termin(d, left),
-          ikony: [{ rodzaj: 'zdjecia', n: photos }, { rodzaj: 'pytania', n: qa }].concat(issues ? [{ rodzaj: 'usterki', n: issues, ton: 'warning' }] : []), numer: '' });
+          ikony: [{ rodzaj: 'zdjecia', n: photos }, { rodzaj: 'pytania', n: qa }, { rodzaj: 'usterki', n: issues || '', ton: 'warning' }], numer: '' });
         const extra = [kl('ki-x', 'wstrzymana', 'TB/L13', '11M', 'blad', 1, 99, '99/99', 99), kl('ki-y', 'zalegla', 'TA/GL', '12M', 'brak', -45, 0, '–', 0), kl('ki-z', 'gotowa', '', '', 'brak', 30, 5, '–', 0)];
         const o = U.ppmDane; window.__kiPpm = o; U.ppmDane = function () { const r = o.apply(this, arguments); return Object.assign({}, r, { klocki: extra.concat(r.klocki) }); };
         window.dispatchEvent(new Event('oest:ppm-ui'));
@@ -189,7 +189,7 @@ const OKNO_INFO = () => { const m = document.querySelector('ion-modal.show-modal
     // Kalendarz: ten sam klocek
     await p.goto(url + '/index.html#cal'); await p.locator('ion-button.oest-cd[data-cd]').first().waitFor(); await p.waitForTimeout(500);
     // dzień z inspekcjami: kratka miesiąca z licznikiem (ion-badge); klocki dnia pod siatką
-    await p.locator('ion-button.oest-cd[data-cd]:has(ion-badge)').first().click(); await p.locator(KLOCEK).first().waitFor({ timeout: 3000 }).catch(() => {});
+    await p.locator('.oest-cdk:has(> ion-badge) > ion-button.oest-cd[data-cd]').first().click(); await p.locator(KLOCEK).first().waitFor({ timeout: 3000 }).catch(() => {});
     R.kalendarz = await p.evaluate(KLOCEK => { const k = document.querySelector(KLOCEK); return k ? { linie: k.querySelectorAll(':scope > .oest-kr').length, st: !!k.querySelector('ion-badge.oest-pigulka'), dzien: k.dataset.day } : null; }, KLOCEK);
     // przyszły termin w Kalendarzu: okno bez postępu bieżącej inspekcji (uwaga Codex w PR #87)
     // klocek Kalendarza na przyszły termin (data-day) → okno informacji: przytrzymanie klocka dnia przekazuje { id, day } do OESTPpmUI.info (czesci/listaInspekcji.js),
