@@ -3,7 +3,7 @@
      Wstrzymana secondary (niebieski), Gotowa success, Odzyskana tertiary. tryb = 'zalegla'|'nierozpoczeta'|'wtrakcie'|'wstrzymana'|'gotowa'|'odzyskana'
      albo tekst + ton (0 szary, 1 żółty, 2 zielony, 3 czerwony, 4 niebieski) dla list spoza inspekcji. -->
 <template>
-  <ion-badge v-if="p" :color="p.kolor">{{ p.tekst }}</ion-badge>
+  <ion-badge v-if="p" class="oest-pigulka" :color="p.kolor">{{ p.tekst }}</ion-badge>
 </template>
 
 <script setup>

@@ -73,8 +73,9 @@ async function run(browser, url, worker) {
   async function send() {
     const d = await pg.evaluate(() => window.__dec), q = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result); }; }));
     await pg.click('#toQueue');
-    const asked = await pg.waitForSelector('.oest-ask', { timeout: 8000 }).then(() => true, () => false);
-    if (asked) await pg.click('.oest-ask [data-a="ok"]');
+    // pytanie przed wysłaniem = ion-alert (OESTOkna.pytaj); okienko z własną treścią – stare .oest-ask
+    const asked = await pg.waitForSelector('ion-alert .alert-button, .oest-ask', { timeout: 8000 }).then(() => true, () => false);
+    if (asked) { if (await pg.locator('ion-alert .alert-button').count()) { await pg.waitForTimeout(400); await pg.locator('ion-alert .alert-button').last().click(); } else await pg.click('.oest-ask [data-a="ok"]'); }
     // czekanie na WYNIK obietnicy (waitForFunction brał samą obietnicę za „prawdę” i nie czekał na raport)
     const ile = () => pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue').objectStore('queue').count(); g.onsuccess = () => res(g.result); }; }));
     const t0 = Date.now(); while (!((await ile()) > q)) { if (Date.now() - t0 > 120000) throw Error('Wyślij nie dodało raportu do kolejki w 120 s'); await pg.waitForTimeout(500); }

@@ -42,7 +42,12 @@ let STEP = 'start';
           registerPlugin: n => P[n] || new Proxy({}, { get: (_, k) => k === 'then' ? undefined : () => Promise.reject(Error('UNAVAILABLE')) }) };
         // okienka apki (moduly/przycisk ask): odpowiedź „OK” jak użytkownik
         window.__said = []; // treść okienek zapamiętana przed kliknięciem (okienko znika od razu)
-        new MutationObserver(() => { const a = document.querySelector('.oest-ask:not([data-wy-out])'); const b = a && a.querySelector('[data-a=ok]'); if (b) { window.__said.push(a.innerText); console.log('OEST-ASK ' + a.innerText); b.click(); } }).observe(document, { childList: true, subtree: true });
+        // okienka z samym tekstem to ion-alert (OESTOkna.pytaj, szkielet Ionic): treść z nagłówka i .alert-message, „OK” = ostatni przycisk
+        new MutationObserver(() => {
+          const a = document.querySelector('.oest-ask:not([data-wy-out])'); const b = a && a.querySelector('[data-a=ok]'); if (b) { window.__said.push(a.innerText); console.log('OEST-ASK ' + a.innerText); b.click(); }
+          const al = document.querySelector('ion-alert:not([data-said])'), ab = al && al.querySelector('.alert-button-group .alert-button:last-child');
+          if (ab) { al.setAttribute('data-said', '1'); const t = [al.querySelector('.alert-title'), al.querySelector('.alert-message')].map(e => e ? e.textContent : '').join(' ').trim(); window.__said.push(t); console.log('OEST-ASK ' + t); setTimeout(() => ab.click(), 600); }
+        }).observe(document, { childList: true, subtree: true });
       }, mode);
       const page = await ctx.newPage(), errors = [];
       page.said = []; page.shares = 0; // z konsoli – przeżywa przejście strony (np. powrót po wysłaniu)

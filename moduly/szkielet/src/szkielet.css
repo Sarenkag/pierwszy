@@ -81,3 +81,5 @@ ion-modal.oest-okno ion-footer ion-button { flex: 1 1 0; min-height: 48px; font-
 ion-modal.oest-okno ion-footer ion-button:not(:last-child) { --background: #222746; --color: #ffffff; --border-radius: 14px; }
 ion-item ion-label.oest-etykieta { font-size: 15px !important; color: var(--steel) !important; }
 ion-modal.oest-okno ion-footer ion-button.ion-color-primary:last-child { --ion-color-base: var(--grad) !important; --background: var(--grad); --background-activated: var(--grad); --background-hover: var(--grad); --background-focused: var(--grad); --color: #ffffff; }
+/* pigułka statusu (czesci/Pigulka.vue): stała szerokość jak na main (98 px) – PL/EN nic nie przesuwa */
+ion-badge.oest-pigulka { min-width: 98px; text-align: center; }

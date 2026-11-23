@@ -11,12 +11,13 @@
       <ion-thumbnail v-if="k.miniatura" slot="start"><img :src="k.miniatura" alt=""></ion-thumbnail>
       <ion-label :color="k.przygaszony ? 'medium' : undefined">
         <h2 class="ion-text-nowrap">{{ k.nazwa }}</h2>
-        <p v-if="k.znak !== undefined || k.czestotliwosc || k.formularz || k.opis || k.status">
+        <!-- linia 2 w jednym wierszu (stała wysokość klocka jak na main): pigułka przed opisem, długi opis kończy się „…” -->
+        <p v-if="k.znak !== undefined || k.czestotliwosc || k.formularz || k.opis || k.status" class="ion-text-nowrap">
           <ion-badge v-if="k.znak !== undefined" color="light">{{ k.znak || '—' }}</ion-badge>
           <template v-if="k.czestotliwosc"> <ion-icon :icon="I.czest" aria-hidden="true"></ion-icon> {{ k.czestotliwosc }}</template>
           <template v-if="k.formularz"> <ion-icon :icon="I.dokument" :color="FORM[k.formularz]" :aria-label="T('Zdjęcie formularza', 'Form photo')"></ion-icon></template>
-          <template v-if="k.opis"> {{ k.opis }}</template>
           <template v-if="k.status"> <Pigulka :T="T" :tryb="k.status.tryb" :tekst="k.status.tekst" :ton="k.status.ton"></Pigulka></template>
+          <template v-if="k.opis"> {{ k.opis }}</template>
         </p>
         <p v-if="k.termin || (k.ikony && k.ikony.length)">
           <template v-if="k.termin"><ion-icon :icon="I.termin" aria-hidden="true"></ion-icon> <ion-text :color="TERMIN[k.termin.ton || '']">{{ k.termin.tekst }}</ion-text></template>

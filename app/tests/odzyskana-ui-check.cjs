@@ -72,10 +72,10 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const lsBefore = await ppmLs();
 
     // 3. Ustawienia → Raporty: brak odzyskanych; podgląd → Odzyskaj do edycji
-    await idz(pg, 'settings/reports'); await pg.locator('#rptList .k2').first().waitFor();
-    check(await pg.locator('#rptRec').isHidden(), 'bez odzyskanych: brak sekcji „Odzyskane inspekcje”');
-    await pg.locator('#rptList .k2').first().click();
-    const rb = pg.locator('.oest-ask [data-a=rec]'); await rb.waitFor();
+    await idz(pg, 'settings/reports'); await pg.locator('#rptList ion-card').first().waitFor(); await pg.waitForTimeout(300);
+    check(await pg.locator('#rptRec').count() === 0, 'bez odzyskanych: brak sekcji „Odzyskane inspekcje”');
+    await pg.locator('#rptList ion-card').first().click();
+    const rb = pg.locator('ion-modal #rptRecover'); await rb.waitFor(); await pg.waitForTimeout(300);
     check((await rb.textContent()).trim() === 'Odzyskaj do edycji', 'w podglądzie przycisk „Odzyskaj do edycji”');
     await shot('podglad-odzyskaj-PL');
     await rb.click(); await pg.waitForURL(/inspekcje\/index\.html#rec=/); await pg.waitForTimeout(2500);
@@ -128,26 +128,29 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(await pg.locator('#recPill .oest-st').textContent() === 'Odzyskana', 'po Wyślij pigułka nadal Odzyskana');
 
     // 6. klocek Raporty: odzyskana jak zwykły klocek inspekcji; PL/EN bez skoków
-    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
-    const card = await pg.evaluate(() => { const k = document.querySelector('#rptRec .ki'), s = k.querySelector('.oest-st'); return { n: document.querySelectorAll('#rptRec .ki').length, st: s.textContent, c: getComputedStyle(s).color, nm: k.querySelector('.knm').textContent, loc: k.querySelector('.klok').textContent, h: Math.round(k.getBoundingClientRect().height) }; });
-    check(card.nm === q.card.name && card.loc === 'TB/L13', 'klocek odzyskanej: nazwa i lokalizacja jak na liście inspekcji (' + card.nm + ', ' + card.loc + ')');
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec ion-card').first().waitFor(); await pg.waitForTimeout(400);
+    // klocek = czesci/Klocek.vue (Ionic): nazwa w h2, lokalizacja w opisie linii 2, pigułka = ion-badge (kolor tła)
+    const card = await pg.evaluate(() => { const k = document.querySelector('#rptRec ion-card'), s = k.querySelector('ion-badge:not([color=light])'); return { n: document.querySelectorAll('#rptRec ion-card').length, st: s.textContent.trim(), c: getComputedStyle(s).backgroundColor, nm: k.querySelector('h2').textContent.trim(), loc: k.querySelector('ion-label p').textContent, h: Math.round(k.getBoundingClientRect().height) }; });
+    check(card.nm === q.card.name && card.loc.includes('TB/L13'), 'klocek odzyskanej: nazwa i lokalizacja jak na liście inspekcji (' + card.nm + ', ' + card.loc + ')');
     check(card.n === 1 && card.st === 'Odzyskana' && card.c === 'rgb(163, 91, 255)', 'klocek Raporty: odzyskana z fioletową pigułką (' + JSON.stringify(card) + ')');
-    const mainH = await pg.evaluate(async () => { const d = document.createElement('div'); d.style.width = document.querySelector('#rptRec .ki').getBoundingClientRect().width + 'px'; d.innerHTML = window.OESTKlocek.inspekcja({ name: 'X', status: 'gotowa', loc: 'TB', freq: '1M', due: new Date(), photos: 1, qa: { ok: 1, all: 2 } }); document.body.appendChild(d); const h = Math.round(d.firstChild.getBoundingClientRect().height); d.remove(); return h; });
-    check(card.h === mainH, 'ta sama wysokość co klocek na liście inspekcji (' + card.h + ' / ' + mainH + ')');
+    // wszystkie listy mają JEDEN klocek (czesci/Klocek.vue): odzyskana ma tę samą wysokość co klocek z krótkim opisem na liście obok (jak dawniej klocek „TB”)
+    const mainH = await pg.evaluate(() => Math.round([...document.querySelectorAll('#rptList ion-card')].reduce((m, k) => Math.min(m, k.getBoundingClientRect().height), 1e9)));
+    check(card.h === mainH, 'ta sama wysokość co klocek na liście (' + card.h + ' / ' + mainH + ')');
     await shot('raporty-odzyskane-PL');
-    const pos = () => pg.evaluate(() => { const b = e => { const r = document.querySelector(e).getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(','); }; return [b('#rptRec .ki'), b('#rptRec .oest-st'), b('#rptQ')].join('|'); });
+    const pos = () => pg.evaluate(() => { const b = e => { const r = document.querySelector(e).getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(','); }; return [b('#rptRec ion-card'), b('#rptRec ion-badge:not([color=light])'), b('#rptQ')].join('|'); });
     // ekran Ustawień wjeżdża animacją: mierzymy po jej końcu (dwa takie same pomiary pod rząd)
     const still = async () => { let a = await pos(); for (let i = 0; i < 30; i++) { await pg.waitForTimeout(120); const b = await pos(); if (b === a) return b; a = b; } return a; };
     const p1 = await still();
-    await pg.locator('#v-settings [data-action=language]').click(); await pg.waitForTimeout(300);
-    check((await pg.locator('#rptRec .oest-st').textContent()) === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRecT').textContent()), 'EN: Recovered');
+    const jezyk = pg.locator('ion-header ion-toolbar ion-buttons[slot=end] ion-button').last();
+    await jezyk.click(); await pg.waitForTimeout(300);
+    check((await pg.locator('#rptRec ion-badge:not([color=light])').textContent()).trim() === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRec > ion-note').textContent()), 'EN: Recovered');
     const p2 = await still();
     check(p2 === p1, 'PL/EN: klocek i pigułka w tym samym miejscu (' + p1 + ' / ' + p2 + ')');
     await shot('raporty-odzyskane-EN');
-    await pg.locator('#v-settings [data-action=language]').click(); await pg.waitForTimeout(300);
+    await jezyk.click(); await pg.waitForTimeout(300);
 
     // 7. ponowne otwarcie z klocka = poprawiona wersja (własny szkic odzyskanej)
-    await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
+    await pg.locator('#rptRec ion-card').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
     const f2 = await form();
     check(f2.fails === 0 && f2.photos === 1, 'ponowne otwarcie: poprawiona wersja (' + JSON.stringify(f2) + ')');
     check(await pg.locator('#updOn').isChecked(), '„Updated” zapamiętane w odzyskanej');
@@ -158,13 +161,13 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(f3.fails === 1 && f3.photos === 1, 'zwykła inspekcja: nadal NIE + zdjęcie (' + JSON.stringify(f3) + ')');
     check(await pg.locator('#recUpdate').isHidden() && await pg.locator('#updBox').isHidden() && !(await pg.locator('#recPill').count()), 'zwykła inspekcja: bez Update, Updated i pigułki Odzyskana');
     // 9. „Wyczyść inspekcję” w odzyskanej: formularz zostaje pusty także po ponownym otwarciu (nie wraca zapis z raportu)
-    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
-    await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
-    pg.evaluate(() => window.OEST_clearInspection()); await pg.locator('.oest-ask [data-a=ok]').first().click(); await pg.waitForTimeout(1500);
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec ion-card').first().waitFor(); await pg.waitForTimeout(300);
+    await pg.locator('#rptRec ion-card').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
+    pg.evaluate(() => window.OEST_clearInspection()); await pg.locator('ion-alert .alert-button').last().click(); await pg.waitForTimeout(1500); // „Na pewno?” = ion-alert (OESTOkna.pytaj)
     const f4 = await form();
     check(f4.fails === 0 && f4.photos === 0, 'Wyczyść: odzyskana pusta (' + JSON.stringify(f4) + ')');
-    await idz(pg, 'settings/reports'); await pg.locator('#rptRec .ki').first().waitFor();
-    await pg.locator('#rptRec .ki').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
+    await idz(pg, 'settings/reports'); await pg.locator('#rptRec ion-card').first().waitFor(); await pg.waitForTimeout(300);
+    await pg.locator('#rptRec ion-card').first().click(); await pg.waitForURL(/#rec=/); await pg.waitForTimeout(2500);
     const f5 = await form();
     check(f5.fails === 0 && f5.photos === 0, 'Wyczyść: po ponownym otwarciu nadal pusta (' + JSON.stringify(f5) + ')');
     // 10. odzyskana, której zdjęcia nie ma już w telefonie: Update i Wyślij nie nadpisują pełnego raportu niepełnym (uwaga Codex #101)

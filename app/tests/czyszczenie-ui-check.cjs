@@ -41,7 +41,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length }));
     const notes = scope => pg.evaluate(s => window.OESTNotatki.list(s).then(a => a.length), scope);
     const open = async id => { await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300); await pg.goto(B + '/inspekcje/index.html#ppm=' + id); await pg.waitForFunction(() => window.OESTNotatki && window.OEST_clearInspection); await pg.waitForTimeout(2000); };
-    const clear = async () => { await pg.locator('.kebab').first().click(); await pg.locator('.kmenu [data-k=clear]').click(); await pg.locator('.oest-ask [data-a=ok]').click(); await pg.waitForFunction(() => /Wyczyszczono|Cleared/.test(document.getElementById('formHint').textContent), null, { timeout: 10000 }); await pg.waitForTimeout(800); };
+    const clear = async () => { await pg.locator('.kebab').first().click(); await pg.locator('.kmenu [data-k=clear]').click(); await pg.locator('ion-alert .alert-button').last().click(); /* „Na pewno?” = ion-alert (OESTOkna.pytaj) */ await pg.waitForFunction(() => /Wyczyszczono|Cleared/.test(document.getElementById('formHint').textContent), null, { timeout: 10000 }); await pg.waitForTimeout(800); };
     const onList = id => pg.evaluate(id => [...document.querySelectorAll('[data-ppm],[data-id]')].some(e => (e.getAttribute('data-ppm') || e.getAttribute('data-id')) === id), id);
     const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
 
@@ -111,9 +111,10 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
     // odzyskanie wysłanej (Ustawienia → Raporty → podgląd → Odzyskaj do edycji)
     const stA = await stage(A);
-    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptList .k2').first().waitFor();
-    await pg.locator('#rptList .k2').first().click();
-    await pg.locator('.oest-ask [data-a=rec]').click(); await pg.waitForURL(/inspekcje\/index\.html#rec=/); await pg.waitForTimeout(2500);
+    await pg.goto(B + '/index.html#settings/reports'); await pg.locator('#rptList ion-card').first().waitFor(); await pg.waitForTimeout(300);
+    await pg.locator('#rptList ion-card').first().click();
+    await pg.locator('ion-modal #rptRecover').click(); // podgląd raportu = ion-modal (OESTOkna.okno)
+    await pg.waitForURL(/inspekcje\/index\.html#rec=/); await pg.waitForTimeout(2500);
     const fr = await form();
     check(fr.fails === 1 && fr.photos === 1, 'A: odzyskana po wyczyszczeniu: NIE i zdjęcie wróciły (' + JSON.stringify(fr) + ')');
     check(!/Brakuje|Missing/.test(await pg.locator('#formHint').textContent()), 'A: odzyskana: bez „Brakuje zdjęć”');
