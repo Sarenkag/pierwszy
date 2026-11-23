@@ -536,15 +536,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|update.js",
-      "rule": "ZNACZNIK",
-      "detail": "update.js: 2 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 2,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|vantify-import.js",
       "rule": "ZNACZNIK",
       "detail": "vantify-import.js: 9 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
