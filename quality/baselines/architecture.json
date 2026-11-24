@@ -89,13 +89,6 @@
       "owner": "Grzegorz"
     },
     {
-      "id": "LOAD_ORDER|inspekcje/index.html|moduly/zdjecia/zdjecia.js|OESTPrzelacznik",
-      "rule": "LOAD_ORDER",
-      "detail": "inspekcje/index.html: moduly/zdjecia/zdjecia.js (poz. 14) używa OESTPrzelacznik z moduly/przelacznik/przelacznik.js (poz. 18, ładowany później)",
-      "reason": "Zastany stan main przy wprowadzeniu G1 (06/11/2026). Bez refaktoryzacji – do oceny w osobnym zadaniu.",
-      "owner": "Grzegorz"
-    },
-    {
       "id": "LOAD_ORDER|inspekcje/index.html|settings-google.js|OESTPrzycisk",
       "rule": "LOAD_ORDER",
       "detail": "inspekcje/index.html: settings-google.js (poz. 12) używa OESTPrzycisk z moduly/przycisk/przycisk.js (poz. 17, ładowany później)",

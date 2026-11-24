@@ -110,13 +110,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|zdjecia",
-      "rule": "IONIC",
-      "detail": "Ekran zdjecia (Zdjęcia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|modul-ui|checkbox",
       "rule": "IONIC",
       "detail": "moduly/checkbox rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
@@ -173,20 +166,6 @@
       "usuwa": "przeniesienie ekranów"
     },
     {
-      "id": "IONIC|modul-ui|raporty",
-      "rule": "IONIC",
-      "detail": "moduly/raporty rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranów"
-    },
-    {
-      "id": "IONIC|modul-ui|wysylka",
-      "rule": "IONIC",
-      "detail": "moduly/wysylka rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranów"
-    },
-    {
       "id": "IONIC|modul-ui|zdjecia",
       "rule": "IONIC",
       "detail": "moduly/zdjecia rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
@@ -233,26 +212,10 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|przewijanie|moduly/raporty/przegladarka.js",
-      "rule": "IONIC",
-      "detail": "moduly/raporty/przegladarka.js: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
-      "maks": 1,
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|przewijanie|powertrace.css",
       "rule": "IONIC",
       "detail": "powertrace.css: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 2× – przewijanie ustawia tylko rama (moduly/szkielet).",
       "maks": 2,
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|przewijanie|theme.css",
-      "rule": "IONIC",
-      "detail": "theme.css: własne ustawienie przewijania (overscroll-behavior / overflow auto|scroll) 1× – przewijanie ustawia tylko rama (moduly/szkielet).",
-      "maks": 1,
       "punkt": "Ionic",
       "usuwa": "przeniesienie ekranu"
     },
