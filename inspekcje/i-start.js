@@ -81,7 +81,7 @@
       });
       top.insertBefore(sel, top.firstChild);
     }
-    if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
+    if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // etap pozostaje w nagłówku formularza
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
     sel.innerHTML = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]

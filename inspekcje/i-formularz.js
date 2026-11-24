@@ -66,7 +66,7 @@
     document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
     if (ask || quick) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
+    $("photos").closest(".panel").style.order = ""; // kolejność daje Formularz.vue: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
     $("allOk").textContent = ask ? window.OESTT("Wszystko TAK", "All YES") : window.OESTT("Wszystkie zaznaczone → OK", "All marked → OK");
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis

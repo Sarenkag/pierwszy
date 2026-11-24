@@ -11,13 +11,21 @@
     var n = tempNum(v); if (n === null) return false;
     return kind === "hot" ? n <= 50 : kind === "cold" ? n >= 20 : n < 38 || n > 43;
   }
-  function renderTemps() {
-    if (!cur.type || !cur.type.temp) { $("tempList").innerHTML = ""; return; }
-    $("tempList").innerHTML = cur.type.slots.map(function (s, i) {
-      return '<div class="tp-row' + (tempBad(s[1], temps[i]) ? " bad" : "") + '"><div class="txt">' + esc(s[0]) + "<small>" + esc(KIND[s[1]]) + " · " + esc(LIMIT[s[1]]) + "</small></div>" +
-        '<input type="text" inputmode="decimal" autocomplete="off" data-t="' + i + '" value="' + esc(temps[i]) + '" aria-label="' + esc(s[0] + ", " + KIND[s[1]]) + '"></div>';
-    }).join("");
+  var polaWidoki = {};
+  function pokazPola(id, rodzaj, dane) {
+    var widok = polaWidoki[id];
+    if (!widok) {
+      var sluchacze = OESTCzesci.sluchacze(dane);
+      polaWidoki[id] = sluchacze;
+      OESTCzesci.montuj($(id), "inspekcja/pola", { rodzaj: rodzaj, kontroler: { dane: dane, na: sluchacze.na } });
+    } else widok.emit();
   }
+  function tempsDane() {
+    return { wiersze: !cur.type || !cur.type.temp ? [] : cur.type.slots.map(function (s, i) {
+      return { i: i, blad: tempBad(s[1], temps[i]), nazwa: s[0], opis: KIND[s[1]] + " · " + LIMIT[s[1]], wartosc: temps[i], etykieta: s[0] + ", " + KIND[s[1]] };
+    }) };
+  }
+  function renderTemps() { pokazPola("tempList", "temperatury", tempsDane); }
   $("tempList").addEventListener("input", function (e) {
     var el = e.target.closest("input[data-t]"); if (!el) return;
     var i = +el.getAttribute("data-t"); temps[i] = el.value;
@@ -117,9 +125,12 @@
   $("ck").addEventListener("input", function (e) { var el = e.target.closest("input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
-    $("faults").innerHTML = RD.usterkiDla(cur.type).map(function (f) {
-      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(window.OESTT(f.pl, f.enl)) + "</button>";
-    }).join("");
+    pokazPola("faults", "usterki", faultsDane);
+  }
+  function faultsDane() {
+    return { wiersze: RD.usterkiDla(cur.type).map(function (f) {
+      return { id: f.id, wybrany: !!faultsOn[f.id], tekst: window.OESTT(f.pl, f.enl) };
+    }) };
   }
   $("faults").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-f]"); if (!b) return;

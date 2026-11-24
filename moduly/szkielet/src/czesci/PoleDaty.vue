@@ -2,8 +2,10 @@
        <PoleDaty :T="T" :id="'od'" :label="T('Obowiązuje od','Effective from')" :value="'2026-10-01'" @zmiana="v => …" />
        <PoleDaty :T="T" id="godz" label="…" value="08:00" rodzaj="godzina" @zmiana="…" />
      Wartość: 'RRRR-MM-DD' (rodzaj „data”, domyślny) albo 'GG:MM' (rodzaj „godzina”). Zdarzenie „zmiana” dostaje ten sam format. -->
+<!-- zastany: zachowuje natywny kalendarz i DOM pól inspekcji obsługiwanych przez istniejący JS. -->
 <template>
-  <ion-item>
+  <input v-if="zastany" :id="id" type="date">
+  <ion-item v-else>
     <div class="oest-pole">
       <ion-label>{{ label }}</ion-label>
       <ion-datetime-button :datetime="id"></ion-datetime-button>
@@ -17,7 +19,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { IonItem, IonLabel, IonDatetimeButton, IonModal, IonDatetime } from '@ionic/vue';
-const props = defineProps({ T: Function, id: String, label: String, value: String, rodzaj: { type: String, default: 'data' } });
+const props = defineProps({ zastany: Boolean, T: Function, id: String, label: String, value: String, rodzaj: { type: String, default: 'data' } });
 const emit = defineEmits(['zmiana']);
 const okno = ref(null);
 // ion-datetime chce pełnej daty ISO; godzinę podajemy z dowolnym dniem
