@@ -92,6 +92,9 @@ test('aparat przekazuje do Javy rozmiar zapisu; bez rozmiaru prosi o pełne zdj�
 test('inspekcje i Reactive pytają o rozmiar dla rodzaju zdjęcia (nie o największy)', () => {
   const insp = require('../../quality/strona-inspekcji.cjs').strona(path.join(ROOT, 'inspekcje')).tekst /* strona inspekcji w kolejności ładowania, z częściami (docs/podzial-modulow.md) */;
   assert.match(insp, /function camOpts\(kind\) \{ var Z = window\.OESTZdjecia; return \{ max: Z && Z\.maxPx \? Z\.maxPx\(kind\) : 0,/);
-  const re = fs.readFileSync(path.join(ROOT, 'app/www/reactive.js'), 'utf8');
-  assert.match(re, /max:w\.OESTZdjecia\?\.maxPx\?w\.OESTZdjecia\.maxPx\('ogolne'\):0/);
+  const re = fs.readFileSync(path.join(ROOT, 'moduly/szkielet/src/ekrany/reactive/Zdjecia.vue'), 'utf8');
+  assert.match(re, /max: window\.OESTZdjecia\?\.maxPx\?\.\('ogolne'\) \|\| 0/);
+  assert.match(re, /DodajZdjecie[^>]+tryb="aparat"[^>]+@oest:wybor-zdjec="kontekst"/);
+  const wspolny = fs.readFileSync(path.join(ROOT, 'moduly/szkielet/src/czesci/DodajZdjecie.vue'), 'utf8');
+  assert.match(wspolny, /OESTAparat\.take\(kontekst\.opcje \|\| \{\}\)/);
 });

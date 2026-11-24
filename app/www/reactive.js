@@ -6,7 +6,7 @@
      OESTReactiveUI.akcja(nazwa, x)   → to, co dawniej robił przycisk data-rx (x = { id, value, status, phase, i })
      OESTReactiveUI.pole(klucz, w)    → wpisane pole karty (zapis szkicu jak dotąd)
      OESTReactiveUI.wstecz()          → strzałka / Wstecz telefonu (podgląd, kreator, niezapisane): false = zostań, true = rodzic (trasę liczy rama)
-     OESTReactiveUI.info(klocek), .notatki(start|end), .wyslijTeraz(), .galeria(faza) */
+     OESTReactiveUI.info(klocek), .notatki(start|end), .wyslijTeraz(), .przyjmijZdjecia(pliki, faza, zGalerii) */
 (function(w){
   'use strict';const C=w.OESTReactiveCore,T=w.OESTReactiveTree,K=w.OESTKreator,lang=()=>w.OESTBledy?w.OESTBledy.lang():'pl',L=(pl,en)=>lang()==='en'?en:pl,tl=x=>T.label(x,lang()),tp=s=>(lang()==='en'&&T.EN[s])||s,repo=w.OESTHandover.repository;
   let navigate=()=>{},route='reactive',data=null,draft=null,account='',busy=false,writing=0,error=false,chain=Promise.resolve(),pendingMedia=new Map(),epoch=0,pristine='';
@@ -15,9 +15,11 @@
   function emit(){w.dispatchEvent(new CustomEvent('oest:reactive-ui'));}
   const statuses=()=>Object.entries(C.labels).filter(([id])=>id!=='completed');const isComplete=()=>route.startsWith('reactive/complete/'),isForm=()=>!!draft&&/reactive\/(new|draft|job|complete)\//.test(route);
   function ensure(){if(account!==w.OESTSettings.get().owner)throw Error('ACCOUNT_CHANGED');}
-  function message(text){komunikat=text||'';emit();}
+  function message(text){komunikat=text||'';w.OESTOkna?.toast?.(komunikat);emit();}
   function cleanup(){urlMap.forEach(u=>URL.revokeObjectURL(u));urlMap=new Map();dowody={before:[],after:[],audio:[],zamkniete:false};}
-  function canLeave(){if(recBusy()||busy||writing){message(L('Zaczekaj na zapis lub zatrzymaj nagranie.','Wait for saving or stop the recording.'));return false;}if(error){message(L('Nie zapisano szkicu. Ponów zapis przed wyjściem.','Draft not saved. Save again before leaving.'));return false;}cleanup();return true;}
+  let wybieranieZdjec=false;
+  function wyborZdjec(on){wybieranieZdjec=!!on;}
+  function canLeave(){if(wybieranieZdjec||recBusy()||busy||writing){message(L('Zaczekaj na zapis lub zatrzymaj nagranie.','Wait for saving or stop the recording.'));return false;}if(error){message(L('Nie zapisano szkicu. Ponów zapis przed wyjściem.','Draft not saved. Save again before leaving.'));return false;}cleanup();return true;}
   async function run(fn){if(busy)return;busy=true;try{ensure();await chain.catch(()=>{});await fn();}catch(e){message(L('Nie wykonano: ','Not done: ')+(w.OESTBledy?w.OESTBledy.text(e):e.message));}finally{busy=false;}}
   /* jak run, ale błąd wraca do przycisku akcji (czesci/Akcja.vue: kółko → zwykły napis) */async function runP(fn){if(busy)throw Error('BUSY');busy=true;try{ensure();await chain.catch(()=>{});return await fn();}catch(e){message(L('Nie wykonano: ','Not done: ')+(w.OESTBledy?w.OESTBledy.text(e):e.message));throw e;}finally{busy=false;}}
   function collect(){if(!draft)return;if(!draft.reportEdited)draft.reportText='';/* tekst automatyczny zawsze od nowa, także gdy pole raportu jest zwinięte; wpisane pola są już w szkicu (pole()) */if(draft.title)draft.uiTitle='';}
@@ -149,14 +151,14 @@
     const done=!!draft.pendingActionId,levels=C.levels(draft.building);
     return {ekran:'karta',tytul:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),naglowek:'more',otwarty:openRow,wybierz:L('Wybierz','Choose'),
       wiecej:openRow==='more'?{etykieta:L('Stan','Condition'),statusy:statuses().map(([id])=>({id,nazwa:C.uiLabel(id),on:draft.status===id})),czesci:draft.status==='parts'?{etCzesci:L('Jakie części?','Which parts?'),partsNote:draft.partsNote||'',etData:L('Oczekiwana data — opcjonalnie','Expected date — optional'),expectedDate:draft.expectedDate||''}:null,quote:{etykieta:L('Quote required — wymagany kosztorys','Quote required'),on:!!draft.quote},odloz:L('Odłóż','Park')}:null,
-      nazwa:{etykieta:L('Nazwa zadania','Job name'),wartosc:draft.title||'',podpowiedz:L('np. Zepsuty zamek w kuchni','e.g. Broken lock in the kitchen')},
+      nazwa:{etykieta:L('Tytuł zlecenia','Job title'),wartosc:draft.title||'',podpowiedz:L('Tytuł zlecenia','Job title')},
       data:{etykieta:L('Data zlecenia','Order date'),wartosc:draft.orderDate||''},
-      typ:{etykieta:L('Typ','Type'),tekst:typeTxt,opcje:K.TYPES.map(x=>({id:x,nazwa:lang()==='en'?x:x+' · '+K.TYPE_PL[x],on:x===type}))},
-      kto:{etykieta:L('Kto zlecił','By who'),tekst:whoTxt,grupy:whoItems.map(([g,l])=>({nazwa:g,opcje:l.map(([v,n])=>({id:v,nazwa:n,on:v===rb}))})),dodaj:L('＋ dodaj osobę lub dział','＋ add a person or department')},
+      typ:{etykieta:L('Typ','Type'),tekst:typeTxt,wartosc:type,opcje:K.TYPES.map(x=>({id:x,nazwa:lang()==='en'?x:x+' · '+K.TYPE_PL[x],on:x===type}))},
+      kto:{etykieta:L('Kto zlecił','By who'),tekst:whoTxt,wartosc:rb,grupy:whoItems.map(([g,l])=>({nazwa:g,opcje:l.map(([v,n])=>({id:v,nazwa:n,on:v===rb}))})),dodaj:L('＋ dodaj osobę lub dział','＋ add a person or department')},
       gdzie:{etykieta:L('Gdzie','Where'),tekst:whereTxt,budynki:C.BUILDINGS.map(x=>({id:x,nazwa:x,on:draft.building===x})),pietra:levels.length?levels:null,etPietro:L('Piętro','Floor'),level:draft.level||'',
         etRoom:levels.length?L('Pomieszczenie / obszar','Room / area'):L('Gdzie dokładnie — opcjonalnie','Exact place — optional'),room:draft.room||'',etFlat:L('Nr mieszkania','Flat no.'),flat:draft.flat||''},/* nr mieszkania zawsze widoczny i do poprawy, także po zmianie budynku (przegląd Codex #147) */
       drzewo:oldTree()?{etykieta:L('Co dokładnie','What exactly'),tekst:treeTxt,podpowiedz:L('opcjonalnie','optional'),...blocks()}:null,
-      co:oldTree()?null:{etykieta:L('Co','What'),tekst:krItems().join(', '),podpowiedz:L('wybierz','choose'),...coInner()},
+      co:oldTree()?null:{etykieta:L('Co','What'),tekst:krItems().join(', '),podpowiedz:L('wybierz','choose'),grupy:K.GROUPS.map(g=>({id:g.id,nazwa:L(g.pl,g.en)})),...coInner()},
       zdjecia:zdjecia(),nagrania:nagrania(),wczesniej:L('Wcześniejsze nagrania','Earlier recordings'),
       info:[info('start',L('Dodaj info na start','Add info on start'),'note',L('co zlecono','what was requested')),info('end',L('Dodaj info na koniec','Add info on end'),'endNote',L('co zrobiono','what was done'))],
       koniec:{etykieta:L('Zakończenie i raport','Finish and report'),tekst:act0?tl(act0):'',podpowiedz:L('gdy skończysz','when you finish'),akcje:T.actions.map(a=>({id:a.id,nazwa:tl(a),on:(draft.pendingActionId||draft.actionId)===a.id})),etRaport:L('Raport (EN) — składa się sam, możesz poprawić','Report (EN) — builds itself, you can edit'),raport:report,podglad:L('Podgląd','Preview'),przywroc:draft.reportEdited?L('Przywróć tekst automatyczny','Restore automatic text'):''},
@@ -188,7 +190,7 @@
     onSaved:()=>{pristine='';message(L('Notatka zapisana. Tekst po angielsku zrobi się sam — stuknij ikonkę, żeby zobaczyć.','Note saved. The English text is made automatically — tap the icon to see it.'));liczniki();},onError:e=>message(e.message),
     onJoin:text=>{if(!draft)return;const v=String(draft[field]||'');draft[field]=v.trim()?v.trim()+'\n\n'+text:text;render();return persist().then(()=>message(L('Wstawione. Możesz poprawić ręcznie.','Inserted. You can edit it by hand.')));}};}
   /* „Z galerii”: systemowy wybór plików (bez własnego pola na ekranie) */
-  function galeria(phase){const i=document.createElement('input');i.type='file';i.accept='image/jpeg,image/png,image/webp';i.multiple=true;i.onchange=()=>{const files=Array.from(i.files||[]);if(!files.length)return;run(async()=>{await askDate(files);for(const file of files)await addPhoto(file,phase);await renderEvidence();});};i.click();}
+  function przyjmijZdjecia(files,phase,zGalerii=false){return run(async()=>{if(zGalerii)await askDate(files);for(const file of files)await addPhoto(file,phase);await renderEvidence();});}
   /* Jeden zapis zdjęcia (Grzegorz 04/11/2026): zdjęcie zapisuje się raz w module zdjęć (folder OEST, trzymane przez Reactive,
      więc sprzątanie go nie skasuje); zadanie ma tylko jego id (zid). Bez modułu albo gdy nie przyjmie zdjęcia: własna kopia jak dawniej. */
   async function photoMedia(file,phase,extra){const base={id:crypto.randomUUID(),kind:'photo',name:'Reactive photo.jpg',mime:'image/jpeg'};if(w.OESTZdjecia){try{const r=await w.OESTZdjecia.save(file,{source:'reactive',category:'Reactive',code:phase==='before'?'przed':'po',location:[draft.building,draft.level,draft.room].filter(Boolean).join(' '),hold:'reactive',kind:'ogolne',...(extra||{})});return{...base,zid:r.id,blob:r.blob,size:r.blob.size};}catch(e){}}const prepared=await w.OESTKeys.prepareMedia(file),c=prepared.canvas,blob=await new Promise(resolve=>c.toBlob(resolve,'image/jpeg',.72));if(!blob)throw Error('IMAGE_COMPRESSION');return{...base,blob,size:blob.size};}
@@ -281,9 +283,7 @@
     case 'sum-edit':akapity[Number(b.i)]=String(b.value==null?'':b.value);sumSave(akapity);return;
     case 'sum-ok':if(sumEmpty())return;if(reviewEnd(true))return;run(async()=>{collect();C.validate(draft);draft=C.finish(draft,draft.pendingActionId);draft.pendingActionId='';preview=false;reviewView=null;sumClear();await save();busy=false;navigate('reactive');});return;
     case 'send-now':wyslijTeraz().catch(()=>{});return;case 'retry-report':if(canLeave())navigate('reactive/complete/'+draft.jobId);return;
-    case 'camera':run(async()=>{if(!w.OESTAparat?.available())throw Error(L('Na komputerze użyj galerii.','On a computer use the gallery.'));const shot=await w.OESTAparat.take({max:w.OESTZdjecia?.maxPx?w.OESTZdjecia.maxPx('ogolne'):0,prepare:w.OESTZdjecia?.prepare?b=>w.OESTZdjecia.prepare(b,'ogolne'):null});if(!shot)return;await addPhoto(shot,b.phase);await renderEvidence();});return;
-    case 'transcribe':run(async()=>{const media=await repo.media(b.id);if(!media)throw Error(L('Najpierw nagraj notatkę.','Record a note first.'));const result=await voice.transcribe(media.blob);ensure();let text=(result.text||'').trim(),en='';const tr=translator();if(text&&tr){message(L('Tłumaczę na angielski…','Translating to English…'));try{en=((await tr.plToEn({text}))?.text||'').trim();}catch(e){en='';}}draft.voiceTexts={...(draft.voiceTexts||{}),[b.id]:en||text};draft.voicePl={...(draft.voicePl||{}),[b.id]:!en&&!!text};render();await persist();await renderEvidence();message(en?L('Tekst nagrania dodany po angielsku.','Recording text added in English.'):text?L('Dodano po polsku — tłumacz niedostępny, popraw ręcznie.','Added in Polish — translator unavailable, correct by hand.'):L('Nie rozpoznano słów.','No words recognised.'));/* po zapisie, żeby „Szkic zapisany” nie zasłonił ostrzeżenia */});return;
-    case 'gallery':galeria(b.phase);return;
+    case 'transcribe':run(async()=>{const media=await repo.media(b.id);if(!media)throw Error(L('Najpierw nagraj notatkę.','Record a note first.'));const result=await voice.transcribe(media.blob);ensure();let text=(result.text||'').trim(),en='';if(text&&w.OESTNotatki?.english){message(L('Tłumaczę na angielski…','Translating to English…'));try{en=await w.OESTNotatki.english(text,'');}catch(e){en='';}}draft.voiceTexts={...(draft.voiceTexts||{}),[b.id]:en||text};draft.voicePl={...(draft.voicePl||{}),[b.id]:!en&&!!text};render();await persist();await renderEvidence();message(en?L('Tekst nagrania dodany po angielsku.','Recording text added in English.'):text?L('Dodano po polsku — tłumacz niedostępny, popraw ręcznie.','Added in Polish — translator unavailable, correct by hand.'):L('Nie rozpoznano słów.','No words recognised.'));/* po zapisie, żeby „Szkic zapisany” nie zasłonił ostrzeżenia */});return;
     case 'photo-del':if(!await w.OESTPytaj(L('Usunąć to zdjęcie z zadania?','Remove this photo from the job?')))return;run(async()=>{draft[b.phase+'MediaIds']=draft[b.phase+'MediaIds'].filter(x=>x!==b.id);await persist(false);await renderEvidence();});return;
     case 'photo-edit':run(async()=>{const m=await repo.media(b.id);if(!m)return;const nb=await w.OESTAparat.edit(m.blob);if(!nb)return;const media=await photoMedia(nb,b.phase,{stamp:false});/* data na zdjęciu tylko przy zrobieniu – poprawione nie dostaje drugiej (Codex PR #127) */pendingMedia.set(media.id,media);draft[b.phase+'MediaIds']=draft[b.phase+'MediaIds'].map(x=>x===b.id?media.id:x);await persist(false);await renderEvidence();});return;
     case 'voice-del':if(!await w.OESTPytaj(L('Usunąć to nagranie?','Delete this recording?')))return;run(async()=>{draft.audioMediaIds=draft.audioMediaIds.filter(x=>x!==b.id);if(draft.voiceTexts)delete draft.voiceTexts[b.id];if(draft.voicePl)delete draft.voicePl[b.id];await persist(false);await renderEvidence();});return;
@@ -292,11 +292,10 @@
   }}
   /* „Zbuduj i wyślij” w podglądzie: przycisk akcji ekranu (kółko → ✓) czeka na wynik; błąd wraca jako komunikat */
   function wyslijTeraz(){if(sumEmpty())return Promise.reject(Error('REPORT_EMPTY'));return runP(send);}
-  /* tłumacz PL→EN na telefonie (ten sam co w inspekcjach) */let trPlugin=null;function translator(){const C2=w.Capacitor;if(!C2?.isNativePlatform?.())return null;if(!trPlugin)trPlugin=C2.registerPlugin?C2.registerPlugin('Translate'):C2.Plugins?.Translate||null;return trPlugin;}
   function findParent(id,node=T.tree){for(const child of node.children||[]){if(child.id===id)return node.id;const found=findParent(id,child);if(found)return found;}return null;}
   /* Wstecz w drzewku (OESTEkrany.rodzicDanych): rodzic liczony z danych — prawdziwy węzeł; korzeń „root” → null (wtedy rodzic z mapy: Reactive) */
   w.OESTEkrany.rodzicDanych('reactive/tree', t => { const p = findParent(t.split('/')[2]); return p && p !== 'root' ? 'reactive/tree/' + p : null; });
   setTimeout(()=>{repo.releasePhotos?.().catch(()=>{});},20000);/* nieużywane zdjęcia Reactive przestają być trzymane (Codex #69) */
-  w.OESTReactiveUI={open,wejdz,dane,akcja:(n,x)=>act(n,x||{}),pole,wstecz,info,notatki,wyslijTeraz,canLeave,setNavigate:fn=>navigate=fn,repository:repo};w.addEventListener('beforeunload',e=>{if(writing||error||recBusy()){e.preventDefault();e.returnValue='';}});
+  w.OESTReactiveUI={open,wejdz,dane,przyjmijZdjecia,wyborZdjec,akcja:(n,x)=>act(n,x||{}),pole,wstecz,info,notatki,wyslijTeraz,canLeave,setNavigate:fn=>navigate=fn,repository:repo};w.addEventListener('beforeunload',e=>{if(wybieranieZdjec||writing||error||recBusy()){e.preventDefault();e.returnValue='';}});
   w.addEventListener('oest:lang',()=>{if(route.startsWith('reactive'))render();});
 })(window);

@@ -4,11 +4,9 @@
      Wartość: 'RRRR-MM-DD' (rodzaj „data”, domyślny) albo 'GG:MM' (rodzaj „godzina”). Zdarzenie „zmiana” dostaje ten sam format. -->
 <!-- zastany: zachowuje natywny kalendarz i DOM pól inspekcji obsługiwanych przez istniejący JS. -->
 <template>
-  <ion-item>
-    <ion-grid>
-      <ion-label>{{ label }}</ion-label>
-      <ion-datetime-button :datetime="id" :disabled="disabled"></ion-datetime-button>
-    </ion-grid>
+  <ion-item button :disabled="disabled" :detail="true" @click="otworz">
+    <ion-label>{{ label }}</ion-label>
+    <ion-note slot="end">{{ tekst }}</ion-note>
     <ion-modal ref="okno" :keep-contents-mounted="true">
       <ion-datetime :id="id" :disabled="disabled" :presentation="rodzaj === 'godzina' ? 'time' : 'date'" :value="wartosc" :locale="T('pl-PL', 'en-GB')" :first-day-of-week="1" :show-default-buttons="true" :done-text="T('Gotowe', 'Done')" :cancel-text="T('Anuluj', 'Cancel')" @ionChange="zmien($event.detail.value)" @ionCancel="zamknij"></ion-datetime>
     </ion-modal>
@@ -17,10 +15,12 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { IonItem, IonGrid, IonLabel, IonDatetimeButton, IonModal, IonDatetime } from '@ionic/vue';
+import { IonItem, IonLabel, IonNote, IonModal, IonDatetime } from '@ionic/vue';
 const props = defineProps({ disabled: Boolean, T: { type: Function, default: (pl) => pl }, id: String, label: String, value: String, rodzaj: { type: String, default: 'data' } });
 const emit = defineEmits(['zmiana']);
 const okno = ref(null);
+const tekst = computed(() => props.rodzaj === 'godzina' ? props.value || '—' : props.value ? props.value.slice(0, 10).split('-').reverse().join('/') : '—');
+function otworz() { const m = okno.value && okno.value.$el; if (m && m.present) m.present(); }
 // ion-datetime chce pełnej daty ISO; godzinę podajemy z dowolnym dniem
 const wartosc = computed(() => (props.rodzaj === 'godzina' ? '2000-01-01T' + (props.value || '00:00') + ':00' : props.value || undefined));
 function zamknij() { const m = okno.value && okno.value.$el; if (m && m.dismiss) m.dismiss(); }

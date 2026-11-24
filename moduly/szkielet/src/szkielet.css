@@ -507,11 +507,6 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 .oest-kolumna { display: flex; flex-direction: column; gap: 14px; }
 .oest-ekran ion-card-subtitle + ion-card-subtitle { color: var(--ink); }
 /* Reactive (ekrany/Reactive.vue): wygląd jak na main (#v-reactive w theme.css) – panele ze szkła, pola karty jak .rx-fr, pas na dole przyklejony */
-.oest-rx { display: flex; flex-direction: column; min-height: 100%; }
-.oest-rx-body { flex: 1; padding: 16px 16px 16px; }
-.oest-rx-stopka { position: sticky; bottom: 0; z-index: 2; margin-top: auto; padding: 6px 16px max(12px, env(safe-area-inset-bottom)); background: var(--bg); }
-.oest-rx-stopka > p { margin: 0 0 4px; font-size: .78rem; color: var(--muted); }
-.oest-rx-stopka > ion-button.oest-rx-pelny { display: block; width: 100%; margin: 4px 0; min-height: 52px; }
 .oest-rx ion-card.oest-rx-panel { display: block; padding: 14px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: none; overflow: visible; color: var(--ink); }
 .oest-rx-body > .oest-kafelki { margin: 0 -16px; }
 .oest-rx-panel .oest-kafelki { padding: 0; margin: 0 -5px; }

@@ -1,6 +1,17 @@
 // Moduł notatek głosowych (moduly/notatki, 08/11/2026): słowa branżowe, liczby, stan notatki, magazyn wg miejsca, łączenie, kontekst dla modelu.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const J=x=>JSON.parse(JSON.stringify(x));
+test('PL→EN: pobrana Gemma dostaje oryginał, ML Kit nie dostaje wywołania',async()=>{
+  const pl='Poproszono mnie, abym wymienil baterie w zamku',en='I was asked to replace the battery in the lock';let calls=0,prompt='';
+  const w=load({Capacitor:{isNativePlatform:()=>true,registerPlugin:()=>({plToEn:async()=>{calls++;throw Error('ML Kit nie powinien być użyty');}}),Plugins:{OESTModel:{status:async()=>({ready:true}),generate:async o=>{prompt=o.prompt;return {text:en};}}}}});
+  assert.equal(await w.OESTNotatki.english(pl,'Reactive'),en);assert.equal(calls,0);assert.ok(prompt.includes(pl));assert.ok(!prompt.includes('castle'));
+});
+test('PL→EN: ML Kit tylko gdy model niepobrany; awaria pobranego modelu nie przełącza tłumacza',async()=>{
+  let ready=false,calls=0;
+  const w=load({Capacitor:{isNativePlatform:()=>true,registerPlugin:()=>({plToEn:async()=>{calls++;return {text:'Fallback translation.'};}}),Plugins:{OESTModel:{status:async()=>({ready}),generate:async()=>{throw Error('MODEL_FAILURE');}}}}});
+  assert.equal(await w.OESTNotatki.english('tekst',''), 'Fallback translation.');assert.equal(calls,1);
+  ready=true;await assert.rejects(w.OESTNotatki.english('tekst',''));assert.equal(calls,1);
+});
 function load(extra){const w=Object.assign({notatkiPamiecTestowa:true,localStorage:{getItem:()=>null,setItem:()=>{}}},extra||{});w.window=w;const ctx={window:w,console};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly/bledy/bledy.js'),'utf8'),ctx);w.OESTT=ctx.OESTT; // jak w apce: OESTT z moduly/bledy
   for(const f of ['narzedzia/narzedzia.js','model/model.js','notatki/notatki.js'])vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../moduly',f),'utf8'),ctx);return w;}

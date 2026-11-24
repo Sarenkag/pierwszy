@@ -1,13 +1,13 @@
 <!-- Rząd pigułek wyboru na karcie Reactive (budynek, typ, stan, „Co”, powierzchnia…): ten sam wygląd co filtr listy (.oest-chipy), zawijany.
      opcje: [{ id, nazwa, on }]; stuknięcie: OESTReactiveUI.akcja(rx, { [klucz]: id }) – klucz: 'id' | 'value' | 'status'. -->
 <template>
-  <div class="oest-chipy oest-rx-chipy">
-    <ion-chip v-for="o in opcje" :key="o.id" :data-rx="o.rx || rx" :data-id="klucz === 'id' ? o.id : undefined" :data-value="klucz === 'value' ? o.id : undefined" :data-status="klucz === 'status' ? o.id : undefined" :data-on="o.on || undefined" :aria-pressed="!!o.on" @click="A.akcja(o.rx || rx, { [klucz]: o.id })"><ion-label>{{ o.nazwa }}</ion-label></ion-chip>
-  </div>
+  <ion-item><ion-select interface="popover" :aria-label="window.OESTT('Wybór', 'Choice')" :placeholder="window.OESTT('Wybierz', 'Choose')" :data-rx-select="rx" :value="opcje.find(o => o.on)?.id" @ionChange="wybierz"><ion-select-option v-for="o in opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item>
 </template>
 
 <script setup>
-import { IonChip, IonLabel } from '@ionic/vue';
-defineProps({ opcje: Array, rx: String, klucz: { type: String, default: 'id' } });
+import { IonItem, IonSelect, IonSelectOption } from '@ionic/vue';
+const props = defineProps({ opcje: Array, rx: String, klucz: { type: String, default: 'id' } });
+const window = globalThis.window;
 const A = window.OESTReactiveUI;
+function wybierz(e) { const o = props.opcje.find(o => o.id === e.detail.value); if (o) A.akcja(o.rx || props.rx, { [props.klucz]: o.id }); }
 </script>

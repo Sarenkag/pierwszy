@@ -3,10 +3,10 @@
 <template>
   <div>
     <div class="oest-rx-sub">{{ etykieta }}</div>
-    <div class="oest-rx-phb">
-      <ion-button fill="outline" data-rx="camera" :data-phase="faza" @click="A.akcja('camera', { phase: faza })"><div class="oest-rx-phb-w"><ion-icon :src="APARAT" aria-hidden="true"></ion-icon><span>{{ z.zrob }}</span></div></ion-button>
-      <ion-button fill="outline" data-rx="gallery" :data-phase="faza" @click="A.akcja('gallery', { phase: faza })"><div class="oest-rx-phb-w"><ion-icon :src="GALERIA" aria-hidden="true"></ion-icon><span>{{ z.galeria }}</span></div></ion-button>
-    </div>
+    <ion-grid v-if="z.usuwanie"><ion-row>
+      <ion-col size="12"><DodajZdjecie expand="block" :T="T" tryb="aparat" data-rx="camera" :data-phase="faza" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza)" @blad="blad">{{ T('Foto', 'Photo') }}</DodajZdjecie></ion-col>
+      <ion-col size="12"><DodajZdjecie expand="block" :T="T" tryb="galeria" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" data-rx="gallery" :data-phase="faza" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza, true)" @blad="blad">{{ T('Galeria', 'Gallery') }}</DodajZdjecie></ion-col>
+    </ion-row></ion-grid>
     <div class="oest-rx-photos" :id="'rx-' + faza">
       <div v-for="p in lista" :key="p.id" class="oest-rx-ph">
         <img :src="p.url" :alt="p.alt" @click="powieksz(p)">
@@ -19,11 +19,13 @@
 
 <script setup>
 import { computed } from 'vue';
-import { IonButton, IonIcon } from '@ionic/vue';
-import { APARAT, GALERIA } from './ikony.js';
+import { IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import DodajZdjecie from '../../czesci/DodajZdjecie.vue';
 import Zdjecie from './Zdjecie.vue';
 const props = defineProps({ T: Function, z: Object, faza: String, etykieta: String });
 const A = window.OESTReactiveUI;
 const lista = computed(() => (props.faza === 'after' ? props.z.po : props.z.przed) || []);
+function kontekst(e) { A.wyborZdjec(true); e.detail.opcje = { max: window.OESTZdjecia?.maxPx?.('ogolne') || 0, prepare: b => window.OESTZdjecia.prepare(b, 'ogolne') }; }
+function blad(e) { window.OESTOkna.toast(window.OESTBledy?.text(e) || e.message); }
 function powieksz(p) { window.OESTOkna.okno({ tytul: p.alt, komponent: Zdjecie, wlasciwosci: { url: p.url, alt: p.alt }, ok: props.T('Zamknij', 'Close'), anuluj: false, wyglad: 'zdjecie' }).catch(() => {}); }
 </script>

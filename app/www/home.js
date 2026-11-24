@@ -83,10 +83,10 @@
   var KAFELKI = [
     { id: "ppm", trasa: "ppm", t: ["Inspekcje", "Inspections"], ikona: "inspekcje" },
     { id: "reactive", trasa: "reactive", t: ["Reactive", "Reactive"], ikona: "reactive" },
-    { id: "powertrace", trasa: "powertrace", t: ["Power trace", "Power trace"], ikona: "powertrace" },
+    { id: "powertrace", trasa: "soon/powertrace", t: ["Power trace", "Power trace"], ikona: "powertrace" },
     { id: "cal", trasa: "cal", t: ["Kalendarz", "Calendar"], ikona: "kalendarz" },
-    { id: "keys", trasa: "keys", t: ["Klucze", "Keys"], ikona: "klucze" },
-    { id: "handover", trasa: "handover", t: ["Handover", "Handover"], ikona: "handover" },
+    { id: "keys", trasa: "soon/keys", t: ["Klucze", "Keys"], ikona: "klucze" },
+    { id: "handover", trasa: "soon/handover", t: ["Handover", "Handover"], ikona: "handover" },
     // nowości firm (moduly/nowosci, 18/11/2026): na miejscu „Statystyk” (jeszcze niezrobione) – siatka 2×4 zostaje
     { id: "news", trasa: "", t: ["Nowości firm", "Company news"], ikona: "nowosci" },
     { id: "settings", trasa: "settings", t: ["Ustawienia", "Settings"], ikona: "ustawienia" }

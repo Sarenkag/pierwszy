@@ -38,6 +38,6 @@ async function dodaj() {
     if (/cancel|anulow/i.test(String(blad && blad.message || blad))) return;
     emit('blad', blad);
     el.dispatchEvent(new CustomEvent('oest:blad-zdjec', { bubbles: true, detail: { blad, kontekst } }));
-  } finally { zajety.value = false; }
+  } finally { zajety.value = false; el.dispatchEvent(new CustomEvent('oest:koniec-wyboru-zdjec', { bubbles: true, detail: { kontekst } })); }
 }
 </script>

@@ -29,7 +29,7 @@
   var queueing = false;
   // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko i strzałkę ‹ widocznego ekranu obsługuje szkielet;
   // ekran bez strzałki → lista, z której przyszedłem. Treść przewija Rama.vue.
-  OESTEkrany.strona({ up: function () { if (queueing) return; var back = document.querySelector(".view:not([hidden]) [data-ui~=back]:not([hidden])"); if (back) back.click(); else leave(backUrl()); } });
+  OESTEkrany.strona({ up: function () { if (queueing) return; var back = document.querySelector("[data-inspekcja] > ion-header [data-ui~=back]:not([hidden])") || document.querySelector(".view:not([hidden]) [data-ui~=back]:not([hidden])"); if (back) back.click(); else leave(backUrl()); } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
   // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
   $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });

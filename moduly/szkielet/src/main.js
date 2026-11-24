@@ -22,7 +22,7 @@
 //   OESTCzesci.pokaz / okno / montuj / plotno / ladowanie    wygląd wspólnych modułów (aparat, notatki, ładowanie, odczyt) – src/czesci.js
 import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
-import { IonicVue, alertController, modalController, actionSheetController } from '@ionic/vue';
+import { IonicVue, alertController, modalController, actionSheetController, toastController } from '@ionic/vue';
 import '@ionic/vue/css/core.css';
 // structure.css (rama na cały ekran) – osobno: lib/struktura.css tylko na stronie z ramą (app/www/index.html), patrz app/scripts/copy-web.js
 import '@ionic/vue/css/padding.css';
@@ -43,7 +43,19 @@ const T = (pl, en) => (stan.wersja, w.OESTT ? w.OESTT(pl, en) : pl);
 
 // ---------- okienka: jeden stos w pamięci (bez wpisów historii) ----------
 const stos = [];
+let powiadomienie = null, numerPowiadomienia = 0;
 const OESTOkna = {
+  async toast(tekst) {
+    const numer = ++numerPowiadomienia;
+    if (powiadomienie) await powiadomienie.dismiss();
+    if (numer !== numerPowiadomienia) return;
+    powiadomienie = null;
+    if (!tekst) return;
+    const t = await toastController.create({ message: tekst, duration: 3500, position: 'bottom' });
+    if (numer !== numerPowiadomienia) return;
+    powiadomienie = t;
+    await t.present();
+  },
   open(zamknij) { stos.push(zamknij); return () => { const i = stos.lastIndexOf(zamknij); if (i >= 0) stos.splice(i, 1); }; },
   ile() { return stos.length + d.querySelectorAll('dialog[open]').length; },
   zamknijGorne() {

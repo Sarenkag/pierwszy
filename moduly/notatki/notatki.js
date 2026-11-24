@@ -121,15 +121,13 @@
   var trP = null;
   function translator() { if (!native()) return null; if (!trP) { var C = w.Capacitor; trP = C.registerPlugin ? C.registerPlugin('Translate') : C.Plugins && C.Plugins.Translate; } return trP || null; }
   function modelReady() { return w.OESTModel && w.OESTModel.available && w.OESTModel.available() ? w.OESTModel.ready() : Promise.resolve(false); }
-  // PL (już poprawiony) → EN: tłumacz, słowa branżowe, potem model (gdy pobrany) z kontekstem miejsca
+  // Jedna droga PL → EN: pobrany model dostaje oryginał, ML Kit tylko bez modelu.
   function english(pl, ctx) {
-    var tr = translator(); if (!pl || !tr) return Promise.resolve('');
-    return tr.plToEn({ text: pl }).then(function (r) { return fix(r && r.text, 'en'); }, function () { return ''; }).then(function (en) {
-      if (!en) return '';
-      return modelReady().then(function (ok) {
-        if (!ok) return en;
-        return w.OESTModel.polish(en, pl, ctx).then(function (out) { return fix(out, 'en') || en; }, function () { return en; });
-      });
+    if (!pl) return Promise.resolve('');
+    return modelReady().then(function (ok) {
+      if (ok) return w.OESTModel.polish(pl, pl, ctx).then(function (out) { return fix(out, 'en'); });
+      var tr = translator();
+      return tr ? tr.plToEn({ text: pl }).then(function (r) { return fix(r && r.text, 'en'); }, function () { return ''; }) : '';
     });
   }
   var voice = null, queue = Promise.resolve(), seq = 0;
