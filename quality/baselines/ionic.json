@@ -103,62 +103,6 @@
       "usuwa": "przeniesienie ekranu"
     },
     {
-      "id": "IONIC|ekran|reactive",
-      "rule": "IONIC",
-      "detail": "Ekran reactive (Reactive) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/complete/:id",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/complete/:id (Zamknięcie zlecenia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/config",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/config (Ustawienia Reactive) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/draft/:id",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/draft/:id (Szkic zlecenia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/history",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/history (Historia) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/job/:id",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/job/:id (Zlecenie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/new/:id",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/new/:id (Nowe zlecenie) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
-      "id": "IONIC|ekran|reactive/tree/:id",
-      "rule": "IONIC",
-      "detail": "Ekran reactive/tree/:id (Wybór (drzewo)) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranu"
-    },
-    {
       "id": "IONIC|ekran|soon",
       "rule": "IONIC",
       "detail": "Ekran soon (Wkrótce) jest jeszcze poza Ionic/Vue – przenieść według moduly/szkielet/PRZEPIS.md.",

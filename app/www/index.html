@@ -190,7 +190,6 @@ input[type=text], input[type=email], input[type=date], select {
 
     <section class="view" id="v-powertrace" hidden></section>
   <section class="view" id="v-keys" hidden></section>
-  <section class="view" id="v-reactive" hidden></section>
   <section class="view" id="v-handover" hidden></section>
 </div>
 <script src="moduly/szkielet/lib/szkielet.js"></script><!-- szkielet Ionic + Vue: rama, nawigacja, Wstecz, okienka (moduly/szkielet) -->
@@ -284,8 +283,6 @@ input[type=text], input[type=email], input[type=date], select {
     if (window.OESTEkrany.jestVue(v)) { document.querySelectorAll(".view").forEach(function (s) { s.hidden = true; }); renderedRoute = v; return; }
     var settingsRoute = v === "settings" || v === "profile" || v === "appset" || v.indexOf("settings/") === 0 ? v : null;
     var handoverRoute = v === "handover" || v.indexOf("handover/") === 0 ? v : null;
-    var reactiveRoute = v === "reactive" || v.indexOf("reactive/") === 0 ? v : null;
-    if (reactiveRoute) v = "reactive";
     var keysRoute = v === "keys" || v.indexOf("keys/") === 0 ? v : null;
     var powerRoute = v === "powertrace" || v.indexOf("powertrace/") === 0 ? v : null;
     if (powerRoute) v = "powertrace";
@@ -298,10 +295,9 @@ input[type=text], input[type=email], input[type=date], select {
     if (v === "handover") window.OESTHandover.open(handoverRoute);
     if (v === "keys") window.OESTKeys.open(keysRoute);
     if (v === "powertrace") window.OESTPowerTrace.open(powerRoute);
-    if (v === "reactive" || v.indexOf("reactive/") === 0) window.OESTReactiveUI.open(reactiveRoute);
     if (v === "zdjecia" && window.OESTZdjeciaUI) window.OESTZdjeciaUI.open();
     if (v === "appset") renderAccount();
-    renderedRoute = reactiveRoute && v === "reactive" ? reactiveRoute : powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
+    renderedRoute = powerRoute && v === "powertrace" ? powerRoute : keysRoute && v === "keys" ? keysRoute : handoverRoute && v === "handover" ? handoverRoute : settingsRoute && v === "settings" ? settingsRoute : v;
     window.OESTEkrany.naGore();
   }
   // Nawigacja i Wstecz: JEDEN moduł – moduly/szkielet (Ionic + Vue, Grzegorz 21/11/2026). Tu tylko: co narysować dla trasy
@@ -309,9 +305,11 @@ input[type=text], input[type=email], input[type=date], select {
   function show(v) { window.OESTEkrany.go(v); }
   [window.OESTHandover, window.OESTKeys, window.OESTPowerTrace, window.OESTReactiveUI, window.OESTZdjeciaUI]
     .forEach(function (m) { if (m && m.setNavigate) m.setNavigate(show); });
-  [["reactive", window.OESTReactiveUI], ["settings", window.OESTSettingsUI], ["profile", window.OESTSettingsUI], ["appset", window.OESTSettingsUI], ["questions", window.OESTQuestionsUI],
+  [["settings", window.OESTSettingsUI], ["profile", window.OESTSettingsUI], ["appset", window.OESTSettingsUI], ["questions", window.OESTQuestionsUI],
    ["powertrace", window.OESTPowerTrace], ["keys", window.OESTKeys], ["handover", window.OESTHandover]]
     .forEach(function (x) { if (x[1] && x[1].canLeave) window.OESTEkrany.straz(x[0], function () { return x[1].canLeave(); }); });
+  // Reactive (Vue): podgląd i kreator cofają się w sobie, niezapisany szkic zostaje; inaczej rodzic (węzeł drzewka, karta zlecenia)
+  if (window.OESTReactiveUI) window.OESTEkrany.straz("reactive", function () { return window.OESTReactiveUI.wstecz(); });
   document.addEventListener("click", function (e) { var b = e.target.closest("[data-nav][data-title]"); if (b && $("soonTitle")) $("soonTitle").textContent = b.dataset.title; }, true);
   // język interfejsu (Grzegorz 03/11): PL domyślnie, EN z Ustawień; elementy z data-en podmieniają tylko tekst
   function applyLang() { if (window.OESTBledy) OESTBledy.applyDom(document); } // stały HTML: data-en / data-en-aria-label …
