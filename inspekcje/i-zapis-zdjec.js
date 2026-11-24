@@ -11,7 +11,7 @@
   function camOpts(kind) { var Z = window.OESTZdjecia; return { max: Z && Z.maxPx ? Z.maxPx(kind) : 0, prepare: kind && Z && Z.prepare ? function (b) { Z.prepare(b, kind); } : null }; }
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
   // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
-  if ($("photoSize") && Zd && Zd.sizeSwitch) $("photoSize").innerHTML = Zd.sizeSwitch();
+  if ($("photoSize") && Zd && window.OESTCzesci) window.OESTCzesci.montuj($("photoSize"), "RozmiarZdjec", { kontroler: Zd.rozmiar() });
   // przełącznik rozmiaru tylko tam, gdzie są zdjęcia ogólne (w formularzach papierowych przyciski dodają kartki – zawsze 1920)
   function photoSizeShow() { var b = $("photoSize"); if (b) b.classList.toggle("off", photoKind(null, false) !== "ogolne"); }
   // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.

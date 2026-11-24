@@ -343,7 +343,7 @@
 
     async function blob(id) { var r = await deps.db.get(id); return r && r.blob; }
     async function remove(id) { await deps.db.del(id); emit(); }
-    function onChange(f) { listeners.push(f); }
+    function onChange(f) { listeners.push(f); return function () { listeners = listeners.filter(function (x) { return x !== f; }); }; }
     function onSaved(f) { savedListeners.push(f); }
     return { save: save, keep: keep, release: release, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
       onChange: onChange, onSaved: onSaved, busy: function () { return !!syncing; } };
@@ -481,26 +481,22 @@
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
     });
-    // Przełącznik rozmiaru zdjęć ogólnych (Duże / Średnie / Małe) – JEDEN dla całej apki (inspekcje, Reactive).
-    // Wygląd z moduly/przelacznik; trzy pola tej samej szerokości; wybór zapisany w ustawieniach (ostatni pamiętany).
-    function tt(g) { return win.OESTT ? win.OESTT(g.pl, g.en) : g.pl; }
-    store.sizeSwitch = function () {
-      var P = win.OESTPrzelacznik; if (!P) return '';
-      return '<span class="oest-photo-size">' + P.html({ name: 'photoSize', value: store.settings().general, label: tt({ pl: 'Rozmiar zdjęć ogólnych', en: 'General photo size' }),
-        options: GENERAL.map(function (g) { return { v: g.v, t: tt(g) }; }) }) + '</span>';
+    // Stan i akcje przełącznika; widok w szkielet/src/czesci/RozmiarZdjec.vue.
+    store.rozmiar = function () {
+      function dane() {
+        var value = store.settings().general;
+        return { value: value, options: GENERAL, index: GENERAL.map(function (g) { return g.v; }).indexOf(value) };
+      }
+      return {
+        dane: dane,
+        na: function (f) { return store.onChange(function () { f(dane()); }); },
+        akcja: function (v) {
+          var opts = GENERAL.map(function (g) { return g.v; });
+          if (v == null) v = opts[(opts.indexOf(store.settings().general) + 1) % opts.length];
+          if (opts.indexOf(v) >= 0) store.setSettings({ general: v });
+        }
+      };
     };
-    if (win.document && win.addEventListener) {
-      var st = win.document.createElement('style'); st.textContent = '.oest-photo-size .oest-sw{width:16.5em}'; (win.document.head || win.document.documentElement).appendChild(st);
-      win.document.addEventListener('click', function (e) {
-        var sw = e.target.closest && e.target.closest('.oest-sw[data-sw="photoSize"]'); if (!sw) return;
-        var i = e.target.closest('i[data-v]'), opts = GENERAL.map(function (g) { return g.v; });
-        var v = i ? i.dataset.v : opts[(opts.indexOf(sw.dataset.val) + 1) % opts.length];
-        store.setSettings({ general: v }); if (win.OESTPrzelacznik) win.OESTPrzelacznik.set('photoSize', v);
-      });
-      win.addEventListener('oest:lang', function () {
-        [].forEach.call(win.document.querySelectorAll('.oest-sw[data-sw="photoSize"] i[data-v]'), function (i) { var g = GENERAL.filter(function (x) { return x.v === i.dataset.v; })[0]; if (g) i.textContent = tt(g); });
-      });
-    }
     // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
     // maxPx(kind): dla danego rodzaju (jak w save()) – aparat zmniejsza zdjęcie w Javie najwyżej do tego rozmiaru (audyt zdjęć, punkt 2)
     store.maxPx = function (kind) { var st = store.settings(); return maxFor(st.preset, st.general, kind); };
