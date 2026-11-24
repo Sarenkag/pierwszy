@@ -20,8 +20,9 @@ import NotatkaNowa from './czesci/NotatkaNowa.vue';
 import Nagrywanie from './czesci/Nagrywanie.vue';
 import Ladowanie from './czesci/Ladowanie.vue';
 import OdczytArkusz from './czesci/OdczytArkusz.vue';
+import KolejkaInsp from './czesci/KolejkaInsp.vue';
 
-const CZESCI = { Aparat, EdytorZdjec, Notatki, NotatkiOkno, NotatkiPropozycja, NotatkaNowa, Nagrywanie, Ladowanie, OdczytArkusz };
+const CZESCI = { Aparat, EdytorZdjec, Notatki, NotatkiOkno, NotatkiPropozycja, NotatkaNowa, Nagrywanie, Ladowanie, OdczytArkusz, KolejkaInsp };
 void IonSpinner; // <ion-spinner> zdefiniowany także dla napisów starego kodu (OESTLadowanie.ring())
 
 export function zainstaluj(w, OESTOkna, T) {

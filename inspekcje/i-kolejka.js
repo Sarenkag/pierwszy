@@ -272,52 +272,7 @@
       (n ? window.OESTT("w kolejce: ", "queued: ") + n + (sending ? window.OESTT(" (wysyłam…)", " (sending…)") : "") : window.OESTT("kolejka pusta", "queue empty"));
   }
   function qBusy() { return sending || (gm() && OESTSender.busy()); }
-  function renderQueue() {
-    var n = pending().length, busy = qBusy();
-    var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
-    var nu = unconfirmed().length;
-    $("qSub").textContent = n ? window.OESTT("Do wysłania: ", "To send: ") + n + (nu ? window.OESTT(" · do potwierdzenia: ", " · to confirm: ") + nu : "") : nu ? window.OESTT("Do potwierdzenia: ", "To confirm: ") + nu : window.OESTT("Wszystko wysłane", "All sent");
-    $("qList").innerHTML = list.length ? list.map(function (q) {
-      var st = q.status === "sent" ? '<span class="st ok">'+window.OESTT('✓ wysłane', '✓ sent')+' ' + esc(NZ.godzina(new Date(q.sentAt))) + "</span>" :
-        q.status === "sending" ? '<span class="st">'+window.OESTT('wysyłam…', 'sending…')+'</span>' :
-        q.status === "err" ? '<span class="st err">'+window.OESTT('błąd', 'error')+'</span>' :
-        q.status === "shared" ? '<span class="st">'+window.OESTT('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
-      return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + NZ.kb(q.docx.length + q.pdf.length) +
-        (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+window.OESTT('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
-          ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+window.OESTT('Wyślij ponownie', 'Send again')+'</button>' : "") +
-        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+window.OESTT('Usuń', 'Delete')+'</button>' : "") +
-        "</small></div>" + st + "</div>";
-    }).join("") : '<p class="hint">'+window.OESTT('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
-    $("qSend").disabled = busy || !n;
-    $("qSend").textContent = busy ? window.OESTT("Wysyłam…", "Sending…") : window.OESTT("Wyślij wszystko", "Send all");
-    $("qHint").textContent = gm() ? window.OESTT("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || window.OESTT("adres z Ustawień", "the address in Settings")) + window.OESTT(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.") : shareApi() ? window.OESTT("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.") : !cfg.email ? window.OESTT("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.") :
-      (!online() ? window.OESTT("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : window.OESTT("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + window.OESTT(" i do folderu „", " and to the folder “") + cfg.folder + window.OESTT("” na Drive.", "” on Drive."));
-    renderNet();
-  }
-  $("qList").addEventListener("click", async function (e) {
-    var ok = e.target.closest("button[data-ok]"), again = e.target.closest("button[data-again]");
-    if ((ok || again) && !qBusy()) {
-      var sid = (ok || again).getAttribute(ok ? "data-ok" : "data-again"), sit = queue.filter(function (q) { return q.id === sid && q.status === "shared"; })[0];
-      if (!sit) return;
-      if (ok) markSent(sit, null); else { sit.status = "wait"; sit.err = ""; } // ponownie = znów w kolejce, wychodzi przez „Wyślij”
-      return qPut(sit).then(refresh);
-    }
-    var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
-    if (!await ask(window.OESTT("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
-    // w czasie pytania mogła ruszyć wysyłka w tle (sieć wróciła, minutnik): wtedy nie usuwamy raportu, który już wychodzi
-    if (qBusy()) { say(window.OESTT("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
-    var id = b.getAttribute("data-del");
-    var gone = queue.filter(function (q) { return q.id === id; })[0];
-    qDel(id).then(function () {
-      queue = queue.filter(function (q) { return q.id !== id; }); renderQueue();
-      // usunięty niewysłany raport: klocek PPM wraca z „W kolejce” (okres znów otwarty)
-      if (gone && gone.ppm && gone.status !== "sent" && PPM && PPM.unqueue) PPM.unqueue(gone.ppm, gone.id);
-    });
-  });
-  $("qSend").addEventListener("click", function () { sendQueue(true); });
-  $("qNext").addEventListener("click", function () { show("list"); });
-  function refresh() { if (!$("v-queue").hidden) renderQueue(); else renderNet(); if (!$("v-list").hidden) renderList(); }
+  function refresh() { OESTKolejkaWidok.powiadom(); renderNet(); if (!$("v-list").hidden) renderList(); } // ekran Kolejka rysuje część Vue (kolejka-widok.js)
 
   // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
   function submitArg(it) {
@@ -381,7 +336,7 @@
         });
       });
     }, Promise.resolve(false)).catch(function (e) {
-      $("qHint").textContent = window.OESTT("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e);
+      OESTKolejkaWidok.blad(window.OESTT("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e));
     }).then(function () { sending = false; refresh(); });
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
