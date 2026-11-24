@@ -12,7 +12,7 @@
     buildAll().then(function (r) {
       r.from = from; built = r; renderPreview();
       // PDF nie powstał (brak silnika LibreOffice): pokazujemy wprost, co naprawdę pójdzie – nic nie udajemy
-      if (r.bezPdf) $("fname").innerHTML = r.files.map(function (f) { return esc(f.name); }).join("<br>") + "<br><b>" + esc(gErr(new Error("REPORT_PDF_MISSING"))) + "</b>";
+
       show("preview");
     }).catch(function (e) {
       $("formHint").textContent = window.OESTT("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
@@ -23,53 +23,36 @@
     return { typ: cur.type, tryb: cur.mode, ppm: cur.ppm, data: reportDate(), raport: cur.type && cur.type.flush ? flushReport(reportDate()) : null, blokada: $("toQueue").disabled, zajete: queueing }; } });
   function buildErr(e) { if (e && /^[A-Z][A-Z0-9_]{3,}$/.test(e.message || "")) return gErr(e); /* kod aplikacji (np. STORAGE_WRITE) → tekst z moduly/bledy (uwaga Codex #164) */ return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
-    var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();
+    var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop(), pliki = [];
+    var company = window.OESTT("(wzór firmy)", "(company template)");
+    function plik(ext, opis) { pliki.push({ nazwa: built.name, rozszerzenie: ext, opis: opis || "" }); }
+    var widok;
     if (d.temps) {
-      $("paper").innerHTML = "<b>" + esc(d.tytul) + "</b><p>Date: " + esc(d.data) + " · Print name: " + esc(d.inspektor) + "</p><table>" +
-        built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
-        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
+      widok = { rodzaj: "temperatury", tytul: d.tytul, podpis: "Date: " + d.data + " · Print name: " + d.inspektor, stan: d.stan_ogolny, zdjecia: [],
+        wiersze: built.from.type.slots.map(function (slot, n) { return { nazwa: slot[0], opis: KIND[slot[1]], blad: tempBad(slot[1], d.temps[n]), wartosc: d.temps[n] ? d.temps[n] + " °C" : "–" }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>" + esc(built.name) + "<em>.pdf</em>";
-      return;
-    }
-    if (d.folder && d.flush) {
+      plik(".docx", " " + company); plik(".pdf");
+    } else if (d.folder && d.flush) {
       var ff = d.flush;
-      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + window.OESTT(" · tydzień ", " · week ") + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
-        ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; });
-          return (gname ? '<tr><td colspan="2"><b>' + esc(gname) + "</b></td></tr>" : "") + '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
-        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
-        built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
+      widok = { rodzaj: "flush", tytul: ff.title, podpis: (ff.points ? "" : OESTFlush.MONTHS[ff.month] + " " + ff.year + window.OESTT(" · tydzień ", " · week ") + ff.week + " · ") + d.data + " · " + ff.name, stan: d.stan_ogolny,
+        wiersze: ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; }); return { grupa: gname, nazwa: t.name, blad: t.state === "no", wartosc: OESTFlush.LABEL[t.state], uwaga: t.note }; }),
+        zdjecia: built.pics.map(function (p) { return { url: p.url, opis: p.tap != null && ff.taps[p.tap] ? ff.taps[p.tap].name : "" }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>") + esc(built.name) + "<em>.pdf</em>";
-      return;
-    }
-    if (d.folder) {
-      $("paper").innerHTML = built.pics.map(function (p, n) { return '<div class="pimg"><img alt="Strona ' + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
+      if (!ff.points) plik(".docx", " " + company); plik(".pdf");
+    } else if (d.folder) {
+      widok = { rodzaj: "kartki", zdjecia: built.pics.map(function (p) { return { url: p.url }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data + " · stron: " + built.pics.length;
-      $("fname").innerHTML = esc(built.name) + "<em>.pdf</em>";
-      return;
+      plik(".pdf");
+    } else {
+      widok = { rodzaj: "raport", raport: d, tytul: title, logo: built.logoUrl, stopka: i.footerText || "", numer: d["job number"] || "", miejsce: [d.building, d.level].filter(Boolean).join(" "),
+        wiersze: (d.details || "").split("\n").map(function (l) { return l.indexOf("\t") < 0 ? { tekst: l } : { komorki: l.split("\t") }; }),
+        zdjecia: built.pics.map(function (p, n) { return { url: p.url, alt: window.OESTT("Zdjęcie ", "Photo ") + (n + 1) }; }) };
+      $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
+      plik(".docx"); plik(".pdf");
+      if (cfg.drivePhotos && built.pics.length) pliki.push({ nazwa: built.name, rozszerzenie: " foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg", opis: " " + window.OESTT("(tylko na Drive)", "(Drive only)") });
     }
-    function head() { return '<div class="ph">' + (built.logoUrl ? '<img alt="" src="' + built.logoUrl + '">' : "") + "<div>" + esc(title) + "</div></div>"; }
-    var foot = '<div class="foot">' + esc(i.footerText || "") + "</div>";
-    var html = head() + "<table>" +
-      '<tr><td class="k">Site</td><td>' + esc(d.site) + "</td></tr>" +
-      // nowy wzór basic (20/11/2026): ID = nr zlecenia Vantify obok daty, Location obok inżyniera – jak w Wordzie i PDF
-      '<tr><td class="k">Date</td><td>' + esc(d.data) + '<span style="float:right"><b>ID:</b> ' + esc(d["job number"] || "") + "</span></td></tr>" +
-      '<tr><td class="k">Engineer</td><td>' + esc(d.inspektor) + '<span style="float:right"><b>Location:</b> ' + esc([d.building, d.level].filter(Boolean).join(" ")) + "</span></td></tr>" +
-      '<tr><td colspan="2" class="big"><p style="text-align:center"><b>' + esc(d.tytul) + "</b></p>" +
-      "<p>Overall Condition: " + esc(d.stan_ogolny) + "</p>" +
-      '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
-        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:2.2">' + esc(c) + "</span>"; }).join("");
-      }).join("\n") + "</div>" +
-      (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
-      '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
-      '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
-      '<tr><td colspan="2" style="height:44px">Signed: ' + esc(d.inspektor) + "</td></tr></table>" + foot +
-      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="' + window.OESTT('Zdjęcie ', 'Photo ') + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
-    $("paper").innerHTML = html;
-    $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
-    $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
-      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> "+window.OESTT("(tylko na Drive)", "(Drive only)")+"" : "");
+    widokInspekcji("paper", "raport", widok);
+    widokInspekcji("fname", "raport", { rodzaj: "pliki", pliki: built.bezPdf ? built.files : pliki, brakPdf: !!built.bezPdf, blad: built.bezPdf ? gErr(new Error("REPORT_PDF_MISSING")) : "" });
   }
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 

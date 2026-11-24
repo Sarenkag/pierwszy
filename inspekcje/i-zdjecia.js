@@ -46,17 +46,11 @@
   $("shCamIn").addEventListener("change", function () { addFiles(this, null, true); });
   $("shGalIn").addEventListener("change", function () { addFiles(this, null, true); });
   function renderPhotos() {
-    $("photos").innerHTML = ""; $("sheetPhotos").innerHTML = ""; if (cur.type) ppmTrack(false);
-    photos.forEach(function (p, i) {
-      if (p.tap != null) return; // zdjęcie kranu (Flushing): pokazane przy kranie
-      var grid = p.sheet ? $("sheetPhotos") : $("photos");
-      var d = document.createElement("div"); d.className = "thumb";
-      d.innerHTML = '<img alt="' + window.OESTT('Zdjęcie ', 'Photo ') + (i + 1) + '" src="' + p.url + '"><span class="n">' + (i + 1) + '</span><button type="button" aria-label="' + window.OESTT('Usuń zdjęcie ', 'Delete photo ') + (i + 1) + '">×</button>' +
-        (p.sugs || []).map(function (sg) { return sg.x != null ? '<span class="mk" style="left:' + (sg.x * 100) + "%;top:" + (sg.y * 100) + '%">' + sg.n + "</span>" : ""; }).join("");
-      d.querySelector("button").addEventListener("click", function () { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); });
-      if (window.OESTAparat && OESTAparat.available()) {
-        var eb = document.createElement("button"); eb.type = "button"; eb.className = "ed"; eb.textContent = "✏️"; eb.setAttribute("aria-label", window.OESTT("Edytuj zdjęcie ", "Edit photo ") + (i + 1));
-        eb.addEventListener("click", function () {
+    if (cur.type) ppmTrack(false);
+    function akcja(nazwa, i) {
+      var p = photos[i]; if (!p) return;
+      if (nazwa === "usun") { URL.revokeObjectURL(p.url); photos.splice(i, 1); renderPhotos(); suggestDate(); return; }
+      if (nazwa === "edytuj") {
           var tok = formSeq; pendingPh++; updateFormHint(); // zapis wstrzymany, dopóki poprawione zdjęcie nie wróci
           OESTAparat.edit(p.blob, camOpts()).then(function (nb) {
             if (!nb) return;
@@ -68,23 +62,25 @@
               URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos(); ppmTrack(false, true); // poprawione zdjęcie = zmiana
             });
           }).catch(function (e) { say(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
-        });
-        d.appendChild(eb);
       }
-      grid.appendChild(d);
+    }
+    [false, true].forEach(function (sheet) {
+      widokInspekcji(sheet ? "sheetPhotos" : "photos", "fragment", { rodzaj: "zdjecia", edycja: !!(window.OESTAparat && OESTAparat.available()), lista: photos.map(function (p, i) {
+        return { i: i, sheet: !!p.sheet, tap: p.tap, url: p.url, sugestie: p.sugs || [], alt: window.OESTT("Zdjęcie ", "Photo ") + (i + 1), usun: window.OESTT("Usuń zdjęcie ", "Delete photo ") + (i + 1), edytuj: window.OESTT("Edytuj zdjęcie ", "Edit photo ") + (i + 1) };
+      }).filter(function (p) { return p.tap == null && p.sheet === sheet; }) }, akcja);
     });
     var shn = sheetPhotos().length, Z = window.OESTZnacznik, nd = typeof needsNow === "function" ? needsNow() : null, req = !!(nd && nd.f);
     var fst = shn ? "ok" : req ? "blad" : "";
-    $("sheetState").innerHTML = Z && fst ? Z.formularz(fst) : "";
+    widokInspekcji("sheetState", "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" });
     // wymóg formularza widać na samym przycisku „Formularz” (Grzegorz 04/11) – bez dodatkowego okna, układ ten sam w każdej inspekcji
     var fb = $("shCamIn").closest("label"), fbd = fb.querySelector(".fbadge");
-    if (!fbd) { fbd = document.createElement("span"); fbd.className = "fbadge"; fb.appendChild(fbd); }
-    fbd.innerHTML = Z && fst ? Z.formularz(fst) : ""; fb.classList.toggle("req", fst === "blad");
+    widokInspekcji(fbd, "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" }); fb.classList.toggle("req", fst === "blad");
     $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
-    var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length; if (window.OESTZnacznik) $("photoCount").innerHTML = OESTZnacznik.licznik(fp, "accent inline"); else $("photoCount").textContent = fp ? "(" + fp + ")" : "";
+    var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length;
+    widokInspekcji("photoCount", "fragment", { rodzaj: "znacznik", html: window.OESTZnacznik ? OESTZnacznik.licznik(fp, "accent inline") : fp ? "(" + fp + ")" : "" });
     if (cur.type && cur.type.flush) renderFlush();
-    if ($("sugBox").innerHTML) renderSugs();
+    if ($("sugBox").__inspKontroler && $("sugBox").__inspKontroler.stan.lista.length) renderSugs();
     updateFormHint(); scheduleDraft();
   }
   // Data raportu: apka proponuje datę z pierwszego zdjęcia, dopóki nie zmienisz jej ręcznie
@@ -94,9 +90,10 @@
     var pd = NZ.dzienIso(p.when), today = NZ.dzienIso(new Date());
     if (!dateTouched) $("dzien").value = pd;
     box.hidden = false;
-    box.innerHTML = "<span>" + (p.exif ? window.OESTT("Zdjęcie zrobione ", "Photo taken ") : window.OESTT("Plik zdjęcia z ", "Photo file from ")) + esc(NZ.data(p.when) + " " + NZ.godzina(p.when)) + ".</span>" +
-      ($("dzien").value !== pd ? '<button class="btn" type="button" data-day="' + pd + '">Ustaw ' + esc(NZ.data(p.when)) + "</button>" : "") +
-      ($("dzien").value !== today ? '<button class="btn" type="button" data-day="' + today + '">'+window.OESTT('Ustaw dziś', 'Set today')+'</button>' : "");
+    var przyciski = [];
+    if ($("dzien").value !== pd) przyciski.push({ dzien: pd, tekst: "Ustaw " + NZ.data(p.when) });
+    if ($("dzien").value !== today) przyciski.push({ dzien: today, tekst: window.OESTT("Ustaw dziś", "Set today") });
+    widokInspekcji(box, "fragment", { rodzaj: "data", tekst: (p.exif ? window.OESTT("Zdjęcie zrobione ", "Photo taken ") : window.OESTT("Plik zdjęcia z ", "Photo file from ")) + NZ.data(p.when) + " " + NZ.godzina(p.when) + ".", przyciski: przyciski });
     updateFormHint();
   }
   $("dateSug").addEventListener("click", function (e) {
@@ -134,11 +131,10 @@
     var open = [];
     photos.forEach(function (p) { (p.sugs || []).forEach(function (sg) { if (sg.open) open.push(sg); }); });
     $("sugBox").hidden = !open.length;
-    $("sugBox").innerHTML = open.map(function (sg) {
+    widokInspekcji("sugBox", "fragment", { rodzaj: "sugestie", lista: open.map(function (sg) {
       var f = FAULTS.filter(function (x) { return x.id === sg.fault; })[0];
-      return '<div class="sug"><div><span class="n">' + sg.n + "</span>" + esc(window.OESTT(f.pl, f.enl)) + '?</div><div class="row">' +
-        '<button class="btn" type="button" data-sg="' + sg.n + '" data-ok="1">'+window.OESTT('Tak', 'Yes')+'</button><button class="btn" type="button" data-sg="' + sg.n + '" data-ok="0">'+window.OESTT('Nie', 'No')+'</button></div></div>';
-    }).join("");
+      return { n: sg.n, tekst: window.OESTT(f.pl, f.enl) };
+    }) });
   }
   $("sugBox").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-sg]"); if (!b) return;

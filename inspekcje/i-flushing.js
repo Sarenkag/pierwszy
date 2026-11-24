@@ -11,7 +11,7 @@
   function recipientsFor(n) { return window.OESTSender && OESTSender.recipients ? OESTSender.recipients(n) : { list: cfg.email ? [cfg.email] : [], me: cfg.email }; }
   function renderFlush() {
     var F = cur.type && cur.type.flush;
-    if (!F) { $("flList").innerHTML = ""; return; }
+    if (!F) { widokInspekcji("flList", "fragment", { rodzaj: "flush", lista: [] }); return; }
     if (fl.taps.length !== F.taps.length) fl = OESTFlush.start(F);
     $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
@@ -26,22 +26,21 @@
     }
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
     $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
-    $("flList").innerHTML = F.taps.map(function (name, i) {
-      var t = fl.taps[i], pics = tapPhotos(i), odczyt = (F.odczyty || []).indexOf(name) >= 0, open = fl.open[i] || t.note || odczyt;
-      return (heads[i] ? '<div class="fl-grp">' + esc(heads[i]) + "</div>" : "") + '<div class="fl-row ' + t.state + '"><div class="fl-line"><div class="txt">' + esc(F.etykieta ? name.replace(new RegExp(F.etykieta), "") : name) + '</div><div class="seg">' +
-        [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]].map(function (o) { return '<button type="button" data-fl="' + i + '" data-s="' + o[0] + '" class="' + o[2] + (t.state === o[0] ? " on" : "") + '">' + o[1] + "</button>"; }).join("") +
-        '</div><button type="button" class="fl-ic" data-flcam="' + i + '" aria-label="' + window.OESTT('Zdjęcie: ', 'Photo: ') + esc(name) + '">📷' + (pics.length ? "<b>" + pics.length + "</b>" : "") + '</button>' +
-        '<button type="button" class="fl-ic" data-flnote="' + i + '" aria-label="' + window.OESTT('Notatka: ', 'Note: ') + esc(name) + '">📝</button></div>' +
-        (open ? '<input class="fl-note" type="text" data-fln="' + i + '" value="' + esc(t.note) + '" placeholder="' + (odczyt ? window.OESTT('Odczyt', 'Reading') : window.OESTT('Notatka (trafi do kolumny NOTES)', 'Note (goes to the NOTES column)')) + '"' + (odczyt ? ' inputmode="decimal"' : "") + '>' : "") +
-        (pics.length ? '<div class="fl-pics">' + pics.map(function (p) { return '<span><img alt="" src="' + p.url + '"><button type="button" data-fldel="' + photos.indexOf(p) + '" aria-label="'+window.OESTT('Usuń zdjęcie', 'Delete photo')+'">×</button></span>'; }).join("") + "</div>" : "") + "</div>";
-    }).join("");
+    widokInspekcji("flList", "fragment", { rodzaj: "flush", opcje: [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]], lista: F.taps.map(function (name, i) {
+      var t = fl.taps[i], pics = tapPhotos(i), odczyt = (F.odczyty || []).indexOf(name) >= 0;
+      return { i: i, grupa: heads[i], stan: t.state, tekst: F.etykieta ? name.replace(new RegExp(F.etykieta), "") : name,
+        aparat: window.OESTT("Zdjęcie: ", "Photo: ") + name, notatka: window.OESTT("Notatka: ", "Note: ") + name,
+        otwarty: !!(fl.open[i] || t.note || odczyt), uwaga: t.note, odczyt: odczyt,
+        placeholder: odczyt ? window.OESTT("Odczyt", "Reading") : window.OESTT("Notatka (trafi do kolumny NOTES)", "Note (goes to the NOTES column)"),
+        zdjecia: pics.map(function (p) { return { i: photos.indexOf(p), url: p.url }; }) };
+    }) });
   }
   var flTap = null;
   $("flushBox").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     if (b.hasAttribute("data-w")) { var w = +b.getAttribute("data-w"); fl.week = fl.week === w ? 0 : w; renderFlush(); updateFormHint(); return; }
     if (b.hasAttribute("data-fl")) { fl.taps[+b.getAttribute("data-fl")].state = b.getAttribute("data-s"); renderFlush(); updateFormHint(); return; }
-    if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.focus(); return; }
+    if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); queueMicrotask(function () { var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.focus(); }); return; }
     if (b.hasAttribute("data-fldel")) { var at = +b.getAttribute("data-fldel"), p = photos[at]; if (p) { URL.revokeObjectURL(p.url); photos.splice(at, 1); renderPhotos(); } return; }
     if (b.hasAttribute("data-flcam")) {
       var tap = +b.getAttribute("data-flcam");

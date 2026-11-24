@@ -129,22 +129,17 @@
   $("sendCfg").addEventListener("click", function () {
     var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
     var sp = sendParts(), to = recipientsFor({ sp: 1, sm: 1, se: 1, sg: 1 });
-    function cb(k, label, dis, note) { return '<label class="need' + (dis ? " dis" : "") + '"><input type="checkbox" data-sn="' + k + '"' + (n[k] && !dis ? " checked" : "") + (dis ? " disabled" : "") + "><span>" + esc(label) + (note ? " <small>" + esc(note) + "</small>" : "") + "</span></label>"; }
+    function cb(k, label, dis, note) { return { klucz: k, tekst: label, blokada: !!dis, wybrane: !!(n[k] && !dis), uwaga: note }; }
     var box = document.createElement("div"); box.className = "sendcfg-box";
-    box.innerHTML = '<div class="sct">' + window.OESTT("Co wysłać", "What to send") + "</div>" +
-      cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")) +
-      cb("q", sp.qLabel, !sp.q) +
-      cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")) +
-      cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t) +
-      '<div class="sct">' + window.OESTT("Jak", "How") + "</div>" +
-      '<label class="need"><input type="radio" name="sn-one" value="1"' + (n.one ? " checked" : "") + "><span>" + window.OESTT("Scalone w jeden dokument", "Merged into one document") + "</span></label>" +
-      '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + window.OESTT("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
-      '<div class="sct">' + window.OESTT("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, window.OESTT("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
-      '<div class="sct">' + window.OESTT("Do kogo", "To") + "</div>" +
-      cb("sp", window.OESTT("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("sm", window.OESTT("Mój firmowy e-mail", "My work email"), !to.me, to.me || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("se", window.OESTT("Inżynier", "Engineer"), !to.eng, to.eng || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
-      cb("sg", window.OESTT("Manager", "Manager"), !to.man, to.man || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
+    widokInspekcji(box, "wysylka", { sekcje: [
+      { tytul: window.OESTT("Co wysłać", "What to send"), pola: [cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")), cb("q", sp.qLabel, !sp.q), cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")), cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t)] },
+      { tytul: window.OESTT("Jak", "How"), pola: [
+        { radio: true, wartosc: "1", wybrane: !!n.one, tekst: window.OESTT("Scalone w jeden dokument", "Merged into one document") },
+        { radio: true, wartosc: "0", wybrane: !n.one, tekst: window.OESTT("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") }
+      ] },
+      { tytul: window.OESTT("Format", "Format"), pola: [cb("xp", "PDF"), cb("xw", "Word", false, window.OESTT("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)"))] },
+      { tytul: window.OESTT("Do kogo", "To"), pola: [cb("sp", window.OESTT("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || window.OESTT("brak adresu w Mój profil", "no address in My Profile")), cb("sm", window.OESTT("Mój firmowy e-mail", "My work email"), !to.me, to.me || window.OESTT("brak adresu w Mój profil", "no address in My Profile")), cb("se", window.OESTT("Inżynier", "Engineer"), !to.eng, to.eng || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")), cb("sg", window.OESTT("Manager", "Manager"), !to.man, to.man || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"))] }
+    ] });
     OESTPrzycisk.ask({ title: window.OESTT("Ustawienia wysyłki", "Sending settings"), node: box, ok: window.OESTT("Zapisz jako domyślne", "Save as default"), cancel: window.OESTT("Zamknij", "Close") }).then(function (save) {
       if (!save || !cur.ppm || !PPM.setNeeds) return;
       var patch = {}; box.querySelectorAll("input[data-sn]:not(:disabled)").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
@@ -152,7 +147,7 @@
       var qWas = !!n.q; PPM.setNeeds(cur.ppm, patch);
       if (patch.q != null && patch.q !== qWas && !cur.type.flush) formMode();
       applyNeeds(patch.q && !qWas); ppmTrack(false); try { suggestOverall(); } catch (e) {} updateFormHint(); scheduleDraft();
-    });
+    }).finally(function () { if (box.__oestCzesc) box.__oestCzesc.unmount(); });
   });
   // dodane zdjęcie = chcę je w raporcie: odznaczona kategoria zaznacza się sama (Grzegorz 04/11 11:28)
   function needOn(k) { var n = needsNow(); if (n && !n[k] && cur.ppm && PPM.setNeeds) { var p = {}; p[k] = true; PPM.setNeeds(cur.ppm, p); applyNeeds(); } }

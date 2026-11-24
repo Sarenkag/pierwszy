@@ -44,8 +44,9 @@
     if (REC) {
       // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (moduly/znacznik), termin bez zmian
       document.querySelectorAll(".ppmbar").forEach(function (el) { el.hidden = true; });
-      var hd = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), pill = $("recPill");
-      if (hd && window.OESTZnacznik) { if (!pill) { pill = document.createElement("span"); pill.id = "recPill"; hd.appendChild(pill); } pill.innerHTML = OESTZnacznik.status("odzyskana"); }
+      var pill = $("recPill");
+      if (pill && window.OESTZnacznik) { pill.hidden = false; widokInspekcji(pill, "fragment", { rodzaj: "znacznik", html: OESTZnacznik.status("odzyskana") }); }
+      $("ppmStage").hidden = true;
       return;
     }
     var t = cur.ppm;
@@ -55,16 +56,16 @@
       // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
       // po ostatnim zleceniu z importu też bez ręcznej daty – apka nie tworzy terminu (PROD-010)
       var vj = (due && PPM.jobFor ? PPM.jobFor(t, NZ.dzienIso(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? NZ.dzienIso(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+window.OESTT('Termin z systemu', 'Due date from the system')+'"></label>' +
-        '<b class="' + (left !== null && left <= 0 ? "late" : "") + '" data-alt="' + esc(window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
-      el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
+      widokInspekcji(el, "fragment", { rodzaj: "termin", data: due ? NZ.dzienIso(due) : "", blokada: !!vj, spoznione: left !== null && left <= 0,
+        alt: window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "",
+        tekst: PPM.endsText(left, t), czestosc: t.freq.join(" + ") }, function (value) { PPM.setDue(t, value); renderPpmBar(); });
 
     });
     // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
     var top = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), sel = $("ppmStage");
     if (!top || !PPM || !PPM.setStage) return;
-    if (!sel) {
-      sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
+    if (!sel.__etapPodpiety) {
+      sel.__etapPodpiety = true;
       sel.addEventListener("change", function () {
         var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
         var was = PPM.stage(tt), closed = was && (was.s === "done" || was.s === "queued" || was.s === "sent");
@@ -79,14 +80,13 @@
         if (!this.value) { PPM.setStage(tt, null); if (PPM.setUnstarted) PPM.setUnstarted(tt, ppmCounts()); } else PPM.setStage(tt, { s: this.value, manual: true, day: NZ.dzienIso(new Date()) });
         renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
       });
-      top.insertBefore(sel, top.firstChild);
     }
-    if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // etap pozostaje w nagłówku formularza
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
-    sel.innerHTML = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
-      .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
-      .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
+    var opcje = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
+      .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []); // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
+    widokInspekcji(sel, "fragment", { rodzaj: "etap", opcje: opcje });
+    queueMicrotask(function () { sel.value = s; });
     sel.className = "ppmpill s-" + (s || "none");
   }
   // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach

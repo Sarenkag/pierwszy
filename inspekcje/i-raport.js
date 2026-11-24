@@ -124,11 +124,11 @@
   function tplState(err) {
     var n = $("tplNotice");
     if (serverTpl) {
-      n.hidden = !err; if (err) n.innerHTML = "<b>"+window.OESTT("Bez połączenia z Google:", "No Google connection:")+"</b> " + esc(err) + window.OESTT(". Działam na zapisanym szablonie.", ". Working with the saved template.");
+      n.hidden = !err; if (err) widokInspekcji(n, "fragment", { rodzaj: "komunikat", tytul: window.OESTT("Bez połączenia z Google:", "No Google connection:"), tekst: " " + err + window.OESTT(". Działam na zapisanym szablonie.", ". Working with the saved template.") });
       $("tplName").textContent = window.OESTT("Używany: ", "In use: ") + serverTpl.name + window.OESTT(" (kopia z Google Drive)", " (copy from Google Drive)");
       return;
     }
-    if (err) { n.hidden = false; n.innerHTML = "<b>" + window.OESTT("Szablon:", "Template:") + "</b> " + esc(err); $("tplName").textContent = window.OESTT("Brak — używany przykładowy wzór.", "None — the sample template is used."); }
+    if (err) { n.hidden = false; widokInspekcji(n, "fragment", { rodzaj: "komunikat", tytul: window.OESTT("Szablon:", "Template:"), tekst: " " + err }); $("tplName").textContent = window.OESTT("Brak — używany przykładowy wzór.", "None — the sample template is used."); }
   }
   function applySetup(r) {
     if (!cfg.email) cfg.email = r.email || "";

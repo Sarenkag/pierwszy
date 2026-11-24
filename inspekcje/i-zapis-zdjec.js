@@ -156,11 +156,8 @@
   function ask(t) { return window.OESTPytaj ? OESTPytaj(t) : Promise.resolve(window.confirm(t)); }
   function say(t) { if (window.OESTKomunikat) OESTKomunikat(t); else window.alert(t); }
   function busySpin(on) {
-    // jedno kółko w całej apce (moduly/ladowanie); stare #busySpin tylko jako zapas
-    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; return; }
-    var el = $("busySpin");
-    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+window.OESTT('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
-    el.classList.toggle("on", !!on);
+    // jedno kółko w całej apce (moduly/ladowanie → wspólna część Ionic)
+    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; }
   }
   function updateFormHint() { updateFormHint0(); syncFinish(); OESTVantifyKlocek.render(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
   // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport

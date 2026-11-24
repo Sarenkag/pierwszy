@@ -4,7 +4,7 @@
 //
 // Interfejs dla reszty apki (stary kod łączy się tylko przez niego):
 //   OESTEkrany.start({ naEkran(trasa), trasa })  apka: rama + nawigacja; naEkran rysuje treść ekranu (do czasu przejścia ekranu na Vue)
-//   OESTEkrany.strona({ up })                     osobna strona (inspekcje): tylko Wstecz i okienka, bez ramy (następny krok)
+//   OESTEkrany.strona({ up })                     osobna strona (inspekcje): rama, przewijanie, Wstecz i okienka
 //   OESTEkrany.go(trasa) / .up() / .trasa()        nawigacja; historia przeglądarki NIE jest stanem (adres tylko replaceState)
 //   OESTEkrany.zamien(trasa)                       nowy adres tego samego ekranu bez rysowania (np. szkic → zapisane zlecenie)
 //   OESTEkrany.straz(przedrostek, fn)              przed wyjściem w górę: fn() → false = zostań, true = rodzic z mapy, 'trasa' = tam

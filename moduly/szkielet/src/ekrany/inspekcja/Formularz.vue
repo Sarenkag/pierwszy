@@ -14,7 +14,7 @@
       <label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">{{ T('Imię', 'Name') }}</span></label>
       <label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span><PoleDaty zastany id="dzien" /></label>
       <label class="icb" id="updBox" hidden><input type="checkbox" id="updOn"><span>Updated</span></label>
-    </div><div class="iright"><div id="iEnds"></div><div id="iCntBox" title="OK / pytania"><b id="iCnt"></b> OK</div></div></div>
+    </div><div class="iright"><select id="ppmStage" class="ppmpill" aria-label="Etap inspekcji" hidden></select><div id="iEnds"></div><div id="iCntBox" title="OK / pytania"><b id="iCnt"></b> OK</div><span id="recPill" hidden></span></div></div>
     <div class="panel iphotos">
       <div class="photo-head"><div class="label"><span data-en="Photos">Zdjęcia</span> <span id="photoCount"></span></div><span id="photoSize"></span></div>
       <div class="photo-btns">
@@ -24,7 +24,7 @@
         <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie" data-en-aria-label="Take photo">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
         <label class="pbtn"><input id="shCamIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie formularza" data-en-aria-label="Take a photo of the form">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10l1.5 1.5 2.5-3M8.5 16l1.5 1.5 2.5-3M14.5 10h1.5M14.5 16h1.5"/></svg><span data-en="Form" data-pl="Formularz">{{ T('Formularz', 'Form') }}</span></label>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10l1.5 1.5 2.5-3M8.5 16l1.5 1.5 2.5-3M14.5 10h1.5M14.5 16h1.5"/></svg><span data-en="Form" data-pl="Formularz">{{ T('Formularz', 'Form') }}</span><span class="fbadge"></span></label>
         <button type="button" class="pbtn" data-form-note><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg><span data-en="Note">Notatka</span></button>
       </div>
       <div class="photos" id="photos"></div>

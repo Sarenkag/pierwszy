@@ -2,8 +2,6 @@
 // Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: nazw T/OESTT – używa ich cała strona.
 // Tekst na ekranie: OESTT('po polsku', 'in English') wg języka apki (moduly/bledy). Raporty zawsze po angielsku.
-// miejsce pod PL i EN (moduly/podmien + moduly/bledy): ten sam fragment w drugim języku wyznacza min. wymiary tekstów – zmiana języka nic nie przesuwa
-function both(el, html) { if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.rezerwuj(el, OESTBledy.wJezyku(OESTBledy.drugi(), html)); }
 // Statyczne teksty strony (data-en / data-en-aria-label / data-en-placeholder) – podmiana w miejscu, bez przerysowania.
 (function () {
   function lang() { if (window.OESTBledy) OESTBledy.applyDom(document); }

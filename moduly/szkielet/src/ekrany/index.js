@@ -23,6 +23,13 @@ import FormularzInspekcji from './inspekcja/Formularz.vue';
 import PolaInspekcji from './inspekcja/Pola.vue';
 import ChecklistaInspekcji from './inspekcja/Checklista.vue';
 import KolejkaInspekcji from './inspekcja/Kolejka.vue';
+import StartInspekcji from "./inspekcja/Start.vue";
+import ListaInspekcji from "./inspekcja/Lista.vue";
+import PodgladInspekcji from "./inspekcja/Podglad.vue";
+import KolejkaStronyInspekcji from "./inspekcja/KolejkaStrony.vue";
+import FragmentInspekcji from "./inspekcja/Fragment.vue";
+import WysylkaInspekcji from "./inspekcja/Wysylka.vue";
+import RaportInspekcji from "./inspekcja/Raport.vue";
 // Fragment osobnej strony, montowany przez OESTCzesci; nie przejmuje tras aplikacji.
-export const WIDOKI_INSPEKCJI = { 'inspekcja/formularz': FormularzInspekcji, 'inspekcja/pola': PolaInspekcji, 'inspekcja/checklista': ChecklistaInspekcji, 'inspekcja/kolejka': KolejkaInspekcji };
+export const WIDOKI_INSPEKCJI = { 'inspekcja/start': StartInspekcji, 'inspekcja/lista': ListaInspekcji, 'inspekcja/podglad': PodgladInspekcji, 'inspekcja/kolejkastrony': KolejkaStronyInspekcji, 'inspekcja/fragment': FragmentInspekcji, 'inspekcja/wysylka': WysylkaInspekcji, 'inspekcja/raport': RaportInspekcji, 'inspekcja/formularz': FormularzInspekcji, 'inspekcja/pola': PolaInspekcji, 'inspekcja/checklista': ChecklistaInspekcji, 'inspekcja/kolejka': KolejkaInspekcji };
 export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, 'settings/profile': Profil, 'settings/calendar': KalendarzGrafik, 'settings/vantify': Vantify, start: Start, questions: Pytania, zdjecia: Zdjecia, reactive: Reactive, 'reactive/new/:id': Reactive, 'reactive/draft/:id': Reactive, 'reactive/job/:id': Reactive, 'reactive/complete/:id': Reactive, 'reactive/tree/:id': Reactive, 'reactive/history': Reactive, 'reactive/config': Reactive };

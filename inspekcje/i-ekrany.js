@@ -17,7 +17,7 @@
     if (v === "list") renderList();
     renderPpmBar();
     if (v === "queue") { renderNet(); OESTKolejkaWidok.powiadom(); }
-    window.scrollTo(0, 0);
+    OESTEkrany.naGore();
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
   // powrót tam, skąd przyszedłem (lista PPM, kalendarz, kolejka…) – zapisane przez app/www/index.html goInsp()
@@ -28,8 +28,8 @@
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
   // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko i strzałkę ‹ widocznego ekranu obsługuje szkielet;
-  // ekran bez strzałki → lista, z której przyszedłem. Strona inspekcji do przeniesienia na ramę (licznik bramki „Poza Ionic/Vue”).
-  if (window.OESTEkrany) OESTEkrany.strona({ up: function () { if (!queueing) leave(backUrl()); } }); // bez paczki szkieletu (strona www z katalogu repo) inspekcja działa dalej, bez Wstecz telefonu
+  // ekran bez strzałki → lista, z której przyszedłem. Treść przewija Rama.vue.
+  OESTEkrany.strona({ up: function () { if (!queueing) leave(backUrl()); } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
   // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
   $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });
@@ -44,25 +44,15 @@
 
   function renderHome() {
     $("homeSub").textContent = (cfg.site ? cfg.site + " · " : "") + NZ.data(new Date());
-    function html() { return TYPES.map(function (t) {
+    widokInspekcji("types", "fragment", { rodzaj: "typy", lista: TYPES.map(function (t) {
       var all = devices(t), dn = doneToday(t), done = all.filter(function (d) { return dn[d.code]; }).length, pr = t.batch && load("bprog_" + t.id, null);
-      var sub = pr && pr.n ? '<span class="sub" style="color:var(--warn);font-weight:600">W trakcie: ' + pr.n + "/" + all.length + window.OESTT(" · od ", " · since ") + esc(NZ.data(new Date(pr.started))) + " "+window.OESTT("· dotknij, by wznowić", "· tap to resume")+"</span>" :
-        '<span class="sub">' + all.length + window.OESTT(" urządzeń · dziś zrobione: ", " devices · done today: ") + done + "</span>";
-      // jeden kafelek dla całej apki (moduly/kafelek, Grzegorz 04/11)
-      if (window.OESTKafelek) return OESTKafelek.html({ name: t.name, sub: (pr && pr.n ? "◐ " : "") + sub.replace(/<[^>]+>/g, "").trim(), badge: pr && pr.n ? pr.n + "/" + all.length : "", cls: "type",
-        icon: '<rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/>', data: { type: t.id } });
-      return '<button class="type" type="button" data-type="' + t.id + '">' +
-        '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="5" width="30" height="38" rx="2"/><path d="M15 13h18M15 19h18M15 25h18"/><path d="M26 30l-5 7h5l-3 6"/></svg>' +
-        "<div><b>" + esc(t.name) + "</b>" + sub + "</div>" +
-        '<span class="arrow" aria-hidden="true">›</span></button>';
-    }).join(""); }
-    $("types").innerHTML = html(); both($("types"), html);
-    $("types").querySelectorAll("[data-type]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        cur.type = TYPES.filter(function (t) { return t.id === b.getAttribute("data-type"); })[0]; $("search").value = "";
-        (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
-          say(window.OESTT("Nie udało się odczytać zapisanego zlecenia (", "Could not read the saved job (") + gErr(e) + window.OESTT("). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.", "). Close and reopen the app — nothing was deleted."));
-        });
+      function opis() { return pr && pr.n ? "◐ W trakcie: " + pr.n + "/" + all.length + window.OESTT(" · od ", " · since ") + NZ.data(new Date(pr.started)) + " " + window.OESTT("· dotknij, by wznowić", "· tap to resume") : all.length + window.OESTT(" urządzeń · dziś zrobione: ", " devices · done today: ") + done; }
+      return { id: t.id, tytul: t.name, licznik: pr && pr.n ? pr.n + "/" + all.length : "", podpis: opis(),
+        podpisAlt: window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), opis) : "" };
+    }) }, function (id) {
+      cur.type = TYPES.filter(function (t) { return t.id === id; })[0]; $("search").value = "";
+      (cur.type.batch ? loadBatch(cur.type) : Promise.resolve()).then(function () { show("list"); }, function (e) {
+        say(window.OESTT("Nie udało się odczytać zapisanego zlecenia (", "Could not read the saved job (") + gErr(e) + window.OESTT("). Zamknij i otwórz apkę ponownie — nic nie zostało usunięte.", "). Close and reopen the app — nothing was deleted."));
       });
     });
     renderNet();
@@ -92,16 +82,15 @@
     var groups = {};
     all.filter(function (d) { return !q || d.code.indexOf(q) >= 0; }).forEach(function (d) { (groups[d.loc] = groups[d.loc] || []).push(d); });
     var order = ["Tower A", "Tower B", "Pavilion"].concat(Object.keys(groups).filter(function (g) { return ["Tower A", "Tower B", "Pavilion"].indexOf(g) < 0; })).filter(function (g) { return groups[g]; });
-    $("groups").innerHTML = order.length ? order.map(function (g) {
-      var list = groups[g];
-      return '<div class="group"><h2>' + esc(g) + "<small>" + list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length + "/" + list.length + "</small></h2>" +
-        list.map(function (d) {
-          var c = d.code, bi = t.batch && batch.items[c], badge = bi ? (bi.fails ? '<span class="badge q">✗ ' + bi.fails + "</span>" : '<span class="badge">✓ OK</span>') : t.batch ? '<span class="arrow" aria-hidden="true">›</span>' : waiting(t, c) ? '<span class="badge q">'+window.OESTT('⏳ w kolejce', '⏳ queued')+'</span>' : dn[c] ? '<span class="badge">✓ ' + esc(dn[c]) + "</span>" : '<span class="arrow" aria-hidden="true">›</span>';
-          var hl = t.ask && !bi && load("hist_" + t.id, {})[c], lastTxt = hl && (hl.q.length || hl.r.length) ? '<div class="last">'+window.OESTT('ostatnio z uwagami (', 'last time with remarks (')+'' + esc(hl.d) + ")</div>" : "";
-          return '<button class="item" type="button" data-code="' + esc(c) + '"><div><div class="code">' + esc(c) + '</div><div class="where">' + esc(where(d)) + "</div>" + lastTxt + "</div>" + badge + "</button>";
-        }).join("") + "</div>";
-    }).join("") : '<p class="hint">'+window.OESTT('Brak wyników. Wpisz kod niżej, żeby otworzyć inne urządzenie.', 'No results. Type a code below to open another device.')+'</p>';
-    $("groups").querySelectorAll("[data-code]").forEach(function (b) { b.addEventListener("click", function () { openForm(b.getAttribute("data-code")); }); });
+    widokInspekcji("groups", "fragment", { rodzaj: "grupy", lista: order.map(function (g) {
+      var list = groups[g]; return { nazwa: g, zrobione: list.filter(function (d) { return t.batch ? batch.items[d.code] : dn[d.code]; }).length,
+        lista: list.map(function (d) {
+          var c = d.code, bi = t.batch && batch.items[c], hl = t.ask && !bi && load("hist_" + t.id, {})[c];
+          return { kod: c, miejsce: where(d), uwaga: !!(bi && bi.fails || !t.batch && waiting(t, c)),
+            badge: bi ? (bi.fails ? "✗ " + bi.fails : "✓ OK") : t.batch ? "" : waiting(t, c) ? window.OESTT("⏳ w kolejce", "⏳ queued") : dn[c] ? "✓ " + dn[c] : "",
+            ostatnio: hl && (hl.q.length || hl.r.length) ? window.OESTT("ostatnio z uwagami (", "last time with remarks (") + hl.d + ")" : "" };
+        }) };
+    }) }, openForm);
   }
   $("search").addEventListener("input", renderList);
   $("customGo").addEventListener("click", function () {

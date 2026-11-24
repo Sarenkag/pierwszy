@@ -293,7 +293,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 /* w apce: bez starych kafelków DB/ATS/Isolators i bez ustawień skryptu Google – tu tylko kolejka i ustawienia raportu */
 [data-app] #types, [data-app] #apiBox, [data-app] #tplNotice, [data-app] #tplBox { display: none !important; }
 
-/* pasek wysyłki (moduly/szkielet: czesci/PasekWysylki.vue) przyklejony do dołu strony inspekcji – do czasu przeniesienia inspekcji do ramy Ionic */
-#oest-stopka { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)); background: #0e1228; }
-#oest-stopka:empty { display: none; }
-body:has(#oest-pasek-wysylki) { padding-bottom: calc(56px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))); }
+/* Rama.vue posiada stopkę i jedyne pionowe przewijanie strony. */
+[data-inspekcja] ion-content { --color: var(--ink); --padding-top: 0; --padding-bottom: 0; }
+[data-inspekcja] #oest-stopka { background: #0e1228; }

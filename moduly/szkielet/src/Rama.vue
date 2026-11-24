@@ -1,12 +1,11 @@
 <!-- Rama ekranu OEST (standard Ionic md): nagłówek pod paskiem telefonu (edge-to-edge), jedna przewijana treść, stopka z paskiem
      wysyłki poza przewijaniem. Ekran na Vue dostaje pasek narzędzi Ionic; ekran jeszcze w starym kodzie – sam pas pod godziną
      (jego nagłówek .top zostaje do przeniesienia); ekran główny i logowanie – bez pasa, tło apki pod godziną.
-     Osobna strona (inspekcje, strona: true): tylko ion-app – Wstecz Androida i okienka, bez ramy; widoczny tylko, gdy okienko jest otwarte
-     (inaczej zasłaniałby stronę) i przypięty do ekranu, bo ta strona przewija się jeszcze sama (do przeniesienia na ramę). Pasek wysyłki strony w jej #oest-stopka. -->
+     Osobna strona (inspekcje, strona: true): ta sama rama i przewijanie Ionic, z zachowanymi nagłówkami strony. -->
 <template>
-  <ion-app ref="apka" :class="{ 'ion-hide': strona }">
-    <div v-if="!strona" class="ion-page">
-      <ion-header v-if="!stan.glowny">
+  <ion-app>
+    <div class="ion-page" :data-inspekcja="strona ? '' : undefined">
+      <ion-header v-if="!strona && !stan.glowny">
         <ion-toolbar v-if="stan.komponent">
           <ion-buttons slot="start"><ion-back-button default-href="#" data-nav="up" :text="''" :aria-label="T('Wstecz', 'Back')"></ion-back-button></ion-buttons>
           <ion-title>{{ stan.tytul }}</ion-title>
@@ -23,32 +22,22 @@
       <ion-footer><div id="oest-stopka"><PasekWysylki :T="T"></PasekWysylki></div></ion-footer>
     </div>
   </ion-app>
-  <Teleport v-if="stopkaStrony" :to="stopkaStrony"><ion-footer><PasekWysylki :T="T"></PasekWysylki></ion-footer></Teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import PasekWysylki from './czesci/PasekWysylki.vue';
 import { IonApp, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonButton, IonIcon, IonContent, IonFooter } from '@ionic/vue';
 const props = defineProps({ stan: Object, T: Function, strona: Boolean });
 const emit = defineEmits(['gotowe', 'jezyk']);
 const jezyk = computed(() => (props.stan.wersja, (window.OESTBledy && window.OESTBledy.lang ? window.OESTBledy.lang() : document.documentElement.lang) === 'en' ? 'en' : 'pl'));
-const tresc = ref(null), apka = ref(null);
-// osobna strona (inspekcje): pasek wysyłki w miejscu, które strona daje na dole (<div id="oest-stopka">), bo rama jest tam schowana
-const stopkaStrony = props.strona ? document.getElementById('oest-stopka') : null;
+const tresc = ref(null);
 // T ekranu ma nową tożsamość po każdej zmianie języka (stan.wersja): teksty T(…) w treści komponentów Ionic (sloty ion-button, ion-toggle,
 // ion-list-header…) przerysowują się w nowym języku – sam licznik wersja nie przerysowuje slotów dzieci (Vue: stabilne sloty)
 const Tj = computed(() => { const w = props.stan.wersja; return (pl, en) => (w, props.T(pl, en)); });
 // akcje paska ekranu na Vue (OESTRama.ustaw({ akcje: [{ ikona, etykieta, fn | nav }] })): ikony Ionicons; węzły DOM to akcje starych ekranów
 const akcjeVue = computed(() => (props.stan.akcje || []).filter(a => a && !(a instanceof Node)));
 onMounted(async () => {
-  if (props.strona) { // osobna strona (inspekcje): tylko Wstecz i okienka, bez ramy; okienka na ekranie, nie na górze przewiniętej strony
-    const a = apka.value && apka.value.$el; if (!a) return;
-    a.style.position = 'fixed'; a.style.zIndex = '2147480000'; // nad elementami strony (ion-app stoi w DOM przed nią)
-    // klasa przez classList: przypisanie class przez Vue zdjęłoby klasy, które Ionic dokłada sam (hydrated, ion-page)
-    watch(() => props.stan.okna, n => a.classList.toggle('ion-hide', !n), { immediate: true });
-    return;
-  }
   const wrap = document.querySelector('body > .wrap');
   const c = tresc.value && tresc.value.$el;
   if (wrap && c) c.appendChild(wrap);
