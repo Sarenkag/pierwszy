@@ -22,13 +22,14 @@ import Ladowanie from './czesci/Ladowanie.vue';
 import OdczytArkusz from './czesci/OdczytArkusz.vue';
 import KolejkaInsp from './czesci/KolejkaInsp.vue';
 import RozmiarZdjec from './czesci/RozmiarZdjec.vue';
+import { WIDOKI_INSPEKCJI } from './ekrany/index.js';
 
 const CZESCI = { Aparat, EdytorZdjec, Notatki, NotatkiOkno, NotatkiPropozycja, NotatkaNowa, Nagrywanie, Ladowanie, OdczytArkusz, KolejkaInsp, RozmiarZdjec };
 void IonSpinner; // <ion-spinner> zdefiniowany także dla napisów starego kodu (OESTLadowanie.ring())
 
 export function zainstaluj(w, OESTOkna, T) {
   const d = w.document;
-  function czesc(n) { const k = CZESCI[n]; if (!k) throw Error('OESTCzesci: ' + n); return markRaw(k); }
+  function czesc(n) { const k = CZESCI[n] || WIDOKI_INSPEKCJI[n]; if (!k) throw Error('OESTCzesci: ' + n); return markRaw(k); }
 
   // okno na cały ekran z częścią; kończy je kontroler (dane().koniec) albo Wstecz / zmiana ekranu (wtedy kontroler.zamknij())
   async function pokaz(nazwa, kontroler, o) {

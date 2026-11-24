@@ -63,6 +63,6 @@
     dane: dane, powiadom: powiadom, akcja: akcja, blad: function (t) { blad = t; },
     na: function (fn) { sluchacze.push(fn); return function () { sluchacze = sluchacze.filter(function (f) { return f !== fn; }); }; },
     // część Vue w polu #queueBox ekranu (stary ekran strony do czasu przeniesienia ramy)
-    montuj: function (el) { return window.OESTCzesci ? OESTCzesci.montuj(el, "KolejkaInsp", { kontroler: window.OESTKolejkaWidok }) : null; }
+    montuj: function (el) { return window.OESTCzesci ? OESTCzesci.montuj(el, "inspekcja/kolejka", { kontroler: window.OESTKolejkaWidok }) : null; }
   };
 })();

@@ -70,43 +70,46 @@
   }
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])
+  // Widok Vue dostaje tylko gotowe wiersze. Reguły odpowiedzi, raportu i zapisu zostają tutaj.
+  var widokChecks = null, checksSluchacze = [];
+  function checksDane() {
+    var pytania = !!cur.type.ask, cks = cur.type.checks;
+    var idx = cks.map(function (c, i) { return i; });
+    if (pytania) idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); });
+    var last = pytania && histOf(cur.code);
+    return { pytania: pytania, wiersze: idx.map(function (i) {
+      var c = cks[i], st = states[i];
+      var was = !!(last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; })));
+      var rs = pytania && c.reasons && c.reasons.length && (st !== "ok" || was) ? c.reasons : [];
+      return {
+        i: i, stan: st, tekst: pytania ? window.OESTT(c.q, c.qen || c.q) : c.room ? c.cp : st === "fail" ? (override[i] || c.fail) : c.ok,
+        poprzednio: pytania && was, data: was ? last.d : "", sugestia: pytania ? susN[i] : null,
+        etykieta: pytania ? window.OESTT(c.q, c.qen || c.q) : "Punkt " + (i + 1),
+        przyciski: pytania ? [
+          { stan: "ok", klasa: "ok", tekst: "TAK" }, { stan: "fail", klasa: "fail", tekst: "NIE" }
+        ] : [
+          { stan: "ok", klasa: "ok", tekst: "✓", etykieta: "OK" },
+          { stan: "fail", klasa: "fail", tekst: "✗", etykieta: window.OESTT("Nie OK", "Not OK") },
+          { stan: "na", klasa: "na", tekst: "–", etykieta: window.OESTT("Pomiń", "Skip") }
+        ],
+        powody: rs.map(function (r) { return { id: r.id, tekst: window.OESTT(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl), poprzednio: !!(last && last.r.indexOf(r.id) >= 0), wybrany: (rsel[i] || []).indexOf(r.id) >= 0 }; }),
+        pokoj: !pytania && c.room && (!i || cks[i - 1].room !== c.room) ? { nazwa: c.roomName, miejsce: c.roomLoc } : null,
+        uwaga: !pytania && c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length ? {
+          id: c.room, tekst: roomNotes[c.room] || "", podpowiedz: window.OESTT("Co jest nie tak? (trafi do raportu)", "What is wrong? (goes to the report)"), etykieta: window.OESTT("Uwagi: ", "Remarks: ") + c.roomName
+        } : null
+      };
+    }) };
+  }
   function renderChecks() {
-    if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0); // każda zmiana odpowiedzi (też „wszystko OK”, powody) → liczniki na klocku
-    if (cur.type.ask) {
-      var idx = cur.type.checks.map(function (c, i) { return i; });
-      idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
-      var last = histOf(cur.code);
-      $("ck").innerHTML = idx.map(function (i) {
-        var c = cur.type.checks[i], st = states[i];
-        var was = last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; }));
-        // powody zwinięte, dopóki NIE / podpowiedź / usterka z ostatniej inspekcji
-        var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
-          '<div class="chips rs">' + c.reasons.map(function (r) {
-            var prev = last && last.r.indexOf(r.id) >= 0;
-            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(window.OESTT(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl)) + "</button>";
-          }).join("") + "</div>" : "";
-        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(window.OESTT(c.q, c.qen || c.q)) +
-          (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
-          '<div class="seg" role="group" aria-label="' + esc(window.OESTT(c.q, c.qen || c.q)) + '">' +
-          '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
-          '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
-          "</div>" + rs + "</div>";
-      }).join("");
-      return;
+    if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0);
+    if (!widokChecks) {
+      widokChecks = OESTCzesci.montuj($("ck"), "inspekcja/checklista", { kontroler: {
+        dane: checksDane,
+        na: function (fn) { checksSluchacze.push(fn); return function () { checksSluchacze = checksSluchacze.filter(function (f) { return f !== fn; }); }; }
+      } });
+    } else {
+      var dane = checksDane(); checksSluchacze.slice().forEach(function (fn) { fn(dane); });
     }
-    var cks = cur.type.checks;
-    $("ck").innerHTML = cks.map(function (c, i) {
-      var s = states[i], head = "", tail = "";
-      if (c.room && (!i || cks[i - 1].room !== c.room)) head = '<div class="room-h"><b>' + esc(c.roomName) + "</b><span>" + esc(c.roomLoc) + "</span></div>";
-      if (c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length)
-        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="'+window.OESTT('Co jest nie tak? (trafi do raportu)', 'What is wrong? (goes to the report)')+'" aria-label="' + window.OESTT('Uwagi: ', 'Remarks: ') + esc(c.roomName) + '">';
-      return head + '<div class="ck-row ' + s + '"><div class="txt">' + esc(c.room ? c.cp : s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
-        '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
-        '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
-        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="'+window.OESTT('Nie OK', 'Not OK')+'" aria-pressed="' + (s === "fail") + '">✗</button>' +
-        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="'+window.OESTT('Pomiń', 'Skip')+'" aria-pressed="' + (s === "na") + '">–</button>' +
-        "</div></div>" + tail;
-    }).join("");
   }
   // plant roomy: uwaga do pomieszczenia (jedna na pomieszczenie), pokazuje się, gdy coś jest ✗
   var roomNotes = {};
