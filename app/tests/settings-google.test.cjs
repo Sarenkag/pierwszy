@@ -1,6 +1,28 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {createGoogle}=require('../www/settings-google.js');
 function api(routes={}){const calls=[];const g=createGoogle({account:()=>({email:'me@example.com'}),login:async()=>({email:'me@example.com',token:'TOKEN'}),fetch:async(url,opts)=>{calls.push({url,opts});if(!routes[url])throw Error('Unexpected '+url);return {ok:true,status:200,json:async()=>routes[url],text:async()=>JSON.stringify(routes[url])};}});return {g,calls};}
+test('24/11: report folder listing reads every page and downloads binary data', async () => {
+  const calls = [];
+  const g = createGoogle({ account: () => ({ email: 'me@example.com' }), login: async () => ({ email: 'me@example.com', token: 'T' }), fetch: async url => {
+    calls.push(url); const u = new URL(url);
+    if (u.searchParams.get('alt') === 'media') return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array([0, 255, 37, 80]).buffer };
+    return { ok: true, status: 200, json: async () => u.searchParams.has('pageToken') ? { files: [{ id: 'pdf', name: 'KOD.pdf' }] } : { files: [{ id: 'word', name: 'KOD.docx' }], nextPageToken: 'next' } };
+  } });
+  await g.connect('drive');
+  assert.deepEqual((await g.listFiles('parent')).map(x => x.id), ['word', 'pdf']);
+  assert.match(new URL(calls[0]).searchParams.get('q'), /'parent' in parents/);
+  assert.equal(new URL(calls[1]).searchParams.get('pageToken'), 'next');
+  assert.deepEqual(await g.downloadFile('word'), new Uint8Array([0, 255, 37, 80]));
+  await assert.rejects(g.listFiles("bad'id"), /FOLDER_ID/);
+  assert.throws(() => g.downloadFile('../other'), /FILE_ID/);
+});
+
+test('24/11: account change while reading downloaded bytes rejects the result', async () => {
+  let email = 'me@example.com';
+  const g = createGoogle({ account: () => ({ email }), login: async () => ({ email, token: 'T' }), fetch: async () => ({ ok: true, status: 200, arrayBuffer: async () => { email = 'other@example.com'; return new ArrayBuffer(1); } }) });
+  await g.connect('drive');
+  await assert.rejects(g.downloadFile('word'), /GOOGLE_ACCOUNT_MISMATCH/);
+});
 test('contacts fetch only members of selected label, no complete address book',async()=>{
   const x=api({'https://people.googleapis.com/v1/contactGroups/team?maxMembers=1000':{memberResourceNames:['people/1'],memberCount:1},'https://people.googleapis.com/v1/people:batchGet?personFields=names%2CemailAddresses%2Corganizations&resourceNames=people%2F1':{responses:[{person:{resourceName:'people/1',names:[{givenName:'A',familyName:'B'}],emailAddresses:[{value:'a@example.com'}],organizations:[{title:'Engineer'}]}}]}});
   await x.g.connect('contacts');const people=await x.g.contacts('contactGroups/team');assert.equal(people[0].email,'a@example.com');assert.equal(x.calls.length,2);assert.ok(x.calls.every(c=>!c.url.includes('/connections')));

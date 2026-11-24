@@ -148,7 +148,7 @@
     cur.loc = locs.join(", "); cur.where = cur.loc;
     $("formTitle").textContent = t.batch;
     $("formSub").textContent = cur.where + " · " + t.name;
-    if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov-2").checked = true;
+    if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov").value = "Requires attention";
     formMode();
     var jobs = [];
     all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d)).catch(function () { return null; })); }); });

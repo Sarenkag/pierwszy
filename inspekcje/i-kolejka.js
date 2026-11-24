@@ -250,7 +250,7 @@
   function unconfirmed() { return queue.filter(function (q) { return q.status === "shared"; }); }
   function renderNet() {
     var n = pending().length, off = !online();
-    $("netbar").className = "netbar" + (off ? " off" : "");
+    $("netTxt").color = off ? "danger" : "primary";
     $("netTxt").textContent = (off ? window.OESTT("Bez sieci", "No network") : "Online") + " · " + // i18n-ok: „Online” tak samo po polsku i po angielsku
       (n ? window.OESTT("w kolejce: ", "queued: ") + n + (sending ? window.OESTT(" (wysyłam…)", " (sending…)") : "") : window.OESTT("kolejka pusta", "queue empty"));
   }

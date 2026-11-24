@@ -30,21 +30,23 @@
     }).catch(function () { $("photoInfo").textContent = window.OESTT("Nie udało się wczytać zdjęcia.", "Could not load the photo."); })
       .then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
   }
-  // Zdjęcie przez wspólny moduł aparatu (zdjęcie → podgląd OK / Edytuj / Powtórz); w przeglądarce zwykły wybór pliku
-  $("camIn").addEventListener("click", function (e) {
-    if (!(window.OESTAparat && OESTAparat.available())) return;
-    e.preventDefault();
-    OESTAparat.take(camOpts(photoKind(null, false))).then(function (b) { if (b) addFiles([new File([b], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })]); }, function (er) { $("photoInfo").textContent = er.message; });
+  // Jeden wybór zdjęć w DodajZdjecie.vue; tu wyłącznie kontekst i zapis istniejącą ścieżką.
+  document.addEventListener("oest:wybor-zdjec", function (e) {
+    var id = e.target.id;
+    if (["camIn", "galIn", "shCamIn", "shGalIn", "flCam"].indexOf(id) < 0) return;
+    var sheet = id === "shCamIn" || id === "shGalIn", tap = id === "flCam" ? flTap : null;
+    e.detail.seq = formSeq; e.detail.tap = tap; e.detail.sheet = sheet;
+    e.detail.opcje = camOpts(photoKind(tap, sheet));
   });
-  $("camIn").addEventListener("change", function () { addFiles(this); });
-  $("galIn").addEventListener("change", function () { addFiles(this); });
-  $("shCamIn").addEventListener("click", function (e) {
-    if (!(window.OESTAparat && OESTAparat.available())) return;
-    e.preventDefault();
-    OESTAparat.take(camOpts(photoKind(null, true))).then(function (b) { if (b) addFiles([new File([b], "formularz.jpg", { type: "image/jpeg", lastModified: Date.now() })], null, true); }, function (er) { $("sheetInfo").textContent = er.message; });
+  document.addEventListener("oest:zdjecia", function (e) {
+    var c = e.detail.kontekst;
+    if (c.seq !== formSeq) return;
+    addFiles(e.detail.lista, c.tap, c.sheet);
   });
-  $("shCamIn").addEventListener("change", function () { addFiles(this, null, true); });
-  $("shGalIn").addEventListener("change", function () { addFiles(this, null, true); });
+  document.addEventListener("oest:blad-zdjec", function (e) {
+    if (e.detail.kontekst.seq !== formSeq) return;
+    $(e.detail.kontekst.sheet ? "sheetInfo" : "photoInfo").textContent = e.detail.blad.message;
+  });
   function renderPhotos() {
     if (cur.type) ppmTrack(false);
     function akcja(nazwa, i) {
@@ -73,8 +75,8 @@
     var fst = shn ? "ok" : req ? "blad" : "";
     widokInspekcji("sheetState", "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" });
     // wymóg formularza widać na samym przycisku „Formularz” (Grzegorz 04/11) – bez dodatkowego okna, układ ten sam w każdej inspekcji
-    var fb = $("shCamIn").closest("label"), fbd = fb.querySelector(".fbadge");
-    widokInspekcji(fbd, "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" }); fb.classList.toggle("req", fst === "blad");
+    var fb = $("shCamIn"), fbd = $("formPhotoBadge");
+    widokInspekcji(fbd, "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" }); fb.color = fst === "blad" ? "danger" : "primary";
     $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
     var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length;
@@ -97,7 +99,7 @@
     updateFormHint();
   }
   $("dateSug").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-day]"); if (!b) return;
+    var b = e.target.closest("ion-button[data-day]"); if (!b) return;
     $("dzien").value = b.getAttribute("data-day"); dateTouched = true; suggestDate();
   });
   $("dzien").addEventListener("change", function () { dateTouched = true; suggestDate(); });
@@ -137,7 +139,7 @@
     }) });
   }
   $("sugBox").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-sg]"); if (!b) return;
+    var b = e.target.closest("ion-button[data-sg]"); if (!b) return;
     var n = +b.getAttribute("data-sg");
     photos.forEach(function (p) {
       (p.sugs || []).forEach(function (sg) {

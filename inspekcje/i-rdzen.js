@@ -48,7 +48,7 @@
   // esc zostaje tu do osobnej karty: ta sama funkcja jest w 11 plikach .js, łączymy je wszystkie naraz (audyt nr 53)
   var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function val(id) { return $(id).value.trim(); }
-  function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
+  function radio(name) { var el = document.querySelector('ion-select[name="' + name + '"]'); return el ? el.value : ""; }
   function online() { return navigator.onLine !== false; }
 
   // ---------- baza w telefonie (IndexedDB „inspekcje”): kolejka raportów + szablon ----------

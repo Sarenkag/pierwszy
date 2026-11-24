@@ -17,7 +17,7 @@
       "id": "LOGIKA|inspekcje/index.html",
       "rule": "LOGIKA",
       "detail": "inspekcje/index.html: 241 funkcji zapisanych w <script> strony zamiast w module.",
-      "maks": 228,
+      "maks": 225,
       "punkt": "R27",
       "usuwa": "K01–K16 (plan-modulow-karty.md)",
       "reason": "Zastany stan main przy wprowadzeniu R27 (20/11/2026, karta M0). Zgoda właściciela: „Tak” 20/11/2026 do planu modułów."

@@ -10,3 +10,6 @@ Wygląd i rozmiary: moduly/wyglad/wyglad.css (.top). Ten plik:
 ```
 
 Strona: `<script src="moduly/naglowek/naglowek.js"></script>` (inspekcje: `../moduly/naglowek/naglowek.js`). CSS moduł dokłada sam.
+
+Adaptery aplikacji s? wstrzykiwane przez `app/www/module-adapters.js` na obu stronach.
+`OESTNaglowek.configure({ setLanguage(next) })`: zapis j?zyka i zastosowanie motywu. Bez adaptera: zapis przez modu? b??d?w.

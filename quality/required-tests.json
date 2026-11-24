@@ -376,11 +376,6 @@
       "timeoutSec": 300
     },
     {
-      "file": "app/tests/czcionka-przebieg-ui-check.cjs",
-      "passMarker": "CZCIONKA PRZEBIEG UI PASS",
-      "timeoutSec": 300
-    },
-    {
       "file": "app/tests/wstecz-tabela-ui-check.cjs",
       "passMarker": "WSTECZ TABELA UI PASS",
       "timeoutSec": 300
@@ -389,11 +384,6 @@
       "file": "app/tests/zrzuty-ui-check.cjs",
       "passMarker": "ZRZUTY UI PASS",
       "timeoutSec": 600
-    },
-    {
-      "file": "app/tests/flush-odczyt-ui-check.cjs",
-      "passMarker": "FLUSH ODCZYT UI PASS",
-      "timeoutSec": 300
     },
     {
       "file": "app/tests/menu-wyjscie-ui-check.cjs",

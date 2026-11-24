@@ -13,7 +13,7 @@
   // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
   if ($("photoSize") && Zd && window.OESTCzesci) window.OESTCzesci.montuj($("photoSize"), "RozmiarZdjec", { kontroler: Zd.rozmiar() });
   // przełącznik rozmiaru tylko tam, gdzie są zdjęcia ogólne (w formularzach papierowych przyciski dodają kartki – zawsze 1920)
-  function photoSizeShow() { var b = $("photoSize"); if (b) b.classList.toggle("off", photoKind(null, false) !== "ogolne"); }
+  function photoSizeShow() { var b = $("photoSize"); if (b) b.hidden = photoKind(null, false) !== "ogolne"; }
   // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.
   // Inspekcja „z kartki” (folder bez listy kranów): każde jej zdjęcie to strona formularza.
   // Krany / punkty Flushingu i AOV oraz izolatory: zdjęcie tylko na dowód wykonania (Grzegorz 05/11) → 960 px, jak w raporcie.
@@ -153,8 +153,8 @@
   }
   // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
   // okienka apki zamiast systemowych (moduly/przycisk): rosną z miejsca stuknięcia, Wstecz = Anuluj (Grzegorz 04/11)
-  function ask(t) { return window.OESTPytaj ? OESTPytaj(t) : Promise.resolve(window.confirm(t)); }
-  function say(t) { if (window.OESTKomunikat) OESTKomunikat(t); else window.alert(t); }
+  function ask(t) { return OESTPytaj(t); }
+  function say(t) { OESTPrzycisk.alert(t); }
   function busySpin(on) {
     // jedno kółko w całej apce (moduly/ladowanie → wspólna część Ionic)
     if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; }
@@ -165,7 +165,7 @@
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
     var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null;
     var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
-    f.classList.toggle("ready", ready); f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
+    f.color = ready ? "success" : "primary"; f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
     f.title = ready ? window.OESTT("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
     if (ready) { f.textContent = window.OESTT("✓ GOTOWA ", "✓ READY ") + NZ.data(new Date(st.at || Date.now())); return; }
     f.textContent = window.OESTT("✓ Zakończ inspekcję", "✓ Finish inspection");
@@ -173,7 +173,7 @@
   function updateFormHint0() {
     busySpin(pendingPh > 0 || !!restoring || (draftT && draftOn));
     var h = [];
-    $("toQueue").classList.remove("compact");
+    $("toQueue").expand = "block";
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
@@ -199,7 +199,7 @@
       var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
       $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
       $("toQueue").textContent = none ? window.OESTT("Dodaj zdjęcie formularza", "Add form photo") : window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
-      $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
+      $("toQueue").expand = none ? undefined : "block"; return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;

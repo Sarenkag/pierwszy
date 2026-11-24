@@ -82,7 +82,7 @@
     }, function (e) { msg = errText(e); render(); throw e; });
   }
   function zapisz(u) {
-    Z.setSettings({ preset: u.preset, phoneLimitMB: +u.phoneLimitMB, warnMB: +u.warnMB, driveLimitMB: +u.driveLimitMB, wifiOnly: !!u.wifiOnly });
+    Z.setSettings({ preset: u.preset, phoneLimitMB: +u.phoneLimitMB, warnMB: +u.warnMB, driveLimitMB: Z.settings().driveLimitMB, wifiOnly: Z.settings().wifiOnly });
     msg = w.OESTT('Ustawienia zapisane.', 'Settings saved.'); render();
   }
   // podgląd zdjęcia: null = brak w telefonie (komunikat na ekranie), inaczej dane okienka (OESTOkna.okno)

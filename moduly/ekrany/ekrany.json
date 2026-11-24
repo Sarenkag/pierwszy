@@ -14,6 +14,7 @@
     { "id": "settings/drive", "rodzic": "settings", "pudelko": "v-settings", "pl": "Google Drive i kopia", "en": "Google Drive & backup", "aliasy": ["settings/backup"] },
     { "id": "settings/mail", "rodzic": "settings", "pudelko": "v-settings", "pl": "Poczta i wysyłka", "en": "Email & delivery" },
     { "id": "settings/calendar", "rodzic": "settings", "pudelko": "v-settings", "pl": "Kalendarz i grafik", "en": "Calendar & shifts" },
+    { "id": "settings/my-reports", "rodzic": "settings", "pudelko": "v-settings", "pl": "Moje raporty", "en": "My reports" },
     { "id": "settings/reports", "rodzic": "settings", "pudelko": "v-settings", "pl": "Raporty i zdjęcia", "en": "Reports & photos" },
     { "id": "settings/sync", "rodzic": "settings", "pudelko": "v-settings", "pl": "Synchronizacja", "en": "Sync & transfer" },
     { "id": "settings/account", "rodzic": "settings", "pudelko": "v-settings", "pl": "Konto", "en": "Account", "aliasy": ["appset"] },

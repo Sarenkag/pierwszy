@@ -3,7 +3,9 @@
    Bez logowania Google w apce nic nie robi (wtedy inspekcje wysyłają przez „Udostępnij”). */
 (function (root) {
   "use strict";
-  var doc = root.document, G = function () { return root.OESTGoogle; };
+  var adapters = {};
+  function configure(a) { Object.assign(adapters, a || {}); }
+  var doc = root.document, G = function () { return adapters.google ? adapters.google() : null; };
   var opts = { ustawienia: null, onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
   var sending = false, pos = null, flash = "", flashT = null, skipWifi = false, open = false, idle = [], items = [], loginErr = "", lock = null;
 
@@ -51,7 +53,7 @@
   function account() { return root.OESTKonto.get(); } // moduly/konto
   function active() {
     var cap = root.Capacitor, c = cfg();
-    return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && (root.OEST_CONFIG || {}).googleWebClientId && !c.api && account() && account().email);
+    return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && adapters.clientConfigured && adapters.clientConfigured() && !c.api && account() && account().email);
   }
   function online() { return root.navigator.onLine !== false; }
   // szybki test internetu (5 s): czy w ogóle dochodzimy do Google
@@ -106,8 +108,8 @@
   }
   function changed(it) { if (opts.onChange) try { opts.onChange(it); } catch (e) {} }
   // ---------- raporty na Dysk (moduly/raporty, Grzegorz 08/11/2026) ----------
-  // Mail = Word + PDF bez zmian. Po wysłaniu raport trafia do archiwum na telefonie, a Word na Dysk (OEST Raporty / budynek / rodzaj);
-  // ponowna wysyłka tego samego raportu nadpisuje ten sam plik. Błąd Dysku nie psuje wysyłki maila: raport czeka na następną próbę.
+  // Mail = Word + PDF. Dysk = Word + PDF + dane inspekcji (Grzegorz 24/11/2026), w OEST Raporty / budynek / rodzaj.
+  // Ponowna wysyłka nadpisuje komplet. Błąd Dysku nie psuje wysyłki maila: raport czeka na następną próbę.
   var archived = Promise.resolve();
   var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   // Word/PDF raportu: z it.docx/it.pdf albo z listy plików złożonej wg ⚙ (formularz ze zdjęć, Flushing basic) – główny plik „nazwa.docx” ma pierwszeństwo
@@ -137,7 +139,7 @@
       return p.then(function () { return archive(it).then(function (ok) { if (!ok) return; it.arch = ""; it.docx = new Uint8Array(0); it.files = []; return put(it); }); });
     }, Promise.resolve()).catch(function () {});
   }
-  // „Update” odzyskanej inspekcji (Grzegorz 08/11/2026 12:54): nowa wersja raportu w telefonie i nadpisanie Worda na Dysku, BEZ maila.
+  // „Update” odzyskanej inspekcji: nowa wersja w telefonie i nadpisanie kompletu na Dysku, BEZ maila.
   // Zwraca { saved, drive }: saved = zapis w telefonie się udał; drive = wynik próby wysyłki na Dysk (null = nie było jak: brak sieci / Dysku / logowania).
   function update(it) {
     if (!root.OESTRaporty || !pickFile(it, "docx", DOCX_MIME)) return Promise.reject(new Error("REPORT_DOCX")); // bez Worda nie ma czego zapisać – nie udajemy
@@ -147,7 +149,7 @@
     });
   }
   function driveAdapter(g) {
-    return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile }; // update(id, blob, nowaNazwa?)
+    return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile, list: g.listFiles, download: g.downloadFile }; // update(id, blob, nowaNazwa?)
   }
   function later(o) { setTimeout(function () { syncReports(o); }, 0); }
   // o.anyNet: raporty wolno wysłać bez Wi‑Fi (tak jak mail po kliknięciu)
@@ -201,7 +203,7 @@
               return put(it).then(function () { return archive(it); }).then(function (ok) {
               it.arch = ok ? "" : "todo"; it.photos = [];
               if (ok) { it.docx = new Uint8Array(0); it.files = []; } // PDF zostaje w telefonie (04/11): z niego da się odtworzyć inspekcję
-              if (it.ppm && window.OEST_PPM && OEST_PPM.markSent) OEST_PPM.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
+              if (it.ppm && adapters.markSent) adapters.markSent(it.ppm, it.id); // klocek PPM: W kolejce → Wysłana
               return put(it).then(function () { changed(it); return false; });
               });
             }, function (e) {
@@ -308,4 +310,5 @@
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
   root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, stan: function () { return stan; }, akcja: akcja, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, myEmail: myEmail, reachable: reachable, syncReports: syncReports, update: update };
+  root.OESTSender.configure = configure;
 })(window);

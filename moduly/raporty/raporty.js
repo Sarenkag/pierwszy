@@ -1,8 +1,8 @@
-/* Moduł raportów (moduly/raporty) – archiwum raportów na telefonie + kopia Word na Dysku Google.
+/* Moduł raportów (moduly/raporty) – archiwum na telefonie + Word, PDF i dane inspekcji na Dysku.
  *
- * Ustalenia Grzegorza 08/11/2026:
- *  - mail dostaje Word + PDF (bez zmian, robi to moduł wysyłki); na Dysk idzie TYLKO Word,
- *  - jeden raport = jeden plik na Dysku; ponowna wysyłka (albo „Update”) nadpisuje ten sam plik – na Dysku zawsze tylko ostatnia wersja,
+ * Decyzja Grzegorza 24/11/2026 (zastępuje „na Dysk tylko Word” z 08/11):
+ *  - mail dostaje Word + PDF; Dysk dostaje Word + PDF + JSON ze snap,
+ *  - jeden raport = trzy pliki o tej samej nazwie bazowej; ponowna wysyłka nadpisuje wszystkie trzy,
  *  - folder: OEST Raporty / budynek / rodzaj inspekcji, nazwa pliku jak raport („KOD DDMMRRRR.docx”),
  *  - na telefonie raporty (Word + PDF) bez limitu dni; po przekroczeniu 200 MB znikają najstarsze, i tylko te, które są już na Dysku;
  *    od 100 MB ostrzeżenie (jak w module zdjęć).
@@ -11,11 +11,12 @@
  *             OESTRaporty.setRec(id, true) / recovered()  – „Odzyskaj do edycji” i lista odzyskanych (etap 2c)
  *             OESTRaporty.sync(drive, { allowed })  – wysyła na Dysk raporty, których tam jeszcze nie ma albo które się zmieniły
  *             OESTRaporty.list() / get(id) / stats()
- * Dysk jest podawany z zewnątrz jako adapter { ensureFolder(name, parentId), find(parentId, name), upload(parentId, name, blob), update(id, blob) },
+ *             OESTRaporty.zDysku(id) – pełna kopia z Dysku do lokalnej listy
+ * Dysk jest podawany jako adapter { ensureFolder, find, upload, update, list(parentId), download(id) },
  * więc moduł zadziała w innej apce z innym dyskiem (ARCH-003).
  *
  * Zasady bezpieczeństwa danych:
- *  - raport bez potwierdzonej kopii na Dysku nigdy nie znika z telefonu,
+ *  - raport bez potwierdzonych WSZYSTKICH trzech części na Dysku nigdy nie znika z telefonu,
  *  - przed utworzeniem nowego pliku szukamy w folderze pliku o tej samej nazwie (przerwa między wysłaniem a zapisem id
  *    nie robi duplikatu – ryzyko z docs/QUALITY.md, pkt 3),
  *  - plik na Dysku, którego już nie ma (404), jest tworzony od nowa.
@@ -30,6 +31,7 @@
   var MB = 1024 * 1024;
   var LIMITS = { phoneLimitMB: 200, warnMB: 100, rootName: 'OEST Raporty' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
   var DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  function complete(r) { return !!(r.driveId && r.drivePdfId && r.driveSnapId && !r.dirty); }
 
   // nazwy bezpieczne dla Androida i Dysku (jak w module zdjęć)
   function safe(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120); }
@@ -42,7 +44,7 @@
     var limit = lim.phoneLimitMB * MB, remove = [];
     recs.slice().sort(function (a, b) { return a.updated < b.updated ? -1 : a.updated > b.updated ? 1 : 0; }).forEach(function (r) {
       if (total <= limit) return;
-      if (!r.driveId || r.dirty) return; // niewysłanego albo zmienionego (stara wersja na Dysku) nie kasujemy nigdy
+      if (r.keep || !complete(r)) return;
       remove.push(r.id); total -= r.bytes || 0;
     });
     return { remove: remove, bytes: total, over: total > limit };
@@ -51,14 +53,15 @@
   function stats(recs, lim) {
     lim = Object.assign({}, LIMITS, lim || {});
     var s = { count: recs.length, bytes: 0, pending: 0, onDrive: 0, limitMB: lim.phoneLimitMB, warnMB: lim.warnMB };
-    recs.forEach(function (r) { s.bytes += r.bytes || 0; if (!r.driveId || r.dirty) s.pending++; else s.onDrive++; });
+    recs.forEach(function (r) { s.bytes += r.bytes || 0; if (!complete(r)) s.pending++; else s.onDrive++; });
     s.warn = s.bytes >= lim.warnMB * MB;
     return s;
   }
 
   /* deps: { db: { get(id), put(rec), del(id), all() }, owner(), now(), limits?, onChange? } */
   function createStore(deps) {
-    var syncing = null, lim = Object.assign({}, LIMITS, deps.limits || {}), rootId = '';
+    var syncing = null, lim = Object.assign({}, LIMITS, deps.limits || {}), rootId = '', rootOwner = '', adapter = deps.drive || null;
+    function accountRoot() { if (rootOwner !== deps.owner()) { rootId = ''; rootOwner = deps.owner(); } }
     // zapisy do bazy po kolei (zapis nowej wersji, zwalnianie miejsca, wynik wysyłki na Dysk): równoległy zapis nie zostanie skasowany
     var chain = Promise.resolve();
     function serial(fn) { var p = chain.then(fn); chain = p.catch(function () {}); return p; }
@@ -87,9 +90,10 @@
         docx: rep.docx, pdf: rep.pdf || null,
         meta: rep.meta || (old && old.meta) || {},
         // dane inspekcji do „Odzyskaj do edycji” (etap 2c): odpowiedzi, pola i odnośniki do zdjęć – bez plików, kilka KB
-        snap: rep.snap || (old && old.snap) || null, rec: old ? old.rec || 0 : 0,
+        keep: !!(old && old.keep), snap: rep.snap || (old && old.snap) || null, rec: old ? old.rec || 0 : 0,
         created: old ? old.created : t, updated: t, versions: old ? (old.versions || 1) + 1 : 1,
-        driveId: old ? old.driveId || '' : '', driveName: old ? old.driveName || '' : '', dirty: true, synced: old ? old.synced || '' : ''
+        driveId: old ? old.driveId || '' : '', drivePdfId: old ? old.drivePdfId || '' : '', driveSnapId: old ? old.driveSnapId || '' : '',
+        driveName: old ? old.driveName || '' : '', driveFolder: old ? old.driveFolder || '' : '', dirty: true, synced: old ? old.synced || '' : ''
       };
       rec.bytes = size(rec);
       await deps.db.put(rec); emit();
@@ -111,7 +115,7 @@
       var p = plan(await mine(), lim);
       for (var i = 0; i < p.remove.length; i++) {
         var r = await deps.db.get(p.remove[i]);
-        if (r && !r.gone && r.driveId && !r.dirty) await deps.db.put({ id: r.id, owner: r.owner, name: r.name, key: r.key, at: r.at, file: r.file, folder: r.folder, driveId: r.driveId, driveName: r.driveName, created: r.created, updated: r.updated, synced: r.synced, meta: r.meta, snap: r.snap || null, rec: r.rec || 0, gone: true, bytes: 0 }); // dane inspekcji zostają: odzyskana inspekcja nie potrzebuje Worda
+        if (r && !r.gone && complete(r)) await deps.db.put(Object.assign({}, r, { docx: null, pdf: null, gone: true, bytes: 0 }));
       }
       if (p.remove.length) emit();
       return p;
@@ -121,6 +125,8 @@
     function sync(drive, o) {
       o = o || {};
       if (syncing) return syncing;
+      adapter = drive;
+      accountRoot();
       syncing = (async function () {
         var me = deps.owner(), folders = {}, sent = 0;
         function allowed() { return !o.allowed || o.allowed(); }
@@ -134,27 +140,41 @@
           }
           return parent;
         }
-        var todo = (await mine()).filter(function (r) { return r.dirty || !r.driveId; })
+        var todo = (await mine()).filter(function (r) { return !complete(r); })
           .sort(function (a, b) { return a.updated < b.updated ? -1 : 1; });
         for (var i = 0; i < todo.length; i++) {
           if (deps.owner() !== me) return { skipped: 'account', sent: sent };
           if (!allowed()) return { skipped: 'network', sent: sent };
-          var r = todo[i], file = (r.file || r.name) + '.docx', blob = toBlob(r.docx), up = null, parent;
+          var r = todo[i], base = r.file || r.name, file = base + '.docx', parent;
+          if (!r.pdf || !(r.pdf.byteLength || r.pdf.length)) throw Error('REPORT_PDF');
           try { parent = await folderId(r.folder); }
           catch (e) { if (rootId && /404/.test(String(e && e.message))) { rootId = ''; folders = {}; parent = await folderId(r.folder); } else throw e; }
-          if (r.driveId) {
-            try { up = await drive.update(r.driveId, blob, r.driveName && r.driveName !== file ? file : undefined); } // nowa nazwa (np. Reactive z nową datą)
-            catch (e) { if (!/404/.test(String(e && e.message))) throw e; up = null; } // plik usunięty z Dysku: tworzymy od nowa
-          }
-          if (!up) {
-            var found = await drive.find(parent, file); // przerwany wcześniej upload: ten sam plik, bez duplikatu (nazwa pliku jest unikalna dla raportu)
-            up = found ? await drive.update(found.id, blob) : await drive.upload(parent, file, blob);
+          var parts = [
+            { field: 'driveId', name: file, blob: toBlob(r.docx) },
+            { field: 'drivePdfId', name: base + '.pdf', blob: toBlob(r.pdf, 'application/pdf') },
+            { field: 'driveSnapId', name: base + '.json', blob: toBlob(JSON.stringify({ v: 1, key: r.key, name: r.name, file: base, folder: r.folder, at: r.at, meta: r.meta, snap: r.snap, created: r.created, updated: r.updated }), 'application/json') }
+          ], ids = {};
+          for (var j = 0; j < parts.length; j++) {
+            if (deps.owner() !== me) return { skipped: 'account', sent: sent };
+            if (!allowed()) return { skipped: 'network', sent: sent };
+            var part = parts[j], up = null;
+            if (r[part.field] && (!r.driveFolder || r.driveFolder === parent)) {
+              try { up = await drive.update(r[part.field], part.blob, part.name); }
+              catch (e) { if (!/404/.test(String(e && e.message))) throw e; }
+            }
+            if (!up) {
+              var found = await drive.find(parent, part.name);
+              up = found ? await drive.update(found.id, part.blob) : await drive.upload(parent, part.name, part.blob);
+            }
+            if (!up || !up.id) throw Error('REPORT_UPLOAD');
+            ids[part.field] = up.id;
           }
           var stored = await serial(async function () {
             var fresh = await deps.db.get(r.id);
-            if (!fresh) return false;
-            fresh.driveId = up.id; fresh.driveName = file;
-            if (fresh.updated === r.updated) fresh.dirty = false; // zmiana w trakcie wysyłki: zostaje do następnej rundy
+            if (!fresh || deps.owner() !== me) return false;
+            if (fresh.versions !== r.versions) return false;
+            Object.assign(fresh, ids); fresh.driveName = file; fresh.driveFolder = parent;
+            fresh.dirty = false;
             fresh.synced = now();
             await deps.db.put(fresh); return true;
           });
@@ -170,10 +190,53 @@
       return syncing;
     }
 
-    function toBlob(bytes) { return typeof Blob !== 'undefined' ? new Blob([bytes], { type: DOCX }) : bytes; }
+    function toBlob(bytes, type) { return typeof Blob !== 'undefined' ? new Blob([bytes], { type: type || DOCX }) : bytes; }
+
+    async function driveList(drive) {
+      drive = drive || adapter; if (!drive) throw Error('REPORT_DRIVE');
+      adapter = drive;
+      var me = deps.owner(); if (!me) throw Error('ACCOUNT_REQUIRED');
+      accountRoot();
+      if (!rootId) rootId = (await drive.ensureFolder(lim.rootName, '')).id;
+      var out = [];
+      async function walk(parent, path) {
+        var files = await drive.list(parent);
+        if (deps.owner() !== me) throw Error('GOOGLE_ACCOUNT_MISMATCH');
+        for (var i = 0; i < files.length; i++) {
+          var f = files[i];
+          if (f.mimeType === 'application/vnd.google-apps.folder') { await walk(f.id, path.concat(f.name)); continue; }
+          if (!/\.json$/.test(f.name)) continue;
+          var base = f.name.slice(0, -5), word = files.find(function (x) { return x.name === base + '.docx'; }), pdf = files.find(function (x) { return x.name === base + '.pdf'; });
+          if (word && pdf) out.push({ id: 'drive:' + f.id, owner: me, name: base, file: base, folder: path, driveId: word.id, drivePdfId: pdf.id, driveSnapId: f.id, driveFolder: parent, driveOnly: true });
+        }
+      }
+      await walk(rootId, []); return out;
+    }
+    async function fromDrive(id, drive) {
+      drive = drive || adapter; if (!drive) throw Error('REPORT_DRIVE');
+      var me = deps.owner(), local = await deps.db.get(id), r;
+      if (!me) throw Error('ACCOUNT_REQUIRED');
+      if (local && local.owner === me && !local.gone) return local;
+      var copies = await driveList(drive);
+      r = copies.find(function (x) { return x.id === id || (local && local.owner === me && x.driveSnapId === local.driveSnapId); });
+      if (!r) throw Error('REPORT_MISSING');
+      var raw = await drive.download(r.driveSnapId), text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
+      var data = JSON.parse(text);
+      if (data.v !== 1 || typeof data.key !== 'string' || !data.key || data.file !== r.file || !Array.isArray(data.folder) || data.folder.join('/') !== r.folder.join('/') || typeof data.name !== 'string') throw Error('REPORT_DATA');
+      var docx = await drive.download(r.driveId), pdf = await drive.download(r.drivePdfId);
+      if (!docx || !docx.byteLength || !pdf || !pdf.byteLength) throw Error('REPORT_DATA');
+      return serial(async function () {
+        if (deps.owner() !== me) throw Error('GOOGLE_ACCOUNT_MISMATCH');
+        var key = me + '|' + data.key, current = await deps.db.get(key);
+        if (current && !current.gone) return current;
+        var rec = Object.assign({}, r, { id: key, key: data.key, name: data.name, at: data.at, meta: data.meta || {}, snap: data.snap || null, created: data.created, updated: data.updated, docx: docx, pdf: pdf, versions: current ? current.versions : 1, rec: current ? current.rec || 0 : 0, dirty: false, gone: false, driveOnly: false, synced: now() });
+        rec.bytes = size(rec); await deps.db.put(rec); emit(); return rec;
+      });
+    }
 
     return {
-      save: save, sync: sync, enforce: enforce,
+      keep: function(id) { return serial(async function() { var r = await deps.db.get(id); if (!r || r.owner !== deps.owner() || r.gone) throw Error('REPORT_MISSING'); r.keep = true; await deps.db.put(r); emit(); return r; }); },
+      save: save, sync: sync, enforce: enforce, zDysku: fromDrive, listaDysku: driveList,
       list: async function () { return (await mine()).sort(function (a, b) { return a.updated < b.updated ? 1 : -1; }); },
       get: async function (id) { var r = await deps.db.get(id); return r && r.owner === deps.owner() ? r : null; }, // tylko raporty zalogowanego konta (uwaga Codex #101)
       /* Odzyskane do edycji (etap 2c): klocek Raporty pokazuje je jak zwykłe inspekcje z pigułką „Odzyskana” – także te, których Word jest już tylko na Dysku. */
@@ -226,6 +289,12 @@
       onChange: function () { listeners.forEach(function (f) { try { f(); } catch (e) {} }); try { win.dispatchEvent(new win.CustomEvent('oest:raporty')); } catch (e) {} }
     });
     store.onChange = function (f) { listeners.push(f); };
+    var driveProvider = null;
+    store.configure = function(o) { driveProvider = o.drive; };
+    function drive() { if (!driveProvider) throw Error('REPORT_DRIVE'); return driveProvider(); }
+    var download = store.zDysku, listDrive = store.listaDysku;
+    store.zDysku = function (id) { return download(id, drive()); };
+    store.listaDysku = function () { return listDrive(drive()); };
     store.find = find; store.day = day; store.docxPreview = docxPreview;
     return store;
   }
@@ -241,7 +310,7 @@
     var words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
     return recs.filter(function (r) {
       if (f.building && (r.folder || [])[0] !== f.building) return false;
-      var m = r.meta || {}, hay = [r.name, (r.folder || []).join(' '), m.code, m.ppm, day(r)].join(' ').toLowerCase();
+      var m = r.meta || {}, hay = [r.name, (r.folder || []).join(' '), m.code, m.ppm, m.type, day(r), (r.file || '').replace(/(\d{2})(\d{2})(\d{4})(?!\d)/g, '$1/$2/$3')].join(' ').toLowerCase();
       return words.every(function (w) { return hay.indexOf(w) >= 0; });
     });
   }

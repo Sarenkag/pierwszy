@@ -50,7 +50,7 @@
     }).catch(function (e) { /* błąd z każdego sprawdzenia, nie tylko ręcznego (wcześniej „if (manual) var em” zostawiało „Nie udało się sprawdzić: undefined”, 22/11/2026) */ var em = w.OESTBledy ? w.OESTBledy.text(e) : (e && e.message || e); setStatus("Nie udało się sprawdzić: " + em, "Check failed: " + (w.OESTBledy ? w.OESTBledy.text(e, "en") : em)); });
   }
   var busySince = 0;
-  function ask(t) { return w.OESTPytaj ? w.OESTPytaj(t, { ok: w.OESTT("Pobierz", "Download") }) : Promise.resolve(w.confirm(t)); } // okienko apki zamiast systemowego
+  function ask(t) { return w.OESTPytaj(t, { ok: w.OESTT("Pobierz", "Download") }); } // okienko apki zamiast systemowego
   async function install() {
     if (busy && Date.now() - busySince > 180000) busy = false; // poprzednie pobieranie utknęło (>3 min) – pozwól zacząć od nowa
     if (busy) { setStatus("Pobieranie już trwa – postęp widać w dzwonku na ekranie głównym.", "Download already running – progress is in the bell on the home screen."); return; }

@@ -41,15 +41,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|doklejanie-do-body|inspekcje/form-ui.js",
-      "rule": "JM",
-      "detail": "inspekcje/form-ui.js: doklejanie elementów prosto do <body> (okienka poza modułem) – 1× poza właścicielem (moduly/przycisk/przycisk.js).",
-      "maks": 1,
-      "punkt": "#18",
-      "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|historia|inspekcje/index.html",
       "rule": "JM",
       "detail": "inspekcje/index.html: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
@@ -125,7 +116,7 @@
       "id": "JM|okna-systemowe|inspekcje/index.html",
       "rule": "JM",
       "detail": "inspekcje/index.html: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 3× poza właścicielem (zakazane).",
-      "maks": 3,
+      "maks": 1,
       "punkt": "D17/#15",
       "usuwa": "O2",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
@@ -146,51 +137,6 @@
       "maks": 3,
       "punkt": "D17/#15",
       "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|okna-systemowe|settings-ui.js",
-      "rule": "JM",
-      "detail": "settings-ui.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 2× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D17/#15",
-      "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|okna-systemowe|update.js",
-      "rule": "JM",
-      "detail": "update.js: systemowe okna alert/confirm/prompt albo <dialog>.showModal – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D17/#15",
-      "usuwa": "O2",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|pad|inspekcje/flush.js",
-      "rule": "JM",
-      "detail": "inspekcje/flush.js: własna kopia funkcji pad (zera z przodu w dacie) – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D24",
-      "usuwa": "U1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|pad|moduly/zdjecia/zdjecia.js",
-      "rule": "JM",
-      "detail": "moduly/zdjecia/zdjecia.js: własna kopia funkcji pad (zera z przodu w dacie) – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D24",
-      "usuwa": "U1",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "JM|pad|ppm.js",
-      "rule": "JM",
-      "detail": "ppm.js: własna kopia funkcji pad (zera z przodu w dacie) – 1× poza właścicielem (zakazane).",
-      "maks": 1,
-      "punkt": "D24",
-      "usuwa": "U1",
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {

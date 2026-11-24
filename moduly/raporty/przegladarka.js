@@ -10,7 +10,7 @@
  *    z fioletową pigułką „Odzyskana” na górze listy; stuknięcie otwiera inspekcję
  *    (inspekcje/index.html#rec=id) z edycją, Wyślij i Update.
  *
- * Moduł daje tylko dane i akcje (wygląd: moduly/szkielet/src/ekrany/Raporty.vue i RaportPodglad.vue):
+ * Moduł daje tylko dane i akcje (wygląd: moduly/szkielet/src/ekrany/MojeRaporty.vue i RaportPodglad.vue):
  *   OESTRaportyUI.budynki()                 → [{ v, t }] opcje filtra budynku
  *   OESTRaportyUI.szukanie() / .szukaj({ q, b })   stan szukania (zostaje po zmianie języka i powrocie na ekran)
  *   OESTRaportyUI.lista()                   → Promise<{ odzyskane: [klocek], raporty: [klocek], pusto: tekst|'' }> (klocek jak w Klocek.vue)
@@ -22,6 +22,7 @@
 (function (w) {
   "use strict";
   var BLD = { "Tower A": "TA", "Tower B": "TB", "Pavilion": "P" };
+  var kopie = Object.create(null);
   var state = { q: "", b: "" };
   function blad(e) { return w.OESTBledy ? w.OESTBledy.text(e) : String(e && e.message || e); }
   function komunikat(tytul, tresc) { return w.OESTOkna && w.OESTOkna.pytaj ? w.OESTOkna.pytaj({ tytul: tytul, tresc: tresc, tylkoOk: true }) : Promise.resolve(true); }
@@ -39,7 +40,7 @@
   }
   function card(R, r) {
     var f = r.folder || [], drive = r.driveId && !r.dirty;
-    return { id: r.id, grupa: drive ? "dysk" : "czeka", nazwa: r.name, znak: BLD[f[0]], status: { tekst: drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
+    return { id: r.id, grupa: r.driveOnly ? "dysk" : drive ? "dysk" : "czeka", nazwa: r.name, znak: BLD[f[0]], status: { tekst: r.driveOnly ? w.OESTT("Tylko na Dysku", "Drive only") : drive ? w.OESTT("Na Dysku", "On Drive") : w.OESTT("Czeka na Dysk", "Waiting for Drive"), ton: drive ? 2 : 1 },
       opis: f.join(" · ") || "—", termin: { tekst: w.OESTT("Wysłany ", "Sent ") + R.day(r) + (r.versions > 1 ? " · " + w.OESTT("wersja ", "version ") + r.versions : "") }, akcja: w.OESTT("Otwórz", "Open") };
   }
   var seq = 0;
@@ -47,22 +48,28 @@
     var R = w.OESTRaporty, my = ++seq;
     if (!R) return Promise.resolve({ odzyskane: [], raporty: [], pusto: w.OESTT("Archiwum raportów niedostępne.", "Report archive unavailable.") });
     var rec = R.recovered ? R.recovered().catch(function () { return []; }) : Promise.resolve([]);
-    return Promise.all([rec, R.list()]).then(function (x) {
-      var all = x[1], hit = R.find(all, state.q, { building: state.b });
+    var problem = "";
+    var dysk = R.listaDysku ? R.listaDysku().catch(function(e) { problem = blad(e); return []; }) : Promise.resolve([]);
+    return Promise.all([rec, R.list(), dysk]).then(function (x) {
+      kopie = Object.create(null);
+      if (my !== seq) return { aktualne: false, odzyskane: [], raporty: [], pusto: "" };
+      var all = x[1].slice();
+      x[2].forEach(function(r) { if (!all.some(function(l) { return l.driveSnapId === r.driveSnapId || l.driveId === r.driveId; })) { kopie[r.id] = r; all.push(r); } });
+      var hit = R.find(all, state.q, { building: state.b });
       return { aktualne: my === seq, odzyskane: x[0].map(recCard), raporty: hit.map(function (r) { return card(R, r); }),
-        pusto: !all.length ? w.OESTT("Brak raportów w telefonie. Każdy wysłany raport pojawi się tutaj.", "No reports on this phone yet. Every sent report appears here.") : !hit.length ? w.OESTT("Nic nie pasuje do szukania.", "Nothing matches your search.") : "" };
+        pusto: problem || (!all.length ? w.OESTT("Brak raportów w telefonie i na Dysku.", "No reports on this phone or Drive.") : !hit.length ? w.OESTT("Nic nie pasuje do szukania.", "Nothing matches your search.") : "") };
     }, function (e) { return { aktualne: my === seq, odzyskane: [], raporty: [], pusto: blad(e) }; });
   }
   function otworzOdzyskana(id) {
     // Wstecz z odzyskanej inspekcji wraca tutaj (inspekcje/index.html → #settings/reports)
-    w.OESTPowrot.zapisz({ h: location.hash || "#settings/reports" }); // moduly/powrot
+    w.OESTPowrot.zapisz({ h: location.hash || "#settings/my-reports" }); // moduly/powrot
     (w.OESTEkrany ? w.OESTEkrany.otworzStrone : function (u) { location.href = u; })("inspekcje/index.html#rec=" + encodeURIComponent(id));
   }
   function reactiveR(r) { return (r.meta && r.meta.type) === "reactive" || (r.folder || [])[0] === "Reactive"; }
   // dane okienka podglądu: tekst Worda, zdjęcia (adresy obrazków), link do Dysku, adresaci jak ⚙ wysyłki
   function podglad(id) {
     var R = w.OESTRaporty, S = w.OESTSender;
-    return R.get(id).then(function (r) {
+    return (kopie[id] ? R.zDysku(id) : R.get(id).then(function(r) { return r && r.gone ? R.zDysku(id) : r; })).then(function (r) {
       if (!r || r.gone) return null;
       var urls = [], pv = null;
       try { pv = w.PizZip ? R.docxPreview(r.docx, w.PizZip) : null; } catch (e) { pv = null; }
@@ -72,6 +79,8 @@
       function cb(k, label, addr, missing) { var off = !addr || (reactive && k !== "sm"); return { k: k, tekst: label, adres: reactive && k !== "sm" ? only : addr || missing, wylaczony: off, zaznaczony: k === "sm" && !!addr }; }
       var zdjecia = pv ? pv.images.map(function (i) { var u = URL.createObjectURL(new Blob([i.bytes], { type: i.type })); urls.push(u); return u; }) : [];
       return {
+        id: r.id,
+        zachowaj: w.OESTT("Zachowaj na telefonie", "Keep on phone"),
         tytul: r.name,
         meta: (r.folder || []).join(" · ") + " · " + w.OESTT("wysłany ", "sent ") + R.day(r) + " · Word + PDF",
         linie: pv ? pv.lines : [w.OESTT("Nie udało się otworzyć podglądu. Raport można wysłać.", "Could not open the preview. The report can still be sent.")],
@@ -83,7 +92,7 @@
           cb("sm", w.OESTT("Mój firmowy e-mail", "My work email"), to.me, w.OESTT("brak adresu w Mój profil", "no address in My Profile")),
           cb("se", w.OESTT("Inżynier", "Engineer"), to.eng, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")),
           cb("sg", w.OESTT("Manager", "Manager"), to.man, w.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"))],
-        ok: w.OESTT("Wyślij", "Send"), anuluj: w.OESTT("Zamknij", "Close"),
+        ok: w.OESTT("Wyślij mailem", "Send by email"), anuluj: w.OESTT("Zamknij", "Close"),
         zwolnij: function () { urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; }
       };
     });
@@ -93,6 +102,7 @@
     var R = w.OESTRaporty, S = w.OESTSender, d = (o && o.dane) || {};
     return R.get(id).then(function (r) {
       if (!r) return;
+      if (d.zachowaj) return R.keep(r.id).then(function () { return komunikat(w.OESTT("Zapisano", "Saved"), w.OESTT("Raport zachowany na telefonie.", "Report kept on this phone.")); }, function(e) { return komunikat(w.OESTT("Nie zapisano", "Not saved"), blad(e)); });
       if (d.odzyskaj) return R.setRec(r.id, true).then(function () { otworzOdzyskana(r.id); }, function (e) { return komunikat(w.OESTT("Nie odzyskano", "Not recovered"), blad(e)); });
       if (!o || !o.ok) return;
       var sel = {}, a = d.adresaci || { sm: true }; Object.keys(a).forEach(function (k) { if (a[k]) sel[k] = true; });

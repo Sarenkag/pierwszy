@@ -22,4 +22,5 @@
   function kb(n) { return n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
   function blobB64(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = rej; r.readAsDataURL(blob); }); }
   w.OESTNarzedzia = { blobB64: blobB64, pad: pad, data: data, godzina: godzina, dzienIso: dzienIso, b64ToBytes: b64ToBytes, bytesToB64: bytesToB64, kb: kb, esc: esc };
+  if (typeof module === "object" && module.exports) module.exports = w.OESTNarzedzia;
 })(typeof window !== "undefined" ? window : globalThis);

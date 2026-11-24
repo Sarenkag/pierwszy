@@ -101,7 +101,7 @@
   function ntRefresh() {
     var k = ntScope(), row = $("ntRec") && $("ntRec").parentNode; if (!row) return;
     row.hidden = !k; if (!k) { $("ntJoin").hidden = true; return; }
-    OESTNotatki.summary(k).then(function (r) { if (k !== ntScope()) return; $("ntN").textContent = r.all; $("ntN").title = ""; $("ntJoin").hidden = r.ready < 1; var kp = $("komentarz").closest(".panel"); if (r.all && kp.classList.contains("fold")) kp.classList.add("open"); /* są notatki: pole notatki rozwinięte jak przy wpisanym komentarzu */ })
+    OESTNotatki.summary(k).then(function (r) { if (k !== ntScope()) return; $("ntN").textContent = r.all; $("ntN").title = ""; $("ntJoin").hidden = r.ready < 1; var kp = $("komentarz").closest("[data-ui~=panel]"); if (r.all && kp.matches("[data-ui~=fold]")) { kp.dataset.expanded = "true"; kp.hidden = false; }; /* są notatki: pole notatki rozwinięte jak przy wpisanym komentarzu */ })
       .catch(function (e) { if (k !== ntScope()) return; $("ntN").textContent = "–"; $("ntN").title = e && e.message || ""; }); // pamięć apki niedostępna: liczba nieznana (nie udajemy „0”), komunikat w podpowiedzi przycisku; jawny błąd zapisu daje sam moduł przy zapisie
   }
   if (window.OESTNotatki) {

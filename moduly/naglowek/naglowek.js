@@ -21,8 +21,10 @@
       (o.back !== false ? '<button class="back" type="button"' + (o.back ? ' data-nav="' + esc(o.back) + '"' : "") + ' aria-label="' + esc(w.OESTT("Wstecz", "Back")) + '">' + ARROW + "</button>" : "") +
       '<div class="t"><h1>' + esc(o.title || "") + "</h1></div>" + (o.actions || "") + (o.lang ? sw() : "") + "</div>";
   }
+  var adapters = {};
+  function configure(a) { Object.assign(adapters, a || {}); }
   function setLang(next) {
-    try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
+    try { if (!adapters.setLanguage) throw Error("LANGUAGE_ADAPTER"); adapters.setLanguage(next); }
     catch (e) { w.OESTBledy.zapiszJezyk(next); } // klucz oest.lang: moduly/bledy
   }
   d.addEventListener("click", function (e) {
@@ -45,5 +47,5 @@
     }
   }).observe(d.documentElement, { childList: true, subtree: true });
   if (d.readyState !== "loading") scan(); else d.addEventListener("DOMContentLoaded", function () { scan(); });
-  w.OESTNaglowek = { html: html, fix: fix, arrow: ARROW };
+  w.OESTNaglowek = { html: html, fix: fix, arrow: ARROW, configure: configure };
 })(window, document);

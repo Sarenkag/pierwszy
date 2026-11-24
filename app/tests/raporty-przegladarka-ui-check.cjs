@@ -52,7 +52,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
       await new Promise(r => { t.oncomplete = r; });
     }, PNG);
 
-    await p.evaluate(()=>OESTEkrany.go('settings/reports')); await p.locator('#rptList ion-card').first().waitFor(); await p.waitForTimeout(300);
+    await p.evaluate(()=>OESTEkrany.go('settings/my-reports')); await p.locator('#rptList ion-card').first().waitFor(); await p.waitForTimeout(300);
     const L = '#rptList ion-card', M = 'ion-modal', A = 'ion-alert';
     const names = () => p.$$eval('#rptList ion-card h2', a => a.map(e => e.textContent.trim()));
     // wybór budynku jak użytkownik: ion-select → lista (ion-popover) → opcja

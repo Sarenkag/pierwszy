@@ -13,7 +13,7 @@ walk(WWW, WWW, true); for (const g of GEN) walk(path.join(ROOT, g), ROOT, false)
 const WSTAWIONE = new Set(require('../../quality/strona-inspekcji.cjs').strona(path.join(__dirname, '..', '..', 'inspekcje')).czesci.map(c => 'inspekcje/' + c));
 const rel0 = ([p, base]) => path.relative(base, p).split(path.sep).join('/'), rel = f => WSTAWIONE.has(rel0(f)) ? 'inspekcje/index.html' : rel0(f), read = ([p]) => fs.readFileSync(p, 'utf8');
 // wspólne moduły okienek/nakładek i zastane miejsca (lista może tylko maleć)
-const BODY_OK = new Set(['moduly/przycisk/przycisk.js', 'inspekcje/index.html', 'inspekcje/form-ui.js']); // zdjecia-ui.js już nie dokleja do body (ekran Zdjęcia na Ionic + Vue)
+const BODY_OK = new Set(['moduly/przycisk/przycisk.js']); // zdjecia-ui.js już nie dokleja do body (ekran Zdjęcia na Ionic + Vue); strona inspekcji nie dokleja (rama szkieletu)
 test('żaden ekran nie otwiera window.open() (w WebView dokleja treść pod wszystkie ekrany)', () => {
   const bad = files.filter(f => /\b(?:w|window|self|globalThis)\.open\s*\(/.test(read(f))).map(rel);
   assert.deepEqual(bad, [], 'window.open() w: ' + bad.join(', ') + ' – użyj OESTPrzycisk.ask({node})');

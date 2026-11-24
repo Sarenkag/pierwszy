@@ -1,17 +1,20 @@
 <!-- Gotowe wartości i ocena pochodzą z i-checklista.js; zdarzenia obsługuje dotychczasowa delegacja. -->
 <template>
   <template v-if="rodzaj === 'temperatury'">
-    <div v-for="r in d.wiersze" :key="r.i" :class="['tp-row', { bad: r.blad }]">
-      <div class="txt">{{ r.nazwa }}<small>{{ r.opis }}</small></div>
-      <input type="text" inputmode="decimal" autocomplete="off" :data-t="r.i" :value="r.wartosc" :aria-label="r.etykieta">
-    </div>
+    <ion-grid v-for="r in d.wiersze" :key="r.i">
+      <ion-grid data-ui="txt">{{ r.nazwa }}<ion-note>{{ r.opis }}</ion-note></ion-grid>
+      <ion-item><ion-input :color="r.blad ? 'danger' : undefined" type="text" inputmode="decimal" autocomplete="off" :data-t="r.i" :value="r.wartosc" :aria-label="r.etykieta"></ion-input></ion-item>
+    </ion-grid>
   </template>
   <template v-else>
-    <button v-for="r in d.wiersze" :key="r.id" type="button" class="fault" :data-f="r.id" :aria-pressed="r.wybrany">{{ r.tekst }}</button>
+    <ion-item v-for="r in d.wiersze" :key="r.id"><ion-checkbox :data-f="r.id" :checked="r.wybrany">{{ r.tekst }}</ion-checkbox></ion-item>
   </template>
 </template>
 
 <script setup>
+import { IonGrid, IonNote, IonItem, IonInput, IonCheckbox } from '@ionic/vue';
+import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
+
 import { uzyjKontrolera } from '../../czesci/kontroler.js';
 const props = defineProps({ kontroler: Object, rodzaj: String });
 const d = uzyjKontrolera(props.kontroler);

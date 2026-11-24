@@ -126,9 +126,11 @@
   var force = null; // wJezyku: na chwilę drugi język (np. pomiar miejsca pod PL i EN), bez zapisu ustawień
   function wJezyku(l, fn) { var k = force; force = l; try { return fn(); } finally { force = k; } }
   function drugi() { return lang() === 'en' ? 'pl' : 'en'; }
+  var adapters = {};
+  function configure(a) { Object.assign(adapters, a || {}); }
   function lang() {
     if (force) return force;
-    try { var S = root.OESTSettings && root.OESTSettings.get && root.OESTSettings.get(); if (S && S.appearance && S.appearance.language) return S.appearance.language; } catch (e) {}
+    try { var l = adapters.language && adapters.language(); if (l) return l; } catch (e) {}
     try { var raw = root.localStorage && root.localStorage.getItem('oest.lang'); if (raw) return raw; } catch (e) {}
     return 'pl';
   }
@@ -240,5 +242,6 @@
     root.addEventListener('storage', function (e) { if (!e || e.key === 'oest.lang') cb(); });
   }
   var api = { zapiszJezyk: zapiszJezyk, naZmianeJezyka: naZmianeJezyka, text: text, lang: lang, t: t, tx: tx, zaladujTeksty: zaladujTeksty, applyDom: applyDom, wJezyku: wJezyku, drugi: drugi, D: D, prostokat: prostokat };
+  api.configure = configure;
   if (typeof module === 'object' && module.exports) module.exports = api; else { root.OESTBledy = api; root.OESTT = t; root.OESTTx = tx; }
 })(this);

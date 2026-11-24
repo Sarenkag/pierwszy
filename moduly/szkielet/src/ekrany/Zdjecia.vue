@@ -6,9 +6,6 @@
       <ion-list-header class="oest-tytul">{{ d.telefon.tytul }}</ion-list-header>
       <ion-progress-bar id="zdPhoneBar" class="oest-licznik" :class="{ 'oest-pelny': d.telefon.pelny }" :value="d.telefon.procent / 100"></ion-progress-bar>
       <ion-note class="oest-opis">{{ d.telefon.tekst }}</ion-note>
-      <ion-list-header class="oest-tytul">{{ d.dysk.tytul }}</ion-list-header>
-      <ion-progress-bar id="zdDriveBar" class="oest-licznik" :class="{ 'oest-pelny': d.dysk.pelny }" :value="d.dysk.procent / 100"></ion-progress-bar>
-      <ion-note class="oest-opis">{{ d.dysk.tekst }}</ion-note>
       <Akcja id="zdSync" class="oest-duzy" :T="T" expand="block" :fn="Z.wyslij" :busy="T('Sprawdzam połączenie', 'Checking connection')" :wylaczony="d.zajety" :gotowe-tekst="gotowe" @wynik="v => (gotowe = v)">{{ d.zajety ? T('Wysyłam…', 'Uploading…') : T('Wyślij teraz na Dysk', 'Upload to Drive now') }}</Akcja>
       <ion-note id="zdMsg" class="oest-opis" role="status" aria-live="polite">{{ d.komunikat }}</ion-note>
     </ion-card>
@@ -35,16 +32,7 @@
         </ion-item>
       </div>
       <ion-note class="oest-opis">{{ T('Licznik na ekranie głównym: do połowy tej wartości zielony, od połowy pomarańczowy, od 75% czerwony, od 90% czerwony z ⚠. To tylko ostrzeżenie – nic nie blokuje i nic nie kasuje.', 'Home screen counter: green up to half of this value, orange from half, red from 75%, red with ⚠ from 90%. It is only a warning – nothing is blocked or deleted.') }}</ion-note>
-      <div class="oest-pole-blok">
-        <ion-note class="oest-etykieta">{{ T('Limit na Dysku (MB)', 'Drive limit (MB)') }}</ion-note>
-        <ion-item class="oest-ramka-pola" lines="none">
-          <ion-input id="zdDrive" type="number" min="100" step="100" :aria-label="T('Limit na Dysku (MB)', 'Drive limit (MB)')" :value="u.driveLimitMB" @ionInput="u.driveLimitMB = $event.detail.value"></ion-input>
-        </ion-item>
-      </div>
-      <ion-item class="oest-check" lines="none">
-        <ion-checkbox id="zdWifi" label-placement="end" justify="start" :checked="u.wifiOnly" @ionChange="u.wifiOnly = $event.detail.checked">{{ T('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') }}</ion-checkbox>
-      </ion-item>
-      <ion-note class="oest-opis">{{ T('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych i tych w inspekcjach apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded or in inspections are never deleted. Over the Drive limit, the oldest are removed from Drive.') }}</ion-note>
+      <ion-button fill="clear" href="#settings/drive">{{ T('Ustawienia Dysku', 'Drive settings') }}</ion-button>
       <ion-button id="zdSave" class="oest-duzy" expand="block" @click="Z.zapisz(u)">{{ T('Zapisz ustawienia', 'Save settings') }}</ion-button>
     </ion-card>
     <ion-card class="oest-panel">

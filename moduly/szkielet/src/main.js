@@ -7,7 +7,8 @@
 //   OESTEkrany.strona({ up })                     osobna strona (inspekcje): rama, przewijanie, Wstecz i okienka
 //   OESTEkrany.go(trasa) / .up() / .trasa()        nawigacja; historia przeglądarki NIE jest stanem (adres tylko replaceState)
 //   OESTEkrany.zamien(trasa)                       nowy adres tego samego ekranu bez rysowania (np. szkic → zapisane zlecenie)
-//   OESTEkrany.straz(przedrostek, fn)              przed wyjściem w górę: fn() → false = zostań, true = rodzic z mapy, 'trasa' = tam
+//   OESTEkrany.straz(przedrostek, fn)              przed wyjściem w górę: fn() → false = zostań, true = rodzic
+//   OESTEkrany.rodzicDanych(przedrostek, fn)       rodzic liczony z danych ekranu: fn(trasa) → trasę rodzica albo null (wtedy rodzic z mapy ekrany.json)
 //   OESTEkrany.ponow()                             po „Opuść” w pytaniu o niezapisane zmiany: dokończ wyjście
 //   OESTEkrany.otworzStrone(url)                   przejście na inną stronę apki bez wpisu w historii (inspekcje)
 //   OESTOkna.komunikat({ tytul, tresc, przyciski }) → Promise<rola>   okienko Ionic (ion-alert) dla starego kodu
@@ -109,7 +110,10 @@ function dopasuj(t) {
   while (p.length) { const r = router.resolve('/' + p.join('/')); if (r.name !== '-nieznany') return r; p = p.slice(0, -1); }
   return router.resolve('/home');
 }
+const rodziceDanych = []; // OESTEkrany.rodzicDanych: rodzic liczony z danych ekranu (fn(trasa) → trasę rodzica albo null)
 function rodzic(t) {
+  const s = rodziceDanych.filter(x => t === x.p || t.indexOf(x.p + '/') === 0).sort((a, b) => b.p.length - a.p.length)[0];
+  if (s) { const cel = s.fn(t); if (cel) return cel; } // rodzic z danych (np. węzeł drzewka); null → rodzic z mapy
   const r = dopasuj(t), id = r.meta.rodzic;
   if (!id) return null;
   try { return router.resolve({ name: id, params: r.params }).fullPath.slice(1); } catch (e) { return id.split('/:')[0]; }
@@ -158,11 +162,7 @@ function up() {
   if (stara) { stara.click(); return; }
   if (tryb === 'strona') { if (stronaUp) stronaUp(); return; }
   const t = stan.trasa, s = straz(t), p = rodzic(t);
-  if (s) {
-    const v = s();
-    if (v === false) { czeka = p ? { cel: p } : null; return false; }
-    if (typeof v === 'string') return wykonaj(v, { wstecz: true });
-  }
+  if (s && s() === false) { czeka = p ? { cel: p } : null; return false; } // straż: false = zostań, true = rodzic (rodzicDanych albo mapa)
   if (!p) return wyjscie();
   czeka = null;
   return wykonaj(p, { wstecz: true });
@@ -231,6 +231,7 @@ const OESTEkrany = {
   jestVue: t => !!EKRANY_VUE[dopasuj(t).meta.id],
   zamien(cel) { cel = czysta(cel); router.replace('/' + cel); stan.trasa = cel; try { history.replaceState(null, '', '#' + cel); } catch (e) {} },
   straz(p, fn) { straze.push({ p: czysta(p), fn }); },
+  rodzicDanych(p, fn) { rodziceDanych.push({ p: czysta(p), fn }); },
   rodzic,
   otworzStrone(url) { location.replace(url); },
   naGore() { if (scrollEl) scrollEl.scrollTop = 0; else w.scrollTo(0, 0); },

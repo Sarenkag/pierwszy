@@ -607,20 +607,3 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 ion-card[data-grupa="otwarte"] { --oest-grupa: #ff8a3d; }
 ion-card[data-grupa="szkic"] { --oest-grupa: #8b949e; }
 
-/* Strona inspekcji na Ionic + Vue (Grzegorz 23/11/2026): wygląd jak na main – panele ze „szkła”, wiersze, przyciski; reguły przeniesione z
-   inspekcje/insp.css i app/www/theme.css na komponenty Ionic. Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). */
-.oest-insp { display: flex; flex-direction: column; gap: 14px; }
-.oest-podtytul { display: none; } /* jak na main: podtytuł nagłówka (.top .sub) ukrywa theme.css */
-ion-card.oest-panel { margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--line); border-radius: 18px;
-  background: var(--panel); box-shadow: none; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); color: var(--ink); }
-ion-list.oest-lista { padding: 0; background: transparent; }
-ion-item.oest-qitem { --padding-start: 0; --inner-padding-end: 0; --min-height: 0; --background: transparent; --border-color: var(--line); --color: var(--ink); }
-ion-item.oest-qitem ion-label { margin: 10px 0; }
-ion-item.oest-qitem h3.oest-kod { font: 500 1rem ui-monospace, "SFMono-Regular", Menlo, monospace; color: var(--ink); margin: 0; }
-ion-item.oest-qitem p { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; margin: 2px 0 0; }
-.oest-wiersz { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-ion-note.oest-st { align-self: center; font-size: .8rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; background: var(--field); color: var(--muted); }
-ion-note.oest-st[data-ton=ok] { background: rgba(61, 220, 132, .14); color: var(--ok); }
-ion-note.oest-st[data-ton=err] { background: rgba(255, 77, 94, .14); color: var(--bad); }
-.oest-wskazowka { color: var(--muted); font-size: .88rem; margin: 0; }
-ion-note.oest-wskazowka { --color: var(--muted); }

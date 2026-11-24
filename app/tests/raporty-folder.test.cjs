@@ -6,7 +6,7 @@ const fs = require('node:fs'), vm = require('node:vm'), path = require('node:pat
 const root = path.resolve(__dirname, '../..');
 const win = { addEventListener() {}, dispatchEvent() {} };
 const ctx = { window: win, localStorage: { getItem: () => null, setItem() {} }, CustomEvent: function () {} };
-vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(root, 'app/www/ppm.js'), 'utf8'), ctx);
+vm.createContext(ctx); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js'); vm.runInContext(fs.readFileSync(path.join(root, 'app/www/ppm.js'), 'utf8'), ctx);
 const PPM = win.OEST_PPM, html = require('../../quality/strona-inspekcji.cjs').strona(path.join(root, 'inspekcje')).tekst /* strona inspekcji w kolejności ładowania, z częściami (docs/podzial-modulow.md) */;
 const BUILDING = JSON.parse(/var BUILDING = (\{[^}]+\})/.exec(html)[1].replace(/(\w+):/g, '"$1":'));
 const src = html.slice(html.indexOf('function reportFolder'), html.indexOf('function enqueue(r, from)'));

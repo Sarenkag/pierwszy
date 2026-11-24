@@ -10,7 +10,7 @@ function load(init) {
   const data = new Map(Object.entries(init || {})), writes = [];
   const win = { addEventListener() {}, dispatchEvent() {} };
   const ctx = { window: win, localStorage: { getItem: k => data.has(k) ? data.get(k) : null, setItem(k, v) { writes.push(k); data.set(k, v); } }, CustomEvent: function () {} };
-  vm.createContext(ctx); vm.runInContext(src, ctx);
+  vm.createContext(ctx); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js'); vm.runInContext(src, ctx);
   return { P: win.OEST_PPM, data, writes };
 }
 

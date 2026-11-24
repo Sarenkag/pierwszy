@@ -23,3 +23,6 @@ Testy zasad: `app/tests/moduly-zasady.test.cjs` (W1–W5: najpierw `OESTGoogle.r
 - Raport z błędem albo przerwany w trakcie wysyła się ponownie tylko po „Ponów” (bez dubli).
 - Okno logowania Google tylko po kliknięciu; w tle wysyła, gdy sesja już jest.
 - Czekanie na Wi‑Fi domyślnie włączone; nieznana sieć = jak dane komórkowe.
+
+Adaptery aplikacji s? wstrzykiwane przez `app/www/module-adapters.js` na obu stronach.
+`OESTSender.configure({ google(), clientConfigured(), markSent(ppm, id) })`: bie??cy klient Google, dost?pno?? konfiguracji OAuth i aktualizacja karty PPM. Bez adapter?w wysy?ka pozostaje nieaktywna.

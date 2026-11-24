@@ -9,6 +9,7 @@ import Dysk from './Dysk.vue';
 import Konto from './Konto.vue';
 import Ai from './Ai.vue';
 import Raporty from './Raporty.vue';
+import MojeRaporty from './MojeRaporty.vue';
 import Zdjecia from './Zdjecia.vue';
 import Glowny from './Glowny.vue';
 import Inspekcje from './Inspekcje.vue';
@@ -32,4 +33,4 @@ import WysylkaInspekcji from "./inspekcja/Wysylka.vue";
 import RaportInspekcji from "./inspekcja/Raport.vue";
 // Fragment osobnej strony, montowany przez OESTCzesci; nie przejmuje tras aplikacji.
 export const WIDOKI_INSPEKCJI = { 'inspekcja/start': StartInspekcji, 'inspekcja/lista': ListaInspekcji, 'inspekcja/podglad': PodgladInspekcji, 'inspekcja/kolejkastrony': KolejkaStronyInspekcji, 'inspekcja/fragment': FragmentInspekcji, 'inspekcja/wysylka': WysylkaInspekcji, 'inspekcja/raport': RaportInspekcji, 'inspekcja/formularz': FormularzInspekcji, 'inspekcja/pola': PolaInspekcji, 'inspekcja/checklista': ChecklistaInspekcji, 'inspekcja/kolejka': KolejkaInspekcji };
-export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, 'settings/profile': Profil, 'settings/calendar': KalendarzGrafik, 'settings/vantify': Vantify, start: Start, questions: Pytania, zdjecia: Zdjecia, reactive: Reactive, 'reactive/new/:id': Reactive, 'reactive/draft/:id': Reactive, 'reactive/job/:id': Reactive, 'reactive/complete/:id': Reactive, 'reactive/tree/:id': Reactive, 'reactive/history': Reactive, 'reactive/config': Reactive };
+export const EKRANY_VUE = { home: Glowny, ppm: Inspekcje, cal: Kalendarz, settings: Ustawienia, 'settings/about': OAplikacji, 'settings/sync': Synchronizacja, 'settings/mail': Poczta, 'settings/contacts': Kontakty, 'settings/drive': Dysk, 'settings/account': Konto, 'settings/ai': Ai, 'settings/reports': Raporty, 'settings/my-reports': MojeRaporty, 'settings/profile': Profil, 'settings/calendar': KalendarzGrafik, 'settings/vantify': Vantify, start: Start, questions: Pytania, zdjecia: Zdjecia, reactive: Reactive, 'reactive/new/:id': Reactive, 'reactive/draft/:id': Reactive, 'reactive/job/:id': Reactive, 'reactive/complete/:id': Reactive, 'reactive/tree/:id': Reactive, 'reactive/history': Reactive, 'reactive/config': Reactive };

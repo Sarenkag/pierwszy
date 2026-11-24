@@ -2,7 +2,7 @@
 const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), path = require('path'), vm = require('vm');
 function load() {
   const ctx = { window: {}, localStorage: { getItem: () => null, setItem() {} } };
-  vm.createContext(ctx);
+  vm.createContext(ctx); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js');
   for (const f of ['ppm.js', 'aktywa.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
   return ctx.window;
 }
@@ -22,7 +22,7 @@ test('każda z 18 tablic DB ma swoje aktywo', () => {
 });
 test('etap klocka: wysłana zamyka okres do terminu, poprawka nie przesuwa terminu', () => {
   const store = {}, ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
-  ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
+  ctx.window.dispatchEvent = () => {}; vm.createContext(ctx); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js');
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', 'ppm.js'), 'utf8'), ctx);
   const P = ctx.window.OEST_PPM, t = P.byId('EFA-INS-003'), d = new Date(), iso = x => x.toISOString().slice(0, 10);
   const later = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 4, 12);

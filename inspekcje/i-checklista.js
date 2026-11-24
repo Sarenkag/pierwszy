@@ -11,25 +11,11 @@
     var n = tempNum(v); if (n === null) return false;
     return kind === "hot" ? n <= 50 : kind === "cold" ? n >= 20 : n < 38 || n > 43;
   }
-  var polaWidoki = {};
-  function pokazPola(id, rodzaj, dane) {
-    var widok = polaWidoki[id];
-    if (!widok) {
-      var sluchacze = OESTCzesci.sluchacze(dane);
-      polaWidoki[id] = sluchacze;
-      OESTCzesci.montuj($(id), "inspekcja/pola", { rodzaj: rodzaj, kontroler: { dane: dane, na: sluchacze.na } });
-    } else widok.emit();
-  }
-  function tempsDane() {
-    return { wiersze: !cur.type || !cur.type.temp ? [] : cur.type.slots.map(function (s, i) {
-      return { i: i, blad: tempBad(s[1], temps[i]), nazwa: s[0], opis: KIND[s[1]] + " · " + LIMIT[s[1]], wartosc: temps[i], etykieta: s[0] + ", " + KIND[s[1]] };
-    }) };
-  }
   function renderTemps() { pokazPola("tempList", "temperatury", tempsDane); }
   $("tempList").addEventListener("input", function (e) {
-    var el = e.target.closest("input[data-t]"); if (!el) return;
+    var el = e.target.closest("ion-input[data-t]"); if (!el) return;
     var i = +el.getAttribute("data-t"); temps[i] = el.value;
-    el.closest(".tp-row").classList.toggle("bad", tempBad(cur.type.slots[i][1], el.value));
+    el.color = tempBad(cur.type.slots[i][1], el.value) ? "danger" : undefined;
     updateFormHint();
   });
   function tempData(w) {
@@ -78,36 +64,6 @@
   }
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])
-  // Widok Vue dostaje tylko gotowe wiersze. Reguły odpowiedzi, raportu i zapisu zostają tutaj.
-  var widokChecks = null, checksSluchacze = [];
-  function checksDane() {
-    var pytania = !!cur.type.ask, cks = cur.type.checks;
-    var idx = cks.map(function (c, i) { return i; });
-    if (pytania) idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); });
-    var last = pytania && histOf(cur.code);
-    return { pytania: pytania, wiersze: idx.map(function (i) {
-      var c = cks[i], st = states[i];
-      var was = !!(last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; })));
-      var rs = pytania && c.reasons && c.reasons.length && (st !== "ok" || was) ? c.reasons : [];
-      return {
-        i: i, stan: st, tekst: pytania ? window.OESTT(c.q, c.qen || c.q) : c.room ? c.cp : st === "fail" ? (override[i] || c.fail) : c.ok,
-        poprzednio: pytania && was, data: was ? last.d : "", sugestia: pytania ? susN[i] : null,
-        etykieta: pytania ? window.OESTT(c.q, c.qen || c.q) : "Punkt " + (i + 1),
-        przyciski: pytania ? [
-          { stan: "ok", klasa: "ok", tekst: "TAK" }, { stan: "fail", klasa: "fail", tekst: "NIE" }
-        ] : [
-          { stan: "ok", klasa: "ok", tekst: "✓", etykieta: "OK" },
-          { stan: "fail", klasa: "fail", tekst: "✗", etykieta: window.OESTT("Nie OK", "Not OK") },
-          { stan: "na", klasa: "na", tekst: "–", etykieta: window.OESTT("Pomiń", "Skip") }
-        ],
-        powody: rs.map(function (r) { return { id: r.id, tekst: window.OESTT(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl), poprzednio: !!(last && last.r.indexOf(r.id) >= 0), wybrany: (rsel[i] || []).indexOf(r.id) >= 0 }; }),
-        pokoj: !pytania && c.room && (!i || cks[i - 1].room !== c.room) ? { nazwa: c.roomName, miejsce: c.roomLoc } : null,
-        uwaga: !pytania && c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length ? {
-          id: c.room, tekst: roomNotes[c.room] || "", podpowiedz: window.OESTT("Co jest nie tak? (trafi do raportu)", "What is wrong? (goes to the report)"), etykieta: window.OESTT("Uwagi: ", "Remarks: ") + c.roomName
-        } : null
-      };
-    }) };
-  }
   function renderChecks() {
     if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0);
     if (!widokChecks) {
@@ -122,19 +78,14 @@
   // plant roomy: uwaga do pomieszczenia (jedna na pomieszczenie), pokazuje się, gdy coś jest ✗
   var roomNotes = {};
   function roomFails(room) { return cur.type.checks.filter(function (c, i) { return c.room === room && states[i] === "fail"; }).map(function (c) { return c.cp; }); }
-  $("ck").addEventListener("input", function (e) { var el = e.target.closest("input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
+  $("ck").addEventListener("input", function (e) { var el = e.target.closest("ion-input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
     pokazPola("faults", "usterki", faultsDane);
   }
-  function faultsDane() {
-    return { wiersze: RD.usterkiDla(cur.type).map(function (f) {
-      return { id: f.id, wybrany: !!faultsOn[f.id], tekst: window.OESTT(f.pl, f.enl) };
-    }) };
-  }
-  $("faults").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-f]"); if (!b) return;
-    setFault(b.getAttribute("data-f"), !faultsOn[b.getAttribute("data-f")]);
+  $("faults").addEventListener("change", function (e) {
+    var b = e.target.closest("ion-checkbox[data-f]"); if (!b) return;
+    setFault(b.getAttribute("data-f"), b.checked);
   });
   function setFault(id, on) {
     var f = FAULTS.filter(function (x) { return x.id === id; })[0], i = checkIdx(f.key);
@@ -149,15 +100,15 @@
       }
       renderChecks();
     }
-    if (faultsOn[f.id] && !f.note) $("ov-2").checked = true;
+    if (faultsOn[f.id] && !f.note) $("ov").value = "Requires attention";
     renderFaults(); suggestOverall(); updateFormHint();
   }
   // usterki bez pasującego punktu checklisty idą jako osobne zdania
   function extraFaults(notes) {
     return RD.usterkiDla(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
   }
-  $("ck").addEventListener("click", function (e) {
-    var r = e.target.closest("button[data-r]");
+  $("ck").addEventListener("change", function (e) {
+    var r = e.target.closest("ion-checkbox[data-r]");
     if (r) {
       var ri = +r.getAttribute("data-ri"), id = r.getAttribute("data-r"), arr = rsel[ri] = rsel[ri] || [];
       if (arr.indexOf(id) >= 0) arr.splice(arr.indexOf(id), 1); else arr.push(id);
@@ -166,9 +117,9 @@
       else if (states[ri] === "fail") states[ri] = "ok";
       renderChecks(); suggestOverall(); updateFormHint(); return;
     }
-    var b = e.target.closest("button[data-i]"); if (!b) return;
+    var b = e.target.closest("ion-select[data-i]"); if (!b) return;
     var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
-    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
+    states[i] = b.value; delete override[i]; delete susN[i];
     if (states[i] === "ok") delete rsel[i];
     FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
@@ -184,8 +135,8 @@
   }
   function suggestOverall() {
     var fails = failCount();
-    if (fails && radio("ov") === "Satisfactory") $("ov-2").checked = true;
-    if (!fails && radio("ov") === "Requires attention") $("ov-1").checked = true;
+    if (fails && radio("ov") === "Satisfactory") $("ov").value = "Requires attention";
+    if (!fails && radio("ov") === "Requires attention") $("ov").value = "Satisfactory";
   }
 
 

@@ -35,7 +35,7 @@ const VANTIFY_78 = {
 };
 function load() {
   const store = {}, ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
-  ctx.window.dispatchEvent = () => {}; vm.createContext(ctx);
+  ctx.window.dispatchEvent = () => {}; vm.createContext(ctx); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js');
   for (const f of ['vantify-plan.js', 'ppm.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
   return ctx.window;
 }

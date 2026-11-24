@@ -238,7 +238,7 @@ window.OEST_PPM = {
     if (needs && typeof needs === "object" && !Array.isArray(needs)) box["oest.ppm.needs"] = Object.assign({}, needs);
   };
   P.sandboxed = function () { return !!box; };
-  function pad(n) { return String(n).padStart(2, "0"); }
+  var pad = (window.OESTNarzedzia || (typeof require === "function" && require("../../moduly/narzedzia/narzedzia.js"))).pad;
   function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function parse(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function add(d, f) {

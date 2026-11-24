@@ -29,9 +29,9 @@ await page.goto(url+'/#reactive');await page.locator('[data-rx=new]').waitFor();
 STEP='krok 2';// 2. Nowe zadanie BEZ drzewka: nazwa, gdzie, kto (domyślnie pierwszy dział), zdjęcie przed.
 await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=title]').waitFor();
 const draftHash=await page.evaluate(()=>location.hash);
-await page.locator('[data-rx-field=title]').fill('Door handle detached');await saved();
-await row('where');await page.locator('[data-rx=building][data-value="Tower B"]').click();await page.locator('[data-rx-field=level]').selectOption('5');await page.locator('[data-rx-field=room]').fill('Kitchen');
-if(!await page.locator('[data-rx-field=note]').isVisible())await row('start');/* „info na start” niezależne (22/11/2026) */await page.locator('[data-rx-field=note]').fill('Handle detached from the door.');await saved();
+await page.locator('[data-rx-field=title] input, [data-rx-field=title] textarea').fill('Door handle detached');await saved();
+await row('where');await page.locator('[data-rx=building][data-value="Tower B"]').click();await page.locator('[data-rx-field=level]').evaluate((e,v)=>e.dispatchEvent(new CustomEvent('ionChange',{detail:{value:v}})),'5');await page.locator('[data-rx-field=room] input, [data-rx-field=room] textarea').fill('Kitchen');
+if(!await page.locator('[data-rx-field=note]').isVisible())await row('start');/* „info na start” niezależne (22/11/2026) */await page.locator('[data-rx-field=note] input, [data-rx-field=note] textarea').fill('Handle detached from the door.');await saved();
 const encoded=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,640,480);x.fillStyle='#777';x.fillRect(90,30,450,430);x.fillStyle='#222';x.fillRect(370,240,130,25);x.fillStyle='white';x.font='25px sans-serif';x.fillText('Door handle',130,90);return c.toDataURL('image/png').split(',')[1];}),photoFile={name:'door.png',mimeType:'image/png',buffer:Buffer.from(encoded,'base64')};
 await page.locator('[data-rx-photos=before]').setInputFiles(photoFile);await page.waitForFunction(()=>document.querySelector('#rx-before img')&&document.querySelector('#rxMessage')?.textContent.includes('Szkic zapisany'));
 {const d=Object.values((await state()).reactiveDrafts)[0];assert.equal(d.title,'Door handle detached');assert.equal(d.building,'Tower B');assert.equal(d.level,'5');assert.equal(d.problemId,'','drzewko nie jest wymagane');assert.equal(d.beforeMediaIds.length,1);assert.equal(d.requestedBy,'General request','domyślnie pierwszy dział z ⚙');}
@@ -111,7 +111,7 @@ await page.evaluate(()=>OESTEkrany.go('reactive'));await page.locator('[data-rx=
 /* zadanie z Handover ma lokalizację tylko w job.location – okno po przytrzymaniu ją pokazuje (uwaga Codex w PR #103) */{const k=page.locator('[data-rx=job]',{hasText:'Job entered through Handover'}),bx=await k.boundingBox();await page.mouse.move(bx.x+bx.width/2,bx.y+bx.height/2);await page.mouse.down();await page.locator('.oest-ask.ki-info').waitFor();await page.mouse.up();assert.match(await page.locator('.oest-ask.ki-info').innerText(),/Loading bay/,'lokalizacja z Handover');await page.locator('.oest-ask.ki-info').click({position:{x:5,y:5}});await page.locator('.oest-ask.ki-info').waitFor({state:'detached'});}
 
 STEP='krok 11';// 11. Usuń szkic: pytanie → szkic znika, zadania bez zmian.
-await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=title]').fill('Temporary draft');await saved();
+await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=title] input, [data-rx-field=title] textarea').fill('Temporary draft');await saved();
 await page.evaluate(()=>{window.__askMode='once-ok'});await page.locator('[data-rx=drop-draft]').click();await page.locator('[data-rx=new]').waitFor();
 s=await state();assert.equal(Object.keys(s.reactiveDrafts||{}).length,0,'szkic usunięty');assert.equal(s.jobs.filter(j=>j.reactive).length,1,'usunięcie szkicu nie rusza zadań');
 

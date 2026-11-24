@@ -63,18 +63,18 @@
   // Pokazuje tylko panele potrzebne w danym trybie
   function formMode() {
     var m = cur.mode;
-    document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
+    document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0 || (el.matches("[data-ui~=fold]") && el.dataset.expanded !== "true"); });
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
-    if (ask || quick) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ""; // kolejność daje Formularz.vue: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
+    if (ask || quick) $("faults").closest("[data-ui~=panel]").hidden = true;
+     // kolejność daje Formularz.vue: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
     $("allOk").textContent = ask ? window.OESTT("Wszystko TAK", "All YES") : window.OESTT("Wszystkie zaznaczone → OK", "All marked → OK");
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
     $("tempBox").hidden = !temp || m === "sum";
-    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; }); // raport pomiarów nie ma zdjęć
-    if (cur.type.plain) $("faults").closest(".panel").hidden = true;
-    if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov"), $("komentarz")].forEach(function (el) { el.closest("[data-ui~=panel]").hidden = true; }); // raport pomiarów nie ma zdjęć
+    if (cur.type.plain) $("faults").closest("[data-ui~=panel]").hidden = true;
+    if (cur.type.folder) [$("faults"), $("ck"), $("ov"), $("komentarz")].forEach(function (el) { el.closest("[data-ui~=panel]").hidden = true; });
     $("flushBox").hidden = !cur.type.flush || m === "sum";
     applyNeeds();
   }
@@ -89,9 +89,9 @@
     if (F) { if (fl.on !== !!n.q) { fl.on = !!n.q; renderFlush(); } syncSendHint(); return; }
     syncSendHint();
     if (!RD.pytaniaMozliwe(cur.type) || cur.mode !== "one") return;
-    var ckp = $("ck").closest(".panel");
+    var ckp = $("ck").closest("[data-ui~=panel]");
     if (!n.q) {
-      ckp.hidden = true; $("faults").closest(".panel").hidden = true;
+      ckp.hidden = true; $("faults").closest("[data-ui~=panel]").hidden = true;
       if (states.some(function (x) { return x !== "na"; })) { qSaved = states.slice(); states = states.map(function () { return "na"; }); renderChecks(); renderFaults(); }
     } else {
       ckp.hidden = false;
@@ -130,7 +130,7 @@
     var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
     var sp = sendParts(), to = recipientsFor({ sp: 1, sm: 1, se: 1, sg: 1 });
     function cb(k, label, dis, note) { return { klucz: k, tekst: label, blokada: !!dis, wybrane: !!(n[k] && !dis), uwaga: note }; }
-    var box = document.createElement("div"); box.className = "sendcfg-box";
+    var box = document.createElement("ion-list");
     widokInspekcji(box, "wysylka", { sekcje: [
       { tytul: window.OESTT("Co wysłać", "What to send"), pola: [cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")), cb("q", sp.qLabel, !sp.q), cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")), cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t)] },
       { tytul: window.OESTT("Jak", "How"), pola: [
@@ -142,8 +142,8 @@
     ] });
     OESTPrzycisk.ask({ title: window.OESTT("Ustawienia wysyłki", "Sending settings"), node: box, ok: window.OESTT("Zapisz jako domyślne", "Save as default"), cancel: window.OESTT("Zamknij", "Close") }).then(function (save) {
       if (!save || !cur.ppm || !PPM.setNeeds) return;
-      var patch = {}; box.querySelectorAll("input[data-sn]:not(:disabled)").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
-      var r = box.querySelector('input[name="sn-one"]:checked'); patch.one = !r || r.value === "1";
+      var patch = {}; box.querySelectorAll("ion-checkbox[data-sn]:not([disabled])").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
+      var r = box.querySelector('ion-select[name="sn-one"]'); patch.one = !r || String(r.value) === "1";
       var qWas = !!n.q; PPM.setNeeds(cur.ppm, patch);
       if (patch.q != null && patch.q !== qWas && !cur.type.flush) formMode();
       applyNeeds(patch.q && !qWas); ppmTrack(false); try { suggestOverall(); } catch (e) {} updateFormHint(); scheduleDraft();
@@ -153,7 +153,7 @@
   function needOn(k) { var n = needsNow(); if (n && !n[k] && cur.ppm && PPM.setNeeds) { var p = {}; p[k] = true; PPM.setNeeds(cur.ppm, p); applyNeeds(); } }
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
-    draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
+    draftOn = false; clearTimeout(draftT); draftT = 0;
     roomNotes = {};
     restoring = 0; formSeq++; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
@@ -161,7 +161,7 @@
     $("dzien").value = NZ.dzienIso(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
-    $("ov-1").checked = true; $("q-0").checked = true;
+    $("ov").value = "Satisfactory"; $("quote").value = "";
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
     fl = OESTFlush.start(cur.type.flush || {}); renderFlush();
   }

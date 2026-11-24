@@ -21,7 +21,7 @@
   }
   // Raport w trakcie wysyłki kończymy przed wyjściem na listę (dalsze z kolejki lista PPM wyśle sama)
   // powrót tam, skąd przyszedłem (lista PPM, kalendarz, kolejka…) – zapisane przez app/www/index.html goInsp()
-  function backUrl() { if (REC_ID) return "../index.html#settings/reports"; var b = OESTPowrot.odczytaj(false); return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
+  function backUrl() { if (REC_ID) return "../index.html#settings/my-reports"; var b = OESTPowrot.odczytaj(false); return "../index.html" + (b && /^#[\w=&.-]*$/.test(b.h) ? b.h : "#ppm"); }
   function leave(url) { saveDraftNow().then(function () { return gm() ? OESTSender.whenIdle() : null; }).then(function () { location.replace(url); }); } // replace: strona inspekcji nie zostaje w historii (Wstecz telefonu przed startem Ionic nie wróci do niej); szkic zapisany, zanim strona zniknie
   // Wysyłka prosto z Gmaila (zalogowany w apce): moduł ../moduly/wysylka, pasek stanu na dole
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
@@ -29,7 +29,7 @@
   var queueing = false;
   // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko i strzałkę ‹ widocznego ekranu obsługuje szkielet;
   // ekran bez strzałki → lista, z której przyszedłem. Treść przewija Rama.vue.
-  OESTEkrany.strona({ up: function () { if (!queueing) leave(backUrl()); } });
+  OESTEkrany.strona({ up: function () { if (queueing) return; var back = document.querySelector(".view:not([hidden]) [data-ui~=back]:not([hidden])"); if (back) back.click(); else leave(backUrl()); } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
   // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
   $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });

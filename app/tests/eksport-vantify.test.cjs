@@ -73,7 +73,7 @@ test('fromApi: lista zleceń z API → ten sam plan co eksport; termin = dzień 
 test('Pobierz z Vantify: każde zadanie PPM z Vantify ma kartę; rozdzielnica na dziś = termin dziś', () => {
   const w = { localStorage: { getItem: () => null, setItem() {} } };
   const g = { window: w, localStorage: w.localStorage };
-  const vm = require('vm'), ctx = vm.createContext(g);
+  const vm = require('vm'), ctx = vm.createContext(g); ctx.window.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js');
   for (const f of ['ppm.js', 'vantify-plan.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx);
   const P = w.OEST_PPM, V = w.OEST_VANTIFY, m = E.matcher(P.tasks.map(t => [t.id, t.name]));
   const d = new Date(), day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');

@@ -13,7 +13,7 @@
     var F = cur.type && cur.type.flush;
     if (!F) { widokInspekcji("flList", "fragment", { rodzaj: "flush", lista: [] }); return; }
     if (fl.taps.length !== F.taps.length) fl = OESTFlush.start(F);
-    $("flOn").checked = fl.on; $("flList").classList.toggle("off", !fl.on);
+    $("flOn").checked = fl.on; $("flList").inert = !fl.on;
     // lista punktów (AOV): bez tygodnia, nagłówki grup (klapy), inne podpowiedzi
     $("flWeekL").hidden = $("flWeek").hidden = !!F.points;
     if (F.ui === "checks") { // lista potwierdzeń (Weekly Spa Checks, Weekly Generator Check): bez przycisków AOV; podpowiedź z konfiguracji typu
@@ -25,7 +25,7 @@
       window.OESTT("„Nasz raport” w ⚙ obok Wyślij wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.", "“Our report” in ⚙ next to Send off: only photos of the filled-in forms go to the report. On: the filled-in Word form goes, with form photos as an extra.");
     }
     var heads = {}, at = 0; (F.groups || []).forEach(function (g) { heads[at] = g.name; at += g.n; });
-    $("flWeek").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-w") === fl.week); });
+    $("flWeek").value = fl.week;
     widokInspekcji("flList", "fragment", { rodzaj: "flush", opcje: [["yes", "Yes", "ok"], ["no", "No", "fail"], ["na", "N/A", "na"]], lista: F.taps.map(function (name, i) {
       var t = fl.taps[i], pics = tapPhotos(i), odczyt = (F.odczyty || []).indexOf(name) >= 0;
       return { i: i, grupa: heads[i], stan: t.state, tekst: F.etykieta ? name.replace(new RegExp(F.etykieta), "") : name,
@@ -37,23 +37,20 @@
   }
   var flTap = null;
   $("flushBox").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
+    var b = e.target.closest("ion-button"); if (!b) return;
     if (b.hasAttribute("data-w")) { var w = +b.getAttribute("data-w"); fl.week = fl.week === w ? 0 : w; renderFlush(); updateFormHint(); return; }
     if (b.hasAttribute("data-fl")) { fl.taps[+b.getAttribute("data-fl")].state = b.getAttribute("data-s"); renderFlush(); updateFormHint(); return; }
-    if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); queueMicrotask(function () { var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.focus(); }); return; }
+    if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); queueMicrotask(function () { var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.setFocus(); }); return; }
     if (b.hasAttribute("data-fldel")) { var at = +b.getAttribute("data-fldel"), p = photos[at]; if (p) { URL.revokeObjectURL(p.url); photos.splice(at, 1); renderPhotos(); } return; }
-    if (b.hasAttribute("data-flcam")) {
-      var tap = +b.getAttribute("data-flcam");
-      if (window.OESTAparat && OESTAparat.available()) {
-        OESTAparat.take(camOpts(photoKind(tap, false))).then(function (bl) { if (bl) addFiles([new File([bl], "zdjecie.jpg", { type: "image/jpeg", lastModified: Date.now() })], tap); }, function (er) { $("flHint").textContent = er.message; });
-      } else { flTap = tap; $("flCam").click(); }
-    }
+    if (b.hasAttribute("data-flcam")) { flTap = +b.getAttribute("data-flcam"); $("flCam").click(); }
   });
-  $("flCam").addEventListener("change", function () { var t = flTap; flTap = null; if (t != null) addFiles(this, t); });
-  $("flushBox").addEventListener("input", function (e) { var el = e.target.closest("input[data-fln]"); if (el) fl.taps[+el.getAttribute("data-fln")].note = el.value; });
+  $("flushBox").addEventListener("input", function (e) { var el = e.target.closest("ion-input[data-fln]"); if (el) fl.taps[+el.getAttribute("data-fln")].note = el.value; });
   $("flOn").addEventListener("change", function () { fl.on = this.checked; renderFlush(); updateFormHint(); });
   function flushReport(w) {
     var F = cur.type.flush;
     return { points: !!F.points, ui: F.ui || "", summary: F.summary || null, statement: F.statement || null, podtytul: F.podtytul || "", etykieta: F.etykieta || "", col: F.col, groups: F.groups || null, strefy: F.strefy || null, wzorBasic: F.wzorBasic || "", building: F.building, title: F.title, year: w.getFullYear(), month: w.getMonth(), week: fl.week, date: w, noDate: !dateOn(), name: val("podpis"),
       taps: F.taps.map(function (n, i) { return { name: n, state: fl.taps[i].state, note: (fl.taps[i].note || "").trim() }; }) };
   }
+
+  $("flWeek").addEventListener("change", function () { fl.week = +this.value; renderFlush(); updateFormHint(); });
+  $("flList").addEventListener("change", function (e) { var el = e.target.closest("ion-select[data-fl]"); if (el) { fl.taps[+el.dataset.fl].state = el.value; renderFlush(); updateFormHint(); } });

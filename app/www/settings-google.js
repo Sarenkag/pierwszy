@@ -93,7 +93,9 @@
           var why='';try{var j=await response.json();why=j&&j.error&&j.error.message?String(j.error.message).slice(0,160):'';}catch(_){}
           throw Error('GOOGLE_HTTP_'+response.status+(why?': '+why:''));}
         if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
-        return response.status===204?{}:await response.json();
+        var result=response.status===204?{}:options&&options.binary?new Uint8Array(await response.arrayBuffer()):await response.json();
+        if(session.email!==accountEmail())throw Error('GOOGLE_ACCOUNT_MISMATCH');
+        return result;
       }finally{clearTimeout(timer);if(shared)par--;else busy=false;}
     }
     async function request(kind,url,options){
@@ -164,6 +166,14 @@
       var boundary='oest_'+Date.now(),body=new Blob(['--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name})+'\r\n--'+boundary+'\r\nContent-Type: '+(blob.type||'application/octet-stream')+'\r\n\r\n',blob,'\r\n--'+boundary+'--']);
       return request('drive','https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=multipart&fields=id,name',{method:'PATCH',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:body});
     }
+    async function listFiles(parentId){
+      if(!/^[\w-]+$/.test(parentId||''))throw Error('FOLDER_ID');
+      var out=[],page='';
+      do{var p=new URLSearchParams({q:"trashed=false and '"+parentId+"' in parents",fields:'files(id,name,mimeType),nextPageToken',pageSize:'100'});if(page)p.set('pageToken',page);
+        var r=await request('drive','https://www.googleapis.com/drive/v3/files?'+p);out=out.concat(r.files||[]);page=r.nextPageToken||'';
+      }while(page);return out;
+    }
+    function downloadFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{binary:true});}
     async function removeFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE'});}
     async function testMail(address){
       if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(address)||/[\r\n]/.test(address))throw Error('EMAIL_INVALID');
@@ -200,7 +210,7 @@
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,findFile:findFile,updateFile:updateFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
+    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,findFile:findFile,updateFile:updateFile,listFiles:listFiles,downloadFile:downloadFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
   }
   return {createGoogle:createGoogle};
 });

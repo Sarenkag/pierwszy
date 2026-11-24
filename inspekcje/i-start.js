@@ -43,14 +43,14 @@
   function renderPpmBar() {
     if (REC) {
       // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (moduly/znacznik), termin bez zmian
-      document.querySelectorAll(".ppmbar").forEach(function (el) { el.hidden = true; });
+      document.querySelectorAll("[data-ui~=ppmbar]").forEach(function (el) { el.hidden = true; });
       var pill = $("recPill");
       if (pill && window.OESTZnacznik) { pill.hidden = false; widokInspekcji(pill, "fragment", { rodzaj: "znacznik", html: OESTZnacznik.status("odzyskana") }); }
       $("ppmStage").hidden = true;
       return;
     }
     var t = cur.ppm;
-    document.querySelectorAll(".ppmbar").forEach(function (el) {
+    document.querySelectorAll("[data-ui~=ppmbar]").forEach(function (el) {
       el.hidden = !t; if (!t) return;
       var due = PPM.due(t), left = PPM.daysLeft(due);
       // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
@@ -62,7 +62,7 @@
 
     });
     // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
-    var top = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), sel = $("ppmStage");
+    var top = document.querySelector("#v-form [data-ui~=iright]") || document.querySelector("#v-form [data-ui~=top]"), sel = $("ppmStage");
     if (!top || !PPM || !PPM.setStage) return;
     if (!sel.__etapPodpiety) {
       sel.__etapPodpiety = true;
@@ -87,7 +87,7 @@
       .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []); // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
     widokInspekcji(sel, "fragment", { rodzaj: "etap", opcje: opcje });
     queueMicrotask(function () { sel.value = s; });
-    sel.className = "ppmpill s-" + (s || "none");
+    sel.color = ({ done: "success", prog: "warning", hold: "secondary" })[s] || "medium";
   }
   // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
   var GENERIC_CPS = [

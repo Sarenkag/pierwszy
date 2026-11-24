@@ -11,6 +11,7 @@
       </div>
     </div>
     <ion-button v-if="p.odzyskaj" id="rptRecover" class="oest-szary oest-szeroki" fill="outline" @click="odzyskaj">{{ p.odzyskaj }}</ion-button>
+    <ion-button v-if="p.zachowaj" fill="outline" expand="block" @click="zachowaj">{{ p.zachowaj }}</ion-button>
     <ion-button v-if="p.dysk" id="rptDrive" class="oest-link" fill="clear" :href="p.dysk.adres" target="_blank" rel="noopener">{{ p.dysk.tekst }}</ion-button>
     <div class="oest-adresaci">
       <ion-item v-for="a in p.adresaci" :key="a.k" class="oest-adresat" lines="none">
@@ -29,6 +30,7 @@ const wybor = reactive({});
 props.p.adresaci.forEach(a => { wybor[a.k] = !!a.zaznaczony && !a.wylaczony; });
 function wyslij(extra) { emit('dane', { adresaci: { ...wybor }, ...(extra || {}) }); }
 function zmien(k, v) { wybor[k] = v; wyslij(); }
+function zachowaj() { wyslij({ zachowaj: true }); emit('zamknij'); }
 function odzyskaj() { wyslij({ odzyskaj: true }); emit('zamknij'); }
 wyslij();
 </script>

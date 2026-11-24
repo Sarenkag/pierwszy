@@ -21,10 +21,10 @@
  *  - z dysku znikają najstarsze, gdy przekroczony jest limit dysku (wpis w apce zostaje oznaczony, że go tam już nie ma).
  */
 (function (root, factory) {
-  var api = factory();
+  var api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.OESTZdjecia = api.createBrowser(root);
-})(typeof window !== 'undefined' ? window : globalThis, function () {
+})(typeof window !== 'undefined' ? window : globalThis, function (root) {
   'use strict';
 
   var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
@@ -48,7 +48,7 @@
     return out;
   }
   function clampInt(v, min, max, def) { v = Math.round(Number(v)); return Number.isFinite(v) && v >= min && v <= max ? v : def; }
-  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  var pad = (root.OESTNarzedzia || (typeof require === 'function' && require('../narzedzia/narzedzia.js'))).pad;
   // nazwy plików bezpieczne dla Androida i Dysku: bez / \ : * ? " < > | i znaków sterujących
   function safe(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80); }
 

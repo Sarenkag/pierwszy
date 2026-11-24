@@ -1,5 +1,5 @@
 // Cała ścieżka (Grzegorz 08/11/2026): raport z kolejki → mail z Word + PDF (bez zmian) → archiwum na telefonie →
-// Word na Dysku (OEST Raporty / budynek / rodzaj). Ponowne wysłanie tego samego raportu nadpisuje plik na Dysku.
+// Word + PDF + dane na Dysku (24/11/2026) (OEST Raporty / budynek / rodzaj). Ponowne wysłanie tego samego raportu nadpisuje plik na Dysku.
 // Błąd Dysku nie psuje maila. Moduły ładowane jak w apce (wysylka.js + raporty.js), IndexedDB w pamięci.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -66,10 +66,19 @@ function app(o = {}) {
   new Function('window', fs.readFileSync(__dirname + '/../../moduly/narzedzia/narzedzia.js', 'utf8'))(root); // jak w apce: narzędzia (esc) przed modułem
   new Function('window', require('node:fs').readFileSync(__dirname + '/../../moduly/konto/konto.js', 'utf8'))(root); // jak w apce: moduly/konto przed modułem wysyłki
   new Function('window', 'setInterval', fs.readFileSync(__dirname + '/../../moduly/wysylka/wysylka.js', 'utf8'))(root, () => 0);
+  root.OESTSender.configure({ google: () => root.OESTGoogle, clientConfigured: () => !!root.OEST_CONFIG.googleWebClientId, markSent: (ppm, id) => root.OEST_PPM?.markSent(ppm, id) });
   return { root, S: root.OESTSender, R: root.OESTRaporty, mails, files, folders, events, setDrive: v => { driveDown = !v; } };
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
-async function settle(a) { for (let i = 0; i < 40; i++) { await wait(5); if (!a.R.busy() && !a.S.busy()) { await wait(5); if (!a.R.busy()) return; } } }
+async function settle(a) {
+  await a.S.whenIdle();
+  await a.S.syncReports(); // czekamy także na ponowny zapis archiwum, zanim R.busy() zacznie pokazywać upload
+  for (let i = 0; i < 200; i++) {
+    await wait(5);
+    if (!a.R.busy() && !a.S.busy()) return;
+  }
+  assert.fail('Raporty lub kolejka nie zakończyły pracy');
+}
 const item = (fill = 1) => ({ type: 'flush', code: 'TB', name: 'Weekly Flushing TB 08112026', subject: 'Weekly Flushing TB 08112026', body: 'x',
   docx: new Uint8Array(1000).fill(fill), pdf: new Uint8Array(1200).fill(fill), rpt: ['Tower B', 'Taps/Shower Flushing'], ppm: 'EFA-INS-010' });
 
@@ -79,7 +88,7 @@ test('mail Word + PDF, potem Word na Dysku w OEST Raporty / Tower B / rodzaj; PD
   await a.S.enqueue(item()); await settle(a);
   assert.equal(a.mails.length, 1);
   assert.deepEqual(a.mails[0].files.map(f => f.name), ['Weekly Flushing TB 08112026.pdf', 'Weekly Flushing TB 08112026.docx'], 'mail bez zmian: Word + PDF');
-  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx'], 'na Dysk tylko Word');
+  assert.deepEqual(a.events.filter(x => x.endsWith('.docx')), ['upload Weekly Flushing TB 08112026.docx'], 'Word w komplecie Word + PDF + JSON');
   assert.deepEqual([...a.folders.keys()], ['root/OEST Raporty', 'f1/Tower B', 'f2/Taps Shower Flushing']);
   const [rec] = await a.R.list();
   assert.equal(rec.docx.length, 1000); assert.equal(rec.pdf.length, 1200); assert.equal(rec.dirty, false);
@@ -91,8 +100,8 @@ test('ponowne Wyślij tego samego raportu (dopisane zdjęcie): drugi mail, ten s
   await a.S.enqueue(item(1)); await settle(a);
   await a.S.enqueue(item(2)); await settle(a);
   assert.equal(a.mails.length, 2);
-  assert.equal(a.files.size, 1, 'na Dysku tylko ostatni raport');
-  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx', 'update Weekly Flushing TB 08112026.docx']);
+  assert.equal(a.files.size, 3, 'na Dysku tylko ostatni raport');
+  assert.deepEqual(a.events.filter(x => x.endsWith('.docx')), ['upload Weekly Flushing TB 08112026.docx', 'update Weekly Flushing TB 08112026.docx']);
   const b = [...a.files.values()][0].blob; assert.equal(new Uint8Array(await b.arrayBuffer())[0], 2);
 });
 
@@ -105,7 +114,7 @@ test('Dysk niedostępny: mail wychodzi, raport czeka w telefonie i trafia na Dys
   assert.equal((await a.R.stats()).pending, 1);
   a.setDrive(true);
   await a.S.run({}); await settle(a); // np. start apki / powrót sieci: kolejka pusta → zaległe raporty na Dysk
-  assert.equal(a.files.size, 1);
+  assert.equal(a.files.size, 3);
   assert.equal((await a.R.stats()).pending, 0);
 });
 
@@ -126,7 +135,7 @@ test('Word tylko w liście plików wg ⚙ (formularz ze zdjęć / Flushing basic
   assert.equal(a.mails.length, 1);
   const [rec] = await a.R.list();
   assert.equal(rec.docx.length, 1000, 'główny Word „nazwa.docx”'); assert.equal(rec.pdf.length, 1200);
-  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx']);
+  assert.deepEqual(a.events.filter(x => x.endsWith('.docx')), ['upload Weekly Flushing TB 08112026.docx']);
 });
 
 test('archiwum w telefonie nie zapisało się (np. brak miejsca): Word zostaje w kolejce, potem trafia do archiwum bez drugiego maila', async () => {
@@ -142,7 +151,7 @@ test('archiwum w telefonie nie zapisało się (np. brak miejsca): Word zostaje w
   assert.equal(a.mails.length, 1, 'bez ponownego maila');
   const [rec] = await a.R.list();
   assert.ok(rec && rec.docx.length === 1000, 'Word w archiwum po ponowieniu');
-  assert.equal(a.files.size, 1, 'i na Dysku');
+  assert.equal(a.files.size, 3, 'i na Dysku');
 });
 
 test('Dysk nadrabia zaległe raporty także, gdy Gmail jest niedostępny', async () => {
@@ -181,7 +190,7 @@ test('ponowne wysłanie z przeglądarki raportów (noArchive): mail wychodzi, ar
   assert.equal(a.mails.length, 2);
   const after = (await a.R.list())[0];
   assert.equal(after.versions, before.versions); assert.equal(after.docx[0], 1);
-  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx'], 'Dysk nietknięty');
+  assert.deepEqual(a.events.filter(x => x.endsWith('.docx')), ['upload Weekly Flushing TB 08112026.docx'], 'Dysk nietknięty');
 });
 
 // ---------- etap 2c: odzyskana inspekcja – Update i Wyślij (Grzegorz 08/11/2026 12:54) ----------
@@ -203,8 +212,8 @@ test('2c: Update = nowa wersja w telefonie i nadpisany Word na Dysku, BEZ maila;
   const r = await a.S.update(up); await settle(a);
   assert.equal(r.saved, true);
   assert.equal(a.mails.length, 1, 'Update nie wysyła maila');
-  assert.equal(a.files.size, 1, 'ten sam plik na Dysku');
-  assert.deepEqual(a.events, ['upload Weekly Flushing TB 08112026.docx', 'update Weekly Flushing TB 08112026.docx']);
+  assert.equal(a.files.size, 3, 'ten sam plik na Dysku');
+  assert.deepEqual(a.events.filter(x => x.endsWith('.docx')), ['upload Weekly Flushing TB 08112026.docx', 'update Weekly Flushing TB 08112026.docx']);
   assert.equal(new Uint8Array(await [...a.files.values()][0].blob.arrayBuffer())[0], 2, 'na Dysku nowa wersja');
   const [rec] = await a.R.list();
   assert.equal(rec.versions, 2); assert.equal(rec.dirty, false);
