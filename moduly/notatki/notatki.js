@@ -122,10 +122,17 @@
   function translator() { if (!native()) return null; if (!trP) { var C = w.Capacitor; trP = C.registerPlugin ? C.registerPlugin('Translate') : C.Plugins && C.Plugins.Translate; } return trP || null; }
   function modelReady() { return w.OESTModel && w.OESTModel.available && w.OESTModel.available() ? w.OESTModel.ready() : Promise.resolve(false); }
   // Jedna droga PL → EN: pobrany model dostaje oryginał, ML Kit tylko bez modelu.
-  function english(pl, ctx) {
+  // how: 'translate' = wierne tłumaczenie w tej samej formie (krótkie pola do Vantify: miejsce, nazwa, części);
+  // domyślnie = dobrze zbudowane zdanie do raportu (notatki, opis Job Sheetu). Gdy model zawiedzie – ML Kit (25/11/2026).
+  function english(pl, ctx, how) {
     if (!pl) return Promise.resolve('');
     return modelReady().then(function (ok) {
-      if (ok) return w.OESTModel.polish(pl, pl, ctx).then(function (out) { return fix(out, 'en'); });
+      if (ok) return (how === 'translate' ? w.OESTModel.translate(pl, ctx) : w.OESTModel.polish(pl, pl, ctx)).then(function (out) { return fix(out, 'en'); }, function () { return mlkit(pl); });
+      return mlkit(pl);
+    });
+  }
+  function mlkit(pl) {
+    return Promise.resolve().then(function () {
       var tr = translator();
       return tr ? tr.plToEn({ text: pl }).then(function (r) { return fix(r && r.text, 'en'); }, function () { return ''; }) : '';
     });

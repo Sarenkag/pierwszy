@@ -4,7 +4,7 @@
     <ion-card v-if="M">
       <ion-list-header>{{ T('Model tekstowy na telefonie', 'On-device text model') }}</ion-list-header>
       <ion-item lines="none">
-        <ion-note>{{ T('Układa notatki w dobre zdania po angielsku i łączy je w jeden akapit raportu.', 'Turns notes into good English sentences and joins them into one report paragraph.') }}</ion-note>
+        <ion-note>{{ T('Układa notatki w dobre zdania po angielsku, łączy je w akapit raportu i tłumaczy pola przed Vantify.', 'Turns notes into good English sentences, joins them into a report paragraph and translates fields before Vantify.') }}</ion-note>
       </ion-item>
       <ion-item lines="none">
         <ion-note>{{ T('Nie dodaje faktów; wynik zawsze sprawdzasz Ty. Bez modelu apka działa jak dotąd.', 'It adds no facts; you always check the result. Without the model the app works as before.') }}</ion-note>
@@ -20,9 +20,16 @@
           <p v-if="m.blad">{{ m.blad }}</p>
         </ion-label>
       </ion-item>
+      <ion-button v-if="m.zezwol" expand="block" fill="outline" @click="akcja('allow')">{{ T('Zezwól na odczyt folderu Modele', 'Allow reading the Modele folder') }}</ion-button>
       <ion-button v-if="m.pobierz" expand="block" fill="outline" @click="akcja('download')">{{ T('⬇ Pobierz model (Wi‑Fi)', '⬇ Download model (Wi‑Fi)') }}</ion-button>
       <ion-button v-if="m.anuluj" expand="block" fill="outline" @click="akcja('remove')">{{ T('Anuluj pobieranie', 'Cancel download') }}</ion-button>
       <ion-button v-if="m.usun" expand="block" fill="outline" @click="akcja('remove')">{{ T('Usuń model z telefonu', 'Remove model from phone') }}</ion-button>
+      <ion-item v-if="m.prompt" lines="none">
+        <ion-label class="ion-text-wrap">
+          <h3>{{ T('Stały prompt (po angielsku, tylko do podglądu)', 'Fixed prompt (read only)') }}</h3>
+          <p>{{ m.prompt }}</p>
+        </ion-label>
+      </ion-item>
     </ion-card>
     <ion-card>
       <ion-list-header>{{ T('Modele na telefonie', 'On-device models') }}</ion-list-header>
@@ -75,6 +82,8 @@ async function akcja(a) { odswiez(await M.akcja(a)); }
 function zmien(k, v) { if (f[k] === v) return; f[k] = v; S.zmiany(true); } // niezapisane zmiany: pytanie przy Wstecz (straż ekranu settings)
 function zapisz() { wynik.value = S.zapiszPola({ 'ai.visionModel': String(f.visionModel || '').trim(), 'ai.provider': f.provider, 'ai.cloudModel': String(f.cloudModel || '').trim() }); }
 watch(() => props.wersja, () => odswiez()); // PL/EN: teksty z modułu w nowym języku
-onMounted(() => { S.zmiany(false); odswiez(); });
-onUnmounted(() => { zywy = false; clearTimeout(zegar); });
+// po powrocie z ustawień Androida („Dostęp do wszystkich plików”) stan modelu czytamy od nowa
+function widoczna() { if (document.visibilityState === 'visible') odswiez(); }
+onMounted(() => { S.zmiany(false); odswiez(); document.addEventListener('visibilitychange', widoczna); });
+onUnmounted(() => { zywy = false; clearTimeout(zegar); document.removeEventListener('visibilitychange', widoczna); });
 </script>
