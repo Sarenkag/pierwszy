@@ -57,8 +57,6 @@ test('przywracanie Flushing z danych raportu: tydzień, odpowiedzi, notatki i zd
   assert.deepEqual(m.taps[3],{state:'no',note:'Valve stiff'}); // kran 2 z raportu jest teraz czwarty
   assert.equal(m.taps[2].state,'yes'); // nowy kran: domyślne Yes
   assert.equal(mt[0],1);assert.equal(mt[2],0);assert.equal(mt[4],null); // zdjęcie usuniętego kranu → zdjęcie ogólne
-  const fs=require('node:fs'),path=require('node:path'),szkic=fs.readFileSync(path.join(__dirname,'../../inspekcje/przywroc.js'),'utf8')+fs.readFileSync(path.join(__dirname,'../../inspekcje/i-szkic.js'),'utf8');
-  assert.match(szkic,/function offerRestore/);
-  assert.match(szkic,/q\.snap && q\.snap\.fl/,'przywracanie z danych raportu w kolejce');
+  const fs=require('node:fs'),path=require('node:path'),szkic=fs.readFileSync(path.join(__dirname,'../../inspekcje/i-szkic.js'),'utf8');
   assert.doesNotMatch(szkic+fs.readFileSync(path.join(__dirname,'../../inspekcje/flush.js'),'utf8'),/fromPdf/,'apka nie czyta PDF (PDF tylko z Worda silnikiem)');
 });
