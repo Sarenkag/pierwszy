@@ -35,7 +35,7 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
       if (!(await pg.locator('#toQueue').isVisible().catch(() => false))) { bad.push(id + ': brak formularza z przyciskiem Wyślij dla inspekcji z listy PPM' + (errs.length ? ' (' + errs.join(' | ') + ')' : '')); await ctx.close(); return; }
       const flush = await pg.locator('[data-flcam]').count(), temps = await pg.locator('#tempList ion-input[data-t]').count();
       if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
-      if (await pg.locator('#flWeek [data-w="1"]').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
+      if (await pg.locator('#flWeek').isVisible().catch(() => false)) await wybierz(pg, '#flWeek', '1'); // tydzień: ion-select (Formularz.vue)
       let expectTemps = null;
       if (temps) {
         // formularz pomiarów: wszystkie pola jak na kartce firmy (EFA-INS-024: 22 wyloty)
@@ -48,12 +48,12 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
         const hint = await pg.locator('#formHint').textContent();
         if (!new RegExp('Wpisano ' + temps + '/' + temps + '\\.').test(hint) || /Poza zakresem/.test(hint)) bad.push(id + ': po wpisaniu ' + temps + ' pomiarów w zakresie formularz pokazuje: ' + hint);
       }
-      else if (flush) { const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="0"]')]); await fc.setFiles({ name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
+      else if (flush) { await zdjecia(pg, '[data-flcam="0"]', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); } // zdjęcie kranu: moduł aparatu (Ionic)
       // inspekcja z kartki: formularz dodaje się przyciskiem „Formularz” (zwykłe zdjęcie to nie formularz – Grzegorz 12/11/2026)
-      else if ((PPM.find(t => t.id === id) || {}).form === 'folder' && await pg.locator('#shGalIn').count()) { await zdjecia(pg, '#shGalIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
+      else if ((PPM.find(t => t.id === id) || {}).form === 'folder' && await pg.locator('#shCamIn').count()) { await zdjecia(pg, '#shCamIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }, 'Dodaj z galerii'); await pg.waitForTimeout(600); } // kafelek Formularz → „Dodaj z galerii”
       else if (await pg.locator('#galIn').count()) { await zdjecia(pg, '#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
-      if (await pg.locator('#toQueue').isDisabled()) { const ok = pg.locator('[data-allok], #allOk, button:has-text("Wszystko OK")').first(); if (await ok.count()) await ok.click().catch(() => {}); await pg.waitForTimeout(300); }
-      if (await pg.locator('#toQueue').isDisabled()) { bad.push(id + ': Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')'); await ctx.close(); return; }
+      if (await pg.locator('#toQueue').evaluate(e => e.disabled)) { const ok = pg.locator('[data-allok], #allOk, button:has-text("Wszystko OK")').first(); if (await ok.count()) await ok.click().catch(() => {}); await pg.waitForTimeout(300); }
+      if (await pg.locator('#toQueue').evaluate(e => e.disabled)) /* ion-button: właściwość disabled */ { bad.push(id + ': Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')'); await ctx.close(); return; }
       const t0 = Date.now(); await pg.click('#toQueue'); let naCzas = false; while (!naCzas && Date.now() - t0 < RAPORT_MS) { naCzas = await pg.evaluate(queued).catch(() => false); if (!naCzas) await pg.waitForTimeout(100); } czasy.push(Date.now() - t0); // czekanie na wynik obietnicy (waitForFunction brał samą obietnicę za „prawdę”)
       if (!naCzas) { bad.push(id + ': Wyślij nie dodało raportu (PDF + Word) do kolejki w ' + RAPORT_MS + ' ms' + (errs.length ? ' (' + errs.join(' | ') + ')' : '')); await ctx.close(); return; } // limit jak dawne stałe czekanie: przekroczenie = FAIL
       await pg.waitForTimeout(200);

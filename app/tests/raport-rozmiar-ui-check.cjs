@@ -32,13 +32,12 @@ async function photo(pg, i) {
     if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
     const taps = await pg.locator('[data-flcam]').count(); assert.ok(taps >= 16, 'Flushing TB: kranów ' + taps);
     for (let i = 0; i < taps; i++) {
-      const f = await photo(pg, i), [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="' + i + '"]')]);
-      await fc.setFiles(f); await pg.waitForFunction(n => document.querySelectorAll('.fl-pics img').length >= n, i + 1, { timeout: 60000 });
+      await zdjecia(pg, '[data-flcam="' + i + '"]', await photo(pg, i)); await pg.waitForFunction(n => photos.filter(p => p.tap != null).length >= n, i + 1, { timeout: 60000 }); // zdjęcie kranu: moduł aparatu (Ionic)
     }
-    await pg.click('#photoSize i[data-v="duze"]'); // najgorszy przypadek: ogólne na „Duże”
-    for (let i = 0; i < GENERAL; i++) { await zdjecia(pg, '#galIn', await photo(pg, 30 + i)); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length >= n, i + 1, { timeout: 60000 }); }
-    await zdjecia(pg, '#shGalIn', await photo(pg, 51)); await pg.waitForTimeout(2500);
-    if (await pg.locator('#flWeek [data-w="1"]:not(.on)').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
+    await wybierz(pg, '#photoSize ion-select', 'duze'); // najgorszy przypadek: ogólne na „Duże”
+    for (let i = 0; i < GENERAL; i++) { await zdjecia(pg, '#galIn', await photo(pg, 30 + i)); await pg.waitForFunction(n => photos.filter(p => p.tap == null && !p.sheet).length >= n, i + 1, { timeout: 60000 }); }
+    await zdjecia(pg, '#shCamIn', await photo(pg, 51), 'Dodaj z galerii'); // kafelek Formularz → „Dodaj z galerii” await pg.waitForTimeout(2500);
+    if (await pg.locator('#flWeek').isVisible().catch(() => false)) await wybierz(pg, '#flWeek', '1'); // tydzień: ion-select
     await pg.click('#toQueue');
     // dużo zdjęć ogólnych: apka pyta przed wysłaniem (Grzegorz 05/11 08:20); OEST_ANSWER=no → „Zostaw tak”
     const asked = await pg.waitForSelector('.oest-ask', { timeout: 20000 }).then(() => true, () => false);
