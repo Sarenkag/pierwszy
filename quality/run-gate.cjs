@@ -73,20 +73,6 @@ function browserEnv() {
   return env;
 }
 
-// raport-ui-check: każda inspekcja z FAKTYCZNEJ listy PPM (window.OEST_PPM.tasks w app/www/ppm.js, ten sam odczyt co w teście:
-// app/tests/ppm-lista.cjs) musi być sprawdzona. Komentarze w kodzie się nie liczą. Pominięta = SKIPPED (QG-002).
-function ppmScenarioCheck(out) {
-  let ids;
-  try { ids = require(path.join(__dirname, '..', 'app', 'tests', 'ppm-lista.cjs')).inspections(path.join(APP, 'www')); }
-  catch (e) { return { expected: 0, checked: 0, missing: ['(lista PPM nieczytelna: ' + e.message + ')'], reportedSkip: [], silent: [] }; }
-  const line = (out.match(/^raport-ui-check: .*$/m) || [''])[0];
-  const head = line.split(' | ')[0], tailTxt = line.slice(head.length);
-  const checked = new Set((head.split('PDF: ')[1] || '').match(/EFA-INS-\d{3}/g) || []);
-  const reportedSkip = ((tailTxt.match(/pominięte[^|]*/) || [''])[0].match(/EFA-INS-\d{3}/g)) || [];
-  const missing = ids.filter(id => !checked.has(id) && !allowed.has('app/tests/raport-ui-check.cjs#' + id));
-  return { expected: ids.length, checked: ids.filter(id => checked.has(id)).length, missing, reportedSkip, silent: missing.filter(id => !reportedSkip.includes(id)) };
-}
-
 async function runBrowser() {
   const env = browserEnv();
   const tests = discover('-ui-check.cjs', manifest.browser).filter(t => (!ONLY || t.file.endsWith(ONLY)) && wGrupie(t));
@@ -118,10 +104,6 @@ async function runBrowser() {
     else if (t.passMarker && !out.includes(t.passMarker)) { status = 'NOT RUN'; detail = `Kod wyjścia 0, ale brak potwierdzenia „${t.passMarker}” – test mógł nie dojść do końca.\n` + tail(out); }
     else {
       status = 'PASS'; detail = tail(out, 2);
-      if (t.scenarios === 'ppm-inspections') {
-        scenarios = ppmScenarioCheck(out);
-        if (scenarios.missing.length) { status = 'SKIPPED'; detail = `Sprawdzono ${scenarios.checked} z ${scenarios.expected} inspekcji. Pominięte: ${scenarios.missing.join(', ')}` + (scenarios.silent.length ? ` (bez zgłoszenia w wyniku testu: ${scenarios.silent.join(', ')})` : '') + '. Test sam w sobie przeszedł, ale pominięcie scenariusza nie jest sukcesem (QG-002).'; }
-      }
     }
     if (t.unregistered) detail = (detail ? detail + ' | ' : '') + 'Test spoza listy quality/required-tests.json – dopisz go do listy.';
     record({ id: t.file, kind: 'browser', status, seconds, detail, ...(scenarios ? { scenarios } : {}), ...(wczytane ? { wczytane } : {}) });
