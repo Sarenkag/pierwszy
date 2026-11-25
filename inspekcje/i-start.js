@@ -63,30 +63,12 @@
     // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
     var top = document.querySelector("#v-form [data-ui~=iright]") || document.querySelector("#v-form [data-ui~=top]"), sel = $("ppmStage");
     if (!top || !PPM || !PPM.setStage) return;
-    if (!sel.__etapPodpiety) {
-      sel.__etapPodpiety = true;
-      sel.addEventListener("change", function () {
-        var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
-        var was = PPM.stage(tt), closed = was && (was.s === "done" || was.s === "queued" || was.s === "sent");
-        if (this.value === "done") { if (!closed) $("finishIns").click(); return; } // „Zakończona” z listy = to samo co ✓ Zakończ inspekcję (Gotowa, zielony klocek); ustawia tylko Grzegorz
-        // cofnięcie „Gotowa” (Grzegorz 04/11: Zakończ → Nie rozpoczęta → inspekcja zniknęła): termin wraca na ten sprzed Zakończ,
-        // a szkic traci znacznik Gotowa, żeby nic go nie wyczyściło. Odpowiedzi i zdjęcia zostają zawsze.
-        if (closed && this.value === "prog") { unready(tt); return; }
-        if (closed && this.value !== "done") {
-          if (was.period) PPM.setDue(tt, was.period);
-          var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
-        }
-        if (!this.value) { PPM.setStage(tt, null); if (PPM.setUnstarted) PPM.setUnstarted(tt, ppmCounts()); } else PPM.setStage(tt, { s: this.value, manual: true, day: NZ.dzienIso(new Date()) });
-        renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
-      });
-    }
+    // wybór w klocku StatusInspekcji → zmienEtap (tytul-etap.js)
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
     var opcje = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
       .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []); // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
-    widokInspekcji(sel, "fragment", { rodzaj: "etap", opcje: opcje });
-    queueMicrotask(function () { sel.value = s; });
-    sel.color = ({ done: "success", prog: "warning", hold: "secondary" })[s] || "medium";
+    widokInspekcji(sel, "fragment", { rodzaj: "etap", opcje: opcje, stan: s }, zmienEtap);
   }
   // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
   var GENERIC_CPS = [
@@ -100,7 +82,7 @@
   function openPpm(t0, code0) {
     var t = t0 || PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
-    cur.ppm = t; $("appMenu").href = t0 ? backUrl() : "../index.html#ppm";
+    cur.ppm = t; wyjscie = t0 ? backUrl() : "../index.html#ppm";
     if (t.open && code0 && !t.dev) { cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; if (cur.type) openForm(code0); return; } // urządzenie z listy (np. izolator)
     if (t.open && t.dev) {
       // jedna rozdzielnica = osobna inspekcja: prosto do jej formularza
@@ -162,7 +144,7 @@
       if (t) { openPpm(t, m.code); return; }
       cur.type = TYPES.filter(function (x) { return x.id === m.type; })[0];
       if (!cur.type) throw new Error("REPORT_NO_DATA");
-      $("appMenu").href = backUrl(); openForm(m.code);
+      wyjscie = backUrl(); openForm(m.code);
     }).catch(fail);
   }
   window.addEventListener("oest:lang", function () { if (REC) renderPpmBar(); });
@@ -197,7 +179,7 @@
   });
 
   // W apce na Androida: powrót do menu głównego
-  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { wyjscieApka = true; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
   var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   if ("serviceWorker" in navigator) {

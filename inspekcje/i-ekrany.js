@@ -8,11 +8,17 @@
   // Odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026): inspekcja odtworzona z raportu w archiwum (moduly/raporty), otwierana
   // z klocka Raporty (#rec=id). Osobny szkic, bez zmian na liście PPM (termin, etap, ⚙), pigułka „Odzyskana”, obok Wyślij przycisk Update.
   var REC = null, REC_ID = (function () { try { return new URLSearchParams(location.hash.slice(1)).get("rec") || ""; } catch (e) { return ""; } })();
+  // widoczny ekran strony i jego tytuł w górnym pasku ramy (Grzegorz 25.11.2026: ten sam pasek co w całej apce, tytuł = nazwa ekranu / inspekcji)
+  var widok = "", tytulFormularza = ""; // tytulFormularza: kod urządzenia albo nazwa zlecenia zbiorczego (i-formularz.js, i-zbiorcze.js)
+  // wyjście ze strony Wstecz z ekranu startowego: w apce na Androida do menu głównego albo tam, skąd przyszedłem (i-start.js), w przeglądarce – lista, z której przyszedłem
+  var wyjscie = "../index.html#home", wyjscieApka = false;
+  window.addEventListener("oest:lang", tytul); // tytul(): tytul-etap.js
   function show(v) {
     if (REC && (v === "home" || v === "list")) { leave(backUrl()); return; } // odzyskana: wyjście wraca do klocka Raporty
     if (cur.ppm && (v === "home" || (v === "list" && !cur.ppm.open))) { leave(backUrl()); return; }
     if (APP && v === "home" && location.hash === "#queue") { leave(backUrl()); return; } // z kolejki wracamy do listy inspekcji
     ["home", "list", "form", "preview", "queue"].forEach(function (n) { $("v-" + n).hidden = n !== v; });
+    widok = v; tytul();
     if (v === "home") renderHome();
     if (v === "list") renderList();
     renderPpmBar();
@@ -27,12 +33,11 @@
   function gm() { return APP && !!window.OESTSender && OESTSender.active(); }
   // Podczas przygotowania raportu formularz musi zostać ten sam (wynik dotyczy tego urządzenia i tego zlecenia)
   var queueing = false;
-  // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko i strzałkę ‹ widocznego ekranu obsługuje szkielet;
-  // ekran bez strzałki → lista, z której przyszedłem. Treść przewija Rama.vue.
-  OESTEkrany.strona({ up: function () { if (queueing) return; var back = document.querySelector("[data-inspekcja] > ion-header [data-ui~=back]:not([hidden])") || document.querySelector(".view:not([hidden]) [data-ui~=back]:not([hidden])"); if (back) back.click(); else leave(backUrl()); } });
+  // Wstecz telefonu (szkielet Ionic, moduly/szkielet; Grzegorz 08/11): okienko zamyka szkielet; potem jeden poziom w górę strony,
+  // z ekranu startowego – lista, z której przyszedłem. Bez strzałki ‹ na ekranie (Grzegorz 25.11.2026: tylko Wstecz telefonu). Treść przewija Rama.vue.
+  var WSTECZ = { list: "home", form: "list", preview: "form", queue: "home" };
+  OESTEkrany.strona({ up: function () { if (queueing) return; if (WSTECZ[widok]) show(WSTECZ[widok]); else leave(wyjscieApka ? wyjscie : backUrl()); } });
   document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { if (!queueing) show(b.getAttribute("data-go")); }); });
-  // strzałka ‹ do apki: przez leave() (szkic zapisany, wysyłka w tle skończona), nie zwykły link (audyt 19/11/2026 nr 37); adres = href ustawiany przez stronę
-  $("appMenu").addEventListener("click", function (e) { e.preventDefault(); if (!queueing) leave(this.href); });
 
   // zrobione dziś (zaznaczane przy dodaniu do kolejki), osobno dla każdego rodzaju — ten sam kod może być w dwóch rejestrach
   function doneToday(t) { var d = load("done", {}), day = d[NZ.dzienIso(new Date())] || {}; return day[t.id] || {}; }
@@ -73,7 +78,6 @@
   var lastQueued = "";
   function renderList() {
     var t = cur.type, dn = doneToday(t), q = val("search").toUpperCase();
-    $("listTitle").textContent = t.name;
     var all = devices(t);
     var done = all.filter(function (d) { return dn[d.code]; }).length;
     $("listSub").textContent = t.batch ? window.OESTT("Raport zbiorczy: otwórz tylko urządzenia z uwagami albo ze zdjęciem", "Combined report: open only devices with remarks or a photo") :

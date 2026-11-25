@@ -1,4 +1,4 @@
-<!-- Raporty i zdjęcia. Licznik i opcja zdjęć: OESTSettingsUI.raportyLicznik()/zdjeciaStempel()/zapiszStempel() (app/www/settings-ui.js).
+<!-- Raporty i zdjęcia. Licznik: OESTSettingsUI.raportyLicznik() (app/www/settings-ui.js).
      „Moje raporty”: dane i akcje OESTRaportyUI (moduly/raporty/przegladarka.js) – lista z klocków (czesci/Klocek.vue), podgląd w OESTOkna.okno (RaportPodglad.vue). -->
 <template>
   <div class="ion-padding">

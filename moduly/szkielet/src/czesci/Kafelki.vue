@@ -1,27 +1,20 @@
-<!-- Kafelki – JEDEN kafelek w całej apce (Grzegorz 04/11/2026): ekran główny, Ustawienia, Reactive, wybór rodzaju inspekcji.
-     Stałe miejsca: ikona, nazwa, podpis (gdy lista ma podpisy – zawsze miejsce na 2 linie, karty równe), licznik w rogu. Lista z modułu:
-       [{ id, trasa (data-nav) | bez trasy = zdarzenie „wybierz”, ikona (adres svg albo ikona ionicons), tytul, podpis, licznik }] -->
+<!-- Kafelki – siatka 2 kolumny z JEDNYM klockiem Kafel.vue powtórzonym dla każdej pozycji (ekran główny, Ustawienia, Reactive, wybór rodzaju inspekcji).
+     Gdy lista ma podpisy – karty równej wysokości (.oest-rowne). Lista z modułu: [{ id, trasa, ikona, tytul, podpis, licznik }] -->
 <template>
-  <ion-grid>
+  <ion-grid :class="['oest-kafelki', { 'oest-rowne': lista.some(x => x.podpis) }]">
     <ion-row>
       <ion-col size="6" v-for="it in lista" :key="it.id">
-        <ion-card button :data-nav="it.trasa || undefined" :data-id="it.id" :data-type="zastane ? it.id : undefined" @click="!it.trasa && emit('wybierz', it)">
-          <ion-card-header>
-            <slot name="ikona" :element="it"></slot>
-            <ion-icon v-if="it.ikona" :src="typeof it.ikona === 'string' ? it.ikona : undefined" :icon="typeof it.ikona === 'string' ? undefined : it.ikona" aria-hidden="true"></ion-icon>
-            <ion-badge v-if="it.licznik" color="danger">{{ it.licznik }}</ion-badge>
-            <ion-card-title>{{ it.tytul }}</ion-card-title>
-            <ion-card-subtitle :ref="el => rezerwuj(el && el.$el, it.podpisAlt)">{{ it.podpis }}</ion-card-subtitle>
-          </ion-card-header>
-        </ion-card>
+        <Kafel :it="it" :zastane="zastane" @wybierz="x => emit('wybierz', x)">
+          <template #ikona="{ element }"><slot name="ikona" :element="element"></slot></template>
+        </Kafel>
       </ion-col>
     </ion-row>
   </ion-grid>
 </template>
 
 <script setup>
-import { IonGrid, IonRow, IonCol, IonCard, IonCardHeader, IonIcon, IonBadge, IonCardTitle, IonCardSubtitle } from '@ionic/vue';
+import { IonGrid, IonRow, IonCol } from '@ionic/vue';
+import Kafel from './Kafel.vue';
 defineProps({ lista: Array, zastane: Boolean, klasa: String });
 const emit = defineEmits(['wybierz']);
-function rezerwuj(el, tekst) { if (el && tekst != null && window.OESTPodmien) window.OESTPodmien.miejsce(el, tekst); }
 </script>

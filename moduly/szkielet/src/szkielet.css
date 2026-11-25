@@ -249,6 +249,8 @@ ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14
 .oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
 .oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
 .oest-kafelki ion-card-title { align-self: stretch; font-size: .95rem; font-weight: 700; color: var(--ink); }
+/* licznik kafelka w prawym górnym rogu, poza układem – każdy kafelek ma ten sam rozmiar bez względu na licznik (Grzegorz 25.11.2026) */
+.oest-kafelki ion-card-header > ion-badge { position: absolute; top: 10px; right: 10px; }
 ion-header.oest-glowny ion-toolbar { --background: transparent; --padding-start: 16px; --padding-end: 16px; --padding-top: 6px; --padding-bottom: 6px; }
 ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-radius: 14px; }
 ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
@@ -363,7 +365,7 @@ ion-progress-bar.oest-licznik.oest-pelny { --progress-background: #e5484d; }
 ion-button.oest-duzy { --border-radius: 14px; min-height: 52px; text-transform: none; font-size: 16px; font-weight: 700; letter-spacing: 0; margin: 14px 0; }
 ion-card.oest-panel ion-button.oest-duzy { margin: 0; }
 /* pasek wysyłki (czesci/PasekWysylki.vue) – piksel w piksel jak dawny .oest-sbar na main (moduly/wysylka + lampka z moduly/znacznik) */
-.oest-sbar { display: flex; flex-direction: column; background: rgba(14, 18, 40, .96); color: var(--ink, #eef1ff); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line, rgba(255, 255, 255, .12)); padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)); font: 13px/1.2 var(--font-body, system-ui), sans-serif; }
+.oest-sbar { display: flex; flex-direction: column; background: rgba(14, 18, 40, .96); color: var(--ink, #eef1ff); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line, rgba(255, 255, 255, .12)); font: 13px/1.2 var(--font-body, system-ui), sans-serif; }
 .oest-sbar-r { display: flex; align-items: center; gap: 8px; height: 29px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
 .oest-sbar-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .oest-sbar-r > span:last-child { opacity: .6; font-size: 11px; will-change: opacity; }
@@ -602,3 +604,24 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 ion-card[data-grupa="otwarte"] { --oest-grupa: #ff8a3d; }
 ion-card[data-grupa="szkic"] { --oest-grupa: #8b949e; }
 
+/* przełącznik PL|EN w górnym pasku (Grzegorz 25.11.2026): w ion-toolbar Ionic nadaje przyciskom kolor paska i rogi 2 px – tu tylko zmienne:
+   wybrany język = fioletowy gradient z poświatą jak na main, niewybrany szary */
+ion-toolbar ion-buttons .oest-jezyk ion-button.in-buttons { --border-radius: 9px; --color: var(--muted); }
+ion-toolbar ion-buttons .oest-jezyk ion-button.in-buttons[fill=solid] { --background: var(--grad); --color: #fff; --ion-toolbar-color: var(--grad); --ion-toolbar-background: #fff; /* Ionic md: pełny przycisk w pasku bierze tło z --ion-toolbar-color, napis z --ion-toolbar-background */ --box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(124,132,255,.5); }
+/* tło pod przyciskami nawigacji telefonu (czesci/TloNawigacji.vue): pusty pasek w stopce = tylko odstęp safe-area dołu od Ionic, kolor tła apki */
+ion-footer ion-toolbar:empty { --min-height: 0; --padding-top: 0; --padding-bottom: 0; --background: var(--bg); }
+/* rząd statusu inspekcji (ekrany/inspekcja/Formularz.vue, Grzegorz 25.11.2026): 11 kolumn – ⋮ 3 | status 5 | termin 3; pigułka zawsze ta sama szerokość */
+ion-grid[data-ui~=iright] { --ion-grid-columns: 11; }
+/* Imię / Data – niższe wiersze, mniejszy odstęp (Grzegorz 25.11.2026) */
+ion-list[data-ui~=ileft] ion-item { --min-height: 34px; }
+/* klocek StatusInspekcji: węższe boki pigułki */
+ion-button[data-ui~=status] { --padding-start: 10px; --padding-end: 10px; }
+/* termin inspekcji („Po terminie X dni”) – fioletowy jak na main */
+ion-text[data-termin] { --ion-color-base: #b9a8ff; }
+
+/* rząd przycisków ekranu w treści (czesci/AkcjeEkranu.vue, Grzegorz 25.11.2026): bez własnego tła paska – tło ekranu prześwituje, jak na main */
+ion-content ion-toolbar { --background: transparent; --border-width: 0; --min-height: 40px; } /* rząd ⋮ nad treścią niższy (Grzegorz 25.11.2026) */
+/* kafelki zdjęć inspekcji (czesci/KafelZdjecia.vue, Grzegorz 25.11.2026): jak na main – jasny napis, zaokrąglone rogi, wąskie boki; kolor obwódki z koloru Ionic */
+ion-button[data-ui~=kafel-zdjecia] { --color: var(--ink); --border-color: var(--line); --border-width: 1px; --border-radius: 12px; --padding-start: 2px; --padding-end: 2px; --padding-top: 8px; --padding-bottom: 8px; --ionicon-stroke-width: 1.8px; }
+ion-button[data-ui~=kafel-zdjecia][data-ok] { --border-color: var(--ion-color-success); }
+ion-button[data-ui~=kafel-zdjecia][data-alarm] { --border-color: var(--ion-color-danger); }

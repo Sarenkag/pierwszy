@@ -21,7 +21,7 @@ await page.locator('ion-card[data-nav="settings/vantify"]').click();await page.l
 assert.match(await page.locator('#vtNow').textContent(),/Eksport z 09\/11\/2026 · \d+ zleceń · wbudowany w apkę/);
 // eksport z 10/11: AOV TA (EFA-INS-003) bez 3000623 (zamknięte), z nowym 3060001 na 25/12; reszta jak w planie wbudowanym
 const rows=await page.evaluate(()=>{const V=window.OEST_VANTIFY,P=window.OEST_PPM,r=[];for(const id of Object.keys(V.jobs))for(const j of V.jobs[id])r.push({id:j.no,task:P.byId(id).name,due:j.due,f:j.f});return r;});
-const now=rows.filter(r=>r.id!=='3000623').map(r=>job(r.id,r.task,r.due,'2026-11-10 08:00:00',r.f));now.push(job('3060001','AOV Operation Testing (Tower A)','2026-12-25'));now.push(job('9999','(Sub) Monthly Spa Sampling','2026-11-30'));
+const now=rows.filter(r=>r.id!=='3000623').map(r=>job(r.id,r.task,r.due,'2026-11-10 08:00:00',r.f));now.push(job('3060001','AOV Operation Testing (Tower A)','2026-12-25'));now.push(job('9999','(Sub) Fire Dampers (Tower B)','2026-11-30'));/* zadanie bez karty w apce (Spa ma od 25.11.2026 własne karty) */
 // plik z wcześniejszym najnowszym zleceniem: tylko ostrzeżenie (data pliku = najnowsze createdAt, nie dzień eksportu), Anuluj nic nie zmienia
 await loadCsv(page,csv([job('1','AOV Operation Test (TA)','2026-11-06','2026-11-01 08:00:00')]));
 await page.locator('#vtPreview ion-note[color=warning]').waitFor();assert.match(await page.locator('#vtPreview').textContent(),/najnowsze zlecenie w pliku jest z 01\/11\/2026.*09\/11\/2026.*może być starszy/);
@@ -38,7 +38,7 @@ await page.waitForFunction(()=>/nie jest eksport Job/.test(document.getElementBy
 await loadCsv(page,csv(now));
 await page.locator('#vtSave').waitFor();const pv=await page.locator('#vtPreview').textContent();
 assert.match(pv,/Eksport z 10\/11\/2026 · \d+ zleceń/);assert.match(pv,/Nowe zlecenia: 1/);assert.match(pv,/25\/12\/2026 · AOV Operation Test \(TA\) · 3060001/);
-assert.match(pv,/Zamknięte w Vantify \(znikną z apki\): 1/);assert.match(pv,/20\/11\/2026 · AOV Operation Test \(TA\) · 3000623/);assert.match(pv,/Bez karty w apce \(pominięte\): \(Sub\) Monthly Spa Sampling/);
+assert.match(pv,/Zamknięte w Vantify \(znikną z apki\): 1/);assert.match(pv,/20\/11\/2026 · AOV Operation Test \(TA\) · 3000623/);assert.match(pv,/Bez karty w apce \(pominięte\): \(Sub\) Fire Dampers \(Tower B\)/);
 assert.equal(await page.evaluate(()=>localStorage.getItem('oest.vantify.plan')),null,'podgląd niczego nie zapisuje');
 if(out)await page.screenshot({path:path.join(out,'VANTIFY_PODGLAD_PL.png'),fullPage:true});
 // zmiana języka: podgląd zostaje (w drugim języku), nic się nie zapisuje

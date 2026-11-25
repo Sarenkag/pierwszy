@@ -673,6 +673,20 @@
       "plik": "moduly/szkielet/src/czesci/EdytorZdjec.vue",
       "powod": "Edytor zdjęć rysuje strzałki, linie i kółka po zdjęciu – Ionic nie ma komponentu do rysowania; canvas tylko w tym jednym pliku.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT2qJsdqyBpVabsBBLFtj7ru"
+    },
+    {
+      "co": "css:.oest-kafelki ion-card-header > ion-badge",
+      "powod": "Licznik kafelka w rogu, poza układem: wszystkie kafelki identyczne (ten sam rozmiar) bez względu na licznik. Ionic nie ma ustawienia rogu dla ion-badge.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT2HJZacqPJpRbm6wB23X9ug"
+    },
+    {
+      "co": [
+        "element:ion-radio-group",
+        "element:ion-radio"
+      ],
+      "plik": "moduly/szkielet/src/ekrany/inspekcja/Wysylka.vue",
+      "powod": "Wybór jednej opcji w sekcji wysyłki (ion-radio-group z ion-radio w ion-item) – tylko w tym jednym pliku (Grzegorz 25.11.2026).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT9kJoCgheWnnkdK8MMExhWK"
     }
   ]
 }

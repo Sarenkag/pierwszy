@@ -11,6 +11,7 @@
 //   OESTCzesci.sluchacze(dane)                       { na, emit } dla kontrolera modułu (emit = powiadom część Vue o nowych danych)
 import { createApp, h, markRaw } from 'vue';
 import { modalController, loadingController, IonSpinner } from '@ionic/vue';
+import { uzyjIonic } from './ionic.js';
 import Aparat from './czesci/Aparat.vue';
 import EdytorZdjec from './czesci/EdytorZdjec.vue';
 import Notatki from './czesci/Notatki.vue';
@@ -58,6 +59,7 @@ export function zainstaluj(w, OESTOkna, T) {
     if (!el) return null;
     if (el.__oestCzesc) { try { el.__oestCzesc.unmount(); } catch (e) {} el.__oestCzesc = null; }
     const app = createApp({ render: () => h(czesc(nazwa), { ...(wl || {}), T }) });
+    uzyjIonic(app);
     app.mount(el); el.__oestCzesc = app;
     return { odmontuj() { try { app.unmount(); } catch (e) {} if (el.__oestCzesc === app) el.__oestCzesc = null; } };
   }

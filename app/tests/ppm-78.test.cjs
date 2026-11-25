@@ -30,8 +30,8 @@ const VANTIFY_78 = {
   '(Sub) Lighting Control System (Tower B)': 's-lcs', '(Sub) Cold Water Storage Tank': 's-cwst', '(Sub) Automatic Doors': 's-doors',
   '(Sub) Automatic Doors (Pavillion)': 's-doors', '(Sub) Air Handling Units': 's-ahu', "(Sub) VRV's (Tower B)": 's-vrv', '(Sub) VRV (Pavillion)': 's-vrv',
   '(Sub) Water Hygiene - Domestic Sampling': 's-hygiene', '(Sub) CWST Inspections': 's-hygiene', '(Sub) Commercial Sprinkler Pumps': 's-spumps',
-  '(Sub) Sprinkler System Control Valves - ICV\'s': 's-icv', '(Sub) Sprinkler System ZoneCheck Testing': 's-icv', '(Sub) Monthly Spa Maintenance': 's-spa',
-  '(Sub) Monthly Spa Sampling': 's-spa', '(Sub) Fire Dampers (Tower B)': 's-dampers'
+  '(Sub) Sprinkler System Control Valves - ICV\'s': 's-icv', '(Sub) Sprinkler System ZoneCheck Testing': 's-icv', '(Sub) Monthly Spa Maintenance': 's-spa-maint',
+  '(Sub) Monthly Spa Sampling': 's-spa-sampling', '(Sub) Fire Dampers (Tower B)': 's-dampers'
 };
 function load() {
   const store = {}, ctx = { window: {}, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } }, CustomEvent: function () {} };
@@ -49,7 +49,7 @@ test('78 zadań PPM z Vantify: każde ma kartę w apce, żadna karta nie jest sp
   for (const id of WLASNE) used.add(id);
   for (const id of ids) assert.ok(used.has(id), 'karta spoza listy 78 i spoza własnych OEST: ' + id);
   for (const id of WLASNE) assert.ok(ids.has(id), 'brak własnej karty: ' + id);
-  assert.strictEqual(P.tasks.length, 70 + WLASNE.length); // 78 zadań − 8 zadań Sub zebranych w karty z innym zadaniem + własne OEST
+  assert.strictEqual(P.tasks.length, 71 + WLASNE.length); // 78 zadań − 7 zadań Sub zebranych w karty z innym zadaniem + własne OEST (25.11.2026: Spa Sampling i Spa Maintenance osobno)
   assert.strictEqual(ids.size, P.tasks.length); // bez powtórzonych id
 });
 test('przywrócone 5 in-house: grupa, częstotliwość jak w Vantify, bez zleceń i bez terminu na czystym telefonie', () => {
@@ -63,4 +63,17 @@ test('przywrócone 5 in-house: grupa, częstotliwość jak w Vantify, bez zlece�
     assert.strictEqual(P.due(t), null, id); // apka nie wymyśla terminu
     assert.strictEqual(P.occurrences(t, '2026-11-01', '2027-12-31').length, 0, id);
   }
+});
+// Spa (Grzegorz 25.11.2026 08:40): dwa zlecenia Vantify = dwie karty, każda dostaje swój numer z importu (plik CSV i API).
+test('Spa Sampling i Spa Maintenance: osobne karty, import Vantify przypisuje każdej jej numer', () => {
+  const P = load().OEST_PPM, E = require('../../moduly/eksport-vantify/eksport-vantify.js'), match = E.matcher(P.tasks.map(t => [t.id, t.name]));
+  assert.strictEqual(P.byId('s-spa'), null, 'dawna wspólna karta s-spa nie istnieje');
+  assert.strictEqual(match('(Sub) Monthly Spa Sampling'), 's-spa-sampling');
+  assert.strictEqual(match('(Sub) Monthly Spa Maintenance'), 's-spa-maint');
+  const rows = [['3029041', '(Sub) Monthly Spa Sampling'], ['3029040', '(Sub) Monthly Spa Maintenance']].map(([id, task]) => ({ id, jobType: 'Planned', task, completeBy: '2026-11-30 23:59', frequency: '1M', createdAt: '2026-11-25' }));
+  const p = E.plan(rows, { match });
+  assert.deepStrictEqual(p.jobs, { 's-spa-sampling': [{ no: '3029041', due: '2026-11-30', f: '1M' }], 's-spa-maint': [{ no: '3029040', due: '2026-11-30', f: '1M' }] });
+  assert.deepStrictEqual(p.missing, []);
+  const api = E.plan(E.fromApi([{ id: 3029041, type: 'planned', summary: '(Sub) Monthly Spa Sampling', completionDueAt: '2026-11-30T23:59:59+00:00', frequency: '1M' }, { id: 3029040, type: 'planned', summary: '(Sub) Monthly Spa Maintenance', completionDueAt: '2026-11-30T23:59:59+00:00', frequency: '1M' }], '2026-11-25'), { match });
+  assert.deepStrictEqual(Object.keys(api.jobs).sort(), ['s-spa-maint', 's-spa-sampling']);
 });

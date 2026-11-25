@@ -47,7 +47,8 @@ async function wartosc(l) {
     return d ? String(d.value || '').slice(0, 10) : e.value;
   });
 }
-async function zdjecia(p, s, v) {
+// opcja: tekst przycisku w okienku wyboru (ion-action-sheet), gdy kafelek najpierw pyta (np. „Formularz” → „Zdjęcie formularza”)
+async function zdjecia(p, s, v, opcja) {
   const [l, files] = cel(p, s, v), page = l.page();
   const payload = (Array.isArray(files) ? files : [files]).map(f => {
     if (typeof f === 'string') return { name: require('node:path').basename(f), mimeType: /png$/i.test(f) ? 'image/png' : 'image/jpeg', b64: fs.readFileSync(f).toString('base64') };
@@ -68,6 +69,7 @@ async function zdjecia(p, s, v) {
   }, payload);
   try {
     await l.click();
+    if (opcja) await page.locator('ion-action-sheet button', { hasText: opcja }).click();
     await page.waitForFunction(() => window.__ionicZdjecia.wybrane);
     await page.waitForFunction(e => e.isConnected && !e.disabled, await l.elementHandle());
   } finally { await page.evaluate(() => window.__ionicZdjecia?.przywroc()); }

@@ -245,6 +245,14 @@ function ionic(www, src, add, czesci) {
   const vuePliki = [];
   const walk = d => { for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else vuePliki.push(f); } };
   walk(SZK);
+  // klocki, których szablon to w całości jeden <ion-item> (np. czesci/PoleDaty.vue): pole włożone w taki klocek (slot) jest na ekranie
+  // w ion-item, więc „pole poza ion-item” liczy taki klocek jak ion-item (Grzegorz 25.11.2026). Lista z samych plików, bez ręcznych wpisów.
+  const klockiItem = new Set(vuePliki.filter(f => f.endsWith('.vue')).filter(f => {
+    const t = ((czytaj(f) || '').match(/<template>([\s\S]*)<\/template>/) || [])[1] || '';
+    const s = t.replace(/<!--[\s\S]*?-->/g, '').trim();
+    return /^<ion-item\b/.test(s) && /<\/ion-item>$/.test(s) && s.indexOf('<ion-item', 1) < 0;
+  }).map(f => path.basename(f, '.vue')));
+  const wItem = stos => stos.some(t => t === 'ion-item' || klockiItem.has(t));
   for (const f of vuePliki) {
     const rel = path.relative(ROOT, f).split(path.sep).join('/'), c = czytaj(f) || '';
     if (f.endsWith('.vue')) {
@@ -260,11 +268,12 @@ function ionic(www, src, add, czesci) {
       // pola formularza (Grzegorz 21/11: „4 listy, każda inna”): jeden sposób na każdy rodzaj pola, zawsze w ion-item (ten sam wygląd).
       // Wybór z listy = ion-select (bez dodatkowego przycisku „Wybierz z listy”), data/godzina = ion-datetime-button + ion-datetime w ion-modal.
       const stos = [];
-      for (const g of bez.matchAll(/<(\/?)([a-z][\w-]*)\b([^>]*?)(\/?)>/g)) {
+      // znaczniki ion-*/html i klocki z wielkiej litery (PoleDaty); atrybuty w cudzysłowach mogą zawierać „>” (np. @zmiana="v => …")
+      for (const g of bez.matchAll(/<(\/?)([A-Za-z][\w-]*)\b((?:"[^"]*"|'[^']*'|[^'">])*?)(\/?)>/g)) {
         const zamk = g[1] === '/', tag = g[2], sam = g[4] === '/' || /^(img|br|input)$/.test(tag);
         if (zamk) { const i = stos.lastIndexOf(tag); if (i >= 0) stos.length = i; continue; }
         if (POLE_INNE.has(tag) && !wolno('element:' + tag)) add(`IONIC|pole-inne|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> – wybór z listy tylko przez ion-select, data przez ion-datetime-button (jeden sposób w całej apce).`);
-        if (POLA.has(tag) && !stos.includes('ion-item')) add(`IONIC|pole-poza-item|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> poza ion-item – każde pole w ion-item, żeby wszystkie wyglądały tak samo.`);
+        if (POLA.has(tag) && !wItem(stos)) add(`IONIC|pole-poza-item|${rel}|${tag}`, 'IONIC', `${rel}: <${tag}> poza ion-item – każde pole w ion-item, żeby wszystkie wyglądały tak samo.`);
         if (tag === 'ion-datetime' && !stos.includes('ion-modal')) add(`IONIC|data-poza-modal|${rel}`, 'IONIC', `${rel}: <ion-datetime> poza ion-modal – data tylko przez ion-datetime-button (ten sam wygląd co inne pola).`);
         if (!sam) stos.push(tag);
       }

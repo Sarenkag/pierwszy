@@ -69,6 +69,7 @@
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
+      if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // „↺ Przywróć inspekcję” (przywroc.js); Flushing: także gdy coś już jest
       draftOn = true; if (typeof ntRefresh === "function") ntRefresh();
   }
   function restoreDraft(d, tok) {

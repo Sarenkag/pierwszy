@@ -77,12 +77,12 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     await budynek('Wszystkie'); await szukaj('ats');
 
     // PL/EN: tekst się zmienia, wpisane szukanie zostaje, układ nie skacze
-    const jezyk = p.locator('ion-header [data-jezyk-ramy]').last();
+    const jezyk = p.locator('ion-header .oest-jezyk ion-button[fill="clear"]').last();
     const box = () => p.evaluate(() => { const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)].join(','); }; return [r('#rptQ'), r('#rptB'), r('#rptList ion-card')].join('|'); });
     const plBox = await box();
     await jezyk.click(); await p.waitForTimeout(250);
     ok(await p.inputValue('#rptQ input') === 'ats', 'EN: wpisane szukanie zostaje');
-    ok(/Code, building/.test(await p.getAttribute('#rptQ input', 'placeholder')) && /Waiting for Drive/.test(await p.locator('#rptList').innerText()), 'EN: teksty po angielsku');
+    ok(/Day, type, code, building/.test(await p.getAttribute('#rptQ input', 'placeholder')) && /Waiting for Drive/.test(await p.locator('#rptList').innerText()), 'EN: teksty po angielsku');
     ok(await box() === plBox, 'PL/EN: pole szukania, wybór budynku i klocek w tym samym miejscu');
     await jezyk.click(); await p.waitForTimeout(250);
     await szukaj('');
@@ -97,7 +97,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     ok(/drive\.google\.com\/file\/d\/abc123/.test(await p.evaluate(() => document.querySelector('ion-modal #rptDrive').href)), 'Otwórz na Dysku');
     const t0 = { sm: await toggle('sm'), sp: await toggle('sp'), se: await toggle('se') };
     ok(t0.sm.on && !t0.sp.on && t0.se.off, 'adresaci: domyślnie firmowy, inżynier bez adresu nieaktywny');
-    await dlg.locator('[data-to=sp]').click(); await p.waitForTimeout(100);
+    await dlg.locator('[data-to=sp]').click(); await p.waitForTimeout(100); ok((await toggle('sp')).on, 'adresaci: prywatny zaznaczony po stuknięciu'); /* jak .check() na main */
     await dlg.locator('ion-footer ion-button', { hasText: 'Wyślij' }).click();
     await zamknijAlert('W kolejce');
     const q = await p.evaluate(() => window.__q);
@@ -123,7 +123,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     await p.locator(M + ' ion-footer ion-button', { hasText: 'Zamknij' }).click(); await p.waitForFunction(() => !document.querySelector('ion-modal'));
     ok((await p.evaluate(() => window.__q.length)) === 2, 'Zamknij nic nie wysyła');
     // szukanie to nie zmiana ustawień: Wstecz bez pytania o niezapisane zmiany
-    await szukaj('flush'); await p.locator('ion-header ion-back-button').click(); await p.waitForTimeout(400);
+    await szukaj('flush'); await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); /* Wstecz telefonu: bez strzałki ‹ (Grzegorz 25.11.2026) */ await p.waitForTimeout(400);
     ok(await p.locator(A).count() === 0 && /#settings$/.test(p.url()), 'po szukaniu Wstecz bez „niezapisanych zmian”');
 
     assert.deepEqual(errors, [], 'błędy strony');

@@ -216,6 +216,9 @@ const OKNO_INFO = () => { const m = document.querySelector('ion-modal.show-modal
             const kr = k.getBoundingClientRect();
             k.querySelectorAll('.oest-kr > *').forEach(e => { const r = e.getBoundingClientRect(); if (r.width && (r.right > kr.right - 6 || r.left < kr.left)) zle.push((k.dataset.id || k.dataset.fam) + ' .' + (e.getAttribute('class') || e.tagName)); });
             k.querySelectorAll('.oest-kdt,.oest-kr strong,.oest-klok,.oest-kcz').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) zle.push((k.dataset.id || k.dataset.fam) + ' nie mieści się: ' + e.textContent); });
+            // w miejsce sprawdzeń „nachodzi na strzałkę” z main (strzałki już nie ma – Grzegorz 23/11): strzałki naprawdę nie ma, a elementy jednej linii nie nachodzą na siebie
+            k.querySelectorAll('ion-icon[name*="chevron"], ion-icon[icon*="chevron"], .go, [data-ui~=go]').forEach(e => { if (e.getClientRects().length) zle.push((k.dataset.id || k.dataset.fam) + ' ma strzałkę z prawej'); });
+            k.querySelectorAll('.oest-kr').forEach(l => { const el = [...l.children].map(e => e.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0).sort((a, b) => a.left - b.left); for (let i = 1; i < el.length; i++) if (el[i].left < el[i - 1].right - 1 && el[i].top < el[i - 1].bottom - 1 && el[i].bottom > el[i - 1].top + 1) { zle.push((k.dataset.id || k.dataset.fam) + ' elementy linii nachodzą na siebie'); break; } });
           });
           return zle;
         }, KLOCEK);

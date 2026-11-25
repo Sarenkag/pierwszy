@@ -14,7 +14,7 @@
     cur.code = code; cur.formType = cur.type.id; cur.mode = mode;
     var d = devOf(code);
     cur.loc = d.loc; cur.where = where(d);
-    $("formTitle").textContent = code;
+    tytulFormularza = code;
     $("formSub").textContent = cur.where + " · " + cur.type.name;
     $("ckTitle").textContent = cur.type.title;
     if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
@@ -142,7 +142,7 @@
     OESTPrzycisk.ask({ title: window.OESTT("Ustawienia wysyłki", "Sending settings"), node: box, ok: window.OESTT("Zapisz jako domyślne", "Save as default"), cancel: window.OESTT("Zamknij", "Close") }).then(function (save) {
       if (!save || !cur.ppm || !PPM.setNeeds) return;
       var patch = {}; box.querySelectorAll("ion-checkbox[data-sn]:not([disabled])").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
-      var r = box.querySelector('ion-select[name="sn-one"]'); patch.one = !r || String(r.value) === "1";
+      var r = box.querySelector('ion-radio-group'); patch.one = !r || String(r.value) === "1"; // jedyna grupa w oknie: „Jak” (Wysylka.vue)
       var qWas = !!n.q; PPM.setNeeds(cur.ppm, patch);
       if (patch.q != null && patch.q !== qWas && !cur.type.flush) formMode();
       applyNeeds(patch.q && !qWas); ppmTrack(false); try { suggestOverall(); } catch (e) {} updateFormHint(); scheduleDraft();

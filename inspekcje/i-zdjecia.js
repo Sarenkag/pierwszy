@@ -33,8 +33,8 @@
   // Jeden wybór zdjęć w DodajZdjecie.vue; tu wyłącznie kontekst i zapis istniejącą ścieżką.
   document.addEventListener("oest:wybor-zdjec", function (e) {
     var id = e.target.id;
-    if (["camIn", "galIn", "shCamIn", "shGalIn", "flCam"].indexOf(id) < 0) return;
-    var sheet = id === "shCamIn" || id === "shGalIn", tap = id === "flCam" ? flTap : null;
+    if (["camIn", "galIn", "shCamIn", "flCam"].indexOf(id) < 0) return;
+    var sheet = id === "shCamIn", tap = id === "flCam" ? flTap : null;
     e.detail.seq = formSeq; e.detail.tap = tap; e.detail.sheet = sheet;
     e.detail.opcje = camOpts(photoKind(tap, sheet));
   });
@@ -57,7 +57,6 @@
           OESTAparat.edit(p.blob, camOpts()).then(function (nb) {
             if (!nb) return;
             var ectx = copyCtx(); ectx.point = p.tap != null ? tapName(p.tap) : ""; ectx.kind = photoKind(p.tap, p.sheet);
-            ectx.stamp = false; // data i godzina (opcja w module zdjęć) wpisywana tylko przy zrobieniu zdjęcia – poprawione zdjęcie nie dostaje drugiej
             return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
@@ -75,11 +74,13 @@
     var fst = shn ? "ok" : req ? "blad" : "";
     widokInspekcji("sheetState", "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" });
     // wymóg formularza widać na samym przycisku „Formularz” (Grzegorz 04/11) – bez dodatkowego okna, układ ten sam w każdej inspekcji
-    var fb = $("shCamIn"), fbd = $("formPhotoBadge");
-    widokInspekcji(fbd, "fragment", { rodzaj: "znacznik", html: Z && fst ? Z.formularz(fst) : "" }); fb.color = fst === "blad" ? "danger" : "primary";
+    var fb = $("shCamIn"); // sama czerwona ramka, bez ⊗ (Grzegorz 25.11.2026)
+    if (fst === "blad") fb.dataset.alarm = ""; else delete fb.dataset.alarm; // czerwona ramka kafelka (czesci/KafelZdjecia.vue)
     $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
     var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length;
+    // zielona ramka kafelka, gdy ma zawartość (Grzegorz 25.11.2026): zdjęcia → Z galerii i Zrób zdjęcie, zdjęcie formularza → Formularz
+    [[$("galIn"), fp], [$("camIn"), fp], [fb, shn]].forEach(function (k) { if (k[1]) k[0].dataset.ok = ""; else delete k[0].dataset.ok; });
     widokInspekcji("photoCount", "fragment", { rodzaj: "znacznik", html: window.OESTZnacznik ? OESTZnacznik.licznik(fp, "accent inline") : fp ? "(" + fp + ")" : "" });
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").__inspKontroler && $("sugBox").__inspKontroler.stan.lista.length) renderSugs();

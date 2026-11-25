@@ -28,10 +28,18 @@ const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'quality', 'required
 if (!baseManifestTxt) notes.push('Na gałęzi bazowej nie ma jeszcze quality/required-tests.json – pierwsze wprowadzenie bramki, brak porównania listy.');
 else {
   const base = JSON.parse(baseManifestTxt);
+  // Zdjęcie testu PRZEGLĄDARKOWEGO z obowiązkowych tylko imiennie, z id pisemnego „tak” Grzegorza (cmsg_…) w required-tests.json
+  // („zdjeteZaZgoda”: lista { zgoda, browser: [pliki] }, decyzje od 25.11.2026). Nie dotyczy testów node, passMarker, limitów, allowedSkips, usuniętych plików ani R23.
+  const zdjete = new Map();
+  for (const zz of [].concat(manifest.zdjeteZaZgoda || [])) {
+    if (!/^cmsg_[A-Za-z0-9]{20,}$/.test(String(zz && zz.zgoda || ''))) { errors.push('quality/required-tests.json: „zdjeteZaZgoda” bez id pisemnego „tak” Grzegorza (cmsg_…)'); continue; }
+    for (const f of zz.browser || []) zdjete.set(f, zz.zgoda);
+  }
   for (const kind of ['node', 'browser']) {
     const now = new Map((manifest[kind] || []).map(t => [t.file, t]));
     for (const b of base[kind] || []) {
       const n = now.get(b.file);
+      if (!n && kind === 'browser' && zdjete.has(b.file)) { warnings.push(`Test przeglądarkowy zdjęty z obowiązkowych za zgodą ${zdjete.get(b.file)}: ${b.file}`); continue; }
       if (!n) { errors.push(`Usunięto obowiązkowy test z listy: ${b.file}`); continue; }
       if (b.passMarker && n.passMarker !== b.passMarker) errors.push(`Zmieniono potwierdzenie PASS testu ${b.file}: „${b.passMarker}” → „${n.passMarker || ''}”`);
       if (b.scenarios && n.scenarios !== b.scenarios) errors.push(`Usunięto kontrolę scenariuszy testu ${b.file} (${b.scenarios})`);

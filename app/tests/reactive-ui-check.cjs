@@ -30,9 +30,11 @@ const foto=async phase=>{await page.evaluate(encoded=>{OESTAparat.take=async()=>
 await page.goto(url+'/#home');
 for(const [id,title] of [['handover','Handover'],['keys','Klucze'],['powertrace','Power trace']]){
   await page.locator('[data-nav="soon/'+id+'"]').click();
-  await page.waitForFunction(t=>document.querySelector('ion-header ion-title')?.textContent===t,title);
+  /* jeden górny pasek w całej apce (czesci/GornyPasek.vue, Grzegorz 25.11.2026): tytuł ekranu w klocku LogoTytul; bez strzałki ‹ – tylko Wstecz telefonu (04:01) */
+  await page.waitForFunction(t=>document.querySelector('ion-header ion-label strong')?.textContent===t,title);
   assert.equal(await page.locator('ion-content ion-list').innerText(),'','w budowie: pusta treść');
-  await page.locator('ion-back-button[data-nav=up]').click();
+  assert.equal(await page.locator('ion-back-button').count(),0,'bez strzałki ‹ w nagłówku');
+  await page.evaluate(()=>document.dispatchEvent(new Event('backbutton')));/* Wstecz telefonu (Ionic hardware back) */
   await page.waitForFunction(()=>OESTEkrany.trasa()==='home');
 }
 await page.evaluate(()=>OESTEkrany.go('reactive'));await page.locator('[data-rx=new]').waitFor();
@@ -40,8 +42,9 @@ await page.evaluate(()=>OESTEkrany.go('reactive'));await page.locator('[data-rx=
 STEP='krok 2';// 2. Nowe zadanie BEZ drzewka: nazwa, gdzie, kto (domyślnie pierwszy dział), zdjęcie przed.
 await page.locator('[data-rx=new]').click();await page.locator('[data-rx-field=title]').waitFor();
 const draftHash=await page.evaluate(()=>location.hash);
-assert.equal(await page.locator('[data-rx-field=title] input').getAttribute('placeholder'),'Tytuł zlecenia');
-assert.equal(await page.locator('[data-rx-field=title] input').getAttribute('aria-label'),'Tytuł zlecenia');
+/* pole nazwy jak na main (Grzegorz 25.11.2026): etykieta „Nazwa zadania” nad polem, przykład w podpowiedzi */
+assert.equal(await page.locator('[data-rx-field=title] input').getAttribute('placeholder'),'np. Zepsuty zamek w kuchni');
+assert.equal(await page.locator('[data-rx-field=title] input').evaluate(i=>document.getElementById(i.getAttribute('aria-labelledby'))?.textContent.trim()),'Nazwa zadania');
 assert.equal(await page.locator('[data-rx-field=title]').getAttribute('label'),null);
 for(const name of ['jobType','requestedBy','co']) assert.equal(await page.locator('ion-item > ion-select[data-rx-field='+name+']').count(),1);
 assert.equal(await page.locator('.oest-rx-stopka').count(),0);
@@ -105,7 +108,7 @@ for(const [label,needle]of [['tytuł','Door handle detached'],['budynek','Tower 
 /* Stan „Open — Temporary repair”: w PDF linia ze znakiem „—” jest rysowana jako obrazek (reactive-report.js line()), więc tekstowo sprawdzamy ją tylko w Word. */assert.ok(includesFlat(wordTxt,'Overall Condition: Open — Temporary repair'),'Word: stan zadania');assert.ok(includesFlat(wordTxt,'Before — Photo 1')&&includesFlat(wordTxt,'After — Photo 2'),'Word: podpisy zdjęć przed/po');assert.ok(docxImages(files['.docx'].buf)>=2,'Word: zdjęcia w pliku');assert.ok(pdfImages(files['.pdf'].buf)>=2,'PDF: co najmniej 2 zdjęcia');
 
 STEP='krok 8';// 8. Potrzebna firma (podwykonawca) → status Subcontractor required, zapis przez Odłóż.
-/* moduly/przycisk: „✓ Gotowe” trwa chwilę, potem przycisk wraca – dopiero wtedy ekran przyjmuje kolejne dotknięcie */await page.waitForFunction(()=>/Zbuduj i wyślij/.test(document.querySelector('[data-rx=send-now]')?.textContent||''));/* Wstecz z podsumowania: jeden poziom (karta), drugi raz lista (zasada Wstecz) */await page.locator('ion-back-button[data-nav=up]').click();await page.locator('[data-rx-field=title]').waitFor();await page.locator('ion-back-button[data-nav=up]').click();await page.locator('[data-rx=new]').waitFor().catch(async()=>{throw Error('Wstecz po wysłaniu: '+JSON.stringify({hash:await page.evaluate(()=>location.hash),msg:await msg()}));});await page.locator('[data-rx=job]').click();await page.locator('[data-rx-field=title]').waitFor();
+/* moduly/przycisk: „✓ Gotowe” trwa chwilę, potem przycisk wraca – dopiero wtedy ekran przyjmuje kolejne dotknięcie */await page.waitForFunction(()=>/Zbuduj i wyślij/.test(document.querySelector('[data-rx=send-now]')?.textContent||''));/* Wstecz z podsumowania: jeden poziom (karta), drugi raz lista (zasada Wstecz) */await page.evaluate(()=>document.dispatchEvent(new Event('backbutton')));/* Wstecz telefonu: bez strzałki ‹ (Grzegorz 25.11.2026) */await page.locator('[data-rx-field=title]').waitFor();await page.evaluate(()=>document.dispatchEvent(new Event('backbutton')));/* Wstecz telefonu: bez strzałki ‹ (Grzegorz 25.11.2026) */await page.locator('[data-rx=new]').waitFor().catch(async()=>{throw Error('Wstecz po wysłaniu: '+JSON.stringify({hash:await page.evaluate(()=>location.hash),msg:await msg()}));});await page.locator('[data-rx=job]').click();await page.locator('[data-rx-field=title]').waitFor();
 await row('finish');await select('[data-rx-select=action]','contractor');await saved();await row('more');await page.locator('[data-rx=park]').click();await page.locator('[data-rx=new]').waitFor();
 job=(await state()).jobs[0];assert.equal(job.reactive.status,'contractor');assert.equal(job.reactive.temporary,false);
 
@@ -116,7 +119,7 @@ await page.locator('[data-rx=sum-ok]').waitFor();{const n=await page.locator('[d
 /* przegląd Codex #148: ✕ według bieżących pól (wyczyszczony pierwszy akapit), pusty raport blokuje zamknięcie */{const v=await page.locator('[data-rx-sum] textarea').evaluateAll(a=>a.map(x=>x.value));if(v.length>=3){await wpisz(page.locator('[data-rx-sum] textarea').nth(0), '');await page.locator('[data-rx=sum-del]').nth(1).click();await page.waitForFunction(()=>document.querySelectorAll('[data-rx-sum] textarea').length>0);const after=await page.locator('[data-rx-sum] textarea').evaluateAll(a=>a.map(x=>x.value));if(after.includes(v[1])||!after.includes(v[2]))throw Error('✕ usunął zły akapit '+JSON.stringify({v,after}));}
 const n2=await page.locator('[data-rx-sum] textarea').count();for(let i=0;i<n2;i++)await wpisz(page.locator('[data-rx-sum] textarea').nth(i), '');await page.locator('[data-rx=sum-ok]').click();if(!/nie może być pusty/.test(await msg()))throw Error('pusty raport: brak blokady');if(!await page.locator('[data-rx=sum-ok]').count())throw Error('pusty raport: zamknięte mimo to');await wpisz(page.locator('[data-rx-sum] textarea').first(), 'Door handle replaced and tested.');}
 await page.locator('[data-rx=preview-back]').click();await page.locator('[data-rx=close]').waitFor();if(!/Door handle replaced and tested\./.test(await wartosc(page.locator('[data-rx-field=reportText] input, [data-rx-field=reportText] textarea'))))throw Error('podsumowanie: poprawka nie trafiła do raportu');
-await page.locator('[data-rx=sum-view]').click();await page.locator('.oest-rr-page').waitFor();if(await page.locator('[data-rx=sum-ok]').count())throw Error('Podgląd: przycisk zamknięcia w samym podglądzie');await page.locator('ion-back-button[data-nav=up]').click();await page.locator('[data-rx=close]').waitFor();
+await page.locator('[data-rx=sum-view]').click();await page.locator('.oest-rr-page').waitFor();if(await page.locator('[data-rx=sum-ok]').count())throw Error('Podgląd: przycisk zamknięcia w samym podglądzie');await page.evaluate(()=>document.dispatchEvent(new Event('backbutton')));/* Wstecz telefonu: bez strzałki ‹ (Grzegorz 25.11.2026) */await page.locator('[data-rx=close]').waitFor();
 await page.locator('[data-rx=close]').click();await page.locator('[data-rx=sum-ok]').click();await page.locator('[data-rx=new]').waitFor();
 s=await state();job=s.jobs[0];assert.equal(job.status,'fixed');assert.equal(job.reactive.status,'completed');assert.equal(job.reactive.actionId,'repaired');
 assert.equal(job.reactive.beforeMediaIds.length,1);assert.equal(job.reactive.afterMediaIds.length,1);assert.equal(job.reactive.reportMediaIds.length,2,'raporty zostają po zakończeniu');

@@ -157,11 +157,6 @@
       "timeoutSec": 900
     },
     {
-      "file": "app/tests/zdjecia-data-ui-check.cjs",
-      "passMarker": "ZDJECIA DATA UI PASS",
-      "timeoutSec": 600
-    },
-    {
       "file": "app/tests/pdf-z-docx-ui-check.cjs",
       "passMarker": "PDF Z DOCX UI PASS",
       "timeoutSec": 300
@@ -170,6 +165,68 @@
       "file": "app/tests/wstecz-tabela-ui-check.cjs",
       "passMarker": "WSTECZ TABELA UI PASS",
       "timeoutSec": 300
+    }
+  ],
+  "zdjeteZaZgoda": [
+    {
+      "opis": "Testy przeglądarkowe zdjęte z obowiązkowych (decyzja Grzegorza 25.11.2026: obowiązkowe zostają bramka, testy node i 5 przeglądarkowych: Wstecz, Reactive→Word/PDF, PDF z Worda, edytor zdjęć, data na zdjęciu). Pliki testów zostają w app/tests i można je uruchamiać ręcznie.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT6cxQCTSpKBZDZSLV4aHJXi",
+      "browser": [
+        "app/tests/handover-ui-check.cjs",
+        "app/tests/keys-ui-check.cjs",
+        "app/tests/powertrace-ui-check.cjs",
+        "app/tests/nie-rozpoczeta-ui-check.cjs",
+        "app/tests/pasek-dni-ui-check.cjs",
+        "app/tests/klocek-inspekcji-ui-check.cjs",
+        "app/tests/checkbox-ui-check.cjs",
+        "app/tests/pigulka-statusu-ui-check.cjs",
+        "app/tests/plynnosc-ui-check.cjs",
+        "app/tests/przejscie-ekranu-ui-check.cjs",
+        "app/tests/questions-ui-check.cjs",
+        "app/tests/reactive-rozmiar-ui-check.cjs",
+        "app/tests/raport-rozmiar-ui-check.cjs",
+        "app/tests/raport-ui-check.cjs",
+        "app/tests/reactive-start-end-ui-check.cjs",
+        "app/tests/settings-ui-check.cjs",
+        "app/tests/pasek-systemowy-ui-check.cjs",
+        "app/tests/ekran-glowny-ui-check.cjs",
+        "app/tests/aktualizacja-dzwonek-ui-check.cjs",
+        "app/tests/zdjecia-szybkosc-ui-check.cjs",
+        "app/tests/jezyk-profil-ui-check.cjs",
+        "app/tests/raporty-przegladarka-ui-check.cjs",
+        "app/tests/odzyskana-ui-check.cjs",
+        "app/tests/wstecz-ui-check.cjs",
+        "app/tests/word-pdf-ui-check.cjs",
+        "app/tests/pl-en-ui-check.cjs",
+        "app/tests/notatki-ui-check.cjs",
+        "app/tests/notatki-app-ui-check.cjs",
+        "app/tests/czyszczenie-ui-check.cjs",
+        "app/tests/formularz-ptaszek-ui-check.cjs",
+        "app/tests/spa-checks-ui-check.cjs",
+        "app/tests/generator-ui-check.cjs",
+        "app/tests/moduly-zasady-ui-check.cjs",
+        "app/tests/vantify-wczytaj-ui-check.cjs",
+        "app/tests/vantify-pobierz-ui-check.cjs",
+        "app/tests/reactive-vantify-ui-check.cjs",
+        "app/tests/reactive-kreator-ui-check.cjs",
+        "app/tests/reactive-podglad-ui-check.cjs",
+        "app/tests/spojnosc-ekranow-ui-check.cjs",
+        "app/tests/nowosci-ui-check.cjs",
+        "app/tests/zapis-bez-bazy-ui-check.cjs",
+        "app/tests/czcionka-przebieg-ui-check.cjs",
+        "app/tests/zrzuty-ui-check.cjs",
+        "app/tests/flush-odczyt-ui-check.cjs",
+        "app/tests/menu-wyjscie-ui-check.cjs",
+        "app/tests/wstecz-ladowanie-ui-check.cjs",
+        "app/tests/udostepnij-ui-check.cjs"
+      ]
+    },
+    {
+      "opis": "Data i godzina na zdjęciach usunięte z apki (Grzegorz 25.11.2026 08:09: „Daty ma nie być wcale”) – test opcji daty na zdjęciu przestał być obowiązkowy.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTHwKTLJYhU8KrNB1EXVoSV3",
+      "browser": [
+        "app/tests/zdjecia-data-ui-check.cjs"
+      ]
     }
   ],
   "allowedSkips": []

@@ -19,7 +19,8 @@ const FN = new Set(['L', 'T', 'OESTT', 'hint', 'notice', 'setStatus', 'setBanner
 const DIRS = ['app/www', 'moduly', 'inspekcje'];
 // app/www/teksty.js jest generowany z app/teksty/*.json; parę PL/EN każdego tekstu sprawdza app/scripts/teksty.js przy budowie (09/11/2026)
 // app/www/wersja.js: generowana lista zmian (tytuły PR w oryginale, dane – nie napisy ekranu; klocek „O aplikacji”, 09/11/2026)
-const SKIP = /^app\/www\/inspekcje\/|(^|\/)(lib|templates|node_modules)\/|\.min\.js$|questions-proposals\.json$|^app\/www\/teksty\.js$|^app\/www\/wersja\.js$|Code\.gs|sw\.js$/;
+// *.stories.js: podglądy klocków w Storybooku (narzędzie, nie apka – nie trafiają do paczki), Grzegorz 25.11.2026
+const SKIP = /^app\/www\/inspekcje\/|(^|\/)(lib|templates|node_modules)\/|\.min\.js$|\.stories\.js$|questions-proposals\.json$|^app\/www\/teksty\.js$|^app\/www\/wersja\.js$|Code\.gs|sw\.js$/;
 
 function files() {
   const out = [];

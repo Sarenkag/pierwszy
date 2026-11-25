@@ -59,17 +59,17 @@ async function zbierz({ wtyczka = false } = {}) {
         const vis = s => pg.locator(s).first().isVisible().catch(() => false);
         // ⚙ wysyłki: „nasz raport” – formularz Word idzie w raporcie (jak raport-ui-check i word-pdf-ui-check)
         if (await vis('#sendCfg')) { await pg.click('#sendCfg'); await pg.locator('.oest-ask [data-a="ok"]').waitFor(); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.locator('.oest-ask').waitFor({ state: 'detached' }).catch(() => {}); }
-        if (await vis('#flWeek [data-w="1"]')) await pg.click('#flWeek [data-w="1"]');
+        if (await vis('#flWeek')) await wybierz(pg, '#flWeek', '1'); // tydzień miesiąca: ion-select (Formularz.vue)
         const temps = await pg.locator('#tempList ion-input[data-t]').count();
         for (let i = 0; i < temps; i++) await wpisz(pg.locator('#tempList ion-input[data-t="' + i + '"]'), String(40 + i / 10));
         if (await vis('#allOk')) await pg.click('#allOk');
         if (await vis('#galIn')) await zdjecia(pg, '#galIn', await jpeg(pg, [176, 132], '#36c'));
-        const kartkaIn = (await vis('#shGalIn')) ? '#shGalIn' : (await vis('label:has(#shCamIn)')) ? '#shCamIn' : '';
-        if (kartkaIn) await zdjecia(pg, kartkaIn, await jpeg(pg, [150, 212], '#c63'));
+        const kartkaIn = (await vis('#shGalIn')) ? '#shGalIn' : (await vis('#shCamIn')) ? '#shCamIn' : '';
+        if (kartkaIn) await zdjecia(pg, kartkaIn, await jpeg(pg, [150, 212], '#c63'), kartkaIn === '#shCamIn' ? 'Zdjęcie formularza' : undefined); // kafelek Formularz pyta: podgląd / galeria / zdjęcie (Grzegorz 25.11.2026)
         await pg.waitForLoadState('networkidle');
         if (await vis('#podpis')) await wpisz(pg, '#podpis', 'G. Sarna');
         await pg.waitForFunction(() => !document.querySelector('#toQueue').disabled, null, { timeout: 15000 }).catch(() => {});
-        if (await pg.locator('#toQueue').isDisabled()) return zle('Wyślij zablokowane (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')');
+        if (await pg.locator('#toQueue').evaluate(e => e.disabled)) /* ion-button: właściwość disabled, nie natywny przycisk */ return zle('Wyślij zablokowane (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')');
         await pg.click('#toQueue');
         if (!(await pg.waitForFunction(() => !!window.__raport, null, { timeout: 20000, polling: 100 }).then(() => true, () => false))) return zle('Wyślij nie dodało raportu do kolejki');
         const pliki = await pg.evaluate(readQueue);

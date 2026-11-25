@@ -425,45 +425,38 @@ test('pkt 1: zdjęcie bez kopii na Dysku (driveDeleted) nigdy nie znika z telefo
   assert.ok(!rows.get(b.id).blob, 'telefon zwalnia miejsce zdjęciem, które jest na Dysku');
 });
 
-// Data i godzina na zdjęciach (Grzegorz 09/11/2026): opcja, domyślnie WYŁĄCZONA, format dd/mm/rrrr GG:MM, czas zrobienia zdjęcia
-test('data i godzina na zdjęciu: domyślnie wyłączona, format dd/mm/rrrr GG:MM, czas zrobienia', async () => {
-  assert.strictEqual(Z.DEFAULTS.stamp, false);
-  assert.strictEqual(Z.cleanSettings({}).stamp, false);
-  assert.strictEqual(Z.cleanSettings({ stamp: 'tak' }).stamp, false); // tylko świadome włączenie (true)
-  assert.strictEqual(Z.cleanSettings({ stamp: true }).stamp, true);
-  assert.strictEqual(Z.stampText(new Date(2026, 10, 9, 7, 5, 59)), '09/11/2026 07:05');
-  assert.strictEqual(Z.stampText(new Date(2026, 0, 31, 23, 59)), '31/01/2026 23:59');
+// Bez daty na zdjęciu (Grzegorz 25.11.2026: „Daty ma nie być wcale”, zmiana PROD-029 z 09/11/2026): moduł nie ma już opcji ani rysowania napisu,
+// dawne ustawienie stamp:true z telefonu znika przy odczycie, a żaden zapis nie przekazuje napisu do zmniejszania zdjęcia.
+test('bez daty na zdjęciu: brak opcji, dawne stamp:true znika, zapis nie dostaje napisu', async () => {
+  assert.strictEqual('stamp' in Z.DEFAULTS, false);
+  assert.strictEqual('stamp' in Z.cleanSettings({}), false);
+  assert.strictEqual('stamp' in Z.cleanSettings({ stamp: true }), false, 'dawne włączone ustawienie znika');
+  assert.strictEqual('stamp' in Z.cleanSettings({ stamp: 'tak' }), false);
+  assert.strictEqual(Z.stampText, undefined, 'brak formatu daty na zdjęcie');
+  assert.strictEqual(Z.drawStamp, undefined, 'brak rysowania napisu');
   const got = [];
-  const { store } = fakeStore({ compress: async (file, preset, kind, stamp) => { got.push(stamp); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
+  const { store, getSettings } = fakeStore({ compress: async (...a) => { got.push(a); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
   const when = new Date(2026, 10, 9, 22, 14, 30);
-  const off = await store.save({ size: 1 }, { kind: 'ogolne', when });
-  assert.strictEqual(got[0], '', 'wyłączona: zdjęcie bez napisu');
-  assert.strictEqual(off.stamp, '');
-  store.setSettings({ stamp: true });
-  const on = await store.save({ size: 1 }, { kind: 'punkt', when });
-  assert.strictEqual(got[1], '09/11/2026 22:14', 'włączona: data i godzina zrobienia (when), nie zapisu');
-  assert.strictEqual(on.stamp, '09/11/2026 22:14');
-  await store.save({ size: 1 }, { kind: 'ogolne', when, stamp: false }); // np. poprawione zdjęcie, które już ma datę
-  assert.strictEqual(got[2], '', 'stamp:false = bez drugiego napisu');
-  store.setSettings({ stamp: false });
-  await store.save({ size: 1 }, { kind: 'ogolne', when });
-  assert.strictEqual(got[3], '', 'po wyłączeniu znowu bez napisu');
+  store.setSettings({ stamp: true }); // np. ustawienie zapisane na telefonie przed 25.11.2026
+  assert.strictEqual('stamp' in getSettings(), false, 'zapis ustawień nie przenosi dawnej opcji');
+  assert.strictEqual('stamp' in store.settings(), false);
+  for (const [i, info] of [{ kind: 'ogolne', when }, { kind: 'punkt', when }, { kind: 'ogolne', when, stamp: true }, { kind: 'formularz', when }].entries()) {
+    const r = await store.save({ size: 1 }, info);
+    assert.strictEqual(got[i].length, 3, 'zmniejszanie dostaje tylko plik, jakość i rodzaj – bez napisu');
+    assert.strictEqual('stamp' in r, false, 'wpis zdjęcia bez napisu');
+    assert.strictEqual(r.created, when.toISOString(), 'data zrobienia zostaje w samym wpisie');
+  }
+  const lista = await store.list();
+  assert.strictEqual(lista.length, 4);
+  assert.ok(lista.every(x => !('stamp' in x)), 'lista zdjęć bez napisu');
+  for (const k of ['formularz', 'ogolne', 'punkt', 'dowod']) assert.strictEqual('stamp' in Z.limits('standard', k), false, 'ustawienia zmniejszania bez napisu: ' + k);
 });
 
-test('data i godzina: napis w prawym dolnym rogu, w granicach zdjęcia (800 px i 2560 px)', () => {
-  for (const [w, h] of [[800, 600], [600, 800], [1600, 1200], [2560, 1920]]) {
-    const ops = [];
-    const g = { measureText: t => ({ width: t.length * parseInt(g.font.split(' ')[1], 10) * 0.55 }),
-      fillRect: (x, y, bw, bh) => ops.push({ x, y, bw, bh }), fillText: (t, x, y) => ops.push({ t, x, y }) };
-    Z.drawStamp(g, w, h, '09/11/2026 22:14');
-    const box = ops[0], txt = ops[1];
-    assert.ok(box.x > w / 2 && box.y > h / 2, 'róg prawy dolny ' + w + '×' + h);
-    assert.ok(box.x >= 0 && box.x + box.bw <= w && box.y + box.bh <= h, 'mieści się w zdjęciu ' + w + '×' + h);
-    assert.strictEqual(txt.t, '09/11/2026 22:14');
-    assert.ok(txt.x > box.x && txt.y > box.y && txt.y < box.y + box.bh, 'tekst na pasku');
-  }
-  const none = []; Z.drawStamp({ fillRect: () => none.push(1), fillText: () => none.push(1), measureText: () => ({ width: 0 }) }, 800, 600, '');
-  assert.strictEqual(none.length, 0, 'bez napisu nic nie rysuje');
+test('bez daty na zdjęciu: kod modułu (Worker i główny wątek) niczego nie pisze na zdjęciu', () => {
+  const kod = require('node:fs').readFileSync(require.resolve('../../moduly/zdjecia/zdjecia.js'), 'utf8');
+  for (const s of ['fillText', 'drawStamp', 'stampText', 'measureText', 'lim.stamp', 'strokeText'])
+    assert.ok(!kod.includes(s), 'moduly/zdjecia/zdjecia.js nie zawiera ' + s);
+  assert.ok(kod.includes('Daty ma nie być wcale'), 'opis decyzji w module');
 });
 
 // Data zrobienia, gdy apka nie podała `when` (przegląd Codex PR #127: zdjęcie z galerii w Reactive) – EXIF, potem data pliku, na końcu teraz
@@ -475,7 +468,7 @@ function exifJpeg(dt) {
   seg.writeUInt16BE(0xFFE1, 0); seg.writeUInt16BE(app1.length + 2, 2);
   return Buffer.concat([Buffer.from([0xFF, 0xD8]), seg, app1, Buffer.from([0xFF, 0xD9])]);
 }
-test('data zrobienia bez `when`: EXIF → data pliku → teraz; napis z tej daty', async () => {
+test('data zrobienia bez `when`: EXIF → data pliku → teraz; wpis z tej daty', async () => {
   const now = new Date(2026, 10, 9, 22, 30).getTime();
   const exif = new Blob([exifJpeg('2025:01:15 08:30:12')]);
   assert.strictEqual(String(await Z.exifDate(exif)), String(new Date(2025, 0, 15, 8, 30)));
@@ -486,8 +479,8 @@ test('data zrobienia bez `when`: EXIF → data pliku → teraz; napis z tej daty
   const future = new File([Buffer.from([1])], 'b.jpg', { lastModified: now + 3600000 });
   assert.strictEqual(+(await Z.takenAt(future, now)), now, 'data z przyszłości = teraz');
   const got = [];
-  const { store } = fakeStore({ compress: async (f, p, k, stamp) => { got.push(stamp); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
-  store.setSettings({ stamp: true });
-  await store.save(exif, { kind: 'ogolne', source: 'reactive' }); // Reactive nie podaje `when`
-  assert.strictEqual(got[0], '15/01/2025 08:30', 'zdjęcie z galerii: data zrobienia, nie dodania');
+  const { store } = fakeStore({ compress: async (...a) => { got.push(a); return { blob: { size: 1, type: 'image/jpeg' }, width: 10, height: 10 }; } });
+  const r = await store.save(exif, { kind: 'ogolne', source: 'reactive' }); // Reactive nie podaje `when`
+  assert.strictEqual(r.created, new Date(2025, 0, 15, 8, 30).toISOString(), 'zdjęcie z galerii: data zrobienia, nie dodania');
+  assert.strictEqual(got[0].length, 3, 'bez napisu na zdjęciu');
 });

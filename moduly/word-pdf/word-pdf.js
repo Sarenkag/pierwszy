@@ -24,7 +24,7 @@
   }
 
   // Kilka Wordów → jeden PDF (Flushing: formularz firmy + basic form Smart): każdy przez silnik (zWorda), potem sklejenie stron
-  // gotową biblioteką pdf-lib (PDFLib). null, gdy którykolwiek się nie uda – wtedy apka zostaje przy PDF z rysownika.
+  // gotową biblioteką pdf-lib (PDFLib). null, gdy którykolwiek się nie uda – wtedy PDF-a nie ma i idzie sam Word (rysownika PDF nie ma).
   function zWordow(docs, PDFLib) {
     docs = (docs || []).filter(function (d) { return d && d.length; });
     if (!docs.length) return Promise.resolve(null);

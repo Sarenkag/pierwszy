@@ -34,7 +34,7 @@
     <Kafelki zastane klasa="type" :lista="d.lista" @wybierz="r => kontroler.akcja(r.id)"><template #ikona><ion-icon :src="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20aria-hidden%3D%22true%22%3E%3Crect%20x%3D%229%22%20y%3D%225%22%20width%3D%2230%22%20height%3D%2238%22%20rx%3D%222%22%2F%3E%3Cpath%20d%3D%22M15%2013h18M15%2019h18M15%2025h18%22%2F%3E%3Cpath%20d%3D%22M26%2030l-5%207h5l-3%206%22%2F%3E%3C%2Fsvg%3E'" aria-hidden="true" /></template></Kafelki>
   </template>
   <template v-else-if="d.rodzaj === 'termin'"><PoleDaty :T="T" :id="terminId" label="Update" :value="d.data" :disabled="d.blokada" @zmiana="kontroler.akcja($event)" /><ion-text data-termin :data-alt="d.alt">{{ d.tekst }}</ion-text><ion-text>{{ d.czestosc }}</ion-text></template>
-  <template v-else-if="d.rodzaj === 'etap'"><ion-select-option v-for="o in d.opcje" :key="o[0]" :value="o[0]">{{ o[1] }}</ion-select-option></template>
+  <template v-else-if="d.rodzaj === 'etap'"><StatusInspekcji :T="T" :stan="d.stan" :opcje="d.opcje" @zmien="kontroler.akcja($event)" /></template>
   <template v-else-if="d.rodzaj === 'komunikat'"><ion-text>{{ d.tytul }}</ion-text>{{ d.tekst }}</template>
   <template v-else-if="d.rodzaj === 'znacznik'"><ion-text v-html="d.html"></ion-text></template>
 </template>
@@ -45,6 +45,7 @@ const terminId = useId();
 import { IonGrid, IonImg, IonText, IonButton, IonSelectOption, IonItem, IonInput, IonList, IonNote, IonTitle, IonIcon } from '@ionic/vue';
 import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
 import PoleDaty from '../../czesci/PoleDaty.vue';
+import StatusInspekcji from '../../czesci/StatusInspekcji.vue';
 
 import { uzyjKontrolera } from '../../czesci/kontroler.js';
 import Kafelki from '../../czesci/Kafelki.vue';

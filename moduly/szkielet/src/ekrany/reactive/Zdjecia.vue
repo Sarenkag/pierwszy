@@ -2,10 +2,10 @@
      × usuwa, ✏️ edytor zdjęć). Dane: OESTReactiveUI.dane().zdjecia; akcje: camera / gallery / photo-del / photo-edit. -->
 <template>
   <div>
-    <div class="oest-rx-sub">{{ etykieta }}</div>
+    <ion-note>{{ etykieta }}</ion-note><!-- kafelki jak w inspekcji: Zrób zdjęcie · Z galerii obok siebie (czesci/KafelZdjecia.vue, Grzegorz 25.11.2026) -->
     <ion-grid v-if="z.usuwanie"><ion-row>
-      <ion-col size="12"><DodajZdjecie expand="block" :T="T" tryb="aparat" data-rx="camera" :data-phase="faza" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza)" @blad="blad">{{ T('Foto', 'Photo') }}</DodajZdjecie></ion-col>
-      <ion-col size="12"><DodajZdjecie expand="block" :T="T" tryb="galeria" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" data-rx="gallery" :data-phase="faza" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza, true)" @blad="blad">{{ T('Galeria', 'Gallery') }}</DodajZdjecie></ion-col>
+      <ion-col size="6"><DodajZdjecie :T="T" tryb="aparat" data-rx="camera" :data-phase="faza" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza)" @blad="blad"></DodajZdjecie></ion-col>
+      <ion-col size="6"><DodajZdjecie :T="T" tryb="galeria" @oest:wybor-zdjec="kontekst" @oest:koniec-wyboru-zdjec="A.wyborZdjec(false)" data-rx="gallery" :data-phase="faza" @zdjecia="pliki => A.przyjmijZdjecia(pliki, faza, true)" @blad="blad"></DodajZdjecie></ion-col>
     </ion-row></ion-grid>
     <div class="oest-rx-photos" :id="'rx-' + faza">
       <div v-for="p in lista" :key="p.id" class="oest-rx-ph">
@@ -19,7 +19,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonButton, IonGrid, IonRow, IonCol, IonNote } from '@ionic/vue';
 import DodajZdjecie from '../../czesci/DodajZdjecie.vue';
 import Zdjecie from './Zdjecie.vue';
 const props = defineProps({ T: Function, z: Object, faza: String, etykieta: String });

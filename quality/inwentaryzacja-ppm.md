@@ -23,7 +23,7 @@ s-cctv CCTV (Thompson Group, 6M) · s-access Door Access Control (Thompson Group
 s-spumps Commercial Sprinkler Pumps (J&J Fire, 6M+12M) · s-risers Dry Risers (J&J Fire, 6M+12M) · s-smoke AOVs, Smoke Extraction, Smoke Control System (Smoke Control Solutions, 6M) ·
 s-dampers Fire Dampers (Adexsi, 12M) · s-ahu Air Handling Units (Accent, 6M) · s-vrv VRVs (Accent, 6M+12M) · s-lcs Lighting Control System (ZEN Controls, 6M) ·
 s-doors Automatic Doors (Geze, 6M) · s-lightning Lightning Protection (Cuttings / Omega Red, 11M) · s-hygiene Water Hygiene Sampling, CWST Inspections (Hydrocert, 6M) ·
-s-cwst Cold Water Storage Tank (Hydrocert, 6M+12M) · s-pat Portable Appliance Testing (bez firmy, 12M) · s-spa Monthly Spa Maintenance & Sampling (bez firmy, 1M)
+s-cwst Cold Water Storage Tank (Hydrocert, 6M+12M) · s-pat Portable Appliance Testing (bez firmy, 12M) · s-spa-sampling (Sub) Monthly Spa Sampling i s-spa-maint (Sub) Monthly Spa Maintenance (bez firmy, 1M; osobno od 25.11.2026)
 
 ## Niespójności do decyzji właściciela (nie poprawiane)
 

@@ -1,40 +1,41 @@
 <!-- Tylko widok. Identyfikatory, klasy i kolejność zachowują kontrakt istniejących i-*.js i form-ui.css. -->
 <template>
-    <NaglowekInspekcji data-ui="top"><ion-button slot="start" data-ui="back" type="button" data-go="list" aria-label="Wstecz" data-en-aria-label="Back"><ion-icon :src="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M15%205l-7%207%207%207%22%2F%3E%3C%2Fsvg%3E'" aria-hidden="true" /></ion-button>
-      <ion-grid data-ui="t"><ion-title id="formTitle">—</ion-title><ion-grid data-ui="sub" id="formSub"></ion-grid></ion-grid><ion-button type="button" slot="end" data-ui="kebab" aria-label="Menu"><ion-icon :src="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%20fill%3D%22currentColor%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%225%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2219%22%20r%3D%222%22%2F%3E%3C%2Fsvg%3E'" aria-hidden="true" /></ion-button>
+    <ion-note id="formSub"></ion-note>
       <ion-grid data-ui="kmenu" hidden><ion-grid data-ui="kupd"><ion-grid data-ui="ppmbar" hidden></ion-grid></ion-grid>
         <ion-button type="button" data-k="def" data-en="Restore defaults (all OK)">Przywróć domyślne (wszystko OK)</ion-button>
         <ion-button type="button" data-k="more" data-en="Overall / Quote">Ocena ogólna / wycena</ion-button>
         <ion-button type="button" data-k="prev" data-en="Report preview">Podgląd raportu</ion-button>
         <ion-button type="button" data-k="clear" data-ui="kclear" data-en="Clear inspection">Wyczyść inspekcję</ion-button>
-      </ion-grid></NaglowekInspekcji>
-
-
-    <ion-grid data-ui="ihead"><ion-grid data-ui="ileft">
-      <ion-item data-ui="icb"><ion-checkbox  id="nameOn" :checked="true"><ion-text id="nameTx">{{ T('Imię', 'Name') }}</ion-text></ion-checkbox></ion-item>
-      <ion-item data-ui="icb"><ion-checkbox  id="dateOn" :checked="true"><ion-text data-en="Date">Data</ion-text></ion-checkbox></ion-item><PoleDaty :T="T" id="dzien" />
-      <ion-item data-ui="icb" id="updBox" hidden><ion-checkbox  id="updOn"><ion-text>Updated</ion-text></ion-checkbox></ion-item>
-    </ion-grid><ion-grid data-ui="iright"><WyborInspekcji id="ppmStage" data-ui="ppmpill" aria-label="Etap inspekcji" hidden></WyborInspekcji><ion-grid id="iEnds"></ion-grid><ion-grid id="iCntBox" title="OK / pytania"><ion-text id="iCnt"></ion-text> OK</ion-grid><ion-text id="recPill" hidden></ion-text></ion-grid></ion-grid>
-    <ion-card data-ui="panel iphotos">
-      <ion-grid data-ui="photo-head"><ion-grid data-ui="label"><ion-text data-en="Photos">Zdjęcia</ion-text> <ion-text id="photoCount"></ion-text></ion-grid><ion-text id="photoSize"></ion-text></ion-grid>
-      <ion-grid data-ui="photo-btns">
-        
-        <DodajZdjecie id="galIn" tryb="galeria" :T="T">{{ T('Z galerii', 'From gallery') }}</DodajZdjecie>
-        <DodajZdjecie id="camIn" tryb="aparat" :T="T">{{ T('Zrób zdjęcie', 'Take photo') }}</DodajZdjecie>
-        <DodajZdjecie formularz id="shCamIn" tryb="aparat" :T="T">{{ T('Formularz', 'Form') }}<ion-badge id="formPhotoBadge" /></DodajZdjecie>
-        <ion-button type="button" data-ui="pbtn" data-form-note><ion-icon :src="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%3E%3Cpath%20d%3D%22M6%203h9l4%204v14H6z%22%2F%3E%3Cpath%20d%3D%22M9%2011h7M9%2015h7%22%2F%3E%3C%2Fsvg%3E'" aria-hidden="true" /><ion-text data-en="Note">Notatka</ion-text></ion-button>
       </ion-grid>
+
+
+    <!-- Imię i Data (Grzegorz 25.11.2026: jak na main – znaczniki na całą szerokość, data jako przycisk obok „Data”; pole daty = klocek PoleDaty) -->
+    <div data-ui="ihead"><ion-grid data-ui="iright"><ion-row class="ion-align-items-center"><ion-col size="3"><ion-button data-ui="kebab" fill="clear" color="medium" :aria-label="T('Opcje inspekcji', 'Inspection options')"><ion-icon slot="icon-only" :icon="ellipsisVertical"></ion-icon></ion-button></ion-col><ion-col size="5"><div id="ppmStage" aria-label="Etap inspekcji" hidden></div><ion-text id="recPill" hidden></ion-text></ion-col><ion-col size="3" class="ion-text-end"><ion-text color="tertiary" data-termin><strong id="iEnds"></strong></ion-text> <ion-text id="iCntBox" title="OK / pytania"><ion-text id="iCnt"></ion-text> OK</ion-text></ion-col></ion-row></ion-grid>
+    <ion-grid class="ion-no-padding"><ion-row class="ion-align-items-center"><ion-col>
+    <ion-list lines="none" data-ui="ileft">
+        <ion-item><ion-checkbox id="nameOn" justify="start" label-placement="end" :checked="true"><ion-text id="nameTx">{{ T('Imię', 'Name') }}</ion-text></ion-checkbox></ion-item>
+        <PoleDaty :T="T" id="dzien"><ion-checkbox slot="start" id="dateOn" justify="start" label-placement="end" :checked="true"><ion-text data-en="Date">Data</ion-text></ion-checkbox></PoleDaty>
+        <ion-item id="updBox" hidden><ion-checkbox id="updOn" justify="start" label-placement="end"><ion-text>Updated</ion-text></ion-checkbox></ion-item>
+      </ion-list>
+    </ion-col><ion-col size="auto"><KafelZdjecia type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings" :ikona="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20class%3D%22ionicon-fill-none%20ionicon-stroke-width%22%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22%2F%3E%3Cpath%20class%3D%22ionicon-fill-none%20ionicon-stroke-width%22%20d%3D%22M19.4%2015a1.7%201.7%200%200%200%20.3%201.8l.1.1a2%202%200%201%201-2.8%202.8l-.1-.1a1.7%201.7%200%200%200-1.8-.3%201.7%201.7%200%200%200-1%201.5V21a2%202%200%201%201-4%200v-.1a1.7%201.7%200%200%200-1.1-1.5%201.7%201.7%200%200%200-1.8.3l-.1.1a2%202%200%201%201-2.8-2.8l.1-.1a1.7%201.7%200%200%200%20.3-1.8%201.7%201.7%200%200%200-1.5-1H3a2%202%200%201%201%200-4h.1a1.7%201.7%200%200%200%201.5-1.1%201.7%201.7%200%200%200-.3-1.8l-.1-.1a2%202%200%201%201%202.8-2.8l.1.1a1.7%201.7%200%200%200%201.8.3H9a1.7%201.7%200%200%200%201-1.5V3a2%202%200%201%201%204%200v.1a1.7%201.7%200%200%200%201%201.5%201.7%201.7%200%200%200%201.8-.3l.1-.1a2%202%200%201%201%202.8%202.8l-.1.1a1.7%201.7%200%200%200-.3%201.8V9a1.7%201.7%200%200%200%201.5%201H21a2%202%200%201%201%200%204h-.1a1.7%201.7%200%200%200-1.5%201z%22%2F%3E%3C%2Fsvg%3E'"></KafelZdjecia></ion-col></ion-row></ion-grid></div>
+    <!-- ↺ Przywróć inspekcję (jak na main, przywrócone 25.11.2026): pokazuje i obsługuje i-szkic.js (offerRestore) -->
+    <ion-button id="restoreIns" expand="block" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</ion-button>
+    <ion-card data-ui="panel iphotos">
+      <!-- 4 kafelki jak na main, bez napisu „Zdjęcia” (Grzegorz 25.11.2026); licznik i rozmiar zdjęć zostają dla i-zdjecia.js -->
+      <ion-grid data-ui="photo-head"><ion-text id="photoCount"></ion-text><ion-text id="photoSize"></ion-text></ion-grid>
+      <ion-grid><ion-row>
+        <ion-col size="3"><DodajZdjecie id="galIn" tryb="galeria" :T="T">{{ T('Z galerii', 'From gallery') }}</DodajZdjecie></ion-col>
+        <ion-col size="3"><DodajZdjecie id="camIn" tryb="aparat" :T="T">{{ T('Zrób zdjęcie', 'Take photo') }}</DodajZdjecie></ion-col>
+        <ion-col size="3"><DodajZdjecie formularz id="shCamIn" tryb="aparat" :T="T">{{ T('Formularz', 'Form') }}</DodajZdjecie></ion-col>
+        <ion-col size="3"><KafelZdjecia type="button" data-form-note :ikona="'data:image/svg+xml,%3Csvg%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%3E%3Cpath%20class%3D%22ionicon-fill-none%20ionicon-stroke-width%22%20d%3D%22M6%203h9l4%204v14H6z%22%2F%3E%3Cpath%20class%3D%22ionicon-fill-none%20ionicon-stroke-width%22%20d%3D%22M9%2011h7M9%2015h7%22%2F%3E%3C%2Fsvg%3E'"><ion-text data-en="Note">Notatka</ion-text></KafelZdjecia></ion-col>
+      </ion-row></ion-grid>
       <ion-grid data-ui="photos" id="photos"></ion-grid>
       <ion-grid id="sugBox" hidden></ion-grid>
       <ion-note data-ui="hint" id="photoInfo" data-en="Photos are reduced straight after adding. Each goes on a separate page of the report.">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</ion-note>
     </ion-card>
 
-    <ion-card data-ui="panel isheet" data-m="one" id="sheetBox">
+    <ion-card data-ui="panel isheet fold" data-m="one" id="sheetBox">
       <ion-grid data-ui="label"><ion-text data-en="Form photo">Zdjęcie formularza</ion-text> <ion-text id="sheetState"></ion-text></ion-grid>
-      <ion-grid data-ui="photo-btns">
-        
-        <DodajZdjecie id="shGalIn" tryb="galeria" :T="T">{{ T('Z galerii', 'From gallery') }}</DodajZdjecie>
-      </ion-grid>
       <ion-grid data-ui="photos" id="sheetPhotos"></ion-grid>
       <ion-note data-ui="hint" id="sheetInfo"></ion-note>
     </ion-card>
@@ -70,7 +71,7 @@
       <ion-grid data-ui="row"><ion-button data-ui="btn" type="button" id="allOk" data-en="All marked → OK">Wszystkie zaznaczone → OK</ion-button></ion-grid>
     </ion-card>
 
-    <ion-card data-ui="panel gone" hidden data-m="one sum">
+    <ion-card data-ui="panel gone" hidden>
       <ion-grid data-ui="grid">
         <ion-grid data-ui="f"><ion-label for="dzien" data-en="Date done">Data wykonania</ion-label></ion-grid>
         <ion-grid data-ui="f"><ion-label for="podpis" data-en="Signature">Podpis</ion-label><ion-item><ion-input id="podpis" type="text"></ion-input></ion-item></ion-grid>
@@ -96,7 +97,7 @@
         <ion-grid data-ui="row"><ion-button data-ui="btn" type="button" id="mdUse" data-en="✓ Insert into comment">✓ Wstaw do komentarza</ion-button><ion-button data-ui="btn" type="button" id="mdDrop" data-en="Discard">Odrzuć</ion-button></ion-grid></ion-grid>
     </ion-card>
 
-    <ion-grid data-ui="sendrow" data-m="one sum"><ion-button data-ui="go" type="button" id="toQueue" data-en="Send">Wyślij</ion-button><ion-button data-ui="go" type="button" id="recUpdate" hidden>Update</ion-button><ion-button data-ui="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><ion-icon :src="'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20aria-hidden%3D%22true%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%223%22%2F%3E%3Cpath%20d%3D%22M19.4%2015a1.7%201.7%200%200%200%20.3%201.8l.1.1a2%202%200%201%201-2.8%202.8l-.1-.1a1.7%201.7%200%200%200-1.8-.3%201.7%201.7%200%200%200-1%201.5V21a2%202%200%201%201-4%200v-.1a1.7%201.7%200%200%200-1.1-1.5%201.7%201.7%200%200%200-1.8.3l-.1.1a2%202%200%201%201-2.8-2.8l.1-.1a1.7%201.7%200%200%200%20.3-1.8%201.7%201.7%200%200%200-1.5-1H3a2%202%200%201%201%200-4h.1a1.7%201.7%200%200%200%201.5-1.1%201.7%201.7%200%200%200-.3-1.8l-.1-.1a2%202%200%201%201%202.8-2.8l.1.1a1.7%201.7%200%200%200%201.8.3H9a1.7%201.7%200%200%200%201-1.5V3a2%202%200%201%201%204%200v.1a1.7%201.7%200%200%200%201%201.5%201.7%201.7%200%200%200%201.8-.3l.1-.1a2%202%200%201%201%202.8%202.8l-.1.1a1.7%201.7%200%200%200-.3%201.8V9a1.7%201.7%200%200%200%201.5%201H21a2%202%200%201%201%200%204h-.1a1.7%201.7%200%200%200-1.5%201z%22%2F%3E%3C%2Fsvg%3E'" aria-hidden="true" /></ion-button></ion-grid>
+    <ion-grid data-ui="sendrow" data-m="one sum"><ion-button data-ui="go" type="button" id="toQueue" data-en="Send">Wyślij</ion-button><ion-button data-ui="go" type="button" id="recUpdate" hidden>Update</ion-button></ion-grid>
     <ion-note data-ui="hint" id="sendHint" data-m="one"></ion-note>
     <ion-button data-ui="btn wide" type="button" id="vtBtn" data-akcja="vantify" hidden></ion-button><!-- „Open Vantify” z klocka (vantify: true w ppm.js) -->
     <ion-note data-ui="hint" id="vtHint" hidden></ion-note>
@@ -108,9 +109,10 @@
 
 <script setup>
 import { IonCard } from '@ionic/vue';
-import NaglowekInspekcji from '../../czesci/NaglowekInspekcji.vue';
-import { IonGrid, IonButton, IonIcon, IonTitle, IonLabel, IonItem, IonCheckbox, IonText, IonBadge, IonNote, IonSelectOption, IonInput, IonTextarea } from '@ionic/vue';
+import { ellipsisVertical } from 'ionicons/icons';
+import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonTitle, IonLabel, IonList, IonItem, IonCheckbox, IonText, IonNote, IonSelectOption, IonInput, IonTextarea } from '@ionic/vue';
 import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
+import KafelZdjecia from '../../czesci/KafelZdjecia.vue';
 import DodajZdjecie from '../../czesci/DodajZdjecie.vue';
 
 import PoleDaty from '../../czesci/PoleDaty.vue';

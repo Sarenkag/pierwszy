@@ -1,7 +1,12 @@
 <!-- Kalendarz (cal): miesiąc (6 tygodni), zmiany z grafiku, liczba inspekcji w dniu, klocki wybranego dnia.
-     Dane i reguły: OESTPpmUI.kalDane() (app/www/ppm-ui.js). Poprzedni/następny miesiąc i grafik – akcje paska ramy. -->
+     Dane i reguły: OESTPpmUI.kalDane() (app/www/ppm-ui.js). Poprzedni/następny miesiąc – rząd na górze treści (nie header). Bez zębatki „Mój grafik” – profil otwiera awatar GS (Grzegorz 25.11.2026).
+     Linia stanu (Wi-Fi, HDD, folder zdjęć) przypięta pod paskiem, nad miesiącem – ten sam klocek co na ekranie głównym (Grzegorz 25.11.2026). -->
 <template>
+  <Teleport defer to="#oest-pod-paskiem">
+    <LiniaStanu :d="h" :T="T" @okno="okno"></LiniaStanu>
+  </Teleport>
   <div>
+    <AkcjeEkranu :akcje="[]"><PrzelacznikMiesiaca :miesiac="d.tytul" :T="T" @zmien="P.kalMiesiac"></PrzelacznikMiesiaca></AkcjeEkranu>
     <div class="ion-padding-horizontal">
       <div class="oest-kal">
         <small v-for="(n, i) in d.tydzien" :key="i">{{ n }}</small>
@@ -26,24 +31,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { IonButton, IonBadge, IonItem, IonNote } from '@ionic/vue';
-import { caretBack, caretForward, settingsOutline } from 'ionicons/icons';
+import AkcjeEkranu from '../czesci/AkcjeEkranu.vue';
+import PrzelacznikMiesiaca from '../czesci/PrzelacznikMiesiaca.vue';
 import Klocek from '../czesci/Klocek.vue';
+import LiniaStanu from '../czesci/LiniaStanu.vue';
+import { okno } from './glowny/okna.js';
 import { wybierz, przytrzymaj } from '../czesci/listaInspekcji.js';
 const props = defineProps({ T: Function, wersja: Number });
 const inny = (pl, en) => (props.T(pl, en) === en ? pl : en); // napis legendy w drugim języku (niewidoczny, trzyma miejsce)
 const P = window.OESTPpmUI;
 const n = ref(0), odswiez = () => { n.value++; };
 const d = computed(() => (props.wersja, n.value, P.kalDane()));
-function akcje() {
-  window.OESTRama.ustaw({ tytul: d.value.tytul, akcje: [
-    { ikona: caretBack, etykieta: props.T('Poprzedni miesiąc', 'Previous month'), fn: () => P.kalMiesiac(-1) },
-    { ikona: caretForward, etykieta: props.T('Następny miesiąc', 'Next month'), fn: () => P.kalMiesiac(1) },
-    { ikona: settingsOutline, etykieta: props.T('Mój grafik', 'My shifts'), nav: 'settings/profile' }
-  ] });
-}
-watch(() => [props.wersja, d.value.tytul], akcje);
-onMounted(() => { akcje(); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
-onUnmounted(() => { window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });
+const h = computed(() => (props.wersja, n.value, window.OESTHome.dane())); // linia stanu: te same dane co ekran główny
+onMounted(() => { window.addEventListener('oest:home', odswiez); window.addEventListener('oest:ppm-ui', odswiez); window.addEventListener('oest:settings-changed', odswiez); /* grafik z profilu i zmiany z Kalendarza Google */ const y = P.powrot(); if (y) setTimeout(() => window.OESTEkrany.przewin(y), 0); });
+onUnmounted(() => { window.removeEventListener('oest:home', odswiez); window.removeEventListener('oest:ppm-ui', odswiez); window.removeEventListener('oest:settings-changed', odswiez); });
 </script>

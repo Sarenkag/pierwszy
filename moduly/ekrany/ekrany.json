@@ -46,7 +46,6 @@
     { "id": "reactive/job/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Zlecenie", "en": "Job" },
     { "id": "reactive/complete/:id", "rodzic": "reactive/job/:id", "pudelko": "v-reactive", "pl": "Zamknięcie zlecenia", "en": "Complete job" },
     { "id": "reactive/tree/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Wybór (drzewo)", "en": "Pick (tree)", "uwaga": "Węzeł drzewa wraca do węzła nadrzędnego, a najwyższy do Reactive." },
-    { "id": "reactive/config", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Ustawienia Reactive", "en": "Reactive settings" },
     { "id": "reactive/history", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Historia", "en": "History" }
   ]
 }

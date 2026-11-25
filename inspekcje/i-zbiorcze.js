@@ -146,7 +146,7 @@
     var locs = [];
     all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
     cur.loc = locs.join(", "); cur.where = cur.loc;
-    $("formTitle").textContent = t.batch;
+    tytulFormularza = t.batch; tytul();
     $("formSub").textContent = cur.where + " · " + t.name;
     if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov").value = "Requires attention";
     formMode();

@@ -69,9 +69,7 @@
     const list=listFilter==='done'?done:listFilter==='all'?all:active,showDrafts=listFilter!=='done';
     const filtry=[['active',L('Aktywne','Active')+' ('+(active.length+loose.length)+')'],['done',L('Zakończone','Completed')+' ('+done.length+')'],['all',L('Wszystkie','All')]].map(([id,nazwa])=>({id,nazwa}));
     const klocki=(showDrafts?loose.map(draftCard):[]).concat(list.slice().sort((a,b)=>(a.status==='fixed')-(b.status==='fixed')||String(b.createdAt).localeCompare(String(a.createdAt))).map(j=>jobCard(j)));
-    return {ekran:'lista',tytul:'Reactive',naglowek:'gear',nowe:L('＋ Nowe zadanie','＋ New job'),filtry,filtr:listFilter,klocki,pusto:L('Brak zadań.','No jobs.')};}
-  function config(){/* typy i „Co” są w kreatorze (Grzegorz 18/11/2026: kreator zastępuje „Typ” i „Co dokładnie”); własne pozycje „＋ Dodaj” w kreatorze */
-    return {ekran:'config',tytul:L('Reactive — ustawienia','Reactive — settings'),teksty:[L('Osoby i działy do „Kto zlecił” dopisujesz w Ustawieniach → Zespół i kontakty (jedna lista dla całej apki).','People and departments for “By who” live in Settings → Team & contacts (one list for the whole app).'),L('Typ pracy i „Co” wybierasz w kreatorze na karcie zadania. Własne pozycje dopisujesz tam przyciskiem „＋ Dodaj”.','Work type and “What” are picked in the builder on the job card. Add your own items there with “＋ Add”.')],powrot:L('Powrót','Back')};}
+    return {ekran:'lista',tytul:'Reactive',nowe:L('＋ Nowe zadanie','＋ New job'),filtry,filtr:listFilter,klocki};}
   function tree(id){const result=C.find(id)||C.find('root'),node=result.node;return {ekran:'drzewo',tytul:node.id==='root'?L('Nowe zadanie','New job'):tl(node),gotowce:node.id==='root'?{tytul:L('GOTOWCE','QUICK PICKS'),kafelki:T.presets.map(p=>({id:p.id,tytul:tl(p),rx:'preset'})),wszystkie:L('WSZYSTKIE KATEGORIE','ALL CATEGORIES')}:null,sciezka:[...result.path.filter(p=>p!=='Reactive'),node.label].filter(x=>x!=='Reactive').map(tp).join(' › '),kafelki:node.children.map(child=>({id:child.id,tytul:tl(child),rx:child.children?'tree':'preset'}))};}
   /* Ekran zadania jak inspekcja: klocki z drzewka składają opis, zdjęcia, notatka, status; na dole Odłóż / Wyślij do siebie. */
   const requesters=()=>[['manager',L('Mój manager','My manager')],['building','Building manager'],['tenant',L('Najemca','Tenant')],['other',L('Inny','Other')]];
@@ -151,7 +149,7 @@
     const done=!!draft.pendingActionId,levels=C.levels(draft.building);
     return {ekran:'karta',tytul:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),naglowek:'more',otwarty:openRow,wybierz:L('Wybierz','Choose'),
       wiecej:openRow==='more'?{etykieta:L('Stan','Condition'),statusy:statuses().map(([id])=>({id,nazwa:C.uiLabel(id),on:draft.status===id})),czesci:draft.status==='parts'?{etCzesci:L('Jakie części?','Which parts?'),partsNote:draft.partsNote||'',etData:L('Oczekiwana data — opcjonalnie','Expected date — optional'),expectedDate:draft.expectedDate||''}:null,quote:{etykieta:L('Quote required — wymagany kosztorys','Quote required'),on:!!draft.quote},odloz:L('Odłóż','Park')}:null,
-      nazwa:{etykieta:L('Tytuł zlecenia','Job title'),wartosc:draft.title||'',podpowiedz:L('Tytuł zlecenia','Job title')},
+      nazwa:{etykieta:L('Nazwa zadania','Job name'),wartosc:draft.title||'',podpowiedz:L('np. Zepsuty zamek w kuchni','e.g. Broken lock in the kitchen')},
       data:{etykieta:L('Data zlecenia','Order date'),wartosc:draft.orderDate||''},
       typ:{etykieta:L('Typ','Type'),tekst:typeTxt,wartosc:type,opcje:K.TYPES.map(x=>({id:x,nazwa:lang()==='en'?x:x+' · '+K.TYPE_PL[x],on:x===type}))},
       kto:{etykieta:L('Kto zlecił','By who'),tekst:whoTxt,wartosc:rb,grupy:whoItems.map(([g,l])=>({nazwa:g,opcje:l.map(([v,n])=>({id:v,nazwa:n,on:v===rb}))})),dodaj:L('＋ dodaj osobę lub dział','＋ add a person or department')},
@@ -169,7 +167,7 @@
   let lastRoute='';function render(){if(route!==lastRoute)infoOpen=new Set(['start']);/* nowa karta: „info na start” otwarte, „na koniec” zwinięte */lastRoute=route;emit();liczniki();fillEnReport();}
   /* dane bieżącego ekranu dla Vue (zwykły obiekt) */
   function dane(){const part=route.split('/'),x={jezyk:lang(),komunikat};if(blad)return {...x,ekran:'blad',tytul:'Reactive',tekst:blad,powrot:L('Powrót','Back')};if(!data)return {...x,ekran:'laduje',tytul:''};
-    const s=part[1]==='tree'?tree(part[2]):part[1]==='config'?config():part[1]==='history'?{ekran:'historia',tytul:L('Historia','History'),klocki:data.jobs.filter(j=>j.status==='fixed').map(j=>jobCard(j,true)),pusto:L('Brak zakończonych zleceń.','No completed jobs.'),powrot:L('Powrót','Back')}:isForm()?form():draft?{ekran:'laduje',tytul:''}:home();
+    const s=part[1]==='tree'?tree(part[2]):part[1]==='history'?{ekran:'historia',tytul:L('Historia','History'),klocki:data.jobs.filter(j=>j.status==='fixed').map(j=>jobCard(j,true)),pusto:L('Brak zakończonych zleceń.','No completed jobs.'),powrot:L('Powrót','Back')}:isForm()?form():draft?{ekran:'laduje',tytul:''}:home();
     return {...x,...s};}
   /* zdjęcia i nagrania karty: adresy blob z magazynu (ten sam adres, dopóki zdjęcie jest na karcie – bez migania) */
   async function renderEvidence(){const token=epoch;if(!draft)return;const closed=closedJob(),nowe=new Map(),ev={before:[],after:[],audio:[],zamkniete:closed};
@@ -268,7 +266,6 @@
     case 'kr-closing':collect();draft.kreator={...(draft.kreator||{}),closing:draft.kreator?.closing===false};krApply();persist(false);render();renderEvidence();return;
     case 'filter':listFilter=b.id;render();renderEvidence();return;
     case 'people':if(canLeave()){if(draft)collect(),persist();navigate('settings/contacts');}return;
-    case 'cfg':if(canLeave()){if(draft)collect(),persist();navigate('reactive/config');}return;
     case 'request':case 'status':collect();if(action==='request'){if(draft.requestedBy!==b.value)draft.requestedName='';draft.requestedBy=b.value;}else{draft.status=b.status;draft.temporary=false;}persist(false);render();renderEvidence();return;
     case 'quick-status':run(async()=>{await repo.setReactiveStatus(b.id,b.status);data=await repo.get();render();await renderEvidence();});return;
     case 'save':run(async()=>{const isNew=/^reactive\/(new|draft)\//.test(route),saved=await save();busy=false;navigate('reactive/job/'+saved.id);});return;

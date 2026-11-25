@@ -15,7 +15,7 @@
   var DEFAULTS = {
     v: 5, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
@@ -27,8 +27,8 @@
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
-  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
-  if (!cfg.stampChosen) cfg.stamp = false;
+  // na zdjęciach nic nie dopisujemy (01/11/2026; 25.11.2026: „Daty ma nie być wcale”) – dawne ustawienie znika
+  delete cfg.stamp; delete cfg.stampChosen;
   // Link z Apps Script (linkDoTelefonu): …/inspekcje/#api=…&key=… — zapisuje adres i klucz, potem czyści pasek adresu
   (function () {
     var h = new URLSearchParams(location.hash.slice(1));

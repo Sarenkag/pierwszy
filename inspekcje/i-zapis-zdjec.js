@@ -96,13 +96,12 @@
   }
   // Zdjęcie do raportu zmniejszane RAZ (audyt wydajności 07/11/2026): wynik zapamiętany przy samym zdjęciu (WeakMap po blobie),
   // więc Podgląd → Wyślij, „Zmniejsz zdjęcia” i ponowne budowanie nie liczą go od nowa. Klucz = wszystko, od czego zależy wynik
-  // (rozmiar, jakość, stempel); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
+  // (rozmiar, jakość); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
   var finalCache = typeof WeakMap === "function" ? new WeakMap() : null;
   function finalOpts(p, d) {
     var general = !p.sheet && p.tap == null && !p.code && !p.small, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
     var px = p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink), q = p.sheet ? SHEET_Q : rs.q;
-    var stamp = cfg.stamp ? NZ.data(p.when) + " " + NZ.godzina(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
-    return { px: px, q: q, stamp: stamp, key: px + "|" + q + "|" + stamp };
+    return { px: px, q: q, key: px + "|" + q }; // bez daty na zdjęciu (Grzegorz 25.11.2026)
   }
   function finalPhoto(p, d) {
     var o = finalOpts(p, d), byKey = finalCache && p.blob && typeof p.blob === "object" ? finalCache.get(p.blob) : null, hit = byKey && byKey[o.key];
@@ -122,7 +121,6 @@
   }
   function finalFrom(src, o) {
     var c = Zd.plotno(src, o.px), w = c.width, h = c.height; // zmniejszenie: moduly/zdjecia
-    if (o.stamp) Zd.drawStamp(c.getContext("2d"), w, h, o.stamp); // data na zdjęciu: ten sam wygląd co przy zapisie (moduly/zdjecia)
     return new Promise(function (res) { c.toBlob(res, "image/jpeg", o.q); }).then(function (blob) {
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, blob: blob }; });
     });
@@ -172,10 +170,10 @@
     if (cur.type && cur.type.folder) {
       var none = !sheetPhotos().length;
       $("formHint").textContent = pendingPh ? window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? window.OESTT("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : window.OESTT("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + window.OESTT(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
-      var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
-      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? window.OESTT("Dodaj zdjęcie formularza", "Add form photo") : window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
-      $("toQueue").expand = none ? undefined : "block"; return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
+      var fb = !!restoring || pendingPh > 0; // zdjęcie formularza dodaje się czerwonym kafelkiem Formularz – tu tylko Wyślij (Grzegorz 25.11.2026)
+      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb || none;
+      $("toQueue").textContent = window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
+      $("toQueue").expand = "block"; return;
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;

@@ -14,15 +14,15 @@
     </ion-card>
 
     <ion-card>
-      <ion-item><ion-input :aria-label="d.nazwa.etykieta" data-rx-field="title" :maxlength="300" :placeholder="d.nazwa.podpowiedz" :value="d.nazwa.wartosc" @ionInput="e => A.pole('title', e.detail.value)"></ion-input></ion-item>
-      <div>
-        <PoleDaty :T="T" id="rxOrderDate" :label="d.data.etykieta" :value="d.data.wartosc" data-rx-field="orderDate" @zmiana="v => A.pole('orderDate', v)"></PoleDaty>
-        <ion-item><ion-select :label="d.typ.etykieta" interface="popover" :placeholder="d.wybierz" data-rx-field="jobType" :value="d.typ.wartosc" @ionChange="e => A.akcja('type', { value: e.detail.value })"><ion-select-option v-for="o in d.typ.opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item>
-      </div>
-      <div>
-        <ion-item><ion-select :label="d.kto.etykieta" interface="popover" :placeholder="d.wybierz" data-rx-field="requestedBy" :value="d.kto.wartosc" @ionChange="e => e.detail.value === '__people' ? A.akcja('people') : A.akcja('who', { value: e.detail.value })"><ion-select-option v-for="o in d.kto.grupy.flatMap(g => g.opcje)" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option><ion-select-option value="__people">{{ d.kto.dodaj }}</ion-select-option></ion-select></ion-item>
-        <Pole id="where" :etykieta="d.gdzie.etykieta" :tekst="d.gdzie.tekst" :wybierz="d.wybierz" :otwarty="d.otwarty === 'where'"></Pole>
-      </div>
+      <ion-item><ion-input :label="d.nazwa.etykieta" label-placement="stacked" data-rx-field="title" :maxlength="300" :placeholder="d.nazwa.podpowiedz" :value="d.nazwa.wartosc" @ionInput="e => A.pole('title', e.detail.value)"></ion-input></ion-item>
+      <!-- pary jak na main (Grzegorz 25.11.2026): Data | Typ, Kto | Gdzie – etykieta nad wartością -->
+      <ion-grid class="ion-no-padding"><ion-row>
+        <ion-col size="6"><PoleDaty :T="T" id="rxOrderDate" :value="d.data.wartosc" data-rx-field="orderDate" @zmiana="v => A.pole('orderDate', v)"><ion-label position="stacked">{{ d.data.etykieta }}</ion-label></PoleDaty></ion-col>
+        <ion-col size="6"><ion-item><ion-select :label="d.typ.etykieta" label-placement="stacked" interface="popover" :placeholder="d.wybierz" data-rx-field="jobType" :value="d.typ.wartosc" @ionChange="e => A.akcja('type', { value: e.detail.value })"><ion-select-option v-for="o in d.typ.opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item></ion-col>
+      </ion-row><ion-row>
+        <ion-col size="6"><ion-item><ion-select :label="d.kto.etykieta" label-placement="stacked" interface="popover" :placeholder="d.wybierz" data-rx-field="requestedBy" :value="d.kto.wartosc" @ionChange="e => e.detail.value === '__people' ? A.akcja('people') : A.akcja('who', { value: e.detail.value })"><ion-select-option v-for="o in d.kto.grupy.flatMap(g => g.opcje)" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option><ion-select-option value="__people">{{ d.kto.dodaj }}</ion-select-option></ion-select></ion-item></ion-col>
+        <ion-col size="6"><Pole pod id="where" :etykieta="d.gdzie.etykieta" :tekst="d.gdzie.tekst" :wybierz="d.wybierz" :otwarty="d.otwarty === 'where'"></Pole></ion-col>
+      </ion-row></ion-grid>
       <div v-if="d.otwarty === 'where'">
         <Chipy :opcje="d.gdzie.budynki" rx="building" klucz="value"></Chipy>
         <div v-if="d.gdzie.pietra">
@@ -60,7 +60,7 @@
     <ion-card>
       <template v-for="x in d.info" :key="x.id">
         <div><Pole :id="x.id" :etykieta="x.etykieta" :tekst="x.pusty ? '' : x.tekst" :podpowiedz="x.tekst" :wybierz="d.wybierz" :otwarty="x.otwarte" :licznik="x.licznik"></Pole></div>
-        <div v-if="x.otwarte">
+        <div v-if="x.otwarte" class="ion-padding-horizontal">
           <div>{{ x.glosTekst }}</div>
           <Notatki :key="x.id + d.jezyk" :T="T" :opcje="A.notatki(x.id)"></Notatki>
           <ion-item><ion-textarea :aria-label="x.etykieta" :data-rx-field="x.pole" :maxlength="20000" :rows="3" :placeholder="x.podpowiedz" :value="x.wartosc" @ionInput="e => A.pole(x.pole, e.detail.value)"></ion-textarea></ion-item>
@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-import { IonCard, IonItem, IonInput, IonTextarea, IonCheckbox, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonInput, IonTextarea, IonCheckbox, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
 import PoleDaty from '../../czesci/PoleDaty.vue';
 import Notatki from '../../czesci/Notatki.vue';
 import Pole from './Pole.vue';

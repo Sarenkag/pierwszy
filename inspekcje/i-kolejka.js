@@ -239,7 +239,6 @@
     renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || window.OESTT("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {
-    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !sheetPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
   });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });

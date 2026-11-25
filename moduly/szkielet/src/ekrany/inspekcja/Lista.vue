@@ -1,7 +1,6 @@
 <!-- Zastany układ strony inspekcji, bez zmiany klas i kolejności. -->
 <template>
-    <NaglowekInspekcji data-ui="top"><ion-button slot="start" data-ui="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</ion-button>
-      <ion-grid data-ui="t"><ion-title id="listTitle">—</ion-title><ion-grid data-ui="sub" id="listSub"></ion-grid></ion-grid></NaglowekInspekcji>
+    <AkcjeEkranu :akcje="[]"><ion-note id="listSub"></ion-note></AkcjeEkranu>
     <ion-grid data-ui="ppmbar" hidden></ion-grid>
     <ion-item><ion-input data-ui="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" data-en-placeholder="Search code, e.g. LL-UG" autocomplete="off" spellcheck="false"></ion-input></ion-item>
     <ion-card data-ui="panel" id="batchBar" hidden></ion-card>
@@ -15,7 +14,7 @@
 
 <script setup>
 import { IonCard } from '@ionic/vue';
-import NaglowekInspekcji from '../../czesci/NaglowekInspekcji.vue';
+import AkcjeEkranu from '../../czesci/AkcjeEkranu.vue';
 import { IonGrid, IonButton, IonTitle, IonItem, IonInput, IonLabel, IonSelectOption, IonNote } from '@ionic/vue';
 import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
 </script>

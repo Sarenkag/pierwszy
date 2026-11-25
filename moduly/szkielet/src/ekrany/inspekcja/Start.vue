@@ -1,6 +1,6 @@
 <!-- Zastany układ strony inspekcji, bez zmiany klas i kolejności. -->
 <template><!-- ekran wybiera skrypt – przy wejściu z listy PPM nie miga lista inspekcji (09/11/2026) -->
-    <NaglowekInspekcji data-ui="top"><ion-button slot="start" data-ui="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" data-en-aria-label="App menu" hidden>‹</ion-button><ion-grid data-ui="t"><ion-title><ion-text data-en="Inspections">Inspekcje</ion-text><ion-text data-ui="dot">.</ion-text></ion-title><ion-grid data-ui="sub" id="homeSub">—</ion-grid></ion-grid></NaglowekInspekcji>
+    <AkcjeEkranu :akcje="[]"><ion-note id="homeSub">—</ion-note></AkcjeEkranu>
     <ion-grid data-ui="notice" id="tplNotice" hidden></ion-grid>
     <ion-grid data-ui="netbar" id="netbar"><ion-text data-ui="dot2" aria-hidden="true"></ion-text><ion-text data-ui="t" id="netTxt">—</ion-text><ion-button data-ui="btn" type="button" data-go="queue" data-en="Queue">Kolejka</ion-button></ion-grid>
     <ion-grid data-ui="types tiles kf-grid" id="types"></ion-grid>
@@ -28,7 +28,6 @@
         <ion-grid data-ui="f"><ion-label for="s-insp" data-en="Default signature (Engineer / Signed)">Domyślny podpis (Engineer / Signed)</ion-label>
           <ion-item><ion-input id="s-insp" type="text"></ion-input></ion-item></ion-grid>
         <ion-item data-ui="toggle"><ion-checkbox  id="s-scope"> <ion-text data-en="Add scope: “visual inspection only”">Dopisz zakres: „visual inspection only”</ion-text></ion-checkbox></ion-item>
-        <ion-item data-ui="toggle"><ion-checkbox  id="s-stamp"> <ion-text data-en="Stamp date, code and location on photos">Wpisz datę, kod i lokalizację na zdjęciach</ion-text></ion-checkbox></ion-item>
         <ion-item data-ui="toggle"><ion-checkbox  id="s-dphotos"> <ion-text data-en="Also save separate photo files to Drive (slower)">Zapisuj też osobne pliki zdjęć na Drive (wolniej)</ion-text></ion-checkbox></ion-item>
         <ion-item data-ui="toggle"><ion-checkbox  id="s-auto"> <ion-text data-en="Send the queue automatically when online">Wysyłaj kolejkę sama, gdy jest sieć</ion-text></ion-checkbox></ion-item>
         <ion-item data-ui="toggle"><ion-checkbox  id="s-wifi"> <ion-text data-en="Wait for Wi‑Fi to send (the bar at the bottom lets you send now)">Czekaj z wysyłką na Wi‑Fi (pasek na dole pozwala wysłać od razu)</ion-text></ion-checkbox></ion-item>
@@ -40,7 +39,7 @@
 
 <script setup>
 import { IonCard } from '@ionic/vue';
-import NaglowekInspekcji from '../../czesci/NaglowekInspekcji.vue';
+import AkcjeEkranu from '../../czesci/AkcjeEkranu.vue';
 import { IonGrid, IonButton, IonTitle, IonText, IonAccordionGroup, IonAccordion, IonItem, IonLabel, IonInput, IonNote, IonCheckbox } from '@ionic/vue';
 import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
 </script>

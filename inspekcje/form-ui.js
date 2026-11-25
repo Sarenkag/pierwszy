@@ -1,20 +1,16 @@
-// Ekran inspekcji wg makiety Grzegorza (31/10/2026): ← nazwa ⋮, Imię☐ Data☐, ile do końca + licznik,
+// Ekran inspekcji wg makiety Grzegorza (31/10/2026; 25.11.2026: nazwa w górnym pasku ramy, ⋮ pod nim), Imię☐ Data☐, ile do końca + licznik,
 // Galeria / Zdjęcie / Notatka na górze, checklista kropkami, rzadkie rzeczy w menu ⋮.
 // Zachowanie widoku Vue; logika formularza i raportu zostaje w i-*.js.
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var form = $("v-form"); if (!form) return;
-  // pasek z tytułem może być już przeniesiony do nagłówka ramy (Rama.vue: ulozNaglowek) – szukamy go po tytule formularza, nie w #v-form
-  // (wejście prosto z karty PPM: formularz widoczny od pierwszej klatki, więc rama zabiera pasek, zanim ten plik się wczyta)
-  var top = ($("formTitle") || form).closest("[data-ui~=top]"), bar = top && top.querySelector("[data-ui~=ppmbar]"); if (!top) return;
+  // tytuł formularza jest w górnym pasku ramy (i-ekrany.js: OESTRama.ustaw); ⋮ i jego menu – w rzędzie ekranu pod paskiem (czesci/AkcjeEkranu.vue)
+  var bar = form.querySelector("[data-ui~=ppmbar]");
 
   // ---- menu ⋮ (małe menu w rogu, bez przechodzenia na inny ekran) ----
-  var kb = top.querySelector("[data-ui~=kebab]");
-  var title = $("formTitle");
-  title.title = title.textContent;
-  new MutationObserver(function () { title.title = title.textContent; }).observe(title, { childList: true, subtree: true });
-  var menu = top.querySelector("[data-ui~=kmenu]");
+  var kb = form.querySelector("[data-ui~=kebab]");
+  var menu = form.querySelector("[data-ui~=kmenu]");
   if (window.OESTBledy) OESTBledy.applyDom(menu);
   kb.addEventListener("click", function () { menu.hidden = !menu.hidden; });
   document.addEventListener("click", function (e) { if (!menu.hidden && !e.target.closest("[data-ui~=kmenu],[data-ui~=kebab]")) menu.hidden = true; });
@@ -27,7 +23,7 @@
     if (k === "more") { ovp.dataset.expanded = "true"; ovp.hidden = false; ovp.scrollIntoView({ behavior: "smooth", block: "center" }); }
   });
 
-  // ---- nagłówek: Imię ☐  Data ☐ | ile do końca, licznik ----
+  // ---- nagłówek: Imię ☐  Data ☐ [data] | ile do końca, licznik; przycisk daty = PoleDaty (id „dzien-przycisk”) ----
   var head = form.querySelector("[data-ui~=ihead]");
   if (window.OESTBledy) OESTBledy.applyDom(head);
   var dz = $("dzien"), pd = $("podpis");
@@ -35,13 +31,19 @@
     if (!this.checked) { pd.dataset.v = pd.value; pd.value = ""; } else { pd.value = pd.dataset.v || pd.value; }
     syncHead();
   });
-  $("dateOn").addEventListener("change", function () { dz.disabled = !this.checked; form.querySelector('ion-datetime-button').disabled = !this.checked; });
+  $("dateOn").addEventListener("change", function () { dz.disabled = !this.checked; $("dzien-przycisk").disabled = !this.checked; });
 
   // ---- zdjęcia na górę: Galeria · Zdjęcie · Notatka ----
   var note = form.querySelector("[data-form-note]");
   if (window.OESTBledy) OESTBledy.applyDom(note);
   var kp = $("komentarz").closest("[data-ui~=panel]");
   note.addEventListener("click", function () { kp.dataset.expanded = "true"; kp.hidden = false; $("komentarz").setFocus(); });
+  // zielona ramka kafelka Notatka, gdy notatka nie jest pusta (Grzegorz 25.11.2026)
+  function notatkaOk() { if ($("komentarz").value.trim()) note.dataset.ok = ""; else delete note.dataset.ok; }
+  $("komentarz").addEventListener("ionInput", notatkaOk);
+  // podgląd zdjęć formularza z okienka kafelka Formularz (czesci/DodajZdjecie.vue, Grzegorz 25.11.2026)
+  var shp = $("sheetBox");
+  form.addEventListener("oest:podglad-formularza", function () { shp.dataset.expanded = "true"; shp.hidden = false; shp.scrollIntoView({ behavior: "smooth", block: "center" }); });
 
   // ---- Overall/Quote: liczone samo z odpowiedzi, ręcznie z menu ⋮ ----
   var ovp = $("ov").closest("[data-ui~=panel]");
@@ -69,17 +71,17 @@
 
   // szkic wczytany (index.html → restoreDraft): Name/Date, notatka i licznik według zapisu
   form.addEventListener("oest:restored", function () {
-    dz.disabled = !$("dateOn").checked; form.querySelector("ion-datetime-button").disabled = dz.disabled;
+    dz.disabled = !$("dateOn").checked; $("dzien-przycisk").disabled = dz.disabled;
     if (!$("nameOn").checked) { pd.dataset.v = pd.value; pd.value = ""; }
-    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden);
+    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden); notatkaOk();
     setTimeout(syncHead, 0);
   });
 
   // przy każdym otwarciu formularza: znaczniki od nowa, notatka zwinięta (chyba że coś w niej jest)
   new MutationObserver(function () {
     if (form.hidden) return;
-    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false; form.querySelector("ion-datetime-button").disabled = false; $("updOn").checked = false;
-    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden); ovp.hidden = true; ovp.dataset.expanded = "false"; menu.hidden = true;
+    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false; $("dzien-przycisk").disabled = false; $("updOn").checked = false;
+    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden); notatkaOk(); ovp.hidden = true; ovp.dataset.expanded = "false"; menu.hidden = true; shp.hidden = true; shp.dataset.expanded = "false";
     setTimeout(syncHead, 0);
   }).observe(form, { attributes: true, attributeFilter: ["hidden"] });
 })();

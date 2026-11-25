@@ -5,21 +5,21 @@
   // ---------- ustawienia ----------
   function fillSettings() {
     $("s-email").value = cfg.email; $("s-folder").value = cfg.folder; $("s-pattern").value = cfg.pattern;
-    $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-stamp").checked = !!cfg.stamp; $("s-dphotos").checked = !!cfg.drivePhotos;
+    $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-dphotos").checked = !!cfg.drivePhotos;
     $("s-api").value = cfg.api; $("s-key").value = cfg.key; $("s-auto").checked = !!cfg.auto; $("s-wifi").checked = cfg.wifiOnly !== false;
     $("apiBox").hidden = IN_GAS;
   }
   function readSettings() {
     var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
-    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.stampChosen = true; cfg.drivePhotos = $("s-dphotos").checked;
+    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.drivePhotos = $("s-dphotos").checked;
     cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked; cfg.wifiOnly = $("s-wifi").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
     $("setToast").textContent = window.OESTT("Zapisano w tej przeglądarce", "Saved in this browser");
     clearTimeout(readSettings.t); readSettings.t = setTimeout(function () { $("setToast").textContent = ""; }, 1800);
   }
-  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
+  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
   $("s-wifi").addEventListener("change", function () { if (gm()) { OESTSender.render(); if (cfg.auto) OESTSender.run(); } }); // wyłączone czekanie od razu puszcza kolejkę
   fillSettings();
   // Word z samych zdjęć formularza (kartki, także małe zdjęcia Fire Test): OESTWord.zdjeciaKartki (moduly/word)

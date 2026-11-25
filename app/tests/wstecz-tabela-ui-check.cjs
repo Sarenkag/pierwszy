@@ -49,18 +49,22 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
       await idz(pg, '' + adres); await pg.waitForLoadState('networkidle');
       // ekran wczytujący dane (np. Edytor pytań: najpierw „Wczytywanie…”, potem pasek ze strzałką) – czekamy na stan, nie na czas;
       // po 3 s ocena idzie dalej tym samym warunkiem co niżej (nic nie jest luzowane, tylko nie oceniamy ekranu w trakcie wczytywania)
-      await pg.waitForFunction(([a, p, r]) => { const s = document.getElementById(p), b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0), vue = !!(document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue) && (!r || (!!b && b.getClientRects().length > 0)); }, [adres, e.pudelko, !!e.rodzic], { timeout: 3000 }).catch(() => {});
+      await pg.waitForFunction(([a, p]) => { const s = document.getElementById(p), vue = !!(document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue); }, [adres, e.pudelko], { timeout: 3000 }).catch(() => {});
       await pg.waitForTimeout(150);
       const s0 = await stan();
       if (!check(s0.sluchaczy === 1, id + ': strona zarejestrowała ' + s0.sluchaczy + ' słuchaczy „backButton” (ma być dokładnie 1)')) continue;
-      // ekran jest otwarty, gdy adres i sekcja się zgadzają, a ekran z rodzicem ma widoczną strzałkę ‹ w górnym pasku
-      // (panel błędu modułu, np. „Ta zmiana jest już zarchiwizowana”, nie ma strzałki – to nie jest ten ekran)
-      const strzalka = await pg.evaluate(p => { const b = [document.querySelector('#' + p + ' .top .back'), document.querySelector('ion-back-button[data-nav="up"]')].find(x => x && x.getClientRects().length > 0); return !!b; }, e.pudelko); // strzałka ‹ w starym nagłówku .top albo w pasku Ionic
-      const otwarty = s0.hash === adres && s0.widok === e.pudelko && (!e.rodzic || strzalka);
+      // ekran jest otwarty, gdy adres i sekcja się zgadzają, a:
+      //  - ekran w ramie Ionic (bez starej sekcji .view): w nagłówku NIE MA strzałki ‹ (Grzegorz 25.11.2026 04:01: bez strzałki Wstecz
+      //    w nagłówku, tylko Wstecz telefonu; jeden górny pasek w całej apce),
+      //  - stary ekran (sekcja .view, jeszcze nie na Ionic) z rodzicem: ma widoczną strzałkę ‹ w swoim nagłówku .top, jak dotąd
+      //    (panel błędu modułu, np. „Ta zmiana jest już zarchiwizowana”, nie ma strzałki – to nie jest ten ekran)
+      const nag = await pg.evaluate(p => { const w = x => x && x.getClientRects().length > 0; return { stary: [...document.querySelectorAll('.view')].some(s => !s.hidden), strzalkaStara: w(document.querySelector('#' + p + ' .top .back')), strzalkaIonic: [...document.querySelectorAll('ion-back-button')].some(w) }; }, e.pudelko);
+      const strzalka = nag.strzalkaIonic || (!nag.stary && nag.strzalkaStara);
+      const otwarty = s0.hash === adres && s0.widok === e.pudelko && !strzalka && (!nag.stary || !e.rodzic || nag.strzalkaStara);
       const wiersz = { id, adres, rodzic: rodzic || null, otwarty, przed: s0.hash + ' ' + s0.widok };
       tabela.push(wiersz);
       if (DOKLEJ[id]) roz.push({ id: 'mapa-bez-id:' + id, opis: id + ': mapa ekrany.json nie ma części zmiennej, apka otwiera ten ekran tylko jako ' + id + '/<id>' });
-      if (!otwarty) { roz.push({ id: 'nie-otwiera:' + id, opis: id + ': pod adresem #' + adres + ' widać #' + s0.hash + ' ' + s0.widok + (strzalka ? '' : ' bez strzałki ‹') + ' zamiast ekranu w ' + e.pudelko }); continue; }
+      if (!otwarty) { roz.push({ id: 'nie-otwiera:' + id, opis: id + ': pod adresem #' + adres + ' widać #' + s0.hash + ' ' + s0.widok + (strzalka ? ' ze strzałką ‹ w nagłówku Ionic (ma być tylko Wstecz telefonu)' : nag.stary && e.rodzic && !nag.strzalkaStara ? ' bez strzałki ‹ (stary ekran)' : '') + ' zamiast ekranu w ' + e.pudelko }); continue; }
       // 2a. okienko apki (pytanie): Wstecz zamyka, ekran zostaje
       await pg.evaluate(() => { window.OESTPrzycisk.confirm('Test okienka', { ok: 'OK', cancel: 'Anuluj' }); });
       await pg.locator('.oest-ask, ion-alert').waitFor({ timeout: 3000 }).catch(() => {});

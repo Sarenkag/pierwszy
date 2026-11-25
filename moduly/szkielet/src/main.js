@@ -23,12 +23,14 @@
 //   OESTCzesci.pokaz / okno / montuj / plotno / ladowanie    wygląd wspólnych modułów (aparat, notatki, ładowanie, odczyt) – src/czesci.js
 import { createApp, h, reactive, markRaw, nextTick } from 'vue';
 import { createRouter, createMemoryHistory } from 'vue-router';
-import { IonicVue, alertController, modalController, actionSheetController, toastController } from '@ionic/vue';
+import { alertController, modalController, actionSheetController, toastController } from '@ionic/vue';
+import { uzyjIonic } from './ionic.js';
 import '@ionic/vue/css/core.css';
 // structure.css (rama na cały ekran) – osobno: lib/struktura.css tylko na stronie z ramą (app/www/index.html), patrz app/scripts/copy-web.js
 import '@ionic/vue/css/padding.css';
 import '@ionic/vue/css/display.css';
 import '@ionic/vue/css/text-alignment.css';
+import '@ionic/vue/css/text-transformation.css'; // ion-text-uppercase / ion-text-capitalize (tytuł w górnym pasku, miesiąc w Kalendarzu)
 import '@ionic/vue/css/flex-utils.css'; // ion-justify-content-* (wiersze przycisków edytora zdjęć)
 import '@ionic/vue/css/palettes/dark.always.css'; // apka jest ciemna (motyw „Szkło i poświata”): ciemna paleta Ionic
 import mapa from '../../ekrany/ekrany.json';
@@ -230,7 +232,7 @@ function montuj(zRama) {
   // T dla ekranów Vue czyta stan.wersja: każdy tekst T('…','…') (także w slotach komponentów Ionic) odświeża się po zmianie PL/EN
   const Tv = (pl, en) => (stan.wersja, T(pl, en));
   const app = createApp({ render: () => h(Rama, { stan, strona: !zRama, onGotowe: el => { scrollEl = el; }, onJezyk: setLang, T: Tv }) });
-  app.use(IonicVue, { mode: 'md', hardwareBackButton: true, animated: true, swipeBackEnabled: false });
+  uzyjIonic(app);
   app.use(router);
   app.mount(host);
 }
