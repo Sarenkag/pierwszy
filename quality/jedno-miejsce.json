@@ -151,9 +151,7 @@
       "wzory": [
         "class=\\\\?[\"']top[\"'\\\\ ]"
       ],
-      "wlasciciele": [
-        "moduly/naglowek/naglowek.js"
-      ],
+      "wlasciciele": [],
       "punkt": "D11",
       "usuwa": "C1"
     },

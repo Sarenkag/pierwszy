@@ -131,13 +131,6 @@
       "usuwa": "przeniesienie ekranów"
     },
     {
-      "id": "IONIC|modul-ui|naglowek",
-      "rule": "IONIC",
-      "detail": "moduly/naglowek rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",
-      "punkt": "Ionic",
-      "usuwa": "przeniesienie ekranów"
-    },
-    {
       "id": "IONIC|modul-ui|podmien",
       "rule": "IONIC",
       "detail": "moduly/podmien rysuje własny interfejs (HTML z kodu) – do zastąpienia komponentami Ionic.",

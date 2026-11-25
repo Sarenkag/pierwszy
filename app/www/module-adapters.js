@@ -3,10 +3,6 @@
   "use strict";
   if (w.OESTRaporty) w.OESTRaporty.configure({ drive: function() { var g = w.OESTGoogle; return { ensureFolder: g.ensureFolder, find: g.findFile, upload: g.uploadFile, update: g.updateFile, list: g.listFiles, download: g.downloadFile }; } });
   w.OESTBledy.configure({ language: function () { return w.OESTSettings.get().appearance.language; } });
-  w.OESTNaglowek.configure({ setLanguage: function (next) {
-    w.OESTSettings.update(function (s) { s.appearance.language = next; });
-    w.OESTSettingsUI.applyTheme();
-  } });
   w.OESTSender.configure({
     google: function () { return w.OESTGoogle; },
     clientConfigured: function () { return !!(w.OEST_CONFIG || {}).googleWebClientId; },

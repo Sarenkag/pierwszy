@@ -3,9 +3,9 @@ const repo=path.resolve(__dirname,'../..'),read=p=>fs.readFileSync(path.join(rep
 test('adapter aplikacji zachowuje odczyt języka, zapis i zastosowanie motywu oraz przekazanie wysyłki',()=>{
   let state={appearance:{language:'pl'}},theme=0,marked=[];const received={};
   const w={OESTSettings:{get:()=>state,update:fn=>fn(state)},OESTSettingsUI:{applyTheme:()=>theme++},OEST_CONFIG:{googleWebClientId:'configured'},OESTGoogle:{client:1},OEST_PPM:{markSent:(...a)=>marked.push(a)}};
-  for(const [api,key] of [['OESTBledy','errors'],['OESTNaglowek','header'],['OESTSender','sender']])w[api]={configure:a=>received[key]=a};
+  for(const [api,key] of [['OESTBledy','errors'],['OESTSender','sender']])w[api]={configure:a=>received[key]=a};
   vm.runInNewContext(read('app/www/module-adapters.js'),{window:w});
-  assert.equal(received.errors.language(),'pl');received.header.setLanguage('en');assert.equal(received.errors.language(),'en');assert.equal(theme,1);
+  assert.equal(received.errors.language(),'pl');
   assert.equal(received.sender.google(),w.OESTGoogle);w.OESTGoogle={client:2};assert.equal(received.sender.google(),w.OESTGoogle);
   assert.equal(received.sender.clientConfigured(),true);w.OEST_CONFIG={};assert.equal(received.sender.clientConfigured(),false);
   received.sender.markSent('EFA-INS-004','queue-id');assert.deepEqual(marked,[['EFA-INS-004','queue-id']]);
@@ -13,12 +13,6 @@ test('adapter aplikacji zachowuje odczyt języka, zapis i zastosowanie motywu or
 test('moduł błędów: adapter języka ma pierwszeństwo, błąd adaptera wraca do języka lokalnego',()=>{
   const ctx={localStorage:{getItem:()=> 'pl'}};vm.runInNewContext(read('moduly/bledy/bledy.js'),ctx);const b=ctx.OESTBledy;
   assert.equal(b.lang(),'pl');b.configure({language:()=> 'en'});assert.equal(b.lang(),'en');b.configure({language:()=>{throw Error('storage');}});assert.equal(b.lang(),'pl');
-});
-test('nagłówek przełącza język przez adapter, a bez niego zachowuje lokalny zapis',()=>{
-  let click,saved=[],changed=[];const w={OESTNarzedzia:{esc:String},OESTBledy:{lang:()=> 'pl',zapiszJezyk:l=>saved.push(l)}};
-  const d={readyState:'loading',documentElement:{},addEventListener:(event,fn)=>{if(event==='click')click=fn;}};
-  vm.runInNewContext(read('moduly/naglowek/naglowek.js'),{window:w,document:d,MutationObserver:class{observe(){}}});
-  click({target:{closest:()=> ({})}});assert.deepEqual(saved,['en']);w.OESTNaglowek.configure({setLanguage:l=>changed.push(l)});click({target:{closest:()=> ({})}});assert.deepEqual(changed,['en']);assert.deepEqual(saved,['en']);
 });
 test('niezapisane ustawienia: odmowa blokuje wyjście, potwierdzenie czyści dirty i pozwala ponowić',()=>{
   const src=read('app/www/settings-ui.js').match(/function canLeave\(\)\{[^\n]+/)[0];let accept,calls=0;
@@ -38,7 +32,7 @@ test('obie strony ładują dostawców przed konsumentami i adaptery przed urucho
   for(const p of ['app/www/index.html','inspekcje/index.html']){
     const scripts=[...read(p).matchAll(/<script src="([^"]+)"/g)].map(m=>m[1].replace(/^\.\.\//,''));
     function before(a,b){assert.ok(scripts.indexOf(a)>=0,a);assert.ok(scripts.indexOf(a)<scripts.indexOf(b),p+': '+a+' przed '+b);}
-    before('moduly/przycisk/przycisk.js','settings-google.js');before('moduly/przycisk/przycisk.js','settings-ui.js');before('moduly/przelacznik/przelacznik.js','moduly/naglowek/naglowek.js');before('settings-ui.js','module-adapters.js');before('moduly/wysylka/wysylka.js','module-adapters.js');
+    before('moduly/przycisk/przycisk.js','settings-google.js');before('moduly/przycisk/przycisk.js','settings-ui.js');before('settings-ui.js','module-adapters.js');before('moduly/wysylka/wysylka.js','module-adapters.js');
     if(p.startsWith('inspekcje')){before('calendar-core.js','calendar-sync.js');before('calendar-sync.js','settings-ui.js');before('wersja.js','settings-ui.js');before('module-adapters.js','i-start.js');}
     else before('moduly/aparat/aparat.js','reactive.js');
   }
