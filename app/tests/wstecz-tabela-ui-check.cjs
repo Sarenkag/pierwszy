@@ -47,6 +47,9 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
       const id = e.id, adres = adresEkranu(id, ids), rodzic = e.rodzic && (ID[e.rodzic] ? e.rodzic.replace(':id', ids[ID[e.rodzic]]) : e.rodzic);
       await pg.evaluate(bez => bez ? sessionStorage.setItem('bez.konta', '1') : sessionStorage.removeItem('bez.konta'), id === 'start');
       await idz(pg, '' + adres); await pg.waitForLoadState('networkidle');
+      // adres ustalony: dwa kolejne odczyty co 300 ms takie same (maks. 3 s) – ekran, który sam przechodzi dalej
+      // (np. reactive/new/<węzeł> → reactive/draft/<id>), oceniamy po przejściu, niezależnie od szybkości komputera
+      for (let i = 0, h0 = null; i < 10; i++) { const h = await pg.evaluate(() => location.hash); if (h === h0) break; h0 = h; await pg.waitForTimeout(300); }
       // ekran wczytujący dane (np. Edytor pytań: najpierw „Wczytywanie…”, potem pasek ze strzałką) – czekamy na stan, nie na czas;
       // po 3 s ocena idzie dalej tym samym warunkiem co niżej (nic nie jest luzowane, tylko nie oceniamy ekranu w trakcie wczytywania)
       await pg.waitForFunction(([a, p]) => { const s = document.getElementById(p), vue = !!(document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) && window.OESTEkrany && ('v-' + OESTEkrany.trasa().split('/')[0]) === p; return location.hash.slice(1) === a && ((s && !s.hidden) || vue); }, [adres, e.pudelko], { timeout: 3000 }).catch(() => {});
