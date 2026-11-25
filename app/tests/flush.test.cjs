@@ -47,8 +47,8 @@ test('szkic TB sprzed zmiany (20 kranów, bez nazw): odpowiedzi, notatki, tydzie
   assert.equal(F.migrujSzkic({taps:[{state:'no'}]},['A','B']),null);assert.equal(F.migrujSzkic(null,['A']),null);});
 test('zdjęcia kranów idą za kranem; usunięty kran (apartament TB) → zdjęcie ogólne, nie osierocone (uwaga Codex #187)',()=>{
   const n=P.forms.flush.TB.taps;assert.deepEqual(F.mapaKranow({taps:Array(20).fill({state:'yes'})},n),[...n.map((_,i)=>i),null,null,null,null]);
-  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});// „↺ Przywróć inspekcję” Flushing (przywrócone 25.11.2026): dane z raportu w kolejce (it.snap), nie z PDF; lista kranów mogła się zmienić od raportu
-test('przywracanie Flushing z danych raportu: tydzień, odpowiedzi, notatki i zdjęcia przy kranach idą za nazwą kranu; PDF nie jest czytany',()=>{
+  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});
+test('szkic Flushing po zmianie listy kranów: tydzień, odpowiedzi, notatki i zdjęcia idą za nazwą kranu; PDF nie jest czytany',()=>{
   const n=P.forms.flush.TB.taps,snap={fl:{week:3,names:n.slice(),taps:n.map((_,i)=>({state:i===1?'no':i===4?'na':'yes',note:i===1?'Valve stiff':''}))},photos:[{zid:'a',tap:0},{zid:'b',tap:2},{zid:'c'}]};
   const nowa=[n[2],n[0],'Nowy kran',n[1]];
   const m=F.migrujSzkic(snap.fl,nowa),mt=F.mapaKranow(snap.fl,nowa);
