@@ -24,12 +24,18 @@ try { git('rev-parse', '--verify', BASE + '^{commit}'); } catch { console.error(
 
 // 1. lista obowiązkowych testów
 const baseManifestTxt = atBase('quality/required-tests.json');
+let redukcja = null;
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'quality', 'required-tests.json'), 'utf8'));
 if (!baseManifestTxt) notes.push('Na gałęzi bazowej nie ma jeszcze quality/required-tests.json – pierwsze wprowadzenie bramki, brak porównania listy.');
 else {
   const base = JSON.parse(baseManifestTxt);
   // Zdjęcie testu PRZEGLĄDARKOWEGO z obowiązkowych tylko imiennie, z id pisemnego „tak” Grzegorza (cmsg_…) w required-tests.json
   // („zdjeteZaZgoda”: lista { zgoda, browser: [pliki] }, decyzje od 25.11.2026). Nie dotyczy testów node, passMarker, limitów, allowedSkips, usuniętych plików ani R23.
+  // Redukcja testów za pisemną zgodą Grzegorza (25.11.2026): „redukcjaZaZgoda”: { zgoda: cmsg_…, zostaja: [pliki] }.
+  // Zdjęcie z listy i usunięcie pliku testu spoza „zostaja” = ostrzeżenie zamiast błędu. passMarker, limity, allowedSkips i R23 bez zmian.
+  const red = manifest.redukcjaZaZgoda;
+  if (red && !/^cmsg_[A-Za-z0-9]{20,}$/.test(String(red.zgoda || ''))) errors.push('quality/required-tests.json: „redukcjaZaZgoda” bez id pisemnego „tak” Grzegorza (cmsg_…)');
+  redukcja = red && /^cmsg_[A-Za-z0-9]{20,}$/.test(String(red.zgoda || '')) ? red : null;
   const zdjete = new Map();
   for (const zz of [].concat(manifest.zdjeteZaZgoda || [])) {
     if (!/^cmsg_[A-Za-z0-9]{20,}$/.test(String(zz && zz.zgoda || ''))) { errors.push('quality/required-tests.json: „zdjeteZaZgoda” bez id pisemnego „tak” Grzegorza (cmsg_…)'); continue; }
@@ -40,6 +46,7 @@ else {
     for (const b of base[kind] || []) {
       const n = now.get(b.file);
       if (!n && kind === 'browser' && zdjete.has(b.file)) { warnings.push(`Test przeglądarkowy zdjęty z obowiązkowych za zgodą ${zdjete.get(b.file)}: ${b.file}`); continue; }
+      if (!n && redukcja) { warnings.push(`Test zdjęty z obowiązkowych (redukcja za zgodą ${redukcja.zgoda}): ${b.file}`); continue; }
       if (!n) { errors.push(`Usunięto obowiązkowy test z listy: ${b.file}`); continue; }
       if (b.passMarker && n.passMarker !== b.passMarker) errors.push(`Zmieniono potwierdzenie PASS testu ${b.file}: „${b.passMarker}” → „${n.passMarker || ''}”`);
       if (b.scenarios && n.scenarios !== b.scenarios) errors.push(`Usunięto kontrolę scenariuszy testu ${b.file} (${b.scenarios})`);
@@ -85,6 +92,7 @@ else if (baseWplywTxt) {
 let changes = [];
 try { changes = git('diff', '--name-status', '-M', `${BASE}...HEAD`).trim().split('\n').filter(Boolean).map(l => l.split('\t')); } catch (e) { warnings.push('Nie udało się porównać zmian z bazą: ' + e.message.split('\n')[0]); }
 for (const [st, a, b] of changes) {
+  if (/^app\/tests\//.test(a) && st === 'D' && redukcja && !(redukcja.zostaja || []).includes(a)) { warnings.push(`Usunięto plik testu (redukcja za zgodą ${redukcja.zgoda}): ${a}`); continue; }
   if (/^app\/tests\//.test(a) && (st === 'D' || st.startsWith('R'))) errors.push(`Usunięto/przeniesiono plik testu: ${a}${b ? ' → ' + b : ''}`);
 }
 // R23: zmieniony test nie może mieć mniej sprawdzeń niż na gałęzi bazowej (apka i test mogą zmieniać się w jednym PR)
