@@ -112,7 +112,7 @@
         // „Wyślij” (Grzegorz 03/11 12:12, 04/11): raport idzie do kolejki, a inspekcja ZOSTAJE otwarta — szkic, zdjęcia, zlecenie
         // i termin bez zmian; można poprawić i wysłać jeszcze raz. Kończy dopiero „Zakończ inspekcję”.
         if (from.ppm && PPM.setStage) { if (!from.fix) ppmTrack(true); var r0 = PPM.stage(from.ppm); PPM.setStage(from.ppm, { s: r0 && r0.s !== "prog" ? (r0.s === "sent" || r0.s === "queued" || r0.s === "done" ? (it.status === "sent" ? "sent" : "queued") : r0.s) : "prog", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), mailSig: from.sig || "", mailDate: d.data || "" }); }
-        if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
+        OESTSender.run({ login: true }); // jedna droga wysyłki: Gmail z konta (moduly/wysylka)
         lastMailHint = mailHint(it);
         return Promise.resolve(saveDraftNow()).then(function () { return sendBtn ? sendBtn.ok(mailState(it)) : null; }).then(function () { show("form"); renderPpmBar(); });
       }
@@ -130,7 +130,7 @@
   // Inspekcja z listy PPM zostaje na ekranie i w telefonie (szkic z oznaczeniem fin) aż do następnego terminu; klocek pokazuje „✓ Zakończona”.
   function closeUp(from, d) {
     var done = Promise.resolve();
-    if (from.queued !== false) { if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(queue[queue.length - 1]); else if (cfg.auto) sendQueue(); }
+    if (from.queued !== false) { OESTSender.run({ login: true }); } // jedna droga wysyłki (moduly/wysylka)
     if (from.mode === "sum") {
       // izolatory: zlecenie musi się wyczyścić, żeby następne zaczęło się od zera
       if (from.type.ask) saveHist(from.type, d.data);
@@ -257,70 +257,19 @@
   function qBusy() { return sending || (gm() && OESTSender.busy()); }
   function refresh() { OESTKolejkaWidok.powiadom(); renderNet(); if (!$("v-list").hidden) renderList(); } // ekran Kolejka rysuje część Vue (kolejka-widok.js)
 
-  // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
-  function submitArg(it) {
-    return { id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
-      docx: NZ.bytesToB64(it.docx), pdf: NZ.bytesToB64(it.pdf), photos: it.photos.map(NZ.bytesToB64) };
-  }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
     if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm, it.id);
     it.docx = new Uint8Array(0); it.photos = []; // pliki są już na Drive; PDF zostaje w telefonie (odtworzenie inspekcji, 04/11)
   }
-  // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
-  var reportShare = null;
-  function shareApi() {
-    if (IN_GAS || cfg.api || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
-    if (!reportShare) reportShare = Capacitor.registerPlugin ? Capacitor.registerPlugin("ReportShare") : Capacitor.Plugins && Capacitor.Plugins.ReportShare;
-    return reportShare || null;
-  }
   function myEmail() {
     if (cfg.email) return cfg.email;
     return OESTSender.myEmail(); // adres firmowy obecnego konta (moduly/wysylka; nigdy adres innego konta)
   }
-  function shareSend(it) {
-    if (sending || !it) return Promise.resolve(); // jedno przekazanie naraz
-    var files = [];
-    if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: NZ.bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
-    else {
-      if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: NZ.bytesToB64(it.pdf) });
-      if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: NZ.bytesToB64(it.docx) });
-    }
-    var to = Array.isArray(it.toList) ? it.toList : [it.to || myEmail()].filter(Boolean);
-    sending = true; it.status = "sending"; refresh(); // blokada na całe sprawdzanie sieci i przekazanie (drugie „Wyślij wszystko” nie otwiera wyboru drugi raz)
-    // najpierw połączenie (zasada wysyłki): bez internetu nie otwieramy wyboru apki, raport czeka w kolejce
-    var net = window.OESTSender && OESTSender.reachable ? OESTSender.reachable() : Promise.resolve(online());
-    return net.then(function (up) {
-      if (!up) { it.status = "wait"; say(window.OESTT("Brak połączenia z internetem. Raport czeka w kolejce.", "No internet connection. The report waits in the queue.")); return qPut(it).then(refresh); }
-      return shareApi().share({ subject: it.subject, body: it.body, to: to, files: files }).then(function () {
-      // Android mówi tylko, że okno wyboru apki się otworzyło – nie, że mail wyszedł: nic nie kasujemy, PPM nie jest „wysłane”
-      it.status = "shared"; it.sharedAt = Date.now(); it.err = ""; return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); say(window.OESTT("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + window.OESTT(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
-    }).then(function () { sending = false; refresh(); }, function (e) { sending = false; refresh(); throw e; });
-  }
+  // Wysyłka: jedna droga – Gmail z konta (moduly/wysylka, OESTSender). „Udostępnij” Androida i skrypt Apps Script usunięte
+  // (Grzegorz 25/11/2026: raporty wychodziły same w tle z Gmaila; dwie zapasowe drogi były martwe i rozjeżdżały wysyłkę).
   function sendQueue(manual) {
-    if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
-    if (shareApi()) { var p = pending()[0]; return manual && p && !sending ? shareSend(p) : Promise.resolve(); }
-    if (sending || !cfg.email) return Promise.resolve();
-    if (!online() && !manual) { refresh(); return Promise.resolve(); }
-    var todo = pending();
-    if (!todo.length) return Promise.resolve();
-    sending = true; refresh();
-    return todo.reduce(function (p, it) {
-      return p.then(function (stop) {
-        if (stop) return true;
-        it.status = "sending"; it.err = ""; refresh();
-        return api("submit", submitArg(it)).then(function (r) {
-          markSent(it, r);
-          return qPut(it).then(function () { refresh(); return false; });
-        }, function (e) {
-          it.status = "err"; it.err = gErr(e);
-          return qPut(it).then(function () { refresh(); return true; }); // przerwij, spróbuję później
-        });
-      });
-    }, Promise.resolve(false)).catch(function (e) {
-      OESTKolejkaWidok.blad(window.OESTT("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e));
-    }).then(function () { sending = false; refresh(); });
+    return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
   window.addEventListener("offline", function () { renderTranslate(); refresh(); });

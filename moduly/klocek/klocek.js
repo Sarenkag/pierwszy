@@ -137,7 +137,7 @@
     var s = w.document.createElement("style"); s.id = "oest-klocek-ki-css"; s.textContent = CSS2;
     (w.document.head || w.document.documentElement).appendChild(s);
   }
-  function dd(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function dd(d) { return w.OESTNarzedzia.dmm(d); }
   function termin(due, left, done) {
     if (!due) return { text: "–", date: "", rest: "", tone: "" };
     var date = dd(due), rest = "", tone = "";

@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // ZASADA (Grzegorz, 04/11/2026; PROD-023): każdy raport idzie w dwóch wersjach, Word i PDF, z tego samego wzoru (basic form / formularz firmy).
 // Ten test otwiera KAŻDĄ inspekcję EFA-INS z faktycznej listy PPM (window.OEST_PPM.tasks z app/www/ppm.js, nie komentarze w kodzie),
 // wypełnia ją jak użytkownik, naciska Wyślij z domyślnymi ustawieniami ⚙ i sprawdza, że w kolejce jest i PDF, i Word, i że pliki da się otworzyć.
@@ -32,8 +33,8 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
       await ctx.addInitScript(() => { localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' })); localStorage.setItem('insp.cfg', JSON.stringify({ insp: 'G. Sarna', email: 'demo@example.com' })); });
       await pg.goto('http://127.0.0.1:' + server.address().port + '/inspekcje/index.html#ppm=' + id); await pg.waitForLoadState('networkidle'); await pg.locator('#toQueue').waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
       if (!(await pg.locator('#toQueue').isVisible().catch(() => false))) { bad.push(id + ': brak formularza z przyciskiem Wyślij dla inspekcji z listy PPM' + (errs.length ? ' (' + errs.join(' | ') + ')' : '')); await ctx.close(); return; }
-      const flush = await pg.locator('[data-flcam]').count(), temps = await pg.locator('#tempList input[data-t]').count();
-      if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
+      const flush = await pg.locator('[data-flcam]').count(), temps = await pg.locator('#tempList ion-input[data-t]').count();
+      if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
       if (await pg.locator('#flWeek [data-w="1"]').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
       let expectTemps = null;
       if (temps) {
@@ -41,7 +42,7 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
         const slots = (PPM.find(t => t.id === id) || {}).form ? await pg.evaluate(f => (window.OEST_PPM.forms[f] || {}).slots || [], PPM.find(t => t.id === id).form) : [];
         if (slots.length !== temps) bad.push(id + ': formularz ma ' + temps + ' pól, a wzór ' + slots.length + ' wylotów');
         expectTemps = slots.map((s, i) => ({ name: s[0], kind: s[1], value: reading(s[1], i) }));
-        for (let i = 0; i < temps; i++) await pg.locator('#tempList input[data-t="' + i + '"]').fill(expectTemps[i] ? expectTemps[i].value : '20');
+        for (let i = 0; i < temps; i++) await wpisz(pg.locator('#tempList ion-input[data-t="' + i + '"]'), expectTemps[i] ? expectTemps[i].value : '20');
         // data inspekcji w innym miesiącu niż dziś: w formularzu firmy zaznaczony ma być rok i miesiąc tej daty, nic na stałe (Grzegorz 09/11/2026)
         await pg.evaluate(() => { const d = document.getElementById('dzien'); d.value = '2026-03-15'; d.dispatchEvent(new Event('input', { bubbles: true })); d.dispatchEvent(new Event('change', { bubbles: true })); });
         const hint = await pg.locator('#formHint').textContent();
@@ -49,8 +50,8 @@ const reading = (kind, i) => kind === 'hot' ? String(51.5 + i) : kind === 'cold'
       }
       else if (flush) { const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="0"]')]); await fc.setFiles({ name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
       // inspekcja z kartki: formularz dodaje się przyciskiem „Formularz” (zwykłe zdjęcie to nie formularz – Grzegorz 12/11/2026)
-      else if ((PPM.find(t => t.id === id) || {}).form === 'folder' && await pg.locator('#shGalIn').count()) { await pg.setInputFiles('#shGalIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
-      else if (await pg.locator('#galIn').count()) { await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
+      else if ((PPM.find(t => t.id === id) || {}).form === 'folder' && await pg.locator('#shGalIn').count()) { await zdjecia(pg, '#shGalIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
+      else if (await pg.locator('#galIn').count()) { await zdjecia(pg, '#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(600); }
       if (await pg.locator('#toQueue').isDisabled()) { const ok = pg.locator('[data-allok], #allOk, button:has-text("Wszystko OK")').first(); if (await ok.count()) await ok.click().catch(() => {}); await pg.waitForTimeout(300); }
       if (await pg.locator('#toQueue').isDisabled()) { bad.push(id + ': Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')'); await ctx.close(); return; }
       const t0 = Date.now(); await pg.click('#toQueue'); let naCzas = false; while (!naCzas && Date.now() - t0 < RAPORT_MS) { naCzas = await pg.evaluate(queued).catch(() => false); if (!naCzas) await pg.waitForTimeout(100); } czasy.push(Date.now() - t0); // czekanie na wynik obietnicy (waitForFunction brał samą obietnicę za „prawdę”)

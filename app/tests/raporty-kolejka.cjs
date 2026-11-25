@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Wspólny dla testów raportów z kolejki (plan audytu 1.4 i 1.5): wypełnia KAŻDĄ inspekcję EFA-INS z listy PPM jak użytkownik
 // (wszystko OK, temperatury, zdjęcie ogólne i kartki, podpis, ⚙ „nasz raport”), klika Wyślij i zwraca pliki zapisane w kolejce wysyłki;
 // do tego raport Reactive z OESTReactiveReport.build (ta sama funkcja co w apce). Nie jest testem (nazwa bez -ui-check / .test).
@@ -57,16 +58,16 @@ async function zbierz({ wtyczka = false } = {}) {
         if (wtyczka && !(await pg.evaluate(() => !!(window.OESTWordPdf && window.OESTWordPdf.dostepny())))) return zle('atrapa silnika LibreOffice nie jest widoczna dla moduly/word-pdf');
         const vis = s => pg.locator(s).first().isVisible().catch(() => false);
         // ⚙ wysyłki: „nasz raport” – formularz Word idzie w raporcie (jak raport-ui-check i word-pdf-ui-check)
-        if (await vis('#sendCfg')) { await pg.click('#sendCfg'); await pg.locator('.oest-ask [data-a="ok"]').waitFor(); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.locator('.oest-ask').waitFor({ state: 'detached' }).catch(() => {}); }
+        if (await vis('#sendCfg')) { await pg.click('#sendCfg'); await pg.locator('.oest-ask [data-a="ok"]').waitFor(); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.locator('.oest-ask').waitFor({ state: 'detached' }).catch(() => {}); }
         if (await vis('#flWeek [data-w="1"]')) await pg.click('#flWeek [data-w="1"]');
-        const temps = await pg.locator('#tempList input[data-t]').count();
-        for (let i = 0; i < temps; i++) await pg.locator('#tempList input[data-t="' + i + '"]').fill(String(40 + i / 10));
+        const temps = await pg.locator('#tempList ion-input[data-t]').count();
+        for (let i = 0; i < temps; i++) await wpisz(pg.locator('#tempList ion-input[data-t="' + i + '"]'), String(40 + i / 10));
         if (await vis('#allOk')) await pg.click('#allOk');
-        if (await vis('#galIn')) await pg.setInputFiles('#galIn', await jpeg(pg, [176, 132], '#36c'));
+        if (await vis('#galIn')) await zdjecia(pg, '#galIn', await jpeg(pg, [176, 132], '#36c'));
         const kartkaIn = (await vis('#shGalIn')) ? '#shGalIn' : (await vis('label:has(#shCamIn)')) ? '#shCamIn' : '';
-        if (kartkaIn) await pg.setInputFiles(kartkaIn, await jpeg(pg, [150, 212], '#c63'));
+        if (kartkaIn) await zdjecia(pg, kartkaIn, await jpeg(pg, [150, 212], '#c63'));
         await pg.waitForLoadState('networkidle');
-        if (await vis('#podpis')) await pg.fill('#podpis', 'G. Sarna');
+        if (await vis('#podpis')) await wpisz(pg, '#podpis', 'G. Sarna');
         await pg.waitForFunction(() => !document.querySelector('#toQueue').disabled, null, { timeout: 15000 }).catch(() => {});
         if (await pg.locator('#toQueue').isDisabled()) return zle('Wyślij zablokowane (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')');
         await pg.click('#toQueue');

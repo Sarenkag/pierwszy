@@ -2,7 +2,7 @@
   'use strict';
   // Kalendarz i grafik (Ustawienia → Kalendarz): rysuje go rama Ionic + Vue (moduly/szkielet/src/ekrany/KalendarzGrafik.vue); tu tylko dane i akcje.
   // Każda akcja oddaje { tekst, blad } (albo { lista } dla list kalendarzy telefonu); ekran tylko to pokazuje.
-  const L=(pl,en)=>w.OESTT?w.OESTT(pl,en):pl;
+  const L=(pl,en)=>w.OESTT(pl,en);
   const cfg=()=>w.OESTSettings.get().calendar;
   const errText=m=>w.OESTBledy?w.OESTBledy.text(m):m;
   const liczba=c=>c?Object.keys(c.days).length:0;

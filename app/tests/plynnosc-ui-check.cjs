@@ -129,13 +129,13 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
 
     // ---------- B2: filtry Inspekcji w jednym rzędzie, lista zawsze w tym samym miejscu ----------
     await nav('ppm'); await p.waitForTimeout(700);
-    R.filtry = await p.evaluate(() => { const c = document.getElementById('ppmChips'); return { rzedy: new Set([...c.children].map(e => e.offsetTop)).size, listaOdY: Math.round(document.getElementById('ppmList').getBoundingClientRect().top) }; });
+    R.filtry = await p.evaluate(() => { const c = document.querySelector('#oest-szkielet ion-content .oest-chipy'); return { rzedy: new Set([...c.children].map(e => e.offsetTop)).size, listaOdY: Math.round(document.querySelector('#oest-szkielet ion-content ion-card.oest-klocek').parentElement.getBoundingClientRect().top) }; });
     check(R.filtry.rzedy === 1, `B2: filtry Inspekcji w ${R.filtry.rzedy} rzędach (ma być 1)`);
     // stuknięcie filtra za krawędzią ekranu nie przewija rzędu z powrotem na początek
     R.filtry.przewiniecieRzedu = await p.evaluate(async () => {
-      const c = document.getElementById('ppmChips'); c.scrollLeft = c.scrollWidth; const x0 = c.scrollLeft;
-      [...c.children].pop().click(); await new Promise(r => setTimeout(r, 300)); const x1 = document.getElementById('ppmChips').scrollLeft;
-      [...document.getElementById('ppmChips').children].pop().click(); await new Promise(r => setTimeout(r, 300));
+      const c = document.querySelector('#oest-szkielet ion-content .oest-chipy'); c.scrollLeft = c.scrollWidth; const x0 = c.scrollLeft;
+      [...c.children].pop().click(); await new Promise(r => setTimeout(r, 300)); const x1 = document.querySelector('#oest-szkielet ion-content .oest-chipy').scrollLeft;
+      [...document.querySelector('#oest-szkielet ion-content .oest-chipy').children].pop().click(); await new Promise(r => setTimeout(r, 300));
       return { przed: x0, po: x1 };
     });
     check(R.filtry.przewiniecieRzedu.przed === 0 || R.filtry.przewiniecieRzedu.po > 0, `B2: stuknięcie filtra przewinęło rząd na początek (${R.filtry.przewiniecieRzedu.przed} → ${R.filtry.przewiniecieRzedu.po})`);
@@ -143,13 +143,13 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // ---------- B3: animacje listy tylko dla nowych kart ----------
     R.animacjeListy = {};
     const tap = async (sel, key) => {
-      await p.evaluate(() => { window.__anim = []; window.__ids = new Set([...document.querySelectorAll('#ppmList [data-id],#ppmList [data-fam]')].map(e => e.getAttribute('data-id') || e.getAttribute('data-fam'))); });
+      await p.evaluate(() => { window.__anim = []; window.__ids = new Set([...document.querySelectorAll('#oest-szkielet ion-content ion-card.oest-klocek[data-id],#oest-szkielet ion-content ion-card.oest-klocek[data-fam]')].map(e => e.getAttribute('data-id') || e.getAttribute('data-fam'))); });
       await p.click(sel); await p.waitForTimeout(700);
       R.animacjeListy[key] = await p.evaluate(() => { const a = window.__anim.filter(x => x.n === getComputedStyle(document.documentElement).getPropertyValue('--ruch-lista-efekt').trim() || x.n === 'wyUp'); return { animacje: a.length, stareKarty: a.filter(x => x.id && window.__ids.has(x.id)).length }; });
     };
-    await tap('#ppmChips [data-g=fire]', 'wszystkie→pożarowe');
-    await tap('#ppmChips [data-g=all]', 'pożarowe→wszystkie');
-    await tap('#ppmChips [data-g=all]', 'wszystkie→wszystkie');
+    await tap('#oest-szkielet .oest-chipy ion-chip:has([data-grupa=fire])', 'wszystkie→pożarowe');
+    await tap('#oest-szkielet .oest-chipy ion-chip:first-child', 'pożarowe→wszystkie');
+    await tap('#oest-szkielet .oest-chipy ion-chip:first-child', 'wszystkie→wszystkie');
     for (const k in R.animacjeListy) check(R.animacjeListy[k].stareKarty === 0, `B3: filtr ${k} animuje ${R.animacjeListy[k].stareKarty} kart, które już były na liście`);
     check(R.animacjeListy['wszystkie→pożarowe'].animacje === 0, `B3: zawężenie filtra uruchamia ${R.animacjeListy['wszystkie→pożarowe'].animacje} animacji (nie ma nowych kart)`);
     await p.evaluate(() => { window.__anim = []; window.dispatchEvent(new Event('focus')); document.dispatchEvent(new Event('visibilitychange')); });
@@ -160,7 +160,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     // ---------- B7: odmiana dzień/dni ----------
     R.odmiana = await p.evaluate(() => ({ m1: OEST_PPM.endsText(-1), m3: OEST_PPM.endsText(-3), p1: OEST_PPM.endsText(1), p5: OEST_PPM.endsText(5), dni: [OEST_PPM.dni && OEST_PPM.dni(1), OEST_PPM.dni && OEST_PPM.dni(2)] }));
     check(R.odmiana.m1 === 'Po terminie 1 dzień' && R.odmiana.m3 === 'Po terminie 3 dni' && R.odmiana.p1 === 'Został 1 dzień' && R.odmiana.p5 === 'Zostało 5 dni', 'B7: odmiana ' + JSON.stringify(R.odmiana));
-    const listText = await p.evaluate(() => document.getElementById('ppmList').textContent);
+    const listText = await p.evaluate(() => document.querySelector('#oest-szkielet ion-content ion-card.oest-klocek').parentElement.textContent);
     check(!/\b1 dni\b/.test(listText) && !/\b1 days\b/.test(listText), 'B7: lista Inspekcji zawiera „1 dni” / „1 days”');
 
     // ---------- Wstecz: wraca na ten sam ekran, przewinięcie i wybór ----------
@@ -168,7 +168,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     await nav('home'); await p.waitForTimeout(500);
     await p.click('[data-nav=ppm]'); await p.waitForTimeout(600); await p.evaluate(() => OESTEkrany.przewin(900)); await p.waitForTimeout(200);
     let y0 = await p.evaluate(() => OESTEkrany.przewiniecie());
-    await p.evaluate(() => [...document.querySelectorAll('#ppmList [data-id]')].find(e => e.getBoundingClientRect().top > 0).click());
+    await p.evaluate(() => [...document.querySelectorAll('#oest-szkielet ion-content ion-card.oest-klocek[data-id]')].find(e => e.getBoundingClientRect().top > 0).click());
     await p.waitForURL(/inspekcje\/index\.html/); await p.waitForTimeout(800); await p.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await p.waitForTimeout(1200);
     R.wstecz.inspekcje = { y0, po: await p.evaluate(() => location.hash + ' y=' + OESTEkrany.przewiniecie()), y: await p.evaluate(() => OESTEkrany.przewiniecie()) };
     check(/#ppm/.test(R.wstecz.inspekcje.po) && Math.abs(R.wstecz.inspekcje.y - y0) <= 10, 'Wstecz z inspekcji do listy: ' + JSON.stringify(R.wstecz.inspekcje));
@@ -198,7 +198,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
     R.plynnosc.przejscie = await p.evaluate(async () => {
       const frames = []; let last = performance.now(), stop = false;
       (function step(t) { frames.push(t - last); last = t; if (!stop) requestAnimationFrame(step); })(performance.now());
-      document.querySelector('#v-ppm .top .back').click(); await new Promise(r => setTimeout(r, 500)); stop = true;
+      document.querySelector('#oest-szkielet ion-header ion-back-button').click(); await new Promise(r => setTimeout(r, 500)); stop = true;
       const s = frames.slice(1).sort((a, b) => a - b); return { klatki: s.length, maxMs: +s[s.length - 1].toFixed(1) };
     });
     check(R.plynnosc.p95Ms < 50, `płynność: przewijanie listy p95 ${R.plynnosc.p95Ms} ms na klatkę (próg 50 ms)`);
@@ -245,7 +245,7 @@ function check(ok, msg) { if (!ok) fails.push(msg); }
       await c2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       const q = await c2.newPage(); q.on('pageerror', e => errors.push(e.message));
       await q.goto(url + '/index.html#home'); await q.waitForTimeout(500);
-      for (const rt of ['ppm', 'cal', 'settings', 'reactive']) { await q.click(`[data-nav=${rt}]`).catch(() => q.evaluate(rt => OESTEkrany.go(rt), rt)); await q.waitForTimeout(500); if (rt === 'ppm') { await q.click('#ppmChips [data-g=fire]'); await q.waitForTimeout(400); await q.click('#ppmChips [data-g=all]'); await q.waitForTimeout(400); } await q.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await q.waitForTimeout(400); }
+      for (const rt of ['ppm', 'cal', 'settings', 'reactive']) { await q.click(`[data-nav=${rt}]`).catch(() => q.evaluate(rt => OESTEkrany.go(rt), rt)); await q.waitForTimeout(500); if (rt === 'ppm') { await q.click('#oest-szkielet .oest-chipy ion-chip:has([data-grupa=fire])'); await q.waitForTimeout(400); await q.click('#oest-szkielet .oest-chipy ion-chip:first-child'); await q.waitForTimeout(400); } await q.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await q.waitForTimeout(400); }
       await q.evaluate(() => { if (window.OESTPytaj) OESTPytaj({ title: 'Test', text: 'x' }); }); await q.waitForTimeout(400);
       const press = await q.evaluate(() => { const b = document.querySelector('.kf'); return getComputedStyle(document.documentElement).getPropertyValue('--ruch-kafelek-nacisk').trim() + '/' + getComputedStyle(document.documentElement).getPropertyValue('--ruch-przycisk-nacisk').trim(); });
       R.mniejRuchu = { animacje: await q.evaluate(() => window.__anim.filter(a => !/spin/.test(a.n)).map(a => a.n + '@' + a.el)), nacisk: press };

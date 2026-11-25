@@ -1,9 +1,8 @@
 // Raport na wzorze firmy OEST-basic: pola po angielsku, brak pustej strony bez zdjęć, autor z profilu.
-const test=require('node:test'),assert=require('node:assert'),fs=require('fs'),path=require('path'),vm=require('vm');
+const test=require('node:test'),assert=require('node:assert'),fs=require('fs'),path=require('path');
 const PizZip=require('pizzip'),Docxtemplater=require('docxtemplater');
-const html=require('../../quality/strona-inspekcji.cjs').strona(path.join(__dirname,'..','..','inspekcje')).tekst /* strona inspekcji w kolejności ładowania, z częściami (docs/podzial-modulow.md) */;
-const src=html.slice(html.indexOf('function fillDocx('),html.indexOf('// Tekst i logo'));
-const ctx={};vm.runInNewContext(src+';this.fillDocx=fillDocx;',ctx);
+const W=require('../../moduly/word/word.js');W.biblioteki({PizZip,Docxtemplater}); /* jedyny silnik Worda (moduly/word) */
+const ctx={fillDocx:(Z,D,t,d,ph)=>new PizZip(W.wypelnij(t,d,ph))};
 const tpl=fs.readFileSync(path.join(__dirname,'..','..','moduly','wzory','basic.docx')); // wzór z modułu Wzory
 const data={site:'One Eastside Tower',date:'01/11/2026',engineer:'G. Sarna',title:'AOV Operation Test (TA)',condition:'Good',building:'Tower A',level:'Roof',details:'• Visual inspection carried out.',quote:'No'};
 const text=x=>(x.match(/<w:t[^>]*>[^<]*<\/w:t>/g)||[]).map(t=>t.replace(/<[^>]+>/g,'')).join('');

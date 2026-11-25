@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Notatki głosowe w Reactive i Hand over (moduly/notatki, Grzegorz 09/11/2026: „Tak, w obu” – to samo co w inspekcji:
 // 🎤 Nagraj notatkę, okienko 📝 Notatki, „Połącz” w opis / we wpis; stare nagrania zostają tam, gdzie są).
 // Prawdziwa apka z paczki app/www; wtyczki telefonu (nagranie, mowa → tekst, tłumacz) podstawione jak w notatki-ui-check.cjs.
@@ -124,11 +125,11 @@ function fakePhone() {
     await pg.locator('#hoNotes [data-nt-bar=join]').click(); await pg.waitForSelector(PROP + ' [data-nt-f=en] textarea');
     check((await pg.locator(OK).textContent()).trim() === 'Wstaw do wpisu', 'Hand over: przycisk „Wstaw do wpisu”');
     await pg.locator(OK).click(); await pg.waitForSelector(OKNO, { state: 'detached' });
-    check(/Pump number 12/.test(await pg.locator('#hoText').inputValue()), 'Hand over: tekst nie wstawiony do wpisu');
+    check(/Pump number 12/.test(await wartosc(pg.locator('#hoText'))), 'Hand over: tekst nie wstawiony do wpisu');
     check(await pg.locator('#hoEnglish').isChecked(), 'Hand over: „po angielsku” nie zaznaczone po wstawieniu do pustego pola');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'NT_HANDOVER.png'), fullPage: true });
     // wpis z samym nagraniem (bez tekstu) da się zapisać, nagranie zostaje przy wpisie, a jego notatki są w „📝 Notatki wpisu” (przegląd Codex #113)
-    await pg.locator('#hoText').fill(''); await pg.locator('#hoKind').selectOption('note'); await pg.locator('[data-ho=save-entry]').click();
+    await wpisz(pg.locator('#hoText'), ''); await wybierz(pg.locator('#hoKind'), 'note'); await pg.locator('[data-ho=save-entry]').click();
     check(await until(() => OESTHandover.repository.get().then(d => d.entries.filter(e => e.kind !== 'reactive').length === 1)), 'Hand over: wpis z samym nagraniem nie zapisany: ' + await pg.locator('#hoMessage').textContent());
     const ent = await pg.evaluate(async () => { const d = await OESTHandover.repository.get(), e = d.entries.find(x => x.kind !== 'reactive'); const m = e ? await OESTHandover.repository.media(e.mediaIds[0]) : null; return e ? { n: e.mediaIds.length, kind: m && m.kind } : null; });
     check(ent && ent.n === 1 && ent.kind === 'audio', 'Hand over: nagranie nie trafiło do wpisu: ' + JSON.stringify(ent));

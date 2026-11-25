@@ -34,7 +34,7 @@
     var h = new URLSearchParams(location.hash.slice(1));
     if (h.get("api") && h.get("key")) {
       cfg.api = h.get("api"); cfg.key = h.get("key"); save("cfg", cfg);
-      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      window.OESTEkrany.czyscAdres(); // adres zmienia tylko szkielet (moduly/szkielet)
     }
   })();
   var serverTpl = null; // {name, bytes} z Google Drive

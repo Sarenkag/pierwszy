@@ -109,7 +109,7 @@ function ocen(nazwa, k, anim, cel, wstecz, efekt, koniec) {
     };
     try {
       await nowaStrona('lista → inspekcja', () => p.click('ion-card.oest-klocek[data-id]'), /inspekcje\//, 'v-form');
-      await nowaStrona('inspekcja → Wstecz', () => p.evaluate(() => [...document.querySelectorAll('.view:not([hidden]) .back')].find(b => b.offsetParent).click()), /:\d+\/index\.html/, 'v-ppm');
+      await nowaStrona('inspekcja → Wstecz', () => p.locator('#oest-szkielet ion-header ion-back-button').click(), /:\d+\/index\.html/, 'v-ppm');
     } catch (e) { check(false, 'Z4: przejście między stronami się nie udało: ' + e.message.split('\n')[0]); await p.waitForLoadState('load').catch(() => {}); await p.goto(url + '/index.html#ppm'); await klatki(); }
 
     // ---------- Z5: przebudowa ekranu w miejscu (schowany i pokazany w jednym kroku) ----------

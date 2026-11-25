@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Przyciski Vantify na karcie Reactive (Grzegorz 18/11/2026 „Tak”, PROD-038), scenariusz Grzegorza z 18/11:
 // haczyki na drzwiach biura w Tower B. Open Vantify: podgląd Summary/Description po angielsku (z miejscem), pierwszy raz okno
 // Vantify z tekstem do skopiowania i numer zlecenia z okna; potem apka zakłada sama (bez PDF). „Czeka na zatwierdzenie” = sprawdź.
@@ -56,10 +57,10 @@ function fakePhone() {
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
     async function job(title, withPhoto = true) {
       await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
-      await pg.locator('[data-rx-field=title]').fill(title); await saved();
-      await row('where'); await pg.locator('[data-rx=building][data-value="Tower B"]').click(); await pg.locator('[data-rx-field=level]').selectOption('5'); await pg.locator('[data-rx-field=room]').fill('Office door');
-      if (!await pg.locator('[data-rx-field=note]').isVisible()) await row('start'); /* „info na start” niezależne od innych wierszy (22/11/2026) – zwykle już otwarte */ await pg.locator('[data-rx-field=note]').fill('Proszę o 10 haczyków na drzwiach biura.'); await saved();
-      if (withPhoto) { await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-before img')); }
+      await wpisz(pg.locator('[data-rx-field=title]'), title); await saved();
+      await row('where'); await wybierz(pg.locator('[data-rx-select=building]'), 'Tower B'); await wybierz(pg.locator('[data-rx-field=level]'), '5'); await wpisz(pg.locator('[data-rx-field=room]'), 'Office door');
+      if (!await pg.locator('[data-rx-field=note]').isVisible()) await row('start'); /* „info na start” niezależne od innych wierszy (22/11/2026) – zwykle już otwarte */ await wpisz(pg.locator('[data-rx-field=note]'), 'Proszę o 10 haczyków na drzwiach biura.'); await saved();
+      if (withPhoto) { await zdjecia(pg.locator('[data-rx=gallery][data-phase=before]'), photo); await pg.waitForFunction(() => document.querySelector('#rx-before img')); }
     }
     // ---------- 1. nowe zadanie: dwa przyciski Vantify, ta sama wielkość ----------
     await job('Haczyki na drzwiach biura');
@@ -72,10 +73,10 @@ function fakePhone() {
     // w oknie Grzegorz poprawił nazwę – karta ma zapisać Summary z Vantify, nie z podglądu (przegląd Codex #146)
     await pg.evaluate(() => { window.__vt.open = { events: [{ op: 'create', id: '3070001', t: 1 }] }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070001, status: 'approval_pending', final: false, summary: 'Coat hooks – office door, Tower B' }] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
-    const sum = await ask().locator('.rx-vt-sum').inputValue(), desc = await ask().locator('.rx-vt-desc').inputValue();
+    const sum = await wartosc(ask().locator('.rx-vt-sum')), desc = await wartosc(ask().locator('.rx-vt-desc'));
     check(/^EN Haczyki na drzwiach biura$/.test(sum), 'Summary nie przetłumaczone: ' + sum);
     check(/EN Proszę o 10 haczyków/.test(desc) && /Location: Tower B, Level 5, EN Office door/.test(desc), 'Description bez tłumaczenia albo miejsca: ' + desc);
-    await ask().locator('.rx-vt-sum').fill('Coat hooks on office door – Tower B');
+    await wpisz(ask().locator('.rx-vt-sum'), 'Coat hooks on office door – Tower B');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podglad.png') });
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
     check(/Pierwszy raz/.test(await ask().textContent()), 'pierwszy raz: brak wyjaśnienia');
@@ -98,9 +99,9 @@ function fakePhone() {
       await pg.locator('.rx-vt-row [data-rx=vt-check]').nth(1).click(); await msg(/zatwierdzone – można zamknąć/);
       const j = (await jobs()).find(x => x.id === id);
       check(j.reactive.status === 'completed' && j.reactive.vantify.status === 'acknowledged' && j.closedAt === at0, 'zakończone w apce: sprawdzenie Vantify zmieniło stan zadania albo datę zakończenia ' + JSON.stringify({ s: j.reactive.status, v: j.reactive.vantify, a: [at0, j.closedAt] }));
-      check(await pg.locator('[data-rx=vt-close].go').count() === 1, 'zakończone w apce: Close Vantify niedostępny po zatwierdzeniu'); }
+      check(await pg.locator('[data-rx=vt-close][data-ton=go]').count() === 1, 'zakończone w apce: Close Vantify niedostępny po zatwierdzeniu'); }
     // ---------- 3. Open z wzorem: apka zakłada sama ----------
-    await pg.locator('[data-rx=back]').first().click().catch(() => {}); await idz(pg, 'reactive'); await pg.locator('[data-rx=new]').waitFor();
+    await pg.locator('ion-back-button[data-nav=up]').first().click().catch(() => {}); await idz(pg, 'reactive'); await pg.locator('[data-rx=new]').waitFor();
     // priorytety z Vantify (Grzegorz 20/11/2026): lista do wyboru, domyślnie ostatnio wybrany / ten ze wzoru
     await pg.evaluate(() => { window.__vt.prio = { status: 'ok', current: '/priorities/5', list: [{ href: '/priorities/5', name: 'P5', days: 5, label: '5 days' }, { href: '/priorities/137', name: 'P8', days: 180, label: '180 days' }] }; });
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'error', code: 'timeout' }, { status: 'error', code: 'http422', msg: 'Invalid' }, { status: 'ok', id: 3070002, job: { id: 3070002, status: 'approval_pending', summary: 'EN Wieszaki w kuchni' }, photos: 1, photosSeen: 1, hrefs: ['/files/9'], seenHrefs: ['/files/9'] }); });
@@ -124,8 +125,8 @@ function fakePhone() {
     // 3d. zakładanie udane – ze zdjęciem przed (Grzegorz 20/11/2026: „przy zakładaniu zdjęcie i opis”), bez Job Sheet
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
     check(/Zdjęcia przed: 1/.test(await ask().locator('.rx-vt-photos').textContent()), 'okno Open Vantify nie mówi o zdjęciu przed');
-    check(await ask().locator('.rx-vt-prio').inputValue() === '/priorities/5', 'priorytet: domyślnie nie ten ze wzoru');
-    await ask().locator('.rx-vt-prio').selectOption('/priorities/137');
+    check(await wartosc(ask().locator('.rx-vt-prio')) === '/priorities/5', 'priorytet: domyślnie nie ten ze wzoru');
+    await wybierz(ask().locator('.rx-vt-prio'), '/priorities/137');
     if (SHOTS) { await pg.waitForTimeout(900); await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-podsumowanie.png') }); }
     await ask().locator('[data-a=ok]').click();
     await wyn(/Założone w Vantify #3070002/, /Zlecenie #3070002: „EN Wieszaki w kuchni”\. Status: czeka na zatwierdzenie \(Pending Approval\)\. Zdjęcia przed przy zleceniu: 1\/1\./);
@@ -141,14 +142,14 @@ function fakePhone() {
     // bez nauczonych wzorów Commence/Complete (Grzegorz 20/11/2026: wbudowane z zapisu 18/11) – zamknięcie idzie od razu, bez okna Vantify
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }); });
     await pg.locator('[data-rx=vt-check]').first().click(); await msg(/zatwierdzone – można zamknąć/);
-    check(await pg.locator('[data-rx=vt-close].go').count() === 1, 'po zatwierdzeniu Close Vantify nieaktywny');
+    check(await pg.locator('[data-rx=vt-close][data-ton=go]').count() === 1, 'po zatwierdzeniu Close Vantify nieaktywny');
     await pg.locator('[data-rx=vt-close]').click(); await ask().waitFor();
     check(/Brakuje: zdjęć po, info na koniec/.test(await ask().textContent()), 'braki: brak pytania');
     await ask().locator('[data-a=no]').click(); await gone();
     check((await calls()).length === 1, 'Wróć mimo to coś wysłało');
     // ---------- 5. inna nazwa w Vantify → stop, nic nie wysłane ----------
-    await pg.locator('[data-rx-photos=after]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-after img'));
-    await row('end'); await pg.locator('[data-rx-field=endNote]').fill('10 hooks installed.'); await saved();
+    await zdjecia(pg.locator('[data-rx=gallery][data-phase=after]'), photo); await pg.waitForFunction(() => document.querySelector('#rx-after img'));
+    await row('end'); await wpisz(pg.locator('[data-rx-field=endNote]'), '10 hooks installed.'); await saved();
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'Something else' }] }); });
     await pg.locator('[data-rx=vt-close]').click(); await msg(/inną nazwę: „Something else”\. Nic nie wysłałem/);
     { const k = await calls(); check(k.length === 1 && k[0].op === 'status', 'inna nazwa: poszło coś poza odczytem'); }
@@ -156,7 +157,7 @@ function fakePhone() {
     // data zdjęcia z modułu zdjęć (pole created), nie z pliku (plik w raporcie jest już bez EXIF) – przegląd Codex #146
     // zdjęcie z wczoraj, zadanie w apce z wczoraj, zlecenie w Vantify dziś: daty z wczoraj (granica = data zadania w apce, PROD-038)
     const y = new Date(Date.now() - 86400000), ymdY = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
-    await pg.locator('[data-rx-field=orderDate]').fill(ymdY); await pg.locator('[data-rx-field=orderDate]').dispatchEvent('change'); await saved();
+    await wpisz(pg.locator('[data-rx-field=orderDate]'), ymdY); await pg.locator('[data-rx-field=orderDate]').dispatchEvent('change'); await saved();
     const shot = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 12, 0, 0).getTime();
     await pg.evaluate(t => { const Z = window.OESTZdjecia, o = Z.list.bind(Z); Z.list = async (...a) => (await o(...a)).map(r => ({ ...r, created: new Date(t).toISOString() })); }, shot);
     // okno podsumowania przed zamknięciem (PROD-039): „Popraw” wraca do karty i nic nie wysyła
@@ -166,7 +167,7 @@ function fakePhone() {
     { const t = await pg.locator('.rx-body').innerText(), p = await pg.locator('[data-rx-sum]').evaluateAll(a => a.map(x => x.value).join('\n'));
       check(/^EN /.test(p) && /EN 10 hooks installed/.test(p) && /\.pdf\)/.test(t) && !/docx/.test(t), 'podsumowanie Close Vantify: treść nie po angielsku albo plik nie tylko PDF ' + p); }
     check(/Zgadzam się, zamknij/.test(await pg.locator('[data-rx=sum-ok]').textContent()) && await pg.locator('[data-rx=sum-del]').count() > 0, 'okno podsumowania: brak ✕ albo „Zgadzam się, zamknij”');
-    await pg.locator('[data-rx=back]').click(); await pg.locator('[data-rx=vt-close]').waitFor();
+    await pg.locator('ion-back-button[data-nav=up]').click(); await pg.locator('[data-rx=vt-close]').waitFor();
     { const k = await calls(); check(k.length === 1 && k[0].op === 'status', 'Popraw w podsumowaniu coś wysłało ' + JSON.stringify(k)); }
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070002, status: 'acknowledged', final: false, summary: 'EN Wieszaki w kuchni' }] }, { status: 'ok', job: { id: 3070002, status: 'completed', final: true }, closed: true, fileSeen: false }); });
     await pg.evaluate(() => { window.__rep = []; const K = window.OESTReactiveCore, R = K.report; K.report = function (d, ...a) { window.__rep.push(JSON.parse(JSON.stringify(d))); return R.call(this, d, ...a); }; });
@@ -206,7 +207,7 @@ function fakePhone() {
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; window.__vt.next.push({ status: 'ok', id: 3070009, job: { id: 3070009, status: 'approval_pending', summary: 'EN Bez zdjecia' }, photos: 0, photosSeen: 0 }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
     check(/^Brak zdjęć$/.test((await ask().locator('.rx-vt-photos').textContent()).trim()), 'bez zdjęcia: okno nie mówi „Brak zdjęć”');
-    check(await ask().locator('.rx-vt-prio').inputValue() === '/priorities/137', 'priorytet: nie pamięta ostatnio wybranego');
+    check(await wartosc(ask().locator('.rx-vt-prio')) === '/priorities/137', 'priorytet: nie pamięta ostatnio wybranego');
     await ask().locator('[data-a=ok]').click();
     await wyn(/Założone w Vantify #3070009/, /^(?!.*Zdjęcia).*Pending Approval/);
     await msg(/Założone w Vantify #3070009\. Czeka na zatwierdzenie/);
@@ -251,7 +252,7 @@ function fakePhone() {
     { const j = (await jobs()).find(x => x.reactive?.vantify?.id === 3070011); check(j && JSON.stringify({ hrefs: j.reactive.vantify.photos.hrefs, seen: j.reactive.vantify.photos.seen }) === JSON.stringify({ hrefs: ['/files/13'], seen: ['/files/13'] }) && /✓ Vantify #3070011/.test(await pg.locator('.rx-vt-row').textContent()), 'dosłanie z wzorem: karta nie zapisała wyniku ' + JSON.stringify(j && j.reactive.vantify)); }
     // dwa zdjęcia, brakuje pierwszego; dosłane, ale dalej niewidoczne → następna próba znowu wysyła pierwsze, nie drugie (przegląd Codex #167)
     await idz(pg, 'reactive'); await job('Dwa zdjecia');
-    await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
+    await zdjecia(pg.locator('[data-rx=gallery][data-phase=before]'), photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070012, job: { id: 3070012, status: 'approval_pending', summary: 'EN Dwa zdjecia' }, photos: 2, photosSeen: 1, hrefs: ['/files/31', '/files/32'], seenHrefs: ['/files/32'] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await wyn(/Założone w Vantify #3070012/, /Zdjęcia przed przy zleceniu: 1\/2.*Stuknij/);
@@ -265,14 +266,14 @@ function fakePhone() {
     }
     // zdjęcia na karcie zmienione po założeniu (Codex #167): A/B, przy zleceniu widać tylko A; A usunięte z karty, dodane C → dosłane B (po identyfikatorze), nie C
     await idz(pg, 'reactive'); await job('Zmienione zdjecia');
-    await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
+    await zdjecia(pg.locator('[data-rx=gallery][data-phase=before]'), photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', id: 3070013, job: { id: 3070013, status: 'approval_pending', summary: 'EN Zmienione zdjecia' }, photos: 2, photosSeen: 1, hrefs: ['/files/41', '/files/42'], seenHrefs: ['/files/41'] }); });
     await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor(); await ask().locator('[data-a=ok]').click();
     await wyn(/Założone w Vantify #3070013/, /Zdjęcia przed przy zleceniu: 1\/2/);
     await pg.waitForFunction(() => /⚠ Vantify #3070013 · zdjęcia 1\/2/.test(document.querySelector('.rx-vt-row')?.textContent || ''));
     const idsAB = await pg.evaluate(async () => { const R = OESTReactiveUI.repository, j = (await R.get()).jobs.find(x => x.reactive?.vantify?.id === 3070013); await R.saveReactive({ ...j.reactive, beforeMediaIds: [j.reactive.beforeMediaIds[1]] }); return j.reactive.vantify.photos.ids; });
     { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070013).id; await idz(pg, 'reactive/job/' + id); await pg.reload(); await pg.locator('.rx-vt-row').waitFor(); }
-    await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
+    await zdjecia(pg.locator('[data-rx=gallery][data-phase=before]'), photo); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2);
     await pg.evaluate(() => { window.__vt.wzory = { create: true, attach: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070013, status: 'approval_pending', final: false, summary: 'EN Zmienione zdjecia', seenHrefs: ['/files/41'] }] }, { status: 'ok', sent: ['/files/43'], seenHrefs: ['/files/41', '/files/43'] }); });
     await pg.locator('.rx-vt-row [data-rx=vt-check]').first().click(); await ask().waitFor(); await ask().locator('[data-a=ok]').click();
     await msg(/Wszystkie zdjęcia przed są przy zleceniu/);
@@ -303,7 +304,7 @@ function fakePhone() {
     await mk('Update pierwszy', 3070031);
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070031, status: 'approval_pending', final: false, summary: 'EN Update pierwszy' }] }, { status: 'ok', jobs: [{ id: 3070031, status: 'approval_pending', final: false, summary: 'EN Update pierwszy', messageSeen: true }] }); window.__vt.open = { events: [{ op: 'update', id: '3070031', t: 1 }] }; });
     await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor();
-    check(await ask().locator('.rx-vt-upd-t').inputValue() === TXT, 'Send update: tekst inny niż ustalony (bez daty) ' + await ask().locator('.rx-vt-upd-t').inputValue());
+    check(await wartosc(ask().locator('.rx-vt-upd-t')) === TXT, 'Send update: tekst inny niż ustalony (bez daty) ' + await wartosc(ask().locator('.rx-vt-upd-t')));
     if (SHOTS) { await pg.waitForTimeout(900); await pg.screenshot({ path: path.join(SHOTS, 'reactive-vantify-send-update-okno.png') }); }
     await ask().locator('[data-a=ok]').click(); await ask().locator('[data-a=ok]').waitFor();
     check(/Pierwszy raz/.test(await ask().textContent()), 'Send update pierwszy raz: brak wyjaśnienia'); await ask().locator('[data-a=ok]').click();
@@ -343,7 +344,7 @@ function fakePhone() {
     await mk('Update zgubiony', 3070035);
     const OWN = 'Works completed. Please approve so the job can be closed. Door fixed.';
     await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true, update: true }; window.__vt.next.push({ status: 'ok', jobs: [{ id: 3070035, status: 'approval_pending', final: false, summary: 'EN Update zgubiony' }] }, { status: 'error', code: 'timeout' }); });
-    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await ask().locator('.rx-vt-upd-t').fill(OWN); await ask().locator('[data-a=ok]').click();
+    await pg.locator('[data-rx=vt-update]').click(); await ask().locator('.rx-vt-upd-t').waitFor(); await wpisz(ask().locator('.rx-vt-upd-t'), OWN); await ask().locator('[data-a=ok]').click();
     await msg(/Brak odpowiedzi z Vantify/);
     { const id = (await jobs()).find(x => x.reactive?.vantify?.id === 3070035).id; await idz(pg, 'reactive/job/' + id); await pg.reload(); await pg.locator('[data-rx=vt-update]').waitFor(); }
     check(await pg.locator('[data-rx=vt-update]').textContent() === '⚠ Update niepotwierdzony', 'Send update zgubiona odpowiedź: po ponownym otwarciu brak ⚠');
@@ -389,10 +390,10 @@ function fakePhone() {
     await idz(pg, 'reactive'); await job('Drzwi', false);
     { const en = 'Door will not open, batteries probably flat.', did = await pg.evaluate(() => (location.hash.match(/reactive\/(?:draft|job)\/([^/]+)/) || [])[1] || '');
       await pg.evaluate(([sc, en]) => new Promise((ok, no) => { const q = indexedDB.open('oest-notatki', 1); q.onsuccess = () => { const t = q.result.transaction('notes', 'readwrite'); t.objectStore('notes').put({ id: 'n-7f', scope: sc, at: Date.now(), seq: 1, ctx: '', ms: 3000, audio: [], pl: 'Drzwi się nie otwierają, prawdopodobnie wyczerpane baterie', en, st: 'ready', err: '' }); t.oncomplete = ok; t.onerror = no; }; q.onerror = no; }), ['rx|' + did, en]);
-      await pg.locator('[data-rx-field=note]').fill(en + '\nKlucz u ochrony.'); await saved();
+      await wpisz(pg.locator('[data-rx-field=note]'), en + '\nKlucz u ochrony.'); await saved();
       await pg.evaluate(() => { window.__vt.calls = []; window.__vt.wzory = { create: true }; });
       await pg.locator('[data-rx=vt-open]').click(); await ask().locator('.rx-vt-sum').waitFor();
-      const desc = await ask().locator('.rx-vt-desc').inputValue(), n = desc.split(en).length - 1;
+      const desc = await wartosc(ask().locator('.rx-vt-desc')), n = desc.split(en).length - 1;
       check(!!did && n === 1 && !/EN Door will not open/.test(desc) && /EN Klucz u ochrony/.test(desc), 'notatka wstawiona do pola: opis z dublem albo przetłumaczony drugi raz: ' + JSON.stringify(desc));
       await ask().locator('[data-a=no]').click(); await gone(); check((await calls()).length === 0, 'Wróć w podglądzie coś wysłało'); }
     // ---------- 8. EN ----------

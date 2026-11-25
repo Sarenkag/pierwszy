@@ -141,7 +141,7 @@
   // okno informacji po przytrzymaniu klocka (Grzegorz 07/11/2026 19:36–19:40): wiersze [{ ikona, czesci: [{ t, b, kolor }] }]
   var FREQ = { "1W": ["co tydzień", "weekly"], "1M": ["co miesiąc", "monthly"], "3M": ["co kwartał", "quarterly"], "6M": ["co pół roku", "6-monthly"], "11M": ["co 11 miesięcy", "every 11 months"], "12M": ["co rok", "annual"] };
   function freqName(f) { return FREQ[f] ? w.OESTT(FREQ[f][0], FREQ[f][1]) : f; }
-  function dlong(d) { return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear(); }
+  function dlong(d) { return w.OESTNarzedzia.data(d); }
   function infoDane(id, dayIso) {
     var t = P.byId(id); if (!t) return null;
     var due = dayIso ? new Date(+dayIso.slice(0, 4), +dayIso.slice(5, 7) - 1, +dayIso.slice(8, 10)) : P.due(t), k = kiData(t, due, P.daysLeft(due));
@@ -189,7 +189,7 @@
         due: day, left: P.daysLeft(day), dueDone: tryb === "gotowa", photos: cur ? k.photos : 0, qa: cur ? k.qa : null, issues: cur ? k.issues : 0, go: w.OESTT("Otwórz", "Open"), plan: e.plan });
     });
     var hasShift = false; try { hasShift = w.OESTSettings.get().schedules.length > 0 || !!w.OESTSettings.scheduleOn(P.iso(new Date())); } catch (e2) {}
-    return { tytul: first.toLocaleDateString(w.OESTBledy && w.OESTBledy.lang() === "en" ? "en-GB" : "pl-PL", { month: "long", year: "numeric" }),
+    return { tytul: w.OESTNarzedzia.miesiacRok(first, w.OESTBledy && w.OESTBledy.lang() === "en" ? "en" : "pl"),
       tydzien: [1, 2, 3, 4, 5, 6, 0].map(dayName), kratki: kratki, klocki: klocki, wybrany: calSel, brakGrafiku: !hasShift,
       pusto: w.OESTT("Brak inspekcji tego dnia.", "No inspections on this day.") };
   }

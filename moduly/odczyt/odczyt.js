@@ -7,10 +7,8 @@
   function available() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform() && w.Capacitor.Plugins && w.Capacitor.Plugins.OESTKeys); }
   // Zdjęcie → JPEG ≤ 2000 px (wtyczka przyjmuje do 4 Mpx)
   function prepare(blob) {
-    return createImageBitmap(blob).then(function (bmp) {
-      var s = Math.min(1, 2000 / Math.max(bmp.width, bmp.height)), c = w.OESTCzesci.plotno(bmp.width * s, bmp.height * s); // płótno w pamięci daje szkielet
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
-      return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return w.OESTZdjecia.wczytaj(blob).then(function (bmp) { // wczytanie i zmniejszenie: moduly/zdjecia
+      return w.OESTZdjecia.plotno(bmp, 2000).toDataURL('image/jpeg', 0.9).split(',')[1];
     });
   }
   function parse(text) {

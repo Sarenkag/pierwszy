@@ -8,7 +8,7 @@
      OESTReactiveUI.wstecz()          → strzałka / Wstecz telefonu (podgląd, kreator, niezapisane): false = zostań, true = rodzic (trasę liczy rama)
      OESTReactiveUI.info(klocek), .notatki(start|end), .wyslijTeraz(), .przyjmijZdjecia(pliki, faza, zGalerii) */
 (function(w){
-  'use strict';const C=w.OESTReactiveCore,T=w.OESTReactiveTree,K=w.OESTKreator,lang=()=>w.OESTBledy?w.OESTBledy.lang():'pl',L=(pl,en)=>lang()==='en'?en:pl,tl=x=>T.label(x,lang()),tp=s=>(lang()==='en'&&T.EN[s])||s,repo=w.OESTHandover.repository;
+  'use strict';const C=w.OESTReactiveCore,T=w.OESTReactiveTree,K=w.OESTKreator,lang=()=>w.OESTBledy?w.OESTBledy.lang():'pl',L=(pl,en)=>w.OESTT(pl,en),tl=x=>T.label(x,lang()),tp=s=>(lang()==='en'&&T.EN[s])||s,repo=w.OESTHandover.repository;
   let navigate=()=>{},route='reactive',data=null,draft=null,account='',busy=false,writing=0,error=false,chain=Promise.resolve(),pendingMedia=new Map(),epoch=0,pristine='';
   /* stan ekranu dla Vue: komunikat pod ekranem, zdjęcia i nagrania karty (adresy blob), liczniki zwiniętych sekcji, akapity podglądu */
   let komunikat='',blad='',zamieniam='',dowody={before:[],after:[],audio:[],zamkniete:false},urlMap=new Map(),licz={start:'',end:''},zamkn={start:0,end:0},akapity=[],enRap={klucz:'',tekst:''};
@@ -56,7 +56,7 @@
   function draftCard(d){return card({action:'draft',id:d.draftId,r:d,at:d.createdAt,st:'draft',color:'#8b949e',icon:'📝',name:d.title||d.uiTitle||L('Nowe zadanie','New job'),loc:[d.level,d.room].filter(Boolean).join(' · ')});}
   // okno informacji po przytrzymaniu klocka – to samo okno co w PPM (czesci/InfoInspekcji.vue): { tytul, wiersze: [{ ikona, czesci: [{ t, b }] }] }
   function info(k){if(!k||!data)return null;const isDraft=k.rx==='draft',job=isDraft?null:data.jobs.find(j=>j.id===k.id),r=isDraft?data.reactiveDrafts?.[k.id]:job&&{...(job.reactive||{}),title:job.text};if(!r)return null;
-    const d=rxDate(r,isDraft?r.createdAt:job.createdAt),day=d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'',st=isDraft?L('Szkic','Draft'):C.uiLabel(C.status(job))+(r.temporary?L(' · tymczasowa naprawa',' · temporary repair'):''),
+    const d=rxDate(r,isDraft?r.createdAt:job.createdAt),day=d?w.OESTNarzedzia.data(d):'',st=isDraft?L('Szkic','Draft'):C.uiLabel(C.status(job))+(r.temporary?L(' · tymczasowa naprawa',' · temporary repair'):''),
       where=[r.building,r.level,r.room].filter(Boolean).join(', ')||(!isDraft&&job.location)||''/* zadanie z Handover: lokalizacja tylko w job.location (uwaga Codex w PR #103) */,nv=(r.audioMediaIds||[]).length;
     const rows=[{ikona:'lok',czesci:[{t:where||L('Lokalizacja nieprzypisana','No location assigned')}]},
       {ikona:'termin',czesci:day?[{t:L('Zlecono ','Ordered ')},{t:day,b:true}]:[{t:L('Brak daty','No date')}]},
@@ -193,9 +193,9 @@
   function przyjmijZdjecia(files,phase,zGalerii=false){return run(async()=>{if(zGalerii)await askDate(files);for(const file of files)await addPhoto(file,phase);await renderEvidence();});}
   /* Jeden zapis zdjęcia (Grzegorz 04/11/2026): zdjęcie zapisuje się raz w module zdjęć (folder OEST, trzymane przez Reactive,
      więc sprzątanie go nie skasuje); zadanie ma tylko jego id (zid). Bez modułu albo gdy nie przyjmie zdjęcia: własna kopia jak dawniej. */
-  async function photoMedia(file,phase,extra){const base={id:crypto.randomUUID(),kind:'photo',name:'Reactive photo.jpg',mime:'image/jpeg'};if(w.OESTZdjecia){try{const r=await w.OESTZdjecia.save(file,{source:'reactive',category:'Reactive',code:phase==='before'?'przed':'po',location:[draft.building,draft.level,draft.room].filter(Boolean).join(' '),hold:'reactive',kind:'ogolne',...(extra||{})});return{...base,zid:r.id,blob:r.blob,size:r.blob.size};}catch(e){}}const prepared=await w.OESTKeys.prepareMedia(file),c=prepared.canvas,blob=await new Promise(resolve=>c.toBlob(resolve,'image/jpeg',.72));if(!blob)throw Error('IMAGE_COMPRESSION');return{...base,blob,size:blob.size};}
+  async function photoMedia(file,phase,extra){const base={id:crypto.randomUUID(),kind:'photo',name:'Reactive photo.jpg',mime:'image/jpeg'};if(w.OESTZdjecia){try{const r=await w.OESTZdjecia.save(file,{source:'reactive',category:'Reactive',code:phase==='before'?'przed':'po',location:[draft.building,draft.level,draft.room].filter(Boolean).join(' '),hold:'reactive',kind:'ogolne',...(extra||{})});return{...base,zid:r.id,blob:r.blob,size:r.blob.size};}catch(e){}}const {blob}=await w.OESTZdjecia.zmniejsz(file,{px:1600,jakosc:.72});/* zapas: moduly/zdjecia */return{...base,blob,size:blob.size};}
   /* zdjęcie z galerii (Grzegorz 18/11/2026): data zrobienia inna niż data zlecenia → pytanie Tak/Nie, czy zmienić datę zlecenia na datę zdjęcia */
-  const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),dmy=v=>v.split('-').reverse().join('/');
+  const ymd=d=>w.OESTNarzedzia.dzienIso(d),dmy=v=>v.split('-').reverse().join('/');
   async function shotDay(file){let d=null;try{d=w.OESTZdjecia?.exifDate?await w.OESTZdjecia.exifDate(file):null;}catch(e){d=null;}if(!(d instanceof Date)||isNaN(d)){const lm=Number(file?.lastModified);d=lm>0&&lm<=Date.now()+6e4?new Date(lm):null;}return d?ymd(d):'';}
   async function askDate(files){if(!draft||draft.jobId&&draft.status==='completed')return;const days=[];for(const f of files){const d=await shotDay(f);if(d&&!days.includes(d))days.push(d);}days.sort();const day=days[0];if(!day||day===draft.orderDate)return;
     const yes=await w.OESTPytaj(L('Zdjęcie zrobiono '+dmy(day)+', a data zlecenia to '+dmy(draft.orderDate||'')+'. Zmienić datę zlecenia na '+dmy(day)+'?','The photo was taken on '+dmy(day)+' but the order date is '+dmy(draft.orderDate||'')+'. Change the order date to '+dmy(day)+'?'),{ok:L('Tak','Yes'),cancel:L('Nie','No')});

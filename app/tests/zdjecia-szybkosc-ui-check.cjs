@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Szybszy zapis zdjęć (audyt wydajności 07/11/2026, „tak” Grzegorza 07/11 21:56). Prawdziwy scenariusz Grzegorza:
 // Weekly Flushing TB – 16 kranów (TB bez apartamentów od 21/11/2026) z innym zdjęciem 12 MP (3072×4080 jak z Pixela), 7 zdjęć ogólnych (razem jak dawniej 20 + 3) i kartka formularza.
 // Sprawdza:
@@ -46,7 +47,7 @@ async function run(browser, url, worker) {
     try { new PerformanceObserver(l => { if (window.__on) for (const e of l.getEntries()) window.__lt += e.duration; }).observe({ type: 'longtask' }); } catch (_) {}
   }, worker);
   await pg.goto(url + 'inspekcje/index.html#ppm=EFA-INS-026'); await pg.waitForTimeout(2000);
-  if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
+  if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
   const taps = await pg.locator('[data-flcam]').count(); assert.ok(taps >= 16, 'Flushing TB: kranów ' + taps);
   const list = []; for (let i = 0; i < taps; i++) list.push(i); for (let i = 0; i < GENERAL; i++) list.push(30 + i); list.push(51);
   assert.equal(await makePhotos(pg, list), list.length);

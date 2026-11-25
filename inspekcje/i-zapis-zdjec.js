@@ -24,39 +24,24 @@
   }
   function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
   function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
-  function bitmap(blob) { return loadImage(blob); } // ten sam odczyt co przy dodawaniu (także zapas przez <img> bez createImageBitmap)
+  function bitmap(blob) { return Zd.wczytaj(blob); } // wczytanie zdjęcia: jedno miejsce w apce (moduly/zdjecia)
   // miniatury po kolei (jedno duże zdjęcie naraz w pamięci); przy błędzie podgląd z samego pliku
   function thumbUrl(blob) {
     var job = thumbQ.then(function () {
-      return bitmap(blob).then(function (img) {
-        var k = Math.min(1, THUMB_PX / Math.max(img.width, img.height)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (img.close) img.close();
-        return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.8); });
-      }).then(function (tb) { return URL.createObjectURL(tb || blob); }, function () { return URL.createObjectURL(blob); });
+      return Zd.zmniejsz(blob, { px: THUMB_PX, jakosc: 0.8 }).then(function (r) { return URL.createObjectURL(r.blob); }, function () { return URL.createObjectURL(blob); });
     });
     thumbQ = job.catch(function () {});
     return job;
   }
   function makePhoto(blob, o, thumb) { return (thumb ? Promise.resolve(URL.createObjectURL(thumb)) : thumbUrl(blob)).then(function (url) { return Object.assign({ blob: blob, url: url }, o); }); }
   function storePhoto(file, when, ctx) {
-    if (!Zd) return processPhoto(file, when);
     return Zd.save(file, Object.assign({}, ctx, { when: when, hold: HOLD })).then(function (r) {
       return makePhoto(r.blob, { zid: r.id, width: r.width, height: r.height, when: when }, r.thumb);
     }, function () { return processPhoto(file, when); }); // folder OEST nie przyjął zdjęcia (np. brak miejsca): zostaje w samej inspekcji
   }
-  // zapas bez modułu zdjęć: własna kopia w szkicu (jak przed 05/11)
+  // zapas, gdy folder OEST nie przyjął zdjęcia: własna kopia w szkicu (jak przed 05/11), zmniejszona przez moduł zdjęć
   function processPhoto(file, when) {
-    return loadImage(file).then(function (img) {
-      var w = img.width, h = img.height, MAX = 1920;
-      var s = Math.min(1, MAX / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
-      var c = document.createElement("canvas"); c.width = w; c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h);
-      if (img.close) img.close();
-      return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
-        return makePhoto(blob, { width: w, height: h, when: when });
-      });
-    });
+    return Zd.zmniejsz(file, { px: 1920, jakosc: 0.72 }).then(function (r) { return makePhoto(r.blob, { width: r.width, height: r.height, when: when }); });
   }
   // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 30 dniach
   // od wyczyszczenia (Grzegorz 08/11/2026: „niech trzyma przez miesiąc”; liczone od chwili, gdy zniknęły z inspekcji) przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
@@ -136,17 +121,8 @@
     return Promise.all(run).then(function () { return out; });
   }
   function finalFrom(src, o) {
-    var k = Math.min(1, o.px / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
-    var c = document.createElement("canvas"); c.width = w; c.height = h;
-    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
-    if (o.stamp) {
-      var txt = o.stamp;
-      var fs = Math.max(16, Math.round(w / 40));
-      g.font = "600 " + fs + "px Barlow, system-ui, sans-serif";
-      var tw = Math.min(g.measureText(txt).width, w - fs * 2.2), pw = tw + fs, ph = fs * 1.8;
-      g.fillStyle = "rgba(10,16,20,0.62)"; g.fillRect(w - pw - fs * 0.6, h - ph - fs * 0.6, pw, ph);
-      g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(txt, w - pw - fs * 0.1, h - ph / 2 - fs * 0.6, tw);
-    }
+    var c = Zd.plotno(src, o.px), w = c.width, h = c.height; // zmniejszenie: moduly/zdjecia
+    if (o.stamp) Zd.drawStamp(c.getContext("2d"), w, h, o.stamp); // data na zdjęciu: ten sam wygląd co przy zapisie (moduly/zdjecia)
     return new Promise(function (res) { c.toBlob(res, "image/jpeg", o.q); }).then(function (blob) {
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, blob: blob }; });
     });

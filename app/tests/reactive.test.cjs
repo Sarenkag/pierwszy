@@ -1,3 +1,5 @@
+globalThis.OESTNarzedzia = require('../../moduly/narzedzia/narzedzia.js');
+globalThis.OESTT = (p, e) => p;
 const {test}=require('node:test'),assert=require('node:assert/strict'),T=require('../www/reactive-tree.js'),C=require('../www/reactive-core.js'),R=require('../www/reactive-store.js'),H=require('../www/handover-core.js');
 function setup(){let n=0,account='a';const map=new Map(),backend={async get(k){return structuredClone(map.get(k)||R.empty());},async update(k,fn){const s=await this.get(k),result=fn(s);map.set(k,structuredClone(s));return result;}};return {r:R.createRepository({backend,owner:()=>account,id:()=>String(++n),clock:()=> '2026-11-01T10:00:00Z'}),account:x=>account=x};}
 const job=()=>({problemId:'handle-1',problem:'Door handle detached',title:'Door handle detached',building:'Tower B',level:'5',room:'Kitchen',requestedBy:'manager',requestedName:'',note:'',status:'open',quote:false,beforeMediaIds:[],afterMediaIds:[],audioMediaIds:[]});

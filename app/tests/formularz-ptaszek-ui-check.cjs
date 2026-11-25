@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Fałszywy ptaszek formularza (Grzegorz 12/11/2026): w Weekly Fire Alarm Test zdjęcie call pointu zrobione przyciskiem
 // „Zrób zdjęcie” zapalało zielony ✓ przy przycisku „Formularz”, jakby formularz był dodany.
 // Zasada: ✓ formularza (przycisk „Formularz”, napis przy „Zdjęcie formularza”, licznik na klocku listy) = TYLKO zdjęcia
@@ -49,7 +50,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
       c.toBlob(b => { const fr = new FileReader(); fr.onload = () => res(fr.result.split(',')[1]); fr.readAsDataURL(b); }, 'image/jpeg', 0.8); }), [w, h, kolor]).then(b => Buffer.from(b, 'base64'));
     const PION = await jpeg(900, 1200, '#c33'), KARTKA = await jpeg(1600, 1131, '#36c');
     // 1. „Zrób zdjęcie” – zdjęcie call pointu
-    await pg.setInputFiles('#camIn', { name: 'call-point.jpg', mimeType: 'image/jpeg', buffer: PION });
+    await zdjecia(pg, '#camIn', { name: 'call-point.jpg', mimeType: 'image/jpeg', buffer: PION });
     await pg.waitForFunction(() => document.querySelectorAll('#photos img').length === 1, null, { timeout: 15000 }); await pg.waitForTimeout(800);
     const s1 = await state(); await shot('1-po-zdjeciu-call-pointu');
     check(s1.photos === 1 && s1.sheets === 0, 'zdjęcie call pointu w zdjęciach, nie w formularzu (' + JSON.stringify(s1) + ')');
@@ -60,7 +61,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     check(s1.stPhotos === 1, 'klocek na liście: 1 zdjęcie (' + s1.stPhotos + ')');
 
     // 2. „Formularz” → zdjęcie kartki
-    await pg.setInputFiles('#shCamIn', { name: 'formularz.jpg', mimeType: 'image/jpeg', buffer: KARTKA });
+    await zdjecia(pg, '#shCamIn', { name: 'formularz.jpg', mimeType: 'image/jpeg', buffer: KARTKA });
     await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos img').length === 1, null, { timeout: 15000 }); await pg.waitForTimeout(800);
     const s2 = await state(); await shot('2-po-zdjeciu-formularza');
     check(s2.badge === 'ok' && s2.label === 'ok', 'po zdjęciu formularza zielony ✓ (' + JSON.stringify(s2) + ')');
@@ -68,14 +69,14 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     check(s2.stSheet === 1 && s2.stPhotos === 1, 'klocek na liście: formularz 1, zdjęcia 1 (' + s2.stSheet + '/' + s2.stPhotos + ')');
 
     // 3. usunięcie zdjęcia formularza → ✓ znika, choć zdjęcie call pointu zostaje
-    await pg.locator('#sheetPhotos .thumb button[aria-label]').first().click(); await pg.waitForTimeout(800);
+    await pg.locator('#sheetPhotos ion-button[aria-label]').first().click(); await pg.waitForTimeout(800);
     const s3 = await state();
     check(s3.badge !== 'ok' && s3.photos === 1, 'po usunięciu kartki ✓ znika, call point zostaje (' + JSON.stringify(s3) + ')');
 
     // 4. raport: kartka z powrotem + 4 kolejne zdjęcia (razem 5 małych) → Wyślij → PDF i Word z kolejki
-    await pg.setInputFiles('#shGalIn', { name: 'formularz.jpg', mimeType: 'image/jpeg', buffer: KARTKA });
+    await zdjecia(pg, '#shGalIn', { name: 'formularz.jpg', mimeType: 'image/jpeg', buffer: KARTKA });
     await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos img').length === 1, null, { timeout: 15000 });
-    for (let i = 0; i < 4; i++) { await pg.setInputFiles('#camIn', { name: 'z' + i + '.jpg', mimeType: 'image/jpeg', buffer: PION }); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length === n, i + 2, { timeout: 15000 }); }
+    for (let i = 0; i < 4; i++) { await zdjecia(pg, '#camIn', { name: 'z' + i + '.jpg', mimeType: 'image/jpeg', buffer: PION }); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length === n, i + 2, { timeout: 15000 }); }
     await pg.waitForTimeout(800); await shot('3-przed-wyslij');
     await pg.click('#toQueue');
     let files = null;

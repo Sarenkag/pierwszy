@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // ZASADA Grzegorza (05/11/2026 08:09): każdy plik raportu (Word i PDF) poniżej 1 MB.
 // Prawdziwy scenariusz: Weekly Flushing TB – 16 kranów (od 21/11/2026 bez apartamentów; wcześniej 20), każdy z INNYM zdjęciem (PDF zapisuje identyczne zdjęcie raz,
 // więc jedno powielone zdjęcie zaniżałoby wynik), 3 zdjęcia ogólne na „Duże”, kartka formularza. Buduje raport przez Wyślij
@@ -28,15 +29,15 @@ async function photo(pg, i) {
     pg.on('pageerror', e => errs.push(e.message));
     await ctx.addInitScript(() => { localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' })); localStorage.setItem('insp.cfg', JSON.stringify({ insp: 'G. Sarna', email: 'demo@example.com' })); });
     await pg.goto('http://127.0.0.1:' + server.address().port + '/inspekcje/index.html#ppm=EFA-INS-026'); await pg.waitForTimeout(2000);
-    if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
+    if (await pg.locator('#sendCfg').isVisible().catch(() => false)) { await pg.click('#sendCfg'); await pg.waitForTimeout(300); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.waitForTimeout(300); }
     const taps = await pg.locator('[data-flcam]').count(); assert.ok(taps >= 16, 'Flushing TB: kranów ' + taps);
     for (let i = 0; i < taps; i++) {
       const f = await photo(pg, i), [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="' + i + '"]')]);
       await fc.setFiles(f); await pg.waitForFunction(n => document.querySelectorAll('.fl-pics img').length >= n, i + 1, { timeout: 60000 });
     }
     await pg.click('#photoSize i[data-v="duze"]'); // najgorszy przypadek: ogólne na „Duże”
-    for (let i = 0; i < GENERAL; i++) { await pg.setInputFiles('#galIn', await photo(pg, 30 + i)); await pg.waitForFunction(n => document.querySelectorAll('#photos .thumb').length >= n, i + 1, { timeout: 60000 }); }
-    await pg.setInputFiles('#shGalIn', await photo(pg, 51)); await pg.waitForTimeout(2500);
+    for (let i = 0; i < GENERAL; i++) { await zdjecia(pg, '#galIn', await photo(pg, 30 + i)); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length >= n, i + 1, { timeout: 60000 }); }
+    await zdjecia(pg, '#shGalIn', await photo(pg, 51)); await pg.waitForTimeout(2500);
     if (await pg.locator('#flWeek [data-w="1"]:not(.on)').isVisible().catch(() => false)) await pg.click('#flWeek [data-w="1"]');
     await pg.click('#toQueue');
     // dużo zdjęć ogólnych: apka pyta przed wysłaniem (Grzegorz 05/11 08:20); OEST_ANSWER=no → „Zostaw tak”

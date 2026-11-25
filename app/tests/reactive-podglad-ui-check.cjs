@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Scenariusz Grzegorza 19/11/2026 (apk-596/598): zlecenie Reactive po polsku, zdjęcie, notatka wstawiona kilka razy →
 // stuknięcie zdjęcia → Wstecz → Podgląd → Wstecz → Ustawienia → wysyłka. Każdy zgłoszony błąd ma tu swój warunek:
 //  1) zdjęcie otwiera się w okienku apki i NIC nie zostaje pod ekranami (wcześniej window.open doklejał je do <body>, widoczne nawet w Ustawieniach),
@@ -53,10 +54,10 @@ function fakePhone() {
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
     // ---------- zlecenie po polsku, notatka wstawiona 3 razy, zdjęcie przed ----------
     await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
-    await pg.locator('[data-rx-field=title]').fill('Usunięcie rośliny');
+    await wpisz(pg.locator('[data-rx-field=title]'), 'Usunięcie rośliny');
     if (!await pg.locator('[data-rx-field=note]').count()) await row('start');
-    await pg.locator('[data-rx-field=note]').fill('Poproszono o usunięcie kwiatu\nPoproszono o usunięcie kwiatu\npoproszono o usunięcie kwiatu');
-    await pg.locator('[data-rx-photos=before]').setInputFiles(photo); await pg.waitForFunction(() => document.querySelector('#rx-before img'));
+    await wpisz(pg.locator('[data-rx-field=note]'), 'Poproszono o usunięcie kwiatu\nPoproszono o usunięcie kwiatu\npoproszono o usunięcie kwiatu');
+    await zdjecia(pg.locator('[data-rx=gallery][data-phase=before]'), photo); await pg.waitForFunction(() => document.querySelector('#rx-before img'));
     // ---------- 1+2. zdjęcie: okienko apki, Wstecz zamyka, nic nie zostaje ----------
     await pg.locator('#rx-before img').first().click(); await ask().locator('img.rx-photo-full').waitFor();
     { const l = await leaked(); check(l.body === 0, 'zdjęcie doklejone do <body> (przecieka pod ekrany)'); }
@@ -76,7 +77,7 @@ function fakePhone() {
     check(await pg.locator('.rr-page').count() === 0, 'po Wstecz podgląd dalej na ekranie');
     // tekst automatyczny powstaje od razu, a tłumaczenie EN dochodzi asynchronicznie (fillEnReport) – czekamy na wynik (audyt 19/11/2026 nr 111: test niestabilny pod obciążeniem CI), warunek bez zmian
     await pg.waitForFunction(() => { const el = document.querySelector('[data-rx-field=reportText]'); return !el || el.value === '' || /EN Usunięcie rośliny/.test(el.value); }, null, { timeout: 8000 }).catch(() => {});
-    { const v = await pg.locator('[data-rx-field=reportText]').inputValue().catch(() => ''); check(/EN Usunięcie rośliny/.test(v) || v === '', 'pole „Raport (EN)” po polsku: ' + v); }
+    { const v = await wartosc(pg.locator('[data-rx-field=reportText]')).catch(() => ''); check(/EN Usunięcie rośliny/.test(v) || v === '', 'pole „Raport (EN)” po polsku: ' + v); }
     // ---------- 1. inne ekrany: nic ze zlecenia nie zostaje (Ustawienia) ----------
     await pg.locator('#rx-before img').first().click(); await ask().locator('img.rx-photo-full').waitFor(); await back(); await gone();
     let jobHash = await pg.evaluate(() => location.hash);
@@ -98,7 +99,7 @@ function fakePhone() {
     { const f = await pg.evaluate(() => window.__sent); check(/EN stara notatka głosowa/.test(f.details), 'wysłany raport: zgubione albo nieprzetłumaczone starsze nagranie: ' + f.details); }
     // świadomie wyczyszczony raport zostaje pusty w podglądzie (przegląd Codex #153)
     await back(); check(await onCard(), 'Wstecz z podglądu wysyłki wyszedł ze zlecenia');
-    await row('finish'); await pg.locator('[data-rx-field=reportText]').fill(''); await pg.waitForTimeout(300);
+    await row('finish'); await wpisz(pg.locator('[data-rx-field=reportText]'), ''); await pg.waitForTimeout(300);
     await pg.locator('[data-rx=sum-view]').click(); await pg.locator('.rr-page').waitFor();
     { const t = await pg.locator('.rr-page').innerText(); check(!/Poproszono|stara notatka/i.test(t), 'wyczyszczony raport wrócił z tekstem automatycznym: ' + t); }
   } catch (e) { fails.push('wyjątek: ' + String(e && e.stack || e).split('\n').filter((l, i) => i < 2 || /podglad-ui-check/.test(l)).join(' / ')); }

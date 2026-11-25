@@ -89,8 +89,8 @@
     return out;
   }
   function zloz(ramkaB, srodekB) {
-    var Z = g.PizZip; if (!Z) throw Error("REPORT_TEMPLATE_MISSING");
-    var rz = new Z(ramkaB), x = rz.file("word/document.xml").asText(), sx = new Z(srodekB).file("word/document.xml").asText();
+    var W = g.OESTWord; if (!W) throw Error("REPORT_TEMPLATE_MISSING"); // pliki Word tylko przez moduly/word
+    var rz = W.otworz(ramkaB), x = rz.file("word/document.xml").asText(), sx = W.otworz(srodekB).file("word/document.xml").asText();
     var body = sx.slice(sx.indexOf(">", sx.indexOf("<w:body")) + 1, sx.lastIndexOf("<w:sectPr"));
     if (/r:(embed|id)=/.test(body)) throw Error("REPORT_TEMPLATE_MIDDLE"); // środek bez zdjęć i odnośników (nie przenosimy relacji)
     var rs = wiersze(x, x.indexOf("<w:tbl")), ti = -1, wi = -1;
@@ -103,7 +103,7 @@
     if (!/<\/w:p>\s*$/.test(body) && !/<w:p\/>\s*$/.test(body)) body += "<w:p/>"; // komórka Worda musi kończyć się akapitem
     var nowy = tr.slice(0, tcA) + tr.slice(tcA, tcA + tc.indexOf(">") + 1) + pr + body + tr.slice(tcEnd);
     rz.file("word/document.xml", x.slice(0, mid[0].a) + nowy + x.slice(mid[mid.length - 1].b));
-    return rz.generate({ type: "uint8array" });
+    return W.zapisz(rz);
   }
   // test w node: wzór podany z zewnątrz (plik z dysku), bez fetch
   function ustaw(id, b) { opis(id); pliki[id] = new Uint8Array(b); }

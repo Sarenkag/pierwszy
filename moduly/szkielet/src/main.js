@@ -11,6 +11,7 @@
 //   OESTEkrany.rodzicDanych(przedrostek, fn)       rodzic liczony z danych ekranu: fn(trasa) → trasę rodzica albo null (wtedy rodzic z mapy ekrany.json)
 //   OESTEkrany.ponow()                             po „Opuść” w pytaniu o niezapisane zmiany: dokończ wyjście
 //   OESTEkrany.otworzStrone(url)                   przejście na inną stronę apki bez wpisu w historii (inspekcje)
+//   OESTEkrany.czyscAdres()                        usuwa jednorazowe dane z adresu (link #api=…&key=…), zostawia bieżący ekran
 //   OESTOkna.komunikat({ tytul, tresc, przyciski }) → Promise<rola>   okienko Ionic (ion-alert) dla starego kodu
 //   OESTEkrany.naGore() / .przewiniecie() / .przewin(y)   przewijanie treści ramy
 //   OESTRama.ustaw({ nad, tytul, akcje: [Node], jezyk: true|fn })   nagłówek bieżącego ekranu (domyślnie nazwa z ekrany.json)
@@ -39,7 +40,7 @@ import { zainstaluj as zainstalujCzesci } from './czesci.js';
 
 const w = window, d = document;
 // czyta stan.wersja: każdy tekst T(…) w szablonie sam zależy od zmiany języka (komponenty w slotach ion-card nie przerysowują się inaczej)
-const T = (pl, en) => (stan.wersja, w.OESTT ? w.OESTT(pl, en) : pl);
+const T = (pl, en) => (stan.wersja, w.OESTT(pl, en));
 
 // ---------- okienka: jeden stos w pamięci (bez wpisów historii) ----------
 const stos = [];
@@ -73,8 +74,9 @@ const OESTOkna = {
   // OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text, role }] }) → Promise<role>
   async komunikat(o) {
     const a = await alertController.create({ header: o.tytul || '', message: o.tresc || '', backdropDismiss: false, buttons: o.przyciski || [{ text: 'OK', role: 'ok' }] });
+    const zwolnij = OESTOkna.open(() => { a.dismiss(undefined, 'cancel'); }); // Wstecz telefonu i zmiana ekranu zamykają okienko (R4)
     await a.present();
-    return (await a.onDidDismiss()).role;
+    const r = (await a.onDidDismiss()).role; zwolnij(); return r;
   },
   // JEDNO okienko „Na pewno?” w całej apce (Grzegorz 04/11/2026) na ion-alert: stuknięcie obok i Wstecz = Anuluj.
   // OESTOkna.pytaj({ tytul, tresc, ok, anuluj, niebezpieczne, tylkoOk }) → Promise<true|false>
@@ -83,8 +85,9 @@ const OESTOkna = {
     const przyciski = o.tylkoOk ? [{ text: o.ok || 'OK', role: 'confirm' }]
       : [{ text: o.anuluj || T('Anuluj', 'Cancel'), role: 'cancel' }, { text: o.ok || T('Tak', 'Yes'), role: o.niebezpieczne ? 'destructive' : 'confirm' }];
     const a = await alertController.create({ header: o.tytul || undefined, message: o.tresc || undefined, buttons: przyciski });
+    const zwolnij = OESTOkna.open(() => { a.dismiss(undefined, 'cancel'); }); // Wstecz telefonu = Anuluj, zmiana ekranu zamyka (R4)
     await a.present();
-    const r = (await a.onDidDismiss()).role;
+    const r = (await a.onDidDismiss()).role; zwolnij();
     return o.tylkoOk ? true : r === 'confirm' || r === 'destructive';
   },
   // okienko z własną treścią (komponent Vue): OESTOkna.okno({ tytul, komponent, wlasciwosci, ok, anuluj, niebezpieczne, bezPrzyciskow, wyglad, pelny, karta }) → Promise<{ ok, dane }>
@@ -246,6 +249,8 @@ const OESTEkrany = {
   rodzicDanych(p, fn) { rodziceDanych.push({ p: czysta(p), fn }); },
   rodzic,
   otworzStrone(url) { location.replace(url); },
+  // usunięcie jednorazowych danych z adresu (np. link z Apps Script #api=…&key=…) – adres zmienia tylko szkielet (R25 „historia”)
+  czyscAdres() { try { history.replaceState(null, '', location.pathname + location.search + (stan.trasa ? '#' + stan.trasa : '')); } catch (e) {} },
   naGore() { if (scrollEl) scrollEl.scrollTop = 0; else w.scrollTo(0, 0); },
   przewiniecie() { return scrollEl ? scrollEl.scrollTop : (w.scrollY || 0); },
   przewin(y) { if (scrollEl) scrollEl.scrollTop = y || 0; else w.scrollTo(0, y || 0); }

@@ -77,7 +77,7 @@ const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwA
     await budynek('Wszystkie'); await szukaj('ats');
 
     // PL/EN: tekst się zmienia, wpisane szukanie zostaje, układ nie skacze
-    const jezyk = p.locator('ion-header ion-toolbar ion-buttons[slot=end] ion-button').last();
+    const jezyk = p.locator('ion-header [data-jezyk-ramy]').last();
     const box = () => p.evaluate(() => { const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)].join(','); }; return [r('#rptQ'), r('#rptB'), r('#rptList ion-card')].join('|'); });
     const plBox = await box();
     await jezyk.click(); await p.waitForTimeout(250);

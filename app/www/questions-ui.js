@@ -2,7 +2,7 @@
 // Moduł trzyma stan i reguły; ekran Pytania.vue (moduly/szkielet, Ionic + Vue) tylko wyświetla i woła akcje.
 // Po każdej zmianie stanu moduł wysyła zdarzenie oest:pytania-stan – ekran odczytuje dane od nowa.
 (function(w){
-  'use strict';const L=(pl,en)=>w.OESTT?w.OESTT(pl,en):pl,A=w.OESTQuestions,Q=w.OESTQuestionsCore,P=w.OEST_PPM,uid=()=>crypto.randomUUID();
+  'use strict';const L=(pl,en)=>w.OESTT(pl,en),A=w.OESTQuestions,Q=w.OESTQuestionsCore,P=w.OEST_PPM,uid=()=>crypto.randomUUID();
   const X0='_'; // wartość „puste” w polach wyboru (ion-select nie lubi pustego napisu)
   let s=null,tab='base',draft=null,profile=null,taskId='',dirty=false,busy=false,search='',filter='',proposal=null,preview=[],epoch=0,message='',report=null,loading=true,failure='',picked=null,replace=false,sectionEdit={id:'',name:'',parentId:''},scaleDraft=null,json='',zywy=false;
   function notify(){try{w.dispatchEvent(new CustomEvent('oest:pytania-stan'));}catch(e){}}

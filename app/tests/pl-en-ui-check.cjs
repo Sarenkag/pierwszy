@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
   fs.readFile(file, (e, b) => { if (e) { res.writeHead(404).end(); return; } res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : file.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8'); res.end(b); });
 });
 // Ekrany apki (index.html#…). Ustawienia: wszystkie strony z listy titles w settings-ui.js (test sprawdza, że lista jest pełna).
-const APP = ['home', 'ppm', 'cal', 'zdjecia', 'soon', 'settings',
+const APP = ['home', 'ppm', 'cal', 'zdjecia', 'soon', 'soon/powertrace', 'soon/keys', 'soon/handover', 'settings',
   'settings/profile', 'settings/contacts', 'settings/drive', 'settings/mail', 'settings/calendar', 'settings/reports', 'settings/sync', 'settings/account', 'settings/ai', 'settings/about', 'settings/vantify',
   'questions', 'reactive', 'reactive/new/blank', 'reactive/history', 'reactive/config', 'keys', 'keys/new', 'keys/find', 'handover', 'powertrace', 'powertrace/new'];
 // Strona inspekcji (inspekcje/index.html): ustawienia inspekcji, kolejka i formularz – po jednej inspekcji każdego rodzaju formularza z listy PPM.

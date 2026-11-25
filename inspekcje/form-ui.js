@@ -5,7 +5,9 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var form = $("v-form"); if (!form) return;
-  var top = form.querySelector("[data-ui~=top]"), bar = form.querySelector("[data-ui~=ppmbar]");
+  // pasek z tytułem może być już przeniesiony do nagłówka ramy (Rama.vue: ulozNaglowek) – szukamy go po tytule formularza, nie w #v-form
+  // (wejście prosto z karty PPM: formularz widoczny od pierwszej klatki, więc rama zabiera pasek, zanim ten plik się wczyta)
+  var top = ($("formTitle") || form).closest("[data-ui~=top]"), bar = top && top.querySelector("[data-ui~=ppmbar]"); if (!top) return;
 
   // ---- menu ⋮ (małe menu w rogu, bez przechodzenia na inny ekran) ----
   var kb = top.querySelector("[data-ui~=kebab]");

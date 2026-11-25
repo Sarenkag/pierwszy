@@ -41,15 +41,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "JM|historia|inspekcje/index.html",
-      "rule": "JM",
-      "detail": "inspekcje/index.html: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",
-      "maks": 1,
-      "punkt": "#5/#12",
-      "usuwa": "N1–N4",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "JM|historia|moduly/wyglad/wyglad.js",
       "rule": "JM",
       "detail": "moduly/wyglad/wyglad.js: zmiana historii przeglądarki (pushState/replaceState/back/go) albo nasłuch popstate – 1× poza właścicielem (index.html, moduly/wstecz/wstecz.js).",

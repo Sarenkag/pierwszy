@@ -93,7 +93,7 @@
   // zakres („Scope: visual inspection only…”) ma być i w PDF, i w Wordzie; wzór bez znacznika {zakres} dostaje go na końcu opisu
   function scopeForWord(tpl, d) {
     if (!d.zakres) return d;
-    var x = ""; try { x = new PizZip(tpl).file("word/document.xml").asText().replace(/<[^>]+>/g, ""); } catch (_) {}
+    var x = ""; try { x = OESTWord.tekst(tpl); } catch (_) {}
     return x.indexOf("zakres") >= 0 ? d : Object.assign({}, d, { details: (d.details ? d.details + "\n" : "") + d.zakres });
   }
   function english(d) {

@@ -28,9 +28,9 @@
 
   function cur() { return V || base; }
   function lang() { return (document.documentElement.lang || "pl").slice(0, 2) === "en" ? "en" : "pl"; }
-  function L(pl, en) { return lang() === "en" ? en : pl; }
-  function dmy(iso) { return iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : "–"; }
-  function hm(iso) { var d = new Date(iso); return isNaN(d) ? "" : ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+  function L(pl, en) { return w.OESTT(pl, en); }
+  function dmy(iso) { return iso ? w.OESTNarzedzia.dmmrrrr(iso) : "–"; }
+  function hm(iso) { var d = new Date(iso); return isNaN(d) ? "" : w.OESTNarzedzia.godzina(d); }
   function cards() { var P = w.OEST_PPM; return P ? P.tasks.map(function (t) { return [t.id, t.name]; }) : []; }
   function cardName(id) { var P = w.OEST_PPM, t = P && P.byId(id); return t ? t.name : id; }
   function count(j) { return Object.keys(j || {}).reduce(function (n, k) { return n + j[k].length; }, 0); }
@@ -44,7 +44,7 @@
   }
   function preview(text) { return previewRows(E.parseCsv(text)); }
   // Lista zleceń z Vantify (vantify-sync.js, bez eksportu): ta sama droga co plik (moduł eksport-vantify), data = dzień pobrania.
-  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + w.OESTNarzedzia.pad(d.getMonth() + 1) + "-" + w.OESTNarzedzia.pad(d.getDate()); }
   function apiPreview(r, day) {
     var rows = E.fromApi(r && r.jobs, day || today());
     if (!rows.some(function (x) { return x.jobType === "Planned"; })) throw new Error("VANTIFY_EMPTY_LIST");
@@ -174,7 +174,7 @@
   function udostepnij() {
     var z = zapis().z, S = plugin("ReportShare");
     if (!z) return;
-    var json = JSON.stringify(z, null, 1), d = new Date(), name = "vantify-zbadaj-" + ("0" + d.getDate()).slice(-2) + ("0" + (d.getMonth() + 1)).slice(-2) + d.getFullYear() + ".json";
+    var json = JSON.stringify(z, null, 1), d = new Date(), name = "vantify-zbadaj-" + w.OESTNarzedzia.pad(d.getDate()) + w.OESTNarzedzia.pad(d.getMonth() + 1) + d.getFullYear() + ".json";
     if (!S) { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click(); return; }
     var b64 = btoa(unescape(encodeURIComponent(json)));
     S.share({ subject: "Vantify – zapis Zbadaj", body: L("Zapis bez haseł, tokenów i danych osób.", "Log without passwords, tokens or personal data."), files: [{ name: name, data: b64 }] })

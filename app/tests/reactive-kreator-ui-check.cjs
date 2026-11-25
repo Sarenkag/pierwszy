@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Kreator opisu zlecenia Reactive (Grzegorz 18/11/2026 „Tak, ruszaj”, PROD-039): zastępuje „Typ” i „Co dokładnie”.
 // Uruchomienie: node app/tests/reactive-kreator-ui-check.cjs
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
@@ -47,52 +48,52 @@ function fakePhone() {
     fs.writeFileSync(photo, Buffer.from(png, 'base64'));
     // ---------- 1. Typ: 16 przycisków, domyślnie REPAIR ----------
     await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
-    await row('type'); check(await pg.locator('[data-rx=type]').count() === 16, 'Typ: nie 16 przycisków');
-    check(await pg.locator('[data-rx=type].on').getAttribute('data-value') === 'REPAIR', 'Typ: domyślnie nie REPAIR');
-    await pg.locator('[data-rx=type][data-value=HANG]').click(); await saved();
-    check(/HANG · Powieszenie/.test(await pg.locator('[data-rx=row][data-id=type]').textContent()), 'Typ: brak HANG na karcie');
+    await pg.locator('[data-rx-field=jobType]').waitFor(); check(await pg.locator('[data-rx-field=jobType] ion-select-option').count() === 16, 'Typ: nie 16 przycisków');
+    check(await wartosc(pg.locator('[data-rx-field=jobType]')) === 'REPAIR', 'Typ: domyślnie nie REPAIR');
+    await wybierz(pg.locator('[data-rx-field=jobType]'), 'HANG'); await saved();
+    check(/HANG · Powieszenie/.test(await pg.locator('[data-rx-field=jobType]').textContent()), 'Typ: brak HANG na karcie');
     // ---------- 2. Gdzie: budynek, piętro, nr mieszkania ----------
-    await row('where'); await pg.locator('[data-rx=building][data-value="Tower B"]').click(); await pg.locator('[data-rx-field=level]').selectOption('5');
-    await pg.locator('[data-rx-field=flat]').fill('504'); await pg.locator('[data-rx-field=room]').fill('Office'); await saved();
+    await row('where'); await wybierz(pg.locator('[data-rx-select=building]'), 'Tower B'); await wybierz(pg.locator('[data-rx-field=level]'), '5');
+    await wpisz(pg.locator('[data-rx-field=flat]'), '504'); await wpisz(pg.locator('[data-rx-field=room]'), 'Office'); await saved();
     // ---------- 3. Co: okno grup → Meble → checkboxy, „＋ Dodaj”, Wstecz o jeden poziom ----------
-    await row('co'); await pg.locator('[data-rx=kr-open]').click(); await pg.locator('[data-rx=kr-group]').first().waitFor();
-    check(await pg.locator('[data-rx=kr-group]').count() === 15, 'Co: nie 15 grup');
+    await pg.locator('[data-rx-field=co]').waitFor();
+    check(await pg.locator('[data-rx-field=co] ion-select-option').count() === 15, 'Co: nie 15 grup');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'kreator-grupy.png') });
-    await pg.locator('[data-rx=kr-group][data-id=furniture]').click(); await pg.locator('[data-rx=kr-item]').first().waitFor();
+    await wybierz(pg.locator('[data-rx-field=co]'), 'furniture'); await pg.locator('[data-rx=kr-item]').first().waitFor();
     check(await pg.locator('[data-rx=kr-item]').first().getAttribute('data-id') === 'coat hooks', 'Meble: haczyki nie na górze');
     await pg.locator('[data-rx=kr-item][data-id="coat hooks"]').click(); await pg.locator('[data-rx=kr-item][data-id=mirror]').click();
     await pg.locator('[data-rx=kr-item][data-id=mirror]').click(); // odznaczenie
-    await pg.locator('[data-rx=kr-add]').click(); await pg.locator('.rx-kr-new').fill('key cabinet'); await pg.locator('.rx-kr-pl').fill('szafka na klucze'); await ask().locator('[data-a=ok]').click(); await gone();
-    check(await pg.locator('[data-rx=kr-item][data-id="key cabinet"]:checked').count() === 1, '＋ Dodaj: nowa pozycja nie zaznaczona');
+    await pg.locator('[data-rx=kr-add]').click(); await wpisz(pg.locator('.oest-rx-kr-new'), 'key cabinet'); await wpisz(pg.locator('.oest-rx-kr-pl'), 'szafka na klucze'); await ask().locator('[data-a=ok]').click(); await gone();
+    check(await pg.locator('[data-rx=kr-item][data-id="key cabinet"][aria-checked=true]').count() === 1, '＋ Dodaj: nowa pozycja nie zaznaczona');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'kreator-pozycje.png') });
     await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); await pg.locator('[data-rx=kr-group]').first().waitFor();
     check(await pg.locator('[data-rx=kr-group][data-id=furniture]').textContent().then(t => /✓/.test(t)), 'Wstecz: grupy bez ✓ przy Meblach');
     await pg.locator('[data-rx=kr-done]').click(); await pg.locator('[data-rx-field=title]').waitFor();
     // ---------- 4. Na czym + opis EN ----------
-    await pg.locator('[data-rx=kr-on][data-value=door]').click(); await saved();
+    await wybierz(pg.locator('[data-rx-select=kr-on]'), 'door'); await saved();
     { const d = (await drafts())[0]; check(JSON.stringify(d.kreator.items) === '["coat hooks","key cabinet"]' && d.kreator.on === 'door' && d.flat === '504', 'kreator: złe wybory ' + JSON.stringify(d.kreator));
       check(d.title === 'Hang coat hooks and key cabinet on door', 'nazwa z kreatora: ' + d.title);
       check(d.problem === 'Coat hooks fixed to the door, evenly spaced and checked secure. Key cabinet hung on the door, level and checked secure.', 'opis EN: ' + d.problem); }
     check(await pg.locator('[data-rx=kr-weight]').count() === 0, 'waga bez ciężkich pozycji');
     // ---------- 5. nauka: drugi raz ta pozycja na górze ----------
-    await pg.locator('[data-rx=kr-open]').first().click(); await pg.locator('[data-rx=kr-group][data-id=furniture]').click(); await pg.locator('[data-rx=kr-item]').first().waitFor();
+    await wybierz(pg.locator('[data-rx-field=co]'), 'furniture'); await pg.locator('[data-rx=kr-item]').first().waitFor();
     { const ids = await pg.locator('[data-rx=kr-item]').evaluateAll(a => a.map(x => x.dataset.id)); check(ids[0] === 'coat hooks' && ids[1] === 'key cabinet', 'nauka: kolejność ' + ids.slice(0, 3)); }
     // ---------- 6. ciężkie: dwie wagi, bez „alone” ----------
     await pg.locator('[data-rx=kr-groups]').click(); await pg.locator('[data-rx=kr-group][data-id=heavy]').click(); await pg.locator('[data-rx=kr-item][data-id="stone block"]').click(); await pg.locator('[data-rx=kr-done]').click();
     await pg.locator('[data-rx=kr-weight]').first().waitFor();
     check(await pg.locator('[data-rx=kr-weight]').count() === 2, 'ciężkie: nie dwie wagi');
-    await pg.locator('[data-rx=kr-weight][data-value=veryHeavy]').click(); await saved();
+    await wybierz(pg.locator('[data-rx-select=kr-weight]'), 'veryHeavy'); await saved();
     { const d = (await drafts())[0]; check(/Stone block \(approx\. over 100 kg\) hung/.test(d.problem) && !/alone|trolley/i.test(d.problem), 'ciężkie: opis ' + d.problem); }
     // ---------- 7. Open Vantify: Summary i opis z kreatora ----------
     await pg.locator('[data-rx=vt-open]').click(); await pg.locator('.rx-vt-sum').waitFor();
-    { const sum = await pg.locator('.rx-vt-sum').inputValue(), desc = await pg.locator('.rx-vt-desc').inputValue();
+    { const sum = await wartosc(pg.locator('.rx-vt-sum')), desc = await wartosc(pg.locator('.rx-vt-desc'));
       check(sum === 'Hang coat hooks, key cabinet and stone block (approx. over 100 kg) on door – Flat 504, EN Office, Level 5, Tower B', 'Summary z kreatora: ' + sum);
       check(/^Hang coat hooks, key cabinet and stone block/.test(desc) && /Location: Tower B, Level 5, Flat 504, EN Office/.test(desc), 'Description z kreatora: ' + desc); }
     await ask().locator('[data-a=no]').click(); await gone();
     // ---------- 7b. zmiana budynku na Premises: nr mieszkania dalej widoczny i do usunięcia (przegląd Codex #147) ----------
-    await row('where'); await pg.locator('[data-rx=building][data-value="Premises"]').click(); await pg.locator('[data-rx-field=flat]').waitFor();
-    check(await pg.locator('[data-rx-field=flat]').inputValue() === '504', 'Premises: nr mieszkania ukryty');
-    await pg.locator('[data-rx-field=flat]').fill(''); await saved();
+    await row('where'); await wybierz(pg.locator('[data-rx-select=building]'), 'Premises'); await pg.locator('[data-rx-field=flat]').waitFor();
+    check(await wartosc(pg.locator('[data-rx-field=flat]')) === '504', 'Premises: nr mieszkania ukryty');
+    await wpisz(pg.locator('[data-rx-field=flat]'), ''); await saved();
     { const d = (await drafts())[0]; check(!d.flat, 'nr mieszkania nie usunięty'); }
     // ---------- 8. EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.reload(); await pg.locator('[data-rx-field=title]').waitFor();

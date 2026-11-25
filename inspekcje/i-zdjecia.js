@@ -114,8 +114,7 @@
     function qOf(id) { for (var i = 0; i < cur.type.checks.length; i++) { var c = cur.type.checks[i]; if (c.key === id || (c.reasons || []).some(function (r) { return r.id === id; })) return i; } return -1; }
     $("photoInfo").textContent = window.OESTT("Sprawdzam zdjęcie…", "Checking the photo…");
     bitmap(ph.blob).then(function (img) {
-      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").drawImage(img, 0, 0); if (img.close) img.close();
-      return window.INSP_ANALYZE(c, cur.type.id);
+      return window.INSP_ANALYZE(Zd.plotno(img, 0), cur.type.id); // pełny rozmiar, płótno z modułu zdjęć
     }).then(function (list) {
       if (cur.code !== code) return;
       ph.sugs = (list || []).filter(function (sg) { return ids.indexOf(sg.fault) >= 0 && (ask ? states[qOf(sg.fault)] !== "fail" : !faultsOn[sg.fault]); })
@@ -152,11 +151,6 @@
     renderPhotos(); renderSugs();
   });
 
-  function loadImage(file) {
-    function viaImg() { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = URL.createObjectURL(file); }); }
-    if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function () { return createImageBitmap(file); }).catch(viaImg);
-    return viaImg();
-  }
   // kopia do folderu OEST (moduł zdjęć: jakość z ustawień, limit, wysyłka na Dysk); błąd kopii nie blokuje inspekcji
   // kontekst zapamiętany przy wyborze zdjęć: przejście do innego urządzenia w trakcie nie zmienia opisu kopii
   function copyCtx() {

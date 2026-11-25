@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Weekly Spa Checks bez formularza (Grzegorz 13/11/2026): zamiast zdjęcia ręcznie wypełnionej kartki – lista potwierdzeń
 // (Yes/No/N/A + 📷 + 📝, domyślnie Yes) i zdjęcia z plant roomów Spa. „Spa” = spa pool + plunge pool.
 // Przycisk „Formularz” zostaje na zaś, ale zdjęcie formularza NIE jest wymagane. Raport po angielsku, basic form Smart, Word = PDF.
@@ -39,8 +40,8 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => document.getElementById('flOn') && document.getElementById('toQueue')); await pg.waitForTimeout(1500);
 
     // 1. ekran: lista potwierdzeń włączona od razu, 9 punktów, wszystkie Yes, formularz niewymagany
-    const s0 = await pg.evaluate(() => ({ on: document.getElementById('flOn').checked, rows: [...document.querySelectorAll('#flList .fl-row .txt')].map(e => e.textContent),
-      yes: document.querySelectorAll('#flList button[data-s="yes"].on').length, lbl: document.getElementById('flOnL').textContent, hint: document.getElementById('flHint').textContent,
+    const s0 = await pg.evaluate(() => ({ on: document.getElementById('flOn').checked, rows: [...document.querySelectorAll('#flList [data-ui~=fl-line] [data-ui~=txt]')].map(e => e.textContent),
+      yes: [...document.querySelectorAll('#flList ion-select[data-fl]')].filter(e => e.value === 'yes').length, lbl: document.getElementById('flOnL').textContent, hint: document.getElementById('flHint').textContent,
       send: document.getElementById('toQueue').textContent.trim(), shCam: !!document.getElementById('shCamIn') }));
     await shot('1-start');
     check(s0.on, 'lista potwierdzeń włączona od razu');
@@ -53,7 +54,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     // 2. dwa zdjęcia z plant roomu → Wyślij → PDF + Word
     const jpeg = (w, h, kolor) => pg.evaluate(([w, h, kolor]) => new Promise(res => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = kolor; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.fillRect(w / 3, h / 3, w / 3, h / 3);
       c.toBlob(b => { const fr = new FileReader(); fr.onload = () => res(fr.result.split(',')[1]); fr.readAsDataURL(b); }, 'image/jpeg', 0.8); }), [w, h, kolor]).then(b => Buffer.from(b, 'base64'));
-    for (const [i, k] of [['0', '#3a7'], ['1', '#37a']]) { await pg.setInputFiles('#camIn', { name: 'plant' + i + '.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1600, 1200, k) }); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length === n, +i + 1, { timeout: 15000 }); }
+    for (const [i, k] of [['0', '#3a7'], ['1', '#37a']]) { await zdjecia(pg, '#camIn', { name: 'plant' + i + '.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1600, 1200, k) }); await pg.waitForFunction(n => document.querySelectorAll('#photos img').length === n, +i + 1, { timeout: 15000 }); }
     await pg.waitForTimeout(800); await shot('2-zdjecia');
     await pg.click('#toQueue');
     const q1 = await waitQueue(1);
@@ -78,8 +79,8 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     const pg2 = await ctx2.newPage(); pg2.on('pageerror', e => errors.push(e.message));
     await pg2.goto(B + '/index.html#home'); await pg2.waitForFunction(() => window.OESTSettings);
     await pg2.evaluate(() => OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; return s; }));
-    await pg2.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg2.waitForFunction(() => document.querySelector('#flList button[data-fl="7"][data-s="no"]')); await pg2.waitForTimeout(1000);
-    await pg2.click('#flList button[data-fl="7"][data-s="no"]'); await pg2.waitForTimeout(300);
+    await pg2.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg2.locator('#flList ion-select[data-fl="7"]').waitFor(); await pg2.waitForTimeout(1000);
+    await wybierz(pg2, '#flList ion-select[data-fl="7"]', 'no'); await pg2.waitForTimeout(300);
     await pg2.click('#toQueue');
     let W2 = '';
     for (let i = 0; i < 150 && !W2; i++) { const q = await pg2.evaluate(queuedFn), f2 = q ? q.files.find(f => f.name.endsWith('.docx')) : null; W2 = f2 ? docxText(Buffer.from(f2.data, 'base64')) : ''; if (!W2) await pg2.waitForTimeout(200); }

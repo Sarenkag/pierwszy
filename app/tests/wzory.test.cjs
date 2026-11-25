@@ -70,7 +70,7 @@ test('każda inspekcja z własnym wzorem (ppm.js „wzor”) wskazuje wzór z mo
 
 // RAMKA + ŚRODEK (Grzegorz 21/11/2026 17:33: „jak zmienisz w jednym, wszystko się zmieni”): środek wkładany w AKTUALNĄ ramkę basic.docx
 test('ramka + środek: bajty() wkłada plik środka w basic.docx; ramka bez zmian, kopii ramki w module nie ma', () => {
-  globalThis.PizZip = PizZip;
+  globalThis.PizZip = PizZip; globalThis.OESTWord = require('../../moduly/word/word.js'); globalThis.OESTWord.biblioteki({ PizZip }); // pliki Word przez moduly/word
   const B = fs.readFileSync(path.join(DIR, 'basic.docx')); W.ustaw('basic', B);
   const xml = b => new PizZip(b).file('word/document.xml').asText();
   const wiersze = x => { const t = x.slice(x.indexOf('<w:tbl>'), x.indexOf('</w:tbl>') + 8); return t.split('</w:tr>').slice(0, -1).map(r => r.replace(/<[^>]+>/g, '')); };

@@ -52,7 +52,12 @@
   //   ask({ title, node, bare: true, cls: "ki-info" }) → samo okienko bez przycisków (np. informacje o inspekcji, 07/11/2026):
   //        stuknięcie gdziekolwiek (także w okienko) albo Wstecz zamyka; cls = dodatkowa klasa do własnego wyglądu treści
   function ask(o) {
-    o = o || {}; css();
+    o = o || {};
+    // JEDNO okienko w apce (Grzegorz 25/11/2026): pytanie i komunikat z tekstem rysuje szkielet Ionic (OESTOkna.pytaj, ion-alert).
+    // Własne okienko poniżej zostaje tylko dla okienek z własną treścią (node), do czasu przeniesienia ich na OESTOkna.okno.
+    if (!o.node && w.OESTOkna && w.OESTOkna.pytaj) return w.OESTOkna.pytaj({ tytul: o.title || "", tresc: o.text || "", tylkoOk: !!o.alert, niebezpieczne: !!o.danger,
+      ok: o.ok || (o.alert ? "OK" : w.OESTT("Połącz ponownie", "Reconnect")), anuluj: o.cancel || w.OESTT("Anuluj", "Cancel") });
+    css();
     return new Promise(function (done) {
       var box = document.createElement("div"); box.className = "oest-ask" + (o.cls ? " " + o.cls : ""); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
       var okTxt = o.ok || (o.alert ? "OK" : w.OESTT("Połącz ponownie", "Reconnect"));

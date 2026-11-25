@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Odzyskana inspekcja (etap 2c, Grzegorz 08/11/2026) – scenariusz na prawdziwych stronach apki (app/www po copy-web):
 // inspekcja ATS z odpowiedzią NIE i zdjęciem → raport w archiwum (z zapisem inspekcji) → Ustawienia → Raporty →
 // podgląd → „Odzyskaj do edycji” → ta sama inspekcja z fioletową pigułką „Odzyskana”, bez Zakończ i bez terminu,
@@ -37,15 +38,15 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     const waitQ = async n => { for (let i = 0; i < 150; i++) { if (await qLen() > n) return; await pg.waitForTimeout(200); } throw new Error('raport nie trafił do kolejki w 30 s'); };
     const ppmLs = () => pg.evaluate(() => JSON.stringify(Object.keys(localStorage).filter(k => /^oest\.ppm\./.test(k)).sort().map(k => [k, localStorage.getItem(k)])));
     const recs = () => pg.evaluate(() => window.OESTRaporty.list());
-    const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length }));
+    const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('[data-ui~=ck-row][data-state=fail]').length }));
     const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
 
     // 1. zwykła inspekcja ATS: zdjęcie + jedna odpowiedź NIE (szkic zapisuje się sam), potem Wyślij (bez Gmaila raport czeka w kolejce)
     await idz(pg, 'home'); await pg.waitForTimeout(800);
     await pg.evaluate(() => OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; return s; }));
     await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForTimeout(2500);
-    await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(800);
-    await pg.locator('.ck-row button[data-s="fail"]').first().click(); await pg.waitForTimeout(1200);
+    await zdjecia(pg, '#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(800);
+    await wybierz(pg.locator('[data-ui~=ck-row] ion-select').first(), 'fail'); await pg.waitForTimeout(1200);
     const all0 = await kv(), dk = Object.keys(all0).find(k => k.startsWith('draft_') && all0[k] && all0[k].v === 1);
     check(!!dk, 'zwykły szkic inspekcji zapisany');
     const draft = all0[dk];
@@ -97,8 +98,8 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     check(await ppmLs() === lsBefore, 'otwarcie odzyskanej nie zmienia listy PPM');
 
     // 5. poprawka + Updated → Update (bez maila)
-    await pg.locator('.ck-row.fail button[data-s="ok"]').first().click(); await pg.waitForTimeout(500);
-    await pg.locator('#updOn').check(); await pg.waitForTimeout(400);
+    await wybierz(pg.locator('[data-ui~=ck-row][data-state=fail] ion-select').first(), 'ok'); await pg.waitForTimeout(500);
+    await ptaszek(pg.locator('#updOn')); check(await pg.locator('#updOn').evaluate(e => e.checked), 'Updated pozostaje zaznaczone'); await pg.waitForTimeout(400);
     const qBefore = await qLen();
     await pg.locator('#recUpdate').click();
     await pg.waitForFunction(() => /Zapisano w telefonie|Nie zapisano/.test(document.getElementById('formHint').textContent), null, { timeout: 30000 });
@@ -141,7 +142,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
     // ekran Ustawień wjeżdża animacją: mierzymy po jej końcu (dwa takie same pomiary pod rząd)
     const still = async () => { let a = await pos(); for (let i = 0; i < 30; i++) { await pg.waitForTimeout(120); const b = await pos(); if (b === a) return b; a = b; } return a; };
     const p1 = await still();
-    const jezyk = pg.locator('ion-header ion-toolbar ion-buttons[slot=end] ion-button').last();
+    const jezyk = pg.locator('ion-header [data-jezyk-ramy]').last();
     await jezyk.click(); await pg.waitForTimeout(300);
     check((await pg.locator('#rptRec ion-badge.oest-pigulka').textContent()).trim() === 'Recovered' && /Recovered inspections/.test(await pg.locator('#rptRec > ion-note').textContent()), 'EN: Recovered');
     const p2 = await still();
@@ -211,7 +212,7 @@ const pad = n => String(n).padStart(2, '0'), d0 = new Date(), TODAY = pad(d0.get
       await pg.evaluate(({ AOV, failSave }) => { const n = JSON.parse(localStorage.getItem('oest.ppm.needs') || '{}'); n[AOV] = Object.assign({}, n[AOV] || {}, { xw: false, xp: true }); localStorage.setItem('oest.ppm.needs', JSON.stringify(n));
         if (failSave) window.OESTZdjecia.save = () => Promise.reject(new Error('brak miejsca')); }, { AOV, failSave });
       const n0 = await qLen();
-      await pg.setInputFiles('#shGalIn', { name: 'f.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500); // zdjęcie kartki przyciskiem „Formularz”
+      await zdjecia(pg, '#shGalIn', { name: 'f.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500); // zdjęcie kartki przyciskiem „Formularz”
       await pg.locator('#toQueue').click(); await waitQ(n0);
       return pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result.sort((a, b) => b.created - a.created)[0]); }; }; }));
     };

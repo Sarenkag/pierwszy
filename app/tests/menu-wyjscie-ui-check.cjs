@@ -38,11 +38,11 @@ let STEP = 'start';
 
     STEP = '1 ‹ czeka na wysyłkę w tle';
     await page.goto(base + '/inspekcje/index.html');
-    await page.locator('#appMenu').waitFor({ state: 'visible' });
+    await page.locator('#oest-szkielet ion-header ion-back-button').waitFor({ state: 'visible' });
     const href = await page.locator('#appMenu').getAttribute('href');
     // wysyłka Gmailem w tle (moduly/wysylka) jeszcze trwa: wyjście ma poczekać, aż skończy (leave → whenIdle), nie przerwać jej
     await page.evaluate(() => { window.__idle = null; window.OESTSender.active = () => true; window.OESTSender.whenIdle = () => new Promise(r => { window.__idle = r; }); });
-    await page.click('#appMenu');
+    await page.locator('#oest-szkielet ion-header ion-back-button').click();
     await page.waitForTimeout(1500);
     assert.ok(/\/inspekcje\//.test(page.url()), 'w trakcie wysyłki strona inspekcji zostaje, jest ' + page.url());
     assert.equal(await page.evaluate(() => typeof window.__idle), 'function', '‹ czeka na koniec wysyłki (whenIdle)');

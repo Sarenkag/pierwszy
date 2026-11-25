@@ -6,7 +6,7 @@
   var adapters = {};
   function configure(a) { Object.assign(adapters, a || {}); }
   var doc = root.document, G = function () { return adapters.google ? adapters.google() : null; };
-  var opts = { ustawienia: null, onChange: null, onQueue: null, onShare: null, queueUrl: "inspekcje/index.html#queue" };
+  var opts = { ustawienia: null, onChange: null, onQueue: null, queueUrl: "inspekcje/index.html#queue" };
   var sending = false, pos = null, flash = "", flashT = null, skipWifi = false, open = false, idle = [], items = [], loginErr = "", lock = null;
 
   // ---------- baza „inspekcje” (IndexedDB): JEDYNY właściciel w apce (karta K10, audyt 19/11/2026 nr 21–22, D4) ----------
@@ -245,7 +245,6 @@
     else if (a === "data") { skipWifi = true; run({ login: true, anyNet: true }); }
     else if (a === "send") run({ login: true });
     else if (a === "retry") retry();
-    else if (a === "share" && opts.onShare) opts.onShare();
     else if (a === "queue") { open = false; if (opts.onQueue) opts.onQueue(); else whenIdle().then(function () { root.location.href = opts.queueUrl; }); }
     render();
   }
@@ -273,7 +272,7 @@
     else if (!n) { cls = "ok"; txt = root.OESTT("Wszystko wysłane", "All sent"); more = [qb]; }
     else if (err || loginErr) {
       cls = "err"; txt = root.OESTT("Nie wysłano: ", "Not sent: ") + (err ? err.err : loginErr);
-      more = [b("retry", root.OESTT("Ponów", "Retry"), true)].concat(opts.onShare ? [b("share", root.OESTT("Wyślij przez Udostępnij", "Send via Share"))] : [], [qb]);
+      more = [b("retry", root.OESTT("Ponów", "Retry"), true)].concat([qb]); // jedna droga wysyłki: bez „Udostępnij” (Grzegorz 25/11/2026)
     } else if (!online()) { cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · czekam na sieć", " · waiting for network"); opis = root.OESTT("Wyślę sam, gdy wróci zasięg (apka musi być otwarta).", "I will send it when the signal returns (the app must be open)."); more = [qb]; }
     else if (wifiOnly() && !onWifi() && !skipWifi) {
       cls = "wait"; txt = root.OESTT("W kolejce: ", "Queued: ") + n + root.OESTT(" · czekam na Wi‑Fi", " · waiting for Wi‑Fi");

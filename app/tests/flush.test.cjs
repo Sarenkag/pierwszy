@@ -19,7 +19,7 @@ test('Date odznaczone: kolumna daty pusta, Yes zostaje',()=>{const f=P.forms.flu
 // 21/11/2026: basic form Flushing ze strefami (moduly/wzory: ramka basic.docx + flush-*-srodek.docx) – Grzegorz: grupy stref, TB bez apartamentów, stałe zdanie
 const Docxtemplater=require('docxtemplater'),fs2=require('node:fs'),path2=require('node:path');
 // wzór basic Flushing = ramka basic.docx + plik środka, składane przez moduł Wzory (Grzegorz 21/11/2026 17:33) – test bierze bajty z modułu jak apka
-const WZ=path2.join(__dirname,'../../moduly/wzory');globalThis.PizZip=PizZip;if(globalThis.window)globalThis.window.PizZip=PizZip;require(path2.join(WZ,'wzory.js'));const OW=(globalThis.window||globalThis).OESTWzory;
+const WZ=path2.join(__dirname,'../../moduly/wzory');globalThis.PizZip=PizZip;if(globalThis.window)globalThis.window.PizZip=PizZip;{const OWd=require('../../moduly/word/word.js');OWd.biblioteki({PizZip,Docxtemplater});globalThis.OESTWord=OWd;if(globalThis.window)globalThis.window.OESTWord=OWd;}require(path2.join(WZ,'wzory.js'));const OW=(globalThis.window||globalThis).OESTWzory;
 for(const w of OW.lista())OW.ustaw(w.id,fs2.readFileSync(path2.join(WZ,w.plik)));
 const ALL='All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
 const PART='Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';

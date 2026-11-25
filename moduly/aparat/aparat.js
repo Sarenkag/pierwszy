@@ -79,7 +79,7 @@
      akcja('plotno', canvas, scena) · ('narzedzie', k) · ('kolor', hex) · ('grubosc', v) · ('cofnij') · ('anuluj') · ('zapisz'); zamknij() = Wstecz */
   function editor(blob, opts) {
     var max = opts && opts.max > 0 ? opts.max : 0;
-    return createImageBitmap(blob, { imageOrientation: 'from-image' }).catch(function () { return createImageBitmap(blob); }).then(function (bmp) {
+    return root.OESTZdjecia.wczytaj(blob).then(function (bmp) { // wczytanie zdjęcia: moduly/zdjecia
       return new Promise(function (done) {
         var W = bmp.width, H = bmp.height, unit = Math.max(W, H) / 1000;
         var st = { tool: 'arrow', color: COLORS[0], width: WIDTHS[1].v }, shapes = [], crop = null, cur = null, zapisuje = false, koniec = false;

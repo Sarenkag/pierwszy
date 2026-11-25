@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Klawisz Wstecz telefonu (moduly/wstecz, Grzegorz 08/11/2026): „back powinien cofać max o poziom wyżej lub spuszczać dane okienko”.
 // Wcześniej Android cofał się po całej historii przeglądania (nawet 15 naciśnięć do ekranu głównego), a po wyjściu
 // z inspekcji Wstecz otwierał ją z powrotem. Scenariusz Grzegorza na prawdziwych stronach apki (app/www po copy-web):
@@ -66,7 +67,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     for (const id of ids) {
       await pg.click('ion-card.oest-klocek[data-id="' + id + '"]'); await wait(3000);
       s = await where(); check(s.page === 'inspekcja', '1: klocek ' + id + ' otwiera inspekcję, jest ' + s.page + s.hash);
-      await pg.locator('.top .back:visible').first().click(); await wait(2500);
+      await pg.locator('ion-header [data-ui~=back]:visible').first().click(); await wait(2500);
       s = await where(); check(s.page === 'apka' && s.view === 'v-ppm', '1: strzałka ‹ z inspekcji ' + id + ' wraca na listę, jest ' + s.page + ' ' + s.view);
     }
     // dawniej: Wstecz z listy otwierał z powrotem ostatnią inspekcję
@@ -121,7 +122,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     // 5. raport w archiwum (jak po wysyłce) z zapisem inspekcji – potrzebny do podglądu i odzyskanej inspekcji
     await pg.evaluate(() => OESTSettings.update(x => { x.profile.companyEmail = 'work@firma.com'; return x; }));
     await pg.goto(B + '/inspekcje/index.html#ppm=EFA-INS-014'); await wait(2500);
-    await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await wait(800);
+    await zdjecia(pg, '#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await wait(800);
     await pg.locator('#toQueue').click(); await wait(2500);
     const q = await pg.evaluate(() => new Promise(res => { const rq = indexedDB.open('inspekcje', 1); rq.onsuccess = () => { const g = rq.result.transaction('queue', 'readonly').objectStore('queue').getAll(); g.onsuccess = () => { rq.result.close(); res(g.result[0]); }; }; }));
     check(!!(q && q.snap), '5: raport inspekcji w kolejce z zapisem inspekcji');
@@ -151,7 +152,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); if (process
     check(tiles.length >= 7, '7: cele ekranu głównego: ' + tiles.join(','));
     for (const t of tiles) { await pg.click(HOME + ' [data-nav="' + t + '"]').catch(() => {}); await wait(1200); await toHome('7: ekran ' + t, 3); }
     // 8. Strzałka ‹ u góry = zawsze poziom wyżej, nigdy po historii (Grzegorz 18/11/2026: krążyła Ustawienia ↔ Vantify, „na każdej stronie”)
-    const arrow = async () => { await pg.locator('ion-back-button[data-nav="up"]:visible, .view:not([hidden]) .top .back:visible').first().click(); await wait(900); return where(); };
+    const arrow = async () => { await pg.locator('ion-back-button[data-nav="up"]:visible, ion-header [data-ui~=back]:visible').first().click(); await wait(900); return where(); };
     await pg.evaluate(() => { history.replaceState({ n: 0 }, '', '#home'); }); await pg.reload(); await wait(1500);
     await pg.click(HOME + ' [data-nav="settings"]'); await wait(1200);
     await pg.evaluate(() => { OESTEkrany.go('#settings/vantify'); }); await wait(1200); // wejście z okienka „Nowe terminy → Pokaż” (zmiana adresu, bez wpisu n)

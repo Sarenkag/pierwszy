@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // ZASADA (Grzegorz 04/11/2026, potwierdzone 08/11/2026; PROD-023, QG-020/G3): każdy raport idzie w DWÓCH IDENTYCZNYCH wersjach – Word i PDF.
 // raport-ui-check sprawdza, że oba pliki powstają i się otwierają; ten test sprawdza, że mają TĘ SAMĄ TREŚĆ:
 //  - te same słowa w Wordzie i w PDF (bez względu na to, gdzie łamie się linia), z tym samym stanem kratek ☑ / ☒
@@ -86,25 +87,25 @@ const krotko = r => Object.entries(r).filter(([, a]) => a.length).map(([k, a]) =
         if (!(await pg.locator('#toQueue').isVisible().catch(() => false))) return zle('brak formularza z przyciskiem Wyślij');
         const vis = s => pg.locator(s).first().isVisible().catch(() => false), idle = () => pg.waitForLoadState('networkidle');
         // ⚙ wysyłki: „nasz raport” (jak raport-ui-check), żeby Flushing dał formularz Word
-        if (await vis('#sendCfg')) { await pg.click('#sendCfg'); await pg.locator('.oest-ask [data-a="ok"]').waitFor(); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) await q.check(); await pg.click('.oest-ask [data-a="ok"]'); await pg.locator('.oest-ask').waitFor({ state: 'detached' }).catch(() => {}); }
+        if (await vis('#sendCfg')) { await pg.click('#sendCfg'); await pg.locator('.oest-ask [data-a="ok"]').waitFor(); const q = pg.locator('[data-sn="q"]:not([disabled])'); if (await q.count()) { await ptaszek(q); const assert = require('node:assert/strict'); assert.equal(await q.evaluate(e => e.checked), true, 'Opcja raportu zaznaczona'); } await pg.click('.oest-ask [data-a="ok"]'); await pg.locator('.oest-ask').waitFor({ state: 'detached' }).catch(() => {}); }
         if (await vis('#flWeek [data-w="1"]')) await pg.click('#flWeek [data-w="1"]');
-        const temps = await pg.locator('#tempList input[data-t]').count();
-        for (let i = 0; i < temps; i++) await pg.locator('#tempList input[data-t="' + i + '"]').fill(String(40 + i / 10));
+        const temps = await pg.locator('#tempList ion-input[data-t]').count();
+        for (let i = 0; i < temps; i++) await wpisz(pg.locator('#tempList ion-input[data-t="' + i + '"]'), String(40 + i / 10));
         const zdj = [];
         if (await pg.locator('[data-flcam]').count()) { const f = await jpeg(pg, FOTO.kran, '#2a6'); const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.click('[data-flcam="0"]')]); await fc.setFiles(f); zdj.push('kran'); }
         if (await vis('#allOk')) await pg.click('#allOk');
         if (await vis('#ck button[data-s="fail"]')) { await pg.locator('#ck button[data-s="fail"]').nth(1).click(); if (await vis('#ck button[data-r]')) await pg.locator('#ck button[data-r]').first().click(); }
         if (await vis('#faults button[data-f]')) await pg.locator('#faults button[data-f]').first().click();
-        if (await vis('#galIn')) { await pg.setInputFiles('#galIn', await jpeg(pg, FOTO.galeria, '#36c')); zdj.push('galeria'); }
+        if (await vis('#galIn')) { await zdjecia(pg, '#galIn', await jpeg(pg, FOTO.galeria, '#36c')); zdj.push('galeria'); }
         // zdjęcie kartki przyciskiem „Formularz” (w inspekcjach z kartki to jedyny sposób dodania formularza – Grzegorz 12/11/2026)
         const kartkaIn = (await vis('#shGalIn')) ? '#shGalIn' : (await vis('label:has(#shCamIn)')) ? '#shCamIn' : '';
-        if (kartkaIn) { await pg.setInputFiles(kartkaIn, await jpeg(pg, FOTO.kartka, '#c63')); zdj.push('kartka'); }
+        if (kartkaIn) { await zdjecia(pg, kartkaIn, await jpeg(pg, FOTO.kartka, '#c63')); zdj.push('kartka'); }
         // zdjęcia gotowe: tyle miniatur, ile dodano (stan, nie czas)
         if (zdj.length && !(await pg.waitForFunction(n => document.querySelectorAll('#photos img, #sheetPhotos img, #flList img, [data-flcam] img').length >= n, zdj.length, { timeout: 15000 }).then(() => true, () => false))) return zle('dodane zdjęcia (' + zdj.join(', ') + ') nie wczytały się w formularzu');
         await idle();
         const zKomentarzem = await vis('#komentarz');
-        if (zKomentarzem) await pg.fill('#komentarz', KOMENTARZ);
-        if (await vis('#podpis')) await pg.fill('#podpis', 'G. Sarna');
+        if (zKomentarzem) await wpisz(pg, '#komentarz', KOMENTARZ);
+        if (await vis('#podpis')) await wpisz(pg, '#podpis', 'G. Sarna');
         if (await pg.locator('#toQueue').isDisabled()) return zle('Wyślij zablokowane – test nie umie wypełnić tej inspekcji (' + (await pg.locator('#formHint').textContent().catch(() => '')) + ')');
         await pg.click('#toQueue');
         if (!(await pg.waitForFunction(() => !!window.__raport, null, { timeout: 20000, polling: 100 }).then(() => true, () => false))) return zle('Wyślij nie dodało raportu (PDF + Word) do kolejki');

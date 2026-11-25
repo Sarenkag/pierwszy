@@ -39,9 +39,9 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
     ids.draft = await szkic(pg, B, ids.leaf);
     for (const k of new Set([...Object.values(ID), ...Object.values(DOKLEJ)])) check(!!ids[k], 'nie udało się utworzyć rekordu „' + k + '” dla ekranów z :id');
     // ekran na Ionic + Vue (hub Ustawień, ekran główny, Inspekcje, Kalendarz) nie ma widoku v-…: stary .wrap jest schowany, a id = v-<trasa>
-    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: (v => v || (window.OESTEkrany && (document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(',')), pytanie: !!document.querySelector('.oest-ask'), sluchaczy: window.__bb, wyjscie: window.__wyjscie }));
+    const stan = () => pg.evaluate(() => ({ hash: location.hash.slice(1), widok: (v => v || (window.OESTEkrany && (document.querySelector('ion-content > .ion-padding') || (document.querySelector('.wrap') || {}).hidden) ? 'v-' + OESTEkrany.trasa().split('/')[0] : ''))([...document.querySelectorAll('.view')].filter(s => !s.hidden).map(s => s.id).join(',')), pytanie: !!document.querySelector('.oest-ask, ion-alert'), sluchaczy: window.__bb, wyjscie: window.__wyjscie }));
     // po Wstecz: czekamy na stan (okienko pytania zniknęło z DOM albo ma zostać), nie na czas
-    const wstecz = async (okienkoZnika = true) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); if (okienkoZnika) await pg.locator('.oest-ask').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {}); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150); };
+    const wstecz = async (okienkoZnika = true) => { await pg.evaluate(() => document.dispatchEvent(new Event('backbutton'))); if (okienkoZnika) await pg.locator('.oest-ask, ion-alert').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {}); await pg.waitForLoadState('networkidle'); await pg.waitForTimeout(150); };
     const pudelko = id => (MAPA.find(e => e.id === id) || {}).pudelko;
     for (const e of MAPA) {
       const id = e.id, adres = adresEkranu(id, ids), rodzic = e.rodzic && (ID[e.rodzic] ? e.rodzic.replace(':id', ids[ID[e.rodzic]]) : e.rodzic);
@@ -63,8 +63,8 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
       if (!otwarty) { roz.push({ id: 'nie-otwiera:' + id, opis: id + ': pod adresem #' + adres + ' widać #' + s0.hash + ' ' + s0.widok + (strzalka ? '' : ' bez strzałki ‹') + ' zamiast ekranu w ' + e.pudelko }); continue; }
       // 2a. okienko apki (pytanie): Wstecz zamyka, ekran zostaje
       await pg.evaluate(() => { window.OESTPrzycisk.confirm('Test okienka', { ok: 'OK', cancel: 'Anuluj' }); });
-      await pg.locator('.oest-ask').waitFor({ timeout: 3000 }).catch(() => {});
-      check(await pg.locator('.oest-ask').count() > 0, id + ': okienko pytania nie otworzyło się');
+      await pg.locator('.oest-ask, ion-alert').waitFor({ timeout: 3000 }).catch(() => {});
+      check(await pg.locator('.oest-ask, ion-alert').count() > 0, id + ': okienko pytania nie otworzyło się');
       await wstecz();
       const s1 = await stan();
       if (!(s1.pytanie === false && s1.hash === adres && s1.widok === e.pudelko)) roz.push({ id: 'okienko:' + id, opis: id + ': Wstecz przy otwartym okienku → okienko ' + (s1.pytanie ? 'zostało' : 'zamknięte') + ', ekran #' + s1.hash + ' ' + s1.widok });
@@ -80,7 +80,7 @@ const BASELINE = path.join(REPO, 'quality/baselines/wstecz-tabela.json');
       }
       // 3. Wstecz na ekranie (na ekranie bez rodzica ma się pojawić pytanie – nie czekamy na jego zniknięcie)
       await wstecz(!!e.rodzic);
-      if (!e.rodzic) await pg.locator('.oest-ask').waitFor({ timeout: 3000 }).catch(() => {});
+      if (!e.rodzic) await pg.locator('.oest-ask, ion-alert').waitFor({ timeout: 3000 }).catch(() => {});
       const s3 = await stan();
       if (!e.rodzic) {
         const ok = s3.pytanie && s3.hash === adres && s3.wyjscie === 0;

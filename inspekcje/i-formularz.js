@@ -55,9 +55,8 @@
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
     if (first && thumbFor !== first.url) {
-      thumbFor = first.url; var img = new Image();
-      img.onload = function () { try { var c = document.createElement("canvas"), k = 96 / Math.max(img.width, img.height); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (PPM.stage(t)) PPM.setStage(t, { thumb: c.toDataURL("image/jpeg", 0.6) }); } catch (e) {} };
-      img.src = first.url;
+      thumbFor = first.url; var Z = window.OESTZdjecia; // miniatura etapu PPM: wczytanie i zmniejszenie z moduly/zdjecia
+      fetch(first.url).then(function (r) { return r.blob(); }).then(Z.wczytaj).then(function (img) { if (PPM.stage(t)) PPM.setStage(t, { thumb: Z.plotno(img, 96).toDataURL("image/jpeg", 0.6) }); }).catch(function () {});
     }
   }
   // Pokazuje tylko panele potrzebne w danym trybie

@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // „Nie rozpoczęta” zostaje (Grzegorz 07/11/2026: „co chwilę im ustawiam, że są nierozpoczęte, a co update wracają, że są w trakcie”).
 // Przyczyna: samo otwarcie inspekcji (i wczytanie jej zapisanych zdjęć/odpowiedzi) ustawiało „W trakcie”.
 // Scenariusz Grzegorza na prawdziwych stronach apki (app/www po npm run copy-web), ten sam origin = te same dane co w telefonie:
@@ -30,21 +31,21 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
       await ctx.addInitScript(() => { if (!localStorage.getItem('oest.account')) localStorage.setItem('oest.account', JSON.stringify({ provider: 'local', id: 't', email: 'demo@example.com', first: 'Greg', last: 'Sarna' })); });
       const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(C.id + ': ' + e.message));
       const stage = () => pg.evaluate(i => { const a = JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}'); return a[i] ? a[i].s : 'none'; }, C.id);
-      const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length, temps: [...document.querySelectorAll('#tempList input[data-t]')].map(x => x.value).join('|') }));
+      const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('[data-ui~=ck-row][data-state=fail]').length, temps: [...document.querySelectorAll('#tempList ion-input[data-t]')].map(x => x.value).join('|') }));
       const openInsp = async () => { await pg.goto(B + '/inspekcje/index.html#ppm=' + C.id); await pg.waitForTimeout(3000); };
       // klocek inspekcji (07/11/2026): „Nie rozpoczęta” na pigułce to pauzy „– – – –”, pełna nazwa stanu w opisie pigułki (aria-label); klocek = ion-card.oest-klocek, pigułka = ion-badge.oest-pigulka (Ionic + Vue)
       const card = async () => { await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(1500); const k = pg.locator('ion-card.oest-klocek[data-id="' + C.id + '"]').first(); return ((await k.textContent().catch(() => '')) || '') + ' ' + ((await k.locator('ion-badge.oest-pigulka').getAttribute('aria-label').catch(() => '')) || ''); };
       // 1. inspekcja z danymi (jak u Grzegorza: zdjęcia, odpowiedź NIE)
       await openInsp();
-      for (let i = 0; i < C.photos; i++) { await pg.setInputFiles('#galIn', { name: 'z' + i + '.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(700); }
-      if (C.answerNo) { const no = pg.locator('.ck-row button[data-s="fail"]').first(); if (await no.count()) { await no.click(); await pg.waitForTimeout(400); } else check(false, C.id + ': brak pytania TAK/NIE do odpowiedzi'); }
-      if (C.temps) { await pg.locator('#tempList input[data-t="0"]').fill('55.5'); await pg.waitForTimeout(400); }
+      for (let i = 0; i < C.photos; i++) { await zdjecia(pg, '#galIn', { name: 'z' + i + '.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(700); }
+      if (C.answerNo) { const no = pg.locator('[data-ui~=ck-row] button[data-s="fail"]').first(); if (await no.count()) { await no.click(); await pg.waitForTimeout(400); } else check(false, C.id + ': brak pytania TAK/NIE do odpowiedzi'); }
+      if (C.temps) { await wpisz(pg.locator('#tempList ion-input[data-t="0"]'), '55.5'); await pg.waitForTimeout(400); }
       await pg.waitForTimeout(1500); // zapis szkicu
       const before = await form();
       check(await stage() === 'prog', C.id + ': po zmianach nie jest „W trakcie” (' + await stage() + ')');
       check(before.photos === C.photos, C.id + ': w formularzu ' + before.photos + ' zdjęć zamiast ' + C.photos);
       // 2. ręcznie „Nie rozpoczęta” w nagłówku inspekcji
-      await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+      await wybierz(pg, '#ppmStage', ''); await pg.waitForTimeout(500);
       check(await stage() === 'none', C.id + ': wybór „Nie rozpoczęta” nie zadziałał');
       // 3. restart apki (jak po aktualizacji APK: te same dane, strona ładowana od nowa) i lista
       for (let round = 1; round <= 2; round++) {
@@ -52,7 +53,7 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
         check(/Nie rozpoczęta|Zaległa/.test(txt) && !/W trakcie/.test(txt), C.id + ' runda ' + round + ': klocek na liście nie pokazuje „Nie rozpoczęta” (albo „Zaległa” po terminie): ' + txt.slice(0, 80));
         // 4. samo otwarcie inspekcji: nic nie ruszam
         await openInsp();
-        const now = await form(), sel = await pg.locator('#ppmStage').inputValue();
+        const now = await form(), sel = await wartosc(pg.locator('#ppmStage'));
         check(await stage() === 'none', C.id + ' runda ' + round + ': po otwarciu inspekcji status wrócił na „' + await stage() + '”');
         check(sel === '', C.id + ' runda ' + round + ': w nagłówku inspekcji wybrane „' + sel + '” zamiast „Nie rozpoczęta”');
         check(now.photos === before.photos && now.fails === before.fails && now.temps === before.temps, C.id + ' runda ' + round + ': dane inspekcji zmienione (zdjęcia ' + before.photos + '→' + now.photos + ', NIE ' + before.fails + '→' + now.fails + ', pomiary ' + before.temps + '→' + now.temps + ')');
@@ -60,33 +61,33 @@ const CASES = [{ id: 'EFA-INS-004', photos: 3 }, { id: 'EFA-INS-014', photos: 2,
       }
       // 5a. zmiana samej treści odpowiedzi przy tych samych licznikach (NIE przechodzi z pytania 1 na pytanie 2) = „W trakcie”
       if (C.answerNo) {
-        await pg.locator('.ck-row button[data-s="fail"]').nth(1).click(); await pg.waitForTimeout(300);
-        await pg.locator('.ck-row button[data-s="ok"]').first().click(); await pg.waitForTimeout(1000);
+        await wybierz(pg.locator('[data-ui~=ck-row] ion-select').nth(1), 'fail'); await pg.waitForTimeout(300);
+        await wybierz(pg.locator('[data-ui~=ck-row] ion-select').first(), 'ok'); await pg.waitForTimeout(1000);
         const f = await form(); check(f.fails === before.fails, C.id + ': test zmienił liczbę NIE (' + f.fails + ')');
         check(await stage() === 'prog', C.id + ': zamiana odpowiedzi (te same liczniki) nie zmieniła statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#zamiana'] = await stage();
-        await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+        await wybierz(pg, '#ppmStage', ''); await pg.waitForTimeout(500);
       }
       // 5b. nowy pomiar temperatury (formularz bez pytań i zdjęć) = „W trakcie”
       if (C.temps) {
-        await pg.locator('#tempList input[data-t="1"]').fill('8'); await pg.waitForTimeout(1000);
+        await wpisz(pg.locator('#tempList ion-input[data-t="1"]'), '8'); await pg.waitForTimeout(1000);
         check(await stage() === 'prog', C.id + ': nowy pomiar nie zmienił statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#pomiar'] = await stage();
-        await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+        await wybierz(pg, '#ppmStage', ''); await pg.waitForTimeout(500);
       }
       // 5c. przycisk „Notatka” (samo otwarcie pola, bez zmiany) nic nie zmienia; wpis komentarza = „W trakcie”
       {
-        const note = pg.locator('#v-form button.pbtn:has-text("Notatka")').first();
+        const note = pg.locator('#v-form ion-button[data-form-note]:has-text("Notatka")').first();
         if (await note.isVisible().catch(() => false)) {
           await note.click(); await pg.waitForTimeout(800);
           check(await stage() === 'none', C.id + ': samo otwarcie notatki zmieniło status na „' + await stage() + '”');
           if (await pg.locator('#komentarz').isVisible().catch(() => false)) {
-            await pg.locator('#komentarz').fill('Test komentarza'); await pg.waitForTimeout(800);
+            await wpisz(pg.locator('#komentarz'), 'Test komentarza'); await pg.waitForTimeout(800);
             check(await stage() === 'prog', C.id + ': komentarz nie zmienił statusu na „W trakcie” (' + await stage() + ')'); R[C.id + '#komentarz'] = await stage();
-            await pg.selectOption('#ppmStage', ''); await pg.waitForTimeout(500);
+            await wybierz(pg, '#ppmStage', ''); await pg.waitForTimeout(500);
           } else R[C.id + '#komentarz'] = 'pole komentarza niewidoczne w tym formularzu';
         } else R[C.id + '#komentarz'] = 'brak przycisku Notatka w tym formularzu';
       }
       // 5. nowa zmiana (nowe zdjęcie) = „W trakcie”, jak dotąd
-      await pg.setInputFiles('#galIn', { name: 'nowe.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1200);
+      await zdjecia(pg, '#galIn', { name: 'nowe.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1200);
       check(await stage() === 'prog', C.id + ': nowe zdjęcie nie zmieniło statusu na „W trakcie” (' + await stage() + ')');
       await ctx.close();
     }));

@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // „Wyczyść inspekcję” i odzyskiwanie (Grzegorz 09/11/2026: sprawdzić od początku do końca na pełnych scenariuszach) –
 // prawdziwe strony apki (app/www po copy-web), zdjęcia w module zdjęć, notatki w module notatek.
 //  A. inspekcja WYSŁANA: zdjęcie + odpowiedź NIE + notatka → Wyślij (nic nie znika) → Zakończ (Gotowa) → zdjęcie Gotowa →
@@ -38,10 +39,10 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     // sprzątanie zdjęć rusza samo 15 s po otwarciu inspekcji (jak w telefonie) – czekamy na jego ślad, nie na zegar
     const waitRelease = async (id, done) => { for (let i = 0; i < 150; i++) { const p = await photo(id); if (done(p)) return p; await pg.waitForTimeout(200); } return photo(id); };
     const stage = id => pg.evaluate(id => { const a = JSON.parse(localStorage.getItem('oest.ppm.stage') || '{}'); return a[id] ? a[id].s : 'none'; }, id);
-    const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('.ck-row.fail').length }));
+    const form = () => pg.evaluate(() => ({ photos: document.querySelectorAll('#photos img').length, fails: document.querySelectorAll('[data-ui~=ck-row][data-state=fail]').length }));
     const notes = scope => pg.evaluate(s => window.OESTNotatki.list(s).then(a => a.length), scope);
     const open = async id => { await pg.goto(B + '/index.html#ppm'); await pg.waitForTimeout(300); await pg.goto(B + '/inspekcje/index.html#ppm=' + id); await pg.waitForFunction(() => window.OESTNotatki && window.OEST_clearInspection); await pg.waitForTimeout(2000); };
-    const clear = async () => { await pg.locator('.kebab').first().click(); await pg.locator('.kmenu [data-k=clear]').click(); await pg.locator('.oest-ask [data-a=ok], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive').click(); /* „Na pewno?”: dawne okienko albo ion-alert (OESTOkna.pytaj) */ await pg.waitForFunction(() => /Wyczyszczono|Cleared/.test(document.getElementById('formHint').textContent), null, { timeout: 10000 }); await pg.waitForTimeout(800); };
+    const clear = async () => { await pg.locator('[data-ui~=kebab]').first().click(); await pg.locator('[data-ui~=kmenu] [data-k=clear]').click(); await pg.locator('.oest-ask [data-a=ok], ion-alert button.alert-button-role-confirm, ion-alert button.alert-button-role-destructive').click(); /* „Na pewno?”: dawne okienko albo ion-alert (OESTOkna.pytaj) */ await pg.waitForFunction(() => /Wyczyszczono|Cleared/.test(document.getElementById('formHint').textContent), null, { timeout: 10000 }); await pg.waitForTimeout(800); };
     const onList = id => pg.evaluate(id => [...document.querySelectorAll('[data-ppm],[data-id]')].some(e => (e.getAttribute('data-ppm') || e.getAttribute('data-id')) === id), id);
     const shot = async n => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
 
@@ -50,8 +51,8 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
     // ===== A. inspekcja wysłana =====
     await open(A);
-    await pg.setInputFiles('#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(800);
-    await pg.locator('.ck-row button[data-s="fail"]').first().click(); await pg.waitForTimeout(1200);
+    await zdjecia(pg, '#galIn', { name: 'a.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(800);
+    await wybierz(pg.locator('[data-ui~=ck-row] ion-select').first(), 'fail'); await pg.waitForTimeout(1200);
     let all = await kv(); const dk = Object.keys(all).find(k => k.startsWith('draft_') && all[k] && all[k].v === 1);
     check(!!dk, 'A: szkic zapisany');
     const zid = all[dk].photos && all[dk].photos[0] && all[dk].photos[0].zid;
@@ -123,7 +124,7 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
     // ===== B. inspekcja niewysłana =====
     await open(Bid);
-    await pg.setInputFiles('#galIn', { name: 'b.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500);
+    await zdjecia(pg, '#galIn', { name: 'b.jpg', mimeType: 'image/jpeg', buffer: JPG }); await pg.waitForTimeout(1500);
     all = await kv(); const dkB = Object.keys(all).find(k => k.startsWith('draft_') && k !== dk && all[k] && all[k].v === 1 && all[k].photos && all[k].photos.length);
     check(!!dkB, 'B: szkic zapisany');
     const zidB = dkB && all[dkB].photos[0].zid;

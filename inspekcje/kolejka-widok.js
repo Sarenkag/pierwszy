@@ -15,10 +15,7 @@
   }
   function podpowiedz() {
     if (gm()) return window.OESTT("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || window.OESTT("adres z Ustawień", "the address in Settings")) + window.OESTT(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.");
-    if (shareApi()) return window.OESTT("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.");
-    if (!cfg.email) return window.OESTT("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.");
-    if (!online()) return window.OESTT("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).");
-    return window.OESTT("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + window.OESTT(" i do folderu „", " and to the folder “") + cfg.folder + window.OESTT("” na Drive.", "” on Drive.");
+    return window.OESTT("Zaloguj się przez Google (Ustawienia → Konto), żeby raporty wychodziły z Twojego Gmaila.", "Sign in with Google (Settings → Account) so reports go out from your Gmail."); // jedna droga wysyłki: Gmail z konta (moduly/wysylka)
   }
   function dane() {
     var n = pending().length, nu = unconfirmed().length, zajeta = qBusy();

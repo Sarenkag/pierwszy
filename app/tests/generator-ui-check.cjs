@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // Weekly Generator Check (Grzegorz 21/11/2026): własna inspekcja OEST, nie ma jej w Vantify – stały klocek uruchamiany ręcznie.
 // Jak AOV: zdjęcie ręcznie wypełnionego formularza (standard, wymagane), dowolne zdjęcia i nasz formularz (jeden generator, 12 punktów (TP-025 + rozruch + L1–L3 + Hz + RPM; powrót do AUTO i test off-load w stałym zdaniu), domyślnie Yes) w basic form.
 // Scenariusz: gen-weekly → lista włączona od razu → bez kartki przycisk prosi o zdjęcie formularza → kartka + 1 zdjęcie + odczyt paliwa w 📝
@@ -35,16 +36,16 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
     await pg.evaluate(() => OESTSettings.update(s => { s.profile.companyEmail = 'work@firma.com'; return s; })); // adresat raportu
     await pg.goto(B + '/inspekcje/index.html#ppm=' + ID); await pg.waitForFunction(() => document.getElementById('flOn') && document.getElementById('toQueue')); await pg.waitForTimeout(1500);
 
-    const s0 = await pg.evaluate(() => ({ on: document.getElementById('flOn').checked, rows: [...document.querySelectorAll('#flList .fl-row .txt')].map(e => e.textContent),
-      yes: document.querySelectorAll('#flList button[data-s="yes"].on').length, hint: document.getElementById('flHint').textContent,
+    const s0 = await pg.evaluate(() => ({ on: document.getElementById('flOn').checked, rows: [...document.querySelectorAll('#flList [data-ui~=fl-line] [data-ui~=txt]')].map(e => e.textContent),
+      yes: [...document.querySelectorAll('#flList ion-select[data-fl]')].filter(e => e.value === 'yes').length, hint: document.getElementById('flHint').textContent,
       send: document.getElementById('toQueue').textContent.trim(), shCam: !!document.getElementById('shCamIn') }));
     await shot('1-start');
     check(s0.on, 'nasz formularz (lista) włączony od razu');
     check(JSON.stringify(s0.rows) === JSON.stringify(POINTS.map(p => p)), 'punkty jak w propozycji (' + JSON.stringify(s0.rows) + ')');
     check(s0.yes === POINTS.length, 'wszystkie punkty domyślnie Yes (' + s0.yes + ')');
     check(/kartki/.test(s0.hint) && !/Spa|klap|call point/i.test(s0.hint), 'podpowiedź dla generatora (' + s0.hint + ')');
-    const odcz = await pg.evaluate(() => [...document.querySelectorAll('#flList input.fl-note')].map(e => +e.getAttribute('data-fln')));
-    const dom = await pg.evaluate(() => [7, 8, 9, 10, 11].map(i => document.querySelector('#flList input[data-fln="' + i + '"]').value));
+    const odcz = await pg.evaluate(() => [...document.querySelectorAll('#flList ion-input[data-ui~=fl-note]')].map(e => +e.getAttribute('data-fln')));
+    const dom = await pg.evaluate(() => [7, 8, 9, 10, 11].map(i => document.querySelector('#flList ion-input[data-fln="' + i + '"]').value));
     check(JSON.stringify(dom) === JSON.stringify(['250', '250', '250', '50', '1500']), 'L1–L3 250 V, 50 Hz, 1500 RPM wpisane od razu (' + dom + ')');
     check(JSON.stringify(odcz) === JSON.stringify([0, 7, 8, 9, 10, 11]), 'pola odczytów (paliwo, L1–L3, Hz, RPM) otwarte od razu (' + odcz + ')');
     check(s0.shCam, 'przycisk „Formularz” jest');
@@ -53,12 +54,12 @@ const check = (ok, msg) => { if (ok) passed++; else fails.push(msg); };
 
     const jpeg = (w, h, kolor) => pg.evaluate(([w, h, kolor]) => new Promise(res => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = kolor; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.fillRect(w / 3, h / 3, w / 3, h / 3);
       c.toBlob(b => { const fr = new FileReader(); fr.onload = () => res(fr.result.split(',')[1]); fr.readAsDataURL(b); }, 'image/jpeg', 0.8); }), [w, h, kolor]).then(b => Buffer.from(b, 'base64'));
-    await pg.setInputFiles('#shCamIn', { name: 'kartka.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1200, 1600, '#ddd') });
+    await zdjecia(pg, '#shCamIn', { name: 'kartka.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1200, 1600, '#ddd') });
     await pg.waitForFunction(() => document.querySelectorAll('#sheetPhotos img').length === 1, null, { timeout: 15000 });
-    await pg.setInputFiles('#camIn', { name: 'gen.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1600, 1200, '#3a7') });
+    await zdjecia(pg, '#camIn', { name: 'gen.jpg', mimeType: 'image/jpeg', buffer: await jpeg(1600, 1200, '#3a7') });
     await pg.waitForFunction(() => document.querySelectorAll('#photos img').length === 1, null, { timeout: 15000 });
     // odczyty z panelu DSE 7320 (zdjęcia Grzegorza 21/11/2026): paliwo 29% / 229 l, L1–L3 251 V, 1500 RPM
-    for (const [i, v] of [[0, '29% / 229 l'], [7, '251'], [8, '251'], [9, '251']]) await pg.fill('#flList input[data-fln="' + i + '"]', v); await pg.waitForTimeout(500);
+    for (const [i, v] of [[0, '29% / 229 l'], [7, '251'], [8, '251'], [9, '251']]) await wpisz(pg, '#flList ion-input[data-fln="' + i + '"]', v); await pg.waitForTimeout(500);
     await shot('2-gotowe');
     // „Open Vantify” na formularzu klocka (Grzegorz 21/11/2026 16:31): ta sama ścieżka co Reactive; wtyczka Vantify podstawiona (bez prawdziwego zlecenia)
     const vb = await pg.evaluate(() => { const b = document.getElementById('vtBtn'); return { on: !b.hidden, t: b.textContent.trim() }; });

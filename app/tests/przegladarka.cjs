@@ -10,7 +10,7 @@ const pw = require(process.env.OEST_PLAYWRIGHT_PATH || 'playwright');
 
 const SOFFICE = process.env.OEST_SOFFICE || 'soffice';
 const katalog = fs.mkdtempSync(path.join(os.tmpdir(), 'oest-lo-'));
-const profil = 'file://' + path.join(katalog, 'profil');
+const profil = require('node:url').pathToFileURL(path.join(katalog, 'profil')).href; // file:///C:/… na Windowsie („file://C:\…” LibreOffice uznawał za uszkodzony bootstrap.ini)
 let kolejka = Promise.resolve(), licznik = 0;
 // jedna konwersja naraz (jeden profil LibreOffice), jak jeden silnik w telefonie
 function konwertuj(docxB64) {

@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require('./przegladarka.cjs');
 const root = path.resolve(__dirname, '../www'), SHOTS = process.env.OEST_SHOTS || '';
@@ -46,7 +47,7 @@ function fakePhone() {
     const scope = 'rx|' + (await pg.evaluate(() => location.hash)).split('/').pop();
     // ---------- układ ----------
     const box = s => pg.locator(s).first().boundingBox();
-    const [d, t] = [await box('[data-rx-field=orderDate]'), await box('[data-rx=row][data-id=type]')];
+    const [d, t] = [await box('[data-rx-field=orderDate]'), await box('[data-rx-field=jobType]')];
     check(Math.abs(d.y - t.y) < 30 && t.x > d.x, 'DATA i TYP nie w jednym rzędzie');
     const [k, g] = [await box('[data-rx=row][data-id=who]'), await box('[data-rx=row][data-id=where]')];
     check(Math.abs(k.y - g.y) < 2 && g.x > k.x, 'KTO i GDZIE nie w jednym rzędzie');
@@ -60,7 +61,7 @@ function fakePhone() {
     // wolny tłumacz + odświeżanie paska w trakcie: wynik tłumaczenia nie może zostać nadpisany drugim przetwarzaniem (Codex #144 P1)
     await pg.evaluate(() => { const t = window.Capacitor.Plugins.Translate, f = t.plToEn; t.plToEn = a => new Promise(r => setTimeout(() => r(f(a)), 900)); });
     await pg.locator('#rxNotes [data-nt-bar=add]').click(); await pg.waitForSelector(NOWA);
-    await pg.locator(NOWA).fill('pompa numer 12 cieknie'); await okno().locator('[data-okno=ok]').click();
+    await wpisz(pg.locator(NOWA), 'pompa numer 12 cieknie'); await okno().locator('[data-okno=ok]').click();
     await pg.waitForFunction(() => (e => !!e && e.dataset.rodzaj === 'tekst' && e.textContent.trim() === '1')(document.querySelector('#rxNotes [data-nt-id]')), null, { timeout: 10000 });
     await pg.evaluate(k => Promise.all([OESTNotatki.summary(k), OESTNotatki.summary(k)]), scope);
     check(await until(k => OESTNotatki.list(k).then(a => a.length === 1 && /Pump number 12/.test(a[0].en) && a[0].pl === 'pompa numer 12 cieknie'), scope), 'start: notatka pisana bez tekstu EN');
@@ -78,7 +79,7 @@ function fakePhone() {
     await okno().locator('[data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' });
     await pg.locator('#rxNotes [data-nt-id]').first().click(); await pg.waitForSelector(POP + ' [data-nt-f=en] textarea');
     await okno().locator('[data-nt=cancel]').click(); await okno().locator('[data-okno=ok]').click(); await pg.waitForSelector(OKNO, { state: 'detached' });
-    await pg.locator('[data-rx-field=note]').fill('Leak at pump 12.'); await saved();
+    await wpisz(pg.locator('[data-rx-field=note]'), 'Leak at pump 12.'); await saved();
     if (SHOTS) { await pg.locator('#rxNotes').scrollIntoViewIfNeeded(); await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-notatki.png') }); }
     // ---------- info na koniec: osobne notatki ----------
     await pg.locator('[data-rx=row][data-id=end]').click(); await pg.locator('#rxNotesEnd [data-nt-bar=add]').waitFor();
@@ -90,10 +91,10 @@ function fakePhone() {
     check(await pg.locator('#rxNotesEnd [data-nt-bar=rec]').isVisible(), 'zwinięcie „na start” zwinęło też „na koniec”');
     await pg.locator('[data-rx=row][data-id=start]').click(); await pg.locator('#rxNotes [data-nt-bar=rec]').waitFor();
     await pg.locator('#rxNotesEnd [data-nt-bar=add]').click(); await pg.waitForSelector(NOWA);
-    await pg.locator(NOWA).fill('wymieniono uszczelkę'); await okno().locator('[data-okno=ok]').click();
+    await wpisz(pg.locator(NOWA), 'wymieniono uszczelkę'); await okno().locator('[data-okno=ok]').click();
     await pg.waitForFunction(() => (e => !!e && e.dataset.rodzaj === 'tekst' && e.textContent.trim() === '1')(document.querySelector('#rxNotesEnd [data-nt-id]')), null, { timeout: 10000 });
     check(await until(k => Promise.all([OESTNotatki.list(k), OESTNotatki.list(k + '|end')]).then(([a, b]) => a.length === 2 && b.length === 1), scope), 'start/koniec: notatki pomieszane');
-    await pg.locator('[data-rx-field=endNote]').fill('Seal replaced.'); await saved();
+    await wpisz(pg.locator('[data-rx-field=endNote]'), 'Seal replaced.'); await saved();
     { const x = await draft(); check(x.note === 'Leak at pump 12.' && x.endNote === 'Seal replaced.', 'szkic: brak note/endNote'); }
     check(await pg.evaluate(() => /Work done: Seal replaced\./.test(OESTReactiveCore.details({ title: 'x', building: 'Premises', requestedBy: 'self', note: 'a', endNote: 'Seal replaced.' }))), 'raport: brak „Work done”');
     // ---------- ⋮: stan, części, kosztorys, Odłóż ----------
@@ -101,22 +102,22 @@ function fakePhone() {
     check(await pg.locator('[data-rx=status]').count() >= 3 && await pg.locator('[data-rx-field=quote]').count() === 1 && await pg.locator('[data-rx=park]').count() === 1, '⋮: brak stanu / kosztorysu / Odłóż');
     await pg.locator('[data-rx=row][data-id=more]').click();
     // ---------- data ze zdjęcia z galerii ----------
-    const pick = (day) => pg.evaluate(day => { const c = document.createElement('canvas'); c.width = 64; c.height = 48; return new Promise(r => c.toBlob(b => { const f = new File([b], 'p.jpg', { type: 'image/jpeg', lastModified: new Date(day + 'T10:00:00').getTime() }), dt = new DataTransfer(); dt.items.add(f); const el = document.querySelector('[data-rx-photos=before]'); el.files = dt.files; el.dispatchEvent(new Event('change')); r(); }, 'image/jpeg')); }, day);
-    const today = await pg.locator('[data-rx-field=orderDate]').inputValue();
+    const pick = (day) => pg.evaluate(day => { const c = document.createElement('canvas'); c.width = 64; c.height = 48; return new Promise(r => c.toBlob(b => { const f = new File([b], 'p.jpg', { type: 'image/jpeg', lastModified: new Date(day + 'T10:00:00').getTime() }), dt = new DataTransfer(); dt.items.add(f); const el = document.querySelector('[data-rx=gallery][data-phase=before]'); el.files = dt.files; el.dispatchEvent(new Event('change')); r(); }, 'image/jpeg')); }, day);
+    const today = await wartosc(pg.locator('[data-rx-field=orderDate]'));
     await pick(today); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 1, null, { timeout: 10000 });
     check(await ask().count() === 0, 'data: pytanie mimo tej samej daty');
     await pick('2026-11-03'); await ask().waitFor();
     check(/03\/11\/2026/.test(await ask().textContent()), 'data: w pytaniu brak daty zdjęcia');
     await ask().locator('[data-a=no], button.alert-button-role-cancel').click(); await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 2, null, { timeout: 10000 });
-    check(await pg.locator('[data-rx-field=orderDate]').inputValue() === today, 'data: „Nie” zmieniło datę');
+    check(await wartosc(pg.locator('[data-rx-field=orderDate]')) === today, 'data: „Nie” zmieniło datę');
     await pick('2026-11-05'); await ask().waitFor(); await ask().locator('[data-a=ok], button.alert-button-role-confirm, button.alert-button-role-destructive').click();
     await pg.waitForFunction(() => document.querySelectorAll('#rx-before img').length === 3, null, { timeout: 10000 });
-    check(await pg.locator('[data-rx-field=orderDate]').inputValue() === '2026-11-05', 'data: „Tak” nie zmieniło daty w polu');
+    check(await wartosc(pg.locator('[data-rx-field=orderDate]')) === '2026-11-05', 'data: „Tak” nie zmieniło daty w polu');
     await pg.waitForTimeout(400); check((await draft()).orderDate === '2026-11-05', 'data: „Tak” nie zapisało daty w szkicu');
     if (SHOTS) await pg.screenshot({ path: path.join(SHOTS, 'reactive-start-end.png'), fullPage: true });
     // ---------- EN ----------
     await pg.evaluate(() => window.OESTSettings.update(s => { s.appearance.language = 'en'; })); await pg.reload(); await pg.locator('#rxNotes [data-nt-bar=add]').waitFor();
-    const en = await pg.locator('#v-reactive .rx-body').innerText();
+    const en = await pg.locator('#v-reactive #v-reactive').innerText();
     check(/Add info on start/.test(en) && /Add info on end/.test(en) && /Voice/.test(en) && !/[ąćęłńóśźż]/i.test(en.replace(/pompa.*|wymieniono.*/g, '')), 'EN: ekran nie po angielsku');
   } catch (e) { fails.push('wyjątek: ' + (e && e.stack || e)); }
   finally { if (browser) await browser.close(); server.close(); }

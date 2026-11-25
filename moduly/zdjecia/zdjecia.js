@@ -414,18 +414,53 @@
       return new Promise(function (ok, no) { wait[id] = { ok: ok, no: no }; wk.postMessage({ id: id, file: file, lim: lim }); });
     };
   }
-  function compressMain(win) {
-    return async function (file, lim) {
-      var img;
-      try { img = await win.createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (_) { img = await win.createImageBitmap(file); }
-      var f = fitTo(img.width, img.height, lim), c = win.document.createElement('canvas');
+  /* Wczytanie i zmniejszenie zdjęcia – JEDNO miejsce dla całej apki (Grzegorz 24/11/2026: „zmiana w jednym miejscu działa
+     wszędzie”; wcześniej po swojemu robiły to inspekcje, Reactive, Mój profil, aparat i odczyt). Apka woła:
+       OESTZdjecia.wczytaj(blob)              → Promise<obraz> (obrót z EXIF; zapas bez obrotu; ostatni zapas przez <img>)
+       OESTZdjecia.plotno(obraz, px, { tlo }) → płótno: dłuższy bok najwyżej px (0 = bez zmniejszania), tlo = kolor pod spodem;
+                                                obraz po narysowaniu jest zamykany (pamięć), chyba że { zamknij: false }
+       OESTZdjecia.zmniejsz(blob, { px, jakosc, typ, tlo }) → Promise<{ blob, width, height }> (domyślnie JPEG 0.9)
+       OESTZdjecia.drawStamp(g, w, h, tekst)  → data na zdjęciu (ten sam wygląd przy zapisie i w raporcie) */
+  function wczytajIn(win) {
+    return function (blob) {
+      function viaImg() { return new Promise(function (res, rej) { var i = new win.Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = win.URL.createObjectURL(blob); }); }
+      if (win.createImageBitmap) return win.createImageBitmap(blob, { imageOrientation: 'from-image' }).catch(function () { return win.createImageBitmap(blob); }).catch(viaImg);
+      return viaImg();
+    };
+  }
+  function plotnoIn(win) {
+    return function (src, px, o) {
+      o = o || {};
+      var f = fitTo(src.width, src.height, { max: px || 0 }), c = win.document.createElement('canvas');
       c.width = f.width; c.height = f.height;
-      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
-      if (img.close) img.close();
+      var g = c.getContext('2d');
+      if (o.tlo) { g.fillStyle = o.tlo; g.fillRect(0, 0, f.width, f.height); }
+      g.drawImage(src, 0, 0, f.width, f.height);
+      if (o.zamknij !== false && src.close) src.close();
+      return c;
+    };
+  }
+  function zmniejszIn(win) {
+    var wczytaj = wczytajIn(win), plotno = plotnoIn(win);
+    return function (blob, o) {
+      o = o || {};
+      return wczytaj(blob).then(function (img) {
+        var c = plotno(img, o.px, o);
+        return new Promise(function (res) { c.toBlob(res, o.typ || 'image/jpeg', o.jakosc == null ? 0.9 : o.jakosc); }).then(function (b) {
+          if (!b) throw Error('IMAGE_COMPRESSION');
+          return { blob: b, width: c.width, height: c.height };
+        });
+      });
+    };
+  }
+  function compressMain(win) {
+    var wczytaj = wczytajIn(win), plotno = plotnoIn(win);
+    return async function (file, lim) {
+      var img = await wczytaj(file), f = fitTo(img.width, img.height, lim), c = plotno(img, lim.max, { tlo: '#fff' });
+      var g = c.getContext('2d');
       drawStamp(g, f.width, f.height, lim.stamp || '');
       // miniatura z tego samego płótna (bez drugiego dekodowania), dla ekranów z podglądem
-      var k = Math.min(1, THUMB / Math.max(f.width, f.height)), t = win.document.createElement('canvas');
-      t.width = Math.max(1, Math.round(f.width * k)); t.height = Math.max(1, Math.round(f.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      var t = plotno(c, THUMB, { zamknij: false });
       var both = await Promise.all([new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); }), new Promise(function (res) { t.toBlob(res, 'image/jpeg', 0.8); })]);
       if (!both[0]) throw Error('IMAGE_COMPRESSION');
       return { blob: both[0], thumb: both[1], width: f.width, height: f.height };
@@ -510,6 +545,7 @@
     };
     store.preparedHits = function () { return hits; }; // ile zapisów wzięło gotowy wynik z podglądu – do testów
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
+    store.wczytaj = wczytajIn(win); store.plotno = plotnoIn(win); store.zmniejsz = zmniejszIn(win); store.drawStamp = drawStamp; // jedno wczytanie i zmniejszanie zdjęć w apce
     store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stampText = stampText; store.exifDate = exifDate; store.stats = stats; store.search = search;
     return store;
   }

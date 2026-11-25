@@ -1,3 +1,4 @@
+const { wpisz, wybierz, ptaszek, wartosc, zdjecia } = require('./ionic-pomoc.cjs');
 // ZASADA Grzegorza (05/11/2026 08:09 i 08:20): każdy plik raportu (Word i PDF) poniżej 1 MB; tylko gdy byłby większy –
 // przed utworzeniem pytanie „Zmniejsz zdjęcia / Zostaw tak”. Przegląd ChatGPT 09/11/2026, pkt 6 (zgoda „lecisz z 1 4 6”):
 // Reactive tę zasadę omijał (zdjęcia ogólne 1600 px trafiały do raportu bez kontroli).
@@ -30,9 +31,9 @@ async function scenario(browser, url, answer) {
   await ctx.addInitScript(() => { localStorage.setItem('oest.account', JSON.stringify({ id: 'rozmiar-test', email: 'test@example.com', first: 'Greg', last: 'Sarna' })); });
   try {
     await pg.goto(url + '/#reactive'); await pg.locator('[data-rx=new]').click(); await pg.locator('[data-rx-field=title]').waitFor();
-    await pg.locator('[data-rx-field=title]').fill('Ceiling tile water damage');
+    await wpisz(pg.locator('[data-rx-field=title]'), 'Ceiling tile water damage');
     for (const [phase, off] of [['before', 0], ['after', 10]]) for (let i = 0; i < PHOTOS; i++) {
-      await pg.locator('[data-rx-photos=' + phase + ']').setInputFiles(await photo(pg, off + i));
+      await zdjecia(pg.locator('[data-rx=gallery][data-phase=' + phase + ']'), await photo(pg, off + i));
       await pg.waitForFunction(([ph, n]) => document.querySelectorAll('#rx-' + ph + ' img').length >= n, [phase, i + 1]);
     }
     await pg.evaluate(() => { OESTSettings.update(s => { s.profile.first = 'Greg'; s.profile.last = 'Sarna'; s.profile.companyEmail = 'work@example.com'; });

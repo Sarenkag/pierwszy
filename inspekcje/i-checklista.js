@@ -34,12 +34,11 @@
   }
   // Wzór firmy: kolejne pola {temp} dostają kolejne pomiary, {name} podpis, {data} datę; reszta tabeli bez zmian
   function fillTempDocx(d) {
-    var zip = new PizZip(OESTWzory.bajty(cur.type.wzor)), xml = zip.file("word/document.xml").asText(), i = 0;
-    function x(s) { return String(s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
-    xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
-    xml = markPeriod(xml, d.rok, d.miesiac);
-    zip.file("word/document.xml", xml);
-    return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+    var i = 0, x = window.OESTNarzedzia.esc;
+    return OESTWord.zmien(OESTWzory.bajty(cur.type.wzor), { "word/document.xml": function (xml) {
+      xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
+      return markPeriod(xml, d.rok, d.miesiac);
+    } });
   }
   // Tabela lat i miesięcy we wzorze QHS-031: żadnego stałego zaznaczenia – zielone tło tylko na roku i miesiącu daty inspekcji
   var MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

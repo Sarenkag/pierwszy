@@ -72,7 +72,7 @@
     return (kopie[id] ? R.zDysku(id) : R.get(id).then(function(r) { return r && r.gone ? R.zDysku(id) : r; })).then(function (r) {
       if (!r || r.gone) return null;
       var urls = [], pv = null;
-      try { pv = w.PizZip ? R.docxPreview(r.docx, w.PizZip) : null; } catch (e) { pv = null; }
+      try { pv = w.OESTWord ? w.OESTWord.podglad(r.docx) : null; } catch (e) { pv = null; } // podgląd Worda: moduly/word
       var to = S && S.recipients ? S.recipients({ sp: 1, sm: 1, se: 1, sg: 1 }) : { priv: "", me: "", eng: "", man: "" };
       // Reactive wysyłamy tylko na firmowy e-mail (PROD-025) – tak jak przy pierwszej wysyłce
       var reactive = reactiveR(r), only = w.OESTT("Reactive: tylko firmowy e-mail", "Reactive: work email only");

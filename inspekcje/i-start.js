@@ -32,8 +32,7 @@
         refresh();
       },
       onQueue: function () { show("queue"); },
-      onIdle: refresh,
-      onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
+      onIdle: refresh
     });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
     return online() ? loadSetup() : tplState(window.OESTT("brak sieci", "no network"));
