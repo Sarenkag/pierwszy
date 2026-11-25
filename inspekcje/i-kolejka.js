@@ -228,7 +228,10 @@
   $("finishIns").addEventListener("click", async function () {
     if (queueing) return;
     var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
-    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { unready(t); return; } // już Gotowa → zdjęcie znacznika
+    if (st && (st.s === "queued" || st.s === "sent" || st.s === "done")) { // już Gotowa → zdjęcie znacznika, najpierw „Na pewno?” (Grzegorz 25.11.2026: przypadkowe drugie dotknięcie cofało Gotową)
+      if (await ask(window.OESTT("Zdjąć znacznik Gotowa? Inspekcja wróci do W trakcie.", "Remove the Ready flag? The inspection goes back to In progress."))) unready(t);
+      return;
+    }
     if (t) {
       var dd = PPM.due(t), day = NZ.dzienIso(reportDate());
       PPM.setStage(t, { s: st && st.mail === "sent" ? "sent" : st && st.mail === "queued" ? "queued" : "done", period: dd ? NZ.dzienIso(dd) : day, day: NZ.dzienIso(new Date()), manual: false });
