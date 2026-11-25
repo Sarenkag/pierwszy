@@ -67,7 +67,7 @@
     }
     [false, true].forEach(function (sheet) {
       widokInspekcji(sheet ? "sheetPhotos" : "photos", "fragment", { rodzaj: "zdjecia", edycja: !!(window.OESTAparat && OESTAparat.available()), lista: photos.map(function (p, i) {
-        return { i: i, sheet: !!p.sheet, tap: p.tap, url: p.url, sugestie: p.sugs || [], alt: window.OESTT("Zdjęcie ", "Photo ") + (i + 1), usun: window.OESTT("Usuń zdjęcie ", "Delete photo ") + (i + 1), edytuj: window.OESTT("Edytuj zdjęcie ", "Edit photo ") + (i + 1) };
+        return { i: i, sheet: !!p.sheet, tap: p.tap, url: p.url, sugestie: p.sugs || [], alt: window.OESTT("Zdjęcie ", "Photo ") + (i + 1) };
       }).filter(function (p) { return p.tap == null && p.sheet === sheet; }) }, akcja);
     });
     var shn = sheetPhotos().length, Z = window.OESTZnacznik, nd = typeof needsNow === "function" ? needsNow() : null, req = !!(nd && nd.f);
@@ -79,9 +79,9 @@
     $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
     var ogolne = photos.filter(function (q) { return q.tap == null && !q.sheet; }), fp = ogolne.length;
-    var z = function (id) { return ogolne.some(function (q) { return q.zrodlo === id; }); };
+    var zGal = ogolne.some(function (q) { return q.zrodlo === "galIn"; }), zCam = ogolne.some(function (q) { return q.zrodlo === "camIn"; });
     // zielona ramka kafelka tylko za jego własne zdjęcia (Grzegorz 25.11.2026): Z galerii → z galerii, Zrób zdjęcie → z aparatu, Formularz → zdjęcie formularza
-    [[$("galIn"), z("galIn")], [$("camIn"), z("camIn")], [fb, shn]].forEach(function (k) { if (k[1]) k[0].dataset.ok = ""; else delete k[0].dataset.ok; });
+    [[$("galIn"), zGal], [$("camIn"), zCam], [fb, shn]].forEach(function (k) { if (k[1]) k[0].dataset.ok = ""; else delete k[0].dataset.ok; });
     widokInspekcji("photoCount", "fragment", { rodzaj: "znacznik", html: window.OESTZnacznik ? OESTZnacznik.licznik(fp, "accent inline") : fp ? "(" + fp + ")" : "" });
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").__inspKontroler && $("sugBox").__inspKontroler.stan.lista.length) renderSugs();

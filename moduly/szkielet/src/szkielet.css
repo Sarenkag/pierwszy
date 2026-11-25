@@ -627,3 +627,8 @@ ion-content ion-toolbar { --background: transparent; --border-width: 0; --min-he
 ion-button[data-ui~=kafel-zdjecia] { --color: var(--ink); --border-color: var(--line); --border-width: 1px; --border-radius: 12px; --padding-start: 2px; --padding-end: 2px; --padding-top: 8px; --padding-bottom: 8px; --ionicon-stroke-width: 1.8px; }
 ion-button[data-ui~=kafel-zdjecia][data-ok] { --border-color: var(--ion-color-success); }
 ion-button[data-ui~=kafel-zdjecia][data-alarm] { --border-color: var(--ion-color-danger); }
+/* pasek zdjęć (czesci/PasekZdjec.vue + MiniaturaZdjecia.vue, Grzegorz 25.11.2026): jeden rząd przesuwany palcem w bok, odstęp 12 px;
+   miniatura 140 px (przed Ionic ok. 110 px), zdjęcie 3:4 kadrowane bez zniekształceń. Jedno miejsce wyglądu zdjęć w całej apce. */
+ion-grid[data-ui=pasek-zdjec] { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px; scroll-snap-type: x proximity; }
+ion-grid[data-ui=pasek-zdjec] > ion-card { flex: 0 0 140px; margin: 0; scroll-snap-align: start; }
+ion-grid[data-ui=pasek-zdjec] ion-img { display: block; width: 140px; height: 187px; object-fit: cover; }

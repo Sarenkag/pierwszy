@@ -33,7 +33,10 @@
         otwarty: !!(fl.open[i] || t.note || odczyt), uwaga: t.note, odczyt: odczyt,
         placeholder: odczyt ? window.OESTT("Odczyt", "Reading") : window.OESTT("Notatka (trafi do kolumny NOTES)", "Note (goes to the NOTES column)"),
         zdjecia: pics.map(function (p) { return { i: photos.indexOf(p), url: p.url }; }) };
-    }) });
+    }) }, function (nazwa, at) { // pasek zdjęć kranu (czesci/PasekZdjec.vue): „Usuń zdjęcie” po „Czy na pewno?”
+      var p = photos[at]; if (nazwa !== "usun-zdjecie" || !p) return;
+      URL.revokeObjectURL(p.url); photos.splice(at, 1); renderPhotos();
+    });
   }
   var flTap = null;
   $("flushBox").addEventListener("click", function (e) {
@@ -41,7 +44,6 @@
     if (b.hasAttribute("data-w")) { var w = +b.getAttribute("data-w"); fl.week = fl.week === w ? 0 : w; renderFlush(); updateFormHint(); return; }
     if (b.hasAttribute("data-fl")) { fl.taps[+b.getAttribute("data-fl")].state = b.getAttribute("data-s"); renderFlush(); updateFormHint(); return; }
     if (b.hasAttribute("data-flnote")) { var n = +b.getAttribute("data-flnote"); fl.open[n] = true; renderFlush(); queueMicrotask(function () { var el = $("flList").querySelector('[data-fln="' + n + '"]'); if (el) el.setFocus(); }); return; }
-    if (b.hasAttribute("data-fldel")) { var at = +b.getAttribute("data-fldel"), p = photos[at]; if (p) { URL.revokeObjectURL(p.url); photos.splice(at, 1); renderPhotos(); } return; }
     if (b.hasAttribute("data-flcam")) { flTap = +b.getAttribute("data-flcam"); $("flCam").click(); }
   });
   $("flushBox").addEventListener("input", function (e) { var el = e.target.closest("ion-input[data-fln]"); if (el) fl.taps[+el.getAttribute("data-fln")].note = el.value; });

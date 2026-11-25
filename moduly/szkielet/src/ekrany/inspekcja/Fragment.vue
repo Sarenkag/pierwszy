@@ -1,10 +1,9 @@
 <!-- Fragmenty zastanej strony: te same elementy, klasy i delegowane zdarzenia. -->
 <template>
   <template v-if="d.rodzaj === 'zdjecia'">
-    <MiniaturaInspekcji v-for="p in d.lista" :key="p.i" :alt="p.alt" :src="p.url"><ion-text data-ui="n">{{ p.i + 1 }}</ion-text><ion-button type="button" :aria-label="p.usun" @click="kontroler.akcja('usun', p.i)">×</ion-button>
-      <template v-for="sg in p.sugestie" :key="sg.n"><ion-text v-if="sg.x != null" data-ui="mk">{{ sg.n }}</ion-text></template>
-      <ion-button v-if="d.edycja" type="button" data-ui="ed" :aria-label="p.edytuj" @click="kontroler.akcja('edytuj', p.i)">✏️</ion-button>
-    </MiniaturaInspekcji>
+    <PasekZdjec :T="T" :lista="d.lista.map(p => ({ klucz: p.i, url: p.url, alt: p.alt, numer: p.i + 1, sugestie: p.sugestie }))" :edycja="d.edycja" @edytuj="p => kontroler.akcja('edytuj', p.klucz)" @usun="p => kontroler.akcja('usun', p.klucz)">
+      <template #znaczniki="{ p }"><template v-for="sg in p.sugestie" :key="sg.n"><ion-text v-if="sg.x != null" data-ui="mk">{{ sg.n }}</ion-text></template></template>
+    </PasekZdjec>
   </template>
   <template v-else-if="d.rodzaj === 'sugestie'">
     <ion-grid v-for="sg in d.lista" :key="sg.n" data-ui="sug"><ion-grid><ion-text data-ui="n">{{ sg.n }}</ion-text>{{ sg.tekst }}?</ion-grid><ion-grid data-ui="row"><ion-button data-ui="btn" type="button" :data-sg="sg.n" data-ok="1">{{ T('Tak', 'Yes') }}</ion-button><ion-button data-ui="btn" type="button" :data-sg="sg.n" data-ok="0">{{ T('Nie', 'No') }}</ion-button></ion-grid></ion-grid>
@@ -17,7 +16,7 @@
       <ion-grid v-if="r.grupa" data-ui="fl-grp">{{ r.grupa }}</ion-grid>
       <ion-grid><ion-grid data-ui="fl-line"><ion-grid data-ui="txt">{{ r.tekst }}</ion-grid><WyborInspekcji :data-fl="r.i" :value="r.stan"><ion-select-option v-for="o in d.opcje" :key="o[0]" :value="o[0]">{{ o[1] }}</ion-select-option></WyborInspekcji><ion-button type="button" data-ui="fl-ic" :data-flcam="r.i" :aria-label="r.aparat">📷<ion-text v-if="r.zdjecia.length">{{ r.zdjecia.length }}</ion-text></ion-button><ion-button type="button" data-ui="fl-ic" :data-flnote="r.i" :aria-label="r.notatka">📝</ion-button></ion-grid>
         <ion-item v-if="r.otwarty"><ion-input data-ui="fl-note" type="text" :data-fln="r.i" :value="r.uwaga" :placeholder="r.placeholder" :inputmode="r.odczyt ? 'decimal' : undefined"></ion-input></ion-item>
-        <ion-grid v-if="r.zdjecia.length" data-ui="fl-pics"><ion-text v-for="p in r.zdjecia" :key="p.i"><ion-img alt="" :src="p.url" /><ion-button type="button" :data-fldel="p.i" :aria-label="T('Usuń zdjęcie', 'Delete photo')">×</ion-button></ion-text></ion-grid>
+        <PasekZdjec :T="T" :lista="r.zdjecia.map((p, n) => ({ klucz: p.i, url: p.url, alt: r.aparat + ' · ' + (n + 1), numer: n + 1 }))" @usun="p => kontroler.akcja('usun-zdjecie', p.klucz)" />
       </ion-grid>
     </template>
   </template>
@@ -39,10 +38,10 @@
   <template v-else-if="d.rodzaj === 'znacznik'"><ion-text v-html="d.html"></ion-text></template>
 </template>
 <script setup>
-import MiniaturaInspekcji from '../../czesci/MiniaturaInspekcji.vue';
+import PasekZdjec from '../../czesci/PasekZdjec.vue';
 import { useId } from 'vue';
 const terminId = useId();
-import { IonGrid, IonImg, IonText, IonButton, IonSelectOption, IonItem, IonInput, IonList, IonNote, IonTitle, IonIcon } from '@ionic/vue';
+import { IonGrid, IonText, IonButton, IonSelectOption, IonItem, IonInput, IonList, IonNote, IonTitle, IonIcon } from '@ionic/vue';
 import WyborInspekcji from '../../czesci/WyborInspekcji.vue';
 import PoleDaty from '../../czesci/PoleDaty.vue';
 import StatusInspekcji from '../../czesci/StatusInspekcji.vue';
