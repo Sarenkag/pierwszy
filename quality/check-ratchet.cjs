@@ -106,6 +106,9 @@ for (const [st, a, b] of changes) {
   const was = atBase(a), path_ = path.join(ROOT, now);
   if (was === null || !fs.existsSync(path_)) continue;
   const n0 = sprawdzenia(was), n1 = sprawdzenia(fs.readFileSync(path_, 'utf8'));
+  // R23 z pisemną zgodą Grzegorza (25.11.2026): „mniejSprawdzenZaZgoda”: [{ zgoda: cmsg_…, plik, z, na }] – tylko dokładnie ten spadek = ostrzeżenie
+  const zz = [].concat(manifest.mniejSprawdzenZaZgoda || []).find(z => z && z.plik === now && /^cmsg_[A-Za-z0-9]{20,}$/.test(String(z.zgoda || '')) && z.z === n0 && z.na === n1);
+  if (n1 < n0 && zz) { warnings.push(`${now}: mniej sprawdzeń (${n0} → ${n1}) za zgodą ${zz.zgoda}`); continue; }
   if (n1 < n0) errors.push(`${now}: mniej sprawdzeń niż na ${BASE} (${n0} → ${n1}) – test osłabiony (R23)`);
   else if (n1 !== n0) notes.push(`${now}: sprawdzeń ${n0} → ${n1}`);
 }

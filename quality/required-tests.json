@@ -35,5 +35,13 @@
       "app/tests/flush.test.cjs",
       "app/tests/zdjecia.test.cjs"
     ]
-  }
+  },
+  "mniejSprawdzenZaZgoda": [
+    {
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTDvissjAy9oCbHYggWzAVQW",
+      "plik": "app/tests/flush.test.cjs",
+      "z": 61,
+      "na": 59
+    }
+  ]
 }
