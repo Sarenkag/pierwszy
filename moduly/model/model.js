@@ -18,6 +18,13 @@
     'room names and product names character for character; do not add causes, recommendations, opinions, assumptions or new facts; ' +
     'do not leave out any information; if a note is in Polish, translate it faithfully. Output only the final text, ' +
     'with no preamble, no quotation marks, no bullet points and no notes about what you changed.';
+  // stały prompt + słownik pojęć z Ustawienia → AI (Grzegorz 25/11/2026); słownik czyta tylko OESTSettings
+  function glossary() { try { return (w.OESTSettings && w.OESTSettings.get().ai.glossary) || []; } catch (e) { return []; } }
+  function system() {
+    var g = glossary().map(function (x) { return '- ' + x.pl + ' = ' + x.en + (String(x.note || '').trim() ? ' (' + x.note.trim() + ')' : ''); });
+    var t = g.length ? RULES + '\n\nGlossary of site terms (Polish = English to use; meaning in brackets). Always use these English terms:\n' + g.join('\n') : RULES;
+    return t.length > 7900 ? t.slice(0, 7900) : t;
+  }
   function plugin() { var C = w.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && (C.Plugins && C.Plugins.OESTModel) || null; }
   // wybór modelu wspólny dla apki i inspekcji (ta sama domena) – własny klucz, niezależny od konta
   function key() { try { var k = w.localStorage.getItem('oest.model.text'); return MODELS[k] ? k : 'E4B'; } catch (e) { return 'E4B'; } }
@@ -32,7 +39,7 @@
   function ready() { return status().then(function (s) { return !!(s && s.ready); }, function () { return false; }); }
   function run(prompt) {
     var p = plugin(); if (!p) return Promise.reject(Error(w.OESTT('Model działa tylko w apce na telefonie.', 'The model works only in the phone app.')));
-    return p.generate({ name: model().name, system: RULES, prompt: prompt, temperature: 0.2 }).then(function (r) { return clean(r && r.text); }, function (e) {
+    return p.generate({ name: model().name, system: system(), prompt: prompt, temperature: 0.2 }).then(function (r) { return clean(r && r.text); }, function (e) {
       var m = String(e && e.message || e);
       if (/NOT_DOWNLOADED/.test(m)) throw Error(w.OESTT('Brak pliku modelu. Ustawienia → AI.', 'The model file is missing. Settings → AI.'));
       if (/ANDROID_TOO_OLD/.test(m)) throw Error(w.OESTT('Model wymaga Androida 12 lub nowszego.', 'The model needs Android 12 or newer.'));

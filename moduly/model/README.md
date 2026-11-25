@@ -11,7 +11,7 @@ Funkcje:
 - `OESTModel.summary(notatka, kontekst?)` → krótka nazwa zlecenia (Summary w Vantify), gdy nie ma nazwy ani wyborów kreatora.
 - `OESTModel.missingNumbers(wejście, wynik)` → liczby, których brakuje w wyniku (ostrzeżenie).
 
-Zasady (jeden stały prompt `RULES` dla wszystkich zadań, podgląd w Ustawienia → AI): bez nowych faktów, przyczyn i zaleceń; liczby, jednostki, kody i nazwy bez zmian. **Wynik to zawsze propozycja** – Grzegorz akceptuje albo poprawia. Polski oryginał i zwykłe tłumaczenie zostają (Cofnij). Bez modelu apka działa jak dotąd.
+Zasady (jeden stały prompt `RULES` dla wszystkich zadań, podgląd w Ustawienia → AI; do promptu doklejany jest **słownik pojęć** z Ustawienia → AI – `ai.glossary` w OESTSettings: termin PL, tłumaczenie EN, znaczenie; dopisuje go Grzegorz, lista startowa: AOV, DB, AHU, TMV, PPM, isolator, tap, lift): bez nowych faktów, przyczyn i zaleceń; liczby, jednostki, kody i nazwy bez zmian. **Wynik to zawsze propozycja** – Grzegorz akceptuje albo poprawia. Polski oryginał i zwykłe tłumaczenie zostają (Cofnij). Bez modelu apka działa jak dotąd.
 
 Android: wtyczka `OESTModel` (`ModelPlugin.kt`): `status/download/remove/allowFiles/generate/unload`. Jedno zadanie naraz, CPU, silnik zwalniany po 3 min bezczynności. Wymaga Androida 12+.
 
