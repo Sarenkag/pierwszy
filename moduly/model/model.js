@@ -18,8 +18,10 @@
     'room names and product names character for character; do not add causes, recommendations, opinions, assumptions or new facts; ' +
     'do not leave out any information; if a note is in Polish, translate it faithfully. Output only the final text, ' +
     'with no preamble, no quotation marks, no bullet points and no notes about what you changed.';
-  // stały prompt + słownik pojęć z Ustawienia → AI (Grzegorz 25/11/2026); słownik czyta tylko OESTSettings
-  function glossary() { try { return (w.OESTSettings && w.OESTSettings.get().ai.glossary) || []; } catch (e) { return []; } }
+  // stały prompt + słownik pojęć z Ustawienia → AI (Grzegorz 25/11/2026); słownik daje apka przez configure({ glossary }) (module-adapters.js)
+  var cfg = {};
+  function configure(o) { cfg = Object.assign({}, cfg, o || {}); }
+  function glossary() { try { return (cfg.glossary && cfg.glossary()) || []; } catch (e) { return []; } }
   function system() {
     var g = glossary().map(function (x) { return '- ' + x.pl + ' = ' + x.en + (String(x.note || '').trim() ? ' (' + x.note.trim() + ')' : ''); });
     var t = g.length ? RULES + '\n\nGlossary of site terms (Polish = English to use; meaning in brackets). Always use these English terms:\n' + g.join('\n') : RULES;
@@ -110,5 +112,5 @@
       return (a === 'download' ? download() : a === 'allow' ? allowFiles() : remove()).then(function () { return ''; }, function (e) { return w.OESTBledy ? w.OESTBledy.text(e) : e.message; });
     });
   }
-  w.OESTModel = { MODELS: MODELS, RULES: RULES, available: available, status: status, download: download, remove: remove, ready: ready, polish: polish, combine: combine, translate: translate, summary: summary, allowFiles: allowFiles, missingNumbers: missingNumbers, key: key, setKey: setKey, panel: panel, akcja: akcja };
+  w.OESTModel = { MODELS: MODELS, RULES: RULES, available: available, status: status, download: download, remove: remove, ready: ready, polish: polish, combine: combine, translate: translate, summary: summary, configure: configure, allowFiles: allowFiles, missingNumbers: missingNumbers, key: key, setKey: setKey, panel: panel, akcja: akcja };
 })(window);
