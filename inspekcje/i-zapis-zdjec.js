@@ -23,7 +23,7 @@
     return "ogolne";
   }
   function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
-  function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
+  function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined, zrodlo: p.zrodlo || undefined }; }
   function bitmap(blob) { return Zd.wczytaj(blob); } // wczytanie zdjęcia: jedno miejsce w apce (moduly/zdjecia)
   // miniatury po kolei (jedno duże zdjęcie naraz w pamięci); przy błędzie podgląd z samego pliku
   function thumbUrl(blob) {

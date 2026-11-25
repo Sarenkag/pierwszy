@@ -109,7 +109,7 @@
     var get = sp.zid && Zd ? Zd.blob(sp.zid).then(function (b) { return b || sp.blob; }, function () { return sp.blob; }) : Promise.resolve(sp.blob);
     return get.then(function (b) {
       if (!b) throw new Error("PHOTO_MISSING");
-      return makePhoto(b, { zid: sp.zid, width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, code: code, where: wh });
+      return makePhoto(b, { zid: sp.zid, width: sp.width, height: sp.height, when: new Date(sp.when), exif: sp.exif, sheet: sp.sheet || undefined, zrodlo: sp.zrodlo || undefined, code: code, where: wh });
     });
   }
   // Zapis zablokowany, dopóki zdjęcia nie wrócą; wynik ignorowany, jeśli w międzyczasie otwarto inne urządzenie

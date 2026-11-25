@@ -3,7 +3,7 @@
 // Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: rozmiary zdjęć są w moduly/zdjecia, nie tutaj.
   // ---------- zdjęcia ----------
-  function addFiles(input, tap, sheet) {
+  function addFiles(input, tap, sheet, zrodlo) {
     var files = Array.isArray(input) ? input : Array.prototype.slice.call(input.files || []); if (!Array.isArray(input)) input.value = "";
     if (!files.length) return;
     var tok = formSeq, ctx = copyCtx(); pendingPh++; updateFormHint();
@@ -16,7 +16,7 @@
           var when = ex || (f.lastModified && f.lastModified <= Date.now() + 60000 ? new Date(f.lastModified) : new Date());
           return storePhoto(f, when, ctx).then(function (ph) {
             if (tok !== formSeq) { URL.revokeObjectURL(ph.url); return; } // formularz zmienił się w trakcie: zdjęcie nie trafia do innego urządzenia
-            ph.exif = !!ex; if (tap != null) ph.tap = tap;
+            ph.exif = !!ex; if (tap != null) ph.tap = tap; if (zrodlo) ph.zrodlo = zrodlo; // „camIn” / „galIn”: który kafelek świeci na zielono
             // zdjęcia formularza zawsze na końcu (ostatnie strony raportu), zwykłe przed nimi
             needOn(sheet ? "f" : tap != null ? "t" : "p");
             if (sheet) { ph.sheet = true; photos.push(ph); } else { var at = photos.findIndex(function (q) { return q.sheet; }); if (at < 0) photos.push(ph); else photos.splice(at, 0, ph); }
@@ -35,13 +35,13 @@
     var id = e.target.id;
     if (["camIn", "galIn", "shCamIn", "flCam"].indexOf(id) < 0) return;
     var sheet = id === "shCamIn", tap = id === "flCam" ? flTap : null;
-    e.detail.seq = formSeq; e.detail.tap = tap; e.detail.sheet = sheet;
+    e.detail.seq = formSeq; e.detail.tap = tap; e.detail.sheet = sheet; e.detail.zrodlo = id;
     e.detail.opcje = camOpts(photoKind(tap, sheet));
   });
   document.addEventListener("oest:zdjecia", function (e) {
     var c = e.detail.kontekst;
     if (c.seq !== formSeq) return;
-    addFiles(e.detail.lista, c.tap, c.sheet);
+    addFiles(e.detail.lista, c.tap, c.sheet, c.zrodlo);
   });
   document.addEventListener("oest:blad-zdjec", function (e) {
     if (e.detail.kontekst.seq !== formSeq) return;
@@ -60,7 +60,7 @@
             return storePhoto(nb, p.when, ectx).then(function (np) {
               var at = photos.indexOf(p);
               if (tok !== formSeq || at < 0) { URL.revokeObjectURL(np.url); return; } // formularz się zmienił: nie podmieniamy cudzego zdjęcia
-              URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; photos[at] = np; renderPhotos(); ppmTrack(false, true); // poprawione zdjęcie = zmiana
+              URL.revokeObjectURL(p.url); np.code = p.code; np.where = p.where; np.sugs = p.sugs; np.exif = p.exif; np.zrodlo = p.zrodlo; photos[at] = np; renderPhotos(); ppmTrack(false, true); // poprawione zdjęcie = zmiana
             });
           }).catch(function (e) { say(e.message); }).then(function () { if (tok === formSeq) { pendingPh--; updateFormHint(); } });
       }
@@ -78,9 +78,10 @@
     if (fst === "blad") fb.dataset.alarm = ""; else delete fb.dataset.alarm; // czerwona ramka kafelka (czesci/KafelZdjecia.vue)
     $("sheetInfo").textContent = shn ? window.OESTT("Dodane: ", "Added: ") + shn + window.OESTT(" — w raporcie na końcu.", " — at the end of the report.") : window.OESTT("Zrób zdjęcie wypełnionego formularza (kartki). Idzie na koniec raportu.", "Take a photo of the filled-in paper form. It goes at the end of the report.");
     photoSizeShow();
-    var fp = photos.filter(function (q) { return q.tap == null && !q.sheet; }).length;
-    // zielona ramka kafelka, gdy ma zawartość (Grzegorz 25.11.2026): zdjęcia → Z galerii i Zrób zdjęcie, zdjęcie formularza → Formularz
-    [[$("galIn"), fp], [$("camIn"), fp], [fb, shn]].forEach(function (k) { if (k[1]) k[0].dataset.ok = ""; else delete k[0].dataset.ok; });
+    var ogolne = photos.filter(function (q) { return q.tap == null && !q.sheet; }), fp = ogolne.length;
+    var z = function (id) { return ogolne.some(function (q) { return q.zrodlo === id; }); };
+    // zielona ramka kafelka tylko za jego własne zdjęcia (Grzegorz 25.11.2026): Z galerii → z galerii, Zrób zdjęcie → z aparatu, Formularz → zdjęcie formularza
+    [[$("galIn"), z("galIn")], [$("camIn"), z("camIn")], [fb, shn]].forEach(function (k) { if (k[1]) k[0].dataset.ok = ""; else delete k[0].dataset.ok; });
     widokInspekcji("photoCount", "fragment", { rodzaj: "znacznik", html: window.OESTZnacznik ? OESTZnacznik.licznik(fp, "accent inline") : fp ? "(" + fp + ")" : "" });
     if (cur.type && cur.type.flush) renderFlush();
     if ($("sugBox").__inspKontroler && $("sugBox").__inspKontroler.stan.lista.length) renderSugs();
