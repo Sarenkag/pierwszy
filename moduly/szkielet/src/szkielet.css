@@ -566,11 +566,6 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 .oest-rx-phb-w { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
 .oest-rx-phb-w ion-icon { width: 22px; height: 22px; }
 .oest-rx-phb-w span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oest-rx-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.oest-rx-ph { position: relative; }
-.oest-rx-ph > img { display: block; width: 100%; height: 64px; object-fit: cover; border-radius: 10px; }
-.oest-ekran .oest-rx-ph ion-button { position: absolute; right: 4px; top: 4px; width: 30px; min-height: 30px; height: 30px; margin: 0; --padding-start: 0; --padding-end: 0; --border-radius: 50%; --background: rgba(10, 16, 20, .72); --color: #fff; font-size: .95rem; }
-.oest-ekran .oest-rx-ph ion-button.oest-rx-ed { top: auto; bottom: 4px; }
 .oest-rx-foto { display: block; width: 100%; max-height: 70vh; object-fit: contain; border-radius: 10px; }
 /* dawne nagrania */
 .oest-rx-voice { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
