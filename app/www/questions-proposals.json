@@ -2067,7 +2067,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2098,7 +2099,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2129,7 +2131,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2160,7 +2163,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2191,7 +2195,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2222,7 +2227,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     },
     {
@@ -2253,7 +2259,8 @@
         "s-hygiene",
         "s-cwst",
         "s-pat",
-        "s-spa"
+        "s-spa-sampling",
+        "s-spa-maint"
       ]
     }
   ]

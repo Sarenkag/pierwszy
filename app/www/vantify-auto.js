@@ -8,7 +8,7 @@
 (function (w) {
   var EVERY = 4 * 3600e3, ASK_LOGIN = 24 * 3600e3;
   function lang() { return (document.documentElement.lang || "pl").slice(0, 2) === "en" ? "en" : "pl"; }
-  function L(pl, en) { return lang() === "en" ? en : pl; }
+  function L(pl, en) { return w.OESTT(pl, en); }
   function native() { var C = w.Capacitor, P = C && C.Plugins && C.Plugins.Vantify; return !!(C && C.isNativePlatform && C.isNativePlatform() && P && P.sync); }
   function ask(o) { var P = w.OESTPrzycisk; return P && P.ask ? P.ask(o) : Promise.resolve(false); }
   function auto() {

@@ -3,6 +3,19 @@
   <div class="ion-padding">
     <component :is="Polaczenie" :T="T" :wersja="wersja" rodzaj="drive" :licznik="odswiez" @wynik="wynik = $event"></component>
     <ion-card>
+      <ion-list-header>{{ T('Co trafia na Dysk', 'What is stored on Drive') }}</ion-list-header>
+      <ion-item><ion-label class="ion-text-wrap">{{ T('Raporty: Word + PDF + dane inspekcji w OEST Raporty / budynek / rodzaj. Ponowna wysyłka nadpisuje wszystkie trzy pliki. Przywracanie: Moje raporty.', 'Reports: Word + PDF + inspection data in OEST Raporty / building / type. Sending again overwrites all three files. Restore in My reports.') }}</ion-label></ion-item>
+      <ion-item><ion-label class="ion-text-wrap">{{ T('Zdjęcia: folder OEST Zdjęcia. Niewysłane i używane w inspekcjach pozostają chronione na telefonie. Po przekroczeniu limitu Dysku usuwane są najstarsze zdjęcia.', 'Photos: OEST Zdjęcia folder. Photos not yet uploaded or used in inspections remain protected on the phone. Over the Drive limit, the oldest photos are removed.') }}</ion-label></ion-item>
+      <ion-item><ion-label class="ion-text-wrap">{{ T('Kopia ustawień: profil, kontakty, grafik i preferencje w wybranym poniżej folderze kopii.', 'Settings backup: profile, contacts, shifts and preferences in the backup folder selected below.') }}</ion-label></ion-item>
+      <ion-button fill="clear" href="#settings/my-reports">{{ T('Moje raporty', 'My reports') }}</ion-button>
+    </ion-card>
+    <ion-card v-if="zd">
+      <ion-list-header>{{ T('Zdjęcia na Dysku', 'Photos on Drive') }}</ion-list-header>
+      <ion-item><ion-input id="zdDrive" type="number" min="100" step="100" :label="T('Limit na Dysku (MB)', 'Drive limit (MB)')" label-placement="stacked" :value="zd.driveLimitMB" @ionInput="zd.driveLimitMB = $event.detail.value"></ion-input></ion-item>
+      <ion-item><ion-checkbox id="zdWifi" label-placement="end" :checked="zd.wifiOnly" @ionChange="zd.wifiOnly = $event.detail.checked">{{ T('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') }}</ion-checkbox></ion-item>
+      <ion-button expand="block" @click="wynik = S.zdjeciaDyskZapisz(zd)">{{ T('Zapisz ustawienia zdjęć na Dysku', 'Save Drive photo settings') }}</ion-button>
+    </ion-card>
+    <ion-card>
       <ion-list-header>{{ T('Folder backupu', 'Backup folder') }}</ion-list-header>
       <ion-item>
         <ion-input :label="T('Identyfikator folderu Drive', 'Drive folder ID')" label-placement="stacked" :value="f.folderId" @ionInput="zmien('folderId', $event.detail.value)"></ion-input>
@@ -47,12 +60,13 @@
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue';
-import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonSelect, IonSelectOption, IonButton } from '@ionic/vue';
+import { IonCard, IonListHeader, IonItem, IonLabel, IonNote, IonInput, IonSelect, IonSelectOption, IonButton, IonCheckbox } from '@ionic/vue';
 import Polaczenie from '../czesci/Polaczenie.vue';
 defineProps({ T: Function, wersja: Number });
 const S = window.OESTSettingsUI;
 const odswiez = ref(0);
 const f = reactive(S.dyskDane());
+const zd = ref(S.zdjeciaDyskDane());
 const nowy = ref('OEST Backup');
 const lista = ref([]);
 const podglad = ref('');

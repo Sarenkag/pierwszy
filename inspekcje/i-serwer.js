@@ -31,12 +31,7 @@
 
   // ---------- tłumaczenie komentarza (tłumacz Google, wymaga sieci) ----------
   // w APK: tłumacz ML Kit w telefonie (offline; za pierwszym razem pobiera słownik PL→EN ok. 30 MB)
-  var trPlugin = null;
-  function nativeTr() {
-    if (IN_GAS || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
-    if (!trPlugin) trPlugin = Capacitor.registerPlugin ? Capacitor.registerPlugin("Translate") : Capacitor.Plugins && Capacitor.Plugins.Translate;
-    return trPlugin || null;
-  }
+  function nativeTr() { return !IN_GAS && window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && window.OESTNotatki; }
   function renderTranslate() {
     var can = !!nativeTr() || (online() && (IN_GAS || cfg.api));
     $("translate").hidden = !can;
@@ -45,10 +40,10 @@
   }
   $("translate").addEventListener("click", function () {
     var txt = $("komentarz").value.trim(); if (!txt) return;
-    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? window.OESTT("Tłumaczę… (pierwszy raz pobieram słownik, ok. 30 MB)", "Translating… (first time downloading the dictionary, about 30 MB)") : window.OESTT("Tłumaczę…", "Translating…");
-    (nt ? nt.plToEn({ text: txt }).then(function (r) { return r && r.text; }) : api("translate", txt)).then(function (out) {
+    var b = this, nt = nativeTr(); b.disabled = true; $("trHint").textContent = nt ? window.OESTT("Tłumaczę…", "Translating…") : window.OESTT("Tłumaczę…", "Translating…");
+    (nt ? nt.english(txt, '') : api("translate", txt)).then(function (out) {
       out = (out || "").trim();
-      if (out) { trOriginal = txt; $("komentarz").value = out; ppmTrack(false, true); /* przetłumaczony komentarz = zmiana */ $("undoTr").hidden = false; $("trHint").textContent = window.OESTT("Gotowe. Możesz poprawić tekst ręcznie.", "Done. You can edit the text by hand."); if (mdReady) runModel(true); }
+      if (out) { trOriginal = txt; $("komentarz").value = out; ppmTrack(false, true); /* przetłumaczony komentarz = zmiana */ $("undoTr").hidden = false; $("trHint").textContent = window.OESTT("Gotowe. Możesz poprawić tekst ręcznie.", "Done. You can edit the text by hand.");  }
       else $("trHint").textContent = window.OESTT("Brak odpowiedzi — spróbuj jeszcze raz.", "No answer — try again.");
     }).catch(function (e) { $("trHint").textContent = window.OESTT("Nie udało się przetłumaczyć: ", "Translation failed: ") + gErr(e); })
       .then(function () { b.disabled = false; });
@@ -101,7 +96,7 @@
   function ntRefresh() {
     var k = ntScope(), row = $("ntRec") && $("ntRec").parentNode; if (!row) return;
     row.hidden = !k; if (!k) { $("ntJoin").hidden = true; return; }
-    OESTNotatki.summary(k).then(function (r) { if (k !== ntScope()) return; $("ntN").textContent = r.all; $("ntN").title = ""; $("ntJoin").hidden = r.ready < 1; var kp = $("komentarz").closest(".panel"); if (r.all && kp.classList.contains("fold")) kp.classList.add("open"); /* są notatki: pole notatki rozwinięte jak przy wpisanym komentarzu */ })
+    OESTNotatki.summary(k).then(function (r) { if (k !== ntScope()) return; $("ntN").textContent = r.all; $("ntN").title = ""; $("ntJoin").hidden = r.ready < 1; var kp = $("komentarz").closest("[data-ui~=panel]"); if (r.all && kp.matches("[data-ui~=fold]")) { kp.dataset.expanded = "true"; kp.hidden = false; }; /* są notatki: pole notatki rozwinięte jak przy wpisanym komentarzu */ })
       .catch(function (e) { if (k !== ntScope()) return; $("ntN").textContent = "–"; $("ntN").title = e && e.message || ""; }); // pamięć apki niedostępna: liczba nieznana (nie udajemy „0”), komunikat w podpowiedzi przycisku; jawny błąd zapisu daje sam moduł przy zapisie
   }
   if (window.OESTNotatki) {

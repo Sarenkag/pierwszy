@@ -11,17 +11,11 @@
     var n = tempNum(v); if (n === null) return false;
     return kind === "hot" ? n <= 50 : kind === "cold" ? n >= 20 : n < 38 || n > 43;
   }
-  function renderTemps() {
-    if (!cur.type || !cur.type.temp) { $("tempList").innerHTML = ""; return; }
-    $("tempList").innerHTML = cur.type.slots.map(function (s, i) {
-      return '<div class="tp-row' + (tempBad(s[1], temps[i]) ? " bad" : "") + '"><div class="txt">' + esc(s[0]) + "<small>" + esc(KIND[s[1]]) + " · " + esc(LIMIT[s[1]]) + "</small></div>" +
-        '<input type="text" inputmode="decimal" autocomplete="off" data-t="' + i + '" value="' + esc(temps[i]) + '" aria-label="' + esc(s[0] + ", " + KIND[s[1]]) + '"></div>';
-    }).join("");
-  }
+  function renderTemps() { pokazPola("tempList", "temperatury", tempsDane); }
   $("tempList").addEventListener("input", function (e) {
-    var el = e.target.closest("input[data-t]"); if (!el) return;
+    var el = e.target.closest("ion-input[data-t]"); if (!el) return;
     var i = +el.getAttribute("data-t"); temps[i] = el.value;
-    el.closest(".tp-row").classList.toggle("bad", tempBad(cur.type.slots[i][1], el.value));
+    el.color = tempBad(cur.type.slots[i][1], el.value) ? "danger" : undefined;
     updateFormHint();
   });
   function tempData(w) {
@@ -40,12 +34,11 @@
   }
   // Wzór firmy: kolejne pola {temp} dostają kolejne pomiary, {name} podpis, {data} datę; reszta tabeli bez zmian
   function fillTempDocx(d) {
-    var zip = new PizZip(OESTWzory.bajty(cur.type.wzor)), xml = zip.file("word/document.xml").asText(), i = 0;
-    function x(s) { return String(s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
-    xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
-    xml = markPeriod(xml, d.rok, d.miesiac);
-    zip.file("word/document.xml", xml);
-    return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+    var i = 0, x = window.OESTNarzedzia.esc;
+    return OESTWord.zmien(OESTWzory.bajty(cur.type.wzor), { "word/document.xml": function (xml) {
+      xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
+      return markPeriod(xml, d.rok, d.miesiac);
+    } });
   }
   // Tabela lat i miesięcy we wzorze QHS-031: żadnego stałego zaznaczenia – zielone tło tylko na roku i miesiącu daty inspekcji
   var MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -71,56 +64,27 @@
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])
   function renderChecks() {
-    if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0); // każda zmiana odpowiedzi (też „wszystko OK”, powody) → liczniki na klocku
-    if (cur.type.ask) {
-      var idx = cur.type.checks.map(function (c, i) { return i; });
-      idx.sort(function (a, b) { return (states[b] === "sus") - (states[a] === "sus"); }); // podejrzane na górę
-      var last = histOf(cur.code);
-      $("ck").innerHTML = idx.map(function (i) {
-        var c = cur.type.checks[i], st = states[i];
-        var was = last && (last.q.indexOf(c.key) >= 0 || (c.reasons || []).some(function (r) { return last.r.indexOf(r.id) >= 0; }));
-        // powody zwinięte, dopóki NIE / podpowiedź / usterka z ostatniej inspekcji
-        var rs = c.reasons && c.reasons.length && (st !== "ok" || was) ?
-          '<div class="chips rs">' + c.reasons.map(function (r) {
-            var prev = last && last.r.indexOf(r.id) >= 0;
-            return '<button type="button" class="rchip' + (prev ? " prev" : "") + '" data-ri="' + i + '" data-r="' + esc(r.id) + '" aria-pressed="' + ((rsel[i] || []).indexOf(r.id) >= 0) + '">' + esc(window.OESTT(r.pl, r.en ? r.en.charAt(0).toUpperCase() + r.en.slice(1) : r.pl)) + "</button>";
-          }).join("") + "</div>" : "";
-        return '<div class="ck-row ' + st + '"><div class="txt' + (was ? " prevq" : "") + '">' + (susN[i] ? '<span class="mkn">' + susN[i] + "</span>" : "") + esc(window.OESTT(c.q, c.qen || c.q)) +
-          (was ? '<small class="was">ostatnio NIE (' + esc(last.d) + ")</small>" : "") + "</div>" +
-          '<div class="seg" role="group" aria-label="' + esc(window.OESTT(c.q, c.qen || c.q)) + '">' +
-          '<button type="button" class="ok' + (st === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-pressed="' + (st === "ok") + '" style="width:58px">TAK</button>' +
-          '<button type="button" class="fail' + (st === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-pressed="' + (st === "fail") + '" style="width:58px">NIE</button>' +
-          "</div>" + rs + "</div>";
-      }).join("");
-      return;
+    if (cur.type && cur.ppm) setTimeout(function () { ppmTrack(false); }, 0);
+    if (!widokChecks) {
+      widokChecks = OESTCzesci.montuj($("ck"), "inspekcja/checklista", { kontroler: {
+        dane: checksDane,
+        na: function (fn) { checksSluchacze.push(fn); return function () { checksSluchacze = checksSluchacze.filter(function (f) { return f !== fn; }); }; }
+      } });
+    } else {
+      var dane = checksDane(); checksSluchacze.slice().forEach(function (fn) { fn(dane); });
     }
-    var cks = cur.type.checks;
-    $("ck").innerHTML = cks.map(function (c, i) {
-      var s = states[i], head = "", tail = "";
-      if (c.room && (!i || cks[i - 1].room !== c.room)) head = '<div class="room-h"><b>' + esc(c.roomName) + "</b><span>" + esc(c.roomLoc) + "</span></div>";
-      if (c.room && (i === cks.length - 1 || cks[i + 1].room !== c.room) && roomFails(c.room).length)
-        tail = '<input class="room-note" type="text" data-room="' + esc(c.room) + '" value="' + esc(roomNotes[c.room] || "") + '" placeholder="'+window.OESTT('Co jest nie tak? (trafi do raportu)', 'What is wrong? (goes to the report)')+'" aria-label="' + window.OESTT('Uwagi: ', 'Remarks: ') + esc(c.roomName) + '">';
-      return head + '<div class="ck-row ' + s + '"><div class="txt">' + esc(c.room ? c.cp : s === "fail" ? (override[i] || c.fail) : c.ok) + "</div>" +
-        '<div class="seg" role="group" aria-label="Punkt ' + (i + 1) + '">' +
-        '<button type="button" class="ok' + (s === "ok" ? " on" : "") + '" data-i="' + i + '" data-s="ok" aria-label="OK" aria-pressed="' + (s === "ok") + '">✓</button>' +
-        '<button type="button" class="fail' + (s === "fail" ? " on" : "") + '" data-i="' + i + '" data-s="fail" aria-label="'+window.OESTT('Nie OK', 'Not OK')+'" aria-pressed="' + (s === "fail") + '">✗</button>' +
-        '<button type="button" class="na' + (s === "na" ? " on" : "") + '" data-i="' + i + '" data-s="na" aria-label="'+window.OESTT('Pomiń', 'Skip')+'" aria-pressed="' + (s === "na") + '">–</button>' +
-        "</div></div>" + tail;
-    }).join("");
   }
   // plant roomy: uwaga do pomieszczenia (jedna na pomieszczenie), pokazuje się, gdy coś jest ✗
   var roomNotes = {};
   function roomFails(room) { return cur.type.checks.filter(function (c, i) { return c.room === room && states[i] === "fail"; }).map(function (c) { return c.cp; }); }
-  $("ck").addEventListener("input", function (e) { var el = e.target.closest("input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
+  $("ck").addEventListener("input", function (e) { var el = e.target.closest("ion-input[data-room]"); if (el) roomNotes[el.getAttribute("data-room")] = el.value; });
   function checkIdx(key) { if (!key) return -1; for (var i = 0; i < cur.type.checks.length; i++) if (cur.type.checks[i].key === key) return i; return -1; }
   function renderFaults() {
-    $("faults").innerHTML = RD.usterkiDla(cur.type).map(function (f) {
-      return '<button type="button" class="fault" data-f="' + f.id + '" aria-pressed="' + !!faultsOn[f.id] + '">' + esc(window.OESTT(f.pl, f.enl)) + "</button>";
-    }).join("");
+    pokazPola("faults", "usterki", faultsDane);
   }
-  $("faults").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-f]"); if (!b) return;
-    setFault(b.getAttribute("data-f"), !faultsOn[b.getAttribute("data-f")]);
+  $("faults").addEventListener("change", function (e) {
+    var b = e.target.closest("ion-checkbox[data-f]"); if (!b) return;
+    setFault(b.getAttribute("data-f"), b.checked);
   });
   function setFault(id, on) {
     var f = FAULTS.filter(function (x) { return x.id === id; })[0], i = checkIdx(f.key);
@@ -135,15 +99,15 @@
       }
       renderChecks();
     }
-    if (faultsOn[f.id] && !f.note) $("ov-2").checked = true;
+    if (faultsOn[f.id] && !f.note) $("ov").value = "Requires attention";
     renderFaults(); suggestOverall(); updateFormHint();
   }
   // usterki bez pasującego punktu checklisty idą jako osobne zdania
   function extraFaults(notes) {
     return RD.usterkiDla(cur.type).filter(function (f) { return faultsOn[f.id] && checkIdx(f.key) < 0 && (notes || !f.note); }).map(function (f) { return f.en; });
   }
-  $("ck").addEventListener("click", function (e) {
-    var r = e.target.closest("button[data-r]");
+  $("ck").addEventListener("change", function (e) {
+    var r = e.target.closest("ion-checkbox[data-r]");
     if (r) {
       var ri = +r.getAttribute("data-ri"), id = r.getAttribute("data-r"), arr = rsel[ri] = rsel[ri] || [];
       if (arr.indexOf(id) >= 0) arr.splice(arr.indexOf(id), 1); else arr.push(id);
@@ -152,9 +116,9 @@
       else if (states[ri] === "fail") states[ri] = "ok";
       renderChecks(); suggestOverall(); updateFormHint(); return;
     }
-    var b = e.target.closest("button[data-i]"); if (!b) return;
+    var b = e.target.closest("ion-select[data-i]"); if (!b) return;
     var i = +b.getAttribute("data-i"), key = cur.type.checks[i].key;
-    states[i] = b.getAttribute("data-s"); delete override[i]; delete susN[i];
+    states[i] = b.value; delete override[i]; delete susN[i];
     if (states[i] === "ok") delete rsel[i];
     FAULTS.forEach(function (f) { if (f.key === key) faultsOn[f.id] = false; });
     renderChecks(); renderFaults(); suggestOverall(); updateFormHint();
@@ -170,8 +134,8 @@
   }
   function suggestOverall() {
     var fails = failCount();
-    if (fails && radio("ov") === "Satisfactory") $("ov-2").checked = true;
-    if (!fails && radio("ov") === "Requires attention") $("ov-1").checked = true;
+    if (fails && radio("ov") === "Satisfactory") $("ov").value = "Requires attention";
+    if (!fails && radio("ov") === "Requires attention") $("ov").value = "Satisfactory";
   }
 
 

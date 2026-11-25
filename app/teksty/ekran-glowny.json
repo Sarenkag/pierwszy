@@ -83,11 +83,6 @@
       "en": "Waiting to upload: {n}"
     },
     {
-      "id": "zamknij",
-      "pl": "Zamknij",
-      "en": "Close"
-    },
-    {
       "id": "prognoza-7-dni",
       "pl": "Prognoza 7 dni",
       "en": "7-day forecast"

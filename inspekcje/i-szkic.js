@@ -9,13 +9,18 @@
   function draftKey(t, code) { if (REC && !t && code == null) return "rec_" + REC.id; /* odzyskana: własny szkic, inspekcja z listy PPM bez zmian */ t = t || cur.type; code = code == null ? cur.code : code; return t && code ? "draft_" + t.id + "|" + code : ""; }
   function draftFields() {
     // wszystkie pola formularza z id (data, podpis, Name/Date, Overall/Quote, komentarz…), bez plików i etapu klocka
-    return Array.prototype.filter.call($("v-form").querySelectorAll("input[id],textarea[id],select[id]"), function (el) {
+    var fields = Array.prototype.filter.call($("v-form").querySelectorAll("ion-input[id],ion-textarea[id],ion-select[id],ion-checkbox[id],ion-datetime[id]"), function (el) {
       return el.type !== "file" && el.id !== "ppmStage" && el.id !== "flOn";
     });
+    var day = $("dzien"); if (day && fields.indexOf(day) < 0) fields.push(day);
+    return fields;
   }
   function draftSnap() {
     var f = {};
-    draftFields().forEach(function (el) { f[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
+    draftFields().forEach(function (el) { f[el.id] = el.tagName === "ION-CHECKBOX" ? el.checked : el.value; });
+    ["Satisfactory", "Requires attention", "Unsatisfactory"].forEach(function (v, i) { f["ov-" + (i + 1)] = f.ov === v; });
+    ["", "No", "Yes"].forEach(function (v, i) { f["q-" + i] = f.quote === v; });
+    delete f.ov; delete f.quote;
     if (f.nameOn === false && $("podpis").dataset.v) f.podpis = $("podpis").dataset.v; // Name odznaczone: podpis schowany, ale pamiętany
     return {
       v: 1, t: Date.now(), fin: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? Date.now() : undefined, finPeriod: cur.ppm && PPM.closed && PPM.closed(cur.ppm) ? PPM.stage(cur.ppm).period : undefined, qk: cur.type.checks.map(function (c) { return c.key; }),
@@ -64,14 +69,16 @@
       // brak szkicu ALBO szkic bez zdjęć (pusty zapis po otwarciu w starej wersji, Grzegorz 04/11): pokaż „Przywróć inspekcję”
       if (d && d.v === 1) { restoreDraft(d, tok); if (cur.ppm && PPM.closed && PPM.closed(cur.ppm)) setTimeout(function () { if (tok === formSeq) $("formHint").textContent = finHint(); }, 0); }
       // po rozpoczęciu wczytywania szkicu (settle() czeka, aż jego zdjęcia będą na miejscu)
-      if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // Flushing: także gdy coś już jest (brakujące krany z raportu w kolejce)
+      if (!REC && (!d || !(d.photos && d.photos.length) || cur.type.flush)) offerRestore(tok); // „↺ Przywróć inspekcję” (przywroc.js); Flushing: także gdy coś już jest
       draftOn = true; if (typeof ntRefresh === "function") ntRefresh();
   }
   function restoreDraft(d, tok) {
-    var f = d.fields || {};
+    var f = Object.assign({}, d.fields || {});
+    ["Satisfactory", "Requires attention", "Unsatisfactory"].forEach(function (v, i) { if (f["ov-" + (i + 1)]) f.ov = v; });
+    ["", "No", "Yes"].forEach(function (v, i) { if (f["q-" + i]) f.quote = v; });
     draftFields().forEach(function (el) {
       if (!(el.id in f)) return;
-      if (el.type === "checkbox" || el.type === "radio") el.checked = !!f[el.id]; else el.value = f[el.id];
+      if (el.tagName === "ION-CHECKBOX") el.checked = !!f[el.id]; else el.value = f[el.id];
     });
     var qk = d.qk || [], old = d.rsel || {};
     override = Object.assign({}, d.override); faultsOn = Object.assign({}, d.faultsOn); rsel = {};
@@ -101,86 +108,13 @@
       $("formHint").textContent = window.OESTT("Wczytano zapisaną inspekcję (", "Saved inspection loaded (") + ok.length + " zdj.)." + (keptSaved.length ? window.OESTT(" Nie udało się pokazać ", " Could not show ") + keptSaved.length + window.OESTT(" zdjęć — zostają w zapisie.", " photos — they stay in the save.") : "");
     });
   }
-  // ---------- odzyskanie inspekcji skasowanej przez starą wersję „Wyślij” (04/11/2026) ----------
-  // Stara wersja po „Wyślij” kasowała szkic. Kopie zdjęć zostały w module zdjęć (kategoria + kod tej inspekcji),
-  // więc pusty formularz z kopiami z ostatnich dni proponuje „↺ Przywróć inspekcję”: zdjęcia wracają, inspekcja znów W trakcie.
-  var restoreList = [];
-  function offerRestore(tok) {
-    var b = $("restoreIns"); b.hidden = true; restoreList = []; restorePdf = null;
-    if (!window.OESTZdjecia || cur.mode !== "one" || !cur.type) return;
-    var ctx = copyCtx(), st = cur.ppm && PPM.stage ? PPM.stage(cur.ppm) : null;
-    var y = NZ.dzienIso(new Date(Date.now() - 864e5)), from = st && st.day && st.day < y ? st.day : y; // od dnia wysłania, ale najpóźniej od wczoraj
-    // Flushing: najpierw raport z kolejki wysyłki (PDF ma odpowiedzi kranów i zdjęcia przy kranach), potem kopie zdjęć
-    var fT = cur.type.flush, pid = cur.ppm && cur.ppm.id;
-    var fromQ = !fT || !pid || !window.OESTFlush || !OESTFlush.fromPdf ? Promise.resolve(null) : qAll().then(function (all) {
-      var me = OESTKonto.email(); // tylko raporty tego konta
-      var since = Date.parse(from + "T00:00:00"); // tylko raport z tego okresu (od dnia etapu / wczoraj), nigdy zeszłotygodniowy
-      var it = (all || []).filter(function (q) { return (q.ppm === pid || (!q.ppm && q.type === cur.type.id)) && q.pdf && q.pdf.length && q.created >= since && (!q.acct || q.acct.toLowerCase() === me); }).sort(function (a, c) { return c.created - a.created; })[0];
-      var rr = it ? OESTFlush.fromPdf(new Uint8Array(it.pdf), fT.taps.map(function (x) { return x && x.name != null ? x.name : String(x); })) : null;
-      if (rr) rr.created = it.created; // czas raportu = czas zdjęć (nie dzień przywrócenia)
-      return rr;
-    }).catch(function () { return null; });
-    var settle = function () { return new Promise(function (r) { (function w() { if (restoring || pendingPh) setTimeout(w, 200); else r(); })(); }); }; // szkic najpierw wczyta swoje zdjęcia
-    Promise.all([OESTZdjecia.list(), fromQ, settle()]).then(function (rs) {
-      var all = rs[0];
-      if (tok !== formSeq) return;
-      // z raportu tylko krany, które w inspekcji nie mają jeszcze zdjęcia (nic się nie dubluje)
-      // zdjęcia bez kranu (np. karta papierowa) tylko wtedy, gdy inspekcja nie ma jeszcze żadnego takiego zdjęcia
-      var have = {}, loose = false; photos.forEach(function (p) { if (p.tap != null) have[p.tap] = 1; else loose = true; });
-      var rp = rs[1]; if (rp) { rp.photos = rp.photos.filter(function (p) { return p.tap != null ? !have[p.tap] : !loose; }); }
-      // odpowiedzi też się liczą (e-formularz nie wymaga zdjęć): jest co przywrócić, gdy raport ma zdjęcia brakujących kranów
-      // albo odpowiedź / notatkę / tydzień, których w inspekcji jeszcze nie ma
-      var ans = rp && (rp.taps.some(function (x, i) { var c = fl.taps[i]; return c && c.state === "yes" && !c.note && (x.state !== "yes" || x.note); }) || (rp.week && !fl.week));
-      restorePdf = rp && (rp.photos.length || ans) ? rp : null;
-      if (photos.length && !restorePdf) return;
-      restoreList = photos.length ? [] : all.filter(function (r) { return r.hasBlob && r.category === ctx.category && r.code === ctx.code && r.day >= from; })
-        .sort(function (a, c) { return a.created < c.created ? -1 : 1; });
-      if (!restoreList.length && !restorePdf) return;
-      b.hidden = false; b.textContent = window.OESTT("↺ Przywróć inspekcję (zdjęcia: ", "↺ Restore inspection (photos: ") + (restorePdf ? restorePdf.photos.length : restoreList.length) + ")";
-      var hd = document.querySelector("#v-form .ihead"); if (hd && b.previousElementSibling !== hd) hd.after(b); // na górze, od razu widoczny (Grzegorz 04/11: „nie ma takich przycisków”)
-    }).catch(function () {});
-  }
-  var restorePdf = null;
-  $("restoreIns").addEventListener("click", function () {
-    var b = this, list = restoreList.slice(), tok = formSeq, rp = restorePdf; if ((!list.length && !rp) || queueing) return;
-    b.disabled = true;
-    var t = cur.ppm, st = t && PPM.stage ? PPM.stage(t) : null;
-    if (t && st && (st.s === "queued" || st.s === "sent" || st.s === "done")) {
-      // okres znów otwarty: termin wraca, raport z kolejki zostaje (wyjdzie sam) jako ✉ przy otwartej inspekcji
-      var q = queue.filter(function (x) { return x.ppm === t.id; }).sort(function (a, c) { return c.created - a.created; })[0];
-      if (st.period) PPM.setDue(t, st.period);
-      PPM.setStage(t, { s: "prog", manual: false, mail: q ? (q.status === "sent" ? "sent" : "queued") : "", mailId: q ? q.id : "", mailSig: "" });
-      renderPpmBar();
-    }
-    if (rp) { // z raportu w kolejce: odpowiedzi, tydzień, notatki i zdjęcia przy tych samych kranach co w raporcie
-      fl.on = true; if (PPM.setNeeds && cur.ppm) PPM.setNeeds(cur.ppm, { q: true, t: true }); applyNeeds(); if (rp.week && !fl.week) fl.week = rp.week; // wybrany już tydzień zostaje
-      // odpowiedź z raportu tylko tam, gdzie w inspekcji jest jeszcze domyślne Yes bez notatki (nic, co już wpisane, się nie nadpisuje)
-      rp.taps.forEach(function (x, i) { var c = fl.taps[i]; if (c && c.state === "yes" && !c.note) { c.state = x.state; c.note = x.note; if (x.note) fl.open[i] = true; } });
-      renderFlush(); updateFormHint();
-      draftOn = true; b.hidden = true; b.disabled = false; restoreList = []; restorePdf = null;
-      rp.photos.forEach(function (p, i) { addFiles([new File([p.bytes], "kran " + (i + 1) + ".jpg", { type: "image/jpeg", lastModified: rp.created || Date.now() })], p.tap, false); });
-      var nt = rp.photos.filter(function (p) { return p.tap != null; }).length;
-      $("formHint").textContent = window.OESTT("Przywrócono z raportu w kolejce: odpowiedzi kranów, tydzień " + (rp.week || "–") + ", zdjęcia przy kranach: " + nt + (rp.photos.length - nt ? ", inne zdjęcia: " + (rp.photos.length - nt) : "") + ". Możesz dodać brakujące zdjęcia.",
-        "Restored from the queued report: outlet answers, week " + (rp.week || "–") + ", outlet photos: " + nt + (rp.photos.length - nt ? ", other photos: " + (rp.photos.length - nt) : "") + ". You can add the missing photos.");
-      return;
-    }
-    // kopie są już w folderze OEST: wracają do inspekcji jako te same zdjęcia (bez drugiego zapisu), znów trzymane przez inspekcję
-    Promise.all(list.map(function (r) { return OESTZdjecia.blob(r.id).then(function (bl) { return bl ? makePhoto(bl, { zid: r.id, width: r.width, height: r.height, when: new Date(Date.parse(r.created) || Date.now()) }) : null; }); }))
-      .then(function (ps) {
-        ps = ps.filter(Boolean); var files = ps; if (tok !== formSeq) { ps.forEach(function (p) { URL.revokeObjectURL(p.url); }); return; }
-        if (Zd.keep) Zd.keep(ps.map(function (p) { return p.zid; }), HOLD).catch(function () {});
-        draftOn = true; b.hidden = true; b.disabled = false; restoreList = [];
-        if (ps.length) needOn("p"); photos = photos.concat(ps); renderPhotos(); suggestDate();
-        $("formHint").textContent = window.OESTT("Przywrócono zdjęcia: ", "Photos restored: ") + files.length + window.OESTT(". Inspekcja znów W trakcie — sprawdź odpowiedzi, potem Wyślij / Zakończ.", ". The inspection is In progress again — check the answers, then Send / Finish.");
-      }, function (e) { b.disabled = false; $("formHint").textContent = window.OESTT("Nie udało się przywrócić zdjęć: ", "Could not restore the photos: ") + gErr(e); });
-  });
   // zmiany w formularzu: kliknięcia (Yes/No, tydzień, przełączniki), wpisywanie, wybór daty
   // ręczne „Nie rozpoczęta” (07/11): dotknięcie, które coś w inspekcji zmieniło (odcisk przed / po), albo wpis = W trakcie
   var sigBefore = null;
   function unstartedNow() { return !!(cur.type && cur.ppm && PPM && PPM.unstarted && PPM.unstarted(cur.ppm)); }
   ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function (e) { if (ev === "click" && e.isTrusted && unstartedNow()) sigBefore = ppmSig(); }, true); });
   ["click", "input", "change"].forEach(function (ev) { $("v-form").addEventListener(ev, function (e) {
-    var mine = e.isTrusted && !(e.target && e.target.id === "ppmStage"), before = ev === "click" ? sigBefore : null;
+    var mine = (e.isTrusted || e.oestTrusted) && !(e.target && e.target.id === "ppmStage"), before = ev === "click" ? sigBefore : null;
     setTimeout(function () { scheduleDraft(); if (mine && unstartedNow() && (ev !== "click" || ppmSig() !== before)) ppmTrack(false, true); }, 0);
   }); });
   // apka schowana / zamykana: zapis od razu, bez czekania

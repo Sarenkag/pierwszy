@@ -5,8 +5,8 @@
   root.OEST_PPM.naZmianeTerminow(request);root.addEventListener('oest:settings-changed',request);
   root.addEventListener('oest:inspection-completed',e=>{root.OESTCalendar.recordCompletion(e.detail).catch(()=>{});});
 }})(typeof window==='undefined'?globalThis:window,function(C){
-  'use strict';
-  function createController(o){let chain=Promise.resolve(),fingerprint='';const day=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+  'use strict';const w=typeof window!=='undefined'?window:globalThis;
+  function createController(o){let chain=Promise.resolve(),fingerprint='';const day=()=>w.OESTNarzedzia.dzienIso(new Date());
     function settings(){return o.store.get();}function key(owner){return 'oest.calendar.v1.'+encodeURIComponent(owner);}
     function read(owner){const text=o.storage.getItem(key(owner));return text?JSON.parse(text):{receipts:[],lastSyncAt:'',lastError:'',eventCount:0};}
     function write(owner,s){o.storage.setItem(key(owner),JSON.stringify(s));if(o.changed)o.changed();}

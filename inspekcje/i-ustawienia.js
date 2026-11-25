@@ -5,76 +5,29 @@
   // ---------- ustawienia ----------
   function fillSettings() {
     $("s-email").value = cfg.email; $("s-folder").value = cfg.folder; $("s-pattern").value = cfg.pattern;
-    $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-stamp").checked = !!cfg.stamp; $("s-dphotos").checked = !!cfg.drivePhotos;
+    $("s-site").value = cfg.site; $("s-insp").value = cfg.insp; $("s-scope").checked = !!cfg.scope; $("s-dphotos").checked = !!cfg.drivePhotos;
     $("s-api").value = cfg.api; $("s-key").value = cfg.key; $("s-auto").checked = !!cfg.auto; $("s-wifi").checked = cfg.wifiOnly !== false;
     $("apiBox").hidden = IN_GAS;
   }
   function readSettings() {
     var apiChanged = cfg.api !== val("s-api") || cfg.key !== val("s-key");
     cfg.email = val("s-email"); cfg.folder = val("s-folder") || DEFAULTS.folder; cfg.pattern = val("s-pattern") || DEFAULTS.pattern;
-    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.stamp = $("s-stamp").checked; cfg.stampChosen = true; cfg.drivePhotos = $("s-dphotos").checked;
+    cfg.site = val("s-site"); cfg.insp = val("s-insp"); cfg.scope = $("s-scope").checked; cfg.drivePhotos = $("s-dphotos").checked;
     cfg.api = val("s-api"); cfg.key = val("s-key"); cfg.auto = $("s-auto").checked; cfg.wifiOnly = $("s-wifi").checked;
     save("cfg", cfg); renderHome();
     if (apiChanged && cfg.api && cfg.key) loadSetup();
     $("setToast").textContent = window.OESTT("Zapisano w tej przeglądarce", "Saved in this browser");
     clearTimeout(readSettings.t); readSettings.t = setTimeout(function () { $("setToast").textContent = ""; }, 1800);
   }
-  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-stamp", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
+  ["s-email", "s-folder", "s-pattern", "s-site", "s-insp", "s-scope", "s-dphotos", "s-api", "s-key", "s-auto", "s-wifi"].forEach(function (id) { $(id).addEventListener("change", readSettings); });
   $("s-wifi").addEventListener("change", function () { if (gm()) { OESTSender.render(); if (cfg.auto) OESTSender.run(); } }); // wyłączone czekanie od razu puszcza kolejkę
   fillSettings();
-  // małe zdjęcia (inspekcje z kartki, np. Fire Test – Grzegorz 12/11/2026): 4 w rzędzie, rząd wyśrodkowany, od górnego
-  // marginesu, 3 rzędy na stronę; ten sam układ w Wordzie (photoDocx)
-  var SMALL = { cols: 4, rows: 3, M: 6, gap: 3 };
-  // Word z samych zdjęć (zdjęcia formularza wypełnionego ręcznie): jedno zdjęcie = jedna strona A4 —
-  // ten sam formularz w Wordzie i w PDF-ie (Grzegorz 04/11)
-  var PHOTO_DOCX = null;
-  function photoDocx(pics, small) {
-    if (!PHOTO_DOCX) {
-      var z = new PizZip();
-      z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
-      z.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-      z.file("word/_rels/document.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>');
-      z.file("word/document.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>{%zdjecia}</w:t></w:r></w:p><w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="340" w:right="340" w:bottom="340" w:left="340" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>');
-      PHOTO_DOCX = z.generate({ type: "uint8array" });
-    }
-    var out = fillDocx(PizZip, docxtemplater, PHOTO_DOCX, {}, pics), x = out.file("word/document.xml").asText();
-    if (small) x = smallDocxBody(x, pics);
-    else x = x.replace('<w:r><w:br w:type="page"/></w:r>', ""); // pierwsze zdjęcie bez pustej strony przed nim
-    out.file("word/document.xml", x);
-    return out.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
-  }
-  // Word inspekcji z kartki (small): formularz strona po stronie (poziomy na
-  // poziomej stronie: każda kartka to osobna sekcja), potem małe zdjęcia po 4 w wyśrodkowanym rzędzie, 3 rzędy na stronę
-  function smallDocxBody(x, pics) {
-    var TW = 56.7, EMU = 635, pg = { w: 11906, h: 16838 }, M = SMALL.M * TW;
-    var dr = x.match(/<w:r><w:drawing>[\s\S]*?<\/w:drawing><\/w:r>/g) || [];
-    function size(d, cx, cy) { return d.replace(/<wp:extent cx="\d+" cy="\d+"\/>/, '<wp:extent cx="' + cx + '" cy="' + cy + '"/>').replace(/<a:ext cx="\d+" cy="\d+"\/>/, '<a:ext cx="' + cx + '" cy="' + cy + '"/>'); }
-    function fit(p, w, h) { var cw = w, ch = Math.round(w * p.height / p.width); if (ch > h) { ch = h; cw = Math.round(h * p.width / p.height); } return [cw, ch]; }
-    function sect(l) { return '<w:sectPr><w:pgSz w:w="' + (l ? pg.h : pg.w) + '" w:h="' + (l ? pg.w : pg.h) + '"' + (l ? ' w:orient="landscape"' : "") + '/><w:pgMar w:top="' + Math.round(M) + '" w:right="' + Math.round(M) + '" w:bottom="' + Math.round(M) + '" w:left="' + Math.round(M) + '" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>'; }
-    var P0 = '<w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/>', body = "", idx = pics.map(function (p, i) { return i; });
-    var sh = idx.filter(function (i) { return pics[i].sheet; }), gen = idx.filter(function (i) { return !pics[i].sheet; });
-    sh.forEach(function (i, k) {
-      var p = pics[i], l = p.width > p.height, W = (l ? pg.h : pg.w) - 2 * M, H = (l ? pg.w : pg.h) - 2 * M - 300, z = fit(p, W, H);
-      // ostatnia kartka bez małych zdjęć za nią: jej strona to sekcja końcowa dokumentu
-      var last = k === sh.length - 1 && !gen.length;
-      body += "<w:p><w:pPr>" + P0 + (last ? "" : sect(l)) + "</w:pPr>" + size(dr[i] || "", Math.round(z[0] * EMU), Math.round(z[1] * EMU)) + "</w:p>";
-      if (last) body += "§LAST§" + (l ? "L" : "P");
-    });
-    var cw = ((pg.w - 2 * M) - (SMALL.cols - 1) * SMALL.gap * TW) / SMALL.cols, ch = cw * 4 / 3;
-    for (var a = 0; a < gen.length; a += SMALL.cols) {
-      var row = gen.slice(a, a + SMALL.cols), r = a / SMALL.cols, brk = r && r % SMALL.rows === 0;
-      body += "<w:p><w:pPr>" + (brk ? "<w:pageBreakBefore/>" : "") + '<w:spacing w:before="0" w:after="' + Math.round(SMALL.gap * TW) + '" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>' +
-        row.map(function (i, k) { var z = fit(pics[i], cw, ch); return (k ? '<w:r><w:t xml:space="preserve"> </w:t></w:r>' : "") + size(dr[i] || "", Math.round(z[0] * EMU), Math.round(z[1] * EMU)); }).join("") + "</w:p>";
-    }
-    var lm = /§LAST§([LP])$/.exec(body), fin = sect(lm ? lm[1] === "L" : false);
-    body = body.replace(/§LAST§[LP]$/, "");
-    return x.replace(/<w:body>[\s\S]*<\/w:body>/, "<w:body>" + body + fin + "</w:body>");
-  }
+  // Word z samych zdjęć formularza (kartki, także małe zdjęcia Fire Test): OESTWord.zdjeciaKartki (moduly/word)
   function fillFlushDocx(f) {
-    var zip = new PizZip(OESTWzory.bajty("flush"));
-    zip.file("word/document.xml", OESTFlush.fill(zip.file("word/document.xml").asText(), f));
-    zip.file("word/header1.xml", OESTFlush.header(zip.file("word/header1.xml").asText(), f.building));
-    return zip.generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX });
+    return OESTWord.zmien(OESTWzory.bajty("flush"), {
+      "word/document.xml": function (x) { return OESTFlush.fill(x, f); },
+      "word/header1.xml": function (x) { return OESTFlush.header(x, f.building); }
+    });
   }
   // AOV i inne listy punktów: podsumowanie po angielsku do raportu
   // basic form Smart w Wordzie (wzór OEST-basic) dla Flushingu: lista kranów + zdjęcia, zdjęcie przy kranie podpisane jego nazwą
@@ -83,7 +36,7 @@
     var k = "", raz = basicRaz.get(d) || {}; basicRaz.set(d, raz);
     for (var i = 0; i < pics.length; i++) k += pics[i].url + "|";
     if (raz[k]) return raz[k];
-    var b = flushBasic(d, pics); return (raz[k] = fillDocx(PizZip, docxtemplater, OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }));
+    var b = flushBasic(d, pics); return (raz[k] = OESTWord.wypelnij(OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics));
   }
   // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
   function flushBasic(d, pics) {
@@ -152,7 +105,7 @@
     function zdjecia(pics) {
       var F = d.flush || cur.type.flush, ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; }));
       if (F) ph = ph.map(function (p) { var t = p.tap != null && F.taps[p.tap]; return t ? Object.assign({}, p, { caption: t.name != null ? t.name : String(t) }) : p; });
-      return photoDocx(ph, small);
+      return OESTWord.zdjeciaKartki(ph, small);
     }
     function done(r, form) { // form: { docs: fn(pics) → Wordy raportu z tymi zdjęciami (z nich PDF), docx: Word firmy | pusty, basic: fn(pics) | brak }
       var sel = pick(r.pics), files = [], sh = sel.filter(function (p) { return p.sheet; }), rest = sel.filter(function (p) { return !p.sheet; });
@@ -169,7 +122,7 @@
         if (form && n.xp) files.push(pdfZ(" - report", form.docs([])));
         if (word && main) files.push(file(" - report", form.docx));
         if (word && form.basic) files.push(file(main ? " - basic" : " - report", form.basic([])));
-        if (sh.length) { var fsh = photoDocx(sh, small); files.push(pdfZ(" - form", [fsh])); if (n.xw) files.push(file(" - form", fsh)); }
+        if (sh.length) { var fsh = OESTWord.zdjeciaKartki(sh, small); files.push(pdfZ(" - form", [fsh])); if (n.xw) files.push(file(" - form", fsh)); }
         if (rest.length) files.push(pdfZ(" - photos", [zdjecia(rest)]));
       }
       r.files = files; return r;
@@ -194,9 +147,9 @@
         return done({ name: name, data: d, docx: docx, pics: pics, info: {}, logoUrl: "", wordPelny: pelny }, { docx: docx, basic: basic, docs: function (sel) { return [docx, basic(sel)]; } });
       });
     }
-    var tpl = templateBytes(), info = templateInfo(PizZip, tpl);
+    var tpl = templateBytes(), info = OESTWord.info(tpl);
     return mapLimit(photos, 3, fin).then(function (pics) {
-      var sel = pick(pics), fill = function (s2) { return fillDocx(PizZip, docxtemplater, tpl, scopeForWord(tpl, d), s2).generate({ type: "uint8array", compression: "DEFLATE", mimeType: MIME_DOCX }); };
+      var sel = pick(pics), fill = function (s2) { return OESTWord.wypelnij(tpl, scopeForWord(tpl, d), s2); };
       var docx = fill(n.one ? sel : []);
       var logoUrl = info.logo ? URL.createObjectURL(new Blob([info.logo], { type: info.logoType === "PNG" ? "image/png" : "image/jpeg" })) : "";
       // PDF z tego samego Worda co mail (te same zdjęcia); archiwum z pełnego Worda tylko, gdy mail nie ma wszystkich zdjęć

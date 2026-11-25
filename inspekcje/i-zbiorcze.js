@@ -49,16 +49,12 @@
     bar.hidden = !t.batch; if (!t.batch) return;
     var all = devices(t), codes = Object.keys(batch.items), fails = codes.filter(function (c) { return batch.items[c].fails; }).length;
     var nextUp = all.filter(function (d) { return !batch.items[d.code]; })[0];
-    bar.innerHTML = '<div class="label">Zlecenie: ' + esc(t.batch) + "</div>" +
-      "<div>"+window.OESTT("Zapisane:", "Saved:")+" " + codes.length + window.OESTT(" z ", " of ") + all.length + window.OESTT(" · z uwagami: ", " · with remarks: ") + fails + (batch.started ? window.OESTT(" · zaczęte ", " · started ") + esc(NZ.data(new Date(batch.started))) : "") + "</div>" +
-      (codes.length && nextUp ? '<div class="row"><button class="btn wide" type="button" id="batchResume">'+window.OESTT('Wznów od', 'Resume from')+' ' + esc(nextUp.code) + "</button></div>" : "") +
-      '<p class="hint">'+window.OESTT('Każde urządzenie zapisuje się od razu w telefonie. Możesz przerwać, zamknąć apkę i wrócić jutro.', 'Each device is saved on the phone straight away. You can stop, close the app and come back tomorrow.')+'</p>' +
-      '<div class="row"><button class="go" type="button" id="batchEnd">'+window.OESTT('Zakończ zlecenie', 'Finish job')+'</button></div>' +
-      (codes.length ? '<div class="row"><button class="btn" type="button" id="batchClear">'+window.OESTT('Zacznij od nowa', 'Start again')+'</button></div>' : "");
-    $("batchEnd").addEventListener("click", openSum);
-    if ($("batchResume")) $("batchResume").addEventListener("click", function () { openForm(nextUp.code); });
-    if ($("batchClear")) $("batchClear").addEventListener("click", async function () {
-      if (await ask(window.OESTT("Usunąć wszystkie zapisy tego zlecenia?", "Delete all saves of this job?"))) clearBatch(t).then(renderList, function (e) { say(window.OESTT("Nie udało się usunąć zlecenia (", "Could not delete the job (") + gErr(e) + window.OESTT("). Zapisy zostają.", "). The saves stay.")); });
+    widokInspekcji(bar, "fragment", { rodzaj: "batch", nazwa: t.batch, zapisane: codes.length, wznow: codes.length && nextUp ? nextUp.code : "",
+      opis: window.OESTT("Zapisane:", "Saved:") + " " + codes.length + window.OESTT(" z ", " of ") + all.length + window.OESTT(" · z uwagami: ", " · with remarks: ") + fails + (batch.started ? window.OESTT(" · zaczęte ", " · started ") + NZ.data(new Date(batch.started)) : "")
+    }, async function (akcja) {
+      if (akcja === "koniec") return openSum();
+      if (akcja === "wznow") return openForm(nextUp.code);
+      if (akcja === "wyczysc" && await ask(window.OESTT("Usunąć wszystkie zapisy tego zlecenia?", "Delete all saves of this job?"))) clearBatch(t).then(renderList, function (e) { say(window.OESTT("Nie udało się usunąć zlecenia (", "Could not delete the job (") + gErr(e) + window.OESTT("). Zapisy zostają.", "). The saves stay.")); });
     });
   }
   // Pytanie z odpowiedzią NIE: wybrane powody (albo ogólne en) i czy to tylko obserwacja
@@ -150,9 +146,9 @@
     var locs = [];
     all.forEach(function (d) { if ((cur.restOk || batch.items[d.code]) && locs.indexOf(d.loc) < 0) locs.push(d.loc); });
     cur.loc = locs.join(", "); cur.where = cur.loc;
-    $("formTitle").textContent = t.batch;
+    tytulFormularza = t.batch; tytul();
     $("formSub").textContent = cur.where + " · " + t.name;
-    if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov-2").checked = true;
+    if (Object.keys(batch.items).some(function (c) { return batch.items[c].fails; })) $("ov").value = "Requires attention";
     formMode();
     var jobs = [];
     all.forEach(function (d) { var it = batch.items[d.code]; if (it) (it.photos || []).forEach(function (sp) { jobs.push(photoFromSaved(sp, d.code, where(d)).catch(function () { return null; })); }); });
@@ -171,9 +167,7 @@
   }
   function renderSum() {
     var d = batchData(reportDate());
-    $("sumBox").innerHTML = '<div class="label">' + window.OESTT("Podsumowanie (trafi do raportu)", "Summary (goes into the report)") + '</div><ul class="sumlist">' +
-      d.punkty.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>" +
-      '<p class="hint">'+window.OESTT('Zdjęcia z zapisanych urządzeń dochodzą same. Możesz dodać ogólne.', 'Photos from saved devices are added automatically. You can add general ones.')+'</p>';
+    widokInspekcji("sumBox", "fragment", { rodzaj: "sum", punkty: d.punkty });
   }
   function batchData(w) {
     var t = cur.type, all = cur.sumDevs || devices(t), items = batch.items;

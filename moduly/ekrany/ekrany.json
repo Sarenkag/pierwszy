@@ -8,12 +8,16 @@
     { "id": "ppm", "rodzic": "home", "pudelko": "v-ppm", "pl": "Inspekcje", "en": "Inspections" },
     { "id": "cal", "rodzic": "home", "pudelko": "v-cal", "pl": "Kalendarz", "en": "Calendar" },
     { "id": "soon", "rodzic": "home", "pudelko": "v-soon", "pl": "Wkrótce", "en": "Coming soon", "uwaga": "Bez wejścia (martwy ekran, punkt #52) – do usunięcia w P0-3." },
+    { "id": "soon/handover", "rodzic": "home", "pudelko": "v-soon", "pl": "Handover", "en": "Handover" },
+    { "id": "soon/keys", "rodzic": "home", "pudelko": "v-soon", "pl": "Klucze", "en": "Keys" },
+    { "id": "soon/powertrace", "rodzic": "home", "pudelko": "v-soon", "pl": "Power trace", "en": "Power trace" },
     { "id": "settings", "rodzic": "home", "pudelko": "v-settings", "pl": "Ustawienia", "en": "Settings" },
     { "id": "settings/profile", "rodzic": "settings", "pudelko": "v-settings", "pl": "Mój profil", "en": "My Profile", "aliasy": ["profile"] },
     { "id": "settings/contacts", "rodzic": "settings", "pudelko": "v-settings", "pl": "Zespół i kontakty", "en": "Team & contacts" },
     { "id": "settings/drive", "rodzic": "settings", "pudelko": "v-settings", "pl": "Google Drive i kopia", "en": "Google Drive & backup", "aliasy": ["settings/backup"] },
     { "id": "settings/mail", "rodzic": "settings", "pudelko": "v-settings", "pl": "Poczta i wysyłka", "en": "Email & delivery" },
     { "id": "settings/calendar", "rodzic": "settings", "pudelko": "v-settings", "pl": "Kalendarz i grafik", "en": "Calendar & shifts" },
+    { "id": "settings/my-reports", "rodzic": "settings", "pudelko": "v-settings", "pl": "Moje raporty", "en": "My reports" },
     { "id": "settings/reports", "rodzic": "settings", "pudelko": "v-settings", "pl": "Raporty i zdjęcia", "en": "Reports & photos" },
     { "id": "settings/sync", "rodzic": "settings", "pudelko": "v-settings", "pl": "Synchronizacja", "en": "Sync & transfer" },
     { "id": "settings/account", "rodzic": "settings", "pudelko": "v-settings", "pl": "Konto", "en": "Account", "aliasy": ["appset"] },
@@ -42,7 +46,6 @@
     { "id": "reactive/job/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Zlecenie", "en": "Job" },
     { "id": "reactive/complete/:id", "rodzic": "reactive/job/:id", "pudelko": "v-reactive", "pl": "Zamknięcie zlecenia", "en": "Complete job" },
     { "id": "reactive/tree/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Wybór (drzewo)", "en": "Pick (tree)", "uwaga": "Węzeł drzewa wraca do węzła nadrzędnego, a najwyższy do Reactive." },
-    { "id": "reactive/config", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Ustawienia Reactive", "en": "Reactive settings" },
     { "id": "reactive/history", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Historia", "en": "History" }
   ]
 }

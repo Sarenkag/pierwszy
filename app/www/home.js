@@ -1,14 +1,13 @@
-/* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”):
- * nagłówek (logo, ONE EASTSIDE, data, pogoda, EN/PL, dzwonek, profil), lampki Wi‑Fi i Dysk,
- * pasek dni (moduly/pasek-dni: pogoda, zrobione/wszystkie, dni pracy z grafiku) i okienka:
- * prognoza 7 dni, powiadomienia, Dysk, sieć. Okienka rosną z miejsca stuknięcia i chowają się przez pomniejszenie,
- * także po stuknięciu obok i po systemowym Wstecz (stos okien moduly/wstecz). Zmiana języka podmienia tylko teksty w miejscu. */
+/* Ekran główny (Grzegorz 03/11/2026, makieta „Home experience”) – dane dla ekranu Vue (moduly/szkielet/src/ekrany/Glowny.vue):
+ * nagłówek (logo, ONE EASTSIDE, data, pogoda, PL/EN, dzwonek, profil), lampki Wi‑Fi i Dysk, licznik folderu zdjęć,
+ * pasek dni (OESTPpmUI.dniPaska), kafelki i okienka: prognoza 7 dni, powiadomienia, Dysk, sieć, nowości.
+ * Ekran niczego nie liczy: OESTHome.dane() i dane okienek dają zwykłe obiekty; zmiana stanu → zdarzenie „oest:home”.
+ *   OESTHome.dane() → { data, pogoda: { ikona, temp } | null, inicjaly, siec, dysk, zdjecia: { tekst, poziom }, dzwonek, nowosci, kafelki }
+ *   OESTHome.prognoza() / powiadomienia() / dysk() / siec() / nowosciLista()   dane okienek
+ *   OESTHome.idz(cel) / dyskAkcja(op) → Promise<tekst> / pozniej() / odswiez() */
 (function (w) {
   "use strict";
-  var d = w.document, deps = null, pop = null, popKind = "", popClose = null, popZw = null;
-  var $ = function (id) { return d.getElementById(id); };
-  var LAT = 52.4797, LON = -1.8834; // One Eastside, Birmingham
-  var WX_KEY = "oest.weather", WX_AGE = 3600000;
+  var d = w.document;
   // teksty ekranu: app/teksty/ekran-glowny.json (Grzegorz 09/11/2026 – teksty w plikach danych, nie w kodzie)
   function X(id, v) { return w.OESTTx ? w.OESTTx("ekran-glowny." + id, v) : id; }
   function en() { return w.OESTBledy ? w.OESTBledy.lang() === "en" : false; }
@@ -17,33 +16,10 @@
   var iso = w.OESTNarzedzia.dzienIso; // moduly/narzedzia
   function today() { var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
 
-  // ---------- pogoda (Open-Meteo, bez klucza; bez sieci ostatnia zapisana) ----------
-  function wxIcon(c) {
-    if (c == null) return "";
-    if (c === 0) return "☀"; if (c <= 2) return "⛅"; if (c === 3) return "☁"; if (c <= 48) return "🌫";
-    if (c >= 95) return "⛈"; if ((c >= 71 && c <= 77) || c === 85 || c === 86) return "❄"; if (c >= 80) return "🌦"; return "🌧";
-  }
-  function wxCache() { try { return JSON.parse(w.localStorage.getItem(WX_KEY) || "null"); } catch (e) { return null; } }
-  var wxLoading = null;
-  function wxLoad(force) {
-    var c = wxCache();
-    if (!force && c && Date.now() - c.t < WX_AGE) return Promise.resolve(c);
-    if (w.navigator.onLine === false || !w.fetch) return Promise.resolve(c);
-    if (wxLoading) return wxLoading;
-    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
-      "&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FLondon&forecast_days=14";
-    wxLoading = w.fetch(url).then(function (r) { if (!r.ok) throw Error("WEATHER_HTTP"); return r.json(); }).then(function (j) {
-      if (!j || !j.daily || !Array.isArray(j.daily.time)) throw Error("WEATHER_DATA");
-      var days = {};
-      j.daily.time.forEach(function (k, i) { days[k] = { c: j.daily.weather_code[i], hi: Math.round(j.daily.temperature_2m_max[i]), lo: Math.round(j.daily.temperature_2m_min[i]) }; });
-      var out = { t: Date.now(), now: j.current ? { temp: Math.round(j.current.temperature_2m), c: j.current.weather_code } : null, days: days };
-      try { w.localStorage.setItem(WX_KEY, JSON.stringify(out)); } catch (e) {}
-      return out;
-    }).catch(function () { return c; }).finally(function () { wxLoading = null; });
-    return wxLoading;
-  }
-
-  // ---------- nagłówek, lampki, pasek dni ----------
+  // pogoda: moduł app/www/pogoda.js (OESTPogoda) – jedno źródło dla ekranu głównego i paska dni
+  var wxCache = function () { return w.OESTPogoda.cache(); }, wxLoad = function (f) { return w.OESTPogoda.load(f); }, wxIcon = function (c) { return w.OESTPogoda.ikona(c); };
+  function zmiana() { w.dispatchEvent(new CustomEvent("oest:home")); }
+  // ---------- nagłówek, lampki ----------
   function initials() {
     var p = {}; try { p = w.OESTSettings.get().profile || {}; } catch (e) {}
     var a = {}; try { a = w.OESTKonto.get() || {}; } catch (e) {}
@@ -73,47 +49,12 @@
     var Z = w.OESTZdjecia; if (!Z || !Z.list) return g;
     return g.then(function () { return Z.list(); }).then(function (rs) { var s = Z.stats(rs); photo = { pending: s.pending, bytes: s.pendingBytes, phone: s.phoneBytes, limit: (Z.settings().phoneLimitMB || 200) * 1048576, warn: (Z.settings().warnMB || 100) * 1048576 }; }).catch(function () {});
   }
-  function lamps() {
-    var n = net(), dr = driveState();
-    $("hmNet").querySelector(".l").className = "l " + n.k; $("hmNet").querySelector("span").textContent = n.t;
-    $("hmDrive").querySelector(".l").className = "l " + dr.k; $("hmDrive").querySelector("span").textContent = dr.t;
-    // folder zdjęć OEST: ile zajmuje (Grzegorz 05/11). Kolory liczone od progu ostrzeżeń (osobne ustawienie, domyślnie 100 MB),
-    // nie od limitu folderu (200 MB = bufor): <50% zielony, <75% pomarańczowy, <90% czerwony, wyżej czerwony z ⚠
-    var ph = $("hmPhotos"); if (ph) {
-      var mb = photo.phone / 1048576, base = photo.warn || photo.limit, f = base ? photo.phone / base : 0;
-      ph.className = "hm-ph-size " + (f < 0.5 ? "ok" : f < 0.75 ? "mid" : f < 0.9 ? "hi" : "full");
-      // sam licznik bez słowa „Zdjęcia”, np. 13/200MB – mieści się w jednej linii z Wi‑Fi i HDD (Grzegorz 07/11)
-      ph.querySelector("span").textContent = (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + "/" + Math.round(photo.limit / 1048576) + "MB";
-    }
+  // folder zdjęć OEST: ile zajmuje (Grzegorz 05/11). Kolory liczone od progu ostrzeżeń (osobne ustawienie, domyślnie 100 MB),
+  // nie od limitu folderu (200 MB = bufor): <50% zielony, <75% pomarańczowy, <90% czerwony, wyżej czerwony z ⚠ (poziom „full”)
+  function zdjeciaStan() {
+    var mb = photo.phone / 1048576, base = photo.warn || photo.limit, f = base ? photo.phone / base : 0;
+    return { tekst: (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + "/" + Math.round(photo.limit / 1048576) + "MB", poziom: f < 0.5 ? "ok" : f < 0.75 ? "mid" : f < 0.9 ? "hi" : "full" };
   }
-  function header() {
-    var t = today();
-    $("hmDate").textContent = t.toLocaleDateString(loc(), { weekday: "short", day: "numeric", month: "short" });
-    $("hmIni").textContent = initials();
-    if (w.OESTPrzelacznik) w.OESTPrzelacznik.set($("hmLang"), en() ? "en" : "pl"); // jeden przełącznik PL/EN (moduly/przelacznik)
-    var c = wxCache(), b = $("hmWx");
-    if (c && c.now) { b.hidden = false; b.querySelector(".i").textContent = wxIcon(c.now.c); b.querySelector(".v").textContent = c.now.temp + "°C"; }
-    else b.hidden = true;
-  }
-  function wxDay(k) { var c = wxCache(), dd = (c && c.days) || {}; return dd[k] ? wxIcon(dd[k].c) : ""; }
-  // pasek dni: jeden moduł z listą Inspekcji (moduly/pasek-dni, Grzegorz 07/11) – wczoraj + 13 dni, dni pracy z grafiku
-  function days() {
-    var t = today(), s = new Date(t); s.setDate(s.getDate() - 1);
-    var box = $("hmDays"), sl = box.scrollLeft, cnt = deps.dayCounts();
-    w.OESTPodmien.html(box, w.OESTPasekDni.html({ start: s, days: 14, today: t, todayLabel: X("dzis"), dayName: deps.dayName,
-      isWork: deps.isWorkday, counter: function (k) { return cnt[k] || null; }, icon: wxDay }));
-    box.scrollLeft = sl;
-  }
-  function render() {
-    if (!deps) return;
-    header(); lamps(); days();
-    badge();
-    photoStats().then(function () { lamps(); if (popKind === "drive") fillDrive(); });
-    wxLoad(false).then(function () { header(); days(); if (popKind === "wx") fillWx(); });
-    newsBadge();
-    if (w.OESTNowosci) w.OESTNowosci.load(false).then(function () { newsBadge(); if (popKind === "news") fillNews(); });
-  }
-  function relang() { if (!deps || $("v-home").hidden) return; header(); lamps(); days(); badge(); if (popKind) fill(popKind); }
 
   // ---------- powiadomienia ----------
   var rxOpen = 0;
@@ -124,189 +65,124 @@
     }).catch(function () {});
   }
   function notes() {
-    var k = iso(today()), insp = deps.inspToday(k), out = [];
-    if (insp.today || insp.late) out.push({ ic: "insp", go: "insp", b: X("inspekcje-na-dzis"),
-      s: X("do-zrobienia", { n: insp.today }) + (insp.late ? ", " + X("po-terminie", { n: insp.late }) : "") });
-    if (rxOpen) out.push({ ic: "rx", go: "reactive", b: "Reactive", s: X("otwarte-zadania", { n: rxOpen }) });
+    var insp = w.OESTPpmUI ? w.OESTPpmUI.licznikDzis() : { today: 0, late: 0 }, out = [];
+    if (insp.today || insp.late) out.push({ ikona: "insp", cel: "insp", tytul: X("inspekcje-na-dzis"),
+      opis: X("do-zrobienia", { n: insp.today }) + (insp.late ? ", " + X("po-terminie", { n: insp.late }) : "") });
+    if (rxOpen) out.push({ ikona: "rx", cel: "reactive", tytul: "Reactive", opis: X("otwarte-zadania", { n: rxOpen }) });
     var q = w.OESTSender && w.OESTSender.count ? w.OESTSender.count() : 0;
-    if (q) out.push({ ic: "mail", go: "queue", b: X("wysylka-raportow"), s: X("raporty-w-kolejce-n", { n: q }) });
-    if (photo.pending) out.push({ ic: "drive", go: "drive", b: X("zdjecia-na-dysk"), s: X("czeka-na-wyslanie", { n: photo.pending }) });
+    if (q) out.push({ ikona: "mail", cel: "queue", tytul: X("wysylka-raportow"), opis: X("raporty-w-kolejce-n", { n: q }) });
+    if (photo.pending) out.push({ ikona: "drive", cel: "drive", tytul: X("zdjecia-na-dysk"), opis: X("czeka-na-wyslanie", { n: photo.pending }) });
     // nowa wersja apki (stan i pobieranie w update.js): zwykły wpis, nic nie zasłania ekranu; „Później” chowa go do następnej wersji
     var u = w.OESTUpdate && w.OESTUpdate.note ? w.OESTUpdate.note() : null;
-    if (u) out.push({ ic: "upd", go: "update", b: X("nowa-wersja"), s: en() ? u.en : u.pl, later: !u.busy });
+    if (u) out.push({ ikona: "upd", cel: "update", tytul: X("nowa-wersja"), opis: en() ? u.en : u.pl, pozniej: !u.busy });
     return out;
   }
-  function badge() {
-    rxCount().then(function () {
-      var n = notes().length, b = $("hmBell").querySelector(".hm-badge");
-      b.hidden = !n; b.textContent = n;
-      if (popKind === "bell") fillBell();
-    });
+
+  // ---------- dane ekranu ----------
+  // kafelki ekranu głównego: jeden kafelek (czesci/Kafelki.vue) powielony z listy – dodanie modułu = jedna linia
+  var KAFELKI = [
+    { id: "ppm", trasa: "ppm", t: ["Inspekcje", "Inspections"], ikona: "inspekcje" },
+    { id: "reactive", trasa: "reactive", t: ["Reactive", "Reactive"], ikona: "reactive" },
+    { id: "powertrace", trasa: "soon/powertrace", t: ["Power trace", "Power trace"], ikona: "powertrace" },
+    { id: "cal", trasa: "cal", t: ["Kalendarz", "Calendar"], ikona: "kalendarz" },
+    { id: "keys", trasa: "soon/keys", t: ["Klucze", "Keys"], ikona: "klucze" },
+    { id: "handover", trasa: "soon/handover", t: ["Handover", "Handover"], ikona: "handover" },
+    // nowości firm (moduly/nowosci, 18/11/2026): na miejscu „Statystyk” (jeszcze niezrobione) – siatka 2×4 zostaje
+    { id: "news", trasa: "", t: ["Nowości firm", "Company news"], ikona: "nowosci" },
+    { id: "settings", trasa: "settings", t: ["Ustawienia", "Settings"], ikona: "ustawienia" }
+  ];
+  function dane() {
+    var c = wxCache(), N = w.OESTNowosci, n = net(), dr = driveState(), nw = N ? N.unread() : 0;
+    return {
+      data: today().toLocaleDateString(loc(), { weekday: "short", day: "numeric", month: "short" }),
+      pogoda: c && c.now ? { ikona: wxIcon(c.now.c), temp: c.now.temp + "°C" } : null,
+      inicjaly: initials(), siec: { stan: n.k, tekst: n.t }, dysk: { stan: dr.k, tekst: dr.t }, zdjecia: zdjeciaStan(),
+      dzwonek: notes().length, dni: w.OESTPpmUI ? w.OESTPpmUI.dniPaska("") : [],
+      kafelki: KAFELKI.map(function (k) { return { id: k.id, trasa: k.trasa, ikona: k.ikona, tytul: w.OESTT(k.t[0], k.t[1]), podpis: "", licznik: k.id === "news" ? nw : 0 }; })
+    };
   }
-  var ICONS = {
-    insp: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3"/>',
-    rx: '<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 16.5v.5"/>',
-    mail: '<rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>',
-    drive: '<path d="M8.5 4h7l6 10.5-3.5 6h-12L2.5 14.5z"/><path d="M8.5 4l6 10.5M2.5 14.5h12"/>',
-    upd: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>'
-  };
-  function svg(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS[k] + "</svg>"; }
+  // odświeżenie: pogoda, zdjęcia, powiadomienia, nowości (także bez sieci – ostatnie zapisane)
+  function odswiez(silaPogody) {
+    zmiana();
+    photoStats().then(zmiana);
+    rxCount().then(zmiana);
+    wxLoad(!!silaPogody).then(zmiana);
+    if (w.OESTNowosci) w.OESTNowosci.load(false).then(zmiana);
+  }
 
   // ---------- okienka ----------
-  function fill(kind) { if (kind === "wx") fillWx(); else if (kind === "bell") fillBell(); else if (kind === "drive") fillDrive(); else if (kind === "net") fillNet(); else if (kind === "news") fillNews(); }
-  function head(title, extra) {
-    return '<div class="hm-ph"><b>' + title + "</b>" + (extra ? "<span>" + extra + "</span>" : "") +
-      '<button class="hm-x" type="button" data-hx aria-label="' + X("zamknij") + '">✕</button></div>';
-  }
-  function body(h) { if (pop) pop.querySelector(".hm-pc").innerHTML = h; }
-  function fillWx() {
-    var c = wxCache(), t = today(), h = head("⛅ " + X("prognoza-7-dni"), "Birmingham");
-    if (!c || !c.days) h += '<p class="hm-note">' + X("brak-prognozy") + "</p>";
-    else {
-      h += '<div class="hm-fc">';
-      for (var i = 0; i < 7; i++) {
-        var x = new Date(t); x.setDate(x.getDate() + i); var f = c.days[iso(x)];
-        h += "<div><small>" + (i === 0 ? X("dzis") : esc(deps.dayName(x.getDay()))) + "</small><span>" + (f ? wxIcon(f.c) : "–") + "</span><b>" + (f ? f.hi + "°" : "") + "</b><s>" + (f ? f.lo + "°" : "") + "</s></div>";
-      }
-      h += '</div><p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) +
-        (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") + "</p>";
+  function stanZ(c) { return X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) + (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : ""); }
+  function prognoza() {
+    var c = wxCache(), t = today(), dni = [], DN = w.OESTPpmUI ? w.OESTPpmUI.dayName : function (i) { return i; };
+    if (c && c.days) for (var i = 0; i < 7; i++) {
+      var x = new Date(t); x.setDate(x.getDate() + i); var f = c.days[iso(x)];
+      dni.push({ k: iso(x), nazwa: i === 0 ? X("dzis") : DN(x.getDay()), ikona: f ? wxIcon(f.c) : "", hi: f ? f.hi + "°" : "", lo: f ? f.lo + "°" : "" });
     }
-    body(h);
+    return { tytul: X("prognoza-7-dni") + " · Birmingham", dni: dni, uwaga: !c || !c.days ? X("brak-prognozy") : stanZ(c) };
   }
-  function fillBell() {
-    var list = notes(), h = head("🔔 " + X("powiadomienia"));
-    h += list.length ? list.map(function (n) {
-      var row = '<button class="hm-nt" type="button" data-hgo="' + n.go + '"><span class="hm-ni">' + svg(n.ic) + "</span><span><b>" + esc(n.b) + "</b><small>" + esc(n.s) + '</small></span><span class="hm-ar">›</span></button>';
-      return n.later ? '<div class="hm-ntw">' + row + '<button class="hm-later" type="button" data-akcja="pozniej" data-hlater>' + X("pozniej") + "</button></div>" : row;
-    }).join("") : '<p class="hm-note">' + X("nic-nowego") + "</p>";
-    body(h);
-  }
+  function powiadomienia() { return { tytul: X("powiadomienia"), lista: notes(), pusto: X("nic-nowego"), pozniej: X("pozniej") }; }
   function mb(b) { return (b / 1048576).toLocaleString(loc(), { maximumFractionDigits: 1 }) + " MB"; }
-  function fillDrive() {
+  function dysk() {
     var on = driveOn(), p = drivePaused();
-    var h = head("Google Drive", on ? X("polaczony") : X("niepolaczony"));
-    h += '<button class="hm-op" type="button" data-hop="sync"><span>' + X("synchronizuj-teraz") + "</span><small>" +
-      (photo.pending ? X("zdjecia-rozmiar", { n: photo.pending, mb: mb(photo.bytes) }) : X("nic-do-wyslania")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hop="pause"><span>' + (p ? X("wznow-wysylke") : X("wstrzymaj-wysylke")) + "</span><small>" + (p ? X("wstrzymana") : X("wlaczona")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hop="reconnect"><span>' + X("polacz-ponownie") + "</span><small>" + (on ? X("polaczony") : X("stuknij-aby-polaczyc")) + "</small></button>";
-    h += '<button class="hm-op" type="button" data-hgo="zdjecia"><span>' + X("zdjecia-i-limity") + '</span><small>›</small></button><p class="hm-note" id="hmDrMsg"></p>';
-    body(h);
+    return { tytul: "Google Drive · " + (on ? X("polaczony") : X("niepolaczony")), opcje: [
+      { op: "sync", tekst: X("synchronizuj-teraz"), opis: photo.pending ? X("zdjecia-rozmiar", { n: photo.pending, mb: mb(photo.bytes) }) : X("nic-do-wyslania") },
+      { op: "pause", tekst: p ? X("wznow-wysylke") : X("wstrzymaj-wysylke"), opis: p ? X("wstrzymana") : X("wlaczona") },
+      { op: "reconnect", tekst: X("polacz-ponownie"), opis: on ? X("polaczony") : X("stuknij-aby-polaczyc") },
+      { cel: "zdjecia", tekst: X("zdjecia-i-limity"), opis: "" }
+    ] };
   }
-  function fillNet() {
+  function siec() {
     var n = net(), q = w.OESTSender && w.OESTSender.count ? w.OESTSender.count() : 0;
-    var h = head(X("polaczenie"), n.t);
-    h += '<p class="hm-note">' + (n.k === "off" ? X("opis-brak-sieci")
-      : n.k === "mid" ? X("opis-dane-komorkowe")
-      : X("opis-polaczono")) + "</p>";
-    h += '<button class="hm-op" type="button" data-hgo="queue"><span>' + X("raporty-w-kolejce") + "</span><small>" + q + " ›</small></button>";
-    h += '<button class="hm-op" type="button" data-hgo="settings/sync"><span>' + X("ustawienia-wysylki") + "</span><small>›</small></button>";
-    body(h);
+    return { tytul: X("polaczenie") + " · " + n.t, opis: n.k === "off" ? X("opis-brak-sieci") : n.k === "mid" ? X("opis-dane-komorkowe") : X("opis-polaczono"),
+      opcje: [{ cel: "queue", tekst: X("raporty-w-kolejce"), opis: String(q) }, { cel: "settings/sync", tekst: X("ustawienia-wysylki"), opis: "" }] };
   }
   // ---------- nowości firm (moduly/nowosci, Grzegorz 18/11/2026) ----------
-  function newsBadge() {
-    var N = w.OESTNowosci, b = d.querySelector('#hmTiles [data-hnews] .kf-n'), tile = d.querySelector("#hmTiles [data-hnews]"); if (!N || !tile) return;
-    var n = N.unread();
-    if (!b && n) { tile.insertAdjacentHTML("beforeend", '<span class="kf-n"></span>'); b = tile.querySelector(".kf-n"); }
-    if (b) { b.hidden = !n; b.textContent = n; }
+  function nowosciLista() {
+    var N = w.OESTNowosci, c = N ? N.cache() : null, list = N ? N.top(5) : [], J = N ? N.jobs() : null, out = [];
+    if (N) N.seen();
+    list.forEach(function (x) {
+      var dt = x.date ? new Date(x.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "" /* DD/MM/YYYY (AI-008) */;
+      out.push({ firma: (N.FIRMY[x.src] || {}).skrot || "", tytul: x.title, url: x.url, opis: (x.oes ? "One Eastside · " : x.praca ? X("nowosci-praca") + " · " : "") + x.pub + (dt ? " · " + dt : "") });
+    });
+    // oferty pracy Smart: jeden wiersz zbiorczy (strona kariery)
+    if (J) out.push({ firma: "Smart", tytul: X("nowosci-oferty", { n: J.n }), url: J.url, opis: X("nowosci-kariera") });
+    zmiana();
+    return { tytul: X("nowosci-firm") + " · PIC · Savills · Smart", lista: out,
+      pusto: !list.length && !J ? (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) : "",
+      uwaga: c ? X("stan-z", { czas: new Date(c.t).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") }) + (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") : "" };
   }
-  function fillNews() {
-    var N = w.OESTNowosci, c = N ? N.cache() : null, list = N ? N.top(5) : [], h = head("📰 " + X("nowosci-firm"), "PIC · Savills · Smart");
-    if (!list.length && !(N && N.jobs())) h += '<p class="hm-note">' + (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) + "</p>";
-    h += list.map(function (x) {
-      var f = (N.FIRMY[x.src] || {}).skrot || "", dt = x.date ? new Date(x.date).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "" /* DD/MM/YYYY (AI-008) */;
-      return '<a class="hm-nt hm-nw" href="' + esc(x.url) + '" rel="noopener"><span class="hm-nf ' + esc(x.src) + '">' + esc(f) + "</span><span><b>" + esc(x.title) + "</b><small>" +
-        (x.oes ? "One Eastside · " : x.praca ? esc(X("nowosci-praca")) + " · " : "") + esc(x.pub) + (dt ? " · " + esc(dt) : "") + '</small></span><span class="hm-ar">›</span></a>';
-    }).join("");
-    var J = N ? N.jobs() : null; // oferty pracy Smart: jeden wiersz zbiorczy (strona kariery)
-    if (J) h += '<a class="hm-nt hm-nw" href="' + esc(J.url) + '" rel="noopener"><span class="hm-nf smart">Smart</span><span><b>' + esc(X("nowosci-oferty", { n: J.n })) + "</b><small>" + esc(X("nowosci-kariera")) + '</small></span><span class="hm-ar">›</span></a>';
-    if (c) h += '<p class="hm-note">' + X("stan-z", { czas: new Date(c.t).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") }) +
-      (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") + "</p>";
-    body(h);
+  // przejście ze źródła powiadomienia (okienko zamyka ekran przed wywołaniem)
+  function idz(cel) {
+    if (cel === "queue") { if (w.OESTSender && w.OESTSender.expand) w.OESTSender.expand(); return; }
+    if (cel === "insp") { if (w.OESTPpmUI) w.OESTPpmUI.ustawDzien(iso(today())); w.OESTEkrany.go("ppm"); return; }
+    if (cel === "update") { if (w.OESTUpdate) w.OESTUpdate.install(); return; }
+    w.OESTEkrany.go(cel);
   }
-  function reduce() { return d.documentElement.dataset.settingsMotion === "reduce"; }
-  function openPop(kind, from) {
-    if (popKind && popClose) popClose(); // nie powinno się zdarzyć (tło zasłania przyciski), ale bez dwóch okien naraz
-    popKind = kind;
-    pop = $("hmPop"); pop.hidden = false; pop.dataset.kind = kind;
-    fill(kind);
-    var card = pop.querySelector(".hm-card"), r = from.getBoundingClientRect(), top = kind === "bell" ? r.bottom + 8 : $("hmDays").getBoundingClientRect().top;
-    card.style.top = Math.max(8, top) + "px";
-    var cr = card.getBoundingClientRect();
-    card.style.transformOrigin = Math.round(r.left + r.width / 2 - cr.left) + "px " + Math.round(r.top + r.height / 2 - cr.top) + "px";
-    pop.classList.remove("in"); void card.offsetWidth; pop.classList.add("in");
-    from.classList.add("hm-act");
-    popClose = function () { from.classList.remove("hm-act"); hide(); };
-    popZw = w.OESTOkna ? w.OESTOkna.open(function () { if (popClose) popClose(); }) : null; // Wstecz telefonu zamyka okienko (moduly/szkielet)
+  function pozniej() { if (w.OESTUpdate) w.OESTUpdate.postpone(); zmiana(); }
+  // operacje Dysku z okienka → Promise<tekst wyniku> (błąd: tekst błędu z moduly/bledy)
+  function dyskAkcja(op) {
+    var U = w.OESTZdjeciaUI, G = w.OESTGoogle;
+    if (op === "pause") { if (U && U.setPaused) U.setPaused(!drivePaused()); zmiana(); return Promise.resolve(""); }
+    var job = op === "sync" ? function () { if (!U || !U.syncNow) throw Error("GOOGLE_SETUP"); return U.syncNow(true).then(function (r) { return photoStats().then(function () { zmiana(); return r; }); }); }
+      : function () { if (!G) throw Error("GOOGLE_SETUP"); return G.connect("drive"); };
+    return Promise.resolve().then(job).then(function (r) {
+      zmiana();
+      return op === "sync" ? (r && r.skipped ? X("czekam-na-wifi") : X("wyslano", { n: (r && r.sent) || 0 })) : X("polaczono-z-dyskiem");
+    }, function (e) { zmiana(); throw new Error(U && U.errText ? U.errText(e) : (w.OESTBledy ? w.OESTBledy.text(e) : String(e))); });
   }
-  function hide() {
-    var p = pop; popKind = ""; popClose = null; if (popZw) { popZw(); popZw = null; } if (!p) return;
-    p.classList.remove("in");
-    if (reduce()) { p.hidden = true; return; }
-    setTimeout(function () { if (!popKind) p.hidden = true; }, 200);
-  }
-  // zamknięcie przyciskiem / stuknięciem obok = to samo co Wstecz
-  function closePop() {
-    if (!popKind) return;
-    if (popClose) popClose();
-  }
-  // przejście ze źródła powiadomienia: najpierw zamknij okienko, potem otwórz ekran
-  function goFromPop(target) {
-    var after = function () {
-      if (target === "queue") { if (w.OESTSender && w.OESTSender.expand) w.OESTSender.expand(); return; }
-      if (target === "drive") { openPop("drive", $("hmDrive")); return; }
-      if (target === "insp") { deps.openDay(iso(today())); return; }
-      if (target === "update") { if (w.OESTUpdate) w.OESTUpdate.install(); return; }
-      deps.show(target);
-    };
-    if (popClose) popClose(); after();
-  }
-  function driveOp(op, btn) {
-    var U = w.OESTZdjeciaUI, G = w.OESTGoogle, msg = function (t) { var m = $("hmDrMsg"); if (m) m.textContent = t; };
-    var job;
-    if (op === "pause") { if (U && U.setPaused) U.setPaused(!drivePaused()); lamps(); fillDrive(); return; }
-    if (op === "sync") job = function () { if (!U || !U.syncNow) throw Error("GOOGLE_SETUP"); return U.syncNow(true).then(function (r) { return photoStats().then(function () { lamps(); return r; }); }); };
-    if (op === "reconnect") job = function () { if (!G) throw Error("GOOGLE_SETUP"); return G.connect("drive"); };
-    var run = w.OESTPrzycisk ? w.OESTPrzycisk.run(btn, job) : Promise.resolve().then(job);
-    Promise.resolve(run).then(function (r) {
-      if (popKind !== "drive") return; // okienko zamknięte albo inne – nie nadpisuj
-      fillDrive();
-      if (op === "sync") msg(r && r.skipped ? X("czekam-na-wifi") : X("wyslano", { n: (r && r.sent) || 0 }));
-      else msg(X("polaczono-z-dyskiem"));
-    }, function (e) { if (popKind !== "drive") return; fillDrive(); msg(U && U.errText ? U.errText(e) : (w.OESTBledy ? w.OESTBledy.text(e) : String(e))); });
+  function jezyk() {
+    var next = en() ? "pl" : "en";
+    try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
+    catch (e) { w.OESTBledy.zapiszJezyk(next); } // klucz oest.lang: moduly/bledy
   }
 
-  function init(o) {
-    deps = o;
-    $("hmWx").addEventListener("click", function () { openPop("wx", this); wxLoad(true).then(function () { header(); days(); if (popKind === "wx") fillWx(); }); });
-    $("hmBell").addEventListener("click", function () { var b = this; rxCount().then(function () { openPop("bell", b); }); });
-    $("hmDrive").addEventListener("click", function () { openPop("drive", this); });
-    if ($("hmPhotos")) $("hmPhotos").addEventListener("click", function () { goFromPop("zdjecia"); });
-    $("hmNet").addEventListener("click", function () { openPop("net", this); });
-    $("hmTiles").addEventListener("click", function (e) {
-      var t = e.target.closest("[data-hnews]"); if (!t || !w.OESTNowosci) return;
-      openPop("news", t); w.OESTNowosci.seen(); newsBadge();
-    });
-    $("hmLang").addEventListener("click", function () {
-      var next = en() ? "pl" : "en";
-      try { w.OESTSettings.update(function (s) { s.appearance.language = next; }); w.OESTSettingsUI.applyTheme(); }
-      catch (e) { w.OESTBledy.zapiszJezyk(next); } // klucz oest.lang: moduly/bledy
-    });
-    $("hmDays").addEventListener("click", function (e) { var b = e.target.closest("[data-day]"); if (b) deps.openDay(b.dataset.day); });
-    $("hmPop").addEventListener("click", function (e) {
-      if (e.target.closest("[data-hx]") || !e.target.closest(".hm-card")) { closePop(); return; }
-      if (e.target.closest("[data-hlater]")) { if (w.OESTUpdate) w.OESTUpdate.postpone(); return; }
-      var g = e.target.closest("[data-hgo]"); if (g) { goFromPop(g.dataset.hgo); return; }
-      var op = e.target.closest("[data-hop]"); if (op) driveOp(op.dataset.hop, op);
-    });
-    w.addEventListener("oest:lang", relang);
-    w.addEventListener("oest:update", function () { if (deps) badge(); });
-    // powrót do apki (np. następnego dnia): odśwież datę, pasek dni i liczniki, także bez sieci
-    function resume() { if (!$("v-home").hidden && !d.hidden && !popKind) render(); }
-    ["pageshow", "focus"].forEach(function (ev) { w.addEventListener(ev, resume); });
-    d.addEventListener("visibilitychange", resume);
-    ["online", "offline"].forEach(function (ev) { w.addEventListener(ev, function () { if (!$("v-home").hidden) { lamps(); if (ev === "online") render(); if (popKind === "net") fillNet(); } }); });
-    if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener("change", function () { lamps(); if (popKind === "net") fillNet(); });
-    if (w.OESTZdjecia && w.OESTZdjecia.onChange) w.OESTZdjecia.onChange(function () { photoStats().then(function () { lamps(); badge(); if (popKind === "drive") fillDrive(); }); });
-  }
-  w.OESTHome = { init: init, render: render, close: closePop, wxDay: wxDay, _wxIcon: wxIcon };
+  w.addEventListener("oest:update", zmiana);
+  // powrót do apki (np. następnego dnia): odśwież datę, pasek dni i liczniki, także bez sieci
+  ["pageshow", "focus"].forEach(function (ev) { w.addEventListener(ev, function () { if (!d.hidden) odswiez(false); }); });
+  d.addEventListener("visibilitychange", function () { if (!d.hidden) odswiez(false); });
+  ["online", "offline"].forEach(function (ev) { w.addEventListener(ev, function () { if (ev === "online") odswiez(false); else zmiana(); }); });
+  if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener("change", zmiana);
+  if (w.OESTZdjecia && w.OESTZdjecia.onChange) w.OESTZdjecia.onChange(function () { photoStats().then(zmiana); });
+  w.OESTHome = { dane: dane, odswiez: odswiez, prognoza: prognoza, powiadomienia: powiadomienia, dysk: dysk, siec: siec, nowosciLista: nowosciLista,
+    idz: idz, pozniej: pozniej, dyskAkcja: dyskAkcja, jezyk: jezyk, rxCount: rxCount };
 })(window);

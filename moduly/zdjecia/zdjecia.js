@@ -7,7 +7,6 @@
  *               kind  = 'formularz' | 'ogolne' | 'punkt' | 'dowod' – rozmiar w Standardzie: 1600 / wybór Duże 2560, Średnie 1600, Małe 800 / 800 / 800 px → { id, blob, width, height, … }
  *               point = punkt / pytanie, przy którym zrobiono zdjęcie (np. nazwa kranu) – trafia do nazwy pliku i wyszukiwania
  *               hold  = kto trzyma zdjęcie (np. 'inspekcja'); trzymanego zdjęcia sprzątanie nigdy nie kasuje z telefonu
- *               stamp = false → bez daty na zdjęciu, nawet gdy opcja włączona (np. zapis po edycji zdjęcia, które już ją ma)
  *             OESTZdjecia.blob(id) → zdjęcie;  OESTZdjecia.release(hold, zostaw, minWiekMs) → zwalnia nieużywane
  * Moduł sam:  kompresuje (jakość z ustawień), zapisuje w osobnym magazynie na telefonie (IndexedDB „oest-zdjecia”),
  *             pilnuje limitu miejsca, nadaje nazwę i folder (dzień / kategoria), a przez sync() wysyła na dysk.
@@ -21,10 +20,10 @@
  *  - z dysku znikają najstarsze, gdy przekroczony jest limit dysku (wpis w apce zostaje oznaczony, że go tam już nie ma).
  */
 (function (root, factory) {
-  var api = factory();
+  var api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.OESTZdjecia = api.createBrowser(root);
-})(typeof window !== 'undefined' ? window : globalThis, function () {
+})(typeof window !== 'undefined' ? window : globalThis, function (root) {
   'use strict';
 
   var MB = 1024 * 1024, THUMB = 400; // miniatura: dłuższy bok w px
@@ -33,7 +32,7 @@
     wysoka: { max: 3000, q: 0.85, pl: 'Wysoka (do 3000 px, ok. 1,5 MB)', en: 'High (up to 3000 px, about 1.5 MB)' },
     oryginal: { max: 0, q: 0.92, pl: 'Oryginał (pełna rozdzielczość, ok. 3 MB)', en: 'Original (full resolution, about 3 MB)' }
   };
-  var DEFAULTS = { preset: 'standard', phoneLimitMB: 200, warnMB: 100, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia', general: 'srednie', stamp: false }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
+  var DEFAULTS = { preset: 'standard', phoneLimitMB: 200, warnMB: 100, driveLimitMB: 5120, wifiOnly: true, rootName: 'OEST Zdjęcia', general: 'srednie' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
 
   function cleanSettings(s) {
     var out = Object.assign({}, DEFAULTS, s || {});
@@ -42,13 +41,13 @@
     out.warnMB = clampInt(out.warnMB, 10, 100000, DEFAULTS.warnMB); // ostrzeżenia licznika (osobno od limitu folderu)
     out.driveLimitMB = clampInt(out.driveLimitMB, 100, 1000000, DEFAULTS.driveLimitMB);
     out.wifiOnly = out.wifiOnly !== false;
-    out.stamp = out.stamp === true; // data i godzina na zdjęciu: tylko po świadomym włączeniu (domyślnie wyłączone)
+    delete out.stamp; // bez daty na zdjęciu (Grzegorz 25.11.2026: „Daty ma nie być wcale”) – dawne ustawienie znika przy odczycie
     if (!GENERAL.some(function (g) { return g.v === out.general; })) out.general = DEFAULTS.general;
     out.rootName = typeof out.rootName === 'string' && out.rootName.trim() ? out.rootName.trim().slice(0, 100) : DEFAULTS.rootName;
     return out;
   }
   function clampInt(v, min, max, def) { v = Math.round(Number(v)); return Number.isFinite(v) && v >= min && v <= max ? v : def; }
-  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  var pad = (root.OESTNarzedzia || (typeof require === 'function' && require('../narzedzia/narzedzia.js'))).pad;
   // nazwy plików bezpieczne dla Androida i Dysku: bez / \ : * ? " < > | i znaków sterujących
   function safe(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80); }
 
@@ -62,24 +61,8 @@
     return { folder: [month, day, category], name: label + ' ' + time + '.jpg', day: month + '-' + day };
   }
 
-  /* Data i godzina wtopione w zdjęcie (Grzegorz 09/11/2026, propozycja 5 z przeglądu apek do inspekcji):
-     TYLKO opcja – przełącznik w Ustawieniach → „Raporty i zdjęcia”, domyślnie WYŁĄCZONY. Format dd/mm/rrrr GG:MM, prawy dolny róg.
-     Czas = chwila zrobienia zdjęcia (when w save(): data z EXIF, gdy apka ją podała). Wpisywana raz, przy zapisie do folderu OEST,
-     więc ta sama data jest w raporcie (inspekcje, Reactive – biorą zdjęcie z modułu) i w kopii na Dysku. Zdjęć już zapisanych nie zmienia. */
-  function stampText(d) {
-    d = d instanceof Date && !isNaN(d) ? d : new Date();
-    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  }
-  // rysowanie napisu: to samo w Workerze i w głównym wątku (kod funkcji trafia do Workera tekstem – jedno źródło).
-  // Wielkość od krótszego boku (czytelna na zdjęciu 800 px i 2560 px), białe cyfry na przyciemnionym pasku, z marginesem od krawędzi.
-  function drawStamp(g, w, h, txt) {
-    if (!txt) return;
-    var fs = Math.max(12, Math.round(Math.min(w, h) / 28)), sp = Math.round(fs * 0.45), m = Math.round(fs * 0.5);
-    g.font = '600 ' + fs + 'px sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
-    var tw = Math.ceil(g.measureText(txt).width), bw = tw + sp * 2, bh = Math.round(fs * 1.5), x = w - bw - m, y = h - bh - m;
-    g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(x, y, bw, bh);
-    g.fillStyle = '#ffffff'; g.fillText(txt, x + sp, y + bh / 2);
-  }
+  /* Bez daty na zdjęciu (Grzegorz 25.11.2026: „Daty ma nie być wcale”, zmiana PROD-029): moduł niczego nie wpisuje w zdjęcie
+     – ani przy zapisie, ani w raporcie. Datę zrobienia trzyma tylko wpis (created) i nazwa pliku. */
 
   /* Data zrobienia z EXIF (DateTimeOriginal, zapas DateTime) – jedno miejsce dla apek (przeniesione z inspekcji 09/11/2026).
      Zwraca Promise<Date|null> z dokładnością do minuty; brak EXIF / nie JPEG / błąd = null. */
@@ -218,11 +201,11 @@
       info = info || {};
       var when = info.when instanceof Date && !isNaN(info.when) ? info.when : await takenAt(file, deps.now());
       var s = settings(), kind = info.kind === 'ogolne' ? generalKind(s.general) : KINDS[info.kind] ? info.kind : '';
-      var stamp = s.stamp && info.stamp !== false ? stampText(when) : '', out = await deps.compress(file, s.preset, kind, stamp);
+      var out = await deps.compress(file, s.preset, kind);
       var p = place(info, when);
       var rec = { id: deps.id(), owner: owner(), created: when.toISOString(), saved: new Date(deps.now()).toISOString(), day: p.day, folder: p.folder, name: p.name,
         source: safe(info.source) || 'inne', category: safe(info.category), code: safe(info.code), location: safe(info.location),
-        point: safe(info.point), kind: kind, hold: safe(info.hold), stamp: stamp,
+        point: safe(info.point), kind: kind, hold: safe(info.hold),
         width: out.width, height: out.height, size: out.blob.size, preset: s.preset, blob: out.blob, driveId: '', driveDeleted: false };
       await deps.db.put(rec);
       // sprzątanie po limicie w tle: zapis zdjęcia nie czeka na przegląd całego folderu (prędkość zapisu, Grzegorz 04/11).
@@ -343,7 +326,7 @@
 
     async function blob(id) { var r = await deps.db.get(id); return r && r.blob; }
     async function remove(id) { await deps.db.del(id); emit(); }
-    function onChange(f) { listeners.push(f); }
+    function onChange(f) { listeners.push(f); return function () { listeners = listeners.filter(function (x) { return x !== f; }); }; }
     function onSaved(f) { savedListeners.push(f); }
     return { save: save, keep: keep, release: release, list: list, blob: blob, remove: remove, sync: sync, settings: settings, setSettings: setSettings,
       onChange: onChange, onSaved: onSaved, busy: function () { return !!syncing; } };
@@ -382,11 +365,11 @@
      Ten sam algorytm co w głównym wątku: te same wymiary (fitTo), białe tło, miniatura z tego samego płótna, ta sama jakość.
      Gdy Worker nie działa (stary WebView, błąd), zdjęcie robi się jak dawniej w głównym wątku – zapis nigdy nie przepada. */
   function workerSource() {
-    return 'var THUMB=' + THUMB + ';var fitTo=' + fitTo.toString() + ';var drawStamp=' + drawStamp.toString() + ';\n' +
+    return 'var THUMB=' + THUMB + ';var fitTo=' + fitTo.toString() + ';\n' +
       'onmessage=async function(e){var d=e.data,img;try{' +
       'try{img=await createImageBitmap(d.file,{imageOrientation:"from-image"});}catch(_){img=await createImageBitmap(d.file);}' +
       'var f=fitTo(img.width,img.height,d.lim),c=new OffscreenCanvas(f.width,f.height),g=c.getContext("2d");' +
-      'g.fillStyle="#fff";g.fillRect(0,0,f.width,f.height);g.drawImage(img,0,0,f.width,f.height);if(img.close)img.close();drawStamp(g,f.width,f.height,d.lim.stamp||"");' +
+      'g.fillStyle="#fff";g.fillRect(0,0,f.width,f.height);g.drawImage(img,0,0,f.width,f.height);if(img.close)img.close();' +
       'var k=Math.min(1,THUMB/Math.max(f.width,f.height)),t=new OffscreenCanvas(Math.max(1,Math.round(f.width*k)),Math.max(1,Math.round(f.height*k)));' +
       't.getContext("2d").drawImage(c,0,0,t.width,t.height);' +
       'var both=await Promise.all([c.convertToBlob({type:"image/jpeg",quality:f.quality}),t.convertToBlob({type:"image/jpeg",quality:0.8})]);' +
@@ -414,18 +397,50 @@
       return new Promise(function (ok, no) { wait[id] = { ok: ok, no: no }; wk.postMessage({ id: id, file: file, lim: lim }); });
     };
   }
-  function compressMain(win) {
-    return async function (file, lim) {
-      var img;
-      try { img = await win.createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (_) { img = await win.createImageBitmap(file); }
-      var f = fitTo(img.width, img.height, lim), c = win.document.createElement('canvas');
+  /* Wczytanie i zmniejszenie zdjęcia – JEDNO miejsce dla całej apki (Grzegorz 24/11/2026: „zmiana w jednym miejscu działa
+     wszędzie”; wcześniej po swojemu robiły to inspekcje, Reactive, Mój profil, aparat i odczyt). Apka woła:
+       OESTZdjecia.wczytaj(blob)              → Promise<obraz> (obrót z EXIF; zapas bez obrotu; ostatni zapas przez <img>)
+       OESTZdjecia.plotno(obraz, px, { tlo }) → płótno: dłuższy bok najwyżej px (0 = bez zmniejszania), tlo = kolor pod spodem;
+                                                obraz po narysowaniu jest zamykany (pamięć), chyba że { zamknij: false }
+       OESTZdjecia.zmniejsz(blob, { px, jakosc, typ, tlo }) → Promise<{ blob, width, height }> (domyślnie JPEG 0.9) */
+  function wczytajIn(win) {
+    return function (blob) {
+      function viaImg() { return new Promise(function (res, rej) { var i = new win.Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = win.URL.createObjectURL(blob); }); }
+      if (win.createImageBitmap) return win.createImageBitmap(blob, { imageOrientation: 'from-image' }).catch(function () { return win.createImageBitmap(blob); }).catch(viaImg);
+      return viaImg();
+    };
+  }
+  function plotnoIn(win) {
+    return function (src, px, o) {
+      o = o || {};
+      var f = fitTo(src.width, src.height, { max: px || 0 }), c = win.document.createElement('canvas');
       c.width = f.width; c.height = f.height;
-      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, f.width, f.height); g.drawImage(img, 0, 0, f.width, f.height);
-      if (img.close) img.close();
-      drawStamp(g, f.width, f.height, lim.stamp || '');
+      var g = c.getContext('2d');
+      if (o.tlo) { g.fillStyle = o.tlo; g.fillRect(0, 0, f.width, f.height); }
+      g.drawImage(src, 0, 0, f.width, f.height);
+      if (o.zamknij !== false && src.close) src.close();
+      return c;
+    };
+  }
+  function zmniejszIn(win) {
+    var wczytaj = wczytajIn(win), plotno = plotnoIn(win);
+    return function (blob, o) {
+      o = o || {};
+      return wczytaj(blob).then(function (img) {
+        var c = plotno(img, o.px, o);
+        return new Promise(function (res) { c.toBlob(res, o.typ || 'image/jpeg', o.jakosc == null ? 0.9 : o.jakosc); }).then(function (b) {
+          if (!b) throw Error('IMAGE_COMPRESSION');
+          return { blob: b, width: c.width, height: c.height };
+        });
+      });
+    };
+  }
+  function compressMain(win) {
+    var wczytaj = wczytajIn(win), plotno = plotnoIn(win);
+    return async function (file, lim) {
+      var img = await wczytaj(file), f = fitTo(img.width, img.height, lim), c = plotno(img, lim.max, { tlo: '#fff' });
       // miniatura z tego samego płótna (bez drugiego dekodowania), dla ekranów z podglądem
-      var k = Math.min(1, THUMB / Math.max(f.width, f.height)), t = win.document.createElement('canvas');
-      t.width = Math.max(1, Math.round(f.width * k)); t.height = Math.max(1, Math.round(f.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      var t = plotno(c, THUMB, { zamknij: false });
       var both = await Promise.all([new Promise(function (res) { c.toBlob(res, 'image/jpeg', f.quality); }), new Promise(function (res) { t.toBlob(res, 'image/jpeg', 0.8); })]);
       if (!both[0]) throw Error('IMAGE_COMPRESSION');
       return { blob: both[0], thumb: both[1], width: f.width, height: f.height };
@@ -433,8 +448,8 @@
   }
   function compressIn(win) {
     var inWorker = compressWorker(win), onMain = compressMain(win);
-    var api = function (file, preset, kind, stamp) {
-      var lim = limits(preset, kind); lim.stamp = stamp || '';
+    var api = function (file, preset, kind) {
+      var lim = limits(preset, kind);
       return inWorker(file, lim).then(function (r) { api.last = 'worker'; return r; }, function () { api.last = 'main'; return onMain(file, lim); });
     };
     api.last = '';
@@ -447,7 +462,7 @@
     // Zmniejszanie w tle podczas podglądu (audyt wydajności zdjęć, punkt 1; zgoda Grzegorza 08/11/2026): aparat woła prepare(blob, kind),
     // gdy pokazuje podgląd, a save() bierze gotowy wynik, jeśli to ten sam plik i te same ustawienia rozmiaru. Inaczej zmniejsza jak dawniej.
     var prepped = [], hits = 0;
-    function prepKey(preset, kind, stamp) { var l = limits(preset, kind); l.stamp = stamp || ''; return JSON.stringify(l); }
+    function prepKey(preset, kind) { return JSON.stringify(limits(preset, kind)); }
     async function sameBytes(a, b) {
       if (a === b) return true;
       if (!a || !b || !a.slice || !b.slice || a.size !== b.size) return false;
@@ -460,13 +475,13 @@
       return true;
     }
     // gotowy wynik z podglądu pasuje tylko z tą samą datą na zdjęciu (inna minuta / data z EXIF = zmniejszenie od nowa)
-    async function compressPrepared(file, preset, kind, stamp) {
-      var key = prepKey(preset, kind, stamp);
+    async function compressPrepared(file, preset, kind) {
+      var key = prepKey(preset, kind);
       for (var i = 0; i < prepped.length; i++) {
         var e = prepped[i];
-        if (e.key === key && await sameBytes(e.blob, file)) { prepped.splice(i, 1); hits++; return e.p.catch(function () { return compress(file, preset, kind, stamp); }); }
+        if (e.key === key && await sameBytes(e.blob, file)) { prepped.splice(i, 1); hits++; return e.p.catch(function () { return compress(file, preset, kind); }); }
       }
-      return compress(file, preset, kind, stamp);
+      return compress(file, preset, kind);
     }
     var store = createStore({
       owner: who,
@@ -481,43 +496,40 @@
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
     });
-    // Przełącznik rozmiaru zdjęć ogólnych (Duże / Średnie / Małe) – JEDEN dla całej apki (inspekcje, Reactive).
-    // Wygląd z moduly/przelacznik; trzy pola tej samej szerokości; wybór zapisany w ustawieniach (ostatni pamiętany).
-    function tt(g) { return win.OESTT ? win.OESTT(g.pl, g.en) : g.pl; }
-    store.sizeSwitch = function () {
-      var P = win.OESTPrzelacznik; if (!P) return '';
-      return '<span class="oest-photo-size">' + P.html({ name: 'photoSize', value: store.settings().general, label: tt({ pl: 'Rozmiar zdjęć ogólnych', en: 'General photo size' }),
-        options: GENERAL.map(function (g) { return { v: g.v, t: tt(g) }; }) }) + '</span>';
+    // Stan i akcje przełącznika; widok w szkielet/src/czesci/RozmiarZdjec.vue.
+    store.rozmiar = function () {
+      function dane() {
+        var value = store.settings().general;
+        return { value: value, options: GENERAL, index: GENERAL.map(function (g) { return g.v; }).indexOf(value) };
+      }
+      return {
+        dane: dane,
+        na: function (f) { return store.onChange(function () { f(dane()); }); },
+        akcja: function (v) {
+          var opts = GENERAL.map(function (g) { return g.v; });
+          if (v == null) v = opts[(opts.indexOf(store.settings().general) + 1) % opts.length];
+          if (opts.indexOf(v) >= 0) store.setSettings({ general: v });
+        }
+      };
     };
-    if (win.document && win.addEventListener) {
-      var st = win.document.createElement('style'); st.textContent = '.oest-photo-size .oest-sw{width:16.5em}'; (win.document.head || win.document.documentElement).appendChild(st);
-      win.document.addEventListener('click', function (e) {
-        var sw = e.target.closest && e.target.closest('.oest-sw[data-sw="photoSize"]'); if (!sw) return;
-        var i = e.target.closest('i[data-v]'), opts = GENERAL.map(function (g) { return g.v; });
-        var v = i ? i.dataset.v : opts[(opts.indexOf(sw.dataset.val) + 1) % opts.length];
-        store.setSettings({ general: v }); if (win.OESTPrzelacznik) win.OESTPrzelacznik.set('photoSize', v);
-      });
-      win.addEventListener('oest:lang', function () {
-        [].forEach.call(win.document.querySelectorAll('.oest-sw[data-sw="photoSize"] i[data-v]'), function (i) { var g = GENERAL.filter(function (x) { return x.v === i.dataset.v; })[0]; if (g) i.textContent = tt(g); });
-      });
-    }
     // największy dłuższy bok, jaki moduł zapisze przy obecnych ustawieniach (0 = bez limitu); dla aparatu/edytora: po co liczyć więcej
     // maxPx(kind): dla danego rodzaju (jak w save()) – aparat zmniejsza zdjęcie w Javie najwyżej do tego rozmiaru (audyt zdjęć, punkt 2)
     store.maxPx = function (kind) { var st = store.settings(); return maxFor(st.preset, st.general, kind); };
     // kind jak w save(): 'formularz' | 'ogolne' | 'punkt' | 'dowod'; trzymamy najwyżej 3 przygotowane zdjęcia (Powtórz zostawia stare)
     store.prepare = function (blob, kind) {
       if (!blob) return;
-      var st = store.settings(), k = kind === 'ogolne' ? generalKind(st.general) : KINDS[kind] ? kind : '', stamp = st.stamp ? stampText(new Date()) : '', key = prepKey(st.preset, k, stamp);
+      var st = store.settings(), k = kind === 'ogolne' ? generalKind(st.general) : KINDS[kind] ? kind : '', key = prepKey(st.preset, k);
       for (var i = 0; i < prepped.length; i++) if (prepped[i].blob === blob && prepped[i].key === key) return;
-      var p = compress(blob, st.preset, k, stamp); p.catch(function () {});
+      var p = compress(blob, st.preset, k); p.catch(function () {});
       prepped.push({ blob: blob, key: key, p: p }); while (prepped.length > 3) prepped.shift();
     };
     store.preparedHits = function () { return hits; }; // ile zapisów wzięło gotowy wynik z podglądu – do testów
     store.compressedIn = function () { return compress.last; }; // 'worker' | 'main' – do testów i pomiarów
-    store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.stampText = stampText; store.exifDate = exifDate; store.stats = stats; store.search = search;
+    store.wczytaj = wczytajIn(win); store.plotno = plotnoIn(win); store.zmniejsz = zmniejszIn(win); // jedno wczytanie i zmniejszanie zdjęć w apce
+    store.PRESETS = PRESETS; store.GENERAL = GENERAL; store.place = place; store.exifDate = exifDate; store.stats = stats; store.search = search;
     return store;
   }
 
-  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, maxFor: maxFor, cleanSettings: cleanSettings, place: place, stampText: stampText, drawStamp: drawStamp, exifDate: exifDate, takenAt: takenAt, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
+  return { PRESETS: PRESETS, DEFAULTS: DEFAULTS, GENERAL: GENERAL, generalKind: generalKind, maxFor: maxFor, cleanSettings: cleanSettings, place: place, exifDate: exifDate, takenAt: takenAt, fit: fit, limits: limits, fitTo: fitTo, plan: plan, stats: stats,
     search: search, createStore: createStore, createBrowser: createBrowser };
 });

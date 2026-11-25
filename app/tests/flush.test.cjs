@@ -16,31 +16,10 @@ test('nagłówek: TOWER A / TOWER B / PAVILION',()=>{assert.match(text(doc('TA')
 test('podsumowanie: niezalane krany → Fault Log',()=>{assert.equal(F.summary({taps:[{state:'yes'},{state:'na'}]}),'All outlets flushed (1 N/A)');assert.match(F.summary({taps:[{state:'no'}]}),/Fault and Remedial/);});
 test('Date odznaczone: kolumna daty pusta, Yes zostaje',()=>{const f=P.forms.flush.P,z=new PizZip(TPL_FLUSH);const xml=F.fill(z.file('word/document.xml').asText(),{building:'Pavilion',year:2026,month:0,week:1,date:new Date(2026,0,5),noDate:true,name:'',taps:f.taps.map(n=>({name:n,state:'yes',note:''}))});assert.doesNotMatch(xml,/05\.01\.2026/);assert.match(xml,/>Yes</);});
 
-// 04/11: odtworzenie Flushingu z PDF-a raportu w kolejce (PDF z apki: tydzień 3, kran 2 = No z notatką, zdjęcia przy kranach 1, 3, 5)
-test('fromPdf reads answers, week and photo→outlet from the queued report PDF', () => {
-  const F = require('../../inspekcje/flush.js'), fs = require('node:fs'), path = require('node:path');
-  const names = ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room", "Studio", "Pool Hall", "Gym", "Cycle Store", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107", "x1", "x2", "x3", "x4", "x5", "x6"];
-  const r = F.fromPdf(new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf'))), names);
-  assert.equal(r.week, 3); assert.equal(r.taps.length, 20);
-  assert.deepEqual(r.taps[1], { state: 'no', note: 'Valve stiff, reported' }); assert.equal(r.taps[0].state, 'yes');
-  assert.deepEqual(r.photos.map(p => p.tap), [0, 2, 4]);
-  assert.equal(r.photos[0].bytes[0], 0xff); assert.equal(r.photos[0].bytes[1], 0xd8);
-  assert.equal(F.fromPdf(new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf'))), names.slice(0, 5)), null); // inna lista kranów: nie zgadujemy
-});
-test('fromPdf: exact outlet name wins over a prefix; ambiguous short caption is not guessed', () => {
-  const F = require('../../inspekcje/flush.js'), fs = require('node:fs'), path = require('node:path');
-  const pdf = new Uint8Array(fs.readFileSync(path.join(__dirname, 'dane/flush-tb.pdf')));
-  const base = ["Roof", "Bin Stores", "SPA Chemical Room", "SPA Hall (Toilets)", "Massage Hall", "Massage Room", "Studio", "Pool Hall", "Gym", "Cycle Store", "Apartment 101", "Apartment 103", "Apartment 104", "Apartment 107", "x1", "x2", "x3", "x4", "x5", "x6"];
-  const a = base.slice(); a[3] = "Massage Hall East"; // prefiks „Massage Hall” przed dokładną nazwą
-  assert.deepEqual(F.fromPdf(pdf, a).photos.map(p => p.tap), [0, 2, 4]);
-  const b = base.slice(); b[0] = "Roof A"; b[1] = "Roof B"; // podpis „Roof” pasuje do dwóch kranów: zdjęcie pominięte
-  assert.deepEqual(F.fromPdf(pdf, b).photos.map(p => p.tap), [2, 4]);
-});
-
 // 21/11/2026: basic form Flushing ze strefami (moduly/wzory: ramka basic.docx + flush-*-srodek.docx) – Grzegorz: grupy stref, TB bez apartamentów, stałe zdanie
 const Docxtemplater=require('docxtemplater'),fs2=require('node:fs'),path2=require('node:path');
 // wzór basic Flushing = ramka basic.docx + plik środka, składane przez moduł Wzory (Grzegorz 21/11/2026 17:33) – test bierze bajty z modułu jak apka
-const WZ=path2.join(__dirname,'../../moduly/wzory');globalThis.PizZip=PizZip;if(globalThis.window)globalThis.window.PizZip=PizZip;require(path2.join(WZ,'wzory.js'));const OW=(globalThis.window||globalThis).OESTWzory;
+const WZ=path2.join(__dirname,'../../moduly/wzory');globalThis.PizZip=PizZip;if(globalThis.window)globalThis.window.PizZip=PizZip;{const OWd=require('../../moduly/word/word.js');OWd.biblioteki({PizZip,Docxtemplater});globalThis.OESTWord=OWd;if(globalThis.window)globalThis.window.OESTWord=OWd;}require(path2.join(WZ,'wzory.js'));const OW=(globalThis.window||globalThis).OESTWzory;
 for(const w of OW.lista())OW.ustaw(w.id,fs2.readFileSync(path2.join(WZ,w.plik)));
 const ALL='All listed Outlets flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
 const PART='Outlets marked as flushed were flushed in accordance with the site Legionella Control procedures. Water drawn through each to prevent stagnation.';
@@ -68,4 +47,18 @@ test('szkic TB sprzed zmiany (20 kranów, bez nazw): odpowiedzi, notatki, tydzie
   assert.equal(F.migrujSzkic({taps:[{state:'no'}]},['A','B']),null);assert.equal(F.migrujSzkic(null,['A']),null);});
 test('zdjęcia kranów idą za kranem; usunięty kran (apartament TB) → zdjęcie ogólne, nie osierocone (uwaga Codex #187)',()=>{
   const n=P.forms.flush.TB.taps;assert.deepEqual(F.mapaKranow({taps:Array(20).fill({state:'yes'})},n),[...n.map((_,i)=>i),null,null,null,null]);
-  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});
+  assert.deepEqual(F.mapaKranow({names:['A','B','C'],taps:[{},{},{}]},['C','A']),[1,null,0]);assert.equal(F.mapaKranow({taps:[{}]},['A','B']),null);});// „↺ Przywróć inspekcję” Flushing (przywrócone 25.11.2026): dane z raportu w kolejce (it.snap), nie z PDF; lista kranów mogła się zmienić od raportu
+test('przywracanie Flushing z danych raportu: tydzień, odpowiedzi, notatki i zdjęcia przy kranach idą za nazwą kranu; PDF nie jest czytany',()=>{
+  const n=P.forms.flush.TB.taps,snap={fl:{week:3,names:n.slice(),taps:n.map((_,i)=>({state:i===1?'no':i===4?'na':'yes',note:i===1?'Valve stiff':''}))},photos:[{zid:'a',tap:0},{zid:'b',tap:2},{zid:'c'}]};
+  const nowa=[n[2],n[0],'Nowy kran',n[1]];
+  const m=F.migrujSzkic(snap.fl,nowa),mt=F.mapaKranow(snap.fl,nowa);
+  assert.equal(m.week,3);
+  assert.equal(m.taps.length,4);
+  assert.deepEqual(m.taps[3],{state:'no',note:'Valve stiff'}); // kran 2 z raportu jest teraz czwarty
+  assert.equal(m.taps[2].state,'yes'); // nowy kran: domyślne Yes
+  assert.equal(mt[0],1);assert.equal(mt[2],0);assert.equal(mt[4],null); // zdjęcie usuniętego kranu → zdjęcie ogólne
+  const fs=require('node:fs'),path=require('node:path'),szkic=fs.readFileSync(path.join(__dirname,'../../inspekcje/przywroc.js'),'utf8')+fs.readFileSync(path.join(__dirname,'../../inspekcje/i-szkic.js'),'utf8');
+  assert.match(szkic,/function offerRestore/);
+  assert.match(szkic,/q\.snap && q\.snap\.fl/,'przywracanie z danych raportu w kolejce');
+  assert.doesNotMatch(szkic+fs.readFileSync(path.join(__dirname,'../../inspekcje/flush.js'),'utf8'),/fromPdf/,'apka nie czyta PDF (PDF tylko z Worda silnikiem)');
+});

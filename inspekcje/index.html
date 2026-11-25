@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <!-- Wstecz telefonu: nasłuch backButton jako pierwszy skrypt (audyt 19/11/2026 nr 41) – bez niego Android w czasie ładowania cofa po historii -->
-<script src="../moduly/szkielet/lib/szkielet.js"></script><!-- Wstecz Androida i okienka: szkielet Ionic (moduly/szkielet), strona bez ramy -->
+<link rel="stylesheet" href="../moduly/szkielet/lib/struktura.css">
+<link rel="stylesheet" href="../moduly/szkielet/lib/szkielet.css">
+<script src="../moduly/szkielet/lib/szkielet.js"></script><!-- Rama, przewijanie i okienka Ionic. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title data-en="Field inspection">Inspekcja w terenie</title>
 <!-- PWA (działa tylko z GitHub Pages; w trybie Apps Script te linki są ignorowane) -->
@@ -21,192 +23,28 @@
 <div class="wrap">
 
   <!-- 1. Rodzaje inspekcji -->
-  <section class="view" id="v-home" hidden><!-- ekran wybiera skrypt – przy wejściu z listy PPM nie miga lista inspekcji (09/11/2026) -->
-    <div class="top"><a class="back" id="appMenu" href="../index.html#home" aria-label="Menu aplikacji" data-en-aria-label="App menu" hidden style="display:grid;place-items:center;text-decoration:none">‹</a><div class="t"><h1><span data-en="Inspections">Inspekcje</span><span class="dot">.</span></h1><div class="sub" id="homeSub">—</div></div></div>
-    <div class="notice" id="tplNotice" hidden></div>
-    <div class="netbar" id="netbar"><span class="dot2" aria-hidden="true"></span><span class="t" id="netTxt">—</span><button class="btn" type="button" data-go="queue" data-en="Queue">Kolejka</button></div>
-    <div class="types tiles kf-grid" id="types"></div>
-    <details class="panel" id="settings">
-      <summary data-en="Settings">Ustawienia</summary>
-      <div class="set">
-        <div class="f" id="apiBox"><label for="s-api" data-en="Google script address (…/exec)">Adres skryptu Google (…/exec)</label>
-          <input id="s-api" type="text" inputmode="url" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
-          <label for="s-key" data-en="Key (KEY from Apps Script)">Klucz (KEY z Apps Script)</label>
-          <input id="s-key" type="text" spellcheck="false" autocomplete="off">
-          <p class="hint" data-en="Only needed in the version from the phone home screen (works without signal). Entered once.">Potrzebne tylko w wersji z ekranu głównego telefonu (działa bez zasięgu). Wpisuje się raz.</p></div>
-        <div class="f" id="tplBox"><span class="label" data-en="Report template (Word)">Szablon raportu (Word)</span>
-          <p class="hint" id="tplName" data-en="Loading from Google Drive…">Ładuję z Google Drive…</p>
-          <div class="row"><button class="btn" type="button" id="tplReload" data-en="Reload from Drive">Wczytaj ponownie z Drive</button></div>
-          <p class="hint" data-en="The template is on your Google Drive in the reports folder. Replace the file there and the app will use the new one.">Szablon leży na Twoim Google Drive w folderze z raportami. Podmień tam plik, a apka weźmie nowy.</p></div>
-        <div class="f"><label for="s-email" data-en="Email the report goes to">E-mail, na który idzie raport</label>
-          <input id="s-email" type="email" autocomplete="email"></div>
-        <div class="f"><label for="s-folder" data-en="Google Drive folder">Folder na Google Drive</label>
-          <input id="s-folder" type="text"></div>
-        <div class="f"><label for="s-pattern" data-en="File name pattern">Wzór nazwy plików</label>
-          <input id="s-pattern" type="text" spellcheck="false">
-          <p class="hint"><span data-en="Available:">Dostępne:</span> <code>{urzadzenie} {kod} {lokalizacja} {DD} {MM} {RRRR}</code>. <span data-en="{kod} is the code in lower case.">{kod} to kod małymi literami.</span></p></div>
-        <div class="f"><label for="s-site">Site</label>
-          <input id="s-site" type="text"></div>
-        <div class="f"><label for="s-insp" data-en="Default signature (Engineer / Signed)">Domyślny podpis (Engineer / Signed)</label>
-          <input id="s-insp" type="text"></div>
-        <label class="toggle"><input type="checkbox" id="s-scope"> <span data-en="Add scope: “visual inspection only”">Dopisz zakres: „visual inspection only”</span></label>
-        <label class="toggle"><input type="checkbox" id="s-stamp"> <span data-en="Stamp date, code and location on photos">Wpisz datę, kod i lokalizację na zdjęciach</span></label>
-        <label class="toggle"><input type="checkbox" id="s-dphotos"> <span data-en="Also save separate photo files to Drive (slower)">Zapisuj też osobne pliki zdjęć na Drive (wolniej)</span></label>
-        <label class="toggle"><input type="checkbox" id="s-auto"> <span data-en="Send the queue automatically when online">Wysyłaj kolejkę sama, gdy jest sieć</span></label>
-        <label class="toggle"><input type="checkbox" id="s-wifi"> <span data-en="Wait for Wi‑Fi to send (the bar at the bottom lets you send now)">Czekaj z wysyłką na Wi‑Fi (pasek na dole pozwala wysłać od razu)</span></label>
-        <div class="tags"><span data-en="Template tags:">Znaczniki w szablonie:</span> {data} {inspektor} {urzadzenie} {lokalizacja} {tytul} {stan_ogolny} {quote}<br>{#punkty} / {.} / {/punkty} — <span data-en="list of points">lista punktów</span><br>{#komentarz} / Comments: {komentarz} / {/komentarz} — <span data-en="comment">komentarz</span><br>{#zakres} / {zakres} / {/zakres} — <span data-en="scope">zakres</span><br>{%zdjecia} — <span data-en="each photo on a new page">każde zdjęcie na nowej stronie</span></div>
-        <p class="toast" id="setToast"></p>
-      </div>
-    </details>
+  <section class="view" id="v-home" hidden>
   </section>
 
   <!-- 2. Lista urządzeń -->
   <section class="view" id="v-list" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1 id="listTitle">—</h1><div class="sub" id="listSub"></div></div></div>
-    <div class="ppmbar" hidden></div>
-    <input class="search" id="search" type="search" placeholder="Szukaj kodu, np. LL-UG" data-en-placeholder="Search code, e.g. LL-UG" autocomplete="off" spellcheck="false">
-    <div class="panel" id="batchBar" hidden></div>
-    <div id="groups"></div>
-    <div class="panel">
-      <label class="label" for="customCode" data-en="Other device">Inne urządzenie</label>
-      <div class="addrow"><input id="customCode" type="text" placeholder="np. DB-TA-L3-01" data-en-placeholder="e.g. DB-TA-L3-01" autocapitalize="characters" spellcheck="false"><select id="customLoc" aria-label="Lokalizacja" data-en-aria-label="Location" style="width:auto"><option>Tower A</option><option>Tower B</option><option>Pavilion</option></select><button class="btn" type="button" id="customGo" data-en="Add">Dodaj</button></div>
-      <p class="hint" data-en="The device stays on the list permanently, with this location.">Urządzenie zostanie na liście na stałe, z tą lokalizacją.</p>
-    </div>
   </section>
 
-  <!-- 3. Formularz -->
+  <!-- 3. Formularz: widok Vue, montowany przed konsumentami pól w i-*.js. -->
   <section class="view" id="v-form" hidden>
-    <div class="top"><button class="back" type="button" data-go="list" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1 id="formTitle">—</h1><div class="sub" id="formSub"></div></div></div>
-    <div class="ppmbar" hidden></div>
-
-    <div class="panel" data-m="sum" id="sumBox"></div>
-
-    <div class="panel" data-m="one item">
-      <div class="label" data-en="Faults — one tap">Usterki — jedno dotknięcie</div>
-      <div class="faults" id="faults"></div>
-      <p class="hint" data-en="Each fault adds a ready English sentence and sets “Requires attention”.">Każda usterka dopisuje gotowe zdanie po angielsku i ustawia „Requires attention”.</p>
-    </div>
-
-    <div class="panel" data-m="one" id="tempBox" hidden>
-      <div class="label" data-en="Temperatures (°C)">Temperatury (°C)</div>
-      <div id="tempList"></div>
-      <p class="hint" data-en="Enter only the readings — other fields of the form stay empty. Nothing is pre-filled or copied from the previous inspection.">Wpisz tylko pomiary — pozostałe rubryki wzoru zostają puste. Nic nie jest wpisane z góry ani przepisane z poprzedniej inspekcji.</p>
-    </div>
-
-    <div class="panel" data-m="one" id="flushBox" hidden>
-      <div class="label" id="flWeekL" data-en="Week of the month (as on the form)">Tydzień miesiąca (jak na formularzu)</div>
-      <div class="fl-week" id="flWeek"><button type="button" data-w="1">1</button><button type="button" data-w="2">2</button><button type="button" data-w="3">3</button><button type="button" data-w="4">4</button><button type="button" data-w="5">5</button></div>
-      <label class="fl-on" hidden><input type="checkbox" id="flOn"> <span id="flOnL" data-en="Electronic form">Formularz elektroniczny</span></label>
-      <div class="fl-list off" id="flList"></div>
-      <p class="hint" id="flHint" data-en="“Our report” in ⚙ next to Send off: only photos of the filled paper forms go to the report. On: the filled Word form goes, photos of the forms are an extra.">Wyłączony: do raportu idą tylko zdjęcia wypełnionych kartek. Włączony: idzie wypełniony formularz Word, zdjęcia kartek są dodatkiem.</p>
-      <input id="flCam" type="file" accept="image/*" capture="environment" hidden>
-    </div>
-
-    <div class="panel" data-m="one item">
-      <div class="label" id="ckTitle" data-en="Checklist">Checklista</div>
-      <div class="legend" id="legend"><span><b class="o">✓</b> OK</span><span><b class="x">✗</b> <i data-en="not OK" style="font-style:normal">nie OK</i></span><span><b>–</b> <i data-en="skip (not in the report)" style="font-style:normal">pomiń (nie trafi do raportu)</i></span></div>
-      <div class="ck" id="ck"></div>
-      <div class="row"><button class="btn" type="button" id="allOk" data-en="All marked → OK">Wszystkie zaznaczone → OK</button></div>
-    </div>
-
-    <div class="panel">
-      <div class="photo-head"><div class="label"><span data-en="Photos">Zdjęcia</span> <span id="photoCount"></span></div><span id="photoSize"></span></div>
-      <div class="photo-btns">
-        <label class="pbtn"><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie" data-en-aria-label="Take photo">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
-        <label class="pbtn"><input id="galIn" type="file" accept="image/*" multiple aria-label="Dodaj z galerii" data-en-aria-label="Add from gallery">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span data-en="From gallery">Z galerii</span></label>
-      </div>
-      <div class="photos" id="photos"></div>
-      <div id="sugBox" hidden></div>
-      <p class="hint" id="photoInfo" data-en="Photos are reduced straight after adding. Each goes on a separate page of the report.">Zdjęcia są zmniejszane od razu po dodaniu. Każde idzie na osobną stronę raportu.</p>
-    </div>
-
-    <div class="panel" data-m="one" id="sheetBox">
-      <div class="label"><span data-en="Form photo">Zdjęcie formularza</span> <span id="sheetState"></span></div>
-      <div class="photo-btns">
-        <label class="pbtn"><input id="shCamIn" type="file" accept="image/*" capture="environment" aria-label="Zrób zdjęcie formularza" data-en-aria-label="Take a photo of the form">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-en="Take photo">Zrób zdjęcie</span></label>
-        <label class="pbtn"><input id="shGalIn" type="file" accept="image/*" multiple aria-label="Dodaj zdjęcie formularza z galerii" data-en-aria-label="Add a form photo from the gallery">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg><span data-en="From gallery">Z galerii</span></label>
-      </div>
-      <div class="photos" id="sheetPhotos"></div>
-      <p class="hint" id="sheetInfo"></p>
-    </div>
-
-
-    <div class="panel" data-m="one sum">
-      <div class="grid">
-        <div class="f"><label for="dzien" data-en="Date done">Data wykonania</label><input id="dzien" type="date"></div>
-        <div class="f"><label for="podpis" data-en="Signature">Podpis</label><input id="podpis" type="text"></div>
-      </div>
-      <div class="datesug" id="dateSug" hidden></div>
-    </div>
-
-    <div class="panel" data-m="one sum">
-      <div class="f"><span id="l-ov">Overall Condition</span>
-        <div class="chips" role="radiogroup" aria-labelledby="l-ov">
-          <label class="chip ok"><input type="radio" name="ov" id="ov-1" value="Satisfactory" checked><span>Satisfactory</span></label>
-          <label class="chip uw"><input type="radio" name="ov" id="ov-2" value="Requires attention"><span>Requires attention</span></label>
-          <label class="chip us"><input type="radio" name="ov" id="ov-3" value="Unsatisfactory"><span>Unsatisfactory</span></label>
-        </div></div>
-      <div class="f"><span id="l-q">Quote Required</span>
-        <div class="chips" role="radiogroup" aria-labelledby="l-q">
-          <label class="chip nn"><input type="radio" name="quote" id="q-0" value="" checked><span data-en="blank">puste</span></label>
-          <label class="chip ok"><input type="radio" name="quote" id="q-1" value="No"><span>No</span></label>
-          <label class="chip us"><input type="radio" name="quote" id="q-2" value="Yes"><span>Yes</span></label>
-        </div></div>
-    </div>
-
-    <div class="panel" data-m="one sum">
-      <div class="f"><label for="komentarz" data-en="Comment (goes to the report in English)">Komentarz (trafi do raportu po angielsku)</label>
-        <textarea id="komentarz" placeholder="Wpisz albo podyktuj po polsku — mikrofon na klawiaturze telefonu" data-en-placeholder="Type or dictate — microphone on the phone keyboard"></textarea></div>
-      <div class="row nt-btns"><button class="btn nt-rec" type="button" id="ntRec" data-en="🎤 Record note">🎤 Nagraj notatkę</button><button class="btn" type="button" id="ntOpen"><span data-en="📝 Notes">📝 Notatki</span> <span class="nt-n" id="ntN">0</span></button></div>
-      <button class="btn wide" type="button" id="ntJoin" hidden data-en="✨ Combine notes into comment">✨ Połącz notatki w komentarz</button>
-      <div class="row"><button class="btn" type="button" id="translate" hidden data-en="Translate to English">Przetłumacz na angielski</button><button class="btn" type="button" id="undoTr" hidden data-en="Undo translation">Cofnij tłumaczenie</button><button class="btn" type="button" id="mdRun" hidden data-en="✨ Write in English">✨ Ułóż po angielsku</button></div>
-      <p class="hint" id="trHint"></p>
-      <div id="mdBox" hidden><div class="f"><label for="mdOut" data-en="Model suggestion — check and correct">Propozycja modelu — sprawdź i popraw</label><textarea id="mdOut"></textarea></div><p class="hint" id="mdWarn"></p>
-        <div class="row"><button class="btn" type="button" id="mdUse" data-en="✓ Insert into comment">✓ Wstaw do komentarza</button><button class="btn" type="button" id="mdDrop" data-en="Discard">Odrzuć</button></div></div>
-    </div>
-
-    <div class="sendrow" data-m="one sum"><button class="go" type="button" id="toQueue" data-en="Send">Wyślij</button><button class="go" type="button" id="recUpdate" hidden>Update</button><button class="btn sendcfg" type="button" id="sendCfg" data-m="one" aria-label="Ustawienia wysyłki" data-en-aria-label="Sending settings"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
-    <p class="hint" id="sendHint" data-m="one"></p>
-    <button class="btn wide" type="button" id="vtBtn" data-akcja="vantify" hidden></button><!-- „Open Vantify” z klocka (vantify: true w ppm.js) -->
-    <p class="hint" id="vtHint" hidden></p>
-    <button class="btn wide" type="button" id="finishIns" data-m="one sum" data-en="✓ Finish inspection">✓ Zakończ inspekcję</button>
-    <button class="go" type="button" id="restoreIns" hidden data-en="↺ Restore inspection">↺ Przywróć inspekcję</button>
-    <button class="btn wide" type="button" id="toPreview" data-m="one sum" data-en="Report preview">Podgląd raportu</button>
-    <button class="go" type="button" id="saveItem" data-m="item" data-en="Save">Zapisz</button>
-    <p class="hint" id="formHint"></p>
   </section>
 
   <!-- 4. Podgląd -->
   <section class="view" id="v-preview" hidden>
-    <div class="top"><button class="back" type="button" data-go="form" aria-label="Wróć do edycji" data-en-aria-label="Back to editing">‹</button>
-      <div class="t"><h1><span data-en="Preview">Podgląd</span><span class="dot">.</span></h1><div class="sub" id="prevSub"></div></div></div>
-    <div class="wrapscroll"><div class="paper" id="paper"></div></div>
-    <div class="panel">
-      <div class="label" data-en="Files">Pliki</div>
-      <div class="fname" id="fname">—</div>
-      <button class="go" id="prevQueue" type="button" data-en="To queue">Do kolejki</button>
-      <button class="btn wide" type="button" id="editBtn" data-en="Back to editing">Wróć do edycji</button>
-    </div>
   </section>
 
-  <!-- 5. Kolejka -->
+  <!-- 5. Kolejka: treść rysuje część Vue (KolejkaInsp), dane z kolejka-widok.js -->
   <section class="view" id="v-queue" hidden>
-    <div class="top"><button class="back" type="button" data-go="home" aria-label="Wstecz" data-en-aria-label="Back">‹</button>
-      <div class="t"><h1><span data-en="Queue">Kolejka</span><span class="dot">.</span></h1><div class="sub" id="qSub"></div></div></div>
-    <div class="panel">
-      <div id="qList"></div>
-      <button class="go" type="button" id="qSend" data-en="Send all">Wyślij wszystko</button>
-      <p class="hint" id="qHint"></p>
-    </div>
-    <button class="btn wide" type="button" id="qNext" data-en="Next device">Następne urządzenie</button>
   </section>
 </div>
+
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.71.0/build/docxtemplater.min.js"></script>
@@ -219,26 +57,44 @@
 <script src="../moduly/ladowanie/ladowanie.js"></script>
 <script src="../moduly/znacznik/znacznik.js"></script>
 <script src="../moduly/kafelek/kafelek.js"></script>
-<script src="../moduly/naglowek/naglowek.js"></script>
+<script src="../moduly/przelacznik/przelacznik.js"></script>
 <script src="../moduly/wyglad/wyglad.js"></script>
 <script src="../vantify-plan.js"></script>
 <script src="../moduly/eksport-vantify/eksport-vantify.js"></script>
 <script src="../ppm.js"></script>
 <script src="../vantify-import.js"></script>
+<script>
+  OESTCzesci.montuj(document.getElementById("v-form"), "inspekcja/formularz");
+  OESTCzesci.montuj(document.getElementById("v-home"), "inspekcja/start");
+  OESTCzesci.montuj(document.getElementById("v-list"), "inspekcja/lista");
+  OESTCzesci.montuj(document.getElementById("v-preview"), "inspekcja/podglad");
+  OESTCzesci.montuj(document.getElementById("v-queue"), "inspekcja/kolejkastrony");
+</script>
 <script>/* wejście z karty PPM (#ppm=…) prosto do formularza: ramka formularza od pierwszej klatki, treść wpisuje start niżej – bez cudzego ekranu i bez pustej strony (bramka B1).
    Karta z listą urządzeń (np. izolatory, t.open bez t.dev) otwiera listę – tu nic nie odsłaniam (przegląd Codex #129). */
   (function () { try { var h = new URLSearchParams(location.hash.slice(1)), P = window.OEST_PPM, t = !h.get("rec") && P && P.byId(h.get("ppm") || "");
     if (t && !(t.open && !t.dev)) { document.documentElement.classList.add("wy-wczytanie"); document.getElementById("v-form").hidden = false; } } catch (e) {} })();</script>
 <script src="../config.js"></script>
+<script src="../moduly/przycisk/przycisk.js"></script>
 <script src="../settings-google.js"></script>
+<script src="../moduly/word/word.js"></script><!-- Word: jedyny silnik .docx (moduly/word) -->
 <script src="../moduly/word-pdf/word-pdf.js"></script>
 <script src="../moduly/raporty/raporty.js"></script>
 <script src="../moduly/wysylka/wysylka.js"></script>
 <script src="../moduly/zdjecia/zdjecia.js"></script>
+<script src="../calendar-core.js"></script>
+<script src="../calendar-sync.js"></script>
+<!-- górny pasek ramy (data, pogoda, dzwonek, inicjały, linia stanu): te same dane co ekran główny – OESTHome.dane() (Grzegorz 25.11.2026) -->
+<script src="../moduly/klocek/klocek.js"></script>
+<script src="../pogoda.js"></script>
+<script src="../ppm-ui.js"></script>
+<script src="../moduly/nowosci/nowosci.js"></script>
+<script src="../wersja.js"></script>
+<script src="../settings-ui.js"></script>
+<script src="../home.js"></script><!-- za settings-ui.js: home.js używa OESTSettingsUI -->
+<script src="../module-adapters.js"></script>
 <script src="../moduly/aparat/aparat.js"></script>
 <script src="../moduly/checkbox/checkbox.js"></script>
-<script src="../moduly/przycisk/przycisk.js"></script>
-<script src="../moduly/przelacznik/przelacznik.js"></script>
 <script src="../moduly/pole-email/pole-email.js"></script>
 <script src="../moduly/model/model.js"></script>
 <script src="../moduly/notatki/glos.js"></script>
@@ -251,6 +107,10 @@
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="i-word.js"></script>
 <script src="i-rdzen.js"></script>
+<script src="widoki.js"></script>
+<script src="i-widoki.js"></script>
+<script src="kolejka-widok.js"></script>
+<script src="tytul-etap.js"></script><!-- tytuł w pasku ramy i etap inspekcji (R27: poza <script> strony) -->
 <script src="i-ekrany.js"></script>
 <script src="i-formularz.js"></script>
 <script src="i-szkic.js"></script>
@@ -263,6 +123,7 @@
 <script src="i-raport.js"></script>
 <script src="i-ustawienia.js"></script>
 <script src="i-kolejka.js"></script>
+<script src="przywroc.js"></script><!-- „↺ Przywróć inspekcję” (R27: poza <script> strony) -->
 <script src="i-start.js"></script>
 <script src="form-ui.js"></script>
 </body>

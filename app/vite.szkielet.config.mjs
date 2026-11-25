@@ -9,7 +9,7 @@ const nm = path.resolve(tu, '../../app/node_modules');
 export default defineConfig({
   root: tu,
   plugins: [vue()],
-  resolve: { alias: [{ find: /^(vue|vue-router|@ionic\/vue|@ionic\/core|ionicons|@stencil\/vue-output-target)(\/.*)?$/, replacement: nm + '/$1$2' }] },
+  resolve: { alias: [{ find: /^(vue|vue-router|@ionic\/vue|@ionic\/core|@capacitor\/camera|@capacitor\/core|ionicons|@stencil\/vue-output-target)(\/.*)?$/, replacement: nm + '/$1$2' }] },
   define: { 'process.env.NODE_ENV': '"production"', __VUE_OPTIONS_API__: 'false', __VUE_PROD_DEVTOOLS__: 'false', __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false' },
   build: {
     outDir: path.resolve(tu, '../../app/www/moduly/szkielet/lib'), emptyOutDir: true, sourcemap: false, minify: true,

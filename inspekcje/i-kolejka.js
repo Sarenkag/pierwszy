@@ -12,7 +12,7 @@
     buildAll().then(function (r) {
       r.from = from; built = r; renderPreview();
       // PDF nie powstał (brak silnika LibreOffice): pokazujemy wprost, co naprawdę pójdzie – nic nie udajemy
-      if (r.bezPdf) $("fname").innerHTML = r.files.map(function (f) { return esc(f.name); }).join("<br>") + "<br><b>" + esc(gErr(new Error("REPORT_PDF_MISSING"))) + "</b>";
+
       show("preview");
     }).catch(function (e) {
       $("formHint").textContent = window.OESTT("Nie udało się przygotować raportu: ", "Could not prepare the report: ") + buildErr(e);
@@ -23,53 +23,36 @@
     return { typ: cur.type, tryb: cur.mode, ppm: cur.ppm, data: reportDate(), raport: cur.type && cur.type.flush ? flushReport(reportDate()) : null, blokada: $("toQueue").disabled, zajete: queueing }; } });
   function buildErr(e) { if (e && /^[A-Z][A-Z0-9_]{3,}$/.test(e.message || "")) return gErr(e); /* kod aplikacji (np. STORAGE_WRITE) → tekst z moduly/bledy (uwaga Codex #164) */ return (e && e.properties && e.properties.explanation) || (e && e.message) || String(e); }
   function renderPreview() {
-    var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop();
+    var d = built.data, i = built.info, title = (i.headerText || "Engineers Report").split("\n").pop(), pliki = [];
+    var company = window.OESTT("(wzór firmy)", "(company template)");
+    function plik(ext, opis) { pliki.push({ nazwa: built.name, rozszerzenie: ext, opis: opis || "" }); }
+    var widok;
     if (d.temps) {
-      $("paper").innerHTML = "<b>" + esc(d.tytul) + "</b><p>Date: " + esc(d.data) + " · Print name: " + esc(d.inspektor) + "</p><table>" +
-        built.from.type.slots.map(function (s, n) { return '<tr><td class="k">' + esc(s[0]) + "<br><small>" + esc(KIND[s[1]]) + "</small></td><td" + (tempBad(s[1], d.temps[n]) ? ' style="color:var(--bad)"' : "") + ">" + esc(d.temps[n] ? d.temps[n] + " °C" : "–") + "</td></tr>"; }).join("") +
-        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>";
+      widok = { rodzaj: "temperatury", tytul: d.tytul, podpis: "Date: " + d.data + " · Print name: " + d.inspektor, stan: d.stan_ogolny, zdjecia: [],
+        wiersze: built.from.type.slots.map(function (slot, n) { return { nazwa: slot[0], opis: KIND[slot[1]], blad: tempBad(slot[1], d.temps[n]), wartosc: d.temps[n] ? d.temps[n] + " °C" : "–" }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>" + esc(built.name) + "<em>.pdf</em>";
-      return;
-    }
-    if (d.folder && d.flush) {
+      plik(".docx", " " + company); plik(".pdf");
+    } else if (d.folder && d.flush) {
       var ff = d.flush;
-      $("paper").innerHTML = "<b>" + esc(ff.title) + "</b><p>" + (ff.points ? "" : esc(OESTFlush.MONTHS[ff.month] + " " + ff.year) + window.OESTT(" · tydzień ", " · week ") + ff.week + " · ") + esc(d.data) + " · " + esc(ff.name) + "</p><table>" +
-        ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; });
-          return (gname ? '<tr><td colspan="2"><b>' + esc(gname) + "</b></td></tr>" : "") + '<tr><td class="k">' + esc(t.name) + "</td><td" + (t.state === "no" ? ' style="color:var(--bad)"' : "") + ">" + esc(OESTFlush.LABEL[t.state]) + (t.note ? "<br><small>" + esc(t.note) + "</small>" : "") + "</td></tr>"; }).join("") +
-        "</table><p><b>" + esc(d.stan_ogolny) + ".</b></p>" +
-        built.pics.map(function (p) { return '<div class="pimg"><img alt="" src="' + p.url + '">' + (p.tap != null && ff.taps[p.tap] ? "<small>" + esc(ff.taps[p.tap].name) + "</small>" : "") + "</div>"; }).join("");
+      widok = { rodzaj: "flush", tytul: ff.title, podpis: (ff.points ? "" : OESTFlush.MONTHS[ff.month] + " " + ff.year + window.OESTT(" · tydzień ", " · week ") + ff.week + " · ") + d.data + " · " + ff.name, stan: d.stan_ogolny,
+        wiersze: ff.taps.map(function (t, ti) { var gh = 0, gname = ""; (ff.groups || []).forEach(function (g) { if (gh === ti) gname = g.name; gh += g.n; }); return { grupa: gname, nazwa: t.name, blad: t.state === "no", wartosc: OESTFlush.LABEL[t.state], uwaga: t.note }; }),
+        zdjecia: built.pics.map(function (p) { return { url: p.url, opis: p.tap != null && ff.taps[p.tap] ? ff.taps[p.tap].name : "" }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data;
-      $("fname").innerHTML = (ff.points ? "" : esc(built.name) + "<em>.docx</em> "+window.OESTT("(wzór firmy)", "(company template)")+"<br>") + esc(built.name) + "<em>.pdf</em>";
-      return;
-    }
-    if (d.folder) {
-      $("paper").innerHTML = built.pics.map(function (p, n) { return '<div class="pimg"><img alt="Strona ' + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
+      if (!ff.points) plik(".docx", " " + company); plik(".pdf");
+    } else if (d.folder) {
+      widok = { rodzaj: "kartki", zdjecia: built.pics.map(function (p) { return { url: p.url }; }) };
       $("prevSub").textContent = d.urzadzenie + " · " + d.data + " · stron: " + built.pics.length;
-      $("fname").innerHTML = esc(built.name) + "<em>.pdf</em>";
-      return;
+      plik(".pdf");
+    } else {
+      widok = { rodzaj: "raport", raport: d, tytul: title, logo: built.logoUrl, stopka: i.footerText || "", numer: d["job number"] || "", miejsce: [d.building, d.level].filter(Boolean).join(" "),
+        wiersze: (d.details || "").split("\n").map(function (l) { return l.indexOf("\t") < 0 ? { tekst: l } : { komorki: l.split("\t") }; }),
+        zdjecia: built.pics.map(function (p, n) { return { url: p.url, alt: window.OESTT("Zdjęcie ", "Photo ") + (n + 1) }; }) };
+      $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
+      plik(".docx"); plik(".pdf");
+      if (cfg.drivePhotos && built.pics.length) pliki.push({ nazwa: built.name, rozszerzenie: " foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg", opis: " " + window.OESTT("(tylko na Drive)", "(Drive only)") });
     }
-    function head() { return '<div class="ph">' + (built.logoUrl ? '<img alt="" src="' + built.logoUrl + '">' : "") + "<div>" + esc(title) + "</div></div>"; }
-    var foot = '<div class="foot">' + esc(i.footerText || "") + "</div>";
-    var html = head() + "<table>" +
-      '<tr><td class="k">Site</td><td>' + esc(d.site) + "</td></tr>" +
-      // nowy wzór basic (20/11/2026): ID = nr zlecenia Vantify obok daty, Location obok inżyniera – jak w Wordzie i PDF
-      '<tr><td class="k">Date</td><td>' + esc(d.data) + '<span style="float:right"><b>ID:</b> ' + esc(d["job number"] || "") + "</span></td></tr>" +
-      '<tr><td class="k">Engineer</td><td>' + esc(d.inspektor) + '<span style="float:right"><b>Location:</b> ' + esc([d.building, d.level].filter(Boolean).join(" ")) + "</span></td></tr>" +
-      '<tr><td colspan="2" class="big"><p style="text-align:center"><b>' + esc(d.tytul) + "</b></p>" +
-      "<p>Overall Condition: " + esc(d.stan_ogolny) + "</p>" +
-      '<div style="white-space:pre-wrap">' + (d.details || "").split("\n").map(function (l) {
-        return l.indexOf("\t") < 0 ? esc(l) : l.split("\t").map(function (c) { return '<span style="display:inline-block;width:33%;line-height:2.2">' + esc(c) + "</span>"; }).join("");
-      }).join("\n") + "</div>" +
-      (d.zakres ? '<div class="scope">' + esc(d.zakres) + "</div>" : "") + "</td></tr>" +
-      '<tr><td colspan="2">Works Complete: ' + esc(d.data) + "</td></tr>" +
-      '<tr><td colspan="2">Quote Required: ' + esc(d.quote) + "</td></tr>" +
-      '<tr><td colspan="2" style="height:44px">Signed: ' + esc(d.inspektor) + "</td></tr></table>" + foot +
-      built.pics.map(function (p, n) { return '<div class="pimg">' + head() + '<img alt="' + window.OESTT('Zdjęcie ', 'Photo ') + (n + 1) + '" src="' + p.url + '"></div>'; }).join("");
-    $("paper").innerHTML = html;
-    $("prevSub").textContent = d.urzadzenie + " · " + d.lokalizacja + " · " + d.data;
-    $("fname").innerHTML = esc(built.name) + "<em>.docx</em><br>" + esc(built.name) + "<em>.pdf</em>" +
-      (cfg.drivePhotos && built.pics.length ? "<br>" + esc(built.name) + "<em> foto 1" + (built.pics.length > 1 ? "…" + built.pics.length : "") + ".jpg</em> "+window.OESTT("(tylko na Drive)", "(Drive only)")+"" : "");
+    widokInspekcji("paper", "raport", widok);
+    widokInspekcji("fname", "raport", { rodzaj: "pliki", pliki: built.bezPdf ? built.files : pliki, brakPdf: !!built.bezPdf, blad: built.bezPdf ? gErr(new Error("REPORT_PDF_MISSING")) : "" });
   }
   $("editBtn").addEventListener("click", function () { if (!queueing) show("form"); });
 
@@ -129,7 +112,7 @@
         // „Wyślij” (Grzegorz 03/11 12:12, 04/11): raport idzie do kolejki, a inspekcja ZOSTAJE otwarta — szkic, zdjęcia, zlecenie
         // i termin bez zmian; można poprawić i wysłać jeszcze raz. Kończy dopiero „Zakończ inspekcję”.
         if (from.ppm && PPM.setStage) { if (!from.fix) ppmTrack(true); var r0 = PPM.stage(from.ppm); PPM.setStage(from.ppm, { s: r0 && r0.s !== "prog" ? (r0.s === "sent" || r0.s === "queued" || r0.s === "done" ? (it.status === "sent" ? "sent" : "queued") : r0.s) : "prog", mail: it.status === "sent" ? "sent" : "queued", mailId: it.id, mailAt: Date.now(), mailSig: from.sig || "", mailDate: d.data || "" }); }
-        if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(it); else if (cfg.auto) sendQueue();
+        OESTSender.run({ login: true }); // jedna droga wysyłki: Gmail z konta (moduly/wysylka)
         lastMailHint = mailHint(it);
         return Promise.resolve(saveDraftNow()).then(function () { return sendBtn ? sendBtn.ok(mailState(it)) : null; }).then(function () { show("form"); renderPpmBar(); });
       }
@@ -147,7 +130,7 @@
   // Inspekcja z listy PPM zostaje na ekranie i w telefonie (szkic z oznaczeniem fin) aż do następnego terminu; klocek pokazuje „✓ Zakończona”.
   function closeUp(from, d) {
     var done = Promise.resolve();
-    if (from.queued !== false) { if (gm()) OESTSender.run({ login: true }); else if (shareApi()) shareSend(queue[queue.length - 1]); else if (cfg.auto) sendQueue(); }
+    if (from.queued !== false) { OESTSender.run({ login: true }); } // jedna droga wysyłki (moduly/wysylka)
     if (from.mode === "sum") {
       // izolatory: zlecenie musi się wyczyścić, żeby następne zaczęło się od zera
       if (from.type.ask) saveHist(from.type, d.data);
@@ -256,7 +239,6 @@
     renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint() || window.OESTT("✓ Gotowa.", "✓ Ready.");
   });
   $("toQueue").addEventListener("click", function () {
-    if (cur.type && cur.type.folder && !(cur.type.flush && fl.on) && !sheetPhotos().length) { $("shCamIn").click(); return; } // „Dodaj zdjęcie kartki”
     queueBtn(this, false);
   });
   $("prevQueue").addEventListener("click", function () { queueBtn(this, true); });
@@ -267,122 +249,26 @@
   function unconfirmed() { return queue.filter(function (q) { return q.status === "shared"; }); }
   function renderNet() {
     var n = pending().length, off = !online();
-    $("netbar").className = "netbar" + (off ? " off" : "");
+    $("netTxt").color = off ? "danger" : "primary";
     $("netTxt").textContent = (off ? window.OESTT("Bez sieci", "No network") : "Online") + " · " + // i18n-ok: „Online” tak samo po polsku i po angielsku
       (n ? window.OESTT("w kolejce: ", "queued: ") + n + (sending ? window.OESTT(" (wysyłam…)", " (sending…)") : "") : window.OESTT("kolejka pusta", "queue empty"));
   }
   function qBusy() { return sending || (gm() && OESTSender.busy()); }
-  function renderQueue() {
-    var n = pending().length, busy = qBusy();
-    var list = queue.slice().sort(function (a, b) { return b.created - a.created; });
-    var nu = unconfirmed().length;
-    $("qSub").textContent = n ? window.OESTT("Do wysłania: ", "To send: ") + n + (nu ? window.OESTT(" · do potwierdzenia: ", " · to confirm: ") + nu : "") : nu ? window.OESTT("Do potwierdzenia: ", "To confirm: ") + nu : window.OESTT("Wszystko wysłane", "All sent");
-    $("qList").innerHTML = list.length ? list.map(function (q) {
-      var st = q.status === "sent" ? '<span class="st ok">'+window.OESTT('✓ wysłane', '✓ sent')+' ' + esc(NZ.godzina(new Date(q.sentAt))) + "</span>" :
-        q.status === "sending" ? '<span class="st">'+window.OESTT('wysyłam…', 'sending…')+'</span>' :
-        q.status === "err" ? '<span class="st err">'+window.OESTT('błąd', 'error')+'</span>' :
-        q.status === "shared" ? '<span class="st">'+window.OESTT('przekazano · niepotwierdzone', 'handed over · not confirmed')+'</span>' : '<span class="st">czeka</span>';
-      return '<div class="qitem"><div><div class="code">' + esc(q.code) + "</div><small>" + esc(q.name) + " · " + NZ.kb(q.docx.length + q.pdf.length) +
-        (q.err ? " · " + esc(q.err) : "") + (q.pdfUrl ? ' · <a href="' + esc(q.pdfUrl) + '" target="_blank" rel="noopener">PDF</a>' : "") +
-        (q.status === "shared" && !busy ? ' · <button class="btn" type="button" data-akcja="potwierdz-wyslane" data-ok="' + esc(q.id) + '">'+window.OESTT('Potwierdzam, wysłane', 'Confirm sent')+'</button>' +
-          ' · <button class="btn" type="button" data-akcja="wyslij-ponownie" data-again="' + esc(q.id) + '">'+window.OESTT('Wyślij ponownie', 'Send again')+'</button>' : "") +
-        (q.status !== "sent" && !busy ? ' · <button class="btn" type="button" data-del="' + esc(q.id) + '">'+window.OESTT('Usuń', 'Delete')+'</button>' : "") +
-        "</small></div>" + st + "</div>";
-    }).join("") : '<p class="hint">'+window.OESTT('Pusto. Raporty dodane „Do kolejki” czekają tu na wysłanie.', 'Empty. Reports added “To queue” wait here to be sent.')+'</p>';
-    $("qSend").disabled = busy || !n;
-    $("qSend").textContent = busy ? window.OESTT("Wysyłam…", "Sending…") : window.OESTT("Wyślij wszystko", "Send all");
-    $("qHint").textContent = gm() ? window.OESTT("Idzie prosto z Twojego Gmaila na ", "Goes straight from your Gmail to ") + (myEmail() || window.OESTT("adres z Ustawień", "the address in Settings")) + window.OESTT(". Stan wysyłki widać na pasku na dole.", ". Sending status shows on the bar at the bottom.") : shareApi() ? window.OESTT("Appka nie jest zalogowana do Google, więc Wyślij otwiera wybór apki. Żeby raporty szły same: Ustawienia → Konto → Wyloguj i zaloguj przez Google.", "The app is not signed in to Google, so Send opens the app chooser. To send reports automatically: Settings → Account → Sign out and sign in with Google.") : !cfg.email ? window.OESTT("Ustaw e-mail w Ustawieniach.", "Set the email in Settings.") :
-      (!online() ? window.OESTT("Bez sieci — wyślę, gdy wróci zasięg (apka musi być otwarta).", "No network — I will send when the signal returns (the app must be open).") : window.OESTT("Idzie z Twojego Gmaila na ", "Goes from your Gmail to ") + cfg.email + window.OESTT(" i do folderu „", " and to the folder “") + cfg.folder + window.OESTT("” na Drive.", "” on Drive."));
-    renderNet();
-  }
-  $("qList").addEventListener("click", async function (e) {
-    var ok = e.target.closest("button[data-ok]"), again = e.target.closest("button[data-again]");
-    if ((ok || again) && !qBusy()) {
-      var sid = (ok || again).getAttribute(ok ? "data-ok" : "data-again"), sit = queue.filter(function (q) { return q.id === sid && q.status === "shared"; })[0];
-      if (!sit) return;
-      if (ok) markSent(sit, null); else { sit.status = "wait"; sit.err = ""; } // ponownie = znów w kolejce, wychodzi przez „Wyślij”
-      return qPut(sit).then(refresh);
-    }
-    var b = e.target.closest("button[data-del]"); if (!b || qBusy()) return;
-    if (!await ask(window.OESTT("Usunąć ten raport z kolejki? Nie zostanie wysłany.", "Remove this report from the queue? It will not be sent."))) return;
-    // w czasie pytania mogła ruszyć wysyłka w tle (sieć wróciła, minutnik): wtedy nie usuwamy raportu, który już wychodzi
-    if (qBusy()) { say(window.OESTT("Wysyłka właśnie ruszyła — spróbuj usunąć raport, gdy się skończy.", "Sending has just started — try removing the report when it finishes.")); return; }
-    var id = b.getAttribute("data-del");
-    var gone = queue.filter(function (q) { return q.id === id; })[0];
-    qDel(id).then(function () {
-      queue = queue.filter(function (q) { return q.id !== id; }); renderQueue();
-      // usunięty niewysłany raport: klocek PPM wraca z „W kolejce” (okres znów otwarty)
-      if (gone && gone.ppm && gone.status !== "sent" && PPM && PPM.unqueue) PPM.unqueue(gone.ppm, gone.id);
-    });
-  });
-  $("qSend").addEventListener("click", function () { sendQueue(true); });
-  $("qNext").addEventListener("click", function () { show("list"); });
-  function refresh() { if (!$("v-queue").hidden) renderQueue(); else renderNet(); if (!$("v-list").hidden) renderList(); }
+  function refresh() { OESTKolejkaWidok.powiadom(); renderNet(); if (!$("v-list").hidden) renderList(); } // ekran Kolejka rysuje część Vue (kolejka-widok.js)
 
-  // Po kolei, jeden raport na raz. Id raportu chroni przed podwójnym mailem, gdy odpowiedź zginie po drodze.
-  function submitArg(it) {
-    return { id: it.id, name: it.name, folder: it.folder, to: it.to, subject: it.subject, body: it.body,
-      docx: NZ.bytesToB64(it.docx), pdf: NZ.bytesToB64(it.pdf), photos: it.photos.map(NZ.bytesToB64) };
-  }
   function markSent(it, r) {
     it.status = "sent"; it.sentAt = Date.now(); it.pdfUrl = r && r.pdfUrl || "";
     if (it.ppm && PPM && PPM.markSent) PPM.markSent(it.ppm, it.id);
     it.docx = new Uint8Array(0); it.photos = []; // pliki są już na Drive; PDF zostaje w telefonie (odtworzenie inspekcji, 04/11)
   }
-  // Bez wdrożonego Apps Script: raport idzie przez Androidowe „Udostępnij” (Gmail itp.) z plikami jako załącznikami.
-  var reportShare = null;
-  function shareApi() {
-    if (IN_GAS || cfg.api || !window.Capacitor || !Capacitor.isNativePlatform || !Capacitor.isNativePlatform()) return null;
-    if (!reportShare) reportShare = Capacitor.registerPlugin ? Capacitor.registerPlugin("ReportShare") : Capacitor.Plugins && Capacitor.Plugins.ReportShare;
-    return reportShare || null;
-  }
   function myEmail() {
     if (cfg.email) return cfg.email;
     return OESTSender.myEmail(); // adres firmowy obecnego konta (moduly/wysylka; nigdy adres innego konta)
   }
-  function shareSend(it) {
-    if (sending || !it) return Promise.resolve(); // jedno przekazanie naraz
-    var files = [];
-    if (Array.isArray(it.files)) it.files.forEach(function (f) { files.push({ name: f.name, data: NZ.bytesToB64(f.bytes) }); }); // ⚙ ustawienia wysyłki
-    else {
-      if (it.pdf && it.pdf.length) files.push({ name: it.name + ".pdf", data: NZ.bytesToB64(it.pdf) });
-      if (it.docx && it.docx.length) files.push({ name: it.name + ".docx", data: NZ.bytesToB64(it.docx) });
-    }
-    var to = Array.isArray(it.toList) ? it.toList : [it.to || myEmail()].filter(Boolean);
-    sending = true; it.status = "sending"; refresh(); // blokada na całe sprawdzanie sieci i przekazanie (drugie „Wyślij wszystko” nie otwiera wyboru drugi raz)
-    // najpierw połączenie (zasada wysyłki): bez internetu nie otwieramy wyboru apki, raport czeka w kolejce
-    var net = window.OESTSender && OESTSender.reachable ? OESTSender.reachable() : Promise.resolve(online());
-    return net.then(function (up) {
-      if (!up) { it.status = "wait"; say(window.OESTT("Brak połączenia z internetem. Raport czeka w kolejce.", "No internet connection. The report waits in the queue.")); return qPut(it).then(refresh); }
-      return shareApi().share({ subject: it.subject, body: it.body, to: to, files: files }).then(function () {
-      // Android mówi tylko, że okno wyboru apki się otworzyło – nie, że mail wyszedł: nic nie kasujemy, PPM nie jest „wysłane”
-      it.status = "shared"; it.sharedAt = Date.now(); it.err = ""; return qPut(it);
-    }, function (e) { it.status = "err"; it.err = gErr(e); say(window.OESTT("Nie udało się otworzyć Gmaila: ", "Could not open Gmail: ") + it.err + window.OESTT(". Raport czeka w kolejce.", ". The report waits in the queue.")); return qPut(it); }).then(refresh);
-    }).then(function () { sending = false; refresh(); }, function (e) { sending = false; refresh(); throw e; });
-  }
+  // Wysyłka: jedna droga – Gmail z konta (moduly/wysylka, OESTSender). „Udostępnij” Androida i skrypt Apps Script usunięte
+  // (Grzegorz 25/11/2026: raporty wychodziły same w tle z Gmaila; dwie zapasowe drogi były martwe i rozjeżdżały wysyłkę).
   function sendQueue(manual) {
-    if (gm()) return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
-    if (shareApi()) { var p = pending()[0]; return manual && p && !sending ? shareSend(p) : Promise.resolve(); }
-    if (sending || !cfg.email) return Promise.resolve();
-    if (!online() && !manual) { refresh(); return Promise.resolve(); }
-    var todo = pending();
-    if (!todo.length) return Promise.resolve();
-    sending = true; refresh();
-    return todo.reduce(function (p, it) {
-      return p.then(function (stop) {
-        if (stop) return true;
-        it.status = "sending"; it.err = ""; refresh();
-        return api("submit", submitArg(it)).then(function (r) {
-          markSent(it, r);
-          return qPut(it).then(function () { refresh(); return false; });
-        }, function (e) {
-          it.status = "err"; it.err = gErr(e);
-          return qPut(it).then(function () { refresh(); return true; }); // przerwij, spróbuję później
-        });
-      });
-    }, Promise.resolve(false)).catch(function (e) {
-      $("qHint").textContent = window.OESTT("Błąd zapisu kolejki w telefonie: ", "Phone queue save error: ") + gErr(e);
-    }).then(function () { sending = false; refresh(); });
+    return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
   }
   window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
   window.addEventListener("offline", function () { renderTranslate(); refresh(); });

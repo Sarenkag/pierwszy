@@ -1,16 +1,15 @@
 /* Ekran „Zdjęcia”: miejsce na telefonie i na Dysku, jakość, limity, synchronizacja, przeglądanie.
- * Logika jest w moduly/zdjecia/zdjecia.js; tu tylko widok i adapter Google Drive (OESTGoogle). */
+ * Logika jest w moduly/zdjecia/zdjecia.js; tu dane ekranu (OESTZdjeciaUI.dane() itd.) i adapter Google Drive (OESTGoogle).
+ * Wygląd: moduly/szkielet/src/ekrany/Zdjecia.vue (Ionic + Vue). */
 (function (w) {
   'use strict';
   var Z = w.OESTZdjecia, G = w.OESTGoogle, $ = function (id) { return w.document.getElementById(id); };
   if (!Z) return;
-  var urls = [], query = '', msg = '', navigate = function () {};
+  var urls = [], query = '', msg = '';
   var MB = 1024 * 1024;
   function loc() { return w.OESTT('pl-PL', 'en-GB'); }
 
-  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function mb(b) { return (b / MB).toLocaleString(loc(), { maximumFractionDigits: b < 10 * MB ? 1 : 0 }) + ' MB'; }
-  function bar(used, limit) { var p = Math.min(100, Math.round(used / limit * 100)); return '<div class="zd-bar"><span style="width:' + p + '%"' + (p >= 90 ? ' class="full"' : '') + '></span></div>'; }
   function drive() {
     return {
       ensureFolder: function (name, parent) { return G.ensureFolder(name, parent); },
@@ -45,58 +44,66 @@
     G.ready('drive').then(function (ok) { if (!ok || Z.busy() || paused()) return; /* „Wstrzymaj” mogło przyjść w trakcie sprawdzania */ return G.background ? G.background(function () { return Z.sync(drive(), false); }) : Z.sync(drive(), false); }).then(function (r) { if (r && r.sent) { msg = w.OESTT('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.'; render(); } }).catch(function () {});
   }
 
-  async function render() {
-    var root = $('v-zdjecia'); if (!root || root.hidden) return;
+  // ---------- dane ekranu (moduly/szkielet/src/ekrany/Zdjecia.vue): zwykły obiekt, ekran niczego nie liczy ----------
+  var sluchacze = [];
+  function render() { sluchacze.forEach(function (f) { try { f(); } catch (e) {} }); } // zmiana danych → ekran Vue pyta o dane() jeszcze raz
+  function zmiany(fn) { sluchacze.push(fn); return function () { var i = sluchacze.indexOf(fn); if (i >= 0) sluchacze.splice(i, 1); }; }
+  function pasek(used, limit) { var p = Math.min(100, Math.round(used / limit * 100)); return { procent: p, pelny: p >= 90 }; }
+  async function dane() {
     var s = Z.settings(), all = await Z.list(), st = Z.stats(all), found = Z.search(all, query).slice(0, 120);
-    urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = [];
-    var days = {}; found.forEach(function (r) { (days[r.day] = days[r.day] || []).push(r); });
-    function html() { // cały ekran w bieżącym języku; drugi raz w drugim języku – miejsce pod PL i EN (moduly/podmien)
-    var presets = Object.keys(Z.PRESETS).map(function (k) { return '<option value="' + k + '"' + (k === s.preset ? ' selected' : '') + '>' + esc(w.OESTT(Z.PRESETS[k].pl, Z.PRESETS[k].en)) + '</option>'; }).join('');
+    var days = {}, kolej = []; found.forEach(function (r) { if (!days[r.day]) { days[r.day] = []; kolej.push(r.day); } days[r.day].push(r); });
     var last = s.lastSync ? new Date(s.lastSync).toLocaleString(loc()) : w.OESTT('jeszcze nie', 'not yet');
-    return (
-      '<div class="top"><button class="back" type="button" aria-label="' + w.OESTT('Wstecz', 'Back') + '">‹</button><div class="t"><h1>' + w.OESTT('Zdjęcia', 'Photos') + '</h1></div></div>' +
-      '<div class="panel"><b>' + w.OESTT('Telefon (folder OEST w apce)', 'Phone (OEST folder in the app)') + '</b>' + bar(st.phoneBytes, s.phoneLimitMB * MB) +
-        '<p class="hint">' + mb(st.phoneBytes) + w.OESTT(' z ', ' of ') + mb(s.phoneLimitMB * MB) + ' · ' + st.phoneCount + w.OESTT(' zdjęć · czeka na wysłanie: ', ' photos · waiting to upload: ') + st.pending + ' (' + mb(st.pendingBytes) + ')</p>' +
-        '<b>Google Drive („' + esc(s.rootName) + '”)</b>' + bar(st.driveBytes, s.driveLimitMB * MB) +
-        '<p class="hint">' + mb(st.driveBytes) + w.OESTT(' z ', ' of ') + mb(s.driveLimitMB * MB) + ' · ' + st.driveCount + w.OESTT(' zdjęć · ostatnia synchronizacja: ', ' photos · last sync: ') + esc(last) + '</p>' +
-        '<button class="btn go" type="button" data-zd="sync"' + (Z.busy() ? ' disabled' : '') + '>' + (Z.busy() ? w.OESTT('Wysyłam…', 'Uploading…') : w.OESTT('Wyślij teraz na Dysk', 'Upload to Drive now')) + '</button>' +
-        '<p class="hint" role="status">' + esc(msg) + '</p></div>' +
-      '<div class="panel"><b>' + w.OESTT('Ustawienia', 'Settings') + '</b>' +
-        '<label class="field"><span>' + w.OESTT('Jakość zdjęć w folderze', 'Photo quality in the folder') + '</span><select id="zdPreset">' + presets + '</select></label>' +
-        '<label class="field"><span>' + w.OESTT('Maksymalny rozmiar folderu OEST na telefonie (MB)', 'Maximum OEST folder size on the phone (MB)') + '</span><input id="zdPhone" type="number" min="100" step="50" value="' + s.phoneLimitMB + '"></label>' +
-        '<label class="field"><span>' + w.OESTT('Ostrzeżenia licznika od (MB)', 'Counter warnings from (MB)') + '</span><input id="zdWarn" type="number" min="10" step="10" value="' + s.warnMB + '"></label>' +
-        '<p class="hint">' + w.OESTT('Licznik na ekranie głównym: do połowy tej wartości zielony, od połowy pomarańczowy, od 75% czerwony, od 90% czerwony z ⚠. To tylko ostrzeżenie – nic nie blokuje i nic nie kasuje.', 'Home screen counter: green up to half of this value, orange from half, red from 75%, red with ⚠ from 90%. It is only a warning – nothing is blocked or deleted.') + '</p>' +
-        '<label class="field"><span>' + w.OESTT('Limit na Dysku (MB)', 'Drive limit (MB)') + '</span><input id="zdDrive" type="number" min="100" step="100" value="' + s.driveLimitMB + '"></label>' +
-        '<label class="check"><input id="zdWifi" type="checkbox"' + (s.wifiOnly ? ' checked' : '') + '><span>' + w.OESTT('Wysyłaj automatycznie tylko przez Wi-Fi', 'Upload automatically only over Wi-Fi') + '</span></label>' +
-        '<p class="hint">' + w.OESTT('Po przekroczeniu limitu telefonu znikają najstarsze zdjęcia, które są już na Dysku. Niewysłanych i tych w inspekcjach apka nie kasuje. Po przekroczeniu limitu Dysku znikają z niego najstarsze.', 'Over the phone limit, the oldest photos already on Drive are removed. Photos not yet uploaded or in inspections are never deleted. Over the Drive limit, the oldest are removed from Drive.') + '</p>' +
-        '<button class="btn go" type="button" data-zd="save">' + w.OESTT('Zapisz ustawienia', 'Save settings') + '</button></div>' +
-      '<div class="panel"><label class="field"><span>' + w.OESTT('Szukaj: dzień (2026-11-01), kod, miejsce, rodzaj', 'Search: day (2026-11-01), code, place, type') + '</span><input id="zdSearch" type="text" inputmode="search" value="' + esc(query) + '" placeholder="' + w.OESTT('np. ISO-027 albo 2026-11-01', 'e.g. ISO-027 or 2026-11-01') + '"></label>' +
-        (found.length ? Object.keys(days).map(function (d) {
-          return '<div class="zd-day"><b>' + esc(d) + '</b> <span class="hint">' + days[d].length + '</span><div class="zd-grid">' + days[d].map(function (r) {
-            return '<button type="button" class="zd-ph" data-ph="' + esc(r.id) + '" title="' + esc(r.name) + '">' + (r.hasBlob ? '' : '<span class="zd-cloud">' + w.OESTT('Dysk', 'Drive') + '</span>') +
-              '<small>' + esc([r.category, r.code || r.location].filter(Boolean).join(' · ')) + '</small></button>';
-          }).join('') + '</div></div>';
-        }).join('') : '<p class="hint">' + (all.length ? w.OESTT('Nic nie pasuje do wyszukiwania.', 'Nothing matches the search.') : w.OESTT('Brak zdjęć. Zdjęcia z inspekcji i Reactive pojawią się tutaj.', 'No photos. Photos from inspections and Reactive will appear here.')) + '</p>') +
-      '</div>');
-    }
-    root.innerHTML = html();
-    if (w.OESTPodmien && w.OESTPodmien.oba) w.OESTPodmien.oba(root, html);
-    bind(root, found);
+    var pusto = found.length ? null : all.length ? ['Nic nie pasuje do wyszukiwania.', 'Nothing matches the search.'] : ['Brak zdjęć. Zdjęcia z inspekcji i Reactive pojawią się tutaj.', 'No photos. Photos from inspections and Reactive will appear here.'];
+    return {
+      telefon: Object.assign(pasek(st.phoneBytes, s.phoneLimitMB * MB), { tytul: w.OESTT('Telefon (folder OEST w apce)', 'Phone (OEST folder in the app)'),
+        tekst: mb(st.phoneBytes) + w.OESTT(' z ', ' of ') + mb(s.phoneLimitMB * MB) + ' · ' + st.phoneCount + w.OESTT(' zdjęć · czeka na wysłanie: ', ' photos · waiting to upload: ') + st.pending + ' (' + mb(st.pendingBytes) + ')' }),
+      dysk: Object.assign(pasek(st.driveBytes, s.driveLimitMB * MB), { tytul: 'Google Drive („' + s.rootName + '”)',
+        tekst: mb(st.driveBytes) + w.OESTT(' z ', ' of ') + mb(s.driveLimitMB * MB) + ' · ' + st.driveCount + w.OESTT(' zdjęć · ostatnia synchronizacja: ', ' photos · last sync: ') + last }),
+      zajety: Z.busy(), komunikat: msg, szukaj: query,
+      ustawienia: { preset: s.preset, phoneLimitMB: s.phoneLimitMB, warnMB: s.warnMB, driveLimitMB: s.driveLimitMB, wifiOnly: !!s.wifiOnly },
+      presety: Object.keys(Z.PRESETS).map(function (k) { return { v: k, t: w.OESTT(Z.PRESETS[k].pl, Z.PRESETS[k].en) }; }),
+      dni: kolej.map(function (d) { return { dzien: d, n: days[d].length, zdjecia: days[d].map(function (r) { return { id: r.id, nazwa: r.name, opis: [r.category, r.code || r.location].filter(Boolean).join(' · '), tylkoDysk: !r.hasBlob }; }) }; }),
+      pusto: pusto ? w.OESTT(pusto[0], pusto[1]) : '',
+      pustoRezerwa: pusto ? (w.OESTT(pusto[0], pusto[1]) === pusto[0] ? pusto[1] : pusto[0]) : '' // tekst w drugim języku: ekran rezerwuje wyższy z dwóch (PL/EN nie przesuwa treści, jak OESTBledy na main)
+    };
   }
-
-  async function thumbs(root) {
-    var nodes = root.querySelectorAll('.zd-ph');
-    for (var i = 0; i < nodes.length; i++) {
-      var b = await Z.blob(nodes[i].dataset.ph); if (!b || !nodes[i].isConnected) continue;
-      var u = URL.createObjectURL(b); urls.push(u); nodes[i].style.backgroundImage = 'url("' + u + '")';
-    }
+  function szukaj(v) { query = String(v || ''); render(); }
+  // miniatura zdjęcia z telefonu (adres obrazka; zwalniany przy następnym zwolnij())
+  async function miniatura(id) { var b = await Z.blob(id); if (!b) return null; var u = URL.createObjectURL(b); urls.push(u); return u; }
+  function zwolnij() { urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; }
+  // „Wyślij teraz na Dysk” (przycisk akcji: kółko + etap): wynik = napis na przycisku po sukcesie; błąd = komunikat pod przyciskiem
+  function wyslij(etap) {
+    msg = ''; render();
+    var h = { step: function (t) { if (etap) etap(t); } };
+    if (etap) etap(w.OESTT('Sprawdzam połączenie', 'Checking connection') + '…');
+    return (G && G.foreground ? G.foreground(function () { return syncNow(true, h); }) : syncNow(true, h)).then(function (r) {
+      msg = r.sent ? w.OESTT('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.' : w.OESTT('Wszystko jest już na Dysku.', 'Everything is already on Drive.'); render();
+      return r.sent ? w.OESTT('Wysłano ', 'Uploaded ') + r.sent : w.OESTT('Gotowe', 'Done');
+    }, function (e) { msg = errText(e); render(); throw e; });
+  }
+  function zapisz(u) {
+    Z.setSettings({ preset: u.preset, phoneLimitMB: +u.phoneLimitMB, warnMB: +u.warnMB, driveLimitMB: Z.settings().driveLimitMB, wifiOnly: Z.settings().wifiOnly });
+    msg = w.OESTT('Ustawienia zapisane.', 'Settings saved.'); render();
+  }
+  // podgląd zdjęcia: null = brak w telefonie (komunikat na ekranie), inaczej dane okienka (OESTOkna.okno)
+  async function podglad(id) {
+    var r = (await Z.list()).filter(function (x) { return x.id === id; })[0], blob = await Z.blob(id);
+    if (!blob) { msg = (r ? r.name : w.OESTT('Zdjęcie', 'Photo')) + w.OESTT(' jest już tylko na Dysku (folder ', ' is now only on Drive (folder ') + (r ? r.folder.join(' / ') : '') + ').'; render(); return null; }
+    var u = URL.createObjectURL(blob); urls.push(u);
+    return { id: id, adres: u, nazwa: r.name, opis: r.folder.join(' / ') + ' · ' + mb(r.size), usun: w.OESTT('Usuń', 'Delete'), zamknij: w.OESTT('Zamknij', 'Close') };
+  }
+  // usunięcie z podglądu: { ok } albo { blad: tekst } (komunikat zostaje w okienku)
+  async function usun(id) {
+    var r = (await Z.list()).filter(function (x) { return x.id === id; })[0]; if (!r) return { ok: false };
+    try { if (!(await delPhoto(r))) return { ok: false }; } catch (err) { return { ok: false, blad: w.OESTT('Nie usunięto: ', 'Not deleted: ') + errText(err) }; }
+    msg = w.OESTT('Usunięto: ', 'Deleted: ') + r.name + '.'; render(); return { ok: true };
   }
   // usuwanie (Grzegorz 03/11): z telefonu i z Dysku, po potwierdzeniu
   async function delPhoto(r) {
     // zdjęcie w inspekcji (Grzegorz 04/11: inspekcje i zdjęcia nigdy nie znikają): usunąć je można tylko z samej inspekcji
-    if (r.hold) { var K = w.OESTKomunikat; var t0 = w.OESTT('To zdjęcie jest w inspekcji, więc tutaj nie da się go usunąć. Najpierw usuń je w inspekcji.', 'This photo is in an inspection, so it cannot be deleted here. Delete it in the inspection first.'); if (K) K(t0); else w.alert(t0); return false; }
-    var P = w.OESTPrzycisk, txt = r.driveId ? w.OESTT('Zniknie z telefonu i z Dysku Google.', 'It will be removed from the phone and Google Drive.') : w.OESTT('Zniknie z telefonu.', 'It will be removed from the phone.');
-    var yes = P && P.ask ? await P.ask({ title: w.OESTT('Usunąć zdjęcie?', 'Delete photo?'), text: r.name + '. ' + txt, ok: w.OESTT('Usuń', 'Delete'), cancel: w.OESTT('Anuluj', 'Cancel') }) : w.confirm(w.OESTT('Usunąć zdjęcie? ', 'Delete photo? ') + txt);
+    if (r.hold) { await w.OESTOkna.pytaj({ tresc: w.OESTT('To zdjęcie jest w inspekcji, więc tutaj nie da się go usunąć. Najpierw usuń je w inspekcji.', 'This photo is in an inspection, so it cannot be deleted here. Delete it in the inspection first.'), tylkoOk: true }); return false; }
+    var txt = r.driveId ? w.OESTT('Zniknie z telefonu i z Dysku Google.', 'It will be removed from the phone and Google Drive.') : w.OESTT('Zniknie z telefonu.', 'It will be removed from the phone.');
+    var yes = await w.OESTOkna.pytaj({ tytul: w.OESTT('Usunąć zdjęcie?', 'Delete photo?'), tresc: r.name + '. ' + txt, ok: w.OESTT('Usuń', 'Delete'), anuluj: w.OESTT('Anuluj', 'Cancel'), niebezpieczne: true });
     if (!yes) return false;
     // trwa wysyłka na Dysk: czekamy, aż skończy, i bierzemy świeże dane (zdjęcie mogło właśnie dostać driveId)
     for (var i = 0; Z.busy() && i < 600; i++) await new Promise(function (ok) { setTimeout(ok, 500); });
@@ -108,52 +115,6 @@
     }
     await Z.remove(r.id); return true;
   }
-  function bind(root, found) {
-    root.querySelector('.back').onclick = function () { navigate('settings'); }; // strzałka ‹ = zawsze rodzic (Ustawienia), nie historia
-    root.querySelector('[data-zd="sync"]').onclick = function () {
-      // wspólny przycisk (moduly/przycisk): kółko + etap na przycisku, potem „✓ Gotowe” (Grzegorz 03/11)
-      var P = w.OESTPrzycisk, h = P ? P.start(this, { busy: w.OESTT('Sprawdzam połączenie', 'Checking connection'), keep: false }) : null;
-      msg = ''; if (!h) { msg = w.OESTT('Łączę z Dyskiem…', 'Connecting to Drive…'); render(); }
-      (G && G.foreground ? G.foreground(function () { return syncNow(true, h); }) : syncNow(true, h)).then(function (r) { msg = r.sent ? w.OESTT('Wysłano na Dysk: ', 'Uploaded to Drive: ') + r.sent + '.' : w.OESTT('Wszystko jest już na Dysku.', 'Everything is already on Drive.'); return h && h.ok(r.sent ? w.OESTT('Wysłano ', 'Uploaded ') + r.sent : w.OESTT('Gotowe', 'Done')); },
-        function (e) { msg = errText(e); if (h) h.fail(); }).then(render);
-    };
-    root.querySelector('[data-zd="save"]').onclick = function () {
-      Z.setSettings({ preset: $('zdPreset').value, phoneLimitMB: +$('zdPhone').value, warnMB: +$('zdWarn').value, driveLimitMB: +$('zdDrive').value, wifiOnly: $('zdWifi').checked });
-      msg = w.OESTT('Ustawienia zapisane.', 'Settings saved.'); render();
-    };
-    var t; $('zdSearch').oninput = function () { var v = this.value; clearTimeout(t); t = setTimeout(function () { query = v; render().then(function () { var i = $('zdSearch'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } }); }, 300); };
-    root.querySelectorAll('.zd-ph').forEach(function (b) {
-      b.onclick = async function () {
-        var r = found.filter(function (x) { return x.id === b.dataset.ph; })[0], blob = await Z.blob(b.dataset.ph);
-        if (!blob) { msg = (r ? r.name : w.OESTT('Zdjęcie', 'Photo')) + w.OESTT(' jest już tylko na Dysku (folder ', ' is now only on Drive (folder ') + (r ? r.folder.join(' / ') : '') + ').'; render(); return; }
-        var u = URL.createObjectURL(blob); urls.push(u);
-        var o = w.document.createElement('div'); o.className = 'zd-full';
-        o.innerHTML = '<img alt="" src="' + u + '"><p>' + esc(r.name) + '<br><span class="hint">' + esc(r.folder.join(' / ')) + ' · ' + mb(r.size) + '</span></p>' +
-          '<div class="zd-act"><button type="button" class="btn" data-a="del">' + w.OESTT('🗑 Usuń', '🗑 Delete') + '</button><button type="button" class="btn" data-a="close">' + w.OESTT('Zamknij', 'Close') + '</button></div>';
-        // Wstecz telefonu zamyka podgląd zamiast cofać apkę (stos okienek moduly/szkielet)
-        w.document.body.appendChild(o);
-        var zw = w.OESTOkna ? w.OESTOkna.open(function () { shut(); }) : null;
-        var shut = function () { if (zw) zw(); o.remove(); }; // tylko ten podgląd
-        o.onclick = function (e) {
-          var a = e.target.closest('[data-a]');
-          if (!a) { if (e.target === o || e.target.tagName === 'IMG') shut(); return; }
-          if (a.dataset.a === 'close') { shut(); return; }
-          var er = o.querySelector('.zd-err'); if (er) er.remove();
-          delPhoto(r).then(function (ok) { if (ok) { shut(); msg = w.OESTT('Usunięto: ', 'Deleted: ') + r.name + '.'; render(); } }, function (err) { var p = w.document.createElement('p'); p.className = 'zd-err'; p.textContent = w.OESTT('Nie usunięto: ', 'Not deleted: ') + errText(err); o.appendChild(p); });
-        };
-      };
-    });
-    thumbs(root);
-  }
-
-  var css = w.document.createElement('style');
-  css.textContent = '#v-zdjecia input[type=number],#v-zdjecia input[type=search]{width:100%;box-sizing:border-box;min-height:46px;padding:10px 12px;font:inherit;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:12px}.zd-bar{height:10px;border-radius:6px;background:rgba(127,127,127,.25);overflow:hidden}.zd-bar span{display:block;height:100%;background:var(--accent,#7c5cff)}.zd-bar span.full{background:#e5484d}' +
-    '.zd-day{margin-top:6px}.zd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:6px}' +
-    '.zd-ph{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:#222 center/cover no-repeat;padding:0;overflow:hidden}' +
-    '.zd-ph small{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.zd-cloud{position:absolute;top:4px;right:4px;font-size:.7rem;background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:6px}' +
-    '.zd-full{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;color:#fff;text-align:center}.zd-full img{max-width:100%;max-height:72vh;object-fit:contain}.zd-act{display:flex;gap:10px;margin-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom),var(--safe-area-inset-bottom,0px))}.zd-act .btn{min-width:120px}.zd-err{color:#ffb4b4;margin:8px 0 0;max-width:90%}';
-  w.document.head.appendChild(css);
 
   Z.onChange(function () { render(); });
   var soon; Z.onSaved(function () { clearTimeout(soon); soon = w.setTimeout(auto, 2000); }); // nowe zdjęcie → wyślij, jeśli Dysk połączony i Wi-Fi
@@ -161,6 +122,6 @@
   if (w.navigator.connection && w.navigator.connection.addEventListener) w.navigator.connection.addEventListener('change', auto);
   w.setTimeout(auto, 3000);
 
-  w.OESTZdjeciaUI = { open: function () { msg = ''; render(); auto(); }, setNavigate: function (f) { navigate = f; }, auto: auto, syncNow: syncNow, errText: errText,
+  w.OESTZdjeciaUI = { open: function () { msg = ''; render(); auto(); }, dane: dane, zmiany: zmiany, szukaj: szukaj, miniatura: miniatura, zwolnij: zwolnij, wyslij: wyslij, zapisz: zapisz, podglad: podglad, usun: usun, auto: auto, syncNow: syncNow, errText: errText,
     paused: paused, setPaused: function (on) { try { if (on) w.localStorage.setItem('oest.zdjecia.pause', '1'); else w.localStorage.removeItem('oest.zdjecia.pause'); } catch (_) {} if (!on) auto(); } };
 })(window);

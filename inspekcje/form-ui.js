@@ -1,129 +1,87 @@
-// Ekran inspekcji wg makiety Grzegorza (31/10/2026): ← nazwa ⋮, Imię☐ Data☐, ile do końca + licznik,
+// Ekran inspekcji wg makiety Grzegorza (31/10/2026; 25.11.2026: nazwa w górnym pasku ramy, ⋮ pod nim), Imię☐ Data☐, ile do końca + licznik,
 // Galeria / Zdjęcie / Notatka na górze, checklista kropkami, rzadkie rzeczy w menu ⋮.
-// Tylko układ – logika formularza i raportu zostaje w index.html.
+// Zachowanie widoku Vue; logika formularza i raportu zostaje w i-*.js.
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var form = $("v-form"); if (!form) return;
-  var top = form.querySelector(".top"), bar = form.querySelector(".ppmbar");
+  // tytuł formularza jest w górnym pasku ramy (i-ekrany.js: OESTRama.ustaw); ⋮ i jego menu – w rzędzie ekranu pod paskiem (czesci/AkcjeEkranu.vue)
+  var bar = form.querySelector("[data-ui~=ppmbar]");
 
   // ---- menu ⋮ (małe menu w rogu, bez przechodzenia na inny ekran) ----
-  var kb = document.createElement("button");
-  kb.type = "button"; kb.className = "kebab"; kb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'; kb.setAttribute("aria-label", "Menu");
-  // strzałka powrotu jako rysunek: znak „‹” siedział niżej niż nazwa inspekcji (03/11)
-  var back = top.querySelector(".back");
-  if (back) back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-  // przytrzymanie palca na nazwie: szary dymek z pełną nazwą inspekcji (03/11)
-  (function () {
-    var h1 = top.querySelector("h1"), tip = null, timer = 0;
-    if (!h1) return;
-    function hide() { clearTimeout(timer); if (tip) { tip.remove(); tip = null; } }
-    function full() { return h1.textContent || ""; }
-    h1.addEventListener("contextmenu", function (e) { e.preventDefault(); });
-    h1.addEventListener("pointerdown", function () { hide(); timer = setTimeout(function () { tip = document.createElement("div"); tip.className = "fulltitle"; tip.textContent = full(); document.body.appendChild(tip); }, 450); });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { h1.addEventListener(ev, function () { clearTimeout(timer); if (tip) setTimeout(hide, 1500); }); });
-  })();
-  var menu = document.createElement("div");
-  menu.className = "kmenu"; menu.hidden = true;
-  menu.innerHTML = '<div class="kupd"></div>' +
-    '<button type="button" data-k="def" data-en="Restore defaults (all OK)">Przywróć domyślne (wszystko OK)</button>' +
-    '<button type="button" data-k="more" data-en="Overall / Quote">Ocena ogólna / wycena</button>' +
-    '<button type="button" data-k="prev" data-en="Report preview">Podgląd raportu</button>' +
-    '<button type="button" data-k="clear" class="kclear" data-en="Clear inspection">Wyczyść inspekcję</button>';
-  top.appendChild(kb); top.appendChild(menu);
+  var kb = form.querySelector("[data-ui~=kebab]");
+  var menu = form.querySelector("[data-ui~=kmenu]");
   if (window.OESTBledy) OESTBledy.applyDom(menu);
-  if (bar) menu.querySelector(".kupd").appendChild(bar);
   kb.addEventListener("click", function () { menu.hidden = !menu.hidden; });
-  document.addEventListener("click", function (e) { if (!menu.hidden && !e.target.closest(".kmenu,.kebab")) menu.hidden = true; });
+  document.addEventListener("click", function (e) { if (!menu.hidden && !e.target.closest("[data-ui~=kmenu],[data-ui~=kebab]")) menu.hidden = true; });
   menu.addEventListener("click", function (e) {
     var b = e.target.closest("[data-k]"); if (!b) return;
     var k = b.getAttribute("data-k"); menu.hidden = true;
     if (k === "def") $("allOk").click();
     if (k === "prev") $("toPreview").click();
     if (k === "clear" && window.OEST_clearInspection) window.OEST_clearInspection();
-    if (k === "more") { ovp.classList.add("open"); ovp.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    if (k === "more") { ovp.dataset.expanded = "true"; ovp.hidden = false; ovp.scrollIntoView({ behavior: "smooth", block: "center" }); }
   });
 
-  // ---- nagłówek: Imię ☐  Data ☐ | ile do końca, licznik ----
-  var head = document.createElement("div");
-  head.className = "ihead";
-  head.innerHTML = '<div class="ileft"><label class="icb"><input type="checkbox" id="nameOn" checked><span id="nameTx">' + window.OESTT("Imię", "Name") + '</span></label>' +
-    '<label class="icb"><input type="checkbox" id="dateOn" checked><span data-en="Date">Data</span></label>' +
-    // odzyskana inspekcja (Grzegorz 08/11/2026 12:53): dopisek „Updated dd/mm/rrrr” przy dacie raportu – opcjonalny, domyślnie wyłączony
-    '<label class="icb" id="updBox" hidden><input type="checkbox" id="updOn"><span>Updated</span></label></div>' + // i18n-ok: dopisek w raporcie (raporty po angielsku)
-    '<div class="iright"><div id="iEnds"></div><div id="iCntBox" title="OK / pytania"><b id="iCnt"></b> OK</div></div>';
-  top.after(head);
+  // ---- nagłówek: Imię ☐  Data ☐ [data] | ile do końca, licznik; przycisk daty = PoleDaty (id „dzien-przycisk”) ----
+  var head = form.querySelector("[data-ui~=ihead]");
   if (window.OESTBledy) OESTBledy.applyDom(head);
-  var dz = $("dzien"), pd = $("podpis"), datePanel = dz.closest(".panel");
-  head.querySelector("#dateOn").closest("label").appendChild(dz);
-  datePanel.classList.add("gone");
+  var dz = $("dzien"), pd = $("podpis");
   $("nameOn").addEventListener("change", function () {
     if (!this.checked) { pd.dataset.v = pd.value; pd.value = ""; } else { pd.value = pd.dataset.v || pd.value; }
     syncHead();
   });
-  $("dateOn").addEventListener("change", function () { dz.disabled = !this.checked; });
+  $("dateOn").addEventListener("change", function () { dz.disabled = !this.checked; $("dzien-przycisk").disabled = !this.checked; });
 
   // ---- zdjęcia na górę: Galeria · Zdjęcie · Notatka ----
-  var ph = $("photos").closest(".panel"), btns = ph.querySelector(".photo-btns");
-  ph.classList.add("iphotos"); head.after(ph);
-  var labels = btns.querySelectorAll("label");
-  function relabel(l, t) { Array.prototype.forEach.call(l.childNodes, function (n) { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = t; }); }
-  if (labels[1]) { relabel(labels[1], "Gallery"); btns.insertBefore(labels[1], labels[0]); }
-  if (labels[0]) relabel(labels[0], "Photo");
-  var note = document.createElement("button");
-  note.type = "button"; note.className = "pbtn";
-  note.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/></svg><span data-en="Note">Notatka</span>';
-  btns.appendChild(note);
+  var note = form.querySelector("[data-form-note]");
   if (window.OESTBledy) OESTBledy.applyDom(note);
-  // ---- zdjęcie formularza (Grzegorz 04/11): osobny przycisk obok zwykłych zdjęć, miniatury pod spodem ----
-  var sh = $("sheetBox");
-  if (sh) {
-    var shCam = $("shCamIn").closest("label");
-    shCam.querySelector("svg").outerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10l1.5 1.5 2.5-3M8.5 16l1.5 1.5 2.5-3M14.5 10h1.5M14.5 16h1.5"/></svg>'; // podkładka z kartką (inna niż „Notatka”)
-    var FL = ["Formularz", "Form"], sp = shCam.querySelector("span"); sp.textContent = window.OESTT(FL[0], FL[1]); sp.dataset.en = FL[1]; sp.dataset.pl = FL[0];
-    btns.insertBefore(shCam, note);
-    sh.classList.add("isheet"); ph.after(sh);
-  }
-  var kp = $("komentarz").closest(".panel"); kp.classList.add("fold");
-  note.addEventListener("click", function () { kp.classList.add("open"); $("komentarz").focus(); });
+  var kp = $("komentarz").closest("[data-ui~=panel]");
+  note.addEventListener("click", function () { kp.dataset.expanded = "true"; kp.hidden = false; $("komentarz").setFocus(); });
+  // zielona ramka kafelka Notatka, gdy notatka nie jest pusta (Grzegorz 25.11.2026)
+  function notatkaOk() { if ($("komentarz").value.trim()) note.dataset.ok = ""; else delete note.dataset.ok; }
+  $("komentarz").addEventListener("ionInput", notatkaOk);
+  // podgląd zdjęć formularza z okienka kafelka Formularz (czesci/DodajZdjecie.vue, Grzegorz 25.11.2026)
+  var shp = $("sheetBox");
+  form.addEventListener("oest:podglad-formularza", function () { shp.dataset.expanded = "true"; shp.hidden = false; shp.scrollIntoView({ behavior: "smooth", block: "center" }); });
 
   // ---- Overall/Quote: liczone samo z odpowiedzi, ręcznie z menu ⋮ ----
-  var ovp = $("ov-1").closest(".panel"); ovp.classList.add("fold");
+  var ovp = $("ov").closest("[data-ui~=panel]");
 
   // ---- checklista: zwijana sekcja, licznik ----
-  var ckp = $("ck").closest(".panel"); ckp.classList.add("isec");
-  $("ckTitle").addEventListener("click", function () { ckp.classList.toggle("shut"); });
+  var ckp = $("ck").closest("[data-ui~=panel]");
+  $("ckTitle").addEventListener("click", function () { $("ck").hidden = !$("ck").hidden; });
 
   function syncHead() {
     // licznik = ile OK z pytań w użyciu (N/A nie liczy się do sumy), np. jedno NIE → 7/8
-    var rows = $("ck").querySelectorAll(".ck-row"), ok = 0, used = 0;
+    var rows = $("ck").querySelectorAll("[data-ui~=ck-row]"), ok = 0, used = 0;
     Array.prototype.forEach.call(rows, function (r) {
-      var on = r.querySelector(".seg .on"), st = on && on.getAttribute("data-s");
+      var st = r.dataset.state;
       if (st === "na") return; used++; if (st === "ok") ok++;
     });
     $("iCnt").textContent = ok + "/" + used;
-    $("iCntBox").hidden = !rows.length || $("ck").closest(".panel").hidden; // pytania wyłączone w tej inspekcji: bez licznika
-    var b = bar && bar.querySelector("b");
+    $("iCntBox").hidden = !rows.length || $("ck").closest("[data-ui~=panel]").hidden; // pytania wyłączone w tej inspekcji: bez licznika
+    var b = bar && bar.querySelector("[data-termin]");
     $("iEnds").textContent = b ? b.textContent : "";
     if (b && b.dataset.alt && window.OESTPodmien) OESTPodmien.miejsce($("iEnds"), b.dataset.alt); // termin PL/EN w tym samym miejscu: etap obok nie skacze
     $("nameTx").textContent = $("nameOn").checked ? (pd.value || window.OESTT("Imię", "Name")) : window.OESTT("Imię", "Name");
   }
-  new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  new MutationObserver(syncHead).observe($("ck"), { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
   if (bar) new MutationObserver(syncHead).observe(bar, { childList: true, subtree: true });
 
   // szkic wczytany (index.html → restoreDraft): Name/Date, notatka i licznik według zapisu
   form.addEventListener("oest:restored", function () {
-    dz.disabled = !$("dateOn").checked;
+    dz.disabled = !$("dateOn").checked; $("dzien-przycisk").disabled = dz.disabled;
     if (!$("nameOn").checked) { pd.dataset.v = pd.value; pd.value = ""; }
-    kp.classList.toggle("open", !!$("komentarz").value.trim());
+    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden); notatkaOk();
     setTimeout(syncHead, 0);
   });
 
   // przy każdym otwarciu formularza: znaczniki od nowa, notatka zwinięta (chyba że coś w niej jest)
   new MutationObserver(function () {
     if (form.hidden) return;
-    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false; $("updOn").checked = false;
-    kp.classList.toggle("open", !!$("komentarz").value.trim()); ovp.classList.remove("open"); menu.hidden = true;
+    $("nameOn").checked = true; $("dateOn").checked = true; dz.disabled = false; $("dzien-przycisk").disabled = false; $("updOn").checked = false;
+    kp.hidden = !$("komentarz").value.trim(); kp.dataset.expanded = String(!kp.hidden); notatkaOk(); ovp.hidden = true; ovp.dataset.expanded = "false"; menu.hidden = true; shp.hidden = true; shp.dataset.expanded = "false";
     setTimeout(syncHead, 0);
   }).observe(form, { attributes: true, attributeFilter: ["hidden"] });
 })();

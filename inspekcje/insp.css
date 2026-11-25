@@ -86,15 +86,7 @@ h1 span.dot { color: var(--accent); }
 .group { display: flex; flex-direction: column; gap: 0; }
 .group h2 { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase; margin: 6px 0 6px; color: var(--steel); display: flex; justify-content: space-between; }
 .group h2 small { font-family: var(--font-body); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
-.item {
-  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; text-align: left;
-  width: 100%; padding: 12px 12px; border: 1px solid var(--line); border-top: 0; background: var(--panel); color: var(--ink); font: inherit; cursor: pointer;
-}
-.item:first-of-type { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; }
-.item:last-child { border-radius: 0 0 8px 8px; }
-.item:only-of-type { border-radius: 8px; }
-.item .code { font-family: var(--font-mono); font-weight: 500; font-size: 1rem; }
-.item .where { color: var(--muted); font-size: 0.85rem; }
+/* .item (stara lista urządzeń) usunięte 25.11.2026: lista ma już data-ui, a klasa .item trafiała w każdy ion-item Ionic (ramka, tło, odstępy) */
 .badge { font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--ok-bg); color: var(--ok); white-space: nowrap; }
 .addrow { display: flex; gap: 8px; }
 .addrow { flex-wrap: wrap; } .addrow input { flex: 1 1 160px; min-width: 0; }
@@ -279,7 +271,6 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .prevq { text-decoration: underline wavy var(--bad); text-underline-offset: 4px; }
 .was { display: block; color: var(--bad); font-size: 0.8rem; text-decoration: none; }
 .rchip.prev { border: 2px dashed var(--bad); }
-.item .last { color: var(--bad); font-size: 0.8rem; }
 .ck-row.sus { background: var(--bad-bg); }
 .mkn { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font: 700 0.75rem/22px var(--font-mono); text-align: center; margin-right: 6px; }
 .view > .top { order: -2; }
@@ -292,3 +283,7 @@ code, .tags { font-family: var(--font-mono); font-size: 0.82rem; }
 .room-note { width: 100%; box-sizing: border-box; margin: 4px 0 6px; padding: 10px; border-radius: 10px; border: 1px solid var(--bad, #e5484d); background: transparent; color: inherit; font: inherit; }
 /* w apce: bez starych kafelków DB/ATS/Isolators i bez ustawień skryptu Google – tu tylko kolejka i ustawienia raportu */
 [data-app] #types, [data-app] #apiBox, [data-app] #tplNotice, [data-app] #tplBox { display: none !important; }
+
+/* Rama.vue posiada stopkę i jedyne pionowe przewijanie strony. */
+[data-inspekcja] ion-content { --color: var(--ink); --padding-top: 0; --padding-bottom: 0; }
+[data-inspekcja] #oest-stopka { background: #0e1228; }

@@ -15,7 +15,7 @@
   var DEFAULTS = {
     v: 5, email: "", folder: "",
     pattern: "{urzadzenie} {DD}{MM}{RRRR}",
-    site: "One Eastside Tower", insp: "", scope: true, stamp: false, drivePhotos: false,
+    site: "One Eastside Tower", insp: "", scope: true, drivePhotos: false,
     api: "", key: "", auto: true
   };
   var savedCfg = load("cfg", {});
@@ -27,14 +27,14 @@
     if (savedCfg.email) cfg.email = savedCfg.email;
     save("cfg", cfg);
   }
-  // 01/11/2026 Grzegorz: na zdjęciach nic nie dopisujemy. Stare „tak” z domyślnych ustawień wyłączamy raz; włączyć można ręcznie w Ustawieniach.
-  if (!cfg.stampChosen) cfg.stamp = false;
+  // na zdjęciach nic nie dopisujemy (01/11/2026; 25.11.2026: „Daty ma nie być wcale”) – dawne ustawienie znika
+  delete cfg.stamp; delete cfg.stampChosen;
   // Link z Apps Script (linkDoTelefonu): …/inspekcje/#api=…&key=… — zapisuje adres i klucz, potem czyści pasek adresu
   (function () {
     var h = new URLSearchParams(location.hash.slice(1));
     if (h.get("api") && h.get("key")) {
       cfg.api = h.get("api"); cfg.key = h.get("key"); save("cfg", cfg);
-      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      window.OESTEkrany.czyscAdres(); // adres zmienia tylko szkielet (moduly/szkielet)
     }
   })();
   var serverTpl = null; // {name, bytes} z Google Drive
@@ -48,7 +48,7 @@
   // esc zostaje tu do osobnej karty: ta sama funkcja jest w 11 plikach .js, łączymy je wszystkie naraz (audyt nr 53)
   var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function val(id) { return $(id).value.trim(); }
-  function radio(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ""; }
+  function radio(name) { var el = document.querySelector('ion-select[name="' + name + '"]'); return el ? el.value : ""; }
   function online() { return navigator.onLine !== false; }
 
   // ---------- baza w telefonie (IndexedDB „inspekcje”): kolejka raportów + szablon ----------

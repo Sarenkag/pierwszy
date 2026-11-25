@@ -9,6 +9,9 @@ Samodzielny moduł do każdej apki OEST. Wysyła raporty z kolejki prosto z Gmai
    `{ id, created, acct, code, name, to, subject, body, pdf: Uint8Array, docx: Uint8Array, status: "wait" }`.
    Po zapisaniu wywołaj `OESTSender.run({ login: true })`.
    Prościej: `OESTSender.enqueue({ type, code, name, subject, body, pdf, docx })` — sam uzupełni id, konto i status i uruchomi wysyłkę.
+4. Pasek na dole rysuje szkielet Ionic (`moduly/szkielet/src/czesci/PasekWysylki.vue`, w stopce ramy; na osobnej stronie w `<div id="oest-stopka">`).
+   Moduł daje tylko dane: `OESTSender.stan()` → `{ widoczny, ton, tekst, opis, przyciski: [{ a, tekst, glowny }], postep, siec: { stan, tekst }, otwarty }`
+   i zdarzenie window `oest:wysylka` (detail = ten obiekt) po każdej zmianie. Przyciski paska: `OESTSender.akcja(a)` (`toggle`, `send`, `data`, `retry`, `share`, `queue`).
 
 ## Wymagania po stronie Google Cloud
 - Gmail API włączone; klient OAuth (Android + Web) jak w `app/README.md`.
@@ -20,3 +23,6 @@ Testy zasad: `app/tests/moduly-zasady.test.cjs` (W1–W5: najpierw `OESTGoogle.r
 - Raport z błędem albo przerwany w trakcie wysyła się ponownie tylko po „Ponów” (bez dubli).
 - Okno logowania Google tylko po kliknięciu; w tle wysyła, gdy sesja już jest.
 - Czekanie na Wi‑Fi domyślnie włączone; nieznana sieć = jak dane komórkowe.
+
+Adaptery aplikacji s? wstrzykiwane przez `app/www/module-adapters.js` na obu stronach.
+`OESTSender.configure({ google(), clientConfigured(), markSent(ppm, id) })`: bie??cy klient Google, dost?pno?? konfiguracji OAuth i aktualizacja karty PPM. Bez adapter?w wysy?ka pozostaje nieaktywna.

@@ -151,11 +151,38 @@
       "wzory": [
         "class=\\\\?[\"']top[\"'\\\\ ]"
       ],
-      "wlasciciele": [
-        "moduly/naglowek/naglowek.js"
-      ],
+      "wlasciciele": [],
       "punkt": "D11",
       "usuwa": "C1"
+    },
+    {
+      "rzecz": "word-silnik",
+      "opis": "otwieranie, wypełnianie, czytanie albo zapis pliku .docx (PizZip, docxtemplater) poza modułem Word – Word tylko przez OESTWord (moduly/word, Grzegorz 24/11/2026)",
+      "wzory": [
+        "\\bnew\\s+[\\w.]*(?:PizZip|[Dd]ocxtemplater)\\b",
+        "[\\w$]+\\.PizZip\\b",
+        "\\b[Dd]ocxtemplater\\s*\\(",
+        "\\.generate\\(\\s*\\{\\s*type\\s*:\\s*[\"']uint8array"
+      ],
+      "wlasciciele": [
+        "moduly/word/word.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "word"
+    },
+    {
+      "rzecz": "wysylka-raportu",
+      "opis": "wysłanie raportu z kolejki poza modułem wysyłki (mail, Udostępnij, skrypt Apps Script) – jedna droga: Gmail z konta przez OESTSender (moduly/wysylka, Grzegorz 25/11/2026)",
+      "wzory": [
+        "\\.sendMail\\s*\\(\\s*\\{",
+        "\\bapi\\(\\s*[\"']submit[\"']",
+        "registerPlugin\\(\\s*[\"']ReportShare[\"']\\s*\\)\\s*:\\s*Capacitor"
+      ],
+      "wlasciciele": [
+        "moduly/wysylka/wysylka.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "wysylka"
     }
   ],
   "kluczeWlasciciele": {

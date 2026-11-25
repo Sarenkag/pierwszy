@@ -21,7 +21,7 @@ Ten plik obowiązuje razem z `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN-S
 | R9 | Każda baza w telefonie (IndexedDB) ma jeden plik, który ją otwiera. Bez nowego modułu: jedyna podwójna dziś to kolejka raportów (D4). | plik-właściciel bazy |
 | R10 | Ekran nie sięga do globali ani magazynów innego ekranu. Wspólne rzeczy są w `moduly/`. | check-architecture |
 | R11 | Style ekranu są w jego pliku, każdy selektor z przedrostkiem ekranu, kolejność przez `@layer`. Nie ma nowych `!important`. theme.css trzyma tylko kolory i rozmiary. | theme / pliki ekranów |
-| R12 | Nagłówek, strzałka, kafelek, wiersz listy, pigułka statusu, checkbox i przycisk pochodzą tylko z `moduly/`. | naglowek, kafelek, klocek, znacznik, checkbox, przycisk |
+| R12 | Nagłówek, strzałka, kafelek, wiersz listy, pigułka statusu, checkbox i przycisk pochodzą tylko z `moduly/`. | kafelek, klocek, znacznik, checkbox, przycisk |
 | R13 | Stałe napisy mają `data-pl`/`data-en` i zmiana języka tylko podmienia tekst (tak działa dziś `bledy.js`). `OESTT(pl, en)` tylko dla napisów chwilowych. Miejsce jest zarezerwowane na oba języki, więc nic się nie przerysowuje. | `moduly/bledy` |
 | R14 | Wspólne narzędzia (`esc`, `pad`, data dd/mm/rrrr, bezpieczny link) istnieją raz. | `moduly/narzedzia` (nowy) |
 | R15 | Jedna droga na zadanie: zdjęcia `OESTZdjecia.prepare`, odczyt `OESTOdczyt`, raport `moduly/word-pdf` (jeden wzór basic), wysyłka, kolejka i pasek `OESTSender`. | te moduły |

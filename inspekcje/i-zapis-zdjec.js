@@ -11,9 +11,9 @@
   function camOpts(kind) { var Z = window.OESTZdjecia; return { max: Z && Z.maxPx ? Z.maxPx(kind) : 0, prepare: kind && Z && Z.prepare ? function (b) { Z.prepare(b, kind); } : null }; }
   var Zd = window.OESTZdjecia, HOLD = "inspekcja", THUMB_PX = 400, thumbQ = Promise.resolve();
   // Rozmiar zdjęć ogólnych (Duże / Średnie / Małe) – przełącznik z modułu zdjęć (jeden dla całej apki)
-  if ($("photoSize") && Zd && Zd.sizeSwitch) $("photoSize").innerHTML = Zd.sizeSwitch();
+  if ($("photoSize") && Zd && window.OESTCzesci) window.OESTCzesci.montuj($("photoSize"), "RozmiarZdjec", { kontroler: Zd.rozmiar() });
   // przełącznik rozmiaru tylko tam, gdzie są zdjęcia ogólne (w formularzach papierowych przyciski dodają kartki – zawsze 1920)
-  function photoSizeShow() { var b = $("photoSize"); if (b) b.classList.toggle("off", photoKind(null, false) !== "ogolne"); }
+  function photoSizeShow() { var b = $("photoSize"); if (b) b.hidden = photoKind(null, false) !== "ogolne"; }
   // rodzaj = rozmiar zapisu (moduł zdjęć): formularz 1920 px (cała strona A4), ogólne 1600 px, przy pytaniu / kranie 1280 px.
   // Inspekcja „z kartki” (folder bez listy kranów): każde jej zdjęcie to strona formularza.
   // Krany / punkty Flushingu i AOV oraz izolatory: zdjęcie tylko na dowód wykonania (Grzegorz 05/11) → 960 px, jak w raporcie.
@@ -24,39 +24,24 @@
   }
   function tapName(tap) { var F = cur.type && cur.type.flush, x = F && F.taps[tap]; return x ? (x.name != null ? x.name : String(x)) : ""; }
   function savedPhoto(p) { return { zid: p.zid || undefined, blob: p.zid ? undefined : p.blob, width: p.width, height: p.height, when: p.when, exif: p.exif, tap: p.tap, sheet: p.sheet || undefined }; }
-  function bitmap(blob) { return loadImage(blob); } // ten sam odczyt co przy dodawaniu (także zapas przez <img> bez createImageBitmap)
+  function bitmap(blob) { return Zd.wczytaj(blob); } // wczytanie zdjęcia: jedno miejsce w apce (moduly/zdjecia)
   // miniatury po kolei (jedno duże zdjęcie naraz w pamięci); przy błędzie podgląd z samego pliku
   function thumbUrl(blob) {
     var job = thumbQ.then(function () {
-      return bitmap(blob).then(function (img) {
-        var k = Math.min(1, THUMB_PX / Math.max(img.width, img.height)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (img.close) img.close();
-        return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.8); });
-      }).then(function (tb) { return URL.createObjectURL(tb || blob); }, function () { return URL.createObjectURL(blob); });
+      return Zd.zmniejsz(blob, { px: THUMB_PX, jakosc: 0.8 }).then(function (r) { return URL.createObjectURL(r.blob); }, function () { return URL.createObjectURL(blob); });
     });
     thumbQ = job.catch(function () {});
     return job;
   }
   function makePhoto(blob, o, thumb) { return (thumb ? Promise.resolve(URL.createObjectURL(thumb)) : thumbUrl(blob)).then(function (url) { return Object.assign({ blob: blob, url: url }, o); }); }
   function storePhoto(file, when, ctx) {
-    if (!Zd) return processPhoto(file, when);
     return Zd.save(file, Object.assign({}, ctx, { when: when, hold: HOLD })).then(function (r) {
       return makePhoto(r.blob, { zid: r.id, width: r.width, height: r.height, when: when }, r.thumb);
     }, function () { return processPhoto(file, when); }); // folder OEST nie przyjął zdjęcia (np. brak miejsca): zostaje w samej inspekcji
   }
-  // zapas bez modułu zdjęć: własna kopia w szkicu (jak przed 05/11)
+  // zapas, gdy folder OEST nie przyjął zdjęcia: własna kopia w szkicu (jak przed 05/11), zmniejszona przez moduł zdjęć
   function processPhoto(file, when) {
-    return loadImage(file).then(function (img) {
-      var w = img.width, h = img.height, MAX = 1920;
-      var s = Math.min(1, MAX / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
-      var c = document.createElement("canvas"); c.width = w; c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h);
-      if (img.close) img.close();
-      return new Promise(function (res) { c.toBlob(res, "image/jpeg", 0.72); }).then(function (blob) {
-        return makePhoto(blob, { width: w, height: h, when: when });
-      });
-    });
+    return Zd.zmniejsz(file, { px: 1920, jakosc: 0.72 }).then(function (r) { return makePhoto(r.blob, { width: r.width, height: r.height, when: when }); });
   }
   // zdjęcia, których żadna zapisana inspekcja już nie używa (usunięte z inspekcji, wyczyszczony szkic), po 30 dniach
   // od wyczyszczenia (Grzegorz 08/11/2026: „niech trzyma przez miesiąc”; liczone od chwili, gdy zniknęły z inspekcji) przestają być trzymane: zostają w folderze OEST i podlegają zwykłemu limitowi (najpierw muszą być na Dysku)
@@ -111,13 +96,12 @@
   }
   // Zdjęcie do raportu zmniejszane RAZ (audyt wydajności 07/11/2026): wynik zapamiętany przy samym zdjęciu (WeakMap po blobie),
   // więc Podgląd → Wyślij, „Zmniejsz zdjęcia” i ponowne budowanie nie liczą go od nowa. Klucz = wszystko, od czego zależy wynik
-  // (rozmiar, jakość, stempel); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
+  // (rozmiar, jakość); inne ustawienie = nowe zmniejszenie. Usunięte / poprawione zdjęcie = inny blob, stary wynik znika sam.
   var finalCache = typeof WeakMap === "function" ? new WeakMap() : null;
   function finalOpts(p, d) {
     var general = !p.sheet && p.tap == null && !p.code && !p.small, rs = general ? { px: HALF_PX, q: HALF_Q } : reportSize();
     var px = p.sheet ? SHEET_PX : Math.round(rs.px * reportShrink), q = p.sheet ? SHEET_Q : rs.q;
-    var stamp = cfg.stamp ? NZ.data(p.when) + " " + NZ.godzina(p.when) + " · " + (p.code || d.urzadzenie) + " · " + (p.where || d.lokalizacja) : "";
-    return { px: px, q: q, stamp: stamp, key: px + "|" + q + "|" + stamp };
+    return { px: px, q: q, key: px + "|" + q }; // bez daty na zdjęciu (Grzegorz 25.11.2026)
   }
   function finalPhoto(p, d) {
     var o = finalOpts(p, d), byKey = finalCache && p.blob && typeof p.blob === "object" ? finalCache.get(p.blob) : null, hit = byKey && byKey[o.key];
@@ -136,31 +120,18 @@
     return Promise.all(run).then(function () { return out; });
   }
   function finalFrom(src, o) {
-    var k = Math.min(1, o.px / Math.max(src.width, src.height)), w = Math.round(src.width * k), h = Math.round(src.height * k);
-    var c = document.createElement("canvas"); c.width = w; c.height = h;
-    var g = c.getContext("2d"); g.drawImage(src, 0, 0, w, h); if (src.close) src.close();
-    if (o.stamp) {
-      var txt = o.stamp;
-      var fs = Math.max(16, Math.round(w / 40));
-      g.font = "600 " + fs + "px Barlow, system-ui, sans-serif";
-      var tw = Math.min(g.measureText(txt).width, w - fs * 2.2), pw = tw + fs, ph = fs * 1.8;
-      g.fillStyle = "rgba(10,16,20,0.62)"; g.fillRect(w - pw - fs * 0.6, h - ph - fs * 0.6, pw, ph);
-      g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(txt, w - pw - fs * 0.1, h - ph / 2 - fs * 0.6, tw);
-    }
+    var c = Zd.plotno(src, o.px), w = c.width, h = c.height; // zmniejszenie: moduly/zdjecia
     return new Promise(function (res) { c.toBlob(res, "image/jpeg", o.q); }).then(function (blob) {
       return blob.arrayBuffer().then(function (buf) { return { bytes: new Uint8Array(buf), width: w, height: h, blob: blob }; });
     });
   }
   // kółko „trwa zapis” na środku ekranu: zdjęcie się zmniejsza / zapisuje albo wczytuje się szkic (Grzegorz 03/11)
   // okienka apki zamiast systemowych (moduly/przycisk): rosną z miejsca stuknięcia, Wstecz = Anuluj (Grzegorz 04/11)
-  function ask(t) { return window.OESTPytaj ? OESTPytaj(t) : Promise.resolve(window.confirm(t)); }
-  function say(t) { if (window.OESTKomunikat) OESTKomunikat(t); else window.alert(t); }
+  function ask(t) { return OESTPytaj(t); }
+  function say(t) { OESTPrzycisk.alert(t); }
   function busySpin(on) {
-    // jedno kółko w całej apce (moduly/ladowanie); stare #busySpin tylko jako zapas
-    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; return; }
-    var el = $("busySpin");
-    if (!el) { el = document.createElement("div"); el.id = "busySpin"; el.setAttribute("role", "status"); el.innerHTML = '<span class="ring"></span><b>'+window.OESTT('Zapisuję…', 'Saving…')+'</b>'; document.body.appendChild(el); }
-    el.classList.toggle("on", !!on);
+    // jedno kółko w całej apce (moduly/ladowanie → wspólna część Ionic)
+    if (window.OESTLadowanie) { if (on) { if (!busySpin.on) OESTLadowanie.show(window.OESTT('Zapisuję…', 'Saving…')); } else if (busySpin.on) OESTLadowanie.hide(); busySpin.on = !!on; }
   }
   function updateFormHint() { updateFormHint0(); syncFinish(); OESTVantifyKlocek.render(); var u = $("recUpdate"); if (u && REC && !queueing) u.disabled = $("toQueue").disabled || !!restoring || pendingPh > 0; } // Update czeka na zdjęcia tak samo jak Wyślij (uwaga Codex #101)
   // „Zakończ” (Grzegorz 03/11 12:12): osobny od „Wyślij”; dostępny wtedy, gdy da się wysłać raport
@@ -168,7 +139,7 @@
     var f = $("finishIns"), q = $("toQueue"); if (!f || !q) return;
     var st = cur.ppm && PPM && PPM.stage ? PPM.stage(cur.ppm) : null;
     var ready = !!(st && (st.s === "queued" || st.s === "sent" || st.s === "done"));
-    f.classList.toggle("ready", ready); f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
+    f.color = ready ? "success" : "primary"; f.disabled = false; // Gotowa: dotknięcie zdejmuje znacznik (Grzegorz 05/11)
     f.title = ready ? window.OESTT("Dotknij, aby zdjąć znacznik Gotowa", "Tap to remove the Ready flag") : "";
     if (ready) { f.textContent = window.OESTT("✓ GOTOWA ", "✓ READY ") + NZ.data(new Date(st.at || Date.now())); return; }
     f.textContent = window.OESTT("✓ Zakończ inspekcję", "✓ Finish inspection");
@@ -176,7 +147,7 @@
   function updateFormHint0() {
     busySpin(pendingPh > 0 || !!restoring || (draftT && draftOn));
     var h = [];
-    $("toQueue").classList.remove("compact");
+    $("toQueue").expand = "block";
     if (cur.type && cur.type.temp) {
       var filled = temps.filter(function (v) { return tempNum(v) !== null; }).length, bad = temps.filter(function (v) { return String(v).trim() && tempNum(v) === null; }).length;
       var outN = cur.type.slots.filter(function (s, i) { return tempBad(s[1], temps[i]); }).length;
@@ -199,10 +170,10 @@
     if (cur.type && cur.type.folder) {
       var none = !sheetPhotos().length;
       $("formHint").textContent = pendingPh ? window.OESTT("Zmniejszam zdjęcie…", "Reducing the photo…") : none ? window.OESTT("Zrób zdjęcie wypełnionej kartki (może być kilka) — każde będzie osobną stroną PDF.", "Take a photo of the filled-in form (can be several) — each becomes a separate PDF page.") : window.OESTT("Zdjęć: ", "Photos: ") + photos.filter(function (p) { return p.tap == null; }).length + window.OESTT(" → jeden PDF, strona na zdjęcie.", " → one PDF, a page per photo.");
-      var fb = !!restoring || pendingPh > 0; // bez zdjęć przycisk otwiera aparat (nie jest martwy)
-      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb;
-      $("toQueue").textContent = none ? window.OESTT("Dodaj zdjęcie formularza", "Add form photo") : window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
-      $("toQueue").classList.toggle("compact", none); return; // przed zdjęciem zgrabny przycisk, nie wielki (Grzegorz 03/11)
+      var fb = !!restoring || pendingPh > 0; // zdjęcie formularza dodaje się czerwonym kafelkiem Formularz – tu tylko Wyślij (Grzegorz 25.11.2026)
+      $("toPreview").disabled = fb || none; $("toQueue").disabled = fb || none;
+      $("toQueue").textContent = window.OESTT("Wyślij · ", "Send · ") + NZ.data(reportDate());
+      $("toQueue").expand = "block"; return;
     }
     if (cur.mode === "item") {
       var sus = states.indexOf("sus") >= 0;

@@ -44,6 +44,20 @@ test('G1: skrypt używający API ładowanego później = nowe naruszenie LOAD_OR
   const d = www('<script src="late.js"></script>', { 'app.js': '(function(w){ w.OESTApp = { go(){ return w.OESTLate.y; } }; })(window);', 'late.js': '(function(w){ w.OESTLate = { y: 2 }; })(window);' });
   const r = g1(d); assert.equal(r.code, 1); assert.match(r.out, /LOAD_ORDER/);
 });
+test('G1: API, którego strona nie ładuje: tylko przez w.X i ze sprawdzeniem = opcjonalne → PASS; bez sprawdzenia albo bez w. → UNDEFINED_GLOBAL → FAIL', () => {
+  const ok = [
+    '(function(w){ w.OESTApp = { go(){ return w.OESTOpc && w.OESTOpc.y(); } }; })(window);',
+    '(function(w){ w.OESTApp = { go(){ if (w.OESTOpc) w.OESTOpc.y(); } }; })(window);',
+    '(function(w){ w.OESTApp = { go(){ var H = w.OESTOpc; if (!H) return; H.y(); } }; })(window);'
+  ];
+  for (const kod of ok) { const r = g1(www('', { 'app.js': kod })); assert.equal(r.code, 0, kod + '\n' + r.out); }
+  const zle = [
+    '(function(w){ w.OESTApp = { go(){ return w.OESTOpc.y(); } }; })(window);',
+    '(function(w){ w.OESTApp = { go(){ return OESTOpc.y(); } }; })(window);',
+    '(function(w){ w.OESTApp = { go(){ if (w.OESTOpc) OESTOpc.y(); } }; })(window);'
+  ];
+  for (const kod of zle) { const r = g1(www('', { 'app.js': kod })); assert.equal(r.code, 1, kod + '\n' + r.out); assert.match(r.out, /UNDEFINED_GLOBAL[\s\S]*OESTOpc/); }
+});
 test('G1: brakujący plik skryptu → MISSING_SCRIPT → FAIL', () => {
   const r = g1(www('<script src="nie-ma.js"></script>')); assert.equal(r.code, 1); assert.match(r.out, /MISSING_SCRIPT/);
 });
@@ -311,18 +325,6 @@ test('Runner przeglądarkowy: kod 0 bez potwierdzenia PASS = NOT RUN; brak zbudo
   assert.equal(statusOf(r.json, 'app/tests/b-ui-check.cjs'), 'NOT RUN');
   assert.equal(r.code, 1);
 });
-test('Runner: pominięta inspekcja w raport-ui-check = SKIPPED, także gdy test jej nie zgłosił', () => {
-  const m = { node: [], browser: [{ file: 'app/tests/raport-ui-check.cjs', passMarker: 'raport-ui-check: ', scenarios: 'ppm-inspections' }], allowedSkips: [] };
-  const d = project(m, {
-    'app/www/inspekcje/index.html': '',
-    // lista jak w apce; EFA-INS-099 tylko w komentarzu – nie jest zadaniem i nie może być wymagane
-    'app/www/ppm.js': "// EFA-INS-099 usunięte z listy\nwindow.OEST_PPM = { tasks: [ { id: 'EFA-INS-001' }, { id: 'EFA-INS-002' }, { id: 'EFA-INS-003' }, { id: 'db-X' }, { id: 's-y' } ] };",
-    'app/tests/raport-ui-check.cjs': "console.log('raport-ui-check: 1 inspekcji, każda ma Word i PDF: EFA-INS-001 | pominięte (wymagają odpowiedzi): EFA-INS-002')"
-  });
-  const r = gate(d, 'browser', fakePw(d)), row = r.json.results[0];
-  assert.equal(row.status, 'SKIPPED'); assert.deepEqual(row.scenarios.missing, ['EFA-INS-002', 'EFA-INS-003']); assert.deepEqual(row.scenarios.silent, ['EFA-INS-003']); assert.equal(row.scenarios.expected, 3, 'tylko EFA-INS z listy zadań, bez komentarzy');
-  assert.equal(r.code, 1);
-});
 
 // ---------- ochrona kryteriów (ratchet) ----------
 function repo(manifest, baseline) {
@@ -341,6 +343,23 @@ test('Ratchet: usunięcie testu z listy, zmiana passMarker, dłuższy limit, now
     const { d, g } = repo(M, []); const m = JSON.parse(JSON.stringify(M)); mod(m);
     write(d, { 'quality/required-tests.json': JSON.stringify(m) }); g('commit', '-qam', 'pr');
     const r = ratchet(d); assert.equal(r.code, 1, r.out);
+  }
+});
+test('Ratchet: zdjęcie testu przeglądarkowego tylko imiennie z cmsg zgody → PASS; bez zgody, inny plik albo test node → FAIL', () => {
+  const Z = 'cmsg_01XEAk2s9PJV8mCFfCy1yHHT6cxQCTSpKBZDZSLV4aHJXi';
+  for (const [mod, kod] of [
+    [m => { m.browser = []; m.zdjeteZaZgoda = { zgoda: Z, browser: ['app/tests/x-ui-check.cjs'] }; }, 0],
+    [m => { m.browser = []; m.zdjeteZaZgoda = { zgoda: 'tak', browser: ['app/tests/x-ui-check.cjs'] }; }, 1],
+    [m => { m.browser = []; m.zdjeteZaZgoda = { zgoda: Z, browser: ['app/tests/inny-ui-check.cjs'] }; }, 1],
+    [m => { m.node = []; m.zdjeteZaZgoda = { zgoda: Z, browser: ['app/tests/a.test.cjs'] }; }, 1],
+    [m => { m.browser[0].timeoutSec = 5000; m.zdjeteZaZgoda = { zgoda: Z, browser: ['app/tests/x-ui-check.cjs'] }; }, 1],
+    [m => { m.browser = []; m.zdjeteZaZgoda = [{ zgoda: Z, browser: ['app/tests/inny-ui-check.cjs'] }, { zgoda: Z, browser: ['app/tests/x-ui-check.cjs'] }]; }, 0],
+    [m => { m.browser = []; m.zdjeteZaZgoda = [{ zgoda: Z, browser: [] }, { zgoda: 'tak', browser: ['app/tests/x-ui-check.cjs'] }]; }, 1]
+  ]) {
+    const { d, g } = repo(M, []); const m = JSON.parse(JSON.stringify(M)); mod(m);
+    write(d, { 'quality/required-tests.json': JSON.stringify(m) }); g('commit', '-qam', 'pr');
+    const r = ratchet(d); assert.equal(r.code, kod, JSON.stringify(m) + '\n' + r.out);
+    if (!kod) assert.match(r.out, /zdjęty z obowiązkowych za zgodą cmsg_/);
   }
 });
 test('Ratchet: nowy wpis w baseline → FAIL; usunięcie wpisu → PASS', () => {

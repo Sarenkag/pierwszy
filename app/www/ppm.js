@@ -198,7 +198,10 @@ window.OEST_PPM = {
     { id: "s-hygiene", group: "sub", name: "Water Hygiene Sampling, CWST Inspections", freq: ["6M"], by: "Hydrocert" },
     { id: "s-cwst", group: "sub", name: "Cold Water Storage Tank", freq: ["6M", "12M"], by: "Hydrocert" },
     { id: "s-pat", group: "sub", name: "Portable Appliance Testing", freq: ["12M"] },
-    { id: "s-spa", group: "sub", name: "Monthly Spa Maintenance & Sampling", freq: ["1M"] }
+    // Spa: dwa zlecenia Vantify = dwie osobne inspekcje z własnym numerem i raportem (Grzegorz 25.11.2026 08:40; wcześniej jedna karta s-spa).
+    // Nazwa dokładnie jak zadanie w Vantify – po niej import (moduly/eksport-vantify, matcher) przypisuje numer zlecenia.
+    { id: "s-spa-sampling", group: "sub", name: "(Sub) Monthly Spa Sampling", freq: ["1M"] },
+    { id: "s-spa-maint", group: "sub", name: "(Sub) Monthly Spa Maintenance", freq: ["1M"] }
   ]
 };
 
@@ -238,7 +241,7 @@ window.OEST_PPM = {
     if (needs && typeof needs === "object" && !Array.isArray(needs)) box["oest.ppm.needs"] = Object.assign({}, needs);
   };
   P.sandboxed = function () { return !!box; };
-  function pad(n) { return String(n).padStart(2, "0"); }
+  var pad = (window.OESTNarzedzia || (typeof require === "function" && require("../../moduly/narzedzia/narzedzia.js"))).pad;
   function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function parse(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
   function add(d, f) {

@@ -3,6 +3,7 @@
 // Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: musi być wczytany ostatni.
   // ---------- start ----------
+  OESTKolejkaWidok.montuj($("queueBox")); // ekran Kolejka: część Vue (czesci/KolejkaInsp.vue)
   states = cur.type.checks.map(function (c) { return c.def; });
   var cached = load("setup", null);
   if (cached) applySetup(cached);
@@ -31,8 +32,7 @@
         refresh();
       },
       onQueue: function () { show("queue"); },
-      onIdle: refresh,
-      onShare: shareApi() ? function () { var p = pending()[0]; if (p) shareSend(p); } : null
+      onIdle: refresh
     });
     if (APP && !cfg.api) return; // apka: wzór wbudowany, raporty przez Gmaila, skrypt Google niepotrzebny
     return online() ? loadSetup() : tplState(window.OESTT("brak sieci", "no network"));
@@ -42,51 +42,33 @@
   function renderPpmBar() {
     if (REC) {
       // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (moduly/znacznik), termin bez zmian
-      document.querySelectorAll(".ppmbar").forEach(function (el) { el.hidden = true; });
-      var hd = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), pill = $("recPill");
-      if (hd && window.OESTZnacznik) { if (!pill) { pill = document.createElement("span"); pill.id = "recPill"; hd.appendChild(pill); } pill.innerHTML = OESTZnacznik.status("odzyskana"); }
+      document.querySelectorAll("[data-ui~=ppmbar]").forEach(function (el) { el.hidden = true; });
+      var pill = $("recPill");
+      if (pill && window.OESTZnacznik) { pill.hidden = false; widokInspekcji(pill, "fragment", { rodzaj: "znacznik", html: OESTZnacznik.status("odzyskana") }); }
+      $("ppmStage").hidden = true;
       return;
     }
     var t = cur.ppm;
-    document.querySelectorAll(".ppmbar").forEach(function (el) {
+    document.querySelectorAll("[data-ui~=ppmbar]").forEach(function (el) {
       el.hidden = !t; if (!t) return;
       var due = PPM.due(t), left = PPM.daysLeft(due);
       // termin ze zlecenia Vantify: dokładnie jak w pliku, nie do zmiany w apce (Grzegorz 05/11)
       // po ostatnim zleceniu z importu też bez ręcznej daty – apka nie tworzy terminu (PROD-010)
       var vj = (due && PPM.jobFor ? PPM.jobFor(t, NZ.dzienIso(due)) : null) || (PPM.jobs && PPM.jobs(t).length > 0);
-      el.innerHTML = '<label>Update <input type="date" value="' + (due ? NZ.dzienIso(due) : "") + '"' + (vj ? " disabled" : "") + ' aria-label="'+window.OESTT('Termin z systemu', 'Due date from the system')+'"></label>' +
-        '<b class="' + (left !== null && left <= 0 ? "late" : "") + '" data-alt="' + esc(window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "") + '">' + esc(PPM.endsText(left, t)) + "</b><span>" + esc(t.freq.join(" + ")) + "</span>";
-      el.querySelector("input").addEventListener("change", function () { PPM.setDue(t, this.value); renderPpmBar(); });
+      widokInspekcji(el, "fragment", { rodzaj: "termin", data: due ? NZ.dzienIso(due) : "", blokada: !!vj, spoznione: left !== null && left <= 0,
+        alt: window.OESTBledy && OESTBledy.wJezyku ? OESTBledy.wJezyku(OESTBledy.drugi(), function () { return PPM.endsText(left, t); }) : "",
+        tekst: PPM.endsText(left, t), czestosc: t.freq.join(" + ") }, function (value) { PPM.setDue(t, value); renderPpmBar(); });
 
     });
     // etap w nagłówku inspekcji (obok nazwy), ustawiany ręcznie, gdy jestem pewien (Grzegorz 02/11): zwykle zmienia się sam
-    var top = document.querySelector("#v-form .iright") || document.querySelector("#v-form .top"), sel = $("ppmStage");
+    var top = document.querySelector("#v-form [data-ui~=iright]") || document.querySelector("#v-form [data-ui~=top]"), sel = $("ppmStage");
     if (!top || !PPM || !PPM.setStage) return;
-    if (!sel) {
-      sel = document.createElement("select"); sel.id = "ppmStage"; sel.className = "ppmpill"; sel.setAttribute("aria-label", "Etap inspekcji");
-      sel.addEventListener("change", function () {
-        var tt = cur.ppm; if (!tt || this.value === "queued" || this.value === "sent") return;
-        var was = PPM.stage(tt), closed = was && (was.s === "done" || was.s === "queued" || was.s === "sent");
-        if (this.value === "done") { if (!closed) $("finishIns").click(); return; } // „Zakończona” z listy = to samo co ✓ Zakończ inspekcję (Gotowa, zielony klocek); ustawia tylko Grzegorz
-        // cofnięcie „Gotowa” (Grzegorz 04/11: Zakończ → Nie rozpoczęta → inspekcja zniknęła): termin wraca na ten sprzed Zakończ,
-        // a szkic traci znacznik Gotowa, żeby nic go nie wyczyściło. Odpowiedzi i zdjęcia zostają zawsze.
-        if (closed && this.value === "prog") { unready(tt); return; }
-        if (closed && this.value !== "done") {
-          if (was.period) PPM.setDue(tt, was.period);
-          var dk = draftKey(); kvGet(dk).then(function (d) { if (d && d.fin) { delete d.fin; delete d.finPeriod; return kvSet(dk, d); } }).catch(function () {});
-        }
-        if (!this.value) { PPM.setStage(tt, null); if (PPM.setUnstarted) PPM.setUnstarted(tt, ppmCounts()); } else PPM.setStage(tt, { s: this.value, manual: true, day: NZ.dzienIso(new Date()) });
-        renderPpmBar(); updateFormHint(); $("formHint").textContent = finHint();
-      });
-      top.insertBefore(sel, top.firstChild);
-    }
-    if (sel.parentNode !== top) top.insertBefore(sel, top.firstChild); // nagłówek budowany przez form-ui.js po pierwszym wywołaniu
+    // wybór w klocku StatusInspekcji → zmienEtap (tytul-etap.js)
     sel.hidden = !t; if (!t) return;
     var st = PPM.stage(t), s = st ? st.s : "";
-    sel.innerHTML = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
-      .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []) // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
-      .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === s ? " selected" : "") + ">" + o[1] + "</option>"; }).join("");
-    sel.className = "ppmpill s-" + (s || "none");
+    var opcje = [["", window.OESTT("○ Nie rozpoczęta", "○ Not started")], ["prog", window.OESTT("◐ W trakcie", "◐ In progress")], ["hold", window.OESTT("⏸ Wstrzymana", "⏸ On hold")], ["done", window.OESTT("✓ Zakończona", "✓ Completed")]]
+      .concat(s === "queued" || s === "sent" ? [[s, window.OESTT("✓ Gotowa", "✓ Ready")]] : []); // zamknięta = Gotowa (04/11); stan raportu pokazuje Wyślij i pasek wysyłki
+    widokInspekcji(sel, "fragment", { rodzaj: "etap", opcje: opcje, stan: s }, zmienEtap);
   }
   // inspekcje bez własnych pytań: 6 ogólnych checkpointów na wzorze generic (Grzegorz 01/11), pytania można potem podmienić w ustawieniach
   var GENERIC_CPS = [
@@ -100,7 +82,7 @@
   function openPpm(t0, code0) {
     var t = t0 || PPM && PPM.byId(new URLSearchParams(location.hash.slice(1)).get("ppm") || "");
     if (!t) return;
-    cur.ppm = t; $("appMenu").href = t0 ? backUrl() : "../index.html#ppm";
+    cur.ppm = t; wyjscie = t0 ? backUrl() : "../index.html#ppm";
     if (t.open && code0 && !t.dev) { cur.type = TYPES.filter(function (x) { return x.id === t.open; })[0]; if (cur.type) openForm(code0); return; } // urządzenie z listy (np. izolator)
     if (t.open && t.dev) {
       // jedna rozdzielnica = osobna inspekcja: prosto do jej formularza
@@ -162,7 +144,7 @@
       if (t) { openPpm(t, m.code); return; }
       cur.type = TYPES.filter(function (x) { return x.id === m.type; })[0];
       if (!cur.type) throw new Error("REPORT_NO_DATA");
-      $("appMenu").href = backUrl(); openForm(m.code);
+      wyjscie = backUrl(); openForm(m.code);
     }).catch(fail);
   }
   window.addEventListener("oest:lang", function () { if (REC) renderPpmBar(); });
@@ -197,7 +179,7 @@
   });
 
   // W apce na Androida: powrót do menu głównego
-  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { $("appMenu").hidden = false; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { wyjscieApka = true; document.documentElement.setAttribute("data-theme", "dark"); document.documentElement.setAttribute("data-app", ""); }
 
   var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   if ("serviceWorker" in navigator) {

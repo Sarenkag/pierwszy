@@ -1,5 +1,5 @@
 /* Moduł odczytu tekstu ze zdjęcia (OESTOdczyt): OCR na telefonie (ML Kit, offline), bez AI w chmurze.
-   Nic nie trafia do pól bez stuknięcia — użytkownik wybiera linie albo liczby. */
+   Nic nie trafia do pól bez stuknięcia — użytkownik wybiera linie albo liczby. Arkusz wyboru rysuje szkielet Ionic (OESTCzesci, czesci/OdczytArkusz.vue). */
 (function (w) {
   'use strict';
   var UNIT = '(?:\\s?(?:mg\\/l|ppm|°c|°f|ph|bar|mbar|kpa|pa|hz|kw|kva|kwh|w|a|ma|v|kv|%|rpm|l\\/s|m3\\/h|m³\\/h|l\\/min|s|min|h))?';
@@ -7,11 +7,8 @@
   function available() { return !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform() && w.Capacitor.Plugins && w.Capacitor.Plugins.OESTKeys); }
   // Zdjęcie → JPEG ≤ 2000 px (wtyczka przyjmuje do 4 Mpx)
   function prepare(blob) {
-    return createImageBitmap(blob).then(function (bmp) {
-      var s = Math.min(1, 2000 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
-      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
-      return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return w.OESTZdjecia.wczytaj(blob).then(function (bmp) { // wczytanie i zmniejszenie: moduly/zdjecia
+      return w.OESTZdjecia.plotno(bmp, 2000).toDataURL('image/jpeg', 0.9).split(',')[1];
     });
   }
   function parse(text) {
@@ -33,12 +30,6 @@
     return prepare(blob).then(ocr)
       .then(function (r) { return parse(r && r.text); }, function (e) { throw Error(w.OESTT('Nie udało się odczytać: ', 'Could not read: ') + (e && e.message || e)); });
   }
-  var css = false;
-  function style() {
-    if (css) return; css = true; var st = document.createElement('style');
-    st.textContent = '.oest-ocr{position:fixed;inset:0;z-index:2147481000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}.oest-ocr .sh{background:#14202a;color:#fff;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));font:16px system-ui}.oest-ocr h3{margin:0 0 6px;font-size:19px}.oest-ocr .hint{opacity:.7;font-size:14px;margin:0 0 10px}.oest-ocr img{width:100%;max-height:28vh;object-fit:contain;border-radius:10px;background:#000}.oest-ocr .lbl{margin:14px 0 6px;font-size:13px;letter-spacing:.06em;opacity:.7;text-transform:uppercase}.oest-ocr .chips{display:flex;flex-wrap:wrap;gap:8px}.oest-ocr .chips button{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);color:#fff;border-radius:12px;padding:10px 12px;font:600 16px system-ui;text-align:left;max-width:100%}.oest-ocr .chips button.on{background:#2e7d32;border-color:#2e7d32}.oest-ocr .num button{font-family:ui-monospace,monospace}.oest-ocr select{width:100%;padding:12px;border-radius:10px;font:16px system-ui;background:#0d161d;color:#fff;border:1px solid rgba(255,255,255,.3)}.oest-ocr .go{width:100%;margin-top:16px;padding:16px;border:0;border-radius:14px;background:#fff;color:#14202a;font:700 18px system-ui}';
-    document.head.appendChild(st);
-  }
   // pole liczbowe: dokładnie jedna liczba z tokenów parse() (bez cyfr z etykiet typu „Cl2”), przecinek → kropka; inaczej nic nie wpisuje
   function numberOf(v) { var n = parse(v).numbers; if (n.length !== 1) return null; var m = n[0].match(/[-+]?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.').replace(/^\+/, '') : null; }
   function put(el, v) {
@@ -48,37 +39,36 @@
     el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
-  /* pick(blob, {targets:[{label, el}]}) – arkusz z odczytem; stuknięcie linii/liczby wpisuje ją do wybranego pola.
-     Zwraca Promise<liczba wpisanych>. */
+  /* pick(blob, {targets:[{label, el}]}) – arkusz z odczytem (część OdczytArkusz.vue w okienku szkieletu); stuknięcie linii/liczby wpisuje ją
+     do wybranego pola. Zwraca Promise<liczba wpisanych>. Kontroler: dane() → { url, podpowiedz, cele:[napis], cel, liczby:[{ k, tekst, wpisane }],
+     linie:[…] }; akcja('cel', i) · ('wybierz', k). */
   function pick(blob, opts) {
-    style(); var targets = (opts && opts.targets || []).filter(function (t) { return t && t.el; });
-    var o = document.createElement('div'), url = URL.createObjectURL(blob), used = 0; o.className = 'oest-ocr';
-    var ttl = w.OESTT('Odczyt ze zdjęcia', 'Read from photo');
-    o.innerHTML = '<div class="sh" role="dialog" aria-label="' + ttl + '"><h3>🔍 ' + ttl + '</h3><p class="hint">' + w.OESTT('Czytam tekst na telefonie…', 'Reading text on the phone…') + '</p><img alt="' + w.OESTT('Zdjęcie', 'Photo') + '"><div class="body"></div><button type="button" class="go">' + w.OESTT('Gotowe', 'Done') + '</button></div>';
-    o.querySelector('img').src = url; document.body.appendChild(o);
-    return new Promise(function (resolve) {
-      function close() { URL.revokeObjectURL(url); o.remove(); resolve(used); }
-      o.querySelector('.go').onclick = close; o.addEventListener('click', function (e) { if (e.target === o) close(); });
-      read(blob).then(function (r) {
-        var hint = o.querySelector('.hint'), body = o.querySelector('.body');
-        if (!r.lines.length) { hint.textContent = w.OESTT('Nie znalazłem tekstu. Zrób zdjęcie bliżej i prosto, bez odblasków.', 'No text found. Take the photo closer and straight, without glare.'); return; }
-        hint.textContent = targets.length ? w.OESTT('Stuknij to, co ma trafić do pola. Nic nie wpisuję samo.', 'Tap what should go into the field. Nothing is filled in automatically.') : w.OESTT('Odczytany tekst.', 'Text read.');
-        var h = '';
-        if (targets.length > 1) h += '<div class="lbl">' + w.OESTT('Wpisz do', 'Fill in') + '</div><select>' + targets.map(function (t, i) { return '<option value="' + i + '">' + esc(t.label) + '</option>'; }).join('') + '</select>';
-        else if (targets.length) h += '<div class="lbl">' + w.OESTT('Wpisz do: ', 'Fill in: ') + esc(targets[0].label) + '</div>';
-        if (r.numbers.length) h += '<div class="lbl">' + w.OESTT('Liczby', 'Numbers') + '</div><div class="chips num">' + r.numbers.map(function (n, i) { return '<button type="button" data-k="n' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
-        h += '<div class="lbl">' + w.OESTT('Linie tekstu', 'Text lines') + '</div><div class="chips">' + r.lines.map(function (l, i) { return '<button type="button" data-k="l' + i + '">' + esc(l) + '</button>'; }).join('') + '</div>';
-        body.innerHTML = h;
-        body.querySelectorAll('[data-k]').forEach(function (b) {
-          b.onclick = function () {
-            if (!targets.length) return; var sel = body.querySelector('select'), t = targets[sel ? +sel.value : 0];
-            var k = b.getAttribute('data-k'), v = k[0] === 'n' ? r.numbers[+k.slice(1)] : r.lines[+k.slice(1)];
-            if (!put(t.el, v)) { o.querySelector('.hint').textContent = w.OESTT('Do tego pola stuknij jedną liczbę (z sekcji Liczby).', 'For this field tap a single number (from Numbers).'); return; } used++; b.classList.add('on');
-          };
-        });
-      }, function (e) { o.querySelector('.hint').textContent = e.message; });
-    });
+    var targets = (opts && opts.targets || []).filter(function (t) { return t && t.el; });
+    var url = URL.createObjectURL(blob), used = 0, r = null, cel = 0, on = {}, subs = [];
+    var hint = w.OESTT('Czytam tekst na telefonie…', 'Reading text on the phone…');
+    function dane() {
+      var mk = function (p) { return function (t, i) { return { k: p + i, tekst: t, wpisane: !!on[p + i] }; }; };
+      return { url: url, podpowiedz: hint, cele: targets.map(function (t) { return t.label; }), cel: cel,
+        liczby: r ? r.numbers.map(mk('n')) : [], linie: r && r.lines.length ? r.lines.map(mk('l')) : [] };
+    }
+    function emit() { var d = dane(); subs.slice().forEach(function (f) { try { f(d); } catch (e) { console.error(e); } }); }
+    var ctrl = { dane: dane, na: function (f) { subs.push(f); return function () { subs = subs.filter(function (x) { return x !== f; }); }; },
+      akcja: function (a, x) {
+        if (a === 'cel') { cel = Math.max(0, Math.min(targets.length - 1, +x || 0)); emit(); return; }
+        if (a !== 'wybierz' || !r || !targets.length) return;
+        var t = targets[targets.length > 1 ? cel : 0], v = x[0] === 'n' ? r.numbers[+x.slice(1)] : r.lines[+x.slice(1)];
+        if (v == null) return;
+        if (!put(t.el, v)) { hint = w.OESTT('Do tego pola stuknij jedną liczbę (z sekcji Liczby).', 'For this field tap a single number (from Numbers).'); emit(); return; }
+        used++; on[x] = 1; emit();
+      } };
+    read(blob).then(function (x) {
+      r = x;
+      if (!r.lines.length) hint = w.OESTT('Nie znalazłem tekstu. Zrób zdjęcie bliżej i prosto, bez odblasków.', 'No text found. Take the photo closer and straight, without glare.');
+      else hint = targets.length ? w.OESTT('Stuknij to, co ma trafić do pola. Nic nie wpisuję samo.', 'Tap what should go into the field. Nothing is filled in automatically.') : w.OESTT('Odczytany tekst.', 'Text read.');
+      emit();
+    }, function (e) { hint = e.message; emit(); });
+    return w.OESTCzesci.okno('OdczytArkusz', ctrl, { tytul: w.OESTT('Odczyt ze zdjęcia', 'Read from photo'), ok: w.OESTT('Gotowe', 'Done'), anuluj: false })
+      .then(function () { URL.revokeObjectURL(url); return used; });
   }
-  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   w.OESTOdczyt = { available: available, tekst: tekst, read: read, parse: parse, pick: pick, numberOf: numberOf };
 })(window);

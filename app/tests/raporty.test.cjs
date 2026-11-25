@@ -21,6 +21,8 @@ function setup(o = {}) {
     upload: async (parent, name, blob) => { const id = 'd' + (++n); files.set(id, { parent, name, blob, v: 1 }); log.push('upload ' + name); return { id }; },
     update: async (id, blob, name) => { const f = files.get(id); if (!f) throw Error('GOOGLE_HTTP_404'); f.blob = blob; f.v++; if (name) f.name = name; log.push('update ' + f.name); return { id }; }
   };
+  drive.list = async parent => [...folders].filter(([k]) => k.startsWith(parent + '/')).map(([k, id]) => ({ id, name: k.slice(parent.length + 1), mimeType: 'application/vnd.google-apps.folder' })).concat([...files].filter(([, f]) => f.parent === parent).map(([id, f]) => ({ id, name: f.name, mimeType: f.blob.type })));
+  drive.download = async id => { if (!files.has(id)) throw Error('GOOGLE_HTTP_404'); return new Uint8Array(await files.get(id).blob.arrayBuffer()); };
   return { store, db, drive, files, folders, log, setOwner: v => { owner = v; } };
 }
 const bytes = (mb, fill = 1) => new Uint8Array(Math.round(mb * MB)).fill(fill);
@@ -32,6 +34,7 @@ test('wysłany raport: Word w OEST Raporty / budynek / rodzaj, nazwa jak raport'
   const r = await t.store.sync(t.drive);
   assert.strictEqual(r.sent, 1);
   const [f] = [...t.files.values()];
+  assert.deepStrictEqual([...t.files.values()].map(f => f.name), ['Weekly Flushing TB 08112026.docx', 'Weekly Flushing TB 08112026.pdf', 'Weekly Flushing TB 08112026.json']);
   assert.strictEqual(f.name, 'Weekly Flushing TB 08112026.docx');
   assert.deepStrictEqual([...t.folders.keys()], ['root/OEST Raporty', 'f1/Tower B', 'f2/Taps Shower Flushing']);
   assert.strictEqual(f.parent, t.folders.get('f2/Taps Shower Flushing'));
@@ -47,8 +50,8 @@ test('ponowna wysyłka po dopisaniu: ten sam plik nadpisany, na Dysku jeden rapo
   const [rec] = await t.store.list();
   assert.strictEqual(rec.dirty, true); assert.strictEqual(rec.versions, 2);
   await t.store.sync(t.drive);
-  assert.strictEqual(t.files.size, 1, 'tylko ostatni raport');
-  assert.deepStrictEqual(t.log, ['upload DB-TB-EXT-1 08112026.docx', 'update DB-TB-EXT-1 08112026.docx']);
+  assert.strictEqual(t.files.size, 3, 'tylko ostatni raport');
+  assert.deepStrictEqual(t.log.filter(x => x.endsWith('.docx')), ['upload DB-TB-EXT-1 08112026.docx', 'update DB-TB-EXT-1 08112026.docx']);
   const b = [...t.files.values()][0].blob; assert.strictEqual(new Uint8Array(await b.arrayBuffer())[0], 2, 'na Dysku nowa treść'); assert.match(b.type, /wordprocessingml/);
   assert.strictEqual((await t.store.list()).length, 1);
 });
@@ -60,8 +63,8 @@ test('przerwa po wysłaniu na Dysk, przed zapisem id: bez duplikatu', async () =
   const [rec] = await t.store.list();
   const broken = t.db.get(rec.id); broken.driveId = ''; broken.dirty = true; // jak po zabiciu apki między uploadem a zapisem
   await t.store.sync(t.drive);
-  assert.strictEqual(t.files.size, 1);
-  assert.deepStrictEqual(t.log, ['upload ATS TB 08112026.docx', 'update ATS TB 08112026.docx']);
+  assert.strictEqual(t.files.size, 3);
+  assert.deepStrictEqual(t.log.filter(x => x.endsWith('.docx')), ['upload ATS TB 08112026.docx', 'update ATS TB 08112026.docx']);
 });
 
 test('plik skasowany z Dysku ręcznie: tworzony od nowa', async () => {
@@ -71,7 +74,7 @@ test('plik skasowany z Dysku ręcznie: tworzony od nowa', async () => {
   t.files.clear();
   await t.store.save(rep('AOV TB 08112026'));
   await t.store.sync(t.drive);
-  assert.strictEqual(t.files.size, 1);
+  assert.strictEqual(t.files.size, 3);
   assert.strictEqual((await t.store.list())[0].dirty, false);
 });
 
@@ -93,11 +96,11 @@ test('limit 200 MB: znikają najstarsze, tylko te już na Dysku; ostrzeżenie od
   await t.store.sync(t.drive); // wysyła i od razu pilnuje limitu
   const names = (await t.store.list()).map(r => r.name).sort();
   assert.deepStrictEqual(names, ['R2', 'R3'], 'najstarszy R1 usunięty z telefonu (jest na Dysku)');
-  assert.strictEqual(t.files.size, 3, 'na Dysku zostają wszystkie');
+  assert.strictEqual(t.files.size, 9, 'na Dysku zostają wszystkie');
 });
 
 test('zmieniony raport (stara wersja na Dysku) nie znika z telefonu', () => {
-  const p = R.plan([{ id: 'a', bytes: 150 * MB, updated: '1', driveId: 'x', dirty: true }, { id: 'b', bytes: 100 * MB, updated: '2', driveId: 'y' }], {});
+  const p = R.plan([{ id: 'a', bytes: 150 * MB, updated: '1', driveId: 'x', dirty: true }, { id: 'b', bytes: 100 * MB, updated: '2', driveId: 'y', drivePdfId: 'yp', driveSnapId: 'ys' }], {});
   assert.deepStrictEqual(p.remove, ['b']);
 });
 
@@ -121,10 +124,10 @@ test('dwa różne raporty o tej samej nazwie (dwa zadania Reactive „Leak” je
   await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.6, 2) }));
   assert.strictEqual((await t.store.list()).length, 2);
   await t.store.sync(t.drive);
-  assert.deepStrictEqual([...t.files.values()].map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
+  assert.deepStrictEqual([...t.files.values()].filter(f => f.name.endsWith('.docx')).map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
   await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.6, 3) })); // dopisane do drugiego zadania
   await t.store.sync(t.drive);
-  assert.strictEqual(t.files.size, 2, 'nadpisany tylko plik drugiego zadania');
+  assert.strictEqual(t.files.size, 6, 'nadpisany tylko plik drugiego zadania');
   const second = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026 (2).docx');
   assert.strictEqual(new Uint8Array(await second.blob.arrayBuffer())[0], 3);
   const first = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026.docx');
@@ -147,9 +150,9 @@ test('raport zwolniony z telefonu (limit) dalej „trzyma” swoją nazwę na Dy
   await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-1', folder: ['Reactive'], docx: bytes(0.6, 1), pdf: bytes(0.6) }));
   await t.store.sync(t.drive); // na Dysku → nad limitem 1 MB → zwolniony z telefonu
   assert.strictEqual((await t.store.list()).length, 0);
-  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.1, 2), pdf: null }));
+  await t.store.save(rep('REACTIVE Leak 08112026', { key: 'reactive-2', folder: ['Reactive'], docx: bytes(0.1, 2), pdf: bytes(0.1) }));
   await t.store.sync(t.drive);
-  assert.deepStrictEqual([...t.files.values()].map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
+  assert.deepStrictEqual([...t.files.values()].filter(f => f.name.endsWith('.docx')).map(f => f.name).sort(), ['REACTIVE Leak 08112026 (2).docx', 'REACTIVE Leak 08112026.docx']);
   const first = [...t.files.values()].find(f => f.name === 'REACTIVE Leak 08112026.docx');
   assert.strictEqual(new Uint8Array(await first.blob.arrayBuffer())[0], 1, 'plik pierwszego zadania nietknięty');
 });
@@ -163,7 +166,7 @@ test('spóźniony zapis starszej wysyłki nie zastępuje nowszej wersji (telefon
   const [rec] = await t.store.list();
   assert.strictEqual(rec.docx[0], 2); assert.strictEqual(rec.dirty, false);
   assert.strictEqual(new Uint8Array(await [...t.files.values()][0].blob.arrayBuffer())[0], 2);
-  assert.deepStrictEqual(t.log, ['upload ATS TB 08112026.docx']);
+  assert.deepStrictEqual(t.log.filter(x => x.endsWith('.docx')), ['upload ATS TB 08112026.docx']);
 });
 
 test('ten sam raport wysłany ponownie z nową nazwą (Reactive następnego dnia): plik na Dysku dostaje nową nazwę', async () => {
@@ -172,13 +175,13 @@ test('ten sam raport wysłany ponownie z nową nazwą (Reactive następnego dnia
   await t.store.sync(t.drive);
   await t.store.save(rep('REACTIVE Leak 09112026', { key: 'reactive-1', folder: ['Reactive'], docx: bytes(0.6, 2) }));
   await t.store.sync(t.drive);
-  assert.deepStrictEqual([...t.files.values()].map(f => f.name), ['REACTIVE Leak 09112026.docx']);
+  assert.deepStrictEqual([...t.files.values()].filter(f => f.name.endsWith('.docx')).map(f => f.name), ['REACTIVE Leak 09112026.docx']);
 });
 
 test('zwalnianie miejsca równolegle z zapisem nowej wersji: nowy Word (jeszcze nie na Dysku) nie znika', async () => {
   const t = setup({ limits: { phoneLimitMB: 1 } });
   await t.store.save(rep('DB-TB-EXT-1 08112026', { docx: bytes(0.6, 1), pdf: bytes(0.6) }));
-  t.drive.upload = async (parent, name, blob) => { const id = 'd1'; t.files.set(id, { parent, name, blob }); return { id }; };
+  t.drive.upload = async (parent, name, blob) => { const id = name; t.files.set(id, { parent, name, blob }); return { id }; };
   await t.store.sync(t.drive);
   // ręcznie przywracam rekord ponad limitem (stan „na Dysku, czysty”), potem enforce i nowa wersja naraz
   const [id] = [...t.db.keys()]; const r = t.db.get(id); Object.assign(r, { gone: false, docx: bytes(0.6, 1), pdf: bytes(0.6), bytes: 1.2 * MB, dirty: false });
@@ -190,6 +193,90 @@ test('zwalnianie miejsca równolegle z zapisem nowej wersji: nowy Word (jeszcze 
 
 // ---------- etap 2c: odzyskiwanie do edycji (Grzegorz 08/11/2026) ----------
 const snap = (x = {}) => Object.assign({ v: 1, qk: ['a', 'b'], states: ['ok', 'fail'], fields: { dzien: '2026-11-06' }, photos: [{ zid: 'z1' }] }, x);
+
+test('24/11: częściowa kopia PDF/JSON nie pozwala usunąć raportu; ponowienie nie dubluje plików', async () => {
+  for (const ext of ['pdf', 'json']) {
+    const t = setup({ limits: { phoneLimitMB: 1 } });
+    await t.store.save(rep('KOD 24112026', { snap: snap() }));
+    const upload = t.drive.upload;
+    t.drive.upload = async (parent, name, blob) => { if (name.endsWith('.' + ext)) throw Error('INTERRUPTED'); return upload(parent, name, blob); };
+    await assert.rejects(t.store.sync(t.drive), /INTERRUPTED/);
+    assert.equal((await t.store.list()).length, 1);
+    assert.equal((await t.store.stats()).pending, 1);
+    t.drive.upload = upload;
+    await t.store.sync(t.drive);
+    assert.equal(t.files.size, 3);
+    assert.equal((await t.store.list()).length, 0);
+  }
+});
+
+test('24/11: pełny odczyt z Dysku na nowym telefonie: Word + PDF + snap i zwykła lista', async () => {
+  const t = setup();
+  await t.store.save(rep('KOD 24112026', { snap: snap() }));
+  await t.store.sync(t.drive);
+  const before = (await t.store.list())[0];
+  t.db.clear();
+  const copies = await t.store.listaDysku(t.drive);
+  assert.equal(copies.length, 1);
+  const restored = await t.store.zDysku(copies[0].id);
+  assert.deepEqual(restored.docx, before.docx);
+  assert.deepEqual(restored.pdf, before.pdf);
+  assert.deepEqual(restored.snap, before.snap);
+  assert.equal(restored.dirty, false);
+  assert.equal((await t.store.list()).length, 1);
+  assert.equal((await t.store.stats()).onDrive, 1);
+});
+
+test('24/11: brak części podczas pobierania nie zapisuje niepełnego raportu', async () => {
+  const t = setup();
+  await t.store.save(rep('KOD 24112026', { snap: snap() }));
+  await t.store.sync(t.drive);
+  const [copy] = await t.store.listaDysku(t.drive);
+  t.db.clear();
+  const download = t.drive.download;
+  t.drive.download = async id => { if (id === copy.drivePdfId) throw Error('OFFLINE'); return download(id); };
+  await assert.rejects(t.store.zDysku(copy.id), /OFFLINE/);
+  assert.equal((await t.store.list()).length, 0);
+});
+
+test('24/11: stare potwierdzenie tylko Worda nie pozwala zwolnić miejsca', () => {
+  const p = R.plan([{ id: 'old', bytes: 250 * MB, driveId: 'word', dirty: false }]);
+  assert.deepEqual(p.remove, []);
+});
+
+test('24/11: ponowna wysyłka nadpisuje Word, PDF i dane, zachowując wszystkie identyfikatory', async () => {
+  const t = setup();
+  await t.store.save(rep('KOD 24112026', { snap: snap() }));
+  await t.store.sync(t.drive);
+  const ids = [...t.files.keys()];
+  await t.store.save(rep('KOD 24112026', { docx: bytes(0.1, 7), pdf: bytes(0.1, 8), snap: snap({ states: ['ok', 'ok'] }) }));
+  await t.store.sync(t.drive);
+  assert.deepEqual([...t.files.keys()], ids);
+  assert.ok([...t.files.values()].every(f => f.v === 2));
+  const pdf = [...t.files.values()].find(f => f.name.endsWith('.pdf'));
+  const json = [...t.files.values()].find(f => f.name.endsWith('.json'));
+  assert.equal(new Uint8Array(await pdf.blob.arrayBuffer())[0], 8);
+  assert.deepEqual(JSON.parse(await json.blob.text()).snap.states, ['ok', 'ok']);
+});
+
+test('24/11: zmiana konta w trakcie pobierania nie zapisuje kopii pod innym kontem', async () => {
+  const t = setup();
+  await t.store.save(rep('KOD 24112026', { snap: snap() }));
+  await t.store.sync(t.drive);
+  const [copy] = await t.store.listaDysku(t.drive);
+  t.db.clear();
+  const download = t.drive.download;
+  t.drive.download = async id => { const bytes = await download(id); if (id === copy.drivePdfId) t.setOwner('other@example.com'); return bytes; };
+  await assert.rejects(t.store.zDysku(copy.id), /GOOGLE_ACCOUNT_MISMATCH/);
+  assert.equal(t.db.size, 0);
+});
+
+test('24/11: raport bez PDF zostaje na telefonie z jawnym błędem synchronizacji', async () => {
+  const t = setup();
+  await t.store.save(rep('KOD 24112026', { pdf: null }));
+  await assert.rejects(t.store.sync(t.drive), /REPORT_PDF/);
+  assert.equal((await t.store.stats()).pending, 1);
+});
 
 test('2c: raport zapamiętuje dane inspekcji; ponowny zapis bez danych ich nie kasuje', async () => {
   const t = setup();
@@ -218,8 +305,8 @@ test('2c: Update tej samej inspekcji = ten sam wpis i ten sam plik na Dysku (nad
   await t.store.setRec(a.id, true);
   await t.store.save(rep('DB-TB-1 06112026', { key: 'DB-TB-1 06112026', at: 200, docx: bytes(0.6, 9), snap: snap({ states: ['ok', 'ok'] }) }));
   await t.store.sync(t.drive);
-  assert.strictEqual(t.files.size, 1, 'jeden plik na Dysku');
-  assert.deepStrictEqual(t.log, ['upload DB-TB-1 06112026.docx', 'update DB-TB-1 06112026.docx']);
+  assert.strictEqual(t.files.size, 3, 'jeden plik na Dysku');
+  assert.deepStrictEqual(t.log.filter(x => x.endsWith('.docx')), ['upload DB-TB-1 06112026.docx', 'update DB-TB-1 06112026.docx']);
   const [r] = await t.store.recovered();
   assert.ok(r.rec > 0, 'nadal Odzyskana'); assert.deepStrictEqual(r.snap.states, ['ok', 'ok']); assert.strictEqual(r.versions, 2);
 });

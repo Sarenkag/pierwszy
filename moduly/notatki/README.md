@@ -17,8 +17,11 @@ Nic nie trafia do raportu samo: „✨ Połącz notatki w komentarz” daje prop
 
 ## API
 
+Od 23/11/2026 moduł nic nie rysuje: pasek, okienka i ekran nagrywania to części Ionic szkieletu (`moduly/szkielet/src/czesci/Notatki.vue`, `NotatkiOkno.vue`, `NotatkiPropozycja.vue`, `NotatkaNowa.vue`, `Nagrywanie.vue`), a moduł daje im kontrolery z logiką (bez zmian). Ekran Vue: `<Notatki :T="T" :opcje="{ scope, ctx, title, join, ok, icons, onJoin, onSaved, onError }" />`; stary kod – `mount` jak dotąd. `OESTNotatki.pasek(opcje)` → kontroler paska (używa go `Notatki.vue`).
+
+
 - `OESTNotatki.bind(przycisk, { scope(), ctx(), onSaved(note), onError(err) })` – przycisk nagrywania; może być kilka ekranów, nagranie trafia do tego, którego przyciskiem zaczęto.
-- `OESTNotatki.mount(pudełko, { scope(), ctx(), title(), join, ok, onJoin(tekst), onSaved, onError })` – gotowy pasek „🎤 Nagraj notatkę · 📝 Notatki N · ✨ Połącz…” (Reactive, Hand over); licznik odświeża się sam, pasek ukryty bez `scope()`.
+- `OESTNotatki.mount(pudełko, { scope(), ctx(), title(), join, ok, icons, onJoin(tekst), onSaved, onError })` – gotowy pasek „Nagraj notatkę · Notatki N · Połącz…” (część `Notatki.vue` w pudełku; przyciski `[data-nt-bar=rec|add|open|n|join]`) (Reactive, Hand over); licznik odświeża się sam, pasek ukryty bez `scope()`.
 - `OESTNotatki.offer(scope, { ctx, ok })` → tekst albo `null` – okienko z propozycją do poprawienia i ostrzeżeniem o liczbach; `propose(scope, ctx)` → `{ text, miss }` (to samo bez okienka, inspekcja).
 - `OESTNotatki.busy()` – trwa nagrywanie (ekran nie powinien się wtedy zamykać).
 - `OESTNotatki.media(scope)` → nagrania notatek jako dowody `{ id, kind:'audio', blob, … }` (Hand over zapisuje je przy wpisie).

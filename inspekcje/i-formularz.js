@@ -14,7 +14,7 @@
     cur.code = code; cur.formType = cur.type.id; cur.mode = mode;
     var d = devOf(code);
     cur.loc = d.loc; cur.where = where(d);
-    $("formTitle").textContent = code;
+    tytulFormularza = code;
     $("formSub").textContent = cur.where + " · " + cur.type.name;
     $("ckTitle").textContent = cur.type.title;
     if (fresh && mode === "item" && batch.items[code]) restoreItem(batch.items[code]); // ten sam formularz: zdjęcia już są, nie dublować
@@ -55,26 +55,25 @@
     if (!first) { patch.thumb = ""; thumbFor = null; }
     PPM.setStage(t, patch); if (open) renderPpmBar();
     if (first && thumbFor !== first.url) {
-      thumbFor = first.url; var img = new Image();
-      img.onload = function () { try { var c = document.createElement("canvas"), k = 96 / Math.max(img.width, img.height); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); if (PPM.stage(t)) PPM.setStage(t, { thumb: c.toDataURL("image/jpeg", 0.6) }); } catch (e) {} };
-      img.src = first.url;
+      thumbFor = first.url; var Z = window.OESTZdjecia; // miniatura etapu PPM: wczytanie i zmniejszenie z moduly/zdjecia
+      fetch(first.url).then(function (r) { return r.blob(); }).then(Z.wczytaj).then(function (img) { if (PPM.stage(t)) PPM.setStage(t, { thumb: Z.plotno(img, 96).toDataURL("image/jpeg", 0.6) }); }).catch(function () {});
     }
   }
   // Pokazuje tylko panele potrzebne w danym trybie
   function formMode() {
     var m = cur.mode;
-    document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0; });
+    document.querySelectorAll("[data-m]").forEach(function (el) { el.hidden = el.getAttribute("data-m").split(" ").indexOf(m) < 0 || (el.matches("[data-ui~=fold]") && el.dataset.expanded !== "true"); });
     var ask = !!cur.type.ask && m !== "sum", quick = !!cur.type.quick; // quick: inspekcja z listy PPM bez własnych pytań
-    if (ask || quick) $("faults").closest(".panel").hidden = true;
-    $("photos").closest(".panel").style.order = ""; // kolejność daje form-ui.js: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
+    if (ask || quick) $("faults").closest("[data-ui~=panel]").hidden = true;
+     // kolejność daje Formularz.vue: Imię/Data → zdjęcia → pytania (tak samo w każdej inspekcji)
     $("allOk").textContent = ask ? window.OESTT("Wszystko TAK", "All YES") : window.OESTT("Wszystkie zaznaczone → OK", "All marked → OK");
     $("legend").hidden = !!cur.type.ask;
     // formularz pomiarów (024): tylko temperatury, data i podpis
     var temp = !!cur.type.temp;
     $("tempBox").hidden = !temp || m === "sum";
-    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; }); // raport pomiarów nie ma zdjęć
-    if (cur.type.plain) $("faults").closest(".panel").hidden = true;
-    if (cur.type.folder) [$("faults"), $("ck"), $("ov-1"), $("komentarz")].forEach(function (el) { el.closest(".panel").hidden = true; });
+    if (temp) [$("faults"), $("ck"), $("photos"), $("sheetPhotos"), $("ov"), $("komentarz")].forEach(function (el) { el.closest("[data-ui~=panel]").hidden = true; }); // raport pomiarów nie ma zdjęć
+    if (cur.type.plain) $("faults").closest("[data-ui~=panel]").hidden = true;
+    if (cur.type.folder) [$("faults"), $("ck"), $("ov"), $("komentarz")].forEach(function (el) { el.closest("[data-ui~=panel]").hidden = true; });
     $("flushBox").hidden = !cur.type.flush || m === "sum";
     applyNeeds();
   }
@@ -89,9 +88,9 @@
     if (F) { if (fl.on !== !!n.q) { fl.on = !!n.q; renderFlush(); } syncSendHint(); return; }
     syncSendHint();
     if (!RD.pytaniaMozliwe(cur.type) || cur.mode !== "one") return;
-    var ckp = $("ck").closest(".panel");
+    var ckp = $("ck").closest("[data-ui~=panel]");
     if (!n.q) {
-      ckp.hidden = true; $("faults").closest(".panel").hidden = true;
+      ckp.hidden = true; $("faults").closest("[data-ui~=panel]").hidden = true;
       if (states.some(function (x) { return x !== "na"; })) { qSaved = states.slice(); states = states.map(function () { return "na"; }); renderChecks(); renderFaults(); }
     } else {
       ckp.hidden = false;
@@ -129,36 +128,31 @@
   $("sendCfg").addEventListener("click", function () {
     var n = needsNow(); if (!n || !window.OESTPrzycisk) return;
     var sp = sendParts(), to = recipientsFor({ sp: 1, sm: 1, se: 1, sg: 1 });
-    function cb(k, label, dis, note) { return '<label class="need' + (dis ? " dis" : "") + '"><input type="checkbox" data-sn="' + k + '"' + (n[k] && !dis ? " checked" : "") + (dis ? " disabled" : "") + "><span>" + esc(label) + (note ? " <small>" + esc(note) + "</small>" : "") + "</span></label>"; }
-    var box = document.createElement("div"); box.className = "sendcfg-box";
-    box.innerHTML = '<div class="sct">' + window.OESTT("Co wysłać", "What to send") + "</div>" +
-      cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")) +
-      cb("q", sp.qLabel, !sp.q) +
-      cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")) +
-      cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t) +
-      '<div class="sct">' + window.OESTT("Jak", "How") + "</div>" +
-      '<label class="need"><input type="radio" name="sn-one" value="1"' + (n.one ? " checked" : "") + "><span>" + window.OESTT("Scalone w jeden dokument", "Merged into one document") + "</span></label>" +
-      '<label class="need"><input type="radio" name="sn-one" value="0"' + (n.one ? "" : " checked") + "><span>" + window.OESTT("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") + "</span></label>" +
-      '<div class="sct">' + window.OESTT("Format", "Format") + "</div>" + cb("xp", "PDF") + cb("xw", "Word", false, window.OESTT("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)")) +
-      '<div class="sct">' + window.OESTT("Do kogo", "To") + "</div>" +
-      cb("sp", window.OESTT("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("sm", window.OESTT("Mój firmowy e-mail", "My work email"), !to.me, to.me || window.OESTT("brak adresu w Mój profil", "no address in My Profile")) +
-      cb("se", window.OESTT("Inżynier", "Engineer"), !to.eng, to.eng || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")) +
-      cb("sg", window.OESTT("Manager", "Manager"), !to.man, to.man || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"));
+    function cb(k, label, dis, note) { return { klucz: k, tekst: label, blokada: !!dis, wybrane: !!(n[k] && !dis), uwaga: note }; }
+    var box = document.createElement("ion-list");
+    widokInspekcji(box, "wysylka", { sekcje: [
+      { tytul: window.OESTT("Co wysłać", "What to send"), pola: [cb("f", window.OESTT("Zdjęcia formularza (całość, strona po stronie)", "Form photos (whole form, page by page)")), cb("q", sp.qLabel, !sp.q), cb("p", window.OESTT("Zdjęcia z inspekcji (ogólne)", "Inspection photos (general)")), cb("t", window.OESTT("Zdjęcia do pytań (z nazwą punktu)", "Question photos (with the point name)"), !sp.t)] },
+      { tytul: window.OESTT("Jak", "How"), pola: [
+        { radio: true, wartosc: "1", wybrane: !!n.one, tekst: window.OESTT("Scalone w jeden dokument", "Merged into one document") },
+        { radio: true, wartosc: "0", wybrane: !n.one, tekst: window.OESTT("Osobne pliki (formularz, raport, zdjęcia)", "Separate files (form, report, photos)") }
+      ] },
+      { tytul: window.OESTT("Format", "Format"), pola: [cb("xp", "PDF"), cb("xw", "Word", false, window.OESTT("(tylko raport; zdjęcia zawsze w PDF)", "(report only; photos always PDF)"))] },
+      { tytul: window.OESTT("Do kogo", "To"), pola: [cb("sp", window.OESTT("Mój prywatny e-mail", "My private email"), !to.priv, to.priv || window.OESTT("brak adresu w Mój profil", "no address in My Profile")), cb("sm", window.OESTT("Mój firmowy e-mail", "My work email"), !to.me, to.me || window.OESTT("brak adresu w Mój profil", "no address in My Profile")), cb("se", window.OESTT("Inżynier", "Engineer"), !to.eng, to.eng || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail")), cb("sg", window.OESTT("Manager", "Manager"), !to.man, to.man || window.OESTT("ustaw w Ustawienia → Wysyłka", "set in Settings → Mail"))] }
+    ] });
     OESTPrzycisk.ask({ title: window.OESTT("Ustawienia wysyłki", "Sending settings"), node: box, ok: window.OESTT("Zapisz jako domyślne", "Save as default"), cancel: window.OESTT("Zamknij", "Close") }).then(function (save) {
       if (!save || !cur.ppm || !PPM.setNeeds) return;
-      var patch = {}; box.querySelectorAll("input[data-sn]:not(:disabled)").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
-      var r = box.querySelector('input[name="sn-one"]:checked'); patch.one = !r || r.value === "1";
+      var patch = {}; box.querySelectorAll("ion-checkbox[data-sn]:not([disabled])").forEach(function (el) { patch[el.getAttribute("data-sn")] = el.checked; });
+      var r = box.querySelector('ion-radio-group'); patch.one = !r || String(r.value) === "1"; // jedyna grupa w oknie: „Jak” (Wysylka.vue)
       var qWas = !!n.q; PPM.setNeeds(cur.ppm, patch);
       if (patch.q != null && patch.q !== qWas && !cur.type.flush) formMode();
       applyNeeds(patch.q && !qWas); ppmTrack(false); try { suggestOverall(); } catch (e) {} updateFormHint(); scheduleDraft();
-    });
+    }).finally(function () { if (box.__oestCzesc) box.__oestCzesc.unmount(); });
   });
   // dodane zdjęcie = chcę je w raporcie: odznaczona kategoria zaznacza się sama (Grzegorz 04/11 11:28)
   function needOn(k) { var n = needsNow(); if (n && !n[k] && cur.ppm && PPM.setNeeds) { var p = {}; p[k] = true; PPM.setNeeds(cur.ppm, p); applyNeeds(); } }
   function resetForm() {
     if (draftT && cur.type && cur.formType === cur.type.id) saveDraftNow(); // zmiana sprzed chwili (przed upływem 300 ms) idzie do szkicu poprzedniego formularza, zanim go wyczyścimy
-    draftOn = false; clearTimeout(draftT); draftT = 0; if ($("restoreIns")) { $("restoreIns").hidden = true; restoreList = []; restorePdf = null; }
+    draftOn = false; clearTimeout(draftT); draftT = 0;
     roomNotes = {};
     restoring = 0; formSeq++; cur.sumDevs = null; pendingPh = 0; keptSaved = []; recLost = 0; built = null; trOriginal = null; override = {}; faultsOn = {}; dateTouched = false; susN = {}; rsel = {};
     photos.forEach(function (p) { URL.revokeObjectURL(p.url); }); photos = []; renderPhotos(); $("sugBox").hidden = true;
@@ -166,7 +160,7 @@
     $("dzien").value = NZ.dzienIso(new Date()); $("podpis").value = cfg.insp; $("dateSug").hidden = true;
     $("komentarz").value = ""; $("undoTr").hidden = true; $("trHint").textContent = ""; mdSeq++; $("mdBox").hidden = true; $("mdRun").disabled = false;
     if ($("ntN")) { $("ntN").textContent = "0"; $("ntJoin").hidden = true; }
-    $("ov-1").checked = true; $("q-0").checked = true;
+    $("ov").value = "Satisfactory"; $("quote").value = "";
     temps = (cur.type.slots || []).map(function () { return ""; }); renderTemps();
     fl = OESTFlush.start(cur.type.flush || {}); renderFlush();
   }

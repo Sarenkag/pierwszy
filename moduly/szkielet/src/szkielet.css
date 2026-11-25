@@ -40,3 +40,590 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --box-shadow: 0 8px 24px rgba(120, 90, 255, .4);
   --border-radius: 14px;
 }
+/* Kolory stanów (pigułka statusu, lampki, terminy) – JEDNO miejsce dla całej apki (Grzegorz 07/11/2026): Zaległa #ef3b36, Gotowa #00d84a,
+   W trakcie żółty, Wstrzymana niebieski, Nie rozpoczęta szary, Odzyskana fioletowy. Tylko zmienne palety Ionic. */
+:root:root {
+  --ion-color-danger: #ef3b36; --ion-color-danger-rgb: 239, 59, 54; --ion-color-danger-contrast: #ffffff; --ion-color-danger-contrast-rgb: 255, 255, 255; --ion-color-danger-shade: #d2342f; --ion-color-danger-tint: #f14f4a;
+  --ion-color-success: #00d84a; --ion-color-success-rgb: 0, 216, 74; --ion-color-success-contrast: #000000; --ion-color-success-contrast-rgb: 0, 0, 0; --ion-color-success-shade: #00be41; --ion-color-success-tint: #1adc5c;
+  --ion-color-warning: #ffd23f; --ion-color-warning-rgb: 255, 210, 63; --ion-color-warning-contrast: #000000; --ion-color-warning-contrast-rgb: 0, 0, 0; --ion-color-warning-shade: #e0b937; --ion-color-warning-tint: #ffd752;
+  --ion-color-secondary: #3b82f6; --ion-color-secondary-rgb: 59, 130, 246; --ion-color-secondary-contrast: #ffffff; --ion-color-secondary-contrast-rgb: 255, 255, 255; --ion-color-secondary-shade: #3472d8; --ion-color-secondary-tint: #4f8ff7;
+  --ion-color-tertiary: #a35bff; --ion-color-tertiary-rgb: 163, 91, 255; --ion-color-tertiary-contrast: #ffffff; --ion-color-tertiary-contrast-rgb: 255, 255, 255; --ion-color-tertiary-shade: #8f50e0; --ion-color-tertiary-tint: #ac6bff;
+}
+/* Kolory rysowania w edytorze zdjęć (moduly/aparat, 6 kolorów jak dawniej) jako kolory Ionic: przycisk koloru pokazuje dokładnie ten kolor. Tylko zmienne palety. */
+.ion-color-ed-czerwony { --ion-color-base: #ff2d2d; --ion-color-base-rgb: 255, 45, 45; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #e02727; --ion-color-tint: #ff4242; }
+.ion-color-ed-zolty { --ion-color-base: #ffd400; --ion-color-base-rgb: 255, 212, 0; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0ba00; --ion-color-tint: #ffd819; }
+.ion-color-ed-zielony { --ion-color-base: #21d36b; --ion-color-base-rgb: 33, 211, 107; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #1db95e; --ion-color-tint: #37d779; }
+.ion-color-ed-niebieski { --ion-color-base: #2f8bff; --ion-color-base-rgb: 47, 139, 255; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #297ae0; --ion-color-tint: #4396ff; }
+.ion-color-ed-bialy { --ion-color-base: #ffffff; --ion-color-base-rgb: 255, 255, 255; --ion-color-contrast: #000000; --ion-color-contrast-rgb: 0, 0, 0; --ion-color-shade: #e0e0e0; --ion-color-tint: #ffffff; }
+.ion-color-ed-czarny { --ion-color-base: #111111; --ion-color-base-rgb: 17, 17, 17; --ion-color-contrast: #ffffff; --ion-color-contrast-rgb: 255, 255, 255; --ion-color-shade: #0e0e0e; --ion-color-tint: #282828; }
+/* Wspólne moduły (aparat, notatki, ładowanie, odczyt) – wygląd jak na main (Grzegorz 23/11/2026: przeniesione ekrany wyglądają TAK SAMO):
+   okienko #161a34 z ramką i pogrubionym tytułem, przyciski 14 px („duch” #222746 z jasną ramką, główny gradientem z poświatą),
+   karty notatek, pasek notatek ze „szkła”, ekran nagrywania z pulsującym mikrofonem, podgląd i edytor zdjęć, kółko „pracuję”.
+   Przeniesione z CSS modułów na main (moduly/przycisk .oest-ask, moduly/notatki .nt-*, .oest-rec, moduly/aparat .oest-editor / podgląd,
+   moduly/ladowanie .oest-load / .oest-inline). Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). Tryb md jak reszta apki. */
+/* okienko (OESTOkna.okno z „wyglad”): wysokość z treści, bez ✕, pogrubiony tytuł */
+ion-modal[data-oest-okno] { --width: min(calc(100% - 34px), 358px); --height: auto; --max-height: calc(100% - 32px); --border-radius: 18px; --background: #161a34;
+  --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid; --box-shadow: 0 16px 40px rgba(0, 0, 0, .5); --backdrop-opacity: .55; }
+ion-modal[data-oest-okno] .ion-page { position: relative; display: block; contain: content; }
+.oest-okno { padding: 18px; color: #fff; font: 15px/1.4 var(--font-body, system-ui), sans-serif; }
+.oest-okno-tytul { display: flex; align-items: center; gap: 5px; font-size: 17px; font-weight: 650; margin-bottom: 6px; }
+.oest-okno-tytul ion-icon { flex: none; font-size: 17px; }
+.oest-okno-tresc { max-height: 62vh; overflow: auto; margin: 0 0 14px; }
+.oest-okno-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oest-okno-rzad[data-jeden] { grid-template-columns: 1fr; }
+ion-button.oest-okno-b { height: 48px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif;
+  --border-radius: 14px; --padding-start: 10px; --padding-end: 10px; --color: #fff; }
+ion-modal[data-oest-okno] ion-button.oest-okno-b:not([fill=outline]) { --box-shadow: none; }
+ion-button.oest-okno-b[fill=outline] { --background: #222746; --background-hover: #222746; --background-activated: #2a2f55; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --box-shadow: none; }
+ion-modal[data-oest-okno] ion-button.oest-okno-b[data-zle]:not([fill=outline]) { --background: linear-gradient(90deg, #ff5d6c, #e0405a); --background-hover: linear-gradient(90deg, #ff5d6c, #e0405a); --background-activated: linear-gradient(90deg, #ff5d6c, #e0405a); }
+/* treść okienek notatek (main: .nt-pop) */
+.oest-nt { display: flex; flex-direction: column; gap: 8px; font: 15px/1.4 var(--font-body, system-ui), sans-serif; color: var(--ink, #eef1ff); }
+.oest-nt-h { color: var(--muted, #9aa3cc); font-size: 13px; margin: -2px 0 2px; }
+.oest-nt-pusto { color: var(--muted, #9aa3cc); text-align: center; padding: 14px 0; }
+.oest-nt-karta { border: 1px solid var(--line, rgba(255, 255, 255, .12)); background: rgba(255, 255, 255, .05); border-radius: 14px; padding: 10px; }
+.oest-nt-m { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted, #9aa3cc); margin-bottom: 5px; }
+.oest-nt-tag { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 1px 8px; border-radius: 9px; border: 1px solid rgba(61, 220, 132, .6); color: var(--ok, #3ddc84); }
+.oest-nt-tag[data-kolor=warning] { border-color: rgba(255, 210, 63, .6); color: var(--warn, #ffd23f); }
+.oest-nt-tag[data-kolor=medium] { border-color: var(--line, rgba(255, 255, 255, .2)); color: var(--muted, #9aa3cc); }
+.oest-nt-en { font-size: 14.5px; }
+.oest-nt-pl { font-size: 12.5px; color: var(--muted, #9aa3cc); margin-top: 4px; font-style: italic; }
+.oest-nt-blad { font-size: 12.5px; color: var(--warn, #ffd23f); margin-top: 4px; }
+.oest-nt-ic { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+.oest-nt-tabs, .oest-nt-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+ion-button.oest-nt-b { height: 48px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif; white-space: normal; opacity: 1;
+  --border-radius: 14px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .18); --background: #222746;
+  --background-hover: #222746; --background-activated: #2a2f55; --color: #fff; --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+ion-button.oest-nt-b[data-on] { --background: rgba(124, 132, 255, .25); --border-color: rgba(124, 132, 255, .7); }
+ion-button.oest-nt-b[data-nt=del] { --color: var(--bad, #ff4d5e); }
+ion-button.oest-nt-b[data-nt=del][data-pewne] { --background: rgba(255, 77, 94, .18); --border-color: rgba(255, 77, 94, .7); }
+ion-modal[data-oest-okno] ion-button.oest-nt-b[data-nt=save]:not([fill=outline]) { --border-width: 0; --box-shadow: none; }
+ion-button.oest-nt-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-nt-b ion-icon[slot=icon-only] { margin: 0; }
+.oest-nt ion-item { --background: rgba(255, 255, 255, .07); --border-radius: 12px; --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid;
+  --inner-border-width: 0; --highlight-height: 0; --padding-start: 10px; --inner-padding-end: 10px; --min-height: 108px; }
+.oest-nt ion-item ion-textarea { font: 15px/21px var(--font-body, system-ui), sans-serif; --padding-top: 10px; --padding-bottom: 10px; min-height: 108px; }
+.oest-nt-warn { color: var(--warn, #ffd23f); font-size: 13px; min-height: 1.4em; }
+/* pasek notatek w ekranie (main: .nt-bar) – przyciski ze „szkła”, nagrywanie podbarwione na czerwono, ponumerowane ikonki, „Notatki N” */
+.oest-ntp-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+ion-button.oest-ntp-b { height: 48px; min-width: 0; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui), sans-serif; white-space: nowrap;
+  --border-radius: 14px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .12)); --background: var(--panel, rgba(255, 255, 255, .06));
+  --background-hover: var(--panel, rgba(255, 255, 255, .06)); --background-activated: rgba(255, 255, 255, .1); --color: var(--ink, #eef1ff); --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+ion-button.oest-ntp-b::part(native) { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+ion-button.oest-ntp-b[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --background-hover: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); touch-action: none; -webkit-user-select: none; user-select: none; }
+ion-button.oest-ntp-b ion-icon { font-size: 17px; }
+ion-button.oest-ntp-b ion-icon + ion-icon { font-size: 13px; margin-left: -3px; margin-right: 3px; }
+ion-button.oest-ntp-b[data-nt-bar=join] { width: 100%; margin-top: 8px; }
+.oest-ntp-ikony { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; }
+ion-button.oest-ntp-i { flex: none; height: 36px; min-width: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 14px var(--font-body, system-ui), sans-serif;
+  --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: rgba(255, 255, 255, .05);
+  --background-hover: rgba(255, 255, 255, .05); --color: var(--ink, #fff); --padding-start: 10px; --padding-end: 10px; --box-shadow: none; }
+ion-button.oest-ntp-i[data-stan=w] { --border-color: rgba(255, 210, 63, .6); }
+ion-button.oest-ntp-i[data-stan=busy] { opacity: .55; }
+ion-button.oest-ntp-i ion-icon { font-size: 14px; margin-right: 1px; }
+ion-button.oest-ntp-i[data-nt-bar=open] { margin-left: auto; }
+.oest-ntp-n { display: inline-block; min-width: 22px; margin-left: 4px; padding: 0 7px; box-sizing: border-box; border-radius: 11px; background: rgba(124, 132, 255, .25); border: 1px solid rgba(124, 132, 255, .6); font-size: .8rem; line-height: 20px; text-align: center; }
+/* nagrywanie notatki (main: .oest-rec) – mikrofon 170 px z pulsowaniem, czas, postęp, podpowiedź, „Zakończ” */
+ion-modal[data-oest-czesc=Nagrywanie] { --background: rgba(10, 14, 31, .86); --backdrop-opacity: 0; }
+ion-modal[data-oest-czesc=Nagrywanie]::part(content) { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.oest-rec { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 22px; color: var(--ink, #eef1ff); font: 600 20px var(--font-body, system-ui), sans-serif; touch-action: none; }
+.oest-rec-mic { width: 170px; height: 170px; border-radius: 50%; background: #e53935; display: flex; align-items: center; justify-content: center; animation: oestPulse 1s ease-in-out infinite; }
+.oest-rec-mic ion-icon { font-size: 84px; color: #fff; }
+.oest-rec-t { font-size: 34px; font-variant-numeric: tabular-nums; }
+.oest-rec ion-progress-bar { width: 70%; height: 8px; border-radius: 4px; --background: rgba(255, 255, 255, .12); --progress-background: linear-gradient(90deg, #5b7cff, #a35bff); }
+.oest-rec-h { font-weight: 400; font-size: 16px; color: var(--muted, #9aa3cc); text-align: center; padding: 0 24px; }
+ion-button.oest-rec-b { height: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 650 18px var(--font-body, system-ui), sans-serif; --padding-start: 40px; --padding-end: 40px; --border-radius: 14px; }
+@keyframes oestPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(229, 57, 53, .7); } 50% { transform: scale(1.08); box-shadow: 0 0 0 30px rgba(229, 57, 53, 0); } }
+@media (prefers-reduced-motion: reduce) { .oest-rec-mic { animation: none; } }
+/* podgląd zdjęcia (main: .oest-review) – zdjęcie na środku, komunikat, Powtórz · Edytuj · OK */
+ion-modal[data-oest-czesc=Aparat] { --background: #05070c; }
+.oest-podglad { position: absolute; inset: 0; display: flex; flex-direction: column; background: #05070c; }
+.oest-podglad-scena { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: max(44px, calc(8px + var(--oest-gora, env(safe-area-inset-top, 0px)))) 8px 8px; }
+.oest-podglad-scena img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+.oest-podglad-msg { margin: 0; padding: 0 16px; color: #f3c76b; font: 500 14px system-ui; min-height: 18px; }
+.oest-podglad-rzad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 12px 16px max(56px, calc(16px + var(--ion-safe-area-bottom, 0px))); }
+ion-button.oest-podglad-b { height: 56px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 16px system-ui; --border-radius: 14px; --padding-start: 4px; --padding-end: 4px; --color: #fff; }
+ion-button.oest-podglad-b[fill=outline] { --background: #151a22; --background-hover: #151a22; --background-activated: #1d232d; --border-width: 1px; --border-style: solid; --border-color: #3a4152; --box-shadow: none; }
+ion-modal[data-oest-czesc=Aparat] ion-button.oest-podglad-b:not([fill=outline]) { font-weight: 700; --box-shadow: none; }
+ion-button.oest-podglad-b ion-icon { font-size: 16px; margin-right: 4px; }
+/* edytor zdjęć (main: .oest-editor) – Anuluj (tekst) · Cofnij (szkło) · Zapisz (gradient), panel ze szkła z ramkami grup, kropki kolorów i grubości */
+ion-modal[data-oest-czesc=EdytorZdjec] { --background: var(--bg, #0a0e1f); }
+.oest-ed { --ed-w: clamp(30px, calc((100vw - 100px) / 7), 44px); position: absolute; inset: 0; display: flex; flex-direction: column; touch-action: none; user-select: none;
+  background: var(--bg, #0a0e1f); color: var(--ink, #eef1ff); font-family: var(--font-body, system-ui); }
+.oest-ed-top { display: flex; gap: 8px; align-items: center; padding: max(44px, calc(10px + var(--oest-gora, env(safe-area-inset-top, 0px)))) 12px 8px; }
+.oest-ed-top > span { flex: 1; }
+ion-button.oest-ed-b { height: 44px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 15px var(--font-body, system-ui); --border-radius: 14px; --padding-start: min(16px, 3.6vw); --padding-end: min(16px, 3.6vw);
+  --border-width: 1px; --border-style: solid; --border-color: transparent; --color: var(--ink, #eef1ff); }
+/* wąski ekran (≤ 340 px): Anuluj / Cofnij / Zapisz mniejszą czcionką i z mniejszym marginesem bocznym, wysokość 44 px bez zmian (Grzegorz 25.11.2026) */
+@media (max-width: 340px) { ion-button.oest-ed-b { font-size: 13px; --padding-start: 9px; --padding-end: 9px; } }
+ion-button.oest-ed-b[data-a=cancel] { --background: transparent; --background-hover: transparent; --color: var(--muted, #9aa3cc); --box-shadow: none; }
+ion-button.oest-ed-b[data-a=undo] { --background: var(--panel, rgba(255, 255, 255, .06)); --background-hover: var(--panel, rgba(255, 255, 255, .06)); --border-color: var(--line, rgba(255, 255, 255, .12)); --box-shadow: none; }
+ion-button.oest-ed-b[data-a=save] { font-weight: 700; --color: #fff; --padding-start: min(20px, 4.5vw); --padding-end: min(20px, 4.5vw); --box-shadow: 0 4px 18px rgba(124, 132, 255, .35); }
+ion-button.oest-ed-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-ed-b ion-spinner { width: 16px; height: 16px; margin-right: 6px; color: #fff; }
+.oest-ed-scena { flex: 1; min-height: 0; } /* odstęp 6 px wokół zdjęcia liczy moduł (fit), zdjęcie na środku sceny */
+.oest-ed-scena canvas { border-radius: 10px; }
+.oest-ed-panel { margin: 6px 12px max(44px, calc(14px + var(--ion-safe-area-bottom, 0px))); padding: 10px 10px 12px; border: 1px solid var(--line, rgba(255, 255, 255, .12)); border-radius: 18px; background: rgba(255, 255, 255, .04); }
+.oest-ed-rzad { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.oest-ed-rzad[data-styl] { align-items: center; }
+.oest-ed-grp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.oest-ed-grp > small { font-size: 12px; color: var(--muted, #9aa3cc); font-weight: 600; }
+.oest-ed-seg { display: flex; gap: 2px; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line, rgba(255, 255, 255, .12)); }
+.oest-ed-sep { height: 1px; background: var(--line, rgba(255, 255, 255, .12)); margin: 10px 2px; }
+.oest-ed-kolory { display: flex; gap: 2px; }
+ion-button.oest-ed-t { width: var(--ed-w); height: 44px; margin: 0; font: 600 18px var(--font-body, system-ui); line-height: 1;
+  --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --border-radius: 11px; --border-width: 1px; --border-style: solid; --border-color: transparent;
+  --background: transparent; --background-hover: transparent; --background-activated: rgba(124, 132, 255, .1); --color: var(--steel, #b9c2f0); --box-shadow: none; }
+ion-button.oest-ed-t[data-on] { --background: rgba(124, 132, 255, .18); --background-hover: rgba(124, 132, 255, .18); --border-color: rgba(124, 132, 255, .55); --color: #fff; --box-shadow: 0 0 14px rgba(124, 132, 255, .30); }
+ion-button.oest-ed-t ion-icon { font-size: 18px; }
+ion-button.oest-ed-t[data-t=arrow] ion-icon { font-size: 16px; transform: rotate(-45deg); }
+ion-button.oest-ed-t[data-t=line] ion-icon { font-size: 28px; transform: rotate(-60deg); }
+ion-button.oest-ed-t[data-t=rect] ion-icon { font-size: 17px; }
+ion-button.oest-ed-t[data-t=c1] ion-icon { font-size: calc(var(--ed-w) * .45); }
+ion-button.oest-ed-t[data-t=c2] ion-icon { font-size: calc(var(--ed-w) * .61); }
+ion-button.oest-ed-t[data-t=c3] ion-icon { font-size: calc(var(--ed-w) * .84); }
+ion-button.oest-ed-t[data-w], ion-button.oest-ed-c { width: calc(var(--ed-w) * .78); }
+ion-button.oest-ed-c { height: 44px; margin: 0; --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --border-width: 0; --border-color: transparent;
+  --background: transparent; --background-hover: transparent; --background-activated: transparent; --box-shadow: none; --border-radius: 11px; }
+.oest-ed-kropka { display: block; width: 24px; height: 24px; border-radius: 50%; background: var(--ion-color-base); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35); transition: transform .24s ease, box-shadow .24s; }
+ion-button.oest-ed-c[data-on] .oest-ed-kropka { transform: scale(1.08); box-shadow: 0 0 0 2px var(--bg, #0a0e1f), 0 0 0 4px #fff; }
+.oest-ed-gr { display: block; border-radius: 50%; background: var(--steel, #b9c2f0); transition: background-color .24s; }
+ion-button.oest-ed-t[data-on] .oest-ed-gr { background: var(--ion-color-base, #fff); }
+ion-button[data-w="4"] .oest-ed-gr { width: 6px; height: 6px; }
+ion-button[data-w="8"] .oest-ed-gr { width: 10px; height: 10px; }
+ion-button[data-w="14"] .oest-ed-gr { width: 16px; height: 16px; }
+/* kółko „pracuję” (main: .oest-load) – nad tekstem, nie zasłania stuknięć, pierścień z gradientem */
+ion-loading[data-oest-ladowanie] { pointer-events: none; --background: rgba(14, 18, 40, .9); --spinner-color: transparent; }
+ion-loading[data-oest-ladowanie] ion-backdrop { opacity: 0; }
+ion-loading[data-oest-ladowanie] .loading-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 22px; border-radius: 18px; color: #fff;
+  font: 600 14px/1.3 var(--font-body, system-ui); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); margin-top: -10vh; }
+ion-loading[data-oest-ladowanie] .loading-wrapper .loading-spinner + .loading-content { margin: 0; }
+ion-loading[data-oest-ladowanie] .loading-spinner { display: flex; }
+ion-loading[data-oest-ladowanie] .loading-spinner ion-spinner, .oest-inline ion-spinner { border-radius: 50%; animation: oest-spin .9s linear infinite;
+  background: conic-gradient(from 0deg, rgba(124, 132, 255, 0) 0deg, rgba(124, 132, 255, .15) 120deg, #7c84ff 300deg, #c58bff 360deg); }
+ion-loading[data-oest-ladowanie] .loading-spinner ion-spinner { width: 46px; height: 46px;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); }
+.oest-inline ion-spinner { color: transparent; width: 22px; height: 22px; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.7px), #000 calc(100% - 3.3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3.7px), #000 calc(100% - 3.3px)); }
+.oest-inline { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 0; color: var(--muted, #9aa3cc); font-size: 13px; }
+@keyframes oest-spin { to { transform: rotate(360deg); } }
+/* arkusz „Odczyt ze zdjęcia” (main: .oest-ocr) – zdjęcie, podpowiedź, liczby i linie do stuknięcia */
+ion-modal[data-oest-okno=OdczytArkusz] { align-items: flex-end; --width: min(100%, 560px); --max-height: 88vh; --border-radius: 18px 18px 0 0; --background: #14202a; --border-width: 0; --backdrop-opacity: .6; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno { padding: 16px 16px calc(16px + var(--ion-safe-area-bottom, 0px)); font: 16px system-ui; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul ion-icon { font-size: 19px; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tresc { max-height: none; margin: 0; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-rzad { margin-top: 16px; }
+ion-modal[data-oest-okno=OdczytArkusz] ion-button.oest-okno-b[data-okno=ok] { height: 56px; font: 700 18px system-ui; --background: #fff; --background-hover: #fff; --background-activated: #e8e8e8; --color: #14202a; --box-shadow: none; }
+.oest-ocr ion-item { --background: #0d161d; --border-radius: 10px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .3); --min-height: 46px; }
+.oest-ocr img { display: block; width: 100%; max-height: 28vh; object-fit: contain; border-radius: 10px; background: #000; }
+.oest-ocr-hint { opacity: .7; font-size: 14px; margin: 0 0 10px; }
+.oest-ocr-lbl { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin: 14px 0 6px; }
+.oest-ocr-chipy { display: flex; flex-wrap: wrap; gap: 8px; }
+ion-button.oest-ocr-b { height: auto; margin: 0; text-transform: none; letter-spacing: 0; font: 600 16px var(--font-body, system-ui); --padding-top: 10px; --padding-bottom: 10px; --padding-start: 12px; --padding-end: 12px;
+  --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: rgba(255, 255, 255, .3); --background: rgba(255, 255, 255, .06); --background-hover: rgba(255, 255, 255, .06); --color: #fff; --box-shadow: none; }
+ion-button.oest-ocr-b[data-liczba] { font-family: ui-monospace, monospace; }
+ion-button.oest-ocr-b[data-on] { --background: #2e7d32; --border-color: #2e7d32; }
+ion-toggle { --track-background-checked: #7c84ff; }
+ion-list-header { --color: var(--ink); --background: transparent; }
+/* Kolor grupy inspekcji = pasek z lewej klocka (Grzegorz 04/11/2026). Te same kolory co grupy w app/www/ppm.js (OEST_PPM.groups) – zmiana grupy = zmiana w obu miejscach. */
+ion-card[data-grupa="fire"] { --oest-grupa: #e5534b; }
+ion-card[data-grupa="water"] { --oest-grupa: #3b8eea; }
+ion-card[data-grupa="elec"] { --oest-grupa: #e3b341; }
+ion-card[data-grupa="mech"] { --oest-grupa: #3fb27f; }
+ion-card[data-grupa="sub"] { --oest-grupa: #a371f7; }
+/* Wygląd ekranu głównego i paska dni jak dotąd (Grzegorz 23/11/2026: „brzydziej się nie dało”) – „Szkło i poświata” z app/www/theme.css
+   na komponentach Ionic. Wyjątek od „tylko zmienne” w quality/wyjatki-ionic.json (zgoda Grzegorza). */
+.oest-dni { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px 8px; scrollbar-width: none; }
+ion-button.oest-dzien { flex: none; width: 50px; height: auto; margin: 0; text-transform: none; letter-spacing: 0; font-weight: 400;
+  --padding-start: 0; --padding-end: 0; --padding-top: 7px; --padding-bottom: 5px; --border-radius: 14px; --border-width: 1px; --border-style: solid;
+  --border-color: var(--line); --background: var(--panel); --background-hover: var(--panel); --color: var(--ink); --box-shadow: none; }
+ion-button.oest-dzien ion-label { text-align: center; }
+ion-button.oest-dzien small { display: block; font-size: .72rem; text-transform: uppercase; color: var(--muted); }
+ion-button.oest-dzien strong { display: block; font-size: 1.1rem; }
+ion-button.oest-dzien ion-icon { display: block; margin: 0 auto; height: 1.2em; font-size: .8rem; }
+ion-button.oest-dzien ion-badge { display: block; min-width: 26px; width: max-content; margin: 3px auto 0; border-radius: 7px; font-size: .72rem; --background: rgba(255,255,255,.1); --color: var(--muted); }
+ion-button.oest-dzien[data-minal] { opacity: .4; }
+ion-button.oest-dzien[data-praca] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
+ion-button.oest-dzien[data-dzis] { --border-color: var(--accent); --box-shadow: 0 0 12px rgba(124,132,255,.5); }
+ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14px rgba(124,132,255,.7); }
+.oest-kafelki { --ion-grid-column-padding: 0; padding: 0 11px; }
+.oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
+.oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
+.oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
+.oest-kafelki ion-card-title { align-self: stretch; font-size: .95rem; font-weight: 700; color: var(--ink); }
+/* licznik kafelka w prawym górnym rogu, poza układem – każdy kafelek ma ten sam rozmiar bez względu na licznik (Grzegorz 25.11.2026) */
+.oest-kafelki ion-card-header > ion-badge { position: absolute; top: 10px; right: 10px; }
+ion-header.oest-glowny ion-toolbar { --background: transparent; --padding-start: 16px; --padding-end: 16px; --padding-top: 6px; --padding-bottom: 6px; }
+ion-avatar.oest-logo { width: 46px; height: 46px; margin-right: 10px; --border-radius: 14px; }
+ion-avatar.oest-logo .oest-inicjaly { border-radius: 14px; font-size: .85rem; }
+ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons, ion-toolbar ion-buttons ion-button.oest-ikona.in-buttons.button-has-icon-only { width: 34px; height: 34px; min-width: 34px; margin-left: 6px; --padding-start: 4px; --padding-end: 4px; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line); --background: var(--panel); overflow: visible; }
+ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; border-radius: 10px; }
+.oest-lampki { display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; padding: 4px 10px 14px; }
+.oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { min-width: 0; flex: 0 1 auto; --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
+.oest-lampki ion-chip:last-child { margin-left: auto; }
+.oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
+.oest-jezyk { display: flex; height: 32px; padding: 2px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+.oest-jezyk ion-button { height: 26px; margin: 0; --padding-start: 7px; --padding-end: 7px; --border-radius: 8px; --box-shadow: none; --color: var(--muted); font-weight: 700; }
+.oest-jezyk ion-button[fill=solid] { --color: #fff; }
+ion-button.oest-ja::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid #0a0e1f; }
+/* Klocek listy i pigułka statusu – wygląd jak dotąd (moduly/klocek .k2.ki i moduly/znacznik .oest-st na main 23/11/2026). */
+ion-card.oest-klocek { position: relative; margin: 0 16px 8px; padding: 12px 18px 12px 18px; border-radius: 16px; border: 1px solid var(--line); box-shadow: none; color: var(--ink); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+ion-card.oest-klocek::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--oest-grupa, transparent); }
+ion-card.oest-klocek[data-przygaszony] { opacity: .6; }
+.oest-klocek .oest-kr { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.oest-klocek .oest-kr + .oest-kr { margin-top: 9px; }
+.oest-klocek h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-klocek .oest-kr > img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; border: 1px solid rgba(255,255,255,.2); flex: none; }
+.oest-klocek ion-icon { flex: none; width: 21px; height: 21px; color: var(--steel); --ionicon-stroke-width: 36px; }
+.oest-klocek ion-icon[data-ton="ok"] { color: #21c45a; }
+.oest-klocek ion-icon[data-ton="blad"], .oest-klocek ion-icon[data-ton="danger"] { color: #ef3b36; }
+.oest-klocek ion-icon[data-ton="brak"] { color: #9097a6; }
+.oest-klocek .oest-klok { flex: none; width: 51px; height: 24px; box-sizing: border-box; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.12); font-size: 11px; font-weight: 800; color: var(--steel); white-space: nowrap; overflow: hidden; }
+.oest-klocek .oest-kcz { flex: none; width: 34px; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.oest-klocek .oest-kopis { min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-klocek .oest-kodstep { flex: 1; }
+.oest-klocek .oest-kdt { flex: none; width: 118px; overflow: hidden; font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oest-klocek .oest-kdt[data-ton="red"] { color: #ef3b36; }
+.oest-klocek .oest-kdt[data-ton="jutro"] { color: #ff8a3d; }
+.oest-klocek .oest-kr strong { font-size: 13px; font-weight: 700; }
+.oest-klocek .oest-ksep { flex: none; width: 1px; height: 19px; background: rgba(255,255,255,.18); }
+.oest-klocek .oest-knr { flex: none; font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Linia 3 inspekcji – stałe miejsca jak na main (Grzegorz 23/11: „Stałe miejsca, numer w 1. linii”): termin 118, zdjęcia 20, pytania 44, usterki 44 (miejsce także bez usterek) */
+.oest-klocek .oest-kr3 { gap: 6px; }
+.oest-klocek .oest-kr3 strong { flex: none; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.oest-klocek strong[data-rodzaj="zdjecia"] { width: 20px; }
+.oest-klocek strong[data-rodzaj="pytania"] { width: 44px; }
+.oest-klocek .oest-kus { flex: none; display: flex; align-items: center; gap: 4px; width: 44px; height: 21px; overflow: hidden; color: #ff8a3d; }
+.oest-klocek .oest-kus[data-pusty] { visibility: hidden; }
+@media (max-width: 399px) {
+  .oest-klocek .oest-kr3 { gap: 3px; }
+  .oest-klocek .oest-kr3 .oest-kdt, .oest-klocek .oest-kr3 strong { font-size: 12px; }
+  .oest-klocek .oest-kr3 .oest-kdt { width: 108px; }
+  .oest-klocek strong[data-rodzaj="zdjecia"] { width: 18px; }
+  .oest-klocek strong[data-rodzaj="pytania"] { width: 40px; }
+  .oest-klocek .oest-kus { width: 40px; }
+}
+ion-badge.oest-pigulka { flex: none; box-sizing: border-box; width: 98px; padding: 5px 6px; border-radius: 999px; border: 1px solid currentColor; --background: color-mix(in srgb, currentColor 16%, transparent); --color: currentColor;
+  font: 700 12px/1 var(--font-body, system-ui); text-align: center; white-space: nowrap; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.45); text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+ion-badge.oest-pigulka[data-kolor="danger"] { color: #ef3b36; }
+ion-badge.oest-pigulka[data-kolor="medium"] { color: #c3c9e8; }
+ion-badge.oest-pigulka[data-kolor="warning"] { color: #f0c75e; }
+ion-badge.oest-pigulka[data-kolor="secondary"] { color: #79b8ff; }
+ion-badge.oest-pigulka[data-kolor="success"] { color: #00d84a; }
+ion-badge.oest-pigulka[data-kolor="tertiary"] { color: #a35bff; }
+/* Filtr listy (pigułki) i Kalendarz miesiąca – wygląd jak dotąd (theme.css .chip/.chip.on, .calgrid/.cd na main 23/11/2026). */
+.oest-chipy { display: flex; gap: 8px; overflow-x: auto; padding: 6px 16px 12px; scrollbar-width: none; }
+.oest-chipy ion-chip { flex: none; margin: 0; min-height: 32px; font-size: .85rem; border-radius: 999px; border: 1px solid var(--line); --background: var(--panel); --color: var(--ink); transition: transform .12s, box-shadow .12s; }
+.oest-chipy ion-chip[data-on] { --background: var(--grad); border-color: transparent; --color: #fff; transform: translateY(1px) scale(.97); box-shadow: inset 0 2px 6px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.12); filter: brightness(.92); }
+.oest-chipy ion-icon { width: 10px; height: 10px; margin: 0 6px 0 0; }
+.oest-chipy ion-icon[data-grupa="fire"] { color: #e5534b; }
+.oest-chipy ion-icon[data-grupa="water"] { color: #3b8eea; }
+.oest-chipy ion-icon[data-grupa="elec"] { color: #e3b341; }
+.oest-chipy ion-icon[data-grupa="mech"] { color: #3fb27f; }
+.oest-chipy ion-icon[data-grupa="sub"] { color: #a371f7; }
+.oest-kal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.oest-kal > small { font-size: .75rem; color: var(--muted); text-align: center; font-weight: 600; }
+.oest-cdk { position: relative; }
+ion-button.oest-cd { position: relative; display: block; width: 100%; aspect-ratio: 1; height: auto; margin: 0; font-size: .9rem; font-weight: 400; text-transform: none; letter-spacing: 0;
+  --padding-start: 0; --padding-end: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: rgba(255,255,255,.24); --background: rgba(255,255,255,.08); --background-hover: rgba(255,255,255,.08); --color: var(--ink); --box-shadow: none; }
+ion-button.oest-cd[data-ot] { opacity: .38; }
+ion-button.oest-cd[data-sh] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
+ion-button.oest-cd[data-td] { --box-shadow: 0 0 0 2px #b9a8ff inset; }
+ion-button.oest-cd[data-on] { --box-shadow: 0 0 14px rgba(124,132,255,.7); --border-color: #fff; }
+.oest-cdk > ion-badge { pointer-events: none; position: absolute; bottom: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 3px; line-height: 16px; font-size: 10px; border-radius: 8px; --background: #ff8a3d; --color: #1a0d00; }
+.oest-cdk > ion-badge[data-plan] { --background: transparent; border: 1.5px dashed #ff8a3d; --color: #ff8a3d; line-height: 13px; }
+.oest-cdk > ion-badge[data-ot] { opacity: .38; }
+.oest-legenda { display: flex; gap: 14px; margin: 10px 0 0; font-size: .8rem; color: var(--muted); }
+.oest-legenda > [data-l] { display: inline-grid; grid-template-columns: auto auto; align-items: center; }
+.oest-legenda > [data-l]::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+.oest-legenda > [data-l] > span { grid-area: 1 / 2; }
+.oest-legenda > [data-l] > [aria-hidden] { visibility: hidden; }
+.oest-legenda [data-l="sh"]::before { background: linear-gradient(135deg, #5b7cff, #a35bff); }
+.oest-legenda [data-l="dn"]::before { background: #ff8a3d; border-radius: 50%; }
+.oest-legenda [data-l="pl"]::before { background: transparent; border: 1.5px dashed #ff8a3d; border-radius: 50%; }
+ion-button.oest-podpowiedz { height: auto; margin: 12px 0 0; white-space: normal; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .85rem; text-align: left;
+  --padding-top: 10px; --padding-bottom: 10px; --padding-start: 12px; --padding-end: 12px; --border-radius: 10px; --border-width: 1px; --border-style: dashed; --border-color: var(--line); --color: var(--muted); }
+ion-card.oest-klocek::part(native) { background: transparent; }
+/* ---------- Wygląd głównej apki („Szkło i poświata”, main) na komponentach Ionic – klasy oest-* (Grzegorz 23/11/2026: przeniesione
+   ekrany wyglądają tak samo jak na main). Najpierw zmienne Ionic; reszta (ramka, zaokrąglenie) tylko tam, gdzie Ionic nie ma zmiennej. ---------- */
+ion-card.oest-panel { --background: var(--panel); --color: var(--ink); margin: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-size: 15px; }
+ion-card.oest-panel ion-item { --background: transparent; }
+ion-list-header.oest-tytul { padding: 0; min-height: 0; margin: 0; font-size: 1.05rem; font-weight: 650; line-height: 1.45; letter-spacing: 0; --color: var(--ink); --inner-padding-end: 0; }
+ion-item.oest-ramka-pola { --background: var(--field); --border-color: var(--line); --border-width: 1px; --border-style: solid; --border-radius: 12px; --min-height: 46px; --padding-start: 12px; --inner-padding-end: 12px; --inner-border-width: 0; margin: 0; font-size: 15px; }
+ion-item.oest-wybrane { --background: var(--field); --border-color: var(--accent); --border-width: 1px; --border-style: solid; --border-radius: 9px; --min-height: 42px; --padding-start: 12px; --inner-padding-end: 12px; --inner-border-width: 0; margin: 0; font-size: 15px; }
+ion-item.oest-wybrane ion-label { margin: 10px 0; white-space: normal; }
+ion-item.oest-check { --background: transparent; --padding-start: 0; --inner-padding-end: 0; --min-height: 48px; --inner-border-width: 0; font-size: 15px; }
+ion-item.oest-check ion-checkbox { --size: 22px; --border-radius: 5px; --border-width: 1px; --border-color: rgba(255, 255, 255, .55); --checkbox-background: transparent; --checkbox-background-checked: var(--accent); --border-color-checked: var(--accent); }
+ion-item.oest-check ion-checkbox::part(label) { margin-inline-start: 10px; }
+.oest-szukaj { display: flex; gap: 8px; margin-bottom: -2px; }
+.oest-szukaj > ion-item { flex: 1 1 auto; min-width: 0; }
+.oest-szukaj > ion-item:last-child { flex: 0 0 34%; }
+.oest-lista { display: flex; flex-direction: column; gap: 10px; }
+.oest-lista ion-card.oest-klocek { margin: 0 0 8px; }
+ion-note.oest-pod { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin: 0 0 -2px; }
+ion-progress-bar.oest-licznik { --background: rgba(127, 127, 127, .25); --progress-background: var(--accent); height: 10px; border-radius: 6px; overflow: hidden; width: auto; }
+ion-progress-bar.oest-licznik.oest-pelny { --progress-background: #e5484d; }
+ion-button.oest-duzy { --border-radius: 14px; min-height: 52px; text-transform: none; font-size: 16px; font-weight: 700; letter-spacing: 0; margin: 14px 0; }
+ion-card.oest-panel ion-button.oest-duzy { margin: 0; }
+/* pasek wysyłki (czesci/PasekWysylki.vue) – piksel w piksel jak dawny .oest-sbar na main (moduly/wysylka + lampka z moduly/znacznik) */
+.oest-sbar { display: flex; flex-direction: column; background: rgba(14, 18, 40, .96); color: var(--ink, #eef1ff); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line, rgba(255, 255, 255, .12)); font: 13px/1.2 var(--font-body, system-ui), sans-serif; }
+.oest-sbar-r { display: flex; align-items: center; gap: 8px; height: 29px; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+.oest-sbar-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.oest-sbar-r > span:last-child { opacity: .6; font-size: 11px; will-change: opacity; }
+.oest-sbar-i { width: 10px; height: 10px; flex: none; border-radius: 50%; box-sizing: border-box; }
+.oest-sbar.run .oest-sbar-i { width: 12px; height: 12px; background: conic-gradient(from 0deg, rgba(124, 132, 255, 0) 0deg, rgba(124, 132, 255, .15) 120deg, #7c84ff 300deg, #c58bff 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px)); animation: oest-sbar-kolo .9s linear infinite; }
+@keyframes oest-sbar-kolo { to { transform: rotate(360deg); } }
+.oest-sbar.ok .oest-sbar-i { background: #3fb27f; }
+.oest-sbar.wait .oest-sbar-i { background: #e3b341; }
+.oest-sbar.err .oest-sbar-i { background: #e5534b; }
+.oest-sbar-n { display: flex; align-items: center; gap: 5px; padding-right: 8px; margin-right: 2px; border-right: 1px solid var(--line, rgba(255, 255, 255, .12)); opacity: .852; will-change: opacity; } /* .852 zamiast .85 z main: w osobnej warstwie Chromium zaokrągla .85 o 1 jednostkę niżej niż main – .851–.853 daje piksel w piksel */
+.oest-sbar-l { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok, #3ddc84); box-shadow: 0 0 6px var(--ok, #3ddc84); transition: background .3s, box-shadow .3s; }
+.oest-sbar-n.mid .oest-sbar-l { background: var(--warn, #ffd23f); box-shadow: 0 0 6px var(--warn, #ffd23f); }
+.oest-sbar-n.off .oest-sbar-l { background: var(--bad, #ff4d5e); box-shadow: 0 0 6px var(--bad, #ff4d5e); }
+ion-progress-bar.oest-sbar-p { height: 2px; --background: transparent; --progress-background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); }
+.oest-sbar-m { display: flex; padding: 10px 12px 6px; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line, rgba(255, 255, 255, .12)); }
+.oest-sbar-m small { flex: 1 1 100%; opacity: .75; font-size: 12px; }
+.oest-sbar-m ion-button { flex: 1 1 auto; height: auto; min-height: 40px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: var(--panel, rgba(255, 255, 255, .06)); --color: var(--ink); --padding-top: 8px; --padding-bottom: 8px; --padding-start: 12px; --padding-end: 12px; --box-shadow: none; }
+.oest-sbar-m ion-button.oest-sbar-go { --background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); --color: #fff; --border-color: transparent; }
+/* podgląd na cały ekran (OESTOkna.okno({ pelny: true }), np. zdjęcie) – jak dawny .zd-full na main: czarne tło .92, odstęp 12 px, treść na środku */
+ion-modal.oest-karta.oest-podglad { --width: 100%; --height: 100%; --max-width: none; --max-height: none; --border-radius: 0; --border-width: 0; --background: rgba(0, 0, 0, .92); --backdrop-opacity: 0; }
+ion-modal.oest-podglad ion-content { --background: transparent; --color: #fff; --padding-start: 12px; --padding-end: 12px; --padding-top: 12px; --padding-bottom: 12px; padding: 0; }
+ion-modal.oest-podglad ion-content::part(scroll) { display: flex; flex-direction: column; justify-content: center; }
+.oest-podglad-tresc { display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; font-size: 15px; }
+.oest-podglad-tresc ion-img::part(image) { width: auto; max-width: 100%; max-height: 72vh; object-fit: contain; }
+.oest-podglad-tresc p { margin: 15px 0; line-height: 1.45; }
+.oest-podpis { font-size: 13px; color: var(--muted); }
+.oest-akcje { display: flex; gap: 10px; margin-top: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+ion-button.oest-szary { --background: var(--panel); --background-activated: var(--panel); --background-hover: var(--panel); --color: var(--ink); --border-radius: 14px; --border-color: var(--line); --border-width: 1px; --border-style: solid; --padding-start: 16px; --padding-end: 16px; --box-shadow: none; margin: 0; height: 48px; min-width: 120px; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+/* Zdjęcia (ekrany/Zdjecia.vue) – jak dawny #v-zdjecia na main */
+.oest-panele > ion-card.oest-panel { margin-bottom: 14px; }
+ion-note.oest-opis.oest-rezerwa { display: grid; }
+.oest-rezerwa > span { grid-area: 1 / 1; }
+.oest-rezerwa > span + span { visibility: hidden; } /* niewidoczny tekst w drugim języku trzyma wysokość: PL/EN nie przesuwa treści (jak rezerwa OESTBledy na main) */
+.oest-panele { padding-bottom: 34px; } /* jak main: 48 px od ostatniego panelu do paska wysyłki */
+.oest-panele ion-list-header.oest-tytul { font-size: 15px; font-weight: 700; line-height: 22px; }
+.oest-panele ion-button.oest-duzy { min-height: 48px; height: 48px; font-size: 15px; font-weight: 600; margin: 0; }
+.oest-pole-blok { display: flex; flex-direction: column; gap: 6px; }
+ion-note.oest-etykieta { display: block; font-size: 13px; line-height: 19px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-panele ion-item.oest-check { --min-height: 40px; }
+.oest-panele ion-item.oest-check ion-checkbox { height: 40px; min-height: 0; }
+.oest-dzien-zdjec { margin-top: 6px; }
+.oest-siatka { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-top: 6px; }
+ion-card.oest-zdjecie { position: relative; aspect-ratio: 1; margin: 0; border: 1px solid var(--line); border-radius: 10px; box-shadow: none; --background: #222; overflow: hidden; }
+ion-card.oest-zdjecie ion-img { position: absolute; inset: 0; }
+ion-card.oest-zdjecie ion-img::part(image) { width: 100%; height: 100%; object-fit: cover; }
+ion-card.oest-zdjecie small { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; font-size: .7rem; background: rgba(0, 0, 0, .6); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.oest-chmura { position: absolute; top: 4px; right: 4px; font-size: .7rem; background: rgba(0, 0, 0, .6); color: #fff; padding: 1px 5px; border-radius: 6px; }
+/* opis pod polem / licznik (dawne .hint na main): 13 px, kolor --muted */
+ion-note.oest-opis { display: block; padding: 0; font-size: 13px; line-height: 1.4; color: var(--muted); }
+/* raporty w „Moje raporty” (moduly/raporty/przegladarka.js): kolor paska z lewej jak na main – na Dysku zielony, czeka żółty, odzyskana fioletowy */
+ion-card[data-grupa="dysk"] { --oest-grupa: #5fd6a0; }
+ion-card[data-grupa="czeka"] { --oest-grupa: #f0c75e; }
+ion-card[data-grupa="odzyskana"] { --oest-grupa: #a35bff; }
+/* „Zapisz ustawienia” przyklejony na dole jak .settings-page .save-bar na main */
+.oest-zapisz { position: sticky; bottom: 8px; z-index: 2; background: var(--bg); padding: 8px 0; display: flex; gap: 8px; flex-direction: column; }
+.oest-zapisz ion-button.oest-duzy { margin: 4px 0; }
+ion-item.oest-ramka-pola ion-input, ion-item.oest-ramka-pola ion-select { min-height: 46px; --padding-top: 0; --padding-bottom: 0; }
+ion-item.oest-check ion-checkbox { margin: 0; }
+/* globalne pole z moduly/wyglad (min-height var(--h-field)) nie rozpycha pola Ionic – wysokość daje ion-item */
+ion-item.oest-ramka-pola { --h-field: 0px; }
+/* okienka OESTOkna.okno – jak dawne okienko apki na main (.oest-ask): tło .55, karta 360 px na środku, wysokość według treści, odstęp 18 px */
+ion-modal.oest-karta { --width: 360px; --max-width: calc(100% - 32px); --height: auto; --max-height: calc(100% - 32px); --border-radius: 18px; --background: #161a34; --border-color: var(--line); --border-width: 1px; --border-style: solid; --backdrop-opacity: .55; --box-shadow: none; }
+ion-modal.oest-karta:not(.oest-podglad) .ion-page { position: relative; display: block; contain: content; padding: 18px; color: #fff; font-size: 15px; }
+ion-modal.oest-karta ion-header { box-shadow: none; }
+ion-modal.oest-karta ion-header ion-toolbar, ion-modal.oest-karta ion-footer ion-toolbar { --background: transparent; --min-height: 0; --padding-top: 0; --padding-bottom: 0; --padding-start: 0; --padding-end: 0; --border-width: 0; }
+ion-modal.oest-karta ion-title { padding: 0; margin: 0 0 6px; font-size: 17px; font-weight: 650; line-height: 24px; text-align: left; color: #fff; }
+.oest-karta-tresc { max-height: 60vh; overflow: auto; margin: 0 0 14px; }
+ion-modal.oest-karta ion-footer { box-shadow: none; }
+.oest-karta-przyciski { display: flex; gap: 10px; }
+.oest-karta-przyciski ion-button { --box-shadow: none !important; flex: 1 1 0; height: 48px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 14px; --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
+.oest-karta-przyciski ion-button[fill=outline] { --background: #222746; --background-hover: #222746; --background-activated: #222746; --color: #fff; --border-color: rgba(255, 255, 255, .18); --border-width: 1px; --border-style: solid; }
+/* treść podglądu raportu (ekrany/RaportPodglad.vue) – jak .rpt-meta / .rpt-view / .rpt-pics / .rpt-drive / .rpt-to na main */
+.oest-raport-meta { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); }
+.oest-raport-tresc { margin: 0 0 10px; font-size: 13px; line-height: 1.35; }
+.oest-raport-tresc p { margin: 0 0 6px; }
+.oest-raport-zdjecia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 0; }
+.oest-raport-zdjecia ion-img::part(image) { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+ion-button.oest-szeroki { width: 100%; margin: 10px 0 0; }
+ion-button.oest-link { height: auto; min-height: 0; margin: 6px 0 0; font-size: 14px; font-weight: 400; text-transform: none; letter-spacing: 0; text-decoration: underline; --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --color: var(--accent); --background-hover: transparent; }
+.oest-adresaci { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 0; }
+ion-item.oest-adresat { --background: transparent; --min-height: 20px; --padding-start: 0; --inner-padding-end: 0; --inner-border-width: 0; font-size: 14px; }
+ion-item.oest-adresat ion-checkbox { --size: 17px; --border-radius: 4px; --border-width: 1px; --border-color: rgba(255, 255, 255, .55); --checkbox-background: transparent; --checkbox-background-checked: var(--accent); --border-color-checked: var(--accent); margin: 0; min-height: 0; }
+ion-item.oest-adresat ion-checkbox::part(label) { margin-inline-start: 10px; }
+ion-item.oest-adresat small { font-size: 11.67px; color: var(--muted); }
+ion-item.oest-adresat ion-checkbox { height: 20px; }
+ion-item.oest-adresat ion-checkbox.checkbox-disabled { opacity: 1; }
+ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(container) { opacity: 1; }
+/* ===== Ekrany przeniesione z dawnego wyglądu („Szkło i poświata”, app/www/theme.css + settings.css z main): panele, pola, przyciski, Start (Grzegorz, zgoda w quality/wyjatki-ionic.json) ===== */
+.oest-ekran ion-card { display: flex; flex-direction: column; gap: 14px; margin: 0 0 12px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: none; overflow: visible; }
+.oest-ekran ion-item { --padding-start: 0; --inner-padding-end: 0; --min-height: 0; --inner-border-width: 0; --border-width: 0; --background: transparent; --padding-top: 0; --padding-bottom: 0; --inner-padding-top: 0; --inner-padding-bottom: 0; }
+.oest-ekran ion-list-header { min-height: 0; padding: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.oest-ekran ion-note { display: block; font-size: .85rem; line-height: 1.45; white-space: normal; }
+.oest-ekran ion-note { --color: var(--muted); }
+.oest-ekran ion-label { white-space: normal; }
+.oest-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 0; }
+.oest-rzad > * { min-width: 0; }
+.oest-ekran ion-button { margin: 0; height: auto; min-height: 46px; text-transform: none; letter-spacing: 0; font-size: 1rem; font-weight: 600; }
+.oest-ekran ion-button.oest-pelny { grid-column: 1 / -1; }
+.oest-ekran ion-button.button-solid { --background: var(--grad); --color: #fff; --border-radius: 14px; --box-shadow: 0 8px 24px rgba(120, 90, 255, .4); }
+.oest-ekran ion-button.button-outline { --background: var(--panel); --color: var(--ink); --border-color: var(--line); --border-width: 1px; --border-radius: 14px; --box-shadow: none; }
+.oest-ekran ion-button.button-clear { --color: var(--muted); }
+.oest-ekran ion-toggle { --track-background-checked: #7c84ff; }
+/* pola: etykieta nad polem, pole = zaokrąglone pudełko z ramką (jak .field + input w theme.css) */
+.oest-ekran ion-input .input-wrapper, .oest-ekran ion-textarea .textarea-wrapper { display: block; min-height: 0; padding: 0; border: 0; background: transparent; }
+.oest-ekran ion-input .label-text-wrapper, .oest-ekran ion-textarea .label-text-wrapper { position: static; transform: none !important; max-width: 100%; margin: 0 0 6px; font-size: .85rem; color: var(--ink); }
+.oest-ekran ion-input .native-wrapper, .oest-ekran ion-textarea .native-wrapper { min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+.oest-ekran ion-input .native-input { min-height: 44px; padding: 0; }
+.oest-ekran ion-select::part(wrapper) { display: block; position: relative; min-height: 0; padding: 0; border: 0; background: transparent; }
+.oest-ekran ion-select::part(label) { position: static; transform: none !important; max-width: 100%; margin: 0 0 6px; font-size: .85rem; color: var(--ink); }
+.oest-ekran ion-select::part(container) { box-sizing: border-box; width: 100%; display: flex; align-items: center; min-height: 46px; padding: 0 36px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+.oest-ekran ion-select::part(end) { position: absolute; right: 12px; bottom: 0; height: 46px; display: flex; align-items: center; margin: 0; padding: 0; }
+.oest-ekran ion-select::part(icon) { position: static; margin: 0; }
+.oest-pole { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.oest-ekran .oest-pole ion-label { margin: 0 0 6px; font-size: .85rem; color: var(--ink); }
+.oest-pole ion-datetime-button::part(native) { box-sizing: border-box; width: 100%; margin: 0; min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink); text-align: left; font-size: 1rem; }
+.oest-pole ion-datetime-button { display: block; width: 100%; }
+/* Start: wielka marka na środku (home.css/index.html z main) */
+.oest-start { display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 100%; text-align: center; }
+.oest-marka { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.oest-nazwa { margin: 0; font-size: 2.6rem; font-weight: 700; letter-spacing: .04em; line-height: 1; }
+.oest-kafel { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 24px; background: var(--steel); color: #fff; font-size: 2rem; font-weight: 700; letter-spacing: .04em; border-bottom: 6px solid var(--accent); }
+.oest-miejsce { font-size: 1.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.oest-logowanie { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.oest-ekran ion-item.oest-ramka::part(native) { padding: 12px; border: 1px solid #7c84ff; border-radius: 12px; background: var(--field); }
+.oest-ekran ion-note.oest-status { margin: 0 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.oest-ekran ion-label, .oest-ekran ion-toggle { font-size: .95rem; }
+.oest-ekran ion-toggle::part(label) { white-space: normal; }
+.oest-logowanie ion-note { font-size: .85rem; }
+.oest-ekran ion-accordion { background: transparent; }
+.oest-ekran ion-accordion ion-item[slot="header"] { font-weight: 700; }
+.oest-ekran ion-accordion [slot="content"] { background: transparent; }
+.oest-ekran .oest-chipy { padding: 0 0 12px; }
+.oest-ekran .ion-accordion-toggle-icon { margin-inline-end: 10px; }
+.oest-ekran ion-card-header { padding: 0; }
+.oest-ekran ion-card-title { font-size: 1rem; font-weight: 700; line-height: 1.3; color: var(--ink); }
+.oest-ekran ion-card-subtitle { font-size: .9rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.oest-ekran ion-card-content { padding: 0; }
+/* notatka zajmuje tyle samo miejsca po polsku i angielsku (przełączenie PL/EN nie przesuwa ekranu) */
+.oest-ekran ion-note.oest-linie3 { min-height: calc(3 * 1.45em); }
+.oest-ekran ion-note.oest-linie5 { min-height: calc(5 * 1.45em); }
+.oest-kolumna { display: flex; flex-direction: column; gap: 14px; }
+.oest-ekran ion-card-subtitle + ion-card-subtitle { color: var(--ink); }
+/* Reactive (ekrany/Reactive.vue): wygląd jak na main (#v-reactive w theme.css) – panele ze szkła, pola karty jak .rx-fr, pas na dole przyklejony */
+.oest-rx ion-card.oest-rx-panel { display: block; padding: 14px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: none; overflow: visible; color: var(--ink); }
+.oest-rx-body > .oest-kafelki { margin: 0 -16px; }
+.oest-rx-panel .oest-kafelki { padding: 0; margin: 0 -5px; }
+.oest-rx-top { margin: 4px 0 8px; }
+.oest-rx-top ion-button { display: block; width: 100%; height: auto; min-height: 46px; margin: 0; text-transform: none; letter-spacing: 0; font-size: 1rem; font-weight: 600; }
+.oest-rx-lista { margin: 0 -16px; }
+.oest-rx-body > .oest-chipy { padding: 0 0 10px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.oest-rx-sub { font-size: .8rem; color: var(--muted); margin: 10px 0 2px; }
+.oest-rx-label { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.oest-rx-h { margin: 18px 0 8px; font-size: .95rem; font-weight: 600; }
+.oest-rx-sciezka { margin: 10px 0 0; }
+.oest-rx-tekst { margin: 0; white-space: pre-wrap; }
+.oest-rx-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oest-rx-row > ion-button { min-height: var(--h-btn, 52px); margin: 3px 0; }
+.oest-rx-vt-upd { grid-template-columns: 1fr; }
+.oest-rx ion-button.oest-rx-vt[data-ton="done"] { --border-color: var(--ok); --color: var(--ok); }
+.oest-rx ion-button.oest-rx-vt[data-ton="off"] { opacity: .6; }
+/* pigułki wyboru na karcie: zawijane, wybrana jak w filtrze */
+.oest-chipy.oest-rx-chipy { flex-wrap: wrap; overflow: visible; gap: 7px; margin: 8px 0; padding: 0; }
+.oest-rx-chipy ion-chip[data-status="open"] { border-left: 5px solid #3b82f6; }
+.oest-rx-chipy ion-chip[data-status="parts"] { border-left: 5px solid #f59e0b; }
+.oest-rx-chipy ion-chip[data-status="contractor"] { border-left: 5px solid #8b5cf6; }
+.oest-rx-chipy ion-chip[data-status="access"] { border-left: 5px solid #9ca3af; }
+.oest-rx-chipy ion-chip[data-status="monitoring"] { border-left: 5px solid #eab308; }
+/* pola karty (dawne .rx-f / .rx-fr / .rx-fx) */
+.oest-rx-f { padding: 4px 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+.oest-rx-name { margin: 0 0 12px; }
+.oest-ekran ion-item.oest-rx-fr { --min-height: 40px; --background: transparent; --background-hover: transparent; --ripple-color: transparent; }
+.oest-rx-fr-w { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 3px 0; color: var(--ink); }
+.oest-rx-k { width: 132px; flex: none; font-size: .8rem; color: var(--muted); }
+.oest-rx-v { flex: 1; min-width: 0; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oest-rx-v[data-ph] { color: var(--muted); }
+.oest-rx-ar { color: var(--muted); font-size: .8rem; }
+.oest-rx-ntc { flex: 0 0 auto; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: .8rem; line-height: 1.4; background: rgba(124, 132, 255, .22); color: var(--ink); white-space: nowrap; }
+.oest-rx-fx { margin: 0 0 8px; padding: 2px 0 6px 10px; border-left: 2px solid var(--accent, #5b7cff); }
+.oest-rx-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oest-rx-2 .oest-rx-fr-w { flex-wrap: wrap; gap: 0 6px; min-width: 0; }
+.oest-rx-2 .oest-rx-k { width: 100%; font-size: .72rem; }
+.oest-rx-2 .oest-pole { padding: 3px 0; }
+.oest-ekran .oest-rx-2 .oest-pole ion-label { margin: 0 0 2px; font-size: .72rem; color: var(--muted); }
+.oest-rx-2 .oest-pole ion-datetime-button::part(native) { min-height: 34px; padding: 4px 8px; border-radius: 8px; border-color: rgba(255, 255, 255, .14); background: rgba(0, 0, 0, .2); }
+.oest-rx-g { font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 8px 0 2px; }
+.oest-ekran ion-item.oest-rx-opt { --min-height: 0; --padding-start: 6px; --border-radius: 8px; font-size: .9rem; }
+.oest-ekran ion-item.oest-rx-opt::part(native) { padding: 8px 6px; border-radius: 8px; }
+.oest-ekran ion-item.oest-rx-opt[data-on] { --background: rgba(120, 140, 255, .14); font-weight: 700; }
+.oest-ekran ion-item.oest-rx-opt[data-dodaj] { --color: #8cc4ff; font-size: .85rem; }
+.oest-rx .oest-ekran ion-textarea .native-wrapper { padding: 8px; border-color: rgba(255, 255, 255, .14); border-radius: 10px; background: rgba(0, 0, 0, .25); font-size: .9rem; }
+.oest-rx-info-t { margin-top: 8px; }
+/* zdjęcia przed | po */
+.oest-rx-pics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oest-rx-phb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.oest-ekran .oest-rx-phb ion-button { min-height: 58px; font-size: 12.5px; line-height: 1.15; --padding-start: 2px; --padding-end: 2px; }
+.oest-rx-phb-w { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.oest-rx-phb-w ion-icon { width: 22px; height: 22px; }
+.oest-rx-phb-w span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oest-rx-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.oest-rx-ph { position: relative; }
+.oest-rx-ph > img { display: block; width: 100%; height: 64px; object-fit: cover; border-radius: 10px; }
+.oest-ekran .oest-rx-ph ion-button { position: absolute; right: 4px; top: 4px; width: 30px; min-height: 30px; height: 30px; margin: 0; --padding-start: 0; --padding-end: 0; --border-radius: 50%; --background: rgba(10, 16, 20, .72); --color: #fff; font-size: .95rem; }
+.oest-ekran .oest-rx-ph ion-button.oest-rx-ed { top: auto; bottom: 4px; }
+.oest-rx-foto { display: block; width: 100%; max-height: 70vh; object-fit: contain; border-radius: 10px; }
+/* dawne nagrania */
+.oest-rx-voice { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.oest-rx-odstep { flex: 1; }
+.oest-ekran .oest-rx-voice ion-button.oest-rx-tx { min-height: 40px; font-size: 15px; }
+.oest-ekran .oest-rx-voice ion-button.oest-rx-vdel { width: 40px; min-height: 40px; --padding-start: 0; --padding-end: 0; --border-radius: 50%; --background: #e53935; --box-shadow: none; font-size: 22px; font-weight: 700; }
+.oest-rx-vt { margin: -2px 0 8px; }
+.oest-rx-ntn { padding: 0 7px; border-radius: 999px; background: rgba(124, 132, 255, .22); }
+.oest-ekran ion-button.oest-rx-notes { display: block; width: 100%; margin: 6px 0 0; }
+/* kreator */
+.oest-ekran ion-item.oest-rx-kr-i { --min-height: 44px; }
+/* podgląd raportu = kartka jak PDF (dawne .rr-* w theme.css) */
+.oest-rr-page { background: #fff; color: #111; border-radius: 6px; padding: 16px 14px; font: 13px/1.4 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, .35); }
+.oest-rr-logo { display: block; margin: 0 auto 6px; max-width: 120px; max-height: 40px; }
+.oest-rr-h { text-align: center; font-size: 16px; margin: 4px 0 10px; }
+.oest-rr-t { display: grid; grid-template-columns: 72px 1fr auto 1fr; border-top: 1px solid #333; border-left: 1px solid #333; }
+.oest-rr-t > span { border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 4px 6px; }
+.oest-rr-t > .oest-rr-c3 { grid-column: span 3; }
+.oest-rr-box { border: 1px solid #333; border-top: 0; padding: 8px; min-height: 140px; }
+.oest-rr-title { font-size: 14px; margin-bottom: 6px; }
+.oest-rr-body { white-space: pre-wrap; }
+.oest-rr-foot > div { border: 1px solid #333; border-top: 0; padding: 4px 6px; }
+.oest-rr-h2 { margin: 14px 0 6px; font-size: 14px; }
+.oest-rr-pics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.oest-rr-pics small { display: block; font-size: 11px; margin-bottom: 2px; }
+.oest-rr-pics img { width: 100%; border-radius: 4px; display: block; }
+.oest-rr-ref { margin-top: 12px; font-size: 10px; color: #555; }
+.oest-rx-sum-p { display: flex; gap: 6px; align-items: flex-start; }
+.oest-rx-sum-p > ion-item { flex: 1; min-width: 0; }
+.oest-rx .oest-ekran .oest-rr-page ion-textarea .native-wrapper { background: #f4f4f4; color: #111; border-color: #bbb; }
+.oest-ekran .oest-rx-sum-p ion-button.oest-rx-sum-x { flex: 0 0 36px; width: 36px; min-height: 36px; height: 36px; margin-top: 8px; --padding-start: 0; --padding-end: 0; --border-radius: 10px; --background: #eee; --color: #111; --border-color: #bbb; }
+/* kolory pasków klocka Reactive: zlecenie otwarte i szkic (reszta stanów = kolory grup) */
+ion-card[data-grupa="otwarte"] { --oest-grupa: #ff8a3d; }
+ion-card[data-grupa="szkic"] { --oest-grupa: #8b949e; }
+
+/* przełącznik PL|EN w górnym pasku (Grzegorz 25.11.2026): w ion-toolbar Ionic nadaje przyciskom kolor paska i rogi 2 px – tu tylko zmienne:
+   wybrany język = fioletowy gradient z poświatą jak na main, niewybrany szary */
+ion-toolbar ion-buttons .oest-jezyk ion-button.in-buttons { --border-radius: 9px; --color: var(--muted); }
+ion-toolbar ion-buttons .oest-jezyk ion-button.in-buttons[fill=solid] { --background: var(--grad); --color: #fff; --ion-toolbar-color: var(--grad); --ion-toolbar-background: #fff; /* Ionic md: pełny przycisk w pasku bierze tło z --ion-toolbar-color, napis z --ion-toolbar-background */ --box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(124,132,255,.5); }
+/* tło pod przyciskami nawigacji telefonu (czesci/TloNawigacji.vue): pusty pasek w stopce = tylko odstęp safe-area dołu od Ionic, kolor tła apki */
+ion-footer ion-toolbar:empty { --min-height: 0; --padding-top: 0; --padding-bottom: 0; --background: var(--bg); }
+/* rząd statusu inspekcji (ekrany/inspekcja/Formularz.vue, Grzegorz 25.11.2026): 11 kolumn – ⋮ 3 | status 5 | termin 3; pigułka zawsze ta sama szerokość */
+ion-grid[data-ui~=iright] { --ion-grid-columns: 11; }
+/* Imię / Data – niższe wiersze, mniejszy odstęp (Grzegorz 25.11.2026) */
+ion-list[data-ui~=ileft] ion-item { --min-height: 34px; }
+/* klocek StatusInspekcji: węższe boki pigułki */
+ion-button[data-ui~=status] { --padding-start: 10px; --padding-end: 10px; }
+/* termin inspekcji („Po terminie X dni”) – fioletowy jak na main */
+ion-text[data-termin] { --ion-color-base: #b9a8ff; }
+
+/* rząd przycisków ekranu w treści (czesci/AkcjeEkranu.vue, Grzegorz 25.11.2026): bez własnego tła paska – tło ekranu prześwituje, jak na main */
+ion-content ion-toolbar { --background: transparent; --border-width: 0; --min-height: 40px; } /* rząd ⋮ nad treścią niższy (Grzegorz 25.11.2026) */
+/* kafelki zdjęć inspekcji (czesci/KafelZdjecia.vue, Grzegorz 25.11.2026): jak na main – jasny napis, zaokrąglone rogi, wąskie boki; kolor obwódki z koloru Ionic */
+ion-button[data-ui~=kafel-zdjecia] { --color: var(--ink); --border-color: var(--line); --border-width: 1px; --border-radius: 12px; --padding-start: 2px; --padding-end: 2px; --padding-top: 8px; --padding-bottom: 8px; --ionicon-stroke-width: 1.8px; }
+ion-button[data-ui~=kafel-zdjecia][data-ok] { --border-color: var(--ion-color-success); }
+ion-button[data-ui~=kafel-zdjecia][data-alarm] { --border-color: var(--ion-color-danger); }

@@ -7,7 +7,6 @@
   { "id": "nie-otwiera:konto-stare", "reason": "Martwa sekcja #v-appset (D13): adres #konto-stare pokazuje ekran główny. Do usunięcia z mapy i z kodu w P0-3." },
   { "id": "mapa-bez-id:handover/draft", "reason": "Mapa: handover/draft bez części zmiennej; apka otwiera go tylko jako handover/draft/<id zmiany> (bez numeru pokazuje błąd i Wstecz idzie do ekranu głównego). Poprawić mapę." },
   { "id": "mapa-bez-id:handover/archive", "reason": "Mapa: handover/archive bez części zmiennej; apka otwiera go tylko jako handover/archive/<id archiwum>. Poprawić mapę." },
-  { "id": "nie-otwiera:reactive/new/:id", "reason": "reactive/new/<węzeł> od razu zakłada szkic i przechodzi na reactive/draft/<id> – w mapie jest jako osobny ekran, w apce to tylko przejście." },
-  { "id": "wstecz:reactive/tree/:id>reactive/tree/root", "reason": "Wstecz z węzła najwyższego poziomu idzie do reactive/tree/root, a mapa mówi: najwyższy węzeł wraca do Reactive. Do decyzji: poprawić mapę albo apkę." }
+  { "id": "nie-otwiera:reactive/new/:id", "reason": "reactive/new/<węzeł> od razu zakłada szkic i przechodzi na reactive/draft/<id> – w mapie jest jako osobny ekran, w apce to tylko przejście." }
  ]
 }

@@ -5,6 +5,7 @@
 //   MISSING_SCRIPT       – <script src> wskazuje plik, którego nie ma w paczce
 //   DUPLICATE_SCRIPT     – ten sam plik ładowany dwa razy na jednej stronie
 //   UNDEFINED_GLOBAL     – plik używa globalnego API (OEST*, TPL_*, biblioteki raportu), którego żaden skrypt strony nie tworzy
+//                          (poza zależnością opcjonalną: tylko w.X i ze sprawdzeniem, czy jest – patrz opcjonalne())
 //   LOAD_ORDER           – plik używa API, które na tej stronie powstaje dopiero w skrypcie ładowanym PÓŹNIEJ
 //   DUPLICATE_DEFINITION – to samo globalne API tworzone w więcej niż jednym pliku
 //   MODULE_DEPENDS_ON_APP – plik z moduly/ zależy od API zdefiniowanego w kodzie samej apki
@@ -33,7 +34,7 @@ const LIBS = {
   'pizzip.min.js': { name: 'PizZip', use: /\bPizZip\b/ },
   'docxtemplater.min.js': { name: 'docxtemplater', use: /\bnew\s+(?:window\.)?docxtemplater\b|\bwindow\.docxtemplater\b/i },
   // szkielet Ionic + Vue (moduly/szkielet, paczka Vite): tworzy API dla reszty apki; z apki czyta dopiero w działaniu (nie przy ładowaniu)
-  'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna'], use: /(?!)/ }
+  'szkielet.js': { name: ['OESTEkrany', 'OESTRama', 'OESTOkna', 'OESTCzesci'], use: /(?!)/ }
 };
 const TRACKED = /^(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)$/;
 const USE_RE = /\b(OEST[A-Za-z0-9_]+|TPL_[A-Z0-9_]+)\b/g;
@@ -73,7 +74,21 @@ function scan(code) {
   for (const m of c.matchAll(USE_RE)) if (TRACKED.test(m[1]) && !/Plugins\.$/.test(c.slice(Math.max(0, m.index - 8), m.index))) uses.add(m[1]); // Capacitor.Plugins.X = wtyczka natywna, nie skrypt
   for (const lib of Object.values(LIBS)) if (lib.use.test(c)) uses.add(lib.name);
   for (const d of defs) uses.delete(d);
-  return { defs, uses };
+  return { defs, uses, opcjonalne: opcjonalne(c, uses) };
+}
+// Zależność opcjonalna (Grzegorz 25.11.2026): plik sięga po API WYŁĄCZNIE przez obiekt globalny (w.X / window.X …) i sprawdza,
+// czy ono jest („w.X && …”, „if (w.X)”, „!w.X”, „var H = w.X; if (!H)”). Na stronie bez tego modułu kod po prostu go pomija,
+// więc brak API nie jest UNDEFINED_GLOBAL. Choć jedno użycie bez obiektu globalnego (X.y) albo bez żadnego sprawdzenia = zwykła zależność.
+// Kolejność (LOAD_ORDER) sprawdza się dalej, gdy strona to API ładuje.
+function opcjonalne(c, uses) {
+  const out = new Set(), G = '\\b(?:window|w|globalThis|self|g)\\s*\\.\\s*';
+  for (const u of uses) {
+    const wszystkie = [...c.matchAll(new RegExp('\\b' + u + '\\b', 'g'))];
+    const przezGlobalny = wszystkie.every(m => new RegExp(G + '$').test(c.slice(Math.max(0, m.index - 20), m.index)));
+    const sprawdzane = new RegExp(G + u + '\\b(?!\\s*[.(\\[=])').test(c);
+    if (wszystkie.length && przezGlobalny && sprawdzane) out.add(u);
+  }
+  return out;
 }
 
 function pageScripts(page) {
@@ -114,7 +129,7 @@ function analyse() {
     const edges = new Map();
     scripts.forEach((s, i) => {
       for (const u of s.uses) {
-        if (!firstDef.has(u)) { add(`UNDEFINED_GLOBAL|${page}|${s.id}|${u}`, 'UNDEFINED_GLOBAL', `${page}: ${s.id} używa ${u}, którego żaden skrypt strony nie tworzy`); continue; }
+        if (!firstDef.has(u)) { if (s.opcjonalne && s.opcjonalne.has(u)) continue; add(`UNDEFINED_GLOBAL|${page}|${s.id}|${u}`, 'UNDEFINED_GLOBAL', `${page}: ${s.id} używa ${u}, którego żaden skrypt strony nie tworzy`); continue; }
         const j = firstDef.get(u);
         if (j > i) add(`LOAD_ORDER|${page}|${s.id}|${u}`, 'LOAD_ORDER', `${page}: ${s.id} (poz. ${i + 1}) używa ${u} z ${scripts[j].id} (poz. ${j + 1}, ładowany później)`);
         if (j !== i) { if (!edges.has(s.id)) edges.set(s.id, new Set()); edges.get(s.id).add(scripts[j].id); }
