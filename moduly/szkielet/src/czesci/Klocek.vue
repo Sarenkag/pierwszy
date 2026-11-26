@@ -1,7 +1,7 @@
 <!-- Klocek listy – JEDEN w całej apce (Grzegorz 04/11 i 07/11/2026; 23/11: linia 1 = nazwa + numer zlecenia Vantify, pigułka statusu w linii 2): inspekcje, dzień w Kalendarzu, Reactive, grupy, raporty.
      Każde miejsce stałe; lista tylko podaje dane (zwykły obiekt z modułu), klocek niczego nie liczy:
        { id, grupa (kolor paska z lewej: fire/water/elec/mech/sub – kolory w szkielet.css), nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
-         opis, termin: { tekst, ton: ''|'jutro'|'red' }, numer (zlecenie Vantify, linia 1 na prawo od nazwy, w całości – nazwa skracana „…”; linia 3 ma stałe miejsca jak na main, usterki z miejscem także bez usterek – Grzegorz 23/11: „Stałe miejsca, numer w 1. linii”), opisTon (kolor Ionic opisu – wtedy kursywą, np. status Vantify w Reactive, Grzegorz 26/11/2026), procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
+         opis, termin: { tekst, ton: ''|'jutro'|'red' }, numer (zlecenie Vantify, linia 1 na prawo od nazwy, w całości – nazwa skracana „…”; linia 3 ma stałe miejsca jak na main, usterki z miejscem także bez usterek – Grzegorz 23/11: „Stałe miejsca, numer w 1. linii”), opisTon (kolor Ionic opisu – wtedy kursywą: szkielet.css, wyjątek w quality/wyjatki-ionic.json; np. status Vantify w Reactive, Grzegorz 26/11/2026), procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
          miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
      Wygląd jak dotąd (szkielet.css, .oest-klocek: szkło, pasek grupy z lewej, odstępy i separatory jak w moduly/klocek). Stuknięcie w dowolne miejsce: zdarzenie „wybierz” (bez strzałki z prawej – Grzegorz 23/11); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
@@ -15,7 +15,7 @@
       <span v-if="k.znak !== undefined" class="oest-klok">{{ k.znak }}</span>
       <template v-if="k.czestotliwosc != null"><ion-icon :icon="I.czest" aria-hidden="true"></ion-icon><strong class="oest-kcz">{{ k.czestotliwosc }}</strong></template>
       <ion-icon v-if="k.formularz" :icon="I.dokument" :data-ton="k.formularz" :aria-label="T('Zdjęcie formularza', 'Form photo')"></ion-icon>
-      <span v-if="k.opis" class="oest-kopis"><ion-text v-if="k.opisTon" :color="k.opisTon"><em>{{ k.opis }}</em></ion-text><template v-else>{{ k.opis }}</template></span>
+      <span v-if="k.opis" class="oest-kopis"><ion-text v-if="k.opisTon" :color="k.opisTon">{{ k.opis }}</ion-text><template v-else>{{ k.opis }}</template></span>
       <span class="oest-kodstep"></span>
       <Pigulka v-if="k.status" :T="T" :tryb="k.status.tryb" :tekst="k.status.tekst" :ton="k.status.ton"></Pigulka>
     </div>

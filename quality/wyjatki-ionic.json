@@ -687,6 +687,11 @@
       "plik": "moduly/szkielet/src/ekrany/inspekcja/Wysylka.vue",
       "powod": "Wybór jednej opcji w sekcji wysyłki (ion-radio-group z ion-radio w ion-item) – tylko w tym jednym pliku (Grzegorz 25.11.2026).",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT9kJoCgheWnnkdK8MMExhWK"
+    },
+    {
+      "co": "css:.oest-klocek .oest-kopis ion-text",
+      "powod": "Status Vantify w klocku Reactive kursywą (Ionic nie ma klasy kursywy); kolor z ion-text color.",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8PU3PPoJ9NzLfPisfh3FWG"
     }
   ]
 }
