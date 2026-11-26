@@ -1,9 +1,8 @@
-<!-- Linia 1 klocka zlecenia Reactive: nazwa zadania, po prawej numer zlecenia Vantify („#3084366”) albo „brak nr”. -->
+<!-- Linia 1 klocka zlecenia Reactive: nazwa zadania · numer zlecenia Vantify („#3084366”) albo „brak nr”. Wewnątrz ion-label klocka. -->
 <template>
-  <ion-item lines="none"><ion-label>{{ nazwa }}</ion-label><ion-note slot="end">{{ nr }}</ion-note></ion-item>
+  <h2>{{ nazwa }} · {{ nr }}</h2>
 </template>
 
 <script setup>
-import { IonItem, IonLabel, IonNote } from '@ionic/vue';
 defineProps({ nazwa: String, nr: String });
 </script>

@@ -6,7 +6,7 @@
     <ion-item lines="none"><ion-label>{{ n.etykieta }}</ion-label><ion-badge v-if="n.licznik" slot="end">{{ n.licznik }}</ion-badge></ion-item>
     <Zablokowane :z="n.zablokowane"></Zablokowane>
     <Notatki v-if="!n.zablokowane && opcje" :T="T" :opcje="opcje"></Notatki>
-    <ion-item><ion-textarea :aria-label="n.etykieta" :disabled="!!n.zablokowane" :maxlength="20000" :rows="3" :auto-grow="true" :placeholder="n.podpowiedz" :value="n.wartosc" @ionInput="e => emit('pole', n.pole, e.detail.value)"></ion-textarea></ion-item>
+    <ion-item><ion-textarea :aria-label="n.etykieta" :disabled="!!n.zablokowane" :maxlength="20000" :rows="1" :auto-grow="true" :placeholder="n.podpowiedz" :value="n.wartosc" @ionInput="e => emit('pole', n.pole, e.detail.value)"></ion-textarea></ion-item>
   </div>
 </template>
 

@@ -9,7 +9,7 @@
     <ion-card>
       <ion-item lines="none"><ion-label>{{ d.koniec.etykieta }}</ion-label><ion-note slot="end">{{ d.koniec.tekst || d.koniec.podpowiedz }}</ion-note></ion-item>
       <Chipy :opcje="d.koniec.akcje" rx="action"></Chipy>
-      <ion-item><ion-textarea label-placement="stacked" :label="d.koniec.etRaport" data-rx-field="reportText" :rows="6" :maxlength="30000" :value="d.koniec.raport" @ionInput="e => A.pole('reportText', e.detail.value)"></ion-textarea></ion-item>
+      <ion-item><ion-textarea label-placement="stacked" :label="d.koniec.etRaport" data-rx-field="reportText" :auto-grow="true" :rows="2" :maxlength="30000" :value="d.koniec.raport" @ionInput="e => A.pole('reportText', e.detail.value)"></ion-textarea></ion-item>
       <div>
         <ion-button fill="outline" data-akcja="podglad" @click="A.akcja('sum-view')">{{ d.koniec.podglad }}</ion-button>
         <ion-button v-if="d.koniec.przywroc" fill="outline" data-akcja="przywroc" @click="A.akcja('report-reset')">{{ d.koniec.przywroc }}</ion-button>
