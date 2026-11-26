@@ -23,7 +23,7 @@
       calendar:{calendarId:'',name:'',exportShifts:false,exportInspections:true,enabled:false,nativeCalendarId:'',accountName:'',weeks:8,workdayMode:'all',groups:['fire','water','elec','mech','sub'],shiftMarkers:false,shiftCalendarId:'',shiftCalendarName:''},
       sync:{preferWifi:true,mobile:'manual',warnMB:null,maxConcurrent:1},
       reports:{language:'en',compression:'readable',photosPerPage:10,formats:['docx','pdf']},
-      inspection:{startMode:'empty'},ai:{location:'phone',provider:'local',visionModel:'',textModel:'',cloudModel:'',ocrEnabled:true,autoAnalyzePhotos:true,maxConcurrent:1,autoCloudFallback:false},appearance:{language:'pl',theme:'graphite',accent:'default',density:'comfortable',reduceMotion:false},legacyProfile:{}};
+      inspection:{startMode:'empty'},ai:{location:'phone',provider:'local',visionModel:'',textModel:'',cloudModel:'',ocrEnabled:true,autoAnalyzePhotos:true,maxConcurrent:1,autoCloudFallback:false,/* słownik pojęć dla Gemmy (Grzegorz 25/11/2026): doklejany do stałego promptu */glossary:[{pl:'AOV',en:'AOV',note:'automatic opening vent'},{pl:'DB',en:'DB',note:'distribution board'},{pl:'AHU',en:'AHU',note:'air handling unit'},{pl:'TMV',en:'TMV',note:'thermostatic mixing valve'},{pl:'PPM',en:'PPM',note:'planned preventive maintenance'},{pl:'izolator',en:'isolator',note:'local isolating switch, never insulator'},{pl:'kran',en:'tap',note:'never faucet'},{pl:'winda',en:'lift',note:'never elevator'}]},appearance:{language:'pl',theme:'graphite',accent:'default',density:'comfortable',reduceMotion:false},legacyProfile:{}};
   }
   function validate(s, importing) {
     var allowed=['version','owner','revision','profile','schedules','contacts','contactsLabel','mail','drive','calendar','sync','reports','inspection','appearance','ai'];
@@ -51,6 +51,7 @@
     if(['empty','allOk','previous'].indexOf(s.inspection.startMode)<0) fail('START_MODE');
     if(s.ai.location!=='phone'||s.ai.autoCloudFallback!==false||s.ai.maxConcurrent!==1||['local','openai','anthropic','gemini'].indexOf(s.ai.provider)<0||typeof s.ai.ocrEnabled!=='boolean'||typeof s.ai.autoAnalyzePhotos!=='boolean')fail('AI_POLICY');
     ['visionModel','textModel','cloudModel'].forEach(function(k){if(typeof s.ai[k]!=='string'||s.ai[k].length>200)fail('AI_MODEL');});
+    if(!Array.isArray(s.ai.glossary)||s.ai.glossary.length>500||s.ai.glossary.some(function(g){return !g||typeof g!=='object'||Object.keys(g).some(function(k){return ['pl','en','note'].indexOf(k)<0;})||['pl','en','note'].some(function(k){return typeof g[k]!=='string'||g[k].length>200;})||!g.pl.trim()||!g.en.trim();}))fail('AI_GLOSSARY');
     if(typeof s.calendar.exportShifts!=='boolean'||typeof s.calendar.exportInspections!=='boolean') fail('CALENDAR_POLICY');
     if(typeof s.calendar.shiftCalendarId!=='string'||typeof s.calendar.shiftCalendarName!=='string') fail('CALENDAR_POLICY');
     if(typeof s.calendar.enabled!=='boolean'||typeof s.calendar.shiftMarkers!=='boolean'||typeof s.calendar.nativeCalendarId!=='string'||typeof s.calendar.accountName!=='string'||!Number.isInteger(s.calendar.weeks)||s.calendar.weeks<1||s.calendar.weeks>52||!['all','skip','next'].includes(s.calendar.workdayMode)||!Array.isArray(s.calendar.groups)||s.calendar.groups.some(g=>!['fire','water','elec','mech','sub'].includes(g))) fail('CALENDAR_POLICY');
@@ -84,7 +85,7 @@
     function key(id){return 'oest.settings.v1.'+encodeURIComponent(id);}
     function get(){
       var who=identity(),s=read(key(who.id),null);
-      if(s){s.calendar=Object.assign({},defaults(who.id,who.a).calendar,s.calendar);s.profile=Object.assign({privateEmail:'',language:s.appearance&&s.appearance.language==='en'?'en':'pl'},s.profile);validate(s,false);return copy(s);}
+      if(s){s.calendar=Object.assign({},defaults(who.id,who.a).calendar,s.calendar);s.ai=Object.assign({},defaults(who.id,who.a).ai,s.ai);/* starsze ustawienia bez słownika dostają listę startową */s.profile=Object.assign({privateEmail:'',language:s.appearance&&s.appearance.language==='en'?'en':'pl'},s.profile);validate(s,false);return copy(s);}
       s=defaults(who.id,who.a);
       var migrationOwner=read('oest.settings.legacyOwner',null);
       if(!migrationOwner || migrationOwner===who.id){
@@ -146,7 +147,7 @@
     function checkBackup(b){
       if(!b||b.kind!=='OEST_SETTINGS'||b.version!==1)fail('BACKUP_VERSION');
       if(b.owner!==identity().id||!b.data||b.data.owner!==b.owner)fail('BACKUP_OWNER');
-      var incoming=copy(b.data);incoming.calendar=Object.assign({},defaults(b.owner,{}).calendar,incoming.calendar);incoming.profile=Object.assign({privateEmail:'',language:incoming.appearance&&incoming.appearance.language==='en'?'en':'pl'},incoming.profile);validate(incoming,true);return incoming;
+      var incoming=copy(b.data);incoming.calendar=Object.assign({},defaults(b.owner,{}).calendar,incoming.calendar);incoming.ai=Object.assign({},defaults(b.owner,{}).ai,incoming.ai);incoming.profile=Object.assign({privateEmail:'',language:incoming.appearance&&incoming.appearance.language==='en'?'en':'pl'},incoming.profile);validate(incoming,true);return incoming;
     }
     function previewRestore(b){var s=checkBackup(b);return {profileName:[s.profile.first,s.profile.last].filter(Boolean).join(' '),contacts:s.contacts.length,schedules:s.schedules.length,exportedAt:b.exportedAt};}
     function restore(b,confirmed){if(confirmed!==true)fail('RESTORE_CONFIRM');var incoming=checkBackup(b);return update(function(s){var legacy=s.legacyProfile;Object.assign(s,incoming);s.legacyProfile=legacy;});}

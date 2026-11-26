@@ -2,8 +2,11 @@ package com.oest.inspekcje
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
 import com.getcapacitor.JSObject
@@ -22,8 +25,10 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /**
- * Model tekstowy na telefonie (LiteRT-LM, Gemma 4 E2B/E4B). Plik modelu pobierany raz przez Wi-Fi (DownloadManager)
- * do katalogu apki; potem wszystko offline. Jedno zadanie naraz, silnik zwalniany po 3 min bezczynności.
+ * Model tekstowy na telefonie (LiteRT-LM, Gemma 4 E2B/E4B). Jeden plik na telefonie (Grzegorz 25/11/2026): najpierw folder
+ * „Modele” w pamięci telefonu (czytany na miejscu, bez kopii; wymaga zgody „Dostęp do wszystkich plików”), a gdy go tam nie ma –
+ * plik pobrany raz przez Wi-Fi (DownloadManager) do katalogu apki. Potem wszystko offline. Jedno zadanie naraz,
+ * silnik zwalniany po 3 min bezczynności.
  */
 @CapacitorPlugin(name = "OESTModel")
 class ModelPlugin : Plugin() {
@@ -35,6 +40,12 @@ class ModelPlugin : Plugin() {
     private val idle = Runnable { if (!destroyed) try { worker.execute { closeEngine() } } catch (_: Throwable) {} }
 
     private fun dir(): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "models").also { it.mkdirs() }
+    /** Wspólny folder modeli: /sdcard/Modele (inne apki też mogą z niego czytać). */
+    private fun shared(name: String): File = File(Environment.getExternalStorageDirectory(), "Modele/$name")
+    private fun access(): Boolean = Build.VERSION.SDK_INT < 30 || Environment.isExternalStorageManager()
+    private fun sharedOk(name: String): Boolean = access() && shared(name).let { it.isFile && it.canRead() && it.length() > 0 }
+    /** Plik, z którego czytamy: folder Modele, a gdy go tam nie ma – kopia pobrana przez apkę. */
+    private fun fileFor(name: String): File = if (sharedOk(name)) shared(name) else File(dir(), name)
     private fun safeName(n: String): String { require(Regex("^[A-Za-z0-9._-]{1,80}\\.litertlm$").matches(n)) { "MODEL_NAME" }; return n }
     private fun prefs() = context.getSharedPreferences("oest-model", Context.MODE_PRIVATE)
     private fun dm() = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
@@ -42,10 +53,13 @@ class ModelPlugin : Plugin() {
     @PluginMethod fun status(call: PluginCall) {
         try {
             val name = safeName(call.getString("name", "")!!)
-            val file = File(dir(), name)
+            val isShared = sharedOk(name)
+            val file = fileFor(name)
             val out = JSObject()
             out.put("supported", Build.VERSION.SDK_INT >= 31)
-            out.put("ready", file.exists() && file.length() > 0 && prefs().getLong("dl:$name", -1L) == -1L)
+            out.put("access", access())
+            out.put("shared", isShared)
+            out.put("ready", file.exists() && file.length() > 0 && (isShared || prefs().getLong("dl:$name", -1L) == -1L))
             out.put("bytes", if (file.exists()) file.length() else 0L)
             out.put("loaded", engine != null && engineFile == file.path)
             val id = prefs().getLong("dl:$name", -1L)
@@ -74,6 +88,7 @@ class ModelPlugin : Plugin() {
             val url = call.getString("url", "")!!
             require(url.startsWith("https://huggingface.co/litert-community/")) { "MODEL_URL" }
             if (prefs().getLong("dl:$name", -1L) >= 0) { call.resolve(); return }
+            if (sharedOk(name)) { call.resolve(); return } // jest już w folderze Modele – druga kopia niepotrzebna
             val file = File(dir(), name); file.delete()
             val req = DownloadManager.Request(Uri.parse(url))
                 .setTitle("OEST: model tekstowy")
@@ -93,11 +108,24 @@ class ModelPlugin : Plugin() {
             val id = prefs().getLong("dl:$name", -1L)
             if (id >= 0) { dm().remove(id); prefs().edit().remove("dl:$name").apply() }
             worker.execute {
-                val file = File(dir(), name)
+                val file = File(dir(), name) // usuwa tylko kopię apki; pliku z folderu Modele apka nie kasuje
                 if (engineFile == file.path) closeEngine()
                 file.delete(); call.resolve()
             }
         } catch (e: Throwable) { call.reject("MODEL_REMOVE: " + e.message) }
+    }
+
+    /** Otwiera ustawienia Androida „Dostęp do wszystkich plików” dla OEST (odczyt folderu Modele). */
+    @PluginMethod fun allowFiles(call: PluginCall) {
+        if (Build.VERSION.SDK_INT < 30 || access()) { call.resolve(); return }
+        try {
+            val i = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + context.packageName))
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try { context.startActivity(i) } catch (_: Throwable) {
+                context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            call.resolve()
+        } catch (e: Throwable) { call.reject("MODEL_ACCESS: " + e.message) }
     }
 
     /** {name, system, prompt, temperature?} → {text} */
@@ -110,8 +138,8 @@ class ModelPlugin : Plugin() {
         main.removeCallbacks(idle)
         worker.execute {
             try {
-                val file = File(dir(), name)
-                if (!file.exists() || stillDownloading(name)) throw IllegalStateException("MODEL_NOT_DOWNLOADED")
+                val file = fileFor(name)
+                if (!file.exists() || (file.parentFile == dir() && stillDownloading(name))) throw IllegalStateException("MODEL_NOT_DOWNLOADED")
                 val eng = load(file)
                 val cfg = ConversationConfig(
                     systemInstruction = Contents.of(system),

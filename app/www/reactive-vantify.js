@@ -57,7 +57,8 @@
     /* piętro z napisem jak w kreatorze (K.where): „Level 20”, nie gołe „20” (Grzegorz 21/11/2026) */
     const lvl = String(d.level || ''), where = [d.building, /^\d/.test(lvl) ? 'Level ' + lvl : lvl, d.flat ? 'Flat ' + d.flat : '', roomEn].filter(Boolean).join(', ');
     /* kreator opisu (PROD-039): Summary i opis zlecenia z wyborów (już po angielsku), info na start dopisane pod spodem */
-    const sum = ks ? K.summary(ks) : await x.english(d.title || d.problem || '', ''), body = await x.english('start', d.note || '');
+    /* bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026); do poprawy w oknie poniżej */
+    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '', body = await x.english('start', d.note || '');
     const desc = [ks ? K.request(ks) : '', body, where ? 'Location: ' + where : ''].filter(Boolean).join('\n');
     /* priorytet do wyboru (Grzegorz 20/11/2026: dłuższy termin niż P5, żeby zlecenie nie było zaległe, zanim Josh zatwierdzi);
        lista z Vantify tego samego rodzaju co priorytet ze wzoru, domyślnie ostatnio wybrany. Pierwszy raz (bez wzoru) – wybór w oknie Vantify */
