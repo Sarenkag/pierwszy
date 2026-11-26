@@ -61,7 +61,7 @@
                 <ion-button fill="outline" data-rx="sum-del" :data-i="i" :aria-label="d.usun" @click="A.akcja('sum-del', { i })">✕</ion-button>
               </div>
             </div>
-            <div v-else class="oest-rr-body">{{ d.strona.details }}</div>
+            <div v-else class="oest-rr-body"><div v-for="(s, i) in d.strona.sekcje" :key="i"><strong v-if="s.naglowek">{{ s.naglowek }}</strong><div>{{ s.tekst }}</div><br v-if="i < d.strona.sekcje.length - 1"></div></div>
           </div>
           <div class="oest-rr-foot"><div v-for="(t, i) in d.strona.stopka" :key="i">{{ t }}</div></div>
           <template v-if="d.strona.zdjecia.length">
