@@ -16,7 +16,7 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 | `{level}` | piętro | level | basic, plant |
 | `{title}` | rodzaj inspekcji | inspection type | basic, plant |
 | `{condition}` | stan ogólny | overall condition | basic, plant |
-| `{details}` | opis i ustalenia | details and findings | basic |
+| `{details}` | opis i ustalenia | details and findings | basic, reactive-basic |
 | `{quote}` | wycena tak/nie | quote yes/no | basic, plant |
 | `{%photos}` | zdjęcia (siatka) | photos (grid) | basic, plant |
 | `{a}` | Plant: kolumna a | Plant: column a | plant |
@@ -159,4 +159,5 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 - **Weekly Flushing Tower B – basic form middle** (`flush-basic-tb`, plik `flush-tb-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{ok15}` `{no15}` `{na15}` `{note15}` `{ok16}` `{no16}` `{na16}` `{note16}` `{zone1}` `{zone2}` `{zone3}` `{zone4}`
 - **Weekly Flushing Pavilion – basic form middle** (`flush-basic-p`, plik `flush-p-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
 - **Generator Checks – Weekly – basic form middle** (`gen-basic`, plik `gen-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
+- **Reactive Job Sheet – basic form middle (no Overall Condition)** (`reactive-basic`, plik `reactive-srodek.docx`): `{details}`
 - **Monthly Tap Temperature Check TB (QHS-031)** (`temp-tb`, plik `temp-tb.docx`): `{temp}` `{name}` `{data}`

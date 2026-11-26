@@ -125,6 +125,8 @@
     if (!V || !V.sync) return Promise.reject(new Error("VANTIFY_NATIVE"));
     return V.sync({}).then(function (r) {
       var st = getJson(AKEY) || {}; st.at = Date.now(); st.last = (r && r.status) || "error"; setJson(AKEY, st);
+      // po udanym pobraniu (ręcznym i co 4 h) odświeżany jest też status zleceń Reactive z numerem (reactive-vantify.js, Grzegorz 26/11/2026)
+      if (r && r.status === "ok") { try { w.dispatchEvent(new CustomEvent("oest:vantify-pobrane")); } catch (e) {} }
       return r || {};
     });
   }

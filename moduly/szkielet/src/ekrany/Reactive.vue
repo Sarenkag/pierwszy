@@ -1,10 +1,9 @@
 <!-- Reactive (reactive, reactive/new|draft|job|complete/:id, reactive/tree/:id, reactive/history): lista zadań (filtr + klocki),
-     drzewko „Nowe zadanie”, karta zlecenia, kreator „Co”, podgląd raportu (kartka jak PDF, po angielsku), historia i ustawienia.
+     drzewko „Nowe zadanie”, zlecenie (4 zakładki, wariant B 26/11/2026), kreator „Co”, podgląd raportu (kartka jak PDF, po angielsku), historia i ustawienia.
      Dane i reguły (zapis szkicu, wysyłka, Vantify, notatki): OESTReactiveUI (app/www/reactive.js) – tu tylko wspólne części i układ jak na main.
      Akcje na końcu przewijanej treści; komunikaty przez wspólny toast Ionic. -->
 <template>
   <div :data-ekran="d.ekran">
-    <AkcjeEkranu v-if="akcje.length" :akcje="akcje"></AkcjeEkranu>
     <!-- lista, historia, drzewko i grupy kreatora: klocki i kafelki bez oest-ekran (własny wygląd części, jak w Inspekcjach i na ekranie głównym) -->
     <div v-if="['lista', 'historia', 'drzewo', 'kreator'].includes(d.ekran)">
       <template v-if="d.ekran === 'lista'">
@@ -56,7 +55,6 @@
           </div>
           <div class="oest-rr-box">
             <div class="oest-rr-title">{{ d.strona.title }}</div>
-            <div>{{ d.strona.condition }}</div>
             <div v-if="d.akapity" class="oest-rr-body">
               <div v-for="(t, i) in d.akapity" :key="i + '|' + d.akapity.length">
                 <ion-item><ion-textarea :aria-label="d.strona.title" :data-rx-sum="i" :auto-grow="true" :rows="2" :maxlength="20000" :value="t" @ionInput="e => A.akcja('sum-edit', { i, value: e.detail.value })"></ion-textarea></ion-item>
@@ -75,7 +73,18 @@
         <p>{{ d.plik }}</p>
       </template>
 
-      <Karta v-else-if="d.ekran === 'karta'" :T="T" :d="d"></Karta>
+      <!-- zlecenie, wariant B (Grzegorz 26/11/2026): zakładki i klocek zlecenia stoją pod paskiem, w zakładce jej pola -->
+      <template v-else-if="d.ekran === 'karta'">
+        <Teleport defer to="#oest-pod-paskiem">
+          <ZakladkiReactive :T="T" :z="d.zakladki" @wybierz="id => A.akcja('tab', { id })"></ZakladkiReactive>
+          <Klocek :T="T" :k="d.klocek" @wybierz="A.akcja('row', { id: 'more' })"></Klocek>
+        </Teleport>
+        <Wiecej v-if="d.wiecej" :T="T" :w="d.wiecej"></Wiecej>
+        <ZakladkaZlecenie v-if="d.zakladki.aktywna === 'zlecenie'" :T="T" :d="d"></ZakladkaZlecenie>
+        <ZakladkaZdjecia v-else-if="d.zakladki.aktywna === 'zdjecia'" :T="T" :d="d"></ZakladkaZdjecia>
+        <ZakladkaNotatki v-else-if="d.zakladki.aktywna === 'notatki'" :T="T" :d="d"></ZakladkaNotatki>
+        <ZakladkaZamkniecie v-else :T="T" :d="d"></ZakladkaZamkniecie>
+      </template>
 
       <template v-else-if="d.ekran === 'zamkniete'">
         <p>{{ d.podpis }}</p>
@@ -93,16 +102,9 @@
     </div>
 
     <div>
-      <!-- dolne przyciski karty jak na main (Grzegorz 25.11.2026): siatka 2×2 równych – Open | Close Vantify, Wyślij do siebie | Zakończ zadanie -->
-      <ion-grid v-if="d.vantify || d.ekran === 'karta'"><ion-row>
-        <ion-col v-for="b in (d.vantify ? d.vantify.rzad : [])" :key="b.rx + b.tekst" size="6"><ion-button expand="block" :fill="b.ton === 'go' ? 'solid' : 'outline'" :data-rx="b.rx" :data-ton="b.ton || undefined" @click="A.akcja(b.rx)">{{ b.tekst }}</ion-button></ion-col>
-        <ion-col v-if="d.vantify && d.vantify.update" size="12"><ion-button expand="block" fill="outline" :data-rx="d.vantify.update.rx" :data-ton="d.vantify.update.ton || undefined" @click="A.akcja(d.vantify.update.rx)">{{ d.vantify.update.tekst }}</ion-button></ion-col>
-        <template v-if="d.ekran === 'karta'">
-          <ion-col size="6"><ion-button expand="block" fill="outline" data-rx="send" @click="A.akcja('send')">{{ d.wyslij }}</ion-button></ion-col>
-          <ion-col size="6"><ion-button expand="block" :fill="d.zakoncz.go ? 'solid' : 'outline'" data-rx="close" @click="A.akcja('close')">{{ d.zakoncz.tekst }}</ion-button></ion-col>
-        </template>
-      </ion-row></ion-grid>
       <template v-if="d.ekran === 'zamkniete'">
+        <!-- zadanie zakończone w apce, a zlecenie w Vantify nadal otwarte: przyciski Vantify zostają (przegląd Codex #146) -->
+        <template v-if="d.vantify"><ion-button v-for="b in [d.vantify.open, d.vantify.close]" :key="b.rx + b.tekst" expand="block" :fill="b.ton === 'go' ? 'solid' : 'outline'" :color="b.ton === 'done' ? 'success' : undefined" data-akcja="vantify" @click="A.akcja(b.rx)">{{ b.tekst }}</ion-button></template>
         <ion-button data-rx="send" @click="A.akcja('send')">{{ d.wyslij }}</ion-button>
         <ion-button fill="outline" data-rx="home" @click="A.akcja('home')">{{ d.powrot }}</ion-button>
       </template>
@@ -124,15 +126,18 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { IonButton, IonCard, IonItem, IonCheckbox, IonTextarea, IonGrid, IonRow, IonCol } from '@ionic/vue';
-import { ellipsisVertical } from 'ionicons/icons';
+import { IonButton, IonCard, IonItem, IonCheckbox, IonTextarea } from '@ionic/vue';
 import Filtr from '../czesci/Filtr.vue';
 import Klocek from '../czesci/Klocek.vue';
 import Kafelki from '../czesci/Kafelki.vue';
 import Akcja from '../czesci/Akcja.vue';
-import AkcjeEkranu from '../czesci/AkcjeEkranu.vue';
 import InfoInspekcji from '../czesci/InfoInspekcji.vue';
-import Karta from './reactive/Karta.vue';
+import ZakladkiReactive from '../czesci/ZakladkiReactive.vue';
+import Wiecej from './reactive/Wiecej.vue';
+import ZakladkaZlecenie from './reactive/ZakladkaZlecenie.vue';
+import ZakladkaZdjecia from './reactive/ZakladkaZdjecia.vue';
+import ZakladkaNotatki from './reactive/ZakladkaNotatki.vue';
+import ZakladkaZamkniecie from './reactive/ZakladkaZamkniecie.vue';
 import Zdjecia from './reactive/Zdjecia.vue';
 import Nagrania from './reactive/Nagrania.vue';
 import DodajPozycje from './reactive/DodajPozycje.vue';
@@ -150,7 +155,6 @@ async function dodaj() {
   if (r && r.ok && r.dane) A.akcja('kr-add', r.dane);
 }
 // przyciski ekranu (rząd na górze treści, nie header): ⋮ na karcie (stan, części, kosztorys). Zębatki „Ustawienia Reactive” nie ma (Grzegorz 25.11.2026: nic nie robiła).
-const akcje = computed(() => d.value.naglowek === 'more' ? [{ ikona: ellipsisVertical, etykieta: props.T('Więcej: stan, części, kosztorys', 'More: condition, parts, quote'), fn: () => A.akcja('row', { id: 'more' }) }] : []);
 // tytuł w górnym pasku ramy = nazwa bieżącego widoku Reactive
 function naglowek() { window.OESTRama.ustaw({ tytul: d.value.tytul || '' }); }
 watch(() => [props.wersja, d.value.tytul], naglowek);

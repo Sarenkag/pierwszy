@@ -135,5 +135,5 @@
     return { type: TYPES.includes(d.jobType) ? d.jobType : 'REPAIR', items: k.items.slice(), groups: { ...(k.groups || {}) }, on: k.on || '', weight: k.weight || '', closing: k.closing !== false, where: { building: d.building || '', level: d.level || '', flat: d.flat || '', room: room === undefined ? d.room || '' : room } };
   }
   const heavy = sel => !!sel && (sel.items || []).some(i => (groupOf(i, sel.groups) || {}).kind === 'heavy');
-  return { fromDraft, heavy, TYPES, TYPE_PL, GROUPS, SURFACES, WEIGHT, FIXED, CLOSING, sentence, summary, description, request, closing, jobSheet, ordered, learn, where, groupOf };
+  return { fromDraft, heavy, TYPES, TYPE_PL, GROUPS, SURFACES, WEIGHT, FIXED, CLOSING, CLOSING_ADD, sentence, summary, description, request, closing, jobSheet, ordered, learn, where, groupOf };
 });
