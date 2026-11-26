@@ -35,6 +35,8 @@
       </div>
     </template>
     <ion-item v-if="d.zaloz" lines="none"><ion-button expand="block" :fill="d.zaloz.ton === 'go' ? 'solid' : 'outline'" :color="d.zaloz.ton === 'done' ? 'success' : undefined" data-akcja="vantify-zaloz" @click="A.akcja(d.zaloz.rx)">{{ d.zaloz.tekst }}</ion-button></ion-item>
+    <!-- usuwanie szkicu/zlecenia, dopóki nie poszło do Vantify – w zakładce Zlecenie pod „Załóż w Vantify” (Grzegorz 26/11/2026 19:30) -->
+    <ion-item v-if="d.usunSzkic" lines="none"><ion-button expand="block" fill="outline" color="danger" data-akcja="usun-szkic" @click="A.akcja('drop-draft')">{{ d.usunSzkic }}</ion-button></ion-item>
   </ion-card>
 </template>
 

@@ -18,7 +18,6 @@
     <ion-button v-if="d.zamknij" expand="block" :fill="d.zamknij.ton === 'go' ? 'solid' : 'outline'" :color="d.zamknij.ton === 'done' ? 'success' : undefined" data-akcja="vantify-zamknij" @click="A.akcja(d.zamknij.rx)">{{ d.zamknij.tekst }}</ion-button>
     <ion-button expand="block" fill="outline" data-akcja="wyslij" @click="A.akcja('send')">{{ d.wyslij }}</ion-button>
     <ion-button expand="block" :fill="d.zakoncz.go ? 'solid' : 'outline'" data-akcja="zakoncz" @click="A.akcja('close')">{{ d.zakoncz.tekst }}</ion-button>
-    <ion-button v-if="d.usunSzkic" fill="outline" data-akcja="usun-szkic" @click="A.akcja('drop-draft')">{{ d.usunSzkic }}</ion-button>
   </div>
 </template>
 
