@@ -78,13 +78,18 @@
   // {_links:{file, resource}, title, filename, type, href}; file/resource z odpowiedzi POST /files
   function link(f) { return { _links: { file: f.file || { href: f.href }, resource: f.resource || {} }, title: f.title, filename: f.name, type: f.type, href: f.href }; }
   // priorytet wybrany przy zakładaniu (Grzegorz 20/11/2026: dłuższy termin niż P5); bez wyboru zostaje ten ze wzoru
-  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: (o.files || []).map(link) }; if (o.priority) { var was = t._links && t._links.priority && t._links.priority.href || ""; b._links = b._links || {}; b._links.priority = { href: /^https?:/.test(was) ? String(o.priority) : path(o.priority) }; } return b; }
+  function create(t, o) { var b = strip(t); b.summary = String(o.summary || "").trim(); b.description = String(o.description || "").trim(); b.files = { links: (o.files || []).map(link) }; if (o.priority) { var was = t._links && t._links.priority && t._links.priority.href || ""; b._links = b._links || {}; b._links.priority = { href: /^https?:/.test(was) ? String(o.priority) : path(o.priority) }; } if (o.jobgroup) { var wg = t._links && t._links.jobgroup && t._links.jobgroup.href || ""; b._links = b._links || {}; b._links.jobgroup = { href: /^https?:/.test(wg) ? String(o.jobgroup) : path(o.jobgroup) }; } return b; }
   // lista priorytetów tego samego rodzaju co priorytet ze wzoru: {href, name, days, label}; dni = termin wykonania
   function hrefOf(x) { var h = x && x._links && x._links.self && (x._links.self.href || x._links.self); return typeof h === "string" ? h : ""; }
   function path(h) { return String(h || "").replace(/^https?:\/\/[^/]+/, ""); }
   function priorities(list, entityType) {
     return (Array.isArray(list) ? list : []).filter(function (p) { return p && p.active !== false && (!entityType || p.entityType === entityType) && hrefOf(p); })
       .map(function (p) { var sec = p.completePeriod && Number(p.completePeriod.period) || 0; return { href: hrefOf(p), name: String(p.name || ""), days: Math.round(sec / 86400 * 10) / 10, label: String(p.completePeriodDisplayValue || "") }; });
+  }
+  // Job Group przy zakładaniu (Grzegorz 26/11/2026: jego częste grupy na górze, pod nimi reszta): {href, name, parent}; podgrupa ma nazwę grupy nadrzędnej
+  function jobgroups(list) {
+    return (Array.isArray(list) ? list : []).filter(function (x) { return x && x.active !== false && hrefOf(x); })
+      .map(function (x) { var par = x.parent || (x._links && x._links.parent) || null; return { href: hrefOf(x), name: String(x.name || x.title || ""), parent: String(par && (par.name || par.title) || "") }; });
   }
   function commence(t, o) { var b = strip(t); b.onSiteDate = fmt(o.date, t._date); b.files = { links: [] }; return b; }
   function complete(t, o) {
@@ -134,7 +139,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief, errText: errText };
+  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, jobgroups: jobgroups, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief, errText: errText };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
@@ -246,6 +251,13 @@
         });
       }).catch(fail);
     }
+    if (a.op === "jobgroups") {
+      var curG = W.create && W.create._links && W.create._links.jobgroup && W.create._links.jobgroup.href;
+      if (!curG) return end({ status: "nowzor", op: "create" });
+      step = "jobgroups";
+      var gitems = function (r) { return (r && (r.jobgroups || r.jobGroups || (r._embedded && (r._embedded.jobgroups || r._embedded.jobGroups)))) || []; };
+      return req("GET", "/jobgroups?active=true&limit=500").then(function (r) { end({ status: "ok", current: curG, list: jobgroups(gitems(r)) }); }).catch(fail);
+    }
     if (a.op === "create") {
       if (!W.create) return end({ status: "nowzor", op: "create" });
       // najpierw pliki (zdjęcia przed), dopiero potem zlecenie: błąd przy plikach = zlecenie na pewno nie powstało (step "upload")
@@ -256,7 +268,7 @@
         // zlecenie bez linków do zdjęć: zdjęcie w zakładaniu Vantify odrzucał („files[links][0]: File resource could not be found”,
         // Grzegorz 21/11/2026), a bez zdjęć zakładanie przechodzi. Zdjęcia (jeśli są – nie zawsze są) zaraz po założeniu do tego samego
         // numeru przez Files → Add (zapis „Zbadaj” 18/11, 201); odmowa przy zdjęciu nie cofa założenia, powód wraca w photoError
-        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: [], priority: a.priority }));
+        return req("POST", "/sites/" + site + "/jobs/reactive", create(W.create, { summary: a.summary, description: a.description, files: [], priority: a.priority, jobgroup: a.jobgroup }));
       }).then(function (r) {
         var id = r && r.id, hrefs = sent.map(function (f) { return f.href; }), photoError = ""; if (!id) return end({ status: "error", code: "noid" });
         step = "check";
@@ -288,14 +300,14 @@
         return job(a.id).then(function (j) { return seenOf(j, (a.known || []).concat(put)); }).then(function (l) { end({ status: "ok", sent: put, seenHrefs: l }); });
       }).catch(function (e) { if (!put.length && Wa && Wa._built && step === "attach" && rejected(e)) return end({ status: "nowzor", op: "attach", built: true, code: e.code, msg: e.msg || "" }); if (!put.length) return fail(e); end({ status: e && e.code === "login" ? "login" : "error", code: (e && e.code) || "error", msg: (e && e.msg) || "", step: step, sent: put }); });
     }
-    // „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie nadal czeka na zatwierdzenie i ma tę samą nazwę co karta;
+    // „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie nadal czeka na zatwierdzenie (notatki z zakładki Notatki – anyStatus: każde niezamknięte, 26/11/2026) i ma tę samą nazwę co karta;
     // wiadomość → ponowny odczyt, czy jest przy zleceniu
     if (a.op === "update") {
       if (!W.update) return end({ status: "nowzor", op: "update" });
       step = "read";
       return job(a.id).then(function (j) {
         if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
-        if (j.is_final_status || j.status !== "approval_pending") { end({ status: "differs", why: j.is_final_status ? "final" : "approved", job: brief(j) }); throw { stop: 1 }; }
+        if (j.is_final_status || (!a.anyStatus && j.status !== "approval_pending")) { end({ status: "differs", why: j.is_final_status ? "final" : "approved", job: brief(j) }); throw { stop: 1 }; }
         if (a.summary && String(j.summary || "").trim() !== String(a.summary).trim()) { end({ status: "differs", why: "summary", job: brief(j) }); throw { stop: 1 }; }
         step = "update";
         return req("POST", "/sites/" + site + "/jobs/" + a.id + "/messages", message(W.update, { text: a.text })).then(function () { step = "check"; return hasMessage(j, a.text).catch(function () { return null; }); }).then(function (s) { end({ status: "ok", job: brief(j), seen: s }); });
