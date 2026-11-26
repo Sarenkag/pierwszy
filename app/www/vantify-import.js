@@ -17,6 +17,7 @@
   function use(p) {
     if (!V) return;
     V.exported = p.exported; V.jobs = p.jobs; V.cards = union(p.cards, base.cards || Object.keys(base.jobs)); V.source = "phone"; V.importedAt = p.at;
+    V.api = !!p.api; V.zmiany = p.zmiany || null;
   }
   // Data wczytanego planu = późniejsza z: najnowsze zlecenie w pliku, dzień wczytania (plik nie ma daty eksportu,
   // a zamknięcie najnowszego zlecenia obniża maksimum createdAt). Wczytany obowiązuje, chyba że apka ma nowszy eksport.
@@ -35,7 +36,7 @@
   function cardName(id) { var P = w.OEST_PPM, t = P && P.byId(id); return t ? t.name : id; }
   function count(j) { return Object.keys(j || {}).reduce(function (n, k) { return n + j[k].length; }, 0); }
 
-  // Podgląd przed zapisem: nic nie zapisuje. Błędy: VANTIFY_FORMAT, VANTIFY_EMPTY. older = tylko ostrzeżenie
+  // Porównanie z obecnym planem (samo nic nie zapisuje; zapis: zapiszPlan). Błędy: VANTIFY_FORMAT, VANTIFY_EMPTY. older = tylko ostrzeżenie
   // (data pliku to najnowsze createdAt, nie dzień eksportu: świeży eksport po zamknięciu najnowszego zlecenia wygląda na starszy).
   function previewRows(rows) {
     var c = cur(), p = E.plan(rows, { match: E.matcher(cards()), prevCards: c.cards || Object.keys(c.jobs || {}) });
@@ -45,14 +46,16 @@
   function preview(text) { return previewRows(E.parseCsv(text)); }
   // Lista zleceń z Vantify (vantify-sync.js, bez eksportu): ta sama droga co plik (moduł eksport-vantify), data = dzień pobrania.
   function today() { var d = new Date(); return d.getFullYear() + "-" + w.OESTNarzedzia.pad(d.getMonth() + 1) + "-" + w.OESTNarzedzia.pad(d.getDate()); }
-  function apiPreview(r, day) {
-    var rows = E.fromApi(r && r.jobs, day || today());
+  function apiPreview(r) {
+    var rows = E.fromApi(r && r.jobs, today());
     if (!rows.some(function (x) { return x.jobType === "Planned"; })) throw new Error("VANTIFY_EMPTY_LIST");
     var pv = previewRows(rows); pv.api = true; pv.older = false; return pv;
   }
   // Zapis + ponowny odczyt (DATA-002): sukces dopiero, gdy telefon oddał to samo.
-  function save(p) {
-    var rec = { exported: p.exported, date: p.date, jobs: p.jobs, cards: p.cards, at: new Date().toISOString() };
+  // o: { api: plan z „Pobierz z Vantify”, zmiany: nowe i zamknięte względem poprzedniego planu (pokazuje je karta) }
+  function save(p, o) {
+    o = o || {};
+    var rec = { exported: p.exported, date: p.date, jobs: p.jobs, cards: p.cards, at: new Date().toISOString(), api: !!o.api, zmiany: o.zmiany || null };
     ls().setItem(KEY, JSON.stringify(rec));
     var back = stored(); if (!back || back.exported !== rec.exported) throw new Error("VANTIFY_SAVE");
     use(back);
@@ -61,7 +64,15 @@
     try { w.dispatchEvent(new CustomEvent("oest:ppm-due-changed", { detail: { source: "vantify" } })); } catch (e) {}
     return back;
   }
-  function info() { var c = cur(); return { date: String(c.exported || "").slice(0, 10), source: c.source || "app", importedAt: c.importedAt || null, jobs: count(c.jobs) }; }
+  // Pobranie z Vantify (ręczne i przy starcie) i eksport z okna Vantify od razu zapisują plan (Grzegorz 26/11/2026:
+  // „Od razu zapis, jedna karta”) – bez podglądu i bez „Zapisz”/„Anuluj”. Karta pokazuje zapisany plan i zmiany z tego zapisu.
+  function zapiszPlan(r) {
+    var ch = r.changes;
+    var back = save(r.plan, { api: !!r.api, zmiany: { nowe: ch.added, zamkniete: ch.closed, pominiete: r.plan.missing || [], starszy: !!r.older, dataObecna: r.currentDate } });
+    zmiana(); // otwarty ekran Ustawienia → Vantify od razu pokazuje nowy plan (także po zapisie przy starcie apki)
+    return back;
+  }
+  function info() { var c = cur(); return { date: String(c.exported || "").slice(0, 10), source: c.source || "app", importedAt: c.importedAt || null, jobs: count(c.jobs), api: !!c.api, zmiany: c.zmiany || null }; }
 
   // Komunikaty ekranu: tekst w języku z chwili zdarzenia (jak dotąd – po zmianie PL/EN ekran odświeżał się bez komunikatów)
   function errText(e) {
@@ -105,14 +116,10 @@
     inMemory = rec; return "memory";
   }
   function plugin(name) { var C = w.Capacitor; if (!C || !C.isNativePlatform || !C.isNativePlatform()) return null; return (C.Plugins && C.Plugins[name]) || (C.registerPlugin && C.registerPlugin(name)); }
-  // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń; podgląd i zapis jak przy pliku.
-  // Gdy Vantify prosi o logowanie: otwiera okno Vantify, a po „Zakończ” pobiera jeszcze raz (raz, bez pętli).
-  var AKEY = "oest.vantify.auto", NKEY = "oest.vantify.nowe";
-  // odłożony podgląd z Vantify; gdy telefon go nie zapisze (brak miejsca), zostaje w pamięci – „Pokaż” nie otworzy starszej listy (przegląd Codex #135)
-  var memNew = null;
-  function dropNew() { memNew = null; setJson(NKEY, null); }
+  var AKEY = "oest.vantify.auto";
   function getJson(k) { try { return JSON.parse(ls().getItem(k) || "null"); } catch (e) { return null; } }
   function setJson(k, v) { try { if (v == null) ls().removeItem(k); else ls().setItem(k, JSON.stringify(v)); } catch (e) {} }
+  setJson("oest.vantify.nowe", null); // odłożony podgląd ze starszej wersji apki (już nieużywany)
   function sync() {
     var V = plugin("Vantify");
     if (!V || !V.sync) return Promise.reject(new Error("VANTIFY_NATIVE"));
@@ -122,32 +129,37 @@
     });
   }
   // ---------- ekran Ustawienia → Vantify: stan i akcje (Vantify.vue pyta dane(), po zmianie dostaje zdarzenie oest:vantify-stan) ----------
-  // Podgląd przed zapisem (pending) i komunikaty żyją tylko, dopóki ekran jest otwarty: wyjście z ekranu porzuca niezapisane.
-  var ui, pending = null, goAfter = null, zywy = false;
-  function zeruj() { pending = null; ui = { pobierz: null, login: null, vantify: null, wynik: null, fokus: 0, pobieranie: false, zbadaj: false }; }
+  // Komunikaty żyją tylko, dopóki ekran jest otwarty.
+  var ui, goAfter = null, zywy = false;
+  function zeruj() { ui = { pobierz: null, login: null, vantify: null, wynik: null, fokus: 0, pobieranie: false, zbadaj: false }; }
   zeruj();
   function zmiana() { try { w.dispatchEvent(new CustomEvent("oest:vantify-stan")); } catch (e) {} }
   function cutList(items, max) { return { wiersze: items.slice(0, max).map(function (x) { return dmy(x.due) + " · " + cardName(x.id) + " · " + x.no; }), wiecej: Math.max(0, items.length - max) }; }
-  function opis(r) {
-    var ch = r.changes, p = r.plan;
-    return { api: !!r.api, starszy: !!r.older, dataPlanu: dmy(p.date), dataObecna: dmy(r.currentDate), zlecen: ch.total,
-      nowe: { n: ch.added.length, lista: cutList(ch.added, 8) }, zamkniete: { n: ch.closed.length, lista: cutList(ch.closed, 8) }, pominiete: p.missing.join(", ") };
+  function opis(z) {
+    return { starszy: !!z.starszy, dataObecna: dmy(z.dataObecna), nowe: { n: z.nowe.length, lista: cutList(z.nowe, 8) },
+      zamkniete: { n: z.zamkniete.length, lista: cutList(z.zamkniete, 8) }, pominiete: (z.pominiete || []).join(", ") };
   }
   function dane() {
-    var i = info();
-    return { teraz: { data: dmy(i.date), zlecen: i.jobs, telefon: i.source === "phone", wczytano: i.source === "phone" ? dmy((i.importedAt || "").slice(0, 10)) + " " + hm(i.importedAt) : "" },
-      podglad: pending ? opis(pending) : null, wynik: ui.wynik, pobierz: ui.pobierz, login: ui.login, vantify: ui.vantify, fokus: ui.fokus,
+    var i = info(), tel = i.source === "phone";
+    return { teraz: { data: dmy(i.date), zlecen: i.jobs, api: tel && i.api, telefon: tel, wczytano: tel ? dmy((i.importedAt || "").slice(0, 10)) + " " + hm(i.importedAt) : "" },
+      zmiany: tel && i.zmiany && i.zmiany.nowe ? opis(i.zmiany) : null, wynik: ui.wynik, pobierz: ui.pobierz, login: ui.login, vantify: ui.vantify, fokus: ui.fokus,
       zapis: zapis().n, trwaPobierz: ui.pobieranie, trwaZbadaj: ui.zbadaj };
   }
-  function pokaz(r) { pending = r; ui.wynik = null; }
-  // „Vantify w apce” (PROD-035): okno Vantify; pobrany eksport idzie do podglądu, zapis „Zbadaj” do udostępnienia
+  // zapis od razu; komunikat pod kartą: zapisano albo błąd (ostrzeżenie o starszym pliku pokazuje karta)
+  function zapiszTeraz(r) {
+    try {
+      zapiszPlan(r);
+      ui.wynik = { ok: true, tekst: r.api ? L("Zapisano. Terminy z Vantify z dnia " + dmy(r.plan.date) + ".", "Saved. Due dates from Vantify as of " + dmy(r.plan.date) + ".") : L("Zapisano. Terminy z eksportu " + dmy(r.plan.date) + ".", "Saved. Due dates from the export of " + dmy(r.plan.date) + ".") };
+    } catch (e) { ui.wynik = { ok: false, tekst: errText(e) }; }
+  }
+  // „Vantify w apce” (PROD-035): okno Vantify; pobrany eksport zapisuje się od razu, zapis „Zbadaj” do udostępnienia
   function otworz(po) {
     var V = plugin("Vantify");
     if (!V) { ui.vantify = L("Vantify w apce działa w aplikacji Android.", "Vantify in the app works in the Android app."); zmiana(); return Promise.resolve(); }
     return V.open({ lang: lang() }).then(function (r) {
       var kept = keepLog(r && r.log);
       ui.pobierz = null; ui.vantify = kept === "memory" ? brakMiejsca() : null;
-      if (r && r.csv) { try { pokaz(preview(r.csv)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errText(e) }; } }
+      if (r && r.csv) { try { zapiszTeraz(preview(r.csv)); } catch (e) { ui.wynik = { ok: false, tekst: errText(e) }; } }
       else if (po) po();
       else if (kept !== "memory") ui.vantify = L("Nie pobrano eksportu. Zapis „Zbadaj” jest w telefonie.", "No export downloaded. The “Explore” log is on the phone.");
       zmiana();
@@ -181,13 +193,13 @@
       .then(function () { ui.vantify = L("Przekazano do udostępnienia.", "Handed over for sharing."); zmiana(); })
       .catch(function () { ui.vantify = L("Nie udało się udostępnić zapisu.", "Could not share the log."); zmiana(); });
   }
-  // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń; podgląd i zapis jak przy pliku.
+  // „Pobierz z Vantify” (Grzegorz 10/11/2026): ukryte okno Vantify czyta listę zleceń i od razu zapisuje plan (26/11/2026).
   // Gdy Vantify prosi o logowanie: otwiera okno Vantify, a po „Zakończ” pobiera jeszcze raz (raz, bez pętli).
   function pobierz(retried) {
     ui.pobierz = L("Łączę z Vantify…", "Connecting to Vantify…"); ui.pobieranie = true; zmiana();
     return sync().then(function (r) {
       ui.pobieranie = false;
-      if (r.status === "ok") { ui.pobierz = null; try { pokaz(apiPreview(r)); } catch (e) { pending = null; ui.wynik = { ok: false, tekst: errText(e) }; } zmiana(); return; }
+      if (r.status === "ok") { ui.pobierz = null; try { zapiszTeraz(apiPreview(r)); } catch (e) { ui.wynik = { ok: false, tekst: errText(e) }; } zmiana(); return; }
       // zapisane hasło odrzucone: nie otwieraj logowania w kółko, poproś o aktualne hasło
       if (r.status === "login" && r.code === "bad") { ui.pobierz = errText(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; zmiana(); return; }
       if (r.status === "login" && !retried) {
@@ -197,32 +209,18 @@
       ui.pobierz = errText(new Error(r.status === "login" ? "VANTIFY_LOGIN" : "VANTIFY_SYNC")); zmiana();
     }).catch(function (e) { ui.pobieranie = false; ui.pobierz = errText(e); zmiana(); });
   }
-  // podgląd: „Zapisz w apce” zapisuje plan (każdy zapis, z API albo z pliku, unieważnia odłożony podgląd); „Anuluj” go porzuca
-  function zapiszPodglad() {
-    var r = pending; if (!r) return;
-    try {
-      save(r.plan); dropNew(); pending = null;
-      ui.wynik = { ok: true, tekst: r.api ? L("Zapisano. Terminy z Vantify z dnia " + dmy(r.plan.date) + ".", "Saved. Due dates from Vantify as of " + dmy(r.plan.date) + ".") : L("Zapisano. Terminy z eksportu " + dmy(r.plan.date) + ".", "Saved. Due dates from the export of " + dmy(r.plan.date) + ".") };
-    } catch (e) { ui.wynik = { ok: false, tekst: errText(e) }; }
-    zmiana();
-  }
-  function anulujPodglad() { if (pending && pending.api) dropNew(); pending = null; ui.wynik = null; zmiana(); }
   // Sprawdzanie przy starcie apki: app/www/vantify-auto.js (ładowany na końcu głównej strony, po module okienek).
-  // Po wejściu na ekran: podgląd z wejścia „Pokaż” (goAfter) albo nowe terminy znalezione przy starcie apki (czekają tu na „Zapisz”/„Anuluj”)
+  // Po wejściu na ekran z okienka przy starcie (goAfter): prośba o hasło albo logowanie w Vantify
   function wejdz() {
-    if (pending) { /* podgląd zostaje */ }
-    else if (goAfter === "haslo") { goAfter = null; ui.pobierz = errText(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; }
+    if (goAfter === "haslo") { goAfter = null; ui.pobierz = errText(new Error("VANTIFY_BAD_LOGIN")); ui.fokus++; }
     else if (goAfter === "login") { goAfter = null; ui.pobierz = L("Zaloguj się w Vantify, potem dotknij „Zakończ” – apka sama pobierze zlecenia.", "Sign in to Vantify, then tap “Done” – the app gets the jobs by itself."); otworz(function () { pobierz(true); }); }
-    else {
-      goAfter = null; var nw = memNew || getJson(NKEY);
-      if (nw && nw.jobs) { try { var pv = apiPreview(nw, nw.day); if (pv.changes.added.length || pv.changes.closed.length) pokaz(pv); else dropNew(); } catch (e) { dropNew(); } }
-    }
+    else goAfter = null;
     zmiana();
   }
   // już na Ustawienia → Vantify: ten sam adres nie otworzy ekranu od nowa, więc wchodzimy od razu (przegląd Codex #133)
   function goVantify(what) {
     goAfter = what;
-    if (w.OESTEkrany.trasa() === "settings/vantify" && zywy) { pending = null; wejdz(); }
+    if (w.OESTEkrany.trasa() === "settings/vantify" && zywy) wejdz();
     else w.OESTEkrany.go("settings/vantify");
   }
   // Zapamiętany login i hasło (Grzegorz 10/11/2026): wpisujesz raz, zmieniasz, kiedy chcesz; hasło zagwiazdkowane, „Pokaż” je odsłania.
@@ -261,13 +259,8 @@
   w.document.addEventListener("oest:ekran", function (e) { if (!/vantify/.test(e.detail.trasa)) zeruj(); });
   w.OESTVantifyImport = { preview: preview, apiPreview: apiPreview, save: save, info: info,
     // dla Vantify.vue: dane ekranu i akcje
-    dane: dane, ekran: ekran, pobierz: function () { return pobierz(false); }, otworz: function () { return otworz(); }, zbadaj: zbadaj, udostepnij: udostepnij, zapiszPodglad: zapiszPodglad, anulujPodglad: anulujPodglad,
+    dane: dane, ekran: ekran, pobierz: function () { return pobierz(false); }, otworz: function () { return otworz(); }, zbadaj: zbadaj, udostepnij: udostepnij,
     loginOdswiez: loginOdswiez, loginZapisz: loginZapisz, loginUsun: loginUsun, loginPokaz: loginPokaz,
-    // dla vantify-auto.js: pobranie, stan sprawdzania, podgląd odłożony do Ustawienia → Vantify
-    sync: sync, today: today, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); },
-    keepNew: function (r) {
-      if (!r) { dropNew(); return; }
-      var v = { day: today(), jobs: r.jobs }; memNew = null;
-      try { ls().setItem(NKEY, JSON.stringify(v)); } catch (e) { memNew = v; try { ls().removeItem(NKEY); } catch (e2) {} }
-    }, go: goVantify };
+    // dla vantify-auto.js: pobranie, zapis planu, stan sprawdzania, przejście do Ustawienia → Vantify (hasło, logowanie)
+    sync: sync, zapiszPlan: zapiszPlan, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); }, go: goVantify };
 })(window);

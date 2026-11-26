@@ -4,10 +4,36 @@
     <ion-card>
       <ion-list-header>{{ T('Terminy PPM z Vantify', 'PPM due dates from Vantify') }}</ion-list-header>
       <ion-item lines="none" class="oest-ramka">
-        <ion-label id="vtNow">{{ T('Eksport z ', 'Export from ') }}{{ d.teraz.data }} · {{ d.teraz.zlecen }}{{ T(' zleceń', ' jobs') }} · {{ d.teraz.telefon ? T('wczytany w telefonie ', 'loaded on this phone ') + d.teraz.wczytano : T('wbudowany w apkę', 'built into the app') }}</ion-label>
+        <ion-label id="vtNow">{{ d.teraz.api ? T('Vantify, stan na ', 'Vantify as of ') : T('Eksport z ', 'Export from ') }}{{ d.teraz.data }} · {{ d.teraz.zlecen }}{{ T(' zleceń', ' jobs') }} · {{ d.teraz.telefon ? (d.teraz.api ? T('pobrane ', 'fetched ') : T('wczytany w telefonie ', 'loaded on this phone ')) + d.teraz.wczytano : T('wbudowany w apkę', 'built into the app') }}</ion-label>
       </ion-item>
+      <template v-if="d.zmiany">
+        <ion-item v-if="d.zmiany.starszy" lines="none">
+          <ion-note color="warning">{{ T('Uwaga: najnowsze zlecenie w pliku jest z ', 'Note: the newest job in the file is from ') }}{{ d.teraz.data }}{{ T(', a w poprzednim planie z ', ', the previous plan had ') }}{{ d.zmiany.dataObecna }}{{ T('. Plik może być starszy – pobierz z Vantify jeszcze raz.', '. The file may be older – get from Vantify again.') }}</ion-note>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-label>{{ T('Nowe zlecenia: ', 'New jobs: ') }}{{ d.zmiany.nowe.n }}</ion-label>
+        </ion-item>
+        <ion-item v-for="(w, i) in d.zmiany.nowe.lista.wiersze" :key="'n' + i" lines="none">
+          <ion-note>{{ w }}</ion-note>
+        </ion-item>
+        <ion-item v-if="d.zmiany.nowe.lista.wiecej" lines="none">
+          <ion-note>+{{ d.zmiany.nowe.lista.wiecej }}</ion-note>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-label>{{ T('Zamknięte w Vantify (usunięte z apki): ', 'Closed in Vantify (removed from the app): ') }}{{ d.zmiany.zamkniete.n }}</ion-label>
+        </ion-item>
+        <ion-item v-for="(w, i) in d.zmiany.zamkniete.lista.wiersze" :key="'z' + i" lines="none">
+          <ion-note>{{ w }}</ion-note>
+        </ion-item>
+        <ion-item v-if="d.zmiany.zamkniete.lista.wiecej" lines="none">
+          <ion-note>+{{ d.zmiany.zamkniete.lista.wiecej }}</ion-note>
+        </ion-item>
+        <ion-item v-if="d.zmiany.pominiete" lines="none">
+          <ion-note>{{ T('Bez karty w apce (pominięte): ', 'No card in the app (skipped): ') }}{{ d.zmiany.pominiete }}</ion-note>
+        </ion-item>
+      </template>
       <ion-item lines="none">
-        <ion-note>{{ T('„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h). Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify. Po pobraniu dotknij „Zapisz w apce” pod listą.', '“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h). The app also checks on start, at most every 4 h. Due dates exactly from Vantify. After getting them, tap “Save in the app” below the list.') }}</ion-note>
+        <ion-note>{{ T('„Pobierz z Vantify”: apka sama bierze listę zleceń z Vantify (lista Jobs z Twoim filtrem; logowanie w Vantify w apce trwa 24 h) i od razu zapisuje terminy. Apka sprawdza też sama przy starcie, najwyżej co 4 h. Terminy dokładnie z Vantify.', '“Get from Vantify”: the app takes the job list from Vantify itself (Jobs list with your filter; Vantify sign-in in the app lasts 24 h) and saves the due dates straight away. The app also checks on start, at most every 4 h. Due dates exactly from Vantify.') }}</ion-note>
       </ion-item>
       <ion-button id="vtPull" expand="block" :disabled="d.trwaPobierz" @click="V.pobierz()">{{ T('Pobierz z Vantify', 'Get from Vantify') }}</ion-button>
       <ion-item v-if="d.pobierz" lines="none">
@@ -15,44 +41,11 @@
       </ion-item>
     </ion-card>
 
-    <div id="vtPreview">
-    <ion-card v-if="d.podglad">
-      <ion-list-header>{{ d.podglad.api ? T('Vantify, stan na ', 'Vantify as of ') : T('Eksport z ', 'Export from ') }}{{ d.podglad.dataPlanu }} · {{ d.podglad.zlecen }}{{ T(' zleceń', ' jobs') }}</ion-list-header>
-      <ion-item v-if="d.podglad.starszy" lines="none">
-        <ion-note color="warning">{{ T('Uwaga: najnowsze zlecenie w pliku jest z ', 'Note: the newest job in the file is from ') }}{{ d.podglad.dataPlanu }}{{ T(', a w obecnym planie z ', ', the current plan has ') }}{{ d.podglad.dataObecna }}{{ T('. Plik może być starszy. Zapisz tylko, jeśli to świeży eksport.', '. The file may be older. Save only if it is a fresh export.') }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-label>{{ T('Nowe zlecenia: ', 'New jobs: ') }}{{ d.podglad.nowe.n }}</ion-label>
-      </ion-item>
-      <ion-item v-for="(w, i) in d.podglad.nowe.lista.wiersze" :key="'n' + i" lines="none">
-        <ion-note>{{ w }}</ion-note>
-      </ion-item>
-      <ion-item v-if="d.podglad.nowe.lista.wiecej" lines="none">
-        <ion-note>+{{ d.podglad.nowe.lista.wiecej }}</ion-note>
-      </ion-item>
-      <ion-item lines="none">
-        <ion-label>{{ T('Zamknięte w Vantify (znikną z apki): ', 'Closed in Vantify (removed from the app): ') }}{{ d.podglad.zamkniete.n }}</ion-label>
-      </ion-item>
-      <ion-item v-for="(w, i) in d.podglad.zamkniete.lista.wiersze" :key="'z' + i" lines="none">
-        <ion-note>{{ w }}</ion-note>
-      </ion-item>
-      <ion-item v-if="d.podglad.zamkniete.lista.wiecej" lines="none">
-        <ion-note>+{{ d.podglad.zamkniete.lista.wiecej }}</ion-note>
-      </ion-item>
-      <ion-item v-if="d.podglad.pominiete" lines="none">
-        <ion-note>{{ T('Bez karty w apce (pominięte): ', 'No card in the app (skipped): ') }}{{ d.podglad.pominiete }}</ion-note>
-      </ion-item>
-      <div class="oest-rzad">
-          <ion-button expand="block" id="vtSave" @click="V.zapiszPodglad()">{{ T('Zapisz w apce', 'Save in the app') }}</ion-button>
-          <ion-button expand="block" id="vtCancel" fill="outline" @click="V.anulujPodglad()">{{ T('Anuluj', 'Cancel') }}</ion-button>
-        </div>
-    </ion-card>
     <ion-card v-if="d.wynik">
       <ion-item lines="none">
         <ion-note id="vtResult" role="status" aria-live="polite" :color="d.wynik.ok ? 'success' : 'danger'">{{ P(d.wynik.tekst) }}</ion-note>
       </ion-item>
     </ion-card>
-    </div>
 
     <ion-card>
       <ion-list-header>{{ T('Vantify w apce', 'Vantify in the app') }}</ion-list-header>
