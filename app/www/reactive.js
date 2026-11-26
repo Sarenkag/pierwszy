@@ -52,14 +52,17 @@
   const RX_IKONY_PIGULKA=f=>[{rodzaj:'czest',sama:true},{rodzaj:'dokument',sama:true,ton:f}];
 function rxPhotos(r){return (r.beforeMediaIds||[]).length+(r.afterMediaIds||[]).length;}
 /* status zlecenia w Vantify słowami jak w Vantify (Grzegorz 26/11/2026 17:17: na klocku w miejscu typu pracy, „Vantify: Completed”); bez numeru – '' */
-const VT_NAZWY={approval_pending:'Pending approval',extension_pending:'Extension pending',acknowledged:'Acknowledged',commenced:'Commenced',completed:'Completed',open:'Open'};
-function rxVantify(r){const v=r&&r.vantify;if(!v||!v.id)return '';const st=v.final||v.closedAt?'Completed':VT_NAZWY[v.status]||String(v.status||'').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());return st?'Vantify: '+st:'Vantify #'+v.id;}
+/* status Vantify krótko, kursywą i kolorem (Grzegorz 26/11/2026 17:36): None = brak numeru, Pending = czeka na zatwierdzenie/przedłużenie, Done = zamknięte, Open = jest, jeszcze nie ruszone (open/acknowledged/commenced) */
+const VT_STAN=r=>{const v=r&&r.vantify;if(!v||!v.id)return 'None';if(v.final||v.closedAt||v.status==='completed')return 'Done';return /pending/.test(String(v.status||''))?'Pending':'Open';};
+const VT_TON={None:'medium',Pending:'warning',Done:'success',Open:'primary'};
+function rxVantify(r){return 'Vantify: '+VT_STAN(r);}
+function rxVantifyTon(r){return VT_TON[VT_STAN(r)];}
 /* kolejność na liście (Grzegorz 26/11/2026 16:47): zakończone, niezakończone, pending (czeka w Vantify) */
 function rxKolejnosc(r,done){const v=r&&r.vantify||{};if(done||v.final||v.closedAt)return 0;return /pending/.test(String(v.status||''))?2:1;}
   /* klocek = czesci/Klocek.vue (ten sam co w Inspekcjach): dane w kształcie części; kolor paska z lewej = status (data-grupa) */
   const RX_GRUPA={open:'otwarte',parts:'sub',contractor:'fire',access:'water',monitoring:'elec',completed:'mech',draft:'szkic'};
   function card(o){const d=rxDate(o.r,o.at),t=d&&w.OESTKlocek?w.OESTKlocek.termin(d,null,true):{text:'–',tone:''};
-    return {id:o.id,rx:o.action,grupa:RX_GRUPA[o.st]||'szkic',nazwa:o.name,znak:rxLoc(o.r.building,o.r.level),opis:rxVantify(o.r),czestotliwosc:null,formularz:'',status:{tryb:RX_TRYB[o.st]||'nierozpoczeta'},termin:{tekst:t.text,ton:t.tone},ikony:[{rodzaj:'zdjecia',n:Math.min(rxPhotos(o.r),99)},{rodzaj:'pytania',n:'–'},...RX_IKONY_PIGULKA('brak')]/* puste miejsce usterek (Reactive ich nie ma) oddane na te dwie ikony *//* częstotliwość i formularz w linii 3 pod pigułką (Grzegorz 26/11/2026 17:33), linia 2 dla statusu Vantify */,akcja:o.action==='draft'?L('Kontynuuj','Continue'):L('Otwórz','Open')};}
+    return {id:o.id,rx:o.action,grupa:RX_GRUPA[o.st]||'szkic',nazwa:o.name,znak:rxLoc(o.r.building,o.r.level),opis:rxVantify(o.r),opisTon:rxVantifyTon(o.r),czestotliwosc:null,formularz:'',status:{tryb:RX_TRYB[o.st]||'nierozpoczeta'},termin:{tekst:t.text,ton:t.tone},ikony:[{rodzaj:'zdjecia',n:Math.min(rxPhotos(o.r),99)},{rodzaj:'pytania',n:'–'},...RX_IKONY_PIGULKA('brak')]/* puste miejsce usterek (Reactive ich nie ma) oddane na te dwie ikony *//* częstotliwość i formularz w linii 3 pod pigułką (Grzegorz 26/11/2026 17:33), linia 2 dla statusu Vantify */,akcja:o.action==='draft'?L('Kontynuuj','Continue'):L('Otwórz','Open')};}
   function jobCard(job){const r=job.reactive||{},st=C.status(job);
     return card({action:'job',id:job.id,r,at:job.createdAt,st,color:STC[st]||'#8b949e',icon:TYPE_ICON[r.jobType]||'📝',name:job.text||L('Zadanie','Job'),loc:[r.level,r.room].filter(Boolean).join(' · ')||(r.building==='Premises'?'':job.location)||''});}
   function draftCard(d){return card({action:'draft',id:d.draftId,r:d,at:d.createdAt,st:'draft',color:'#8b949e',icon:'📝',name:d.title||d.uiTitle||L('Nowe zadanie','New job'),loc:[d.level,d.room].filter(Boolean).join(' · ')});}
@@ -166,7 +169,7 @@ function rxKolejnosc(r,done){const v=r&&r.vantify||{};if(done||v.final||v.closed
       wiecej:openRow==='more'?{etykieta:L('Stan','Condition'),statusy:statuses().map(([id])=>({id,nazwa:C.uiLabel(id),on:draft.status===id})),czesci:draft.status==='parts'?{etCzesci:L('Jakie części?','Which parts?'),partsNote:draft.partsNote||'',etData:L('Oczekiwana data — opcjonalnie','Expected date — optional'),expectedDate:draft.expectedDate||''}:null,quote:{etykieta:L('Quote required — wymagany kosztorys','Quote required'),on:!!draft.quote},odloz:L('Odłóż','Park')}:null,
       zakladki:{aktywna:zakladka,lista:ZAK.map(([id,tekst,wyslane])=>({id,tekst,wyslane}))},
       /* klocek pod zakładkami = ten sam klocek co na liście (Grzegorz 26/11/2026 17:10: „podzielony na pół”): linia 1 nazwa + nr, linia 2 miejsce · status Vantify (bez numeru: typ) + pigułka, linia 3 data, zdjęcia (razem, jak na liście), notatki; Job Sheet = ikona dokumentu w linii 3 pod pigułką; stuknięcie = ⋮ */
-      klocek:{id:'karta',grupa:RX_GRUPA[draft.status]||'otwarte',nazwa:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),numer:vid?'#'+vid:L('brak nr','no no.'),znak:rxLoc(draft.building,draft.level),opis:rxVantify(draft)||typeTxt,formularz:'',status:{tryb:'wtrakcie'},termin:{tekst:draft.orderDate?dmy(draft.orderDate):'–',ton:''},
+      klocek:{id:'karta',grupa:RX_GRUPA[draft.status]||'otwarte',nazwa:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),numer:vid?'#'+vid:L('brak nr','no no.'),znak:rxLoc(draft.building,draft.level),opis:rxVantify(draft),opisTon:rxVantifyTon(draft),formularz:'',status:{tryb:'wtrakcie'},termin:{tekst:draft.orderDate?dmy(draft.orderDate):'–',ton:''},
         ikony:[{rodzaj:'zdjecia',n:Math.min(fotoAll,99)/* razem przed i po, jak na liście */},{rodzaj:'notatki',n:pelne},...RX_IKONY_PIGULKA((draft.reportMediaIds||[]).length||draft.vantify?.sheetTitle?'ok':'brak')],akcja:L('Stan, części, kosztorys','Condition, parts, quote')},
       zablokowane:zab(S.zlecenie),
       nazwa:{etykieta:L('Nazwa zadania','Job name'),wartosc:draft.title||'',podpowiedz:L('np. Zepsuty zamek w kuchni','e.g. Broken lock in the kitchen')},
