@@ -45,31 +45,7 @@
 
       <template v-else-if="d.ekran === 'podglad'">
         <p v-if="d.podpowiedz">{{ d.podpowiedz }}</p>
-        <div v-if="d.strona" class="oest-rr-page">
-          <img v-if="d.strona.logo" class="oest-rr-logo" :src="d.strona.logo" alt="Smart Managed Solutions">
-          <div class="oest-rr-h">{{ d.strona.naglowek }}</div>
-          <div class="oest-rr-t">
-            <span>Site:</span><span class="oest-rr-c3">{{ d.strona.site }}</span>
-            <span>Date:</span><span>{{ d.strona.date }}</span><span>ID:</span><span>{{ d.strona.id }}</span>
-            <span>Engineer:</span><span>{{ d.strona.engineer }}</span><span>Location:</span><span>{{ d.strona.location }}</span>
-          </div>
-          <div class="oest-rr-box">
-            <div class="oest-rr-title">{{ d.strona.title }}</div>
-            <div v-if="d.akapity" class="oest-rr-body">
-              <div v-for="(t, i) in d.akapity" :key="i + '|' + d.akapity.length">
-                <ion-item><ion-textarea :aria-label="d.strona.title" :data-rx-sum="i" :auto-grow="true" :rows="2" :maxlength="20000" :value="t" @ionInput="e => A.akcja('sum-edit', { i, value: e.detail.value })"></ion-textarea></ion-item>
-                <ion-button fill="outline" data-rx="sum-del" :data-i="i" :aria-label="d.usun" @click="A.akcja('sum-del', { i })">✕</ion-button>
-              </div>
-            </div>
-            <div v-else class="oest-rr-body"><div v-for="(s, i) in d.strona.sekcje" :key="i"><strong v-if="s.naglowek">{{ s.naglowek }}</strong><div>{{ s.tekst }}</div><br v-if="i < d.strona.sekcje.length - 1"></div></div>
-          </div>
-          <div class="oest-rr-foot"><div v-for="(t, i) in d.strona.stopka" :key="i">{{ t }}</div></div>
-          <template v-if="d.strona.zdjecia.length">
-            <div class="oest-rr-h2">{{ d.strona.zdjeciaTytul }}</div>
-            <div class="oest-rr-pics"><div v-for="(p, i) in d.strona.zdjecia" :key="i"><small>{{ p.podpis }}</small><img :src="p.url" alt=""></div></div>
-          </template>
-          <div class="oest-rr-ref">{{ d.strona.ref }}</div>
-        </div>
+        <ion-button v-if="d.pdf" expand="block" :data-rx="d.pdf.rx" @click="A.akcja(d.pdf.rx)">{{ d.pdf.tekst }}</ion-button>
         <p>{{ d.plik }}</p>
       </template>
 

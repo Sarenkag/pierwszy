@@ -155,7 +155,7 @@ public class VantifyActivity extends Activity {
             }).start();
         });
         String hash = getIntent().getStringExtra("hash");
-        web.loadUrl(START + (hash != null && hash.matches("#/user/jobs(/[0-9]+/status|/[0-9]+/files/add|/add//site)?") ? hash : ""));
+        web.loadUrl(START + (hash != null && hash.matches("#/user/jobs(/add//site)?|#/user/sites/list/details/[A-Za-z0-9%]+/jobs/[A-Za-z0-9%]+/(status|files/add)") ? hash : ""));
     }
 
     private Button copy(String label, String what, String text) {
