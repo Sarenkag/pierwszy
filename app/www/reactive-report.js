@@ -15,11 +15,5 @@
   function biggest(r){return Math.max(...['docx','pdf'].map(k=>r&&r[k]?(r[k].byteLength??r[k].length??0):0));}
   async function fit(rebuild,ask){let px=START_PX,r=await rebuild(px),big=biggest(r);if(big<LIMIT||!(await ask(big)))return r;
     for(let i=0;i<4&&big>=LIMIT&&px>MIN_PX;i++){px=Math.max(MIN_PX,Math.round(px*Math.sqrt(LIMIT*0.9/big)));r=await rebuild(px);big=biggest(r);}return r;}
-  /* podgląd raportu na ekranie (Grzegorz 19/11/2026: „podgląd ma wyglądać jak raport”): ta sama kartka co PDF – logo, Engineers Report,
-     Site/Date/Engineer, tytuł, Location, treść (bez Overall Condition – Grzegorz 26/11/2026), Works Complete/Quote/Signed, potem zdjęcia przed/po. Treść (body) podaje ekran. */
-  /* kartka raportu na ekranie (podgląd jak PDF, po angielsku): zwykłe dane – ekran Vue rysuje układ (Reactive.vue) */
-  function dane(fields,o){o=o||{};const ph=o.photos||[];return {logo:o.logo||'',naglowek:'Engineers Report',site:String(fields.site).toUpperCase(),date:fields.date,id:fields['job number']||'',engineer:fields.engineer,location:[fields.building,fields.level].filter(Boolean).join(' '),title:fields.title,details:String(fields.details||''),sekcje:sekcje(fields.details),stopka:['Works Complete: '+fields.date,'Quote Required: '+fields.quote,'Signed: '+fields.engineer],zdjeciaTytul:ph.length?'Photographic evidence — before then after':'',zdjecia:ph.map((p,i)=>({url:p.url,podpis:(p.phase==='after'?'After':'Before')+' — Photo '+(i+1)})),ref:'Ref: Eng Report · Ver: 01 · Smart Managed Solutions'};}
-  /* logo z wzoru Word (to samo, co w PDF) – raz na sesję */
-  let logoP=null;function logo(){if(!logoP)logoP=wzor().catch(()=>null).then(b=>{if(!b||!window.OESTWord)return '';const i=OESTWord.info(b);return i.logo?URL.createObjectURL(new Blob([i.logo],{type:i.logoType==='PNG'?'image/png':'image/jpeg'})):'';}).catch(()=>'');return logoP;}
-  return {build,fit,biggest,LIMIT,dane,logo,sekcje};
+  return {build,fit,biggest,LIMIT,sekcje};
 });

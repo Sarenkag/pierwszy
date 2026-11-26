@@ -34,11 +34,7 @@ public class ReportSharePlugin extends Plugin {
             ArrayList<Uri> uris = new ArrayList<>();
             for (int i = 0; i < files.length(); i++) {
                 JSObject f = JSObject.fromJSONObject(files.getJSONObject(i));
-                String name = f.getString("name", "file").replaceAll("[\\\\/:*?\"<>|]", "_");
-                byte[] bytes = Base64.decode(f.getString("data", ""), Base64.DEFAULT);
-                File out = new File(sub, name);
-                try (FileOutputStream o = new FileOutputStream(out)) { o.write(bytes); }
-                uris.add(FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out));
+                uris.add(uri(write(sub, f)));
             }
             Intent send = new Intent(uris.size() > 1 ? Intent.ACTION_SEND_MULTIPLE : Intent.ACTION_SEND);
             send.setType("*/*");
@@ -56,4 +52,35 @@ public class ReportSharePlugin extends Plugin {
             });
         } catch (Exception e) { call.reject("SHARE_FAILED"); }
     }
+
+    // Podgląd raportu (Grzegorz 26/11/2026): ten sam PDF co do wysyłki, otwarty w przeglądarce PDF telefonu.
+    // Jeden plik podglądu: każde otwarcie nadpisuje poprzedni (składany od nowa z poprawionych pól).
+    @PluginMethod public void open(PluginCall call) {
+        JSObject f = call.getObject("file");
+        if (f == null || f.getString("data", "").isEmpty()) { call.reject("OPEN_INPUT"); return; }
+        try {
+            File dir = new File(new File(getContext().getCacheDir(), "report-share"), "podglad");
+            File[] old = dir.listFiles();
+            if (old != null) for (File x : old) x.delete();
+            if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException();
+            Intent view = new Intent(Intent.ACTION_VIEW);
+            view.setDataAndType(uri(write(dir, f)), f.getString("type", "application/pdf"));
+            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().runOnUiThread(() -> {
+                try { getActivity().startActivity(view); call.resolve(new JSObject().put("status", "opened")); }
+                catch (android.content.ActivityNotFoundException e) { call.reject("OPEN_NO_APP"); }
+                catch (Exception e) { call.reject("OPEN_FAILED"); }
+            });
+        } catch (Exception e) { call.reject("OPEN_FAILED"); }
+    }
+
+    // plik {name, data (base64)} zapisany w katalogu dir
+    private static File write(File dir, JSObject f) throws Exception {
+        String name = f.getString("name", "file").replaceAll("[\\\\/:*?\"<>|]", "_");
+        byte[] bytes = Base64.decode(f.getString("data", ""), Base64.DEFAULT);
+        File out = new File(dir, name);
+        try (FileOutputStream o = new FileOutputStream(out)) { o.write(bytes); }
+        return out;
+    }
+    private Uri uri(File f) { return FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f); }
 }
