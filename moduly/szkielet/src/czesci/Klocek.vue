@@ -23,7 +23,7 @@
       <template v-if="k.termin"><ion-icon :icon="I.termin" aria-hidden="true"></ion-icon><span class="oest-kdt" :data-ton="k.termin.ton || undefined">{{ k.termin.tekst }}</span></template>
       <template v-for="(x, i) in widoczne" :key="i">
         <span v-if="x.rodzaj === 'usterki'" class="oest-kus" :data-pusty="pusty(x) || undefined"><ion-icon :icon="I.usterki" :data-ton="x.ton || undefined" aria-hidden="true"></ion-icon><strong data-rodzaj="usterki">{{ x.n }}</strong></span>
-        <template v-else><span class="oest-ksep"></span><ion-icon :icon="I[x.rodzaj] || I.punkt" :data-ton="x.ton || undefined" aria-hidden="true"></ion-icon><strong :data-rodzaj="x.rodzaj">{{ x.n }}</strong></template>
+        <template v-else><span class="oest-ksep"></span><ion-icon :icon="I[x.rodzaj] || I.punkt" :data-ton="x.ton || undefined" aria-hidden="true"></ion-icon><strong v-if="!x.sama" :data-rodzaj="x.rodzaj">{{ x.n }}</strong></template>
       </template>
     </div>
     <ion-progress-bar v-if="k.procent != null" :value="(k.procent || 0) / 100" :color="k.procent >= 100 ? 'success' : 'primary'"></ion-progress-bar>
@@ -38,9 +38,10 @@ import Pigulka from './Pigulka.vue';
 const props = defineProps({ T: Function, k: Object });
 const emit = defineEmits(['wybierz', 'przytrzymaj']);
 const I = { czest: barChartOutline, dokument: documentTextOutline, termin: calendarClearOutline, zdjecia: imageOutline, pytania: checkboxOutline, usterki: warningOutline, notatki: micOutline, wysylka: paperPlaneOutline, punkt: ellipseOutline };
-// usterki: stałe miejsce w linii 3 także bez usterek (puste, niewidoczne – jak .kus na main); pozostałe ikony tylko z liczbą
+// usterki: stałe miejsce w linii 3 także bez usterek (puste, niewidoczne – jak .kus na main); pozostałe ikony tylko z liczbą,
+// albo sama ikona bez liczby (x.sama – Reactive: częstotliwość i formularz pod pigułką, Grzegorz 26/11/2026)
 const pusty = x => x.n === '' || x.n == null;
-const widoczne = computed(() => (props.k.ikony || []).filter(x => x && (x.rodzaj === 'usterki' || !pusty(x))));
+const widoczne = computed(() => (props.k.ikony || []).filter(x => x && (x.rodzaj === 'usterki' || x.sama || !pusty(x))));
 // przytrzymanie ~0,4 s (bez ruchu palca > 10 px) = informacje; po nim zwykłe stuknięcie się nie liczy
 let zegar = null, przytrzymany = false, x0 = 0, y0 = 0;
 function wcisnij(e) { przytrzymany = false; x0 = e.clientX; y0 = e.clientY; clearTimeout(zegar); zegar = setTimeout(() => { zegar = null; przytrzymany = true; try { navigator.vibrate && navigator.vibrate(20); } catch (er) {} emit('przytrzymaj', props.k); }, 400); }
