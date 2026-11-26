@@ -30,7 +30,16 @@
       }
     }).catch(function () {});
   }
-  setTimeout(auto, 4000);
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") auto(); });
+  // statusy otwartych zleceń Reactive przy otwarciu apki (start i powrót na ekran), najwyżej co 5 min, niezależnie od pełnego pobrania co 4 h;
+  // bez licznika w tle (Grzegorz 26/11/2026: „każde otwarcie apki”, „5 minut”)
+  var QUICK = 5 * 60e3, lastQuick = 0;
+  function quick() {
+    var R = w.OESTReactiveVantify, now = Date.now();
+    if (!R || !R.odswiez || !native() || (now - lastQuick < QUICK && now >= lastQuick)) return;
+    lastQuick = now; R.odswiez();
+  }
+  function onOpen() { auto(); quick(); }
+  setTimeout(onOpen, 4000);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") onOpen(); });
   w.OESTVantifyAuto = { check: auto };
 })(window);

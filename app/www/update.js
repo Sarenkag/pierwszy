@@ -83,7 +83,13 @@
     return { wersja: mojaTekst, nowa: latest && (pokazInstaluj || (mine !== null && latest.n > mine)) ? latest.n : null, status: w.OESTT(lastStatus[0], lastStatus[1]) };
   }
   current().then(function (v) { mojaTekst = String(v || "?"); stan(); });
-  // przy starcie: ciche sprawdzenie (raz na uruchomienie); nowsza wersja = wpis w dzwonku
-  if (native()) setTimeout(function () { check(false); }, 4000);
+  // ciche sprawdzenie przy otwarciu apki: start i każdy powrót na ekran (z tła, po odblokowaniu), najwyżej co 5 min; bez licznika w tle
+  // (Grzegorz 26/11/2026: „każde otwarcie apki”, „5 minut”, „jak jest otwarta i w niej pracuję, to co 5 minut nie sprawdza”); nowsza wersja = wpis w dzwonku
+  var EVERY = 5 * 60e3, lastAuto = 0;
+  function onOpen() { var now = Date.now(); if (now - lastAuto < EVERY && now >= lastAuto) return; lastAuto = now; check(false); }
+  if (native()) {
+    setTimeout(onOpen, 4000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") onOpen(); });
+  }
   w.OESTUpdate = { check: check, install: install, dane: dane, note: note, postpone: postpone };
 })(window);
