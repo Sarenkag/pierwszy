@@ -26,8 +26,14 @@
       <ion-button v-if="m.usun" expand="block" fill="outline" @click="akcja('remove')">{{ T('Usuń model z telefonu', 'Remove model from phone') }}</ion-button>
       <ion-item v-if="m.prompt" lines="none">
         <ion-label class="ion-text-wrap">
-          <h3>{{ T('Stały prompt (po angielsku, tylko do podglądu)', 'Fixed prompt (read only)') }}</h3>
+          <h3>{{ T('Wspólne zasady agentów (po angielsku, tylko do podglądu)', 'Common rules for all agents (read only)') }}</h3>
           <p>{{ m.prompt }}</p>
+        </ion-label>
+      </ion-item>
+      <ion-item v-for="a in m.agenci || []" :key="a.id" lines="none">
+        <ion-label class="ion-text-wrap">
+          <h3>{{ T('Agent: ', 'Agent: ') }}{{ a.nazwa }}</h3>
+          <p>{{ a.instrukcja }}</p>
         </ion-label>
       </ion-item>
     </ion-card>

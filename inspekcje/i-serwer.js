@@ -64,7 +64,7 @@
     var tok = ++mdSeq, form = formSeq; mdInput = txt; mdMode = ""; $("mdRun").disabled = true;
     $("mdWarn").textContent = ""; $("mdBox").hidden = true;
     $("trHint").textContent = (auto ? window.OESTT("Przetłumaczone. ", "Translated. ") : "") + window.OESTT("Model układa tekst na telefonie… (pierwszy raz do ~20 s)", "The model is writing the text on the phone… (first time up to ~20 s)");
-    (notes.length > 1 ? OESTModel.combine(notes, reference) : OESTModel.polish(original, reference)).then(function (out) {
+    OESTModel.agent('uwaga', notes.length > 1 ? notes : original, { reference: reference }).then(function (out) {
       if (tok !== mdSeq || form !== formSeq) return;
       $("mdOut").value = out; $("mdBox").hidden = false;
       var miss = OESTModel.missingNumbers(original, out);
