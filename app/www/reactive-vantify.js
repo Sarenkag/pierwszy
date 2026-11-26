@@ -293,6 +293,27 @@
   function label(j, L) { return j.final ? L('zamknięte', 'closed') : j.status === 'approval_pending' ? L('czeka na zatwierdzenie', 'awaiting approval') : j.status === 'acknowledged' ? L('zatwierdzone – można zamknąć', 'approved – ready to close') : j.status === 'commenced' ? L('rozpoczęte', 'commenced') : j.status; }
   async function update(x, j, extra) { const v = x.draft.vantify; if (v.status === j.status && !!v.final === !!j.final && !extra) return; x.draft.vantify = { ...v, status: j.status, final: !!j.final, ...(j.final && !v.closedAt ? { closedAt: new Date().toISOString() } : {}), ...(extra || {}) }; await x.persist(); x.render(); }
 
+  /* status z Vantify dla wszystkich zleceń Reactive z numerem, jeszcze niezamkniętych (Grzegorz 26/11/2026: „w apce W trakcie, a w Vantify
+     od dawna zamknięte”): po każdym udanym pobraniu z Vantify (ręcznym i co 4 h) ten sam odczyt co „Sprawdź” na karcie, po 20 numerów */
+  let refreshing = null;
+  function odswiez() {
+    if (refreshing) return refreshing;
+    const P = plugin(), H = w.OESTHandover?.repository;
+    if (!P || !H) return Promise.resolve(0);
+    refreshing = (async () => {
+      const s = await H.get(), ids = new Set();
+      const add = v => { if (v?.id && !v.final && !v.closedAt) ids.add(Number(v.id)); };
+      (s.jobs || []).forEach(j => add(j.reactive?.vantify)); Object.values(s.reactiveDrafts || {}).forEach(d => add(d?.vantify));
+      const all = [...ids], got = [];
+      for (let i = 0; i < all.length; i += 20) { const r = await act(P, { op: 'status', ids: all.slice(i, i + 20) }); if (r.status !== 'ok') break; got.push(...(r.jobs || [])); }
+      const n = got.length ? await H.setReactiveVantify(got) : 0;
+      if (n) try { w.dispatchEvent(new CustomEvent('oest:reactive-vantify', { detail: { n } })); } catch (e) {}
+      return n;
+    })().catch(() => 0).finally(() => { refreshing = null; });
+    return refreshing;
+  }
+  w.addEventListener('oest:vantify-pobrane', () => { odswiez(); });
+
   async function close(x) {
     const { draft: d, L } = x, P = plugin(), s = state(d);
     if (s === 'none' || s === 'pending') return x.message(L('Najpierw Open Vantify.', 'Open Vantify first.'));
@@ -335,5 +356,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { przyciski, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
+  w.OESTReactiveVantify = { odswiez, przyciski, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
 })(window);
