@@ -1,6 +1,7 @@
 // Sprawdzanie Vantify przy starcie apki i po powrocie do niej (Grzegorz 10/11/2026: „Zacznij od automatycznego updatu”).
-// Najwyżej co 4 h pyta Vantify po cichu (VantifyPlugin.sync przez OESTVantifyImport.sync). Nic nie zapisuje samo:
-//  - nowe albo zamknięte zlecenia → okienko „Pokazać?” → Ustawienia → Vantify z podglądem (zapis po „Zapisz”),
+// Najwyżej co 4 h pyta Vantify po cichu (VantifyPlugin.sync przez OESTVantifyImport.sync):
+//  - lista pobrana → plan zapisuje się od razu, po cichu (Grzegorz 26/11/2026: „Od razu zapis, jedna karta”);
+//    zmiany widać na karcie w Ustawienia → Vantify,
 //  - wygasłe logowanie (24 h): z zapisanym loginem i hasłem okno Vantify loguje się samo (VantifyLogin); bez nich albo gdy
 //    Vantify odrzuci hasło → okienko najwyżej raz na dobę,
 //  - brak sieci, błąd, brak zmian → cisza.
@@ -17,14 +18,7 @@
     if (st.at && now - st.at < EVERY && now >= st.at) return;
     st.at = now; V.state(st);
     return V.sync().then(function (r) {
-      if (r.status === "ok") {
-        var pv; try { pv = V.apiPreview(r); } catch (e) { return; }
-        var n = pv.changes.added.length, c = pv.changes.closed.length;
-        if (!n && !c) { V.keepNew(null); return; }
-        V.keepNew(r);
-        return ask({ title: "Vantify", text: L("Są nowe terminy PPM z Vantify: nowe zlecenia ", "New PPM due dates from Vantify: new jobs ") + n + L(", zamknięte ", ", closed ") + c + L(". Pokazać przed zapisem?", ". Show them before saving?"), ok: L("Pokaż", "Show"), cancel: L("Później", "Later") })
-          .then(function (yes) { if (yes) V.go("nowe"); });
-      }
+      if (r.status === "ok") { try { V.zapiszPlan(V.apiPreview(r)); } catch (e) {} return; }
       if (r.status === "login") {
         var s2 = V.state(); if (s2.askedLogin && now - s2.askedLogin < ASK_LOGIN && now >= s2.askedLogin) return;
         s2.askedLogin = now; V.state(s2);

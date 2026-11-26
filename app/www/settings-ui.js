@@ -15,7 +15,7 @@
   function ver(){return w.OESTWersja||{zmiany:[]};}
   function dmy(d){return w.OESTNarzedzia.dmmrrrr(d);}
   function verName(){var v=ver();return v.nazwa||L('podgląd','preview');}
-  function vantifySub(){var V=w.OESTVantifyImport,i=V&&V.info();return i&&i.date?L('Eksport z ','Export from ')+w.OESTNarzedzia.dmmrrrr(i.date):L('Eksport zleceń PPM','PPM job export');}
+  function vantifySub(){var V=w.OESTVantifyImport,i=V&&V.info();return i&&i.date?(i.api&&i.source==='phone'?L('Vantify, stan na ','Vantify as of '):L('Eksport z ','Export from '))+w.OESTNarzedzia.dmmrrrr(i.date):L('Eksport zleceń PPM','PPM job export');}
   function aboutSub(){return L('Wersja ','Version ')+verName()+' · '+CREATOR;}
   // O aplikacji rysuje rama Ionic + Vue (moduly/szkielet/src/ekrany/OAplikacji.vue); tu tylko dane
   function aboutDane(){var v=ver();return {tworca:CREATOR,wersja:verName()+(v.data?' · '+dmy(v.data):''),zmiany:(v.zmiany||[]).map(function(x){return {t:x.t,info:dmy(x.d)+(x.pr?' · #'+x.pr:'')};})};}
