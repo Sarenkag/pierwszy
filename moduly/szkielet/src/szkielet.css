@@ -22,6 +22,8 @@
 }
 /* tło apki (gradient z moduly/wyglad) widać pod treścią i pod paskiem telefonu */
 ion-content { --background: transparent; }
+/* podpowiedź w pustym polu kursywą, w całej apce (Grzegorz 26/11/2026 15:53) */
+ion-input, ion-textarea { --placeholder-font-style: italic; }
 ion-content::part(scroll) { overscroll-behavior: none; } /* bez rozciągania na każdym ekranie (Grzegorz 21/11/2026) */
 .oest-pas { /* pas pod godziną nad ekranem jeszcze w starym kodzie (do zera licznika) */
   height: var(--ion-safe-area-top); background: var(--ion-toolbar-background); }
