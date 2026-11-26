@@ -51,7 +51,7 @@ test("Job Sheet już w Vantify: Commence + Complete bez nowego pliku, mail o zam
   const p = V.posts();
   assert.deepEqual(p.map(c => c.url.replace(API, "")), [SITE + "3084999/workflow/operation/commence", SITE + "3084999/workflow/operation/complete"]);
   assert.deepEqual(Object.keys(p[0].opt.json).sort(), ["_links", "files", "onSiteDate"]);
-  assert.deepEqual(p[1].opt.json.files, []);
+  assert.ok(Array.isArray(p[1].opt.json.files) && p[1].opt.json.files.length === 0, "Complete bez nowego pliku");
   assert.ok(p[1].opt.json.completionDate && p[1].opt.json.escalationFiles);
   assert.ok(new Date(p[0].opt.json.onSiteDate) < new Date(p[1].opt.json.completionDate) && new Date(p[1].opt.json.completionDate) <= new Date());
   assert.equal(E.mails.length, 1); assert.match(E.mails[0].t, /#3084999 zamknięte/);
