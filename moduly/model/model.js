@@ -21,12 +21,12 @@
     'Output only the final text for the field, with no preamble, no headings, no quotation marks and no notes about what you changed.';
   // agent na każde pole: po co jest pole i jak ma wyglądać tekst (Grzegorz 26/11/2026; punktory tylko w opisie pracy, częściach i rekomendacji)
   var AGENTS = {
-    summary: { nazwa: 'Summary w Vantify', instrukcja: 'Field: Summary, the job title in the CAFM system. Write a short title for this maintenance job, at most 10 words, on one line, with no full stop at the end and no bullet points. Do not add recommendations.' },
-    description: { nazwa: 'Description w Vantify', instrukcja: 'Field: Description of a new job request in the CAFM system. Describe what is wrong or what needs to be done, in one to three sentences, with no bullet points. Do not add recommendations.' },
-    opis: { nazwa: 'Job Sheet – opis pracy', instrukcja: 'Field: Work description on the Job Sheet. The text is the engineer\'s notes (written and voice), numbered in order. Combine them into ONE text describing the work. Keep their order and do not repeat the same information. If the notes describe two or more separate tasks, write one bullet point per task, each line starting with "- ". If there is one task, write one or two sentences with no bullet points. Do not add recommendations.' },
-    czesci: { nazwa: 'Części', instrukcja: 'Field: Parts used. List the parts exactly as given, with quantities and codes unchanged. If there is more than one part, write one part per line starting with "- ". If there is one part, write it as a short name with no full stop. Do not add any other words.' },
-    uwaga: { nazwa: 'Uwaga w inspekcji', instrukcja: 'Field: Remark in an inspection report. The text is the engineer\'s notes, numbered in order. Write one or two well-built sentences; if there are several notes, write one coherent paragraph, keeping their order and not repeating the same information. No bullet points. Do not add recommendations.' },
-    rekomendacja: { nazwa: 'Rekomendacja', instrukcja: 'Field: Recommendation. Write only the recommendations the engineer gives in the text; do not invent other actions or recommendations. If there are two or more, write one per line starting with "- ". If there is one, write one sentence with no bullet points.' }
+    summary: { nazwa: ['Summary w Vantify', 'Summary in Vantify'], instrukcja: 'Field: Summary, the job title in the CAFM system. Write a short title for this maintenance job, at most 10 words, on one line, with no full stop at the end and no bullet points. Do not add recommendations.' },
+    description: { nazwa: ['Description w Vantify', 'Description in Vantify'], instrukcja: 'Field: Description of a new job request in the CAFM system. Describe what is wrong or what needs to be done, in one to three sentences, with no bullet points. Do not add recommendations.' },
+    opis: { nazwa: ['Job Sheet – opis pracy', 'Job Sheet – work description'], instrukcja: 'Field: Work description on the Job Sheet. The text is the engineer\'s notes (written and voice), numbered in order. Combine them into ONE text describing the work. Keep their order and do not repeat the same information. If the notes describe two or more separate tasks, write one bullet point per task, each line starting with "- ". If there is one task, write one or two sentences with no bullet points. Do not add recommendations.' },
+    czesci: { nazwa: ['Części', 'Parts'], instrukcja: 'Field: Parts used. List the parts exactly as given, with quantities and codes unchanged. If there is more than one part, write one part per line starting with "- ". If there is one part, write it as a short name with no full stop. Do not add any other words.' },
+    uwaga: { nazwa: ['Uwaga w inspekcji', 'Inspection remark'], instrukcja: 'Field: Remark in an inspection report. The text is the engineer\'s notes, numbered in order. Write one or two well-built sentences; if there are several notes, write one coherent paragraph, keeping their order and not repeating the same information. No bullet points. Do not add recommendations.' },
+    rekomendacja: { nazwa: ['Rekomendacja', 'Recommendation'], instrukcja: 'Field: Recommendation. Write only the recommendations the engineer gives in the text; do not invent other actions or recommendations. If there are two or more, write one per line starting with "- ". If there is one, write one sentence with no bullet points.' }
   };
   // stały prompt + słownik pojęć z Ustawienia → AI (Grzegorz 25/11/2026); słownik daje apka przez configure({ glossary }) (module-adapters.js)
   var cfg = {};
@@ -107,7 +107,7 @@
         // bez zgody na folder Modele najpierw „Zezwól” (pobranie mogłoby zrobić drugą kopię); plik z Modele usuwasz sam w Plikach
         zezwol: available() && s.supported !== false && s.access === false && !s.ready,
         pobierz: available() && s.supported !== false && s.access !== false && !s.ready && !s.downloading, anuluj: !!s.downloading, usun: !!s.ready && !shared,
-        prompt: COMMON, agenci: Object.keys(AGENTS).map(function (id) { return { id: id, nazwa: AGENTS[id].nazwa, instrukcja: AGENTS[id].instrukcja }; })
+        prompt: COMMON, agenci: Object.keys(AGENTS).map(function (id) { return { id: id, nazwa: w.OESTT(AGENTS[id].nazwa[0], AGENTS[id].nazwa[1]), instrukcja: AGENTS[id].instrukcja }; })
       };
     });
   }
