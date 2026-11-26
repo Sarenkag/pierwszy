@@ -10,8 +10,9 @@
     <div class="oest-rx-photos" :id="'rx-' + faza">
       <div v-for="p in lista" :key="p.id" class="oest-rx-ph">
         <img :src="p.url" :alt="p.alt" @click="powieksz(p)">
-        <ion-button v-if="z.usuwanie" class="oest-rx-del" fill="clear" :aria-label="T('Usuń zdjęcie', 'Delete photo')" @click.stop="A.akcja('photo-del', { id: p.id, phase: faza })">×</ion-button>
-        <ion-button v-if="z.edycja" class="oest-rx-ed" fill="clear" :aria-label="T('Edytuj zdjęcie', 'Edit photo')" @click.stop="A.akcja('photo-edit', { id: p.id, phase: faza })">✏️</ion-button>
+        <ion-note v-if="p.wyslane" color="medium">{{ p.wyslane }}</ion-note><!-- wysłane do Vantify: szare, bez usuwania i edycji (Grzegorz 26/11/2026) -->
+        <ion-button v-if="z.usuwanie && !p.wyslane" class="oest-rx-del" fill="clear" :aria-label="T('Usuń zdjęcie', 'Delete photo')" @click.stop="A.akcja('photo-del', { id: p.id, phase: faza })">×</ion-button>
+        <ion-button v-if="z.edycja && !p.wyslane" class="oest-rx-ed" fill="clear" :aria-label="T('Edytuj zdjęcie', 'Edit photo')" @click.stop="A.akcja('photo-edit', { id: p.id, phase: faza })">✏️</ion-button>
       </div>
     </div>
   </div>
