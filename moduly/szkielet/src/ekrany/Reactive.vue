@@ -4,7 +4,6 @@
      Akcje na końcu przewijanej treści; komunikaty przez wspólny toast Ionic. -->
 <template>
   <div :data-ekran="d.ekran">
-    <AkcjeEkranu v-if="akcje.length" :akcje="akcje"></AkcjeEkranu>
     <!-- lista, historia, drzewko i grupy kreatora: klocki i kafelki bez oest-ekran (własny wygląd części, jak w Inspekcjach i na ekranie głównym) -->
     <div v-if="['lista', 'historia', 'drzewo', 'kreator'].includes(d.ekran)">
       <template v-if="d.ekran === 'lista'">
@@ -78,7 +77,7 @@
       <template v-else-if="d.ekran === 'karta'">
         <Teleport defer to="#oest-pod-paskiem">
           <ZakladkiReactive :T="T" :z="d.zakladki" @wybierz="id => A.akcja('tab', { id })"></ZakladkiReactive>
-          <KlocekZlecenia :T="T" :k="d.klocek"></KlocekZlecenia>
+          <KlocekZlecenia :T="T" :k="d.klocek" :wiecej="d.naglowek === 'more' ? T('Więcej: stan, części, kosztorys', 'More: condition, parts, quote') : ''" @wiecej="A.akcja('row', { id: 'more' })"></KlocekZlecenia>
         </Teleport>
         <Wiecej v-if="d.wiecej" :T="T" :w="d.wiecej"></Wiecej>
         <ZakladkaZlecenie v-if="d.zakladki.aktywna === 'zlecenie'" :T="T" :d="d"></ZakladkaZlecenie>
@@ -128,12 +127,10 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { IonButton, IonCard, IonItem, IonCheckbox, IonTextarea } from '@ionic/vue';
-import { ellipsisVertical } from 'ionicons/icons';
 import Filtr from '../czesci/Filtr.vue';
 import Klocek from '../czesci/Klocek.vue';
 import Kafelki from '../czesci/Kafelki.vue';
 import Akcja from '../czesci/Akcja.vue';
-import AkcjeEkranu from '../czesci/AkcjeEkranu.vue';
 import InfoInspekcji from '../czesci/InfoInspekcji.vue';
 import ZakladkiReactive from '../czesci/ZakladkiReactive.vue';
 import KlocekZlecenia from '../czesci/KlocekZlecenia.vue';
@@ -159,7 +156,6 @@ async function dodaj() {
   if (r && r.ok && r.dane) A.akcja('kr-add', r.dane);
 }
 // przyciski ekranu (rząd na górze treści, nie header): ⋮ na karcie (stan, części, kosztorys). Zębatki „Ustawienia Reactive” nie ma (Grzegorz 25.11.2026: nic nie robiła).
-const akcje = computed(() => d.value.naglowek === 'more' ? [{ ikona: ellipsisVertical, etykieta: props.T('Więcej: stan, części, kosztorys', 'More: condition, parts, quote'), fn: () => A.akcja('row', { id: 'more' }) }] : []);
 // tytuł w górnym pasku ramy = nazwa bieżącego widoku Reactive
 function naglowek() { window.OESTRama.ustaw({ tytul: d.value.tytul || '' }); }
 watch(() => [props.wersja, d.value.tytul], naglowek);
