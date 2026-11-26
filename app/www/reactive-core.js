@@ -18,7 +18,7 @@
   /* Job Sheet Reactive w akapitach z nagłówkami (Grzegorz 26/11/2026 18:08): Job description / Work complete / Recommendations; pusty akapit wylatuje.
      Nagłówki to osobne linie (SEKCJE) – raport Word i podgląd rozpoznają je po treści i pogrubiają (moduł OESTReactiveReport.sekcje). */
   const SEKCJE=['Job description:','Work complete:','Recommendations:'];
-  function details(d){const opis=[sentence(d),d.flat?'Flat: '+d.flat:'',d.room?'Room/area: '+d.room:'',(d.problemId&&find(d.problemId)?.node.context)||'',d.orderDate?'Order date: '+d.orderDate.split('-').reverse().join('/'):'',d.jobType?'Type: '+d.jobType:'',d.note||'',(who(d)==='self'?'Proactive work (engineer initiative)':'Requested by: '+whoLabel(d)+(d.requestedName?' — '+d.requestedName:''))].filter(Boolean),
+  function details(d){const opis=[sentence(d),d.flat?'Flat: '+d.flat:'',d.room?'Room/area: '+d.room:'',(d.problemId&&find(d.problemId)?.node.context)||'',d.orderDate?'Order date: '+d.orderDate.split('-').reverse().join('/'):'',d.jobType?'Type: '+d.jobType.charAt(0)+d.jobType.slice(1).toLowerCase():''/* w raporcie „Repair”, nie „REPAIR” (Grzegorz 26/11/2026) */,d.note||'',(who(d)==='self'?'Proactive work (engineer initiative)':'Requested by: '+whoLabel(d)+(d.requestedName?' — '+d.requestedName:''))].filter(Boolean),
     praca=[...voice(d),d.endNote||'',d.partsNote?'Parts: '+d.partsNote:'',d.expectedDate?'Expected date: '+d.expectedDate:'',(WORK.find(x=>x.id===d.workChoice)||{}).en||''].filter(Boolean),
     rek=[d.recNote||''].filter(Boolean);
     /* zdanie BHP zawsze na końcu formularza, po rekomendacjach, osobnym akapitem bez nagłówka (Grzegorz 26/11/2026) */
