@@ -7,7 +7,7 @@
 // Przebieg zamknięcia (twardy warunek Grzegorza 10/11/2026, PROD-035): świeży odczyt i porównanie z kartą → różnica = stop;
 // Commence (gdy trzeba) → plik Job Sheet → Complete → ponowny odczyt: status zamknięty i plik przy zleceniu.
 // Statusy Vantify z zapisu 18/11: approval_pending → acknowledged (_links.commence) → commenced (_links.complete) → completed (final).
-// W testach (node) eksportuje czyste funkcje przez module.exports.
+// W testach (node) eksportuje czyste funkcje przez module.exports. Te same funkcje dokleja do siebie bot Vantify (tools/bot-vantify, Apps Script).
 (function (g) {
   var OPS = { create: /\/sites\/\d+\/jobs\/reactive$/, commence: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/commence$/, complete: /\/sites\/\d+\/jobs\/\d+\/workflow\/operation\/complete$/, attach: /\/sites\/\d+\/jobs\/\d+\/files$/, update: /\/sites\/\d+\/jobs\/\d+\/messages$/ };
   var API = /^https:\/\/[a-z0-9-]+-api\.cafm\.vantify\.com\//i;
@@ -139,7 +139,7 @@
     return l.map(function (d) { var h = d && d._links && d._links.self && (d._links.self.href || d._links.self); return typeof h === "string" && h.indexOf("/documenttypes/") >= 0 ? h.replace(/^https?:\/\/[^/]+/, "") : d && d.id != null ? "/documenttypes/" + d.id : ""; }).filter(Boolean);
   }
   function brief(j) { return j ? { id: j.id, status: j.status, final: !!j.is_final_status, summary: j.summary || "" } : null; }
-  var api = { op: op, wzor: wzor, built: built, fmt: fmt, create: create, priorities: priorities, jobgroups: jobgroups, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief, errText: errText };
+  var api = { op: op, wzor: wzor, built: built, fmt: fmt, docDate: docDate, create: create, priorities: priorities, jobgroups: jobgroups, path: path, commence: commence, complete: complete, attach: attach, message: message, check: check, brief: brief, errText: errText };
   if (typeof window === "undefined" && typeof module === "object" && module.exports) { module.exports = api; return; }
   g.OESTVantifyAkcje = api;
 
