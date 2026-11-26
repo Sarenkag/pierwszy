@@ -124,6 +124,8 @@
   /* Update (Grzegorz 26/11/2026): w zakładce Zdjęcia i Notatki ten sam przycisk i ten sam podgląd przed wysyłką (czesci/PodgladUpdate.vue);
      wysyła tylko to, czego jeszcze nie ma w Vantify. Najpierw świeży odczyt: zamknięte albo inna nazwa = nic nie wysyła. */
   const UPDATE_TEXT = 'Works completed. Please approve so the job can be closed.';
+  /* notatka z rekomendacją zawsze z nagłówkiem w pierwszej linii (Grzegorz 26/11/2026: „zawsze nad tym recommendation”, wpisuje tak ręcznie w Vantify) */
+  const REC_HEAD = 'Recommendation:', recText = t => { t = String(t || '').trim(); return !t || t.toLowerCase().startsWith(REC_HEAD.toLowerCase()) ? t : REC_HEAD + '\n' + t; };
   /* podgląd przed wysyłką: { wiadomosci: [{ id, etykieta, tekst }], zdjecia: [{ url, tytul }] } → poprawione wiadomości albo null (Wróć) */
   async function podglad(x, tytul, dane) {
     const C = w.OESTCzesci; if (!C?.okno) return null;
@@ -170,7 +172,7 @@
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
     const hasDone = !!String(d.endNote || '').trim() || !!await x.english('end', '', true), hasRec = !!String(d.recNote || '').trim() || !!await x.english('rec', '', true);
     if (!n.done?.at && hasDone) msgs.push({ id: 'done', etykieta: et.done, tekst: n.done?.text || await x.english('end', d.endNote || '') });
-    if (!n.rec?.at && hasRec) msgs.push({ id: 'rec', etykieta: et.rec, tekst: n.rec?.text || await x.english('rec', d.recNote || '') });
+    if (!n.rec?.at && hasRec) msgs.push({ id: 'rec', etykieta: et.rec, tekst: recText(n.rec?.text || await x.english('rec', d.recNote || '')) });
     if (!n.final?.at && (n.done?.at || msgs.some(m => m.id === 'done'))) msgs.push({ id: 'final', etykieta: et.final, tekst: n.final?.text || UPDATE_TEXT });
     x.message('');
     if (!msgs.length) return x.message(n.final?.at ? L('Wszystkie notatki są już w Vantify.', 'All notes are already in Vantify.') : L('Najpierw wpisz albo nagraj „Co zrobione”.', 'First type or record “Work done”.'));
@@ -180,7 +182,7 @@
     if (!await fresh(x, P)) return;
     const W = await wzory(P), save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
     for (const m of list) {
-      const text = String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
+      const text = m.id === 'rec' ? recText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
       /* poprzednia próba bez odpowiedzi: najpierw odczyt wiadomości przy zleceniu (bez dublowania) */
       if (prev?.sentAt && !prev.at) {
         const c = await act(P, { op: 'status', ids: [v.id], messageText: prev.text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
