@@ -51,12 +51,12 @@
   // files:[{_links:{file, documentType}, tags, id, title, visibility, documentDate, expiresAt, notifyExpiry, isStatutory, userTags, description}]} (204).
   // Files → Add: {_links:{file, documentType}, tags, id, title, visibility, isContract, documentDate, expiresAt, isStatutory, userTags,
   // notifyExpiry, isJobFile, description, applicableTo} (job 3066755, 201, typ dokumentu id 3). Job Sheet = wymagany typ zlecenia (id 1).
-  // Zapis dat jak w odpowiedziach Vantify; „visibility” brana z pliku już przy zleceniu (zapis jej nie pokazał), bez pliku – pominięta.
-  var SAMPLE = "2026-11-05T15:54:17+00:00", JOB_SHEET = "/documenttypes/1", PHOTO = "/documenttypes/3";
+  // Zapis dat jak w odpowiedziach Vantify. „visibility” zawsze „partnerships” = Partnership w formularzu Files → Add (Grzegorz 26/11/2026:
+  // „visibility zawsze musi być partnership”; bez niej plik nie pokazuje się w zakładce Files zlecenia – #3084943 vs #3084946).
+  var VISIBILITY = "partnerships", SAMPLE = "2026-11-05T15:54:17+00:00", JOB_SHEET = "/documenttypes/1", PHOTO = "/documenttypes/3";
   function built(kind, o) {
     o = o || {};
-    var file = { tags: { tags: [] }, id: null, expiresAt: null, notifyExpiry: false, isStatutory: false, userTags: [] };
-    if (o.visibility) file.visibility = o.visibility;
+    var file = { tags: { tags: [] }, id: null, visibility: VISIBILITY, expiresAt: null, notifyExpiry: false, isStatutory: false, userTags: [] };
     if (kind === "commence") return { _links: {}, files: { links: [] }, _date: SAMPLE, _built: 1 };
     if (kind === "complete") { file._links = { file: { href: "" }, documentType: { href: o.docType || JOB_SHEET } }; return { _links: {}, escalationFiles: { links: [] }, assets: {}, files: [], _date: SAMPLE, _file: file, _built: 1 }; }
     if (kind === "attach") { file._links = { file: { href: "" }, documentType: { href: PHOTO } }; file.isContract = null; file.isJobFile = false; file.applicableTo = []; file._date = SAMPLE; file._built = 1; return file; }
@@ -95,14 +95,14 @@
   function complete(t, o) {
     var b = strip(t);
     b.completionDate = fmt(o.date, t._date);
-    b.files = (o.files || []).map(function (f) { var it = clone(t._file); it.title = f.title; it.description = ""; it.documentDate = fmt(o.date, t._date); it._links.file = { href: f.href }; return it; });
+    b.files = (o.files || []).map(function (f) { var it = clone(t._file); it.title = f.title; it.visibility = VISIBILITY; it.description = ""; it.documentDate = fmt(o.date, t._date); it._links.file = { href: f.href }; return it; });
     return b;
   }
   // dosłanie zdjęcia przed do już założonego zlecenia (przegląd Codex #166): ten sam wzór, tytuł i adres pliku z wysyłki
   // documentDate nie może być późniejsza niż „teraz” Vantify (Grzegorz 21/11/2026: „documentDate: This value should be less than or equal to Nov 21, 2026, 4:51 PM”,
   // zegar telefonu minimalnie przed serwerem) – data dokumentu = 5 min wcześniej, pełna minuta; nigdy nie z przyszłości
   function docDate(d) { var t = Math.min(d instanceof Date && !isNaN(d) ? d.getTime() : Date.now(), Date.now() - 300000); return new Date(Math.floor(t / 60000) * 60000); }
-  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.description = ""; b.documentDate = fmt(docDate(o.date), t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
+  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.visibility = VISIBILITY; b.description = ""; b.documentDate = fmt(docDate(o.date), t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
   // treść odmowy Vantify w całości (Grzegorz 21/11/2026: „http400 (create)” bez powodu): komunikat, lista naruszeń
   // ({property_path|propertyPath|field, message}), błędy formularza (errors / children) albo surowy tekst odpowiedzi; do 1000 znaków
   function errText(j, raw) {
@@ -209,12 +209,6 @@
       if (!ml || !text) return Promise.resolve(null);
       return req("GET", ml).then(function (r) { var m = r && (r.messages || (r._embedded && r._embedded.messages)); m = Array.isArray(m) ? m : m && Array.isArray(m.items) ? m.items : m ? [m] : []; return m.some(function (x) { return x && String(x.body || "").trim() === String(text).trim(); }); }, function (e) { if (e && e.code === "login") throw e; return null; });
     }
-    // „visibility” pliku jak u plików już przy zleceniu (wzór wbudowany); brak plików albo błąd odczytu = pole pominięte
-    function visOf(j) {
-      var fl = j && j._links && j._links.files && j._links.files.href;
-      if (!fl) return Promise.resolve("");
-      return req("GET", fl).then(function (r) { var list = (r && (r.files || r.items || (r._embedded && r._embedded.files))) || []; for (var i = 0; i < list.length; i++) if (list[i] && typeof list[i].visibility === "string" && list[i].visibility) return list[i].visibility; return ""; }, function (e) { if (e && e.code === "login") throw e; return ""; });
-    }
     // wzór wbudowany odrzucony przez Vantify (4xx) = „nowzor”: apka otwiera okno Vantify i uczy się z niego (nic nie zgaduje dalej)
     function rejected(e) { return e && /^http4\d\d$/.test(e.code || "") && e.code !== "http401"; }
     // plik do Vantify jak strona: POST /files (opis) → formularz do Google Storage z polityką z odpowiedzi; wynik: adres pliku i linki
@@ -276,7 +270,7 @@
         return job(id).then(function (j) {
           var rest = sent, Wa = W.attach, now = new Date();
           // błąd przy dosyłaniu nie cofa założenia: numer wraca, brakujące zdjęcia pokaże „⚠ Vantify #nr · zdjęcia n/m”
-          return (rest.length ? (Wa ? Promise.resolve() : visOf(j).then(function (v) { Wa = built("attach", { visibility: v }); })).then(function () {
+          return (rest.length ? (Wa ? Promise.resolve() : Promise.resolve().then(function () { Wa = built("attach"); })).then(function () {
             return rest.reduce(function (p, f) { return p.then(function () { return req("POST", "/sites/" + site + "/jobs/" + id + "/files", attach(Wa, { title: f.title, href: f.href, date: now })); }); }, Promise.resolve());
           }).catch(function (e) { photoError = (e && (e.msg || e.code)) || "error"; }).then(function () { return job(id).catch(function () { return j; }); }) : Promise.resolve(j));
         }).then(function (j) {
@@ -291,7 +285,7 @@
       step = "read";
       return job(a.id).then(function (j) {
         if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
-        return Wa ? null : visOf(j).then(function (v) { Wa = built("attach", { visibility: v }); });
+        if (!Wa) Wa = built("attach");
       }).then(function () {
         step = "upload";
         return (a.files || []).reduce(function (p, f) { return p.then(function () { return upload(f).then(function (u) { step = "attach"; return req("POST", "/sites/" + site + "/jobs/" + a.id + "/files", attach(Wa, { title: f.title, href: u.href, date: now })).then(function () { put.push(u.href); step = "upload"; }); }); }); }, Promise.resolve());
@@ -325,7 +319,7 @@
         if (why === "doctype") { end({ status: "nowzor", op: "complete", why: why }); throw { stop: 1 }; }
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
         if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
-        return Wp ? null : visOf(j).then(function (v) { Wp = built("complete", { docType: dt, visibility: v }); });
+        if (!Wp) Wp = built("complete", { docType: dt });
       }).then(function () {
         step = "upload";
         return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) { href = u.href; });
