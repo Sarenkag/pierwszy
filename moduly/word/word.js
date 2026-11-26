@@ -151,20 +151,22 @@
     }
     // Reactive: „Photographic evidence — before then after”, tabela 2 kolumny, 10 zdjęć na stronę, podpis nad zdjęciem
     function przedPo() {
-      function par(s) { return '<w:p><w:r><w:t xml:space="preserve">' + nz().esc(s) + "</w:t></w:r></w:p>"; }
+      // siatka wyśrodkowana na stronie, zdjęcie i podpis na środku komórki, odstęp między zdjęciami (Grzegorz 26/11/2026 18:10: „żeby się nie zlewały”)
+      var C = '<w:pPr><w:jc w:val="center"/></w:pPr>';
+      function par(s, srodek) { return "<w:p>" + (srodek ? C : "") + '<w:r><w:t xml:space="preserve">' + nz().esc(s) + "</w:t></w:r></w:p>"; }
       var g = "";
       for (var start = 0; start < photos.length; start += 10) {
         var chunk = photos.slice(start, start + 10);
         if (start) g += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
         g += par("Photographic evidence — before then after");
-        g += '<w:tbl><w:tblPr><w:tblW w:w="8306" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="4153"/><w:gridCol w:w="4153"/></w:tblGrid>';
+        g += '<w:tbl><w:tblPr><w:tblW w:w="8306" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="170" w:type="dxa"/><w:left w:w="113" w:type="dxa"/><w:bottom w:w="170" w:type="dxa"/><w:right w:w="113" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="4153"/><w:gridCol w:w="4153"/></w:tblGrid>';
         var maxH = chunk.length <= 2 ? 2600000 : chunk.length <= 6 ? 1800000 : 1100000;
         for (var i = 0; i < chunk.length; i += 2) {
           g += "<w:tr>";
           for (var j = i; j < i + 2; j++) {
             var p = chunk[j];
             g += '<w:tc><w:tcPr><w:tcW w:w="4153" w:type="dxa"/></w:tcPr>';
-            if (p) { var n = start + j, z = wpisz(p, 2400000, maxH); g += par((p.phase === "after" ? "After" : "Before") + " — Photo " + (n + 1)) + "<w:p>" + obraz(n, z[0], z[1]) + "</w:p>"; }
+            if (p) { var n = start + j, z = wpisz(p, 2400000, maxH); g += par((p.phase === "after" ? "After" : "Before") + " — Photo " + (n + 1), true) + "<w:p>" + C + obraz(n, z[0], z[1]) + "</w:p>"; }
             else g += par("");
             g += "</w:tc>";
           }
