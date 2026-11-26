@@ -77,7 +77,7 @@
       <template v-else-if="d.ekran === 'karta'">
         <Teleport defer to="#oest-pod-paskiem">
           <ZakladkiReactive :T="T" :z="d.zakladki" @wybierz="id => A.akcja('tab', { id })"></ZakladkiReactive>
-          <KlocekZlecenia :T="T" :k="d.klocek" :wiecej="d.naglowek === 'more' ? T('Więcej: stan, części, kosztorys', 'More: condition, parts, quote') : ''" @wiecej="A.akcja('row', { id: 'more' })"></KlocekZlecenia>
+          <Klocek :T="T" :k="d.klocek" @wybierz="A.akcja('row', { id: 'more' })"></Klocek>
         </Teleport>
         <Wiecej v-if="d.wiecej" :T="T" :w="d.wiecej"></Wiecej>
         <ZakladkaZlecenie v-if="d.zakladki.aktywna === 'zlecenie'" :T="T" :d="d"></ZakladkaZlecenie>
@@ -133,7 +133,6 @@ import Kafelki from '../czesci/Kafelki.vue';
 import Akcja from '../czesci/Akcja.vue';
 import InfoInspekcji from '../czesci/InfoInspekcji.vue';
 import ZakladkiReactive from '../czesci/ZakladkiReactive.vue';
-import KlocekZlecenia from '../czesci/KlocekZlecenia.vue';
 import Wiecej from './reactive/Wiecej.vue';
 import ZakladkaZlecenie from './reactive/ZakladkaZlecenie.vue';
 import ZakladkaZdjecia from './reactive/ZakladkaZdjecia.vue';

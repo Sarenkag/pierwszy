@@ -159,8 +159,9 @@
     return {ekran:'karta',tytul:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),naglowek:'more',otwarty:openRow,wybierz:L('Wybierz','Choose'),
       wiecej:openRow==='more'?{etykieta:L('Stan','Condition'),statusy:statuses().map(([id])=>({id,nazwa:C.uiLabel(id),on:draft.status===id})),czesci:draft.status==='parts'?{etCzesci:L('Jakie części?','Which parts?'),partsNote:draft.partsNote||'',etData:L('Oczekiwana data — opcjonalnie','Expected date — optional'),expectedDate:draft.expectedDate||''}:null,quote:{etykieta:L('Quote required — wymagany kosztorys','Quote required'),on:!!draft.quote},odloz:L('Odłóż','Park')}:null,
       zakladki:{aktywna:zakladka,lista:ZAK.map(([id,tekst,wyslane])=>({id,tekst,wyslane}))},
-      klocek:{nazwa:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),nr:vid?'#'+vid:L('brak nr','no no.'),tryb:'wtrakcie',typ:typeTxt,data:draft.orderDate?dmy(draft.orderDate):'',
-        stan:[L('Przed ','Before ')+(vid?wys('before')+'/':'')+ile('before'),L('Po ','After ')+(vid?wys('after')+'/':'')+ile('after'),L('Notatki ','Notes ')+pelne,'Job Sheet '+((draft.reportMediaIds||[]).length||draft.vantify?.sheetTitle?'✓':'–')]},
+      /* klocek pod zakładkami = ten sam klocek co na liście (Grzegorz 26/11/2026 17:10: „podzielony na pół”): linia 1 nazwa + nr, linia 2 miejsce · typ + pigułka, linia 3 data, zdjęcia (razem, jak na liście), notatki; Job Sheet = ikona dokumentu; stuknięcie = ⋮ */
+      klocek:{id:'karta',grupa:RX_GRUPA[draft.status]||'otwarte',nazwa:draft.title||draft.uiTitle||L('Nowe zadanie','New job'),numer:vid?'#'+vid:L('brak nr','no no.'),znak:rxLoc(draft.building,draft.level),opis:typeTxt,formularz:(draft.reportMediaIds||[]).length||draft.vantify?.sheetTitle?'ok':'brak',status:{tryb:'wtrakcie'},termin:{tekst:draft.orderDate?dmy(draft.orderDate):'–',ton:''},
+        ikony:[{rodzaj:'zdjecia',n:Math.min(fotoAll,99)/* razem przed i po, jak na liście */},{rodzaj:'notatki',n:pelne}],akcja:L('Stan, części, kosztorys','Condition, parts, quote')},
       zablokowane:zab(S.zlecenie),
       nazwa:{etykieta:L('Nazwa zadania','Job name'),wartosc:draft.title||'',podpowiedz:L('np. Zepsuty zamek w kuchni','e.g. Broken lock in the kitchen')},
       data:{etykieta:L('Data zlecenia','Order date'),wartosc:draft.orderDate||''},
