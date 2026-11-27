@@ -362,7 +362,9 @@
       S.emit();
       list(scope).then(resume).then(function (a) {
         if (editing) return;
-        if (o.only) a = a.filter(function (n) { return n.id === o.only; }); // stuknięta ikonka: tylko ta jedna notatka
+        // stuknięta ikonka: tylko ta jedna notatka; po jej usunięciu okienko pokazuje pozostałe (Grzegorz 27/11/2026: „Brak notatek”, choć druga jest)
+        if (o.only && !a.some(function (n) { return n.id === o.only; })) o.only = '';
+        if (o.only) a = a.filter(function (n) { return n.id === o.only; });
         notes = a; S.emit();
       });
     }
