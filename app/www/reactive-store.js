@@ -52,5 +52,5 @@
       async archive(shiftId,body,recipients){return backend.update(owner(),s=>{const sh=active(s,shiftId);const entries=s.entries.filter(e=>e.shiftId===sh.id||sh.jobIds.some(jid=>s.jobs.find(j=>j.id===jid)?.entryId===e.id));const a={id:id(),shiftId,createdAt:clock(),body,recipients:clone(recipients),snapshot:{shift:clone(sh),jobs:clone(s.jobs.filter(j=>sh.jobIds.includes(j.id))),entries:clone(entries)}};s.archives.push(a);sh.archived=true;return a;});}
     };return api;
   }
-  return {empty,createRepository,browserBackend,validDate,statuses,mergeStates,LOCAL};
+  return {empty,createRepository,browserBackend,statuses,mergeStates,LOCAL};
 });
