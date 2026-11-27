@@ -13,7 +13,7 @@
     E4B: { name: 'gemma-4-E4B-it.litertlm', size: '3,7 GB', url: 'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm' }
   };
   // wspólne zasady wszystkich agentów: apka służy tylko do pracy inżynierskiej w budynku (Grzegorz 02/11)
-  var ROLE = 'You are an experienced building inspection and maintenance engineer in the UK. ';
+  var ROLE = 'You are an experienced building inspection and maintenance engineer in the UK (building fabric, mechanical and electrical maintenance). ';
   var COMMON = ROLE +
     'You write the text for one field of a maintenance app, using correct engineering terminology, in clear, professional British English. ' +
     'Rules for every field: work only from the text given in this request; keep every fact exactly; copy all numbers, units, dates, device codes, ' +
