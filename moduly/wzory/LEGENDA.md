@@ -28,6 +28,8 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 | `{licznik}` | grupy: licznik w pasku (np. 5/6) | groups: count in the bar (e.g. 5/6) | grupy-basic |
 | `{wiersze}` | grupy: wiersz z 2 punktami | groups: row with 2 points | grupy-basic |
 | `{szare}` | grupy: akapity szarej ramki | groups: grey box paragraphs | grupy-basic |
+| `{dwie}` | grupy: układ po 2 punkty w wierszu | groups: 2 points per row layout | grupy-basic |
+| `{jedna}` | grupy: układ jeden punkt pod drugim | groups: one point per row layout | grupy-basic |
 | `{n1}` | grupy: nazwa punktu 1 w wierszu | groups: point 1 name in row | grupy-basic |
 | `{u1}` | grupy: szara uwaga punktu 1 | groups: point 1 grey note | grupy-basic |
 | `{n2}` | grupy: nazwa punktu 2 w wierszu | groups: point 2 name in row | grupy-basic |
@@ -147,4 +149,4 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 - **Weekly Flushing Pavilion – basic form middle** (`flush-basic-p`, plik `flush-p-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
 - **Generator Checks – Weekly – basic form middle** (`gen-basic`, plik `gen-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
 - **Reactive Job Sheet – basic form middle (no Overall Condition)** (`reactive-basic`, plik `reactive-srodek.docx`): `{wstep}` `{sekcje}` `{tekstowa}` `{naglowek}` `{akapity}` `{tekst}` `{tabela}` `{pary}` `{l1}` `{w1}` `{l2}` `{w2}` `{koniec}`
-- **Inspection groups – basic form middle** (`grupy-basic`, plik `grupy-srodek.docx`): `{podtytul}` `{tekst}` `{grupy}` `{nazwa}` `{licznik}` `{wiersze}` `{n1}` `{u1}` `{ok1}` `{no1}` `{na1}` `{n2}` `{u2}` `{ok2}` `{no2}` `{na2}` `{szare}`
+- **Inspection groups – basic form middle** (`grupy-basic`, plik `grupy-srodek.docx`): `{podtytul}` `{tekst}` `{grupy}` `{nazwa}` `{licznik}` `{wiersze}` `{n1}` `{u1}` `{ok1}` `{no1}` `{na1}` `{n2}` `{u2}` `{ok2}` `{no2}` `{na2}` `{szare}` `{dwie}` `{jedna}`
