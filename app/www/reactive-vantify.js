@@ -51,7 +51,8 @@
   }
   /* wynik zakładania w okienku Ionic, które zostaje do zamknięcia (Grzegorz 21/11/2026: „nie ma jak w apce sprawdzić, czy poszło”);
      okienko ze szkieletu (moduly/szkielet, OESTOkna.komunikat = ion-alert), bez własnego HTML. Pasek na dole mówi to samo. */
-  const wynik = (tytul, tresc) => w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
+  /* wynik w wierszach (Grzegorz 27/11/2026): tresc = [{ etykieta, tekst, uwaga }] → okienko WynikVantify; tekst = zwykły komunikat */
+  const wynik = (tytul, tresc) => Array.isArray(tresc) && w.OESTCzesci?.okno ? w.OESTCzesci.okno('WynikVantify', { dane: () => ({ wiersze: tresc }) }, { tytul, ok: 'OK', anuluj: false }).catch(() => {}) : Array.isArray(tresc) ? wynik(tytul, tresc.map(r => r.etykieta + ': ' + r.tekst).join('\n')) : w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
   async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
   async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
 
@@ -113,8 +114,9 @@
       const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [], ids: files.map(f => f.id) } : null;
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}), ...(jobgroup ? { jobgroup, groupName } : {}), ...(photos ? { photos } : {}), startNote: String(x.draft.note || '') });
       const miss = photos ? photosMissing(x.draft) : 0;
-      const ph = !photos ? '' : miss ? L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.seen.length + '/' + photos.hrefs.length + (r.photoError ? L(' – Vantify: ', ' – Vantify: ') + r.photoError : '') + L('. Stuknij „⚠ Vantify”, żeby dosłać brakujące.', '. Tap “⚠ Vantify” to send the missing ones.') : L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.hrefs.length + '/' + photos.hrefs.length + '.';
-      const done = wynik(L('Założone w Vantify #', 'Created in Vantify #') + r.id, L('Zlecenie #', 'Job #') + r.id + ': „' + (r.job?.summary || summary) + L('”. Status: czeka na zatwierdzenie (Pending Approval).', '”. Status: awaiting approval (Pending Approval).') + ph);
+      const wiersze = [{ etykieta: L('Numer zlecenia', 'Job number'), tekst: '#' + r.id }, { etykieta: 'Summary', tekst: r.job?.summary || summary }, { etykieta: 'Status', tekst: L('Czeka na zatwierdzenie (Pending Approval)', 'Awaiting approval (Pending Approval)') }];
+      if (photos) wiersze.push({ etykieta: L('Zdjęcia przed przy zleceniu', 'Before photos on the job'), tekst: (miss ? photos.seen.length : photos.hrefs.length) + '/' + photos.hrefs.length + (miss ? (r.photoError ? ' – Vantify: ' + r.photoError : '') + L('. Stuknij „⚠ Vantify”, żeby dosłać brakujące.', '. Tap “⚠ Vantify” to send the missing ones.') : ''), uwaga: !!miss });
+      const done = wynik(L('Założone w Vantify', 'Created in Vantify'), wiersze);
       if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed', ' before photos') + (r.photoError ? L(' (Vantify: ', ' (Vantify: ') + r.photoError + ')' : '') + L('. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', '. Tap “⚠ Vantify” to check again and send the missing ones.'));
       return done;
     }
