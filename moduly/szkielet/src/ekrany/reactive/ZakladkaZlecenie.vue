@@ -35,13 +35,15 @@
         <div>{{ d.co.opis }}</div>
       </div>
     </template>
+    <!-- bot na tym zleceniu (Grzegorz 27/11/2026): wyłączony = bot nie zamyka; czynny także po założeniu (pozostałe pola szare) -->
+    <ion-item v-if="d.bot"><ion-toggle justify="space-between" data-akcja="vantify-bot" :checked="d.bot.on" :disabled="d.bot.off" @ionChange="e => A.akcja('vt-bot', { value: e.detail.checked })">{{ d.bot.etykieta }}</ion-toggle></ion-item>
     <ion-item v-if="d.zaloz" lines="none"><ion-button expand="block" :fill="d.zaloz.ton === 'go' ? 'solid' : 'outline'" :color="d.zaloz.ton === 'done' ? 'success' : undefined" data-akcja="vantify-zaloz" @click="A.akcja(d.zaloz.rx)">{{ d.zaloz.tekst }}</ion-button></ion-item>
   </ion-card>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { IonCard, IonItem, IonLabel, IonText, IonIcon, IonInput, IonTextarea, IonCheckbox, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonText, IonIcon, IonInput, IonTextarea, IonCheckbox, IonToggle, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
 import { mic } from 'ionicons/icons';
 import PoleDaty from '../../czesci/PoleDaty.vue';
 import Zablokowane from '../../czesci/Zablokowane.vue';

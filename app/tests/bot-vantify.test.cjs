@@ -39,7 +39,7 @@ const A = require("../www/vantify-akcje.js");
 function env(V, o = {}) {
   const props = o.props || {}, mails = [], logs = [];
   return { mails, logs, props, e: { dry: !!o.dry, now: () => o.now || Date.now(), user: "greg", pass: o.pass || HASLO, props: { get: k => props[k] || null, set: (k, v) => { props[k] = v; } },
-    szukaj: () => (o.subjects || []).map(s => ({ subject: s })), dysk: nr => (o.dysk || {})[nr] || null, http: V.http, mail: (t, b) => mails.push({ t, b }), log: s => logs.push(s) } };
+    szukaj: () => (o.subjects || []).map(s => ({ subject: s })), stop: nr => !!(o.stop || {})[nr], dysk: nr => (o.dysk || {})[nr] || null, http: V.http, mail: (t, b) => mails.push({ t, b }), log: s => logs.push(s) } };
 }
 const BOT = (() => { const c = { console }; vm.createContext(c); vm.runInContext(zbuduj(), c); return c; })().BOT;
 const ASSIGNED = n => "Your issue has been assigned - " + n;
@@ -135,4 +135,13 @@ test("Plik Apps Script: funkcje do wyboru w edytorze i usługi Google (Gmail, Dy
   g.wlacz(); g.wlacz(); assert.equal(triggers.length, 1); assert.equal(triggers[0].m, 10);
   g.wylacz(); assert.equal(triggers.length, 0);
   assert.ok(!JSON.stringify(logs).includes(HASLO) && !JSON.stringify(logs).includes(TOKEN));
+});
+
+test("Bot wyłączony na zleceniu w apce (plik „BOT STOP <nr>” na Dysku): ani zapytania do Vantify, ani maila; po włączeniu zamyka", () => {
+  const V = vantify({ 3084999: { status: "acknowledged", files: [SHEET] } }), stop = { 3084999: true }, E = env(V, { subjects: [ASSIGNED(3084999)], stop });
+  BOT.run(E.e, A);
+  assert.equal(V.calls.length, 0); assert.equal(E.mails.length, 0); assert.match(E.logs.join("\n"), /bot wyłączony/);
+  delete stop[3084999]; BOT.run(E.e, A);
+  assert.match(E.mails[0].t, /#3084999 zamknięte/);
+  assert.ok(BOT.stopZDysku("BOT STOP 3084999.txt", "3084999")); assert.ok(!BOT.stopZDysku("BOT STOP 30849990.txt", "3084999")); assert.ok(!BOT.stopZDysku("JOB SHEET 3084999.pdf", "3084999"));
 });

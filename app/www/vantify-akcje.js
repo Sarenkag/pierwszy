@@ -104,7 +104,7 @@
   // documentDate nie może być późniejsza niż „teraz” Vantify (Grzegorz 21/11/2026: „documentDate: This value should be less than or equal to Nov 21, 2026, 4:51 PM”,
   // zegar telefonu minimalnie przed serwerem) – data dokumentu = 5 min wcześniej, pełna minuta; nigdy nie z przyszłości
   function docDate(d) { var t = Math.min(d instanceof Date && !isNaN(d) ? d.getTime() : Date.now(), Date.now() - 300000); return new Date(Math.floor(t / 60000) * 60000); }
-  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.visibility = VISIBILITY; b.description = ""; b.documentDate = fmt(docDate(o.date), t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; return b; }
+  function attach(t, o) { var b = strip(t); b.title = String(o.title || ""); b.visibility = VISIBILITY; b.description = ""; b.documentDate = fmt(docDate(o.date), t._date); b._links = clone(t._links || {}); b._links.file = { href: o.href }; if (o.docType) b._links.documentType = { href: o.docType }; return b; }
   // treść odmowy Vantify w całości (Grzegorz 21/11/2026: „http400 (create)” bez powodu): komunikat, lista naruszeń
   // ({property_path|propertyPath|field, message}), błędy formularza (errors / children) albo surowy tekst odpowiedzi; do 1000 znaków
   function errText(j, raw) {
@@ -309,6 +309,29 @@
         return req("POST", "/sites/" + site + "/jobs/" + a.id + "/messages", message(Wu, { text: a.text })).then(function () { step = "check"; return hasMessage(j, a.text).catch(function () { return null; }); }).then(function (s) { end({ status: "ok", job: brief(j), seen: s }); });
       }).catch(function (e) { if (e && e.stop) return; if (Wu._built && step === "update" && rejected(e)) return end({ status: "nowzor", op: "update", built: true, code: e.code, msg: e.msg || "" }); fail(e); });
     }
+    // Job Sheet do Files zlecenia przed zamknięciem (Grzegorz 27/11/2026: „wyślij formularz do Vantify i czekaj na zakończenie”):
+    // PDF jako typ dokumentu, którego zlecenie wymaga (Reactive: Job Sheet), widoczność Partnership; zamyka potem bot albo „Zamknij w Vantify” bez drugiego pliku
+    if (a.op === "sheet") {
+      var Ws = W.attach, hs = "";
+      step = "read";
+      return job(a.id).then(function (j) {
+        if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
+        if (j.is_final_status) { end({ status: "differs", why: "final", job: brief(j) }); throw { stop: 1 }; }
+        if (a.summary && String(j.summary || "").trim() !== String(a.summary).trim()) { end({ status: "differs", why: "summary", job: brief(j) }); throw { stop: 1 }; }
+        if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
+        var need = docTypes(j);
+        if (need.length > 1) { end({ status: "differs", why: "doctype", job: brief(j) }); throw { stop: 1 }; }
+        if (!Ws) Ws = built("attach");
+        step = "upload";
+        return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) {
+          hs = u.href; step = "attach";
+          return req("POST", "/sites/" + site + "/jobs/" + a.id + "/files", attach(Ws, { title: a.file.title, href: u.href, date: new Date(), docType: need[0] || JOB_SHEET }));
+        });
+      }).then(function () {
+        step = "check";
+        return job(a.id).then(function (j) { return hasFile(j, a.file.title, hs).then(function (s) { end({ status: "ok", job: brief(j), href: hs, fileSeen: s }); }); });
+      }).catch(function (e) { if (e && e.stop) return; if (Ws && Ws._built && step === "attach" && rejected(e)) return end({ status: "nowzor", op: "sheet", built: true, code: e.code, msg: e.msg || "" }); fail(e); });
+    }
     if (a.op === "close") {
       var j0, href, d0 = new Date(a.onSite || Date.now()), d1 = new Date(a.done || Date.now()), Wc = W.commence || built("commence"), Wp = W.complete;
       step = "read";
@@ -320,9 +343,11 @@
         j0 = j;
         if (why === "doctype") { end({ status: "nowzor", op: "complete", why: why }); throw { stop: 1 }; }
         if (why) { end({ status: "differs", why: why, job: brief(j) }); throw { stop: 1 }; }
-        if (!a.file || !a.file.b64) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
+        if (!a.sheetHref && (!a.file || !a.file.b64)) { end({ status: "error", code: "nofile" }); throw { stop: 1 }; }
         if (!Wp) Wp = built("complete", { docType: dt });
       }).then(function () {
+        // Job Sheet już w Files zlecenia (op „sheet”): Complete bez drugiego pliku – jak bot (tools/bot-vantify)
+        if (a.sheetHref) { href = a.sheetHref; return null; }
         step = "upload";
         return upload({ b64: a.file.b64, name: a.file.name, title: a.file.title, type: a.file.type || "application/pdf" }).then(function (u) { href = u.href; });
       }).then(function () {
@@ -331,11 +356,11 @@
         return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/commence", commence(Wc, { date: d0 }));
       }).then(function () {
         step = "complete";
-        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/complete", complete(Wp, { date: d1, files: [{ href: href, title: a.file.title }] }));
+        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/workflow/operation/complete", complete(Wp, { date: d1, files: a.sheetHref ? [] : [{ href: href, title: a.file.title }] }));
       }).then(function () {
         step = "verify";
         return job(a.id).then(function (j) {
-          return hasFile(j, a.file.title, href).then(function (s) { end({ status: "ok", job: brief(j), closed: !!(j && j.is_final_status), fileSeen: s }); });
+          return hasFile(j, a.sheetTitle || (a.file && a.file.title), href).then(function (s) { end({ status: "ok", job: brief(j), closed: !!(j && j.is_final_status), fileSeen: s }); });
         });
       }).catch(function (e) {
         if (e && e.stop) return;

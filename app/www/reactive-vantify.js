@@ -39,7 +39,10 @@
   function przyciski(d, L) {
     const s = state(d), v = d?.vantify || {}, b = (tekst, rx, ton) => ({ tekst, rx, ton: ton || '' });
     const open = s === 'none' || s === 'pending' ? b(L('Załóż w Vantify', 'Create in Vantify'), 'vt-open', s === 'pending' ? 'off' : 'go') : photosMissing(d) ? b('⚠ Vantify #' + v.id + ' · ' + L('zdjęcia ', 'photos ') + (v.photos.seen || []).length + '/' + v.photos.hrefs.length, 'vt-check', 'off') : b('✓ Vantify #' + v.id, 'vt-check', 'done');
-    const close = s === 'none' || s === 'pending' ? b(L('Zamknij w Vantify', 'Close in Vantify'), 'vt-close', 'off') : s === 'approval' ? b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'off') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'done') : s === 'nofile' ? b(L('⚠ Brak pliku w Vantify', '⚠ No file in Vantify'), 'vt-check', 'off') : b(L('Zamknij w Vantify', 'Close in Vantify'), 'vt-close', 'go');
+    /* jeden przycisk w Zamknięciu, napis ze stanu (Grzegorz 27/11/2026): bot włączony → najpierw Job Sheet do Vantify, potem czeka na zatwierdzenie
+       i zamyka bot; bot wyłączony na tym zleceniu → „Wyślij Job Sheet i zamknij” po zatwierdzeniu */
+    const bot = !d?.botOff, sh = !!v.sheet?.href;
+    const close = s === 'none' || s === 'pending' ? b(L('Zamknij w Vantify', 'Close in Vantify'), 'vt-close', 'off') : s === 'approval' ? (sh ? b(L('✓ Job Sheet w Vantify · czeka na zatwierdzenie', '✓ Job Sheet in Vantify · awaiting approval'), 'vt-check', 'off') : bot ? b(L('Wyślij Job Sheet do Vantify', 'Send Job Sheet to Vantify'), 'vt-sheet', 'go') : b(L('Czeka na zatwierdzenie', 'Awaiting approval'), 'vt-check', 'off')) : s === 'open' ? b(sh ? L('Zamknij w Vantify', 'Close in Vantify') : L('Wyślij Job Sheet i zamknij', 'Send Job Sheet and close'), 'vt-close', 'go') : s === 'closed' ? b(L('✓ Zamknięte w Vantify', '✓ Closed in Vantify'), 'vt-check', 'done') : s === 'nofile' ? b(L('⚠ Brak pliku w Vantify', '⚠ No file in Vantify'), 'vt-check', 'off') : b(L('Zamknij w Vantify', 'Close in Vantify'), 'vt-close', 'go');
     return { open, close };
   }
   function why(r, L) {
@@ -246,6 +249,7 @@
   async function saved(x, v) {
     x.draft.vantify = { ...v, at: new Date().toISOString() };
     await x.persist(); x.render();
+    if (x.draft.botOff && !await botZnacznik(x.draft)) x.message(x.L('Nie udało się zapisać na Dysku, że bot ma nie zamykać #', 'Could not save on Drive that the bot must not close #') + v.id + x.L(' – przełącz bota jeszcze raz.', ' – switch the bot again.'));
     x.message(x.L('Założone w Vantify #', 'Created in Vantify #') + v.id + x.L('. Czeka na zatwierdzenie.', '. Awaiting approval.'));
   }
   /* sprawdź status teraz (stuknięcie w „Czeka na zatwierdzenie” albo w „✓ Vantify #nr”) */
@@ -329,6 +333,45 @@
   }
   w.addEventListener('oest:vantify-pobrane', () => { odswiez(); });
 
+  /* „Wyślij Job Sheet do Vantify” (Grzegorz 27/11/2026): przed zatwierdzeniem PDF „JOB SHEET … nr” do Files zlecenia; najpierw okienko,
+     że zamknie bot po zatwierdzeniu. Napis przycisku zmienia się ze stanem z Vantify (odczyt przy otwarciu karty, co 4 h, stuknięcie). */
+  async function sheet(x) {
+    const { draft: d, L } = x, P = plugin();
+    if (state(d) !== 'approval') return check(x);
+    if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
+    if (!await ask({ title: L('Job Sheet do Vantify #', 'Job Sheet to Vantify #') + d.vantify.id, text: L('Wyślę Job Sheet (PDF) do plików zlecenia w Vantify. Zlecenie czeka na zatwierdzenie: gdy Vantify je zatwierdzi, bot sam je zamknie z tym Job Sheetem i przyśle maila. Do tego czasu apka sprawdza stan w Vantify, a napis przycisku się zmienia.', 'I will send the Job Sheet (PDF) to the job files in Vantify. The job is awaiting approval: once Vantify approves it, the bot closes it with this Job Sheet and emails you. Until then the app checks the state in Vantify and the button label changes.'), ok: L('Tak, wyślij', 'Yes, send'), cancel: L('Wróć', 'Back') })) return x.message('');
+    if (x.review && !await x.review()) return x.message('');
+    x.message(L('Tworzę Job Sheet (PDF)…', 'Creating the Job Sheet (PDF)…'));
+    const js = await x.jobSheet(), b64 = await w.OESTVoice.base64(new Blob([js.pdf], { type: 'application/pdf' }));
+    x.message(L('Wysyłam Job Sheet do Vantify…', 'Sending the Job Sheet to Vantify…'));
+    const r = await act(P, { op: 'sheet', id: d.vantify.id, summary: d.vantify.summary || '', file: { b64, name: js.name, title: js.title, type: 'application/pdf' } });
+    if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(r.why === 'final' ? 'Vantify #' + d.vantify.id + ': ' + L('zamknięte', 'closed') : L('Zlecenie w Vantify różni się od karty (', 'The job in Vantify differs from the card (') + r.why + L('). Nic nie wysłałem.', '). Nothing was sent.')); }
+    if (r.status === 'nowzor') return x.message(L('Vantify nie przyjął pliku z apki (', 'Vantify did not accept the file from the app (') + (r.code || '') + L('). Dodaj Job Sheet w Vantify ręcznie albo zamknij po zatwierdzeniu.', '). Add the Job Sheet in Vantify by hand or close after approval.'));
+    if (r.status !== 'ok') return x.message(why(r, L));
+    await update(x, r.job || { status: d.vantify.status }, { sheet: { title: js.title, href: r.href, at: new Date().toISOString(), seen: !!r.fileSeen } });
+    x.message(r.fileSeen ? L('✓ Job Sheet w Vantify. Bot zamknie zlecenie po zatwierdzeniu.', '✓ Job Sheet in Vantify. The bot closes the job after approval.') : L('Job Sheet wysłany, ale nie widzę go jeszcze przy zleceniu – sprawdź w Vantify.', 'Job Sheet sent, but I do not see it on the job yet – check in Vantify.'));
+  }
+  /* bot na tym zleceniu (Grzegorz 27/11/2026: „zlecenia, których nie chcę, żeby automat zamykał”): wyłączony = plik „BOT STOP <nr>” w OEST Raporty
+     na Dysku; bot (tools/bot-vantify) przy takim pliku nic nie robi. Włączenie usuwa plik. Bez numeru zlecenia plik powstaje przy zakładaniu. */
+  const STOP = nr => 'BOT STOP ' + nr + '.txt'; // i18n-ok: nazwa pliku na Dysku czytana przez bota
+  async function botZnacznik(d) {
+    const G = w.OESTGoogle, nr = d?.vantify?.id;
+    if (!nr || !G) return true;
+    try {
+      if (!(await G.ready('drive'))) await G.connect('drive');
+      const root = (await G.ensureFolder('OEST Raporty', '')).id, f = await G.findFile(root, STOP(nr)); // i18n-ok: folder na Dysku
+      if (d.botOff && !f) await G.uploadFile(root, STOP(nr), new Blob(['OEST: bot nie zamyka zlecenia #' + nr + '\n'], { type: 'text/plain' }));
+      if (!d.botOff && f) await G.removeFile(f.id);
+      return true;
+    } catch (e) { return false; }
+  }
+  async function bot(x, on) {
+    const { draft: d, L } = x;
+    if (d.vantify?.final || d.vantify?.closedAt) return;
+    d.botOff = !on; await x.persist(); x.render();
+    if (!d.vantify?.id) return x.message(on ? '' : L('Bot nie zamknie tego zlecenia. Zapamiętam to przy zakładaniu.', 'The bot will not close this job. Saved for when it is created.'));
+    x.message(await botZnacznik(d) ? (on ? L('Bot zamknie zlecenie #', 'The bot closes job #') + d.vantify.id + L(' po zatwierdzeniu.', ' after approval.') : L('Bot nie zamknie zlecenia #', 'The bot will not close job #') + d.vantify.id + '.') : L('Nie udało się zapisać na Dysku ustawienia bota. Sprawdź połączenie z Google i przełącz jeszcze raz.', 'Could not save the bot setting on Drive. Check the Google connection and switch again.'));
+  }
   async function close(x) {
     const { draft: d, L } = x, P = plugin(), s = state(d);
     if (s === 'none' || s === 'pending') return x.message(L('Najpierw Open Vantify.', 'Open Vantify first.'));
@@ -348,7 +391,8 @@
     if (x.review && !await x.review()) return x.message('');
     x.message(L('Tworzę Job Sheet (PDF)…', 'Creating the Job Sheet (PDF)…'));
     const sheet = await x.jobSheet(), day = sheet.date.toLocaleDateString('en-GB');
-    if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + L(' oraz plik ', ' with the file ') + sheet.name + '.', ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
+    const jest = d.vantify.sheet?.href ? d.vantify.sheet : null; // Job Sheet już w Files zlecenia (przycisk „Wyślij Job Sheet do Vantify”) – bez drugiego pliku
+    if (!await ask({ title: 'Close Vantify #' + d.vantify.id, text: L('Wyślę do Vantify: Commence (jeśli trzeba) i Complete z datą ', 'I will send to Vantify: Commence (if needed) and Complete dated ') + day + (jest ? L('. Job Sheet ', '. The Job Sheet ') + jest.title + L(' jest już przy zleceniu – bez drugiego pliku.', ' is already on the job – no second file.') : L(' oraz plik ', ' with the file ') + sheet.name + '.'), ok: L('Tak, zamknij', 'Yes, close'), cancel: L('Wróć', 'Back') })) return x.message('');
     const b64 = await w.OESTVoice.base64(new Blob([sheet.pdf], { type: 'application/pdf' }));
     /* zamknięcie w oknie Vantify tylko, gdy zlecenie wymaga innego typu dokumentu (przegląd Codex #146) albo Vantify odrzucił
        zamknięcie wzorem wbudowanym z zapisu 18/11 (Grzegorz 20/11/2026: bez nauki w oknie) */
@@ -360,16 +404,16 @@
       return done ? check(x) : x.message(L('Nie widzę zamknięcia w Vantify. Zlecenie zostaje otwarte.', 'I do not see the job closed in Vantify. It stays open.'));
     };
     x.message(L('Zamykam w Vantify…', 'Closing in Vantify…'));
-    const r = await act(P, { op: 'close', id: d.vantify.id, summary: d.vantify.summary || '', onSite: sheet.start.toISOString(), done: sheet.date.toISOString(), file: { b64, name: sheet.name, title: sheet.title, type: 'application/pdf' } });
+    const r = await act(P, { op: 'close', id: d.vantify.id, summary: d.vantify.summary || '', onSite: sheet.start.toISOString(), done: sheet.date.toISOString(), ...(jest ? { sheetHref: jest.href, sheetTitle: jest.title } : { file: { b64, name: sheet.name, title: sheet.title, type: 'application/pdf' } }) });
     if (r.status === 'differs') { if (r.job) await update(x, r.job); return x.message(L('Zlecenie w Vantify różni się od karty (', 'The job in Vantify differs from the card (') + r.why + L('). Nic nie wysłałem.', '). Nothing was sent.')); }
     if (r.status === 'nowzor') return inWindow(r);
     if (r.status !== 'ok') return x.message(why(r, L));
     /* plik zapamiętany na karcie: bez potwierdzenia pliku karta pokazuje „⚠ Brak pliku”, stuknięcie sprawdza znowu (przegląd Codex #146) */
-    await update(x, r.job || { status: d.vantify.status }, { fileSeen: !!r.fileSeen, sheetTitle: sheet.title });
+    await update(x, r.job || { status: d.vantify.status }, { fileSeen: !!r.fileSeen, sheetTitle: jest ? jest.title : sheet.title });
     if (!r.closed) return x.message(L('Vantify nie potwierdził zamknięcia. Sprawdź zlecenie w Vantify.', 'Vantify did not confirm the job is closed. Check the job in Vantify.'));
     x.message(r.fileSeen ? L('✓ Zamknięte w Vantify z Job Sheet.', '✓ Closed in Vantify with the Job Sheet.') : L('✓ Zamknięte w Vantify, ale nie widzę pliku przy zleceniu – sprawdź w Vantify.', '✓ Closed in Vantify, but I do not see the file on the job – check in Vantify.'));
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
+  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, sheet, bot, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
 })(window);
