@@ -56,7 +56,13 @@
      okienko ze szkieletu (moduly/szkielet, OESTOkna.komunikat = ion-alert), bez własnego HTML. Pasek na dole mówi to samo. */
   /* wynik w wierszach (Grzegorz 27/11/2026): tresc = [{ etykieta, tekst, uwaga }] → okienko WynikVantify; tekst = zwykły komunikat */
   const wynik = (tytul, tresc) => Array.isArray(tresc) && w.OESTCzesci?.okno ? w.OESTCzesci.okno('WynikVantify', { dane: () => ({ wiersze: tresc }) }, { tytul, ok: 'OK', anuluj: false }).catch(() => {}) : Array.isArray(tresc) ? wynik(tytul, tresc.map(r => r.etykieta + ': ' + r.tekst).join('\n')) : w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
-  async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
+  /* kółko „łączę z Vantify” na czas każdego zapytania wywołanego stuknięciem (Grzegorz 27/11/2026: „długo trwało, wyglądało jak zwis”) –
+     jedno kółko apki (moduly/ladowanie, ion-loading); odczyt w tle (odswiez) bez kółka */
+  async function act(P, a, tlo) {
+    const K = !tlo && w.OESTLadowanie;
+    if (K) K.show(w.OESTT ? w.OESTT('Łączę z Vantify…', 'Connecting to Vantify…') : 'Vantify…');
+    try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } finally { if (K) K.hide(); }
+  }
   async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
 
   /* Summary do Vantify z karty – jedno miejsce dla okna „Załóż zlecenie” i podglądu pod nazwą zadania (Grzegorz 27/11/2026: „mogłaby od razu tłumaczyć”) */
@@ -324,7 +330,7 @@
       const add = v => { if (v?.id && !v.final && !v.closedAt) ids.add(Number(v.id)); };
       (s.jobs || []).forEach(j => add(j.reactive?.vantify)); Object.values(s.reactiveDrafts || {}).forEach(d => add(d?.vantify));
       const all = [...ids], got = [];
-      for (let i = 0; i < all.length; i += 20) { const r = await act(P, { op: 'status', ids: all.slice(i, i + 20) }); if (r.status !== 'ok') break; got.push(...(r.jobs || [])); }
+      for (let i = 0; i < all.length; i += 20) { const r = await act(P, { op: 'status', ids: all.slice(i, i + 20) }, true); if (r.status !== 'ok') break; got.push(...(r.jobs || [])); }
       const n = got.length ? await H.setReactiveVantify(got) : 0;
       if (n) try { w.dispatchEvent(new CustomEvent('oest:reactive-vantify', { detail: { n } })); } catch (e) {}
       return n;
