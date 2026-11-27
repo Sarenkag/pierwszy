@@ -102,10 +102,10 @@
       openForm(t.name); return;
     }
     if (f && f.rooms) {
-      // plant roomy: stałe pomieszczenia, w każdym checkpointy (domyślnie OK), raport na wzorze firmy
+      // plant roomy: stałe pomieszczenia, w każdym checkpointy (domyślnie OK), raport: ramka basic + środek „grupy” (grupa = pomieszczenie)
       var cps = PPM.forms.plantCps.concat(f.monthly ? PPM.forms.plantCpsMonthly : []), rc = [];
       PPM.forms.plantRooms.forEach(function (r) {
-        cps.concat(r.extra || []).forEach(function (cp) { rc.push({ key: r.key + "." + cp, cp: cp, room: r.key, roomName: r.name, roomLoc: r.loc, ok: r.name + ": " + cp + " OK.", fail: r.name + ": " + cp + " – requires attention.", def: "ok" }); });
+        cps.concat(r.extra || []).forEach(function (cp) { rc.push({ key: r.key + "." + cp, cp: cp, short: PPM.forms.plantCpsRaport[cp] || cp, room: r.key, roomName: r.name, roomLoc: r.loc, ok: r.name + ": " + cp + " OK.", fail: r.name + ": " + cp + " – requires attention.", def: "ok" }); });
       });
       cur.type = { id: "ppm-" + t.id, plain: true, rooms: true, name: t.name, title: f.title, wzor: f.wzor, scope: "", devices: dev, checks: rc };
       openForm(t.name); return;
@@ -114,7 +114,7 @@
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, wzor: f.wzor, slots: f.slots, scope: "", devices: dev, checks: [] } :
         { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", devices: dev,
-          checks: f.checks.map(function (c) { return { key: c.key, cp: c.cp, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
+          checks: f.checks.map(function (c) { return { key: c.key, cp: c.cp, short: c.short, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
       openForm(t.name); return;
     }
     // inspekcja bez własnych pytań: zdjęcie i jedno sprawdzenie, pytania dojdą w ustawieniach inspekcji

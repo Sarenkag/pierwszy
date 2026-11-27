@@ -34,32 +34,46 @@
     if (cur.type.checks.length && cur.type.checks.every(function (c) { return c.cp; })) body = checkpointText(cur.type.checks);
     else body = pts.map(function (s) { return "• " + s; }).join("\n");
     d.opis = (head ? head + "\n\n" : "") + body + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    // środek „grupy” (Grzegorz 27/11/2026): krótki punkt przy ☑/☒, przy ☒ szara uwaga = pełne zdanie usterki; N/A pominięte jak dotąd
+    var pk = [], nNo = 0, extra = extraFaults(true);
+    cur.type.checks.forEach(function (c, i) {
+      if (states[i] === "ok") pk.push({ nazwa: punkt(c), stan: "ok" });
+      else if (states[i] === "fail") { nNo++; pk.push({ nazwa: punkt(c), stan: "no", uwaga: override[i] || c.fail || powody(c, i) }); }
+    });
+    Object.assign(d, OESTWzory.grupy([{ nazwa: head || cur.code || cur.type.name, punkty: pk }], { szare: [ogolny(d)].concat(extra.map(function (s) { return "Fault: " + s; }),
+      [pk.length || extra.length ? summaryLine(nNo + extra.length) : "Visual inspection carried out.", d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
     return english(d);
   }
-  // plant roomy: dane do wzoru firmy (siatka 4 w wierszu: {a}{b}{c}{d}) i tekst do PDF (siatka 3 w wierszu, tabulatory)
+  // nazwa punktu w raporcie: krótki tekst zatwierdzony przez Grzegorza (27/11/2026, pole short), inaczej hasło z ekranu
+  function punkt(c) { return c.short || c.cp || c.qen || c.ok || ""; }
+  // pytanie z powodami (izolatory): wybrane powody po angielsku, inaczej ogólne zdanie pytania
+  function powody(c, i) { var rs = (c.reasons || []).filter(function (r) { return (rsel[i] || []).indexOf(r.id) >= 0; }); return rs.length ? rs.map(function (r) { return r.en; }).join("; ") : c.en || ""; }
+  // pierwszy akapit szarej ramki: wiersza „Overall Condition” w środku grup nie ma (jak we Flushingu), stan idzie tutaj
+  function ogolny(d) { return d.stan_ogolny ? "Overall condition: " + d.stan_ogolny + "." : ""; }
+  // plant roomy: dane środka „grupy” (Word i PDF z niego) i tekst opisu (podgląd, Vantify)
   function roomsData(w) {
     var d = english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
       tytul: cur.type.title, punkty: [], stan_ogolny: radio("ov"), quote: radio("quote"), site: cfg.site, komentarz: $("komentarz").value.trim(), zakres: "" });
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date());
     // 01/11 Grzegorz: w pomieszczeniach same kratki (układ się nie rozjeżdża), usterki pełnymi zdaniami + uwagi dopiero na końcu
-    var seen = {}, last = "", rooms = [], issues = [];
+    var seen = {}, rooms = [], issues = [];
     cur.type.checks.forEach(function (c) {
-      if (seen[c.room]) return; seen[c.room] = 1; last = c.room;
+      if (seen[c.room]) return; seen[c.room] = 1;
       var cells = [];
       cur.type.checks.forEach(function (x, i) { if (x.room !== c.room) return; if (states[i] === "ok") cells.push("\u2611 " + x.cp); else if (states[i] === "fail") cells.push("\u2612 " + x.cp); });
       var fails = roomFails(c.room), note = (roomNotes[c.room] || "").trim().replace(/\.?$/, ".");
       fails.forEach(function (f) { issues.push(c.roomName + " (" + c.roomLoc + "): " + f + " check failed \u2013 " + (note.length > 1 ? note : "requires attention.")); }); // każde odznaczenie osobnym zdaniem
-      var rows = [];
-      for (var k = 0; k < cells.length; k += 4) rows.push({ a: cells[k] || "", b: cells[k + 1] || "", c: cells[k + 2] || "", d: cells[k + 3] || "" });
-      d[c.room] = rows; d[c.room + "_notes"] = [];
-      rooms.push({ name: c.roomName, loc: c.roomLoc, cells: cells });
+      var pk = [];
+      cur.type.checks.forEach(function (x, i) { if (x.room !== c.room) return; if (states[i] === "ok") pk.push({ nazwa: punkt(x), stan: "ok" }); else if (states[i] === "fail") pk.push({ nazwa: punkt(x), stan: "no", uwaga: note.length > 1 ? note : "requires attention." }); });
+      rooms.push({ name: c.roomName, loc: c.roomLoc, cells: cells, punkty: pk });
     });
     var end = issues.length ? ["Issues found:"].concat(issues.map(function (t) { return "\u2022 " + t; })) : [];
     if (d.komentarz) end.push("Comments: " + d.komentarz);
-    if (last) d[last + "_notes"] = end; // wzór nie ma pola na koniec: lista idzie pod ostatnie pomieszczenie, przed podpisem
     rooms = rooms.filter(function (r) { return r.cells.length; }); // pomieszczenie całe na N/A: nie pokazuj pustego nagłówka
     if (!rooms.length) end.unshift("Visual inspection carried out."); // wszystko N/A: sama inspekcja wzrokowa
-    d.plant = rooms; d.plantEnd = end;
+    // środek „grupy” (Grzegorz 27/11/2026): grupa = pomieszczenie z lokalizacją, przy ☒ szara uwaga pomieszczenia
+    Object.assign(d, OESTWzory.grupy(rooms.map(function (r) { return { nazwa: r.name + " \u2013 " + r.loc, punkty: r.punkty }; }),
+      { szare: [ogolny(d)].concat(rooms.length ? [] : ["Visual inspection carried out."], d.komentarz ? ["Comments: " + d.komentarz] : []) }));
     d.opis = d.details = rooms.map(function (r) { return r.name + " \u2013 Location: " + r.loc + "\n" + r.cells.join(", "); }).concat(end).join("\n");
     return d;
   }
@@ -116,10 +130,11 @@
 
   // ---------- szablon (z Google Drive, kopia w telefonie na offline) ----------
   function templateBytes() {
-    if (cur.type && cur.type.wzor) return OESTWzory.bajty(cur.type.wzor); // wzór firmy dla tej inspekcji (moduly/wzory)
-    // w apce bez skryptu Google zawsze wbudowany wzór (stara kopia z Drive w telefonie nie może go podmieniać)
-    if (APP && !cfg.api) return OESTWzory.bajty("basic");
-    return serverTpl ? serverTpl.bytes : OESTWzory.bajty("basic");
+    if (cur.type && cur.type.wzor) return OESTWzory.bajty(cur.type.wzor); // wzór wskazany w opisie inspekcji (moduly/wzory)
+    // w apce bez skryptu Google zawsze wbudowany wzór (stara kopia z Drive w telefonie nie może go podmieniać):
+    // ramka basic + środek „grupy” (Grzegorz 27/11/2026: wszystkie inspekcje w stylu Flushing/Generator)
+    if (APP && !cfg.api) return OESTWzory.bajty("grupy-basic");
+    return serverTpl ? serverTpl.bytes : OESTWzory.bajty("grupy-basic");
   }
   function tplState(err) {
     var n = $("tplNotice");

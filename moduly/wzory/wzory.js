@@ -3,7 +3,7 @@
 // w jej opisie (app/www/ppm.js, pole „wzor”). Kopii wzoru (plik .docx, base64) nigdzie indziej nie ma – pilnuje bramka (R25, rzecz „wzor-word”).
 // Interfejs: OESTWzory.lista() → [{id, plik, nazwa, pola}], OESTWzory.wczytaj() → Promise (raz, przy starcie strony),
 // OESTWzory.bajty(id) → Uint8Array (kopia; po wczytaj()), OESTWzory.pola(id) → nawiasy, które apka umie wypełnić,
-// OESTWzory.slownik() → wspólny słownik nawiasów {nazwa: {opis: [pl, en], stare}}.
+// OESTWzory.slownik() → wspólny słownik nawiasów {nazwa: {opis: [pl, en], stare}}, OESTWzory.grupy(lista, o) → dane środka „grupy-basic”.
 (function (g) {
   "use strict";
   // SŁOWNIK (Grzegorz 21/11/2026): jeden zestaw nawiasów dla wszystkich wzorów – ta sama nazwa = ta sama dana w każdym wzorze.
@@ -13,17 +13,16 @@
     "engineer": ["inżynier", "engineer"], "building": ["budynek", "building"], "level": ["piętro", "level"], "title": ["rodzaj inspekcji", "inspection type"],
     "condition": ["stan ogólny", "overall condition"], "details": ["opis i ustalenia", "details and findings"], "quote": ["wycena tak/nie", "quote yes/no"],
     "%photos": ["zdjęcia (siatka)", "photos (grid)"],
-    "a": ["Plant: kolumna a", "Plant: column a"], "b": ["Plant: kolumna b", "Plant: column b"], "c": ["Plant: kolumna c", "Plant: column c"],
-    "d": ["Plant: kolumna d", "Plant: column d"], ".": ["Plant: wiersz uwag", "Plant: notes row"],
-    "temp": ["QHS-031: kolejny pomiar temperatury", "QHS-031: next temperature reading"],
-    "data": { opis: ["QHS-031: data (stara nazwa, wspólna = date)", "QHS-031: date (old name, common = date)"], stare: true },
-    "name": { opis: ["QHS-031: inżynier (stara nazwa, wspólna = engineer)", "QHS-031: engineer (old name, common = engineer)"], stare: true },
     "o": { opis: ["Flushing: nazwa kranu (kod skryptu)", "Flushing: outlet name (script code)"], stare: true },
     "bld": { opis: ["Flushing: budynek w nagłówku (kod skryptu, wspólna = building)", "Flushing: header building (script code, common = building)"], stare: true },
     "twr": { opis: ["Flushing: wieża w tytule (kod skryptu)", "Flushing: tower in title (script code)"], stare: true }
   };
-  ["comms", "mechanical", "primary_switch", "secondary_switch", "spa_filtration", "spa_pump", "sprinkler"].forEach(function (k) {
-    SLOWNIK[k] = ["Plant: pomieszczenie " + k, "Plant: room " + k]; SLOWNIK[k + "_notes"] = ["Plant: uwagi " + k, "Plant: notes " + k];
+  // środek „grupy” (Grzegorz 27/11/2026: wszystkie inspekcje w stylu Flushing/Generator) – pętle, dane z OESTWzory.grupy()
+  [["podtytul", "grupy: linia nad grupami", "groups: line above the groups"], ["grupy", "grupy: lista grup", "groups: group list"],
+    ["nazwa", "grupy: nazwa grupy (pasek)", "groups: group name (bar)"], ["licznik", "grupy: licznik w pasku (np. 5/6)", "groups: count in the bar (e.g. 5/6)"],
+    ["wiersze", "grupy: wiersz z 2 punktami", "groups: row with 2 points"], ["szare", "grupy: akapity szarej ramki", "groups: grey box paragraphs"]].forEach(function (x) { SLOWNIK[x[0]] = [x[1], x[2]]; });
+  [1, 2].forEach(function (n) {
+    SLOWNIK["n" + n] = ["grupy: nazwa punktu " + n + " w wierszu", "groups: point " + n + " name in row"]; SLOWNIK["u" + n] = ["grupy: szara uwaga punktu " + n, "groups: point " + n + " grey note"]; // ok/no/na 1–2: te same co we Flushingu
   });
   ["y0", "y1", "y2", "y3", "y4", "y5"].forEach(function (k, i) { SLOWNIK[k] = { opis: ["Flushing: rok " + (i + 1) + " (kod skryptu)", "Flushing: year " + (i + 1) + " (script code)"], stare: true }; });
   // basic form Weekly Flushing (Grzegorz 21/11/2026): kran nr i z listy kranów (ppm.js) i strefa nr k
@@ -46,9 +45,6 @@
   // pola = nawiasy, które apka wypełnia w danym wzorze (test app/tests/wzory.test.cjs: plik ma dokładnie te nawiasy, każdy jest w SŁOWNIKU)
   var WZORY = {
     basic: { plik: "basic.docx", nazwa: "OEST basic Engineers Report", pola: ["site", "date", "job number", "engineer", "building", "level", "title", "condition", "details", "quote", "%photos"] },
-    plant: { plik: "plant.docx", nazwa: "Plant Rooms Weekly / Monthly", pola: ["site", "date", "job number", "engineer", "building", "level", "title", "condition", "quote", "%photos", "a", "b", "c", "d", ".",
-      "comms", "mechanical", "primary_switch", "secondary_switch", "spa_filtration", "spa_pump", "sprinkler",
-      "comms_notes", "mechanical_notes", "primary_switch_notes", "secondary_switch_notes", "spa_filtration_notes", "spa_pump_notes", "sprinkler_notes"] },
     flush: { plik: "flush.docx", nazwa: "Weekly Taps/Shower Flushing Record (TA / TB / P)", pola: ["o", "bld", "twr", "y0", "y1", "y2", "y3", "y4", "y5", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"] },
     // RAMKA + ŚRODEK (Grzegorz 21/11/2026 09:10 i 17:33: „jak zmienisz w jednym, wszystko się zmieni”): wpis z „ramka” to plik SAMEGO środka;
     // bajty(id) wkłada go w aktualną ramkę (basic.docx) przy każdym raporcie – kopii ramki nigdzie nie ma.
@@ -59,7 +55,9 @@
     "gen-basic": { plik: "gen-srodek.docx", ramka: "basic", nazwa: "Generator Checks – Weekly – basic form middle", pola: flushPola(12, 2) },
     // Reactive Job Sheet (Grzegorz 26/11/2026): bez wiersza „Overall Condition”; środek w stylu „grupy stref” (27/11/2026, app/scripts/reactive-srodek.py)
     "reactive-basic": { plik: "reactive-srodek.docx", ramka: "basic", nazwa: "Reactive Job Sheet – basic form middle (no Overall Condition)", pola: ["wstep", "sekcje", "tekstowa", "naglowek", "akapity", "tekst", "tabela", "pary", "l1", "w1", "l2", "w2", "koniec"] },
-    "temp-tb": { plik: "temp-tb.docx", nazwa: "Monthly Tap Temperature Check TB (QHS-031)", pola: ["temp", "name", "data"] }
+    // Inspekcje bez własnego środka (Grzegorz 27/11/2026): z pytaniami, Plant Rooms, Temp TB, Spa, AOV TB – JEDEN środek z pętlami grup
+    "grupy-basic": { plik: "grupy-srodek.docx", ramka: "basic", nazwa: "Inspection groups – basic form middle", pola: ["podtytul", "tekst", "grupy", "nazwa", "licznik", "wiersze",
+      "n1", "u1", "ok1", "no1", "na1", "n2", "u2", "ok2", "no2", "na2", "szare"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();
   var pliki = {}, obietnica = null;
@@ -110,7 +108,28 @@
   // test w node: wzór podany z zewnątrz (plik z dysku), bez fetch
   function ustaw(id, b) { opis(id); pliki[id] = new Uint8Array(b); }
 
+  // Dane środka „grupy-basic” (jedno miejsce dla wszystkich inspekcji): lista = [{ nazwa, punkty: [{ nazwa, stan: "ok"|"no"|"na", uwaga }] }],
+  // o = { podtytul, szare: [akapity szarej ramki] }. Po 2 punkty w wierszu, licznik w pasku = ☑ / wszystkie punkty grupy (jak strefy Flushingu);
+  // grupa bez punktów nie trafia do raportu. ☑ / ☒ / N/A – te same znaki co we Flushingu (OESTFlush.basicPola).
+  function grupy(lista, o) {
+    o = o || {};
+    var gr = (lista || []).filter(function (g) { return g.punkty && g.punkty.length; }).map(function (g) {
+      var w = [], ok = g.punkty.filter(function (p) { return p.stan === "ok"; }).length;
+      for (var i = 0; i < g.punkty.length; i += 2) {
+        var r = {};
+        [g.punkty[i], g.punkty[i + 1]].forEach(function (p, k) {
+          var n = k + 1; p = p || {};
+          r["n" + n] = p.nazwa || ""; r["u" + n] = p.uwaga ? " \u2013 " + p.uwaga : "";
+          r["ok" + n] = p.stan === "ok" ? "\u2611" : ""; r["no" + n] = p.stan === "no" ? "\u2612" : ""; r["na" + n] = p.stan === "na" ? "N/A" : "";
+        });
+        w.push(r);
+      }
+      return { nazwa: g.nazwa, licznik: ok + "/" + g.punkty.length, wiersze: w };
+    });
+    return { podtytul: o.podtytul ? [{ tekst: o.podtytul }] : [], grupy: gr, szare: (o.szare || []).filter(Boolean).map(function (t) { return { tekst: t }; }) };
+  }
+
   function slownik() { var o = {}; Object.keys(SLOWNIK).forEach(function (k) { var v = SLOWNIK[k]; o[k] = Array.isArray(v) ? { opis: v.slice(), stare: false } : { opis: v.opis.slice(), stare: !!v.stare }; }); return o; }
 
-  g.OESTWzory = { lista: lista, slownik: slownik, wczytaj: wczytaj, bajty: bajty, pola: function (id) { return opis(id).pola.slice(); }, ustaw: ustaw };
+  g.OESTWzory = { lista: lista, slownik: slownik, wczytaj: wczytaj, bajty: bajty, pola: function (id) { return opis(id).pola.slice(); }, ustaw: ustaw, grupy: grupy };
 })(typeof window !== "undefined" ? window : globalThis);

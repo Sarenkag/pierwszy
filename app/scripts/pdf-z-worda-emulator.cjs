@@ -20,7 +20,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log("strona:", await val("location.href", 10000));
   console.log("silnik dostępny:", await val("!!(window.OESTWordPdf && OESTWordPdf.dostepny())", 10000));
   let ok = 0;
-  for (const nazwa of ["plant", "basic", "flush", "temp-tb"]) {
+  for (const nazwa of ["basic", "flush", "grupy-basic"]) {
     const t0 = Date.now();
     const v = await val(`(function(){var b=OESTWzory.bajty("${nazwa}");
       var docx=OESTWord.wypelnij(b,{},[]);

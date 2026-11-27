@@ -1,6 +1,6 @@
 # PDF z Worda (LibreOfficeKit, Grzegorz 20/11/2026): sprawdzenie na prawdziwym Androidzie przed wydaniem.
 # Buduje wersję debug OEST z silnikiem, uruchamia ją na emulatorze Androida (x86_64 z tłumaczeniem ARM, silnik jest arm64),
-# w stronie inspekcji wypełnia wzory firmy (Plant, basic) i robi z nich PDF silnikiem; wypisuje strony, czasy i logcat awarii.
+# w stronie inspekcji wypełnia wzory (basic, Flushing, środek „grupy”) i robi z nich PDF silnikiem; wypisuje strony, czasy i logcat awarii.
 # Nic nie wydaje. Uruchamia się przy zmianach silnika/adaptera i ręcznie.
 name: PDF z Worda – emulator
 

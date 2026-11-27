@@ -36,7 +36,7 @@
     var k = "", raz = basicRaz.get(d) || {}; basicRaz.set(d, raz);
     for (var i = 0; i < pics.length; i++) k += pics[i].url + "|";
     if (raz[k]) return raz[k];
-    var b = flushBasic(d, pics); return (raz[k] = OESTWord.wypelnij(OESTWzory.bajty(d.flush.wzorBasic || "basic"), b.d, b.pics));
+    var b = flushBasic(d, pics); return (raz[k] = OESTWord.wypelnij(OESTWzory.bajty(d.flush.wzorBasic || "grupy-basic"), b.d, b.pics));
   }
   // dane basic form dla Flushingu — te same dla Worda i PDF-u (identyczne wersje)
   function flushBasic(d, pics) {
@@ -49,6 +49,12 @@
       .concat(["", sum + "."]).join("\n");
     // Flushing ze strefami (Grzegorz 21/11/2026): wzór flush-basic-* – strefy, kratki i stałe zdanie zamiast listy w {details}
     if (f.strefy && f.wzorBasic) { Object.assign(dd, OESTFlush.basicPola(f)); dd.details = dd.opis = ""; }
+    // lista punktów bez własnego środka (Spa, AOV TB – Grzegorz 27/11/2026): środek „grupy”, grupy z konfiguracji typu (groups), inaczej jedna
+    else {
+      var gr = [], st = { yes: "ok", no: "no", na: "na" };
+      f.taps.forEach(function (t, i) { if (heads[i] != null || !gr.length) gr.push({ nazwa: heads[i] || dd.title, punkty: [] }); gr[gr.length - 1].punkty.push({ nazwa: t.name, stan: st[t.state], uwaga: t.note }); });
+      Object.assign(dd, OESTWzory.grupy(gr, { podtytul: f.podtytul, szare: [sum + "."] }));
+    }
     var ph = pics.filter(function (p) { return p.sheet; }).concat(pics.filter(function (p) { return !p.sheet; })).map(function (p) {
       return p.tap != null && f.taps[p.tap] ? Object.assign({}, p, { caption: f.taps[p.tap].name }) : p;
     });
@@ -129,8 +135,8 @@
     }
     function fin(ph) { return finalPhoto(small && ph.tap == null && !ph.sheet ? Object.assign({}, ph, { small: true }) : ph, d).then(function (f) { f.tap = ph.tap; f.sheet = ph.sheet; if (ph.code && ph.tap == null && !ph.sheet) f.caption = ph.code + (ph.where ? " · " + ph.where : ""); return f; }); }
     if (cur.type.temp) return Promise.resolve().then(function () {
-      // formularz firmy QHS-031: Word, PDF z niego
-      var docx = fillTempDocx(d);
+      // ramka basic + środek „grupy” (Grzegorz 27/11/2026, zamiast formularza firmy QHS-031): Word, PDF z niego
+      var docx = OESTWord.wypelnij(templateBytes(), d, []);
       return { name: name, data: d, docx: docx, pics: [], info: {}, logoUrl: "", wordPelny: true, archiwum: [docx], files: [n.xp || !n.xw ? pdfZ("", [docx]) : null, n.xw ? file("", docx) : null].filter(Boolean) };
     });
     if (cur.type.folder) {

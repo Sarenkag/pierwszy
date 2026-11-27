@@ -184,6 +184,13 @@
     };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date());
     d.opis = pts.map(function (x) { return "• " + x; }).join("\n") + (d.komentarz ? "\n\nComments: " + d.komentarz : "");
+    // środek „grupy” (Grzegorz 27/11/2026): izolator = punkt z ☑/☒, przy uwagach szara notatka z powodami (te same zdania EN co dotąd)
+    var pk = checked.map(function (dv) {
+      var it = items[dv.code], pre = "Isolator " + dv.code + ": ", ln = it && it.lines.length ? it.lines.join(" ") : "";
+      return { nazwa: dv.code, stan: it && it.fails ? "no" : "ok", uwaga: ln.indexOf(pre) === 0 ? ln.slice(pre.length) : ln };
+    });
+    var reszta = pts.slice(1).filter(function (x) { return /^(Remaining |No defects found|Not inspected: )/.test(x); }); // zdania podsumowania listy
+    Object.assign(d, OESTWzory.grupy([{ nazwa: t.name, punkty: pk }], { szare: [ogolny(d)].concat(reszta, [d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
     return english(d);
   }
 

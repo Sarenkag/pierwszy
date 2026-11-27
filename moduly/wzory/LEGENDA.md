@@ -8,55 +8,43 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 
 | Nawias | Co wstawia apka | In English | Używają |
 |---|---|---|---|
-| `{site}` | obiekt | site | basic, plant |
-| `{date}` | data inspekcji dd/mm/rrrr | inspection date dd/mm/yyyy | basic, plant |
-| `{job number}` | nr zlecenia Vantify | Vantify job number | basic, plant |
-| `{engineer}` | inżynier | engineer | basic, plant |
-| `{building}` | budynek | building | basic, plant |
-| `{level}` | piętro | level | basic, plant |
-| `{title}` | rodzaj inspekcji | inspection type | basic, plant |
-| `{condition}` | stan ogólny | overall condition | basic, plant |
-| `{details}` | opis i ustalenia | details and findings | basic, reactive-basic |
-| `{quote}` | wycena tak/nie | quote yes/no | basic, plant |
-| `{%photos}` | zdjęcia (siatka) | photos (grid) | basic, plant |
-| `{a}` | Plant: kolumna a | Plant: column a | plant |
-| `{b}` | Plant: kolumna b | Plant: column b | plant |
-| `{c}` | Plant: kolumna c | Plant: column c | plant |
-| `{d}` | Plant: kolumna d | Plant: column d | plant |
-| `{.}` | Plant: wiersz uwag | Plant: notes row | plant |
-| `{temp}` | QHS-031: kolejny pomiar temperatury | QHS-031: next temperature reading | temp-tb |
-| `{data}` STARA | QHS-031: data (stara nazwa, wspólna = date) | QHS-031: date (old name, common = date) | temp-tb |
-| `{name}` STARA | QHS-031: inżynier (stara nazwa, wspólna = engineer) | QHS-031: engineer (old name, common = engineer) | temp-tb |
+| `{site}` | obiekt | site | basic |
+| `{date}` | data inspekcji dd/mm/rrrr | inspection date dd/mm/yyyy | basic |
+| `{job number}` | nr zlecenia Vantify | Vantify job number | basic |
+| `{engineer}` | inżynier | engineer | basic |
+| `{building}` | budynek | building | basic |
+| `{level}` | piętro | level | basic |
+| `{title}` | rodzaj inspekcji | inspection type | basic |
+| `{condition}` | stan ogólny | overall condition | basic |
+| `{details}` | opis i ustalenia | details and findings | basic |
+| `{quote}` | wycena tak/nie | quote yes/no | basic |
+| `{%photos}` | zdjęcia (siatka) | photos (grid) | basic |
 | `{o}` STARA | Flushing: nazwa kranu (kod skryptu) | Flushing: outlet name (script code) | flush |
 | `{bld}` STARA | Flushing: budynek w nagłówku (kod skryptu, wspólna = building) | Flushing: header building (script code, common = building) | flush |
 | `{twr}` STARA | Flushing: wieża w tytule (kod skryptu) | Flushing: tower in title (script code) | flush |
-| `{comms}` | Plant: pomieszczenie comms | Plant: room comms | plant |
-| `{comms_notes}` | Plant: uwagi comms | Plant: notes comms | plant |
-| `{mechanical}` | Plant: pomieszczenie mechanical | Plant: room mechanical | plant |
-| `{mechanical_notes}` | Plant: uwagi mechanical | Plant: notes mechanical | plant |
-| `{primary_switch}` | Plant: pomieszczenie primary_switch | Plant: room primary_switch | plant |
-| `{primary_switch_notes}` | Plant: uwagi primary_switch | Plant: notes primary_switch | plant |
-| `{secondary_switch}` | Plant: pomieszczenie secondary_switch | Plant: room secondary_switch | plant |
-| `{secondary_switch_notes}` | Plant: uwagi secondary_switch | Plant: notes secondary_switch | plant |
-| `{spa_filtration}` | Plant: pomieszczenie spa_filtration | Plant: room spa_filtration | plant |
-| `{spa_filtration_notes}` | Plant: uwagi spa_filtration | Plant: notes spa_filtration | plant |
-| `{spa_pump}` | Plant: pomieszczenie spa_pump | Plant: room spa_pump | plant |
-| `{spa_pump_notes}` | Plant: uwagi spa_pump | Plant: notes spa_pump | plant |
-| `{sprinkler}` | Plant: pomieszczenie sprinkler | Plant: room sprinkler | plant |
-| `{sprinkler_notes}` | Plant: uwagi sprinkler | Plant: notes sprinkler | plant |
+| `{podtytul}` | grupy: linia nad grupami | groups: line above the groups | grupy-basic |
+| `{grupy}` | grupy: lista grup | groups: group list | grupy-basic |
+| `{nazwa}` | grupy: nazwa grupy (pasek) | groups: group name (bar) | grupy-basic |
+| `{licznik}` | grupy: licznik w pasku (np. 5/6) | groups: count in the bar (e.g. 5/6) | grupy-basic |
+| `{wiersze}` | grupy: wiersz z 2 punktami | groups: row with 2 points | grupy-basic |
+| `{szare}` | grupy: akapity szarej ramki | groups: grey box paragraphs | grupy-basic |
+| `{n1}` | grupy: nazwa punktu 1 w wierszu | groups: point 1 name in row | grupy-basic |
+| `{u1}` | grupy: szara uwaga punktu 1 | groups: point 1 grey note | grupy-basic |
+| `{n2}` | grupy: nazwa punktu 2 w wierszu | groups: point 2 name in row | grupy-basic |
+| `{u2}` | grupy: szara uwaga punktu 2 | groups: point 2 grey note | grupy-basic |
 | `{y0}` STARA | Flushing: rok 1 (kod skryptu) | Flushing: year 1 (script code) | flush |
 | `{y1}` STARA | Flushing: rok 2 (kod skryptu) | Flushing: year 2 (script code) | flush |
 | `{y2}` STARA | Flushing: rok 3 (kod skryptu) | Flushing: year 3 (script code) | flush |
 | `{y3}` STARA | Flushing: rok 4 (kod skryptu) | Flushing: year 4 (script code) | flush |
 | `{y4}` STARA | Flushing: rok 5 (kod skryptu) | Flushing: year 5 (script code) | flush |
 | `{y5}` STARA | Flushing: rok 6 (kod skryptu) | Flushing: year 6 (script code) | flush |
-| `{ok1}` | Flushing basic: ☑ kran 1 przepłukany | Flushing basic: ☑ outlet 1 flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{no1}` | Flushing basic: ☒ kran 1 nie przepłukany | Flushing basic: ☒ outlet 1 not flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{na1}` | Flushing basic: N/A kran 1 | Flushing basic: N/A outlet 1 | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
+| `{ok1}` | Flushing basic: ☑ kran 1 przepłukany | Flushing basic: ☑ outlet 1 flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
+| `{no1}` | Flushing basic: ☒ kran 1 nie przepłukany | Flushing basic: ☒ outlet 1 not flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
+| `{na1}` | Flushing basic: N/A kran 1 | Flushing basic: N/A outlet 1 | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
 | `{note1}` | Flushing basic: notatka kranu 1 | Flushing basic: outlet 1 note | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{ok2}` | Flushing basic: ☑ kran 2 przepłukany | Flushing basic: ☑ outlet 2 flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{no2}` | Flushing basic: ☒ kran 2 nie przepłukany | Flushing basic: ☒ outlet 2 not flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
-| `{na2}` | Flushing basic: N/A kran 2 | Flushing basic: N/A outlet 2 | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
+| `{ok2}` | Flushing basic: ☑ kran 2 przepłukany | Flushing basic: ☑ outlet 2 flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
+| `{no2}` | Flushing basic: ☒ kran 2 nie przepłukany | Flushing basic: ☒ outlet 2 not flushed | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
+| `{na2}` | Flushing basic: N/A kran 2 | Flushing basic: N/A outlet 2 | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic, grupy-basic |
 | `{note2}` | Flushing basic: notatka kranu 2 | Flushing basic: outlet 2 note | flush-basic-ta, flush-basic-tb, flush-basic-p, gen-basic |
 | `{ok3}` | Flushing basic: ☑ kran 3 przepłukany | Flushing basic: ☑ outlet 3 flushed | flush-basic-ta, flush-basic-tb, gen-basic |
 | `{no3}` | Flushing basic: ☒ kran 3 nie przepłukany | Flushing basic: ☒ outlet 3 not flushed | flush-basic-ta, flush-basic-tb, gen-basic |
@@ -153,11 +141,10 @@ Nawias spoza tej listy nie zostanie wypełniony (test go zatrzyma). „STARA” 
 ## Wzory
 
 - **OEST basic Engineers Report** (`basic`, plik `basic.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{condition}` `{details}` `{quote}` `{%photos}`
-- **Plant Rooms Weekly / Monthly** (`plant`, plik `plant.docx`): `{site}` `{date}` `{job number}` `{engineer}` `{building}` `{level}` `{title}` `{condition}` `{quote}` `{%photos}` `{a}` `{b}` `{c}` `{d}` `{.}` `{comms}` `{mechanical}` `{primary_switch}` `{secondary_switch}` `{spa_filtration}` `{spa_pump}` `{sprinkler}` `{comms_notes}` `{mechanical_notes}` `{primary_switch_notes}` `{secondary_switch_notes}` `{spa_filtration_notes}` `{spa_pump_notes}` `{sprinkler_notes}`
 - **Weekly Taps/Shower Flushing Record (TA / TB / P)** (`flush`, plik `flush.docx`): `{o}` `{bld}` `{twr}` `{y0}` `{y1}` `{y2}` `{y3}` `{y4}` `{y5}` `{c1}` `{c2}` `{c3}` `{c4}` `{c5}` `{c6}` `{c7}` `{c8}` `{c9}` `{c10}` `{c11}` `{c12}`
 - **Weekly Flushing Tower A – basic form middle** (`flush-basic-ta`, plik `flush-ta-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}` `{zone3}`
 - **Weekly Flushing Tower B – basic form middle** (`flush-basic-tb`, plik `flush-tb-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{ok13}` `{no13}` `{na13}` `{note13}` `{ok14}` `{no14}` `{na14}` `{note14}` `{ok15}` `{no15}` `{na15}` `{note15}` `{ok16}` `{no16}` `{na16}` `{note16}` `{zone1}` `{zone2}` `{zone3}` `{zone4}`
 - **Weekly Flushing Pavilion – basic form middle** (`flush-basic-p`, plik `flush-p-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{zone1}`
 - **Generator Checks – Weekly – basic form middle** (`gen-basic`, plik `gen-srodek.docx`): `{statement}` `{ok1}` `{no1}` `{na1}` `{note1}` `{ok2}` `{no2}` `{na2}` `{note2}` `{ok3}` `{no3}` `{na3}` `{note3}` `{ok4}` `{no4}` `{na4}` `{note4}` `{ok5}` `{no5}` `{na5}` `{note5}` `{ok6}` `{no6}` `{na6}` `{note6}` `{ok7}` `{no7}` `{na7}` `{note7}` `{ok8}` `{no8}` `{na8}` `{note8}` `{ok9}` `{no9}` `{na9}` `{note9}` `{ok10}` `{no10}` `{na10}` `{note10}` `{ok11}` `{no11}` `{na11}` `{note11}` `{ok12}` `{no12}` `{na12}` `{note12}` `{zone1}` `{zone2}`
-- **Reactive Job Sheet – basic form middle (no Overall Condition)** (`reactive-basic`, plik `reactive-srodek.docx`): `{details}`
-- **Monthly Tap Temperature Check TB (QHS-031)** (`temp-tb`, plik `temp-tb.docx`): `{temp}` `{name}` `{data}`
+- **Reactive Job Sheet – basic form middle (no Overall Condition)** (`reactive-basic`, plik `reactive-srodek.docx`): `{wstep}` `{sekcje}` `{tekstowa}` `{naglowek}` `{akapity}` `{tekst}` `{tabela}` `{pary}` `{l1}` `{w1}` `{l2}` `{w2}` `{koniec}`
+- **Inspection groups – basic form middle** (`grupy-basic`, plik `grupy-srodek.docx`): `{podtytul}` `{tekst}` `{grupy}` `{nazwa}` `{licznik}` `{wiersze}` `{n1}` `{u1}` `{ok1}` `{no1}` `{na1}` `{n2}` `{u2}` `{ok2}` `{no2}` `{na2}` `{szare}`
