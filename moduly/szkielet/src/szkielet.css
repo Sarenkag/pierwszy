@@ -249,6 +249,9 @@ ion-button.oest-dzien[data-praca] { --background: linear-gradient(135deg, rgba(9
 ion-button.oest-dzien[data-dzis] { --border-color: var(--accent); --box-shadow: 0 0 12px rgba(124,132,255,.5); }
 ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14px rgba(124,132,255,.7); }
 .oest-kafelki { --ion-grid-column-padding: 0; padding: 0 11px; }
+/* kafelki w jednym wierszu tej samej wysokości (Grzegorz 27/11/2026: „wielkie kafelki się rozjeżdżają” – „Ściany / podłogi / sufit” w dwóch linijkach był wyższy od sąsiada) */
+.oest-kafelki ion-col { display: flex; flex-direction: column; }
+.oest-kafelki ion-card { flex: 1 1 auto; }
 .oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
 .oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
 .oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
