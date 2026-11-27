@@ -18,9 +18,9 @@
     "twr": { opis: ["Flushing: wieża w tytule (kod skryptu)", "Flushing: tower in title (script code)"], stare: true }
   };
   // środek „grupy” (Grzegorz 27/11/2026: wszystkie inspekcje w stylu Flushing/Generator) – pętle, dane z OESTWzory.grupy()
-  [["podtytul", "grupy: linia nad grupami", "groups: line above the groups"], ["grupy", "grupy: lista grup", "groups: group list"],
-    ["nazwa", "grupy: nazwa grupy (pasek)", "groups: group name (bar)"], ["licznik", "grupy: licznik w pasku (np. 5/6)", "groups: count in the bar (e.g. 5/6)"],
-    ["wiersze", "grupy: wiersz z 2 punktami", "groups: row with 2 points"], ["szare", "grupy: akapity szarej ramki", "groups: grey box paragraphs"]].forEach(function (x) { SLOWNIK[x[0]] = [x[1], x[2]]; });
+  SLOWNIK.podtytul = ["grupy: linia nad grupami", "groups: line above the groups"]; SLOWNIK.grupy = ["grupy: lista grup", "groups: group list"];
+  SLOWNIK.nazwa = ["grupy: nazwa grupy (pasek)", "groups: group name (bar)"]; SLOWNIK.licznik = ["grupy: licznik w pasku (np. 5/6)", "groups: count in the bar (e.g. 5/6)"];
+  SLOWNIK.wiersze = ["grupy: wiersz z 2 punktami", "groups: row with 2 points"]; SLOWNIK.szare = ["grupy: akapity szarej ramki", "groups: grey box paragraphs"];
   [1, 2].forEach(function (n) {
     SLOWNIK["n" + n] = ["grupy: nazwa punktu " + n + " w wierszu", "groups: point " + n + " name in row"]; SLOWNIK["u" + n] = ["grupy: szara uwaga punktu " + n, "groups: point " + n + " grey note"]; // ok/no/na 1–2: te same co we Flushingu
   });
