@@ -70,7 +70,7 @@
   function queueItem(r, from) {
     var d = r.data;
     var it = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      id: crypto.randomUUID(),
       ppm: from.ppm ? from.ppm.id : "", created: Date.now(), acct: (OESTKonto.get() || {}).email || "", type: from.type.id, code: d.urzadzenie, name: r.name, folder: cfg.folder, to: cfg.email,
       subject: d.folder ? r.name : "Engineers Report – " + d.urzadzenie + " – " + d.lokalizacja + " – " + d.data + " – " + d.stan_ogolny,
       body: d.folder ? d.tytul + "\nDate: " + d.data + "\nEngineer: " + (d.inspektor || "—") + "\n" :
@@ -155,7 +155,7 @@
       window.OESTT(" Wszystko zostaje w telefonie.", " Everything stays on the phone.");
   }
   // stan raportu po „Wyślij”, prawdziwy — nigdy „wysłane”, dopóki mail nie wyszedł (zasada 03/11)
-  function waitsWifi() { var c = navigator.connection; return gm() && cfg.wifiOnly !== false && !(c && (c.type === "wifi" || c.type === "ethernet")); }
+  function waitsWifi() { return gm() && cfg.wifiOnly !== false && !OESTNarzedzia.wifi(); }
   function mailState(it) { return it.status === "sent" ? window.OESTT("Wysłano", "Sent") : it.status === "shared" ? window.OESTT("Przekazano · niepotwierdzone", "Handed over · not confirmed") : !online() ? window.OESTT("W kolejce · brak sieci", "Queued · no network") : waitsWifi() ? window.OESTT("W kolejce · czeka na Wi‑Fi", "Queued · waiting for Wi‑Fi") : window.OESTT("W kolejce", "Queued"); }
   function mailHint(it) {
     var s = it.status === "sent" ? window.OESTT("Raport wysłany.", "Report sent.") : it.status === "shared" ? window.OESTT("Raport przekazany do wybranej apki, ale wysłania nikt nie potwierdził. Gdy mail wyjdzie: Kolejka → „Potwierdzam, wysłane”.", "Report handed over to the chosen app, but nobody confirmed it was sent. When the email goes out: Queue → “Confirm sent”.") : !online() ? window.OESTT("Raport czeka w kolejce — nie ma sieci. Wyjdzie sam, gdy wróci zasięg.", "The report is waiting in the queue — no network. It goes out by itself when the signal returns.") :
@@ -168,9 +168,8 @@
     try {
       var sn = draftSnap(); sn.t = 0;
       sn.photos = sn.photos.map(function (p) { return [p.when, p.tap, p.width, p.height, p.sheet ? 1 : 0, p.blob ? p.blob.size : 0]; });
-      var str = JSON.stringify(sn) + (cur.mode === "sum" ? JSON.stringify(batch.items) : ""), h = 5381;
-      for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
-      return cur.mode + ":" + (h >>> 0).toString(36) + ":" + str.length;
+      var str = JSON.stringify(sn) + (cur.mode === "sum" ? JSON.stringify(batch.items) : "");
+      return cur.mode + ":" + NZ.skrot(str) + ":" + str.length; // odcisk: moduly/narzedzia
     } catch (e) { return ""; }
   }
   function mailSame(st) {
@@ -273,8 +272,7 @@
   function sendQueue(manual) {
     return manual || cfg.auto ? OESTSender.run({ login: !!manual, anyNet: !!manual }) : Promise.resolve();
   }
-  window.addEventListener("online", function () { renderTranslate(); refresh(); if (cfg.auto) sendQueue(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
+  window.addEventListener("online", function () { renderTranslate(); refresh(); if (!serverTpl && !(APP && !cfg.api)) loadSetup(); });
   window.addEventListener("offline", function () { renderTranslate(); refresh(); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden && cfg.auto) sendQueue(); });
-  setInterval(function () { if (cfg.auto && pending().length) sendQueue(); }, 60000);
+  // samoczynna wysyłka (sieć wróciła, powrót do apki, co minutę): moduly/wysylka (OESTSender) – jedno miejsce dla obu stron
 

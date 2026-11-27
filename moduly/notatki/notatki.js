@@ -54,20 +54,10 @@
   }
 
   // ---------- magazyn w telefonie ----------
-  var mem = { notes: {}, audio: {} }, dbP = null;
+  var mem = { notes: {}, audio: {} };
+  var otworz = w.OESTNarzedzia.baza(w.indexedDB, 'oest-notatki', function (d) { d.createObjectStore('notes', { keyPath: 'id' }).createIndex('scope', 'scope'); d.createObjectStore('audio'); }); // moduly/narzedzia
   function db() {
-    if (dbP) return dbP;
-    dbP = new Promise(function (res) {
-      try {
-        var rq = w.indexedDB.open('oest-notatki', 1);
-        rq.onupgradeneeded = function () { var d = rq.result; d.createObjectStore('notes', { keyPath: 'id' }).createIndex('scope', 'scope'); d.createObjectStore('audio'); };
-        rq.onsuccess = function () { res(rq.result); }; rq.onerror = function () { res(null); };
-      } catch (e) { res(null); }
-    }).then(function (d) {
-      if (!d) dbP = null; // następna próba otworzy bazę od nowa
-      return d;
-    });
-    return dbP;
+    return otworz().catch(function () { return null; }); // bez bazy: notatki w pamięci; następna próba otworzy bazę od nowa
   }
   function tx(store, mode, fn) {
     return db().then(function (d) {
@@ -102,7 +92,7 @@
   function resume(a) {
     a.forEach(function (n) {
       if (n.st !== 'busy' || running[n.id]) return; running[n.id] = 1;
-      queue = queue.then(function () { if (!(n.audio && n.audio.length)) return retext(n); /* notatka pisana: tylko tłumaczenie od nowa */ return audioGet(n.audio && n.audio[0]).then(function (blob) {
+      queue(function () { if (!(n.audio && n.audio.length)) return retext(n); /* notatka pisana: tylko tłumaczenie od nowa */ return audioGet(n.audio && n.audio[0]).then(function (blob) {
         if (blob) return transcribe(n, blob);
         n.st = ''; n.err = w.OESTT('Brak nagrania – wpisz tekst w „Popraw”.', 'Recording missing – type the text in “Edit”.'); return keep(n);
       }); }).catch(function () {}).then(function () { delete running[n.id]; });
@@ -137,7 +127,7 @@
       return tr ? tr.plToEn({ text: pl }).then(function (r) { return fix(r && r.text, 'en'); }, function () { return ''; }) : '';
     });
   }
-  var voice = null, queue = Promise.resolve(), seq = 0;
+  var voice = null, queue = w.OESTNarzedzia.poKolei(), seq = 0; // zamiany jedna po drugiej (moduly/narzedzia)
   function vc() {
     if (voice || !w.OESTVoice) return voice;
     voice = w.OESTVoice.create({ maxMs: 120000, onState: function (on) { if (on && capture) started = capture(); }, onAudio: function (media) { return pending && pending(media); }, onError: function (e) { if (pendingErr) pendingErr(e); } });
@@ -146,11 +136,11 @@
   var pending = null, pendingErr = null, capture = null, started = null; // started: miejsce i kontekst z chwili rozpoczęcia nagrania
   // nagranie → nowa notatka; tekst powstaje w tle (kolejka: jedno rozpoznawanie naraz)
   function addAudio(scope, ctx, media) {
-    var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), aid = id + '-a1';
+    var id = 'n' + crypto.randomUUID(), aid = id + '-a1';
     var n = { id: id, scope: scope, at: Date.now(), seq: ++seq, ctx: ctx || '', ms: media.ms || 0, audio: [aid], pl: '', en: '', st: 'busy', err: '' };
     return audioPut(aid, media.blob).then(function () { return put(n); }).then(function () {
       running[id] = 1;
-      queue = queue.then(function () { return transcribe(n, media.blob); }).catch(function () {}).then(function () { delete running[id]; });
+      queue(function () { return transcribe(n, media.blob); }).catch(function () {}).then(function () { delete running[id]; });
       return n;
     });
   }
@@ -292,11 +282,11 @@
   }
   // 📝+ notatka pisana: okienko z polem; tekst (po polsku albo po angielsku) → angielski w tle jak przy nagraniu; Anuluj = null
   function addText(scope, ctx, text) {
-    var id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), pl = fix(text, 'pl');
+    var id = 'n' + crypto.randomUUID(), pl = fix(text, 'pl');
     var n = { id: id, scope: scope, at: Date.now(), seq: ++seq, ctx: ctx || '', ms: 0, audio: [], pl: pl, en: '', st: 'busy', err: '' };
     running[id] = 1; // przed put(): odświeżenie paska (summary → resume) nie może uruchomić drugiego tłumaczenia (Codex #144)
     return put(n).then(function () {
-      queue = queue.then(function () { return retext(n); }).catch(function () {}).then(function () { delete running[id]; });
+      queue(function () { return retext(n); }).catch(function () {}).then(function () { delete running[id]; });
       return n;
     }, function (e) { delete running[id]; throw e; });
   }
@@ -321,8 +311,8 @@
   function busy() { return !!(voice && voice.busy); }
 
   // ---------- okienko „Notatki” (część NotatkiOkno.vue przez OESTCzesci.okno) ----------
-  function clock(ms) { var s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-  function hhmm(t) { var d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  var clock = w.OESTNarzedzia.czas;
+  function hhmm(t) { return w.OESTNarzedzia.godzina(new Date(t)); }
   // znacznik stanu notatki: tekst + kolor Ionic (success = gotowa, warning = do sprawdzenia, medium = w toku)
   function tag(s) {
     if (s === 'ready') return { tekst: w.OESTT('gotowa', 'ready'), kolor: 'success' };

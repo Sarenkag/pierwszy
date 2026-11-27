@@ -1,13 +1,8 @@
-// Moduł kafelka (moduly/kafelek) – JEDEN kafelek dla całej apki (Grzegorz 04/11/2026): ekran główny, Ustawienia,
-// Reactive (kategorie zgłoszeń) i wybór typu w inspekcjach. Stałe miejsca: ikona w kolorowym kwadracie, nazwa,
-// opcjonalny opis pod spodem i znaczek z liczbą w rogu. Ekrany tylko powielają kafelek i podstawiają treść.
-//
-//   OESTKafelek.html({ icon: '<path …/>' albo cały '<svg …>' albo emoji, name: "Inspekcje", en: "Inspections" (albo name już w języku ekranu, bez en),
-//                      sub: "Dane i podpis", subEn: "Details", badge: 3, data: { go: "ppm" }, cls: "settings-card" })
-//   OESTKafelek.grid(lista)  → '<div class="tiles kf-grid">…</div>'
+// Moduł kafelka (moduly/kafelek) – wygląd kafelka dla całej apki (Grzegorz 04/11/2026): ikona w kolorowym kwadracie, nazwa,
+// opcjonalny opis i znaczek z liczbą w rogu, ruch przy naciśnięciu. Kafelki rysują ekrany Ionic + Vue (klasy .kf / .tile / .kf-grid);
+// moduł dokłada tylko ich CSS przy starcie. Dawne OESTKafelek.html / grid usunięte 27/11/2026 – nikt ich już nie wołał.
 (function (w, d) {
   "use strict";
-  var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var CSS =
     ".kf-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:10px}" +
     "html body .kf{position:relative;display:flex!important;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;" +
@@ -31,25 +26,5 @@
     if (d.getElementById("oest-kafelek-css")) return;
     var s = d.createElement("style"); s.id = "oest-kafelek-css"; s.textContent = CSS; (d.head || d.documentElement).appendChild(s);
   }
-  function icon(i) {
-    if (!i) return "";
-    if (/^\s*<svg/.test(i)) return i;
-    if (/^\s*</.test(i)) return '<svg viewBox="0 0 48 48" aria-hidden="true">' + i + "</svg>";
-    return '<span aria-hidden="true">' + esc(i) + "</span>";
-  }
-  function html(o) {
-    css(); o = o || {};
-    var data = "";
-    Object.keys(o.data || {}).forEach(function (k) { data += " data-" + k + '="' + esc(o.data[k]) + '"'; });
-    // z en/subEn: tekst polski + data-en, język podmienia OESTBledy.applyDom w miejscu (bez przerysowania)
-    var name = o.name, sub = o.sub;
-    return '<button class="tile kf' + (o.cls ? " " + esc(o.cls) : "") + '" type="button"' + data + (o.disabled ? " disabled" : "") + ">" +
-      '<span class="kf-ic">' + icon(o.icon) + "</span>" +
-      "<b" + (o.en ? ' data-en="' + esc(o.en) + '"' : "") + ">" + esc(name) + "</b>" +
-      "<small" + (o.subEn ? ' data-en="' + esc(o.subEn) + '"' : "") + ">" + esc(sub || "") + "</small>" +
-      (o.badge ? '<span class="kf-n">' + esc(o.badge) + "</span>" : "") + "</button>";
-  }
-  function grid(list, cls) { return '<div class="tiles kf-grid' + (cls ? " " + esc(cls) : "") + '">' + (list || []).map(html).join("") + "</div>"; }
-  css(); // ruch kafelka działa też dla kafelków zbudowanych bez OESTKafelek.html (np. stare .tile)
-  w.OESTKafelek = { html: html, grid: grid, css: css };
+  css(); // wygląd i ruch kafelków (.kf, .tile) od startu strony
 })(window, document);

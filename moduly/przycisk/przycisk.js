@@ -136,11 +136,6 @@
       restore: restore
     };
   }
-  // Najprostsze użycie: OESTPrzycisk.run(btn, function () { return wyslij(); })
-  function run(btn, fn, opts) {
-    var h = start(btn, opts);
-    return Promise.resolve().then(fn).then(function (r) { return h.ok().then(function () { return r; }); }, function (e) { h.fail(); throw e; });
-  }
-  w.OESTPrzycisk = { start: start, run: run, ask: ask, confirm: confirmAsk, alert: alertAsk, leave: leave };
-  w.OESTPytaj = confirmAsk; w.OESTKomunikat = alertAsk; // krótkie nazwy dla ekranów
+  w.OESTPrzycisk = { start: start, ask: ask, confirm: confirmAsk, alert: alertAsk, leave: leave };
+  w.OESTPytaj = confirmAsk; // krótka nazwa dla ekranów
 })(window);

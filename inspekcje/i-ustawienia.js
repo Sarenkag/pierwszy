@@ -85,7 +85,7 @@
         // PDF nie powstał: zamiast niego jego Wordy (jeśli jeszcze nie idą), żeby raport nie zginął
         bez.forEach(function (f) {
           var baza = f.name.slice(0, -4), i = r.files.indexOf(f);
-          var zast = f.z.filter(function (d) { return d && d.length; }).map(function (d, k) { return { name: baza + (k ? " - basic" : "") + ".docx", mime: MIME_DOCX, bytes: d }; })
+          var zast = f.z.filter(function (d) { return d && d.length; }).map(function (d, k) { return { name: baza + (k ? " - basic" : "") + ".docx", mime: OESTNarzedzia.DOCX, bytes: d }; })
             .filter(function (w) { return !r.files.some(function (g) { return g.name === w.name; }); });
           r.files.splice.apply(r.files, [i, 1].concat(zast));
         });
@@ -98,7 +98,7 @@
     var d = formData(), name = makeName(cfg.pattern, d, reportDate()), n = needsNow() || { q: true, p: true, t: true, f: true, xp: true, xw: true, one: true };
     if (opt && opt.word) n = Object.assign({}, n, { xw: true }); // Update: Word do archiwum i na Dysk zawsze, niezależnie od ⚙ maila (uwaga Codex #101)
     var small = !!(cur.type.folder && !cur.type.flush); // inspekcja z kartki (Fire Test itp.)
-    function file(suffix, bytes) { return { name: name + suffix + ".docx", mime: MIME_DOCX, bytes: bytes }; }
+    function file(suffix, bytes) { return { name: name + suffix + ".docx", mime: OESTNarzedzia.DOCX, bytes: bytes }; }
     function pdfZ(suffix, docs) { return { name: name + suffix + ".pdf", mime: "application/pdf", z: docs }; }
     function pick(pics) { return pics.filter(function (p) { return p.sheet ? n.f : p.tap != null ? n.t : n.p; }); }
     // Word samych zdjęć: przy kranach / punktach podpisane ich nazwą; formularz (kartka) pierwszy

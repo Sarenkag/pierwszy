@@ -12,6 +12,7 @@
  *          OESTWord.info(wzor)    → { headerText, footerText, logo, logoType } (nagłówek/stopka/logo wzoru)
  *          OESTWord.tekst(wzor)   → tekst dokumentu bez znaczników XML
  *          OESTWord.podglad(docx) → { lines, images } (podgląd Worda na ekranie, Moje raporty)
+ *          OESTWord.dopasuj(raport, { rozmiar, buduj, min }) → Promise<raport> – plik ponad 1 MB: pytanie i mniejsze zdjęcia (inspekcje i Reactive)
  *          OESTWord.photoPages(lista), OESTWord.photoGrid(n) – układ stron ze zdjęciami (wspólny dla Worda i podglądu)
  * Zdjęcie: { bytes: Uint8Array (JPEG), width, height, caption?, tap?, sheet?, phase? }.
  */
@@ -23,7 +24,7 @@
   else root.OESTWord = api;
 })(typeof window !== "undefined" ? window : globalThis, function (root) {
   "use strict";
-  var MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  var MIME = root.OESTNarzedzia.DOCX; // typ pliku Word: moduly/narzedzia (jedno miejsce)
   var libs = null;
   function biblioteki(l) { libs = l || null; }
   function Zip() { var Z = (libs && libs.PizZip) || root.PizZip; if (!Z) throw Error("REPORT_TEMPLATE_MISSING"); return Z; }
@@ -367,6 +368,30 @@
     });
   }
 
-  return { MIME: MIME, biblioteki: biblioteki, otworz: otworz, nowy: nowy, zapisz: zapisz, wypelnij: wypelnij, zdjeciaKartki: zdjeciaKartki,
+  /* Raport ponad 1 MB (Grzegorz 05/11/2026, PROD-023): przed wysłaniem pytanie „Zmniejsz zdjęcia / Zostaw tak”, bez cichego zmniejszania.
+     „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie (kartka i zdjęcia w folderze bez zmian), do 4 prób, skala nie mniejsza niż o.min.
+     o.rozmiar(raport) → bajty największego pliku; o.buduj(skala, poprzedni) → Promise<nowy raport>. Jedno miejsce: inspekcje i Reactive. */
+  var LIMIT = 1048576;
+  function zaDuzy(big) {
+    var T = root.OESTT, P = root.OESTPrzycisk, mb = root.OESTNarzedzia.mb(big, T("pl", "en"));
+    return P && P.confirm ? P.confirm(T("Plik raportu będzie miał " + mb + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
+      "The report file will be " + mb + " MB (limit 1 MB). Make the photos in the report smaller, or keep them as they are?"),
+      { ok: T("Zmniejsz zdjęcia", "Make smaller"), cancel: T("Zostaw tak", "Keep as is"), danger: false }) : Promise.resolve(false);
+  }
+  function dopasuj(r, o) {
+    var big = o.rozmiar(r);
+    if (big < LIMIT) return Promise.resolve(r);
+    return zaDuzy(big).then(function (tak) {
+      var skala = 1, i = 0;
+      function krok() {
+        if (!tak || i++ >= 4 || big < LIMIT || skala <= o.min) return r;
+        skala = Math.max(o.min, skala * Math.sqrt(LIMIT * 0.9 / big));
+        return Promise.resolve(o.buduj(skala, r)).then(function (n) { r = n; big = o.rozmiar(r); return krok(); });
+      }
+      return krok();
+    });
+  }
+
+  return { MIME: MIME, dopasuj: dopasuj, biblioteki: biblioteki, otworz: otworz, nowy: nowy, zapisz: zapisz, wypelnij: wypelnij, zdjeciaKartki: zdjeciaKartki,
     zmien: zmien, info: info, tekst: tekst, podglad: podglad, photoPages: photoPages, photoGrid: photoGrid };
 });

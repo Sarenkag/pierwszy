@@ -21,7 +21,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(ReportSharePlugin.class);
         registerPlugin(TranslatePlugin.class);
         registerPlugin(AppUpdatePlugin.class);
-        registerPlugin(PhotoEditPlugin.class);
         registerPlugin(ModelPlugin.class);
         registerPlugin(VantifyPlugin.class); // Vantify w apce: logowanie na stronie Vantify, pobrany eksport do wczytania (10/11/2026)
         registerPlugin(GoogleTokenPlugin.class); // ciche odnowienie pozwoleń Google (Gmail, Dysk) bez okna

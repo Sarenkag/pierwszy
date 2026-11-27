@@ -45,7 +45,7 @@
   }
   function preview(text) { return previewRows(E.parseCsv(text)); }
   // Lista zleceń z Vantify (vantify-sync.js, bez eksportu): ta sama droga co plik (moduł eksport-vantify), data = dzień pobrania.
-  function today() { var d = new Date(); return d.getFullYear() + "-" + w.OESTNarzedzia.pad(d.getMonth() + 1) + "-" + w.OESTNarzedzia.pad(d.getDate()); }
+  function today() { return w.OESTNarzedzia.dzienIso(new Date()); }
   function apiPreview(r) {
     var rows = E.fromApi(r && r.jobs, today());
     if (!rows.some(function (x) { return x.jobType === "Planned"; })) throw new Error("VANTIFY_EMPTY_LIST");
@@ -195,7 +195,7 @@
     if (!z) return;
     var json = JSON.stringify(z, null, 1), d = new Date(), name = "vantify-zbadaj-" + w.OESTNarzedzia.pad(d.getDate()) + w.OESTNarzedzia.pad(d.getMonth() + 1) + d.getFullYear() + ".json";
     if (!S) { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = name; a.click(); return; }
-    var b64 = btoa(unescape(encodeURIComponent(json)));
+    var b64 = w.OESTNarzedzia.bytesToB64(new TextEncoder().encode(json)); // base64: moduly/narzedzia
     S.share({ subject: "Vantify – zapis Zbadaj", body: L("Zapis bez haseł, tokenów i danych osób.", "Log without passwords, tokens or personal data."), files: [{ name: name, data: b64 }] })
       .then(function () { ui.vantify = L("Przekazano do udostępnienia.", "Handed over for sharing."); zmiana(); })
       .catch(function () { ui.vantify = L("Nie udało się udostępnić zapisu.", "Could not share the log."); zmiana(); });

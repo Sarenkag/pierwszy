@@ -14,7 +14,7 @@
   function loc() { return en() ? "en-GB" : "pl-PL"; }
   var esc = w.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   var iso = w.OESTNarzedzia.dzienIso; // moduly/narzedzia
-  function today() { var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+  var today = w.OESTNarzedzia.dzis; // moduly/narzedzia
 
   // pogoda: moduł app/www/pogoda.js (OESTPogoda) – jedno źródło dla ekranu głównego i paska dni
   var wxCache = function () { return w.OESTPogoda.cache(); }, wxLoad = function (f) { return w.OESTPogoda.load(f); }, wxIcon = function (c) { return w.OESTPogoda.ikona(c); };
@@ -28,9 +28,9 @@
     return (s || "?").toUpperCase();
   }
   function net() {
-    if (w.navigator.onLine === false) return { k: "off", t: X("brak-sieci") };
+    if (!w.OESTNarzedzia.online()) return { k: "off", t: X("brak-sieci") };
+    if (w.OESTNarzedzia.wifi()) return { k: "on", t: "Wi‑Fi" };
     var c = w.navigator.connection;
-    if (c && (c.type === "wifi" || c.type === "ethernet")) return { k: "on", t: "Wi‑Fi" };
     if (c && c.type && c.type !== "unknown") return { k: "mid", t: X("dane-komorkowe") };
     return { k: "on", t: X("online") };
   }
@@ -111,7 +111,7 @@
   }
 
   // ---------- okienka ----------
-  function stanZ(c) { return X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) + (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : ""); }
+  function stanZ(c) { return X("stan-z", { czas: new Date(c.t).toLocaleString(loc(), { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) }) + (!w.OESTNarzedzia.online() ? " · " + X("bez-sieci-ostatnia") : ""); }
   function prognoza() {
     var c = wxCache(), t = today(), dni = [], DN = w.OESTPpmUI ? w.OESTPpmUI.dayName : function (i) { return i; };
     if (c && c.days) for (var i = 0; i < 7; i++) {
@@ -148,8 +148,8 @@
     if (J) out.push({ firma: "Smart", tytul: X("nowosci-oferty", { n: J.n }), url: J.url, opis: X("nowosci-kariera") });
     zmiana();
     return { tytul: X("nowosci-firm") + " · PIC · Savills · Smart", lista: out,
-      pusto: !list.length && !J ? (w.navigator.onLine === false ? X("nowosci-brak-sieci") : X("nowosci-brak")) : "",
-      uwaga: c ? X("stan-z", { czas: new Date(c.t).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") }) + (w.navigator.onLine === false ? " · " + X("bez-sieci-ostatnia") : "") : "" };
+      pusto: !list.length && !J ? (!w.OESTNarzedzia.online() ? X("nowosci-brak-sieci") : X("nowosci-brak")) : "",
+      uwaga: c ? X("stan-z", { czas: new Date(c.t).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") }) + (!w.OESTNarzedzia.online() ? " · " + X("bez-sieci-ostatnia") : "") : "" };
   }
   // przejście ze źródła powiadomienia (okienko zamyka ekran przed wywołaniem)
   function idz(cel) {

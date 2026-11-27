@@ -204,7 +204,6 @@ input[type=text], input[type=email], input[type=date], select {
 <script src="moduly/znacznik/znacznik.js"></script>
 <script src="moduly/klocek/klocek.js"></script>
 <script src="moduly/kafelek/kafelek.js"></script>
-<script src="moduly/przelacznik/przelacznik.js"></script>
 <script src="moduly/wyglad/wyglad.js"></script>
 <script src="config.js"></script>
 <script src="vantify-plan.js"></script>
@@ -269,8 +268,6 @@ input[type=text], input[type=email], input[type=date], select {
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  function load(k, d) { try { var v = localStorage.getItem("oest." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
-  function save(k, v) { try { localStorage.setItem("oest." + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var CONF = window.OEST_CONFIG || {};
   var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   var Social = native && window.Capacitor.Plugins ? window.Capacitor.Plugins.SocialLogin : null;
@@ -322,7 +319,6 @@ input[type=text], input[type=email], input[type=date], select {
 
   // ---------- konto (logowanie raz; potem apka otwiera się bez sieci) ----------
   function account() { return window.OESTKonto.get(); } // moduly/konto
-  function setAccount(a) { window.OESTKonto.set(a); }
 
   $("logoutBtn").addEventListener("click", function () {
     var a = account();
@@ -338,8 +334,6 @@ input[type=text], input[type=email], input[type=date], select {
     $("accPic").hidden = !a.pic; if (a.pic) $("accPic").src = a.pic;
   }
 
-  // Shared versioned profile: consumed by Settings and other modules.
-  function profile() { return window.OESTSettings.get().profile; }
   function seedProfile() {
     window.OESTSettings.get();
     window.OESTSettings.syncLegacy();

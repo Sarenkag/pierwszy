@@ -4,7 +4,7 @@
  * Zdjęcie: aparat systemowy (wtyczka OESTKeys.capture) → podgląd „✓ OK / ✏️ Edytuj / ↺ Powtórz” →
  * gotowe zdjęcie. Edycja: własny prosty edytor w apce (strzałka, kółko, kwadrat, linia, kolor, grubość,
  * kadrowanie, cofnij). Decyzja Grzegorza 01/11/2026: edytory Google nie otwierają plików z wnętrza apki
- * („Editing is not supported for this image”), więc nie używamy OESTPhotoEdit. Działa offline, nic nie trafia do Galerii.
+ * („Editing is not supported for this image”), więc apka nie ma wtyczki do edytorów systemowych. Działa offline, nic nie trafia do Galerii.
  *
  *   OESTAparat.take(opts?)  → Promise<Blob|null>   zdjęcie po podglądzie (null = anulowane)
  *     opts.max = dłuższy bok (px), w jakim zdjęcie i tak zostanie zapisane; aparat (Java) i edycja nie schodzą poniżej (bez = pełny)
@@ -18,7 +18,7 @@
 (function (root) {
   'use strict';
   function TT(p) { return p ? root.OESTT(p[0], p[1]) : ''; } // para [pl, en] → tekst
-  function plugin() { var C = root.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.OESTPhotoEdit; }
+  function natywnie() { var C = root.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform()); } // aparat i edytor działają w apce Android
   /* ---------- edytor w apce (logika; wygląd: szkielet Ionic – moduly/szkielet/src/czesci/EdytorZdjec.vue) ---------- */
   var COLORS = ['#ff2d2d', '#ffd400', '#21d36b', '#2f8bff', '#ffffff', '#111111'];
   var WIDTHS = [{ k: 'S', v: 4 }, { k: 'M', v: 8 }, { k: 'L', v: 14 }]; // na 1000 px dłuższego boku
@@ -197,7 +197,7 @@
   }
 
   var api = {
-    available: function () { return !!plugin(); },
+    available: natywnie,
     // Edycja: własny edytor w apce (działa też w przeglądarce). null = bez zmian / anulowane.
     edit: function (blob, opts) { return editor(blob, opts); },
     _drawShape: drawShape, _normCrop: normCrop,

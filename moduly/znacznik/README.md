@@ -1,23 +1,15 @@
 # Moduł `moduly/znacznik`
 
-```
-Moduł znaczków (moduly/znacznik) – JEDEN wzór małych wskaźników w całej apce (Grzegorz 04/11/2026):
-  • licznik  – kropka z liczbą w rogu (dzwonek, kafelek, aparat przy punkcie, dzień w kalendarzu),
-  • lampka   – kolorowa kropka stanu (Wi‑Fi, Dysk, wysyłka, termin): on / mid / off / na,
-  • ikonka z liczbą – np. 📷 3, ⚠ 1, ✓ 12 (stopka klocka, nagłówek zdjęć).
-Zmiana wyglądu tutaj = zmiana na wszystkich ekranach. Starsze nazwy klas (hm-badge, kf-n, fl-ic b, .cd i,
-hm-st .l, pasek wysyłki .n i) są podpięte pod ten sam wzór, więc nic nie wygląda inaczej.
+Małe wskaźniki – jeden wzór w całej apce (Grzegorz 04/11/2026):
+- `OESTZnacznik.licznik(3, "red"|"orange"|"accent"|"dashed"|"inline")` → `<span class="oest-n">3</span>` (0 = nic) – kropka z liczbą w rogu;
+- lampka – kolorowa kropka stanu: sam CSS (`.hm-st .l` + `on` / `mid` / `off`).
 
-  OESTZnacznik.licznik(3, "red"|"orange"|"accent"|"dashed")  → '<span class="oest-n">3</span>' (0 = nic)
-  OESTZnacznik.lampka("on"|"mid"|"off"|"na")                  → '<i class="oest-l on"></i>'
-  OESTZnacznik.ikona("📷", 3, tone)                            → '<span class="oest-ic">📷 3</span>'
-  OESTZnacznik.status("zalegla"|"nierozpoczeta"|"wtrakcie"|"wstrzymana"|"gotowa"|"odzyskana") → '<span class="oest-st zalegla">Zaległa</span>'
-```
+27/11/2026: `lampka()`, `ikona()` (nikt ich nie wołał) i `status()` (druga kopia pigułki) usunięte. Zostaje `formularz("brak"|"ok"|"blad")` – ikonka zdjęcia formularza w inspekcji (inspekcje/i-zdjecia.js).
 
-## Pigułka statusu – `OESTZnacznik.status(tryb)` (zatwierdzona przez Grzegorza 07/11/2026 18:29)
+## Pigułka statusu (zatwierdzona przez Grzegorza 07/11/2026 18:29) – rysuje ją `moduly/szkielet/src/czesci/Pigulka.vue`, wygląd w `szkielet.css` (`.oest-pigulka`)
 
 Jedna pigułka statusu dla całej apki. **Zawsze taka sama** – kształt, cień, wypełnienie, wielkość, zaokrąglenie.
-Zmienia się tylko kolor i napis. Nie nadpisywać tych wartości na ekranach – zmiana tylko tutaj.
+Zmienia się tylko kolor i napis. Nie nadpisywać tych wartości na ekranach – zmiana tylko w Pigulka.vue / szkielet.css. Wzór:
 
 | Cecha | Wartość |
 |---|---|
@@ -36,7 +28,6 @@ Zmienia się tylko kolor i napis. Nie nadpisywać tych wartości na ekranach –
 | `gotowa` | Gotowa | Ready | zielony #00d84a |
 | `odzyskana` | Odzyskana | Recovered | fioletowy #a35bff (Grzegorz 08/11/2026; ten sam fiolet co w gradiencie apki) – inspekcja odzyskana z raportu, tylko w klocku Raporty |
 
-Kolory to te same, które już są w klocku (moduly/klocek, TONE). PL/EN: ta sama szerokość, nic nie skacze.
-Test: `app/tests/pigulka-statusu-ui-check.cjs` (wymagany w Quality Gate).
+PL/EN: ta sama szerokość, nic nie skacze.
 
 Strona: `<script src="moduly/znacznik/znacznik.js"></script>` (inspekcje: `../moduly/znacznik/znacznik.js`). CSS moduł dokłada sam.

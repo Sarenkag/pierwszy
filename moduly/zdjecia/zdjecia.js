@@ -47,9 +47,9 @@
     return out;
   }
   function clampInt(v, min, max, def) { v = Math.round(Number(v)); return Number.isFinite(v) && v >= min && v <= max ? v : def; }
-  var pad = (root.OESTNarzedzia || (typeof require === 'function' && require('../narzedzia/narzedzia.js'))).pad;
+  var NZ = root.OESTNarzedzia || (typeof require === 'function' && require('../narzedzia/narzedzia.js')), pad = NZ.pad;
   // nazwy plików bezpieczne dla Androida i Dysku: bez / \ : * ? " < > | i znaków sterujących
-  function safe(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80); }
+  function safe(s) { return NZ.nazwaPliku(s, 80); }
 
   /* Folder i nazwa z kontekstu: OEST Zdjęcia / 2026-11 / 01 / Isolators / TB-L13 ISO-027 171405.jpg */
   function place(meta, when) {
@@ -144,20 +144,16 @@
 
   /* Co skasować, żeby zmieścić się w limitach. Rekordy: {id, created, size, blob?, driveId?, driveDeleted?} */
   function plan(records, settings) {
-    var s = cleanSettings(settings), oldest = records.slice().sort(function (a, b) { return a.created < b.created ? -1 : a.created > b.created ? 1 : 0; });
-    var onDrive = oldest.filter(function (r) { return r.driveId && !r.driveDeleted; });
-    var driveBytes = onDrive.reduce(function (t, r) { return t + (r.size || 0); }, 0), driveRemove = [];
-    for (var i = 0; i < onDrive.length && driveBytes > s.driveLimitMB * MB; i++) { driveRemove.push(onDrive[i].id); driveBytes -= onDrive[i].size || 0; }
-    var local = oldest.filter(function (r) { return r.hasBlob; });
-    var phoneBytes = local.reduce(function (t, r) { return t + (r.size || 0); }, 0), phoneRemove = [];
-    for (var j = 0; j < local.length && phoneBytes > s.phoneLimitMB * MB; j++) {
-      if (!local[j].driveId) continue; // niewysłane zostają na telefonie
-      // przegląd ChatGPT 09/11/2026, pkt 1: zdjęcie skasowane już z Dysku (limit Dysku) to jedyna kopia – zostaje na telefonie
-      if (local[j].driveDeleted) continue;
-      if (local[j].hold) continue; // zdjęcie w inspekcji zostaje na telefonie
-      phoneRemove.push(local[j].id); phoneBytes -= local[j].size || 0;
-    }
-    return { driveRemove: driveRemove, phoneRemove: phoneRemove, phoneOver: phoneBytes > s.phoneLimitMB * MB };
+    var s = cleanSettings(settings);
+    // od najstarszych, aż zmieści się w limicie: moduly/narzedzia (ponadLimit – to samo dla raportów)
+    var size = function (r) { return r.size; };
+    var drive = NZ.ponadLimit(records.filter(function (r) { return r.driveId && !r.driveDeleted; }), { wg: 'created', limit: s.driveLimitMB * MB, rozmiar: size });
+    var phone = NZ.ponadLimit(records.filter(function (r) { return r.hasBlob; }), { wg: 'created', limit: s.phoneLimitMB * MB, rozmiar: size, zostaw: function (r) {
+      // niewysłane zostają na telefonie; zdjęcie skasowane już z Dysku (limit Dysku) to jedyna kopia (przegląd ChatGPT 09/11/2026, pkt 1);
+      // zdjęcie w inspekcji (hold) zostaje na telefonie
+      return !r.driveId || r.driveDeleted || r.hold;
+    } });
+    return { driveRemove: drive.usun, phoneRemove: phone.usun, phoneOver: phone.suma > s.phoneLimitMB * MB };
   }
 
   function stats(records) {
@@ -268,24 +264,16 @@
         var s = settings(), who = owner();
         function allowed() { return !(s.wifiOnly && !force && deps.wifi() !== true); }
         if (!allowed()) return { skipped: 'wifi', sent: 0 };
-        var folders = {}, sent = 0;
+        var sent = 0;
         await enforce(drive); // najpierw zaległe sprzątanie Dysku, żeby pełny Dysk nie blokował wysyłki
-        async function folderId(parts) {
-          var key = '', parent = s.rootId || '';
-          if (!parent) { parent = (await drive.ensureFolder(s.rootName, '')).id; s = setSettings({ rootId: parent }); }
-          for (var i = 0; i < parts.length; i++) {
-            key += '/' + parts[i];
-            if (!folders[key]) folders[key] = (await drive.ensureFolder(parts[i], parent)).id;
-            parent = folders[key];
-          }
-          return parent;
-        }
+        // foldery na Dysku: moduly/narzedzia (folderyDysku – to samo dla raportów); folder główny zapamiętany w ustawieniach
+        var folderId = NZ.folderyDysku(drive, {
+          id: async function () { if (!s.rootId) s = setSettings({ rootId: (await drive.ensureFolder(s.rootName, '')).id }); return s.rootId; },
+          zapomnij: function () { s = setSettings({ rootId: '' }); }
+        });
         var all = (await mine()).filter(function (r) { return r.blob && !r.driveId; })
           .sort(function (a, b) { return a.created < b.created ? -1 : 1; });
-        async function parentOf(r) {
-          try { return await folderId(r.folder); }
-          catch (e) { if (s.rootId && /404/.test(String(e && e.message))) { s = setSettings({ rootId: '' }); folders = {}; return folderId(r.folder); } throw e; }
-        }
+        function parentOf(r) { return folderId(r.folder); }
         // Przerwana wysyłka (audyt 06/11/2026): plik mógł już trafić na dysk, zanim apka zapisała driveId (zamknięcie apki,
         // utrata sieci po wysłaniu). Przed wysyłką znacznik upTry; przy ponownej próbie najpierw szukamy pliku z id tego
         // zdjęcia – znaleziony = ten sam plik, bez duplikatu. Bez znacznika (zwykły przypadek) nie ma dodatkowego zapytania.
@@ -334,16 +322,7 @@
 
   /* ---- przeglądarka / Android WebView ---- */
   function idb(win) {
-    var opened = null;
-    function open() {
-      if (opened) return opened;
-      opened = new Promise(function (res, rej) {
-        var q = win.indexedDB.open('oest-zdjecia', 1);
-        q.onupgradeneeded = function () { q.result.createObjectStore('photos', { keyPath: 'id' }); };
-        q.onsuccess = function () { res(q.result); }; q.onerror = function () { rej(q.error); };
-      });
-      return opened;
-    }
+    var open = NZ.baza(win.indexedDB, 'oest-zdjecia', function (d) { d.createObjectStore('photos', { keyPath: 'id' }); }); // moduly/narzedzia
     function tx(mode, fn) {
       return open().then(function (db) {
         return new Promise(function (res, rej) {
@@ -492,7 +471,7 @@
         save: function (s) { try { win.localStorage.setItem(KEY(), JSON.stringify(s)); } catch (_) {} }
       },
       compress: compressPrepared,
-      wifi: function () { var c = win.navigator.connection; if (!c || !c.type) return null; return c.type === 'wifi' || c.type === 'ethernet'; },
+      wifi: NZ.wifi, // moduly/narzedzia (jedno miejsce)
       now: function () { return Date.now(); },
       id: function () { return win.crypto.randomUUID(); }
     });
