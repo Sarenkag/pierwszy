@@ -114,7 +114,6 @@ ion-button.oest-ntp-b::part(native) { -webkit-backdrop-filter: blur(14px); backd
 ion-button.oest-ntp-b[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --background-hover: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); touch-action: none; -webkit-user-select: none; user-select: none; }
 ion-button.oest-ntp-b ion-icon { font-size: 17px; }
 ion-button.oest-ntp-b ion-icon + ion-icon { font-size: 13px; margin-left: -3px; margin-right: 3px; }
-ion-button.oest-ntp-b[data-nt-bar=join] { width: 100%; margin-top: 8px; }
 .oest-ntp-ikony { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; }
 ion-button.oest-ntp-i { flex: none; height: 36px; min-width: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 14px var(--font-body, system-ui), sans-serif;
   --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: rgba(255, 255, 255, .05);

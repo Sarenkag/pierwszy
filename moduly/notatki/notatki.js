@@ -235,6 +235,8 @@
   // o: { scope(), ctx(), title(), join: napis, ok: napis „Wstaw…”, icons, onJoin(tekst), onSaved(note), onError(err) }
   // pasek ukryty (box.hidden), gdy scope() puste; licznik odświeża się sam po każdej zmianie notatek
   var mounts = [], watching = false;
+  // porównanie tekstu notatki z treścią pola: bez wielkości liter, interpunkcji końcowej i nadmiaru spacji
+  function nk(t) { return String(t || '').toLowerCase().replace(/[.!?\s]+/g, ' ').trim(); }
   function pasek(o) {
     o = o || {};
     var ctx = function () { return o.ctx ? o.ctx() || '' : ''; };
@@ -247,9 +249,12 @@
     var S = UI().sluchacze(m.dane); m.na = S.na;
     m.refresh = function () {
       var k = m.scope(); if (m.box) m.box.hidden = !k; S.emit(); if (!k) return Promise.resolve();
-      return summary(k).then(function (r) { if (k !== m.scope()) return; st.n = r.all; st.polacz = r.ready > 0; S.emit(); return o.icons ? list(k) : null; })
+      return summary(k).then(function (r) { if (k !== m.scope()) return; st.n = r.all; st.polacz = r.ready > 0 && !o.tekst; S.emit(); return o.icons || o.tekst ? list(k) : null; })
         .then(function (a) {
           if (!a || k !== m.scope()) return;
+          // o.tekst (pole, do którego „Połącz” wstawia): przycisk tylko, gdy jest gotowa notatka, której tekstu (PL albo EN) nie ma jeszcze w polu (Grzegorz 27/11/2026)
+          if (o.tekst) { var t = nk(o.tekst()); st.polacz = a.some(function (n) { var s = state(n); return (s === 'ready' || s === 'check') && !(t && ((nk(n.pl) && t.indexOf(nk(n.pl)) >= 0) || (nk(n.en) && t.indexOf(nk(n.en)) >= 0))); }); S.emit(); }
+          if (!o.icons) return;
           // ponumerowane ikonki notatek: rodzaj (nagranie / pisana) i stan (busy = zamieniam, ready = gotowa, w = do sprawdzenia)
           st.ikony = a.map(function (n, i) { var s = state(n); return { id: n.id, nr: i + 1, rodzaj: n.audio && n.audio.length ? 'glos' : 'tekst', stan: s === 'busy' ? 'busy' : s === 'ready' ? 'ready' : 'w' }; });
           S.emit();
@@ -271,7 +276,7 @@
         if (st.laczy) return; st.laczy = true; S.emit();
         var alive = function () { return zywy() && !(m.box && m.box.closest('[hidden]')) && k === m.scope(); }; // ten sam, nadal widoczny formularz co przy stuknięciu (apka ukrywa nieaktywne ekrany atrybutem hidden)
         offer(k, { ctx: ctx(), ok: o.ok, alive: alive }).then(function (t) { if (t && alive() && o.onJoin) return o.onJoin(t); })
-          .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { st.laczy = false; S.emit(); });
+          .catch(function (e) { if (o.onError) o.onError(e); }).then(function () { st.laczy = false; S.emit(); m.refresh(); });
       }
     };
     mounts = mounts.filter(function (x) { return !x.box || x.box.isConnected; }); mounts.push(m);
@@ -432,5 +437,5 @@
     return UI().okno('NotatkiOkno', ctrl, { tytul: w.OESTT('Notatki', 'Notes'), ok: w.OESTT('Zamknij', 'Close'), anuluj: false }).then(function () {});
   }
 
-  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, pasek: pasek, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, addText: addText, write: write, english: english };
+  w.OESTNotatki = { WORDS: WORDS, fix: fix, missing: missing, state: state, list: list, put: put, remove: remove, clear: clear, move: move, summary: summary, on: on, bind: bind, mount: mount, pasek: pasek, busy: busy, media: media, combine: combine, propose: propose, offer: offer, open: open, addAudio: addAudio, addText: addText, write: write, english: english, odswiez: function (scope) { emit(scope); } };
 })(window);
