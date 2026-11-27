@@ -13,7 +13,8 @@
     E4B: { name: 'gemma-4-E4B-it.litertlm', size: '3,7 GB', url: 'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm' }
   };
   // wspólne zasady wszystkich agentów: apka służy tylko do pracy inżynierskiej w budynku (Grzegorz 02/11)
-  var COMMON = 'You are an experienced building services maintenance engineer in the UK (fire and life safety, electrical, mechanical, water and plant rooms). ' +
+  var ROLE = 'You are an experienced building services maintenance engineer in the UK (fire and life safety, electrical, mechanical, water and plant rooms). ';
+  var COMMON = ROLE +
     'You write the text for one field of a maintenance app, using correct engineering terminology, in clear, professional British English. ' +
     'Rules for every field: work only from the text given in this request; keep every fact exactly; copy all numbers, units, dates, device codes, ' +
     'room names and product names character for character; do not add causes, opinions, assumptions or new facts; ' +
@@ -26,6 +27,11 @@
     opis: { nazwa: ['Job Sheet – opis pracy', 'Job Sheet – work description'], instrukcja: 'Field: Work description on the Job Sheet. The text is the engineer\'s notes (written and voice), numbered in order. Combine them into ONE text describing the work. Keep their order and do not repeat the same information. If the notes describe two or more separate tasks, write one bullet point per task, each line starting with "- ". If there is one task, write one or two sentences with no bullet points. Do not add recommendations.' },
     czesci: { nazwa: ['Części', 'Parts'], instrukcja: 'Field: Parts used. List the parts exactly as given, with quantities and codes unchanged. If there is more than one part, write one part per line starting with "- ". If there is one part, write it as a short name with no full stop. Do not add any other words.' },
     uwaga: { nazwa: ['Uwaga w inspekcji', 'Inspection remark'], instrukcja: 'Field: Remark in an inspection report. The text is the engineer\'s notes, numbered in order. Write one or two well-built sentences; if there are several notes, write one coherent paragraph, keeping their order and not repeating the same information. No bullet points. Do not add recommendations.' },
+    // czat (Grzegorz 27/11/2026): rozmowa z Gemmą jako inżynierem – pytania techniczne i handover głosem; własne zasady zamiast COMMON (odpowiada, nie tłumaczy)
+    czat: { nazwa: ['Czat z Gemmą', 'Chat with Gemma'], wlasne: true, instrukcja: 'You are talking with a maintenance engineer at work. Answer in the language the engineer uses (Polish or English), clearly and briefly, using correct engineering terminology. ' +
+      'Answer technical questions from general engineering knowledge; if you are not sure, say so, and never invent figures, standards, regulations or facts about this building. ' +
+      'If the engineer dictates a handover or a list of tasks, organise it into a clear handover in professional British English: group items by building (Tower A, Tower B, Pavilion) when buildings are mentioned, one bullet point per item starting with "- ", keep every fact, number and code exactly and add nothing. ' +
+      'Output only your reply, with no preamble.' },
     rekomendacja: { nazwa: ['Rekomendacja', 'Recommendation'], instrukcja: 'Field: Recommendation. Write only the recommendations the engineer gives in the text; do not invent other actions or recommendations. If there are two or more, write one per line starting with "- ". If there is one, write one sentence with no bullet points.' }
   };
   // stały prompt + słownik pojęć z Ustawienia → AI (Grzegorz 25/11/2026); słownik daje apka przez configure({ glossary }) (module-adapters.js)
@@ -34,7 +40,7 @@
   function glossary() { try { return (cfg.glossary && cfg.glossary()) || []; } catch (e) { return []; } }
   function system(id) {
     var g = glossary().map(function (x) { return '- ' + x.pl + ' = ' + x.en + (String(x.note || '').trim() ? ' (' + x.note.trim() + ')' : ''); });
-    var base = COMMON + (AGENTS[id] ? '\n\n' + AGENTS[id].instrukcja : '');
+    var a = AGENTS[id], base = a && a.wlasne ? ROLE + a.instrukcja : COMMON + (a ? '\n\n' + a.instrukcja : '');
     var t = g.length ? base + '\n\nGlossary of site terms (Polish = English to use; meaning in brackets). Always use these English terms:\n' + g.join('\n') : base;
     return t.length > 7900 ? t.slice(0, 7900) : t;
   }
@@ -79,6 +85,21 @@
     return run('Translate this Polish text into English. Keep its form and length: a short label or name stays a short label, ' +
       'a sentence stays a sentence. Do not turn it into a report sentence.\n\nText:\n' + String(text || '').trim() + where(context));
   }
+  // Czat (Grzegorz 27/11/2026): model odpowiada na jedną wiadomość naraz, więc dostaje ostatnią część rozmowy jako tekst (do ~6000 znaków).
+  // Rozmowa leży tylko w tym telefonie (klucz oest.model.czat); „Nowa rozmowa” ją czyści.
+  var CZAT = 'oest.model.czat';
+  function rozmowa() { try { var r = JSON.parse(w.localStorage.getItem(CZAT) || '[]'); return Array.isArray(r) ? r : []; } catch (e) { return []; } }
+  function zapiszRozmowe(r) { try { w.localStorage.setItem(CZAT, JSON.stringify(r.slice(-60))); } catch (e) {} return r; }
+  function nowaRozmowa() { try { w.localStorage.removeItem(CZAT); } catch (e) {} return []; }
+  function czat(tekst) {
+    tekst = String(tekst || '').trim();
+    if (!tekst) return Promise.reject(Error(w.OESTT('Wpisz wiadomość.', 'Type a message.')));
+    var r = rozmowa(), linie = [], dl = 0;
+    for (var i = r.length - 1; i >= 0 && dl < 6000; i--) { var l = (r[i].kto === 'ja' ? 'Engineer: ' : 'Assistant: ') + r[i].tekst; linie.unshift(l); dl += l.length; }
+    var prompt = (linie.length ? 'Conversation so far:\n' + linie.join('\n') + '\n\n' : '') + 'Engineer: ' + tekst + '\nAssistant:';
+    zapiszRozmowe(r.concat([{ kto: 'ja', tekst: tekst }]));
+    return run(prompt, 'czat').then(function (out) { out = out.replace(/^assistant:\s*/i, ''); zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out }])); return out; });
+  }
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
   function missingNumbers(input, output) {
     // całe liczby jako tokeny: 12 ≠ 120
@@ -118,5 +139,5 @@
       return (a === 'download' ? download() : a === 'allow' ? allowFiles() : remove()).then(function () { return ''; }, function (e) { return w.OESTBledy ? w.OESTBledy.text(e) : e.message; });
     });
   }
-  w.OESTModel = { MODELS: MODELS, COMMON: COMMON, AGENTS: AGENTS, available: available, status: status, download: download, remove: remove, ready: ready, agent: agent, translate: translate, configure: configure, allowFiles: allowFiles, missingNumbers: missingNumbers, key: key, setKey: setKey, panel: panel, akcja: akcja };
+  w.OESTModel = { MODELS: MODELS, COMMON: COMMON, AGENTS: AGENTS, available: available, status: status, download: download, remove: remove, ready: ready, agent: agent, translate: translate, czat: czat, rozmowa: rozmowa, nowaRozmowa: nowaRozmowa, configure: configure, allowFiles: allowFiles, missingNumbers: missingNumbers, key: key, setKey: setKey, panel: panel, akcja: akcja };
 })(window);

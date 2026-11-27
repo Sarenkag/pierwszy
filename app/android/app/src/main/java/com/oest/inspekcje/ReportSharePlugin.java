@@ -53,6 +53,20 @@ public class ReportSharePlugin extends Plugin {
         } catch (Exception e) { call.reject("SHARE_FAILED"); }
     }
 
+    // Sam tekst do dowolnej aplikacji (Grzegorz 27/11/2026: odpowiedź z czatu Gemmy, np. handover) – bez plików i bez adresów
+    @PluginMethod public void text(PluginCall call) {
+        String body = call.getString("body", ""), subject = call.getString("subject", "OEST");
+        if (body.isEmpty() || body.length() > 100000) { call.reject("SHARE_INPUT"); return; }
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, subject);
+        send.putExtra(Intent.EXTRA_TEXT, body);
+        getActivity().runOnUiThread(() -> {
+            try { getActivity().startActivity(Intent.createChooser(send, subject)); call.resolve(new JSObject().put("status", "shared")); }
+            catch (Exception e) { call.reject("SHARE_UNAVAILABLE"); }
+        });
+    }
+
     // Podgląd raportu (Grzegorz 26/11/2026): ten sam PDF co do wysyłki, otwarty w przeglądarce PDF telefonu.
     // Jeden plik podglądu: każde otwarcie nadpisuje poprzedni (składany od nowa z poprawionych pól).
     @PluginMethod public void open(PluginCall call) {
