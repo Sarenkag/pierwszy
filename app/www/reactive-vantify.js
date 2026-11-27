@@ -55,6 +55,14 @@
   async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
   async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
 
+  /* Summary do Vantify z karty – jedno miejsce dla okna „Załóż zlecenie” i podglądu pod nazwą zadania (Grzegorz 27/11/2026: „mogłaby od razu tłumaczyć”) */
+  async function nazwaEn(x, d) {
+    /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
+    const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = x.kreator, ks = K && K.fromDraft(d, roomEn);
+    /* kreator opisu (PROD-039): Summary z wyborów (już po angielsku); bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026) */
+    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '';
+    return { roomEn, K, ks, sum };
+  }
   async function open(x) {
     const { draft: d, L } = x, P = plugin();
     if (state(d) !== 'none' && state(d) !== 'pending') return check(x);
@@ -62,13 +70,11 @@
     /* poprzednie zakładanie bez odpowiedzi (przegląd Codex #146): zlecenie mogło powstać – najpierw sprawdzić w Vantify */
     if (state(d) === 'pending' && !await ask({ title: 'Open Vantify', text: L('Poprzednie zakładanie (', 'The previous attempt (') + new Date(d.vantify.at).toLocaleString('en-GB') + L(') nie dostało odpowiedzi z Vantify i zlecenie mogło już powstać: „', ') got no answer from Vantify and the job may already exist: “') + (d.vantify.summary || '') + L('”. Sprawdź najpierw listę zleceń w Vantify. Założyć nowe mimo to?', '”. Check the job list in Vantify first. Create a new one anyway?'), ok: L('Załóż mimo to', 'Create anyway'), cancel: L('Wróć', 'Back') })) return;
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
-    /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
-    const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = x.kreator, ks = K && K.fromDraft(d, roomEn);
+    const { roomEn, K, ks, sum } = await nazwaEn(x, d), body = await x.english('start', d.note || '');
     /* piętro z napisem jak w kreatorze (K.where): „Level 20”, nie gołe „20” (Grzegorz 21/11/2026) */
     const lvl = String(d.level || ''), where = [d.building, /^\d/.test(lvl) ? 'Level ' + lvl : lvl, d.flat ? 'Flat ' + d.flat : '', roomEn].filter(Boolean).join(', ');
     /* kreator opisu (PROD-039): Summary i opis zlecenia z wyborów (już po angielsku), info na start dopisane pod spodem */
     /* bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026); do poprawy w oknie poniżej */
-    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '', body = await x.english('start', d.note || '');
     /* miejsce na początku opisu (Grzegorz 26/11/2026: Vantify nie przyjmuje własnej lokalizacji) – tylko to, co wpisane na karcie */
     const desc = [where.split(', ').join(' · '), ks ? K.request(ks) : '', body].filter(Boolean).join('\n');
     /* priorytet do wyboru (Grzegorz 20/11/2026: dłuższy termin niż P5, żeby zlecenie nie było zaległe, zanim Josh zatwierdzi);
@@ -363,5 +369,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { odswiez, przyciski, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
+  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
 })(window);
