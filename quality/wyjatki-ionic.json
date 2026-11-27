@@ -28,9 +28,10 @@
         "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card",
         "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-title",
         "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-subtitle",
-        "klasa:oest-rowne"
+        "klasa:oest-rowne",
+        "klasa:oest-kafelki"
       ],
-      "powod": "JEDNA reguła „przyciski w grupie równe” dla całej apki: w siatce element kolumny wypełnia wysokość wiersza, w rzędzie przycisków każdy ma tę samą szerokość (27/11/2026).",
+      "powod": "JEDNA reguła „przyciski w grupie równe” dla całej apki: w siatce element kolumny wypełnia wysokość wiersza, w rzędzie przycisków każdy ma tę samą szerokość (27/11/2026). Kafelki.vue ma stałą klasę „oest-kafelki oest-rowne” (wcześniej wiązanie :class).",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8XuRmBDW4ij3tpkYZLYjuw"
     },
     {
