@@ -60,6 +60,8 @@
     if (kind === "commence") return { _links: {}, files: { links: [] }, _date: SAMPLE, _built: 1 };
     if (kind === "complete") { file._links = { file: { href: "" }, documentType: { href: o.docType || JOB_SHEET } }; return { _links: {}, escalationFiles: { links: [] }, assets: {}, files: [], _date: SAMPLE, _file: file, _built: 1 }; }
     if (kind === "attach") { file._links = { file: { href: "" }, documentType: { href: PHOTO } }; file.isContract = null; file.isJobFile = false; file.applicableTo = []; file._date = SAMPLE; file._built = 1; return file; }
+    // wiadomość do zlecenia z zapisu 25/11/2026 (job 3084366): POST /sites/N/jobs/N/messages {"body":"<tekst>"} → 201 (Grzegorz 27/11/2026: bez okna „pierwszy raz”)
+    if (kind === "update") return { _built: 1 };
     return null;
   }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
@@ -297,15 +299,15 @@
     // „Send update” (Grzegorz 20/11/2026): tylko gdy zlecenie nadal czeka na zatwierdzenie (notatki z zakładki Notatki – anyStatus: każde niezamknięte, 26/11/2026) i ma tę samą nazwę co karta;
     // wiadomość → ponowny odczyt, czy jest przy zleceniu
     if (a.op === "update") {
-      if (!W.update) return end({ status: "nowzor", op: "update" });
+      var Wu = W.update || built("update");
       step = "read";
       return job(a.id).then(function (j) {
         if (!j || Number(j.id) !== Number(a.id)) throw { code: "other" };
         if (j.is_final_status || (!a.anyStatus && j.status !== "approval_pending")) { end({ status: "differs", why: j.is_final_status ? "final" : "approved", job: brief(j) }); throw { stop: 1 }; }
         if (a.summary && String(j.summary || "").trim() !== String(a.summary).trim()) { end({ status: "differs", why: "summary", job: brief(j) }); throw { stop: 1 }; }
         step = "update";
-        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/messages", message(W.update, { text: a.text })).then(function () { step = "check"; return hasMessage(j, a.text).catch(function () { return null; }); }).then(function (s) { end({ status: "ok", job: brief(j), seen: s }); });
-      }).catch(function (e) { if (e && e.stop) return; fail(e); });
+        return req("POST", "/sites/" + site + "/jobs/" + a.id + "/messages", message(Wu, { text: a.text })).then(function () { step = "check"; return hasMessage(j, a.text).catch(function () { return null; }); }).then(function (s) { end({ status: "ok", job: brief(j), seen: s }); });
+      }).catch(function (e) { if (e && e.stop) return; if (Wu._built && step === "update" && rejected(e)) return end({ status: "nowzor", op: "update", built: true, code: e.code, msg: e.msg || "" }); fail(e); });
     }
     if (a.op === "close") {
       var j0, href, d0 = new Date(a.onSite || Date.now()), d1 = new Date(a.done || Date.now()), Wc = W.commence || built("commence"), Wp = W.complete;

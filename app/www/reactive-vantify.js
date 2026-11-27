@@ -191,7 +191,7 @@
     if (!list) return;
     if (list.some(m => !String(m.tekst || '').trim())) return x.message(L('Wiadomość nie może być pusta.', 'The message cannot be empty.'));
     if (!await fresh(x, P)) return;
-    const W = await wzory(P), save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
+    const save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
     for (const m of list) {
       const text = m.id === 'rec' ? recText(m.tekst) : m.id === 'info' ? infoText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
       /* poprzednia próba bez odpowiedzi: najpierw odczyt wiadomości przy zleceniu (bez dublowania) */
@@ -202,8 +202,9 @@
       }
       await save(m.id, { text, sentAt: new Date().toISOString() });
       x.message(L('Wysyłam do Vantify: ', 'Sending to Vantify: ') + m.etykieta + '…');
-      if (!W.update) {
-        /* pierwszy raz (brak wzoru): okno Vantify z tekstem do skopiowania, apka uczy się i następne wysyła sama */
+      const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '', anyStatus: true });
+      if (r.status === 'nowzor' && r.built) {
+        /* wbudowany wzór odrzucony przez Vantify (4xx): okno Vantify z tekstem do skopiowania, apka uczy się i następne wysyła sama */
         await ask({ title: 'Update', text: L('Pierwszy raz: dodaj wiadomość do zlecenia w oknie Vantify, jak zwykle. Tekst jest gotowy do skopiowania (przycisk u góry). Apka zapamięta, jak to zrobiłeś, a następne wyśle sama.', 'First time: add a message to the job in the Vantify window as usual. The text is ready to copy (button at the top). The app remembers how you did it and sends the next ones by itself.'), alert: true });
         try { await P.open({ lang: L('pl', 'en'), hash: jobHash(v.id, 'status'), text }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
         const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
@@ -211,7 +212,6 @@
         await save(m.id, { text, sentAt: new Date().toISOString(), at: new Date().toISOString() });
         return notatki(x);
       }
-      const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '', anyStatus: true });
       if (r.status === 'differs' || r.status === 'nowzor') { await save(m.id, prev || null); if (r.job) await update(x, r.job); return x.message(r.why === 'summary' ? L('W Vantify zlecenie ma inną nazwę. Nic nie wysłałem.', 'In Vantify the job has a different name. Nothing was sent.') : 'Vantify #' + v.id + ': ' + label(r.job || {}, L) + L('. Nie wysłane.', '. Not sent.')); }
       if (r.status !== 'ok') return x.message(why(r, L) + L(' Stuknij Update, żeby sprawdzić, czy doszło.', ' Tap Update to check whether it arrived.'));
       await save(m.id, { text, sentAt: new Date().toISOString(), at: new Date().toISOString(), seen: r.seen === true });
