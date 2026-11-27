@@ -360,7 +360,7 @@
     try {
       if (!(await G.ready('drive'))) await G.connect('drive');
       const root = (await G.ensureFolder('OEST Raporty', '')).id, f = await G.findFile(root, STOP(nr)); // i18n-ok: folder na Dysku
-      if (d.botOff && !f) await G.uploadFile(root, STOP(nr), new Blob(['OEST: bot nie zamyka zlecenia #' + nr + '\n'], { type: 'text/plain' }));
+      if (d.botOff && !f) await G.uploadFile(root, STOP(nr), new Blob(['OEST bot: do not close job #' + nr + '\n'], { type: 'text/plain' }));
       if (!d.botOff && f) await G.removeFile(f.id);
       return true;
     } catch (e) { return false; }
