@@ -59,12 +59,13 @@
   function ready() { return status().then(function (s) { return !!(s && s.ready); }, function () { return false; }); }
   function run(prompt, id) {
     var p = plugin(); if (!p) return Promise.reject(Error(w.OESTT('Model działa tylko w apce na telefonie.', 'The model works only in the phone app.')));
-    return p.generate({ name: model().name, system: system(id), prompt: prompt, temperature: 0.2 }).then(function (r) { return clean(r && r.text); }, function (e) {
-      var m = String(e && e.message || e);
-      if (/NOT_DOWNLOADED/.test(m)) throw Error(w.OESTT('Brak pliku modelu. Ustawienia → AI.', 'The model file is missing. Settings → AI.'));
-      if (/ANDROID_TOO_OLD/.test(m)) throw Error(w.OESTT('Model wymaga Androida 12 lub nowszego.', 'The model needs Android 12 or newer.'));
-      throw Error(w.OESTT('Model nie zadziałał: ', 'The model failed: ') + m);
-    });
+    return p.generate({ name: model().name, system: system(id), prompt: prompt, temperature: 0.2 }).then(function (r) { return clean(r && r.text); }, blad);
+  }
+  function blad(e) {
+    var m = String(e && e.message || e);
+    if (/NOT_DOWNLOADED/.test(m)) throw Error(w.OESTT('Brak pliku modelu. Ustawienia → AI.', 'The model file is missing. Settings → AI.'));
+    if (/ANDROID_TOO_OLD/.test(m)) throw Error(w.OESTT('Model wymaga Androida 12 lub nowszego.', 'The model needs Android 12 or newer.'));
+    throw Error(w.OESTT('Model nie zadziałał: ', 'The model failed: ') + m);
   }
   function clean(t) { t = String(t || '').trim().replace(/^["“”']+|["“”']+$/g, '').replace(/^(here is|here's)[^:]*:\s*/i, '').trim(); if (!t) throw Error(w.OESTT('Model nie zwrócił tekstu.', 'The model returned no text.')); return t; }
   function ref(note, reference) { reference = String(reference || '').trim(); return reference && reference !== String(note || '').trim() ? '\n\nOriginal Polish wording (for reference only; the note above is what counts):\n' + reference : ''; }
@@ -86,12 +87,12 @@
     return run('Translate this Polish text into English. Keep its form and length: a short label or name stays a short label, ' +
       'a sentence stays a sentence. Do not turn it into a report sentence.\n\nText:\n' + String(text || '').trim() + where(context));
   }
-  // Czat (Grzegorz 27/11/2026): model odpowiada na jedną wiadomość naraz, więc dostaje ostatnią część rozmowy jako tekst (do ~6000 znaków).
-  // Rozmowa leży tylko w tym telefonie (klucz oest.model.czat); „Nowa rozmowa” ją czyści.
+  // Czat (Grzegorz 27/11/2026): jedna trwała rozmowa w bibliotece modelu (wzór Google LiteRT-LM) – każda wiadomość to kolejna tura.
+  // Rozmowa leży tylko w tym telefonie (klucz oest.model.czat): z niej wtyczka odtwarza tury, gdy zakłada rozmowę od nowa; „Nowa rozmowa” czyści obie.
   var CZAT = 'oest.model.czat';
   function rozmowa() { try { var r = JSON.parse(w.localStorage.getItem(CZAT) || '[]'); return Array.isArray(r) ? r : []; } catch (e) { return []; } }
   function zapiszRozmowe(r) { try { w.localStorage.setItem(CZAT, JSON.stringify(r.slice(-60))); } catch (e) {} return r; }
-  function nowaRozmowa() { try { w.localStorage.removeItem(CZAT); } catch (e) {} return []; }
+  function nowaRozmowa() { try { w.localStorage.removeItem(CZAT); } catch (e) {} var p = plugin(); if (p && p.chatReset) p.chatReset().catch(function () {}); return []; }
   // id = agent pola (test promptu z Ustawienia → AI): tekst idzie przez agent(id) dokładnie jak z pola – bez historii rozmowy
   function czat(tekst, id) {
     tekst = String(tekst || '').trim();
@@ -101,11 +102,12 @@
       zapiszRozmowe(rozmowa().concat([{ kto: 'ja', tekst: tekst, agent: id }]));
       return agent(id, tekst).then(function (out) { zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out, agent: id }])); return out; });
     }
-    var r = rozmowa().filter(function (m) { return !m.agent; }), linie = [], dl = 0;
-    for (var i = r.length - 1; i >= 0 && dl < 6000; i--) { var l = (r[i].kto === 'ja' ? 'Engineer: ' : 'Assistant: ') + r[i].tekst; linie.unshift(l); dl += l.length; }
-    var prompt = (linie.length ? 'Conversation so far:\n' + linie.join('\n') + '\n\n' : '') + 'Engineer: ' + tekst + '\nAssistant:';
+    var p = plugin(); if (!p) return Promise.reject(Error(w.OESTT('Model działa tylko w apce na telefonie.', 'The model works only in the phone app.')));
+    var historia = rozmowa().filter(function (m) { return !m.agent; }).map(function (m) { return { role: m.kto === 'ja' ? 'user' : 'model', text: m.tekst }; });
     zapiszRozmowe(rozmowa().concat([{ kto: 'ja', tekst: tekst }]));
-    return run(prompt, 'czat').then(function (out) { out = out.replace(/^assistant:\s*/i, ''); zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out }])); return out; });
+    return p.chat({ name: model().name, system: system('czat'), message: tekst, history: historia, temperature: 0.2 }).then(function (r) {
+      var out = clean(r && r.text); zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out }])); return out;
+    }, blad);
   }
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
   function missingNumbers(input, output) {
