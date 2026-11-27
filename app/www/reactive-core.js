@@ -15,14 +15,14 @@
   function finish(d,actionId){const action=T.actions.find(a=>a.id===actionId);if(!action)throw Error('REACTIVE_ACTION');return {...d,actionId,status:actionId==='contractor'?'contractor':actionId==='temporary'?'open':'completed',temporary:actionId==='temporary'};}
   function sentence(d){/* kreator opisu (PROD-039): zdania z wyborów zamiast drzewka i klocka „Zakończenie” */const ks=K&&K.fromDraft(d),act=T.actions.find(a=>a.id===d.actionId);/* naprawa tymczasowa / firma: bez zdania „zrobione”, tylko co zlecono + stan */if(ks)return act&&!act.closes?K.request({...ks,where:{}})+' '+act.sentence:K.description(ks);const item=d.problemId?find(d.problemId)?.node:null,action=T.actions.find(a=>a.id===d.actionId);return [String(d.problem||item?.sentence||d.title||'').replace(/[.\s]+$/,''),action?(item?.actionSentences?.[action.id]||action.sentence):''].filter(Boolean).map(s=>/[.!?]$/.test(s)?s:s+'.').join(' ');}
   const requestLabels={self:'Self (proactive)',manager:'My manager',building:'Building manager',tenant:'Tenant',other:'Other'};const whoLabel=d=>requestLabels[who(d)]||who(d)||'Other';
-  /* Job Sheet Reactive w akapitach z nagłówkami (Grzegorz 26/11/2026 18:08): Job description / Work complete / Recommendations; pusty akapit wylatuje.
+  /* Job Sheet Reactive w akapitach z nagłówkami (Grzegorz 26/11/2026 18:08): Job description / Work complete / Recommendations / Additional information (27/11/2026); pusty akapit wylatuje.
      Nagłówki to osobne linie (SEKCJE) – raport Word i podgląd rozpoznają je po treści i pogrubiają (moduł OESTReactiveReport.sekcje). */
-  const SEKCJE=['Job description:','Work complete:','Recommendations:'];
+  const SEKCJE=['Job description:','Work complete:','Recommendations:','Additional information:'];
   function details(d){const opis=[sentence(d),d.flat?'Flat: '+d.flat:'',d.room?'Room/area: '+d.room:'',(d.problemId&&find(d.problemId)?.node.context)||'',d.orderDate?'Order date: '+d.orderDate.split('-').reverse().join('/'):'',d.jobType?'Type: '+d.jobType.charAt(0)+d.jobType.slice(1).toLowerCase():''/* w raporcie „Repair”, nie „REPAIR” (Grzegorz 26/11/2026) */,d.note||'',(who(d)==='self'?'Proactive work (engineer initiative)':'Requested by: '+whoLabel(d)+(d.requestedName?' — '+d.requestedName:''))].filter(Boolean),
     praca=[...voice(d),d.endNote||'',d.partsNote?'Parts: '+d.partsNote:'',d.expectedDate?'Expected date: '+d.expectedDate:'',(WORK.find(x=>x.id===d.workChoice)||{}).en||''].filter(Boolean),
-    rek=[d.recNote||''].filter(Boolean);
+    rek=[d.recNote||''].filter(Boolean),info=[d.infoNote||''].filter(Boolean);
     /* zdanie BHP zawsze na końcu formularza, po rekomendacjach, osobnym akapitem bez nagłówka (Grzegorz 26/11/2026) */
-    const bhp=closingText(d),t=[[SEKCJE[0],opis],[SEKCJE[1],praca],[SEKCJE[2],rek]].filter(x=>x[1].length).map(x=>[x[0],...x[1]].join('\n')).join('\n');
+    const bhp=closingText(d),t=[[SEKCJE[0],opis],[SEKCJE[1],praca],[SEKCJE[2],rek],[SEKCJE[3],info]].filter(x=>x[1].length).map(x=>[x[0],...x[1]].join('\n')).join('\n');
     return bhp?t+'\n\n'+bhp:t;}
   /* zakończenie Job Sheet (Grzegorz 26/11/2026): wybór pracy na samym końcu; tekst końcowy z listy albo własny – bez zmiany = automatyczny z kreatora */
   const WORK=[{id:'completed',pl:'Zakończone',en:'Completed'},{id:'not-completed',pl:'Niezakończone',en:'Not completed'},{id:'temporary',pl:'Naprawa tymczasowa',en:'Temporary repair'},{id:'inspected',pl:'Sprawdzone – usterka potwierdzona',en:'Inspected – fault confirmed'}];

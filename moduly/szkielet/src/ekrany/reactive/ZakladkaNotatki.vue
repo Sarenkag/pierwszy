@@ -1,4 +1,4 @@
-<!-- Zakładka 3 „Notatki” (Grzegorz 26/11/2026): Notatka na start (z dawnymi nagraniami), Co zrobione, Rekomendacja (opcjonalnie) – Napisz / Nagraj;
+<!-- Zakładka 3 „Notatki” (Grzegorz 26/11/2026): Notatka na start (z dawnymi nagraniami), Co zrobione, Rekomendacja (opcjonalnie), Dodatkowe informacje (opcjonalnie, 27/11/2026) – Napisz / Nagraj;
      Update wysyła do Vantify osobne wiadomości: co zrobione, rekomendacja (gdy jest), na końcu prośba o zatwierdzenie. -->
 <template>
   <ion-card>

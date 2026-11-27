@@ -27,12 +27,12 @@
   /* zdjęcia przed wysłane przy zakładaniu, a niewidoczne przy zleceniu (przegląd Codex #166): {hrefs, seen} na karcie */
   function photosMissing(d) { const p = d?.vantify?.photos; return p && Array.isArray(p.hrefs) ? p.hrefs.filter(h => !(p.seen || []).includes(h)).length : 0; }
   /* co już jest w Vantify (Grzegorz 26/11/2026: wysłane = zablokowane, szare, „✓ w Vantify, godzina”): godziny wysłania
-     { zlecenie, zdjecia: { idZdjęcia: czas }, notatki: { done, rec, final: czas } } – czas ISO albo brak */
+     { zlecenie, zdjecia: { idZdjęcia: czas }, notatki: { done, rec, info, final: czas } } – czas ISO albo brak */
   function wyslane(d) {
     const v = d?.vantify || {}, p = v.photos || {}, zd = {}, n = {};
     if (!v.id) return { zlecenie: '', zdjecia: zd, notatki: n };
     (p.ids || []).forEach((id, i) => { if (id && (p.hrefs || [])[i]) zd[id] = (p.at || {})[id] || v.at || ''; });
-    for (const k of ['done', 'rec', 'final']) if (v.notes?.[k]?.at) n[k] = v.notes[k].at;
+    for (const k of ['done', 'rec', 'info', 'final']) if (v.notes?.[k]?.at) n[k] = v.notes[k].at;
     return { zlecenie: v.at || '', zdjecia: zd, notatki: n };
   }
   /* przycisk „Zamknij w Vantify” w zakładce Zamknięcie: { tekst, rx, ton } – ton: '' zwykły, 'off' przygaszony, 'done' zielony ✓, 'go' główny */
@@ -126,6 +126,8 @@
   const UPDATE_TEXT = 'Works completed. Please approve so the job can be closed.';
   /* notatka z rekomendacją zawsze z nagłówkiem w pierwszej linii (Grzegorz 26/11/2026: „zawsze nad tym recommendation”, wpisuje tak ręcznie w Vantify) */
   const REC_HEAD = 'Recommendation:', recText = t => { t = String(t || '').trim(); return !t || t.toLowerCase().startsWith(REC_HEAD.toLowerCase()) ? t : REC_HEAD + '\n' + t; };
+  /* Dodatkowe informacje (Grzegorz 27/11/2026): osobna wiadomość po rekomendacji, z nagłówkiem jak rekomendacja */
+  const INFO_HEAD = 'Additional information:', infoText = t => { t = String(t || '').trim(); return !t || t.toLowerCase().startsWith(INFO_HEAD.toLowerCase()) ? t : INFO_HEAD + '\n' + t; };
   /* podgląd przed wysyłką: { wiadomosci: [{ id, etykieta, tekst }], zdjecia: [{ url, tytul }] } → poprawione wiadomości albo null (Wróć) */
   async function podglad(x, tytul, dane) {
     const C = w.OESTCzesci; if (!C?.okno) return null;
@@ -162,17 +164,18 @@
     if (r.status !== 'ok') return x.message(why(r, L) + (sent.filter(Boolean).length ? L(' Wysłane: ', ' Sent: ') + sent.filter(Boolean).length + '/' + files.length : ''));
     x.message(photosMissing(x.draft) ? L('Wysłane, ale Vantify nie pokazuje wszystkich zdjęć. Stuknij „⚠ Vantify” w zakładce Zlecenie, żeby sprawdzić.', 'Sent, but Vantify does not show all photos. Tap “⚠ Vantify” on the Job tab to check.') : L('✓ Zdjęcia w Vantify #', '✓ Photos on Vantify #') + v.id + ': ' + sent.filter(Boolean).length + '.');
   }
-  /* Update w zakładce Notatki: Co zrobione, Rekomendacja (gdy wpisana) i na końcu zawsze prośba o zatwierdzenie – osobne wiadomości.
+  /* Update w zakładce Notatki: Co zrobione, Rekomendacja i Dodatkowe informacje (gdy wpisane) i na końcu zawsze prośba o zatwierdzenie – osobne wiadomości.
      Każda zapisana na karcie PRZED wysyłką (sentAt); zgubiona odpowiedź = następny Update najpierw sprawdza, czy jest przy zleceniu. */
   async function notatki(x) {
     const { draft: d, L } = x, P = plugin(), v = d.vantify;
     if (!v?.id) return x.message(L('Najpierw „Załóż w Vantify” w zakładce Zlecenie.', 'First “Create in Vantify” on the Job tab.'));
     if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
-    const n = v.notes || {}, msgs = [], et = { done: L('Co zrobione', 'Work done'), rec: L('Rekomendacja', 'Recommendation'), final: L('Prośba o zatwierdzenie', 'Approval request') };
+    const n = v.notes || {}, msgs = [], et = { done: L('Co zrobione', 'Work done'), rec: L('Rekomendacja', 'Recommendation'), info: L('Dodatkowe informacje', 'Additional information'), final: L('Prośba o zatwierdzenie', 'Approval request') };
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
-    const hasDone = !!String(d.endNote || '').trim() || !!await x.english('end', '', true), hasRec = !!String(d.recNote || '').trim() || !!await x.english('rec', '', true);
+    const hasDone = !!String(d.endNote || '').trim() || !!await x.english('end', '', true), hasRec = !!String(d.recNote || '').trim() || !!await x.english('rec', '', true), hasInfo = !!String(d.infoNote || '').trim() || !!await x.english('info', '', true);
     if (!n.done?.at && hasDone) msgs.push({ id: 'done', etykieta: et.done, tekst: n.done?.text || await x.english('end', d.endNote || '') });
     if (!n.rec?.at && hasRec) msgs.push({ id: 'rec', etykieta: et.rec, tekst: recText(n.rec?.text || await x.english('rec', d.recNote || '')) });
+    if (!n.info?.at && hasInfo) msgs.push({ id: 'info', etykieta: et.info, tekst: infoText(n.info?.text || await x.english('info', d.infoNote || '')) });
     if (!n.final?.at && (n.done?.at || msgs.some(m => m.id === 'done'))) msgs.push({ id: 'final', etykieta: et.final, tekst: n.final?.text || UPDATE_TEXT });
     x.message('');
     if (!msgs.length) return x.message(n.final?.at ? L('Wszystkie notatki są już w Vantify.', 'All notes are already in Vantify.') : L('Najpierw wpisz albo nagraj „Co zrobione”.', 'First type or record “Work done”.'));
@@ -182,7 +185,7 @@
     if (!await fresh(x, P)) return;
     const W = await wzory(P), save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
     for (const m of list) {
-      const text = m.id === 'rec' ? recText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
+      const text = m.id === 'rec' ? recText(m.tekst) : m.id === 'info' ? infoText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
       /* poprzednia próba bez odpowiedzi: najpierw odczyt wiadomości przy zleceniu (bez dublowania) */
       if (prev?.sentAt && !prev.at) {
         const c = await act(P, { op: 'status', ids: [v.id], messageText: prev.text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
