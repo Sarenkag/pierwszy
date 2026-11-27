@@ -24,7 +24,7 @@
   else root.OESTWord = api;
 })(typeof window !== "undefined" ? window : globalThis, function (root) {
   "use strict";
-  var MIME = root.OESTNarzedzia.DOCX; // typ pliku Word: moduly/narzedzia (jedno miejsce)
+  var MIME = (root.OESTNarzedzia || require("../narzedzia/narzedzia.js")).DOCX; // typ pliku Word: moduly/narzedzia (jedno miejsce)
   var libs = null;
   function biblioteki(l) { libs = l || null; }
   function Zip() { var Z = (libs && libs.PizZip) || root.PizZip; if (!Z) throw Error("REPORT_TEMPLATE_MISSING"); return Z; }
