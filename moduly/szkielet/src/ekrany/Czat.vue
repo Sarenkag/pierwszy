@@ -11,7 +11,7 @@
     <ion-card v-for="(m, i) in lista" :key="i">
       <ion-item lines="none">
         <ion-label class="ion-text-wrap">
-          <p>{{ m.kto === 'ja' ? T('Ty', 'You') : 'Gemma' }}</p>
+          <p>{{ (m.kto === 'ja' ? T('Ty', 'You') : 'Gemma') + (m.agent ? ' · ' + nazwa(m.agent) : '') }}</p>
           <h3 v-for="(l, j) in String(m.tekst || '').split('\n')" :key="j">{{ l || '\u00a0' }}</h3>
         </ion-label>
       </ion-item>
@@ -27,6 +27,11 @@
       <ion-note>{{ komunikat }}</ion-note>
     </ion-item>
     <ion-card>
+      <ion-item>
+        <ion-select :label="T('Prompt', 'Prompt')" :value="tryb" interface="action-sheet" :disabled="pisze" @ionChange="tryb = $event.detail.value">
+          <ion-select-option v-for="a in agenci" :key="a.id" :value="a.id">{{ a.nazwa }}</ion-select-option>
+        </ion-select>
+      </ion-item>
       <ion-item lines="none">
         <ion-textarea :label="T('Wiadomość', 'Message')" label-placement="stacked" :auto-grow="true" :rows="3" :value="tekst" :disabled="pisze"
           :placeholder="T('Zapytaj albo podyktuj handover (mikrofon na klawiaturze)', 'Ask, or dictate a handover (keyboard microphone)')" @ionInput="tekst = $event.detail.value"></ion-textarea>
@@ -39,17 +44,20 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { IonCard, IonItem, IonLabel, IonNote, IonTextarea, IonButton } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonNote, IonTextarea, IonButton, IonSelect, IonSelectOption } from '@ionic/vue';
 const props = defineProps({ T: Function, wersja: Number });
 const M = window.OESTModel, N = window.OESTNarzedzia;
 const lista = ref(M ? M.rozmowa() : []);
-const tekst = ref(''), pisze = ref(false), komunikat = ref(''), gotowy = ref(true);
+const tekst = ref(''), pisze = ref(false), komunikat = ref(''), gotowy = ref(true), tryb = ref('czat');
+// „Prompt”: czat albo agent pola – ten sam prompt, którego apka używa w polu (lista z OESTModel.AGENTS, czat pierwszy)
+const nazwa = id => { const a = M && M.AGENTS[id]; return a ? props.T(a.nazwa[0], a.nazwa[1]) : id; };
+const agenci = M ? ['czat'].concat(Object.keys(M.AGENTS).filter(id => id !== 'czat')).map(id => ({ id, nazwa: nazwa(id) })) : [];
 let zywy = true;
 const blad = e => (window.OESTBledy ? window.OESTBledy.text(e) : e.message);
 async function wyslij() {
   const t = String(tekst.value || '').trim(); if (!t || pisze.value) return;
-  komunikat.value = ''; pisze.value = true; lista.value = lista.value.concat([{ kto: 'ja', tekst: t }]); tekst.value = '';
-  try { await M.czat(t); } catch (e) { if (zywy) komunikat.value = blad(e); }
+  komunikat.value = ''; pisze.value = true; lista.value = lista.value.concat([{ kto: 'ja', tekst: t, agent: tryb.value === 'czat' ? undefined : tryb.value }]); tekst.value = '';
+  try { await M.czat(t, tryb.value); } catch (e) { if (zywy) komunikat.value = blad(e); }
   if (!zywy) return; pisze.value = false; lista.value = M.rozmowa();
 }
 async function nowa() { if (!await window.OESTPytaj(props.T('Zacząć nową rozmowę? Obecna zniknie z telefonu.', 'Start a new chat? The current one will be removed from the phone.'))) return; lista.value = M.nowaRozmowa(); komunikat.value = ''; }

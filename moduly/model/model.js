@@ -92,13 +92,19 @@
   function rozmowa() { try { var r = JSON.parse(w.localStorage.getItem(CZAT) || '[]'); return Array.isArray(r) ? r : []; } catch (e) { return []; } }
   function zapiszRozmowe(r) { try { w.localStorage.setItem(CZAT, JSON.stringify(r.slice(-60))); } catch (e) {} return r; }
   function nowaRozmowa() { try { w.localStorage.removeItem(CZAT); } catch (e) {} return []; }
-  function czat(tekst) {
+  // id = agent pola (test promptu z Ustawienia → AI): tekst idzie przez agent(id) dokładnie jak z pola – bez historii rozmowy
+  function czat(tekst, id) {
     tekst = String(tekst || '').trim();
     if (!tekst) return Promise.reject(Error(w.OESTT('Wpisz wiadomość.', 'Type a message.')));
-    var r = rozmowa(), linie = [], dl = 0;
+    if (id && id !== 'czat') {
+      if (!AGENTS[id]) return Promise.reject(Error('MODEL_AGENT'));
+      zapiszRozmowe(rozmowa().concat([{ kto: 'ja', tekst: tekst, agent: id }]));
+      return agent(id, tekst).then(function (out) { zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out, agent: id }])); return out; });
+    }
+    var r = rozmowa().filter(function (m) { return !m.agent; }), linie = [], dl = 0;
     for (var i = r.length - 1; i >= 0 && dl < 6000; i--) { var l = (r[i].kto === 'ja' ? 'Engineer: ' : 'Assistant: ') + r[i].tekst; linie.unshift(l); dl += l.length; }
     var prompt = (linie.length ? 'Conversation so far:\n' + linie.join('\n') + '\n\n' : '') + 'Engineer: ' + tekst + '\nAssistant:';
-    zapiszRozmowe(r.concat([{ kto: 'ja', tekst: tekst }]));
+    zapiszRozmowe(rozmowa().concat([{ kto: 'ja', tekst: tekst }]));
     return run(prompt, 'czat').then(function (out) { out = out.replace(/^assistant:\s*/i, ''); zapiszRozmowe(rozmowa().concat([{ kto: 'gemma', tekst: out }])); return out; });
   }
   // Sprawdzenie: czy wszystkie liczby i kody z wejścia są w wyniku (ostrzeżenie dla użytkownika, nie blokada)
