@@ -97,7 +97,10 @@ var BOT = (function () {
           var job = v("GET", "/sites/" + SITE + "/jobs/" + nr), why = A.check(job, { id: Number(nr), docType: JOB_SHEET });
           if (why === "final") { log("#" + nr + ": już zamknięte w Vantify – nic nie robię."); if (!env.dry) zamkniete(nr, "było zamknięte"); return; }
           if (why === "approval") { log("#" + nr + ": Vantify nadal pokazuje „czeka na zatwierdzenie” – sprawdzę za godzinę."); if (!env.dry) { z.next = now + CZEKA * MIN; zmiana = true; } return; }
-          if (why) throw blad("odmowa", 0, POWOD[why] || why);
+          // brak Commence i Complete = zlecenie jeszcze nie do zamknięcia (np. mail „assigned” przyszedł przed Job Sheetem, #3085206 27/11/2026):
+          // bot zagląda co godzinę jak przy „czeka na zatwierdzenie”; „zamknij ręcznie” dopiero po dobie bez zmiany (Grzegorz 27/11/2026 „Tak, popraw”)
+          if (why === "state" && now - z.od < DZIEN) { log("#" + nr + ": Vantify nie pokazuje jeszcze Commence ani Complete – sprawdzę za godzinę."); if (!env.dry) { z.next = now + CZEKA * MIN; zmiana = true; } return; }
+          if (why) throw blad("odmowa", 0, why === "state" ? POWOD.state + " przez dobę" : POWOD[why] || why);
           krok = "lista plików";
           var fl = job._links.files && (job._links.files.href || job._links.files), jest = fl ? lista(v("GET", sciezka(fl))).filter(function (f) { return jestJobSheet(f, nr); })[0] : null;
           if (!jest && !dysk) { log("#" + nr + ": zatwierdzone, ale Job Sheetu nie ma ani w Vantify, ani na Dysku – czekam."); if (!env.dry) { z.next = now + CZEKA * MIN; zmiana = true; } return; }
