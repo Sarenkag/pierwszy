@@ -13,6 +13,8 @@
 //   OESTNarzedzia.kb(n)               → "2 KB" / "3.0 MB"
 //   OESTNarzedzia.blobB64(blob)      → Promise<base64 bez nagłówka data:> (FileReader)
 //   OESTNarzedzia.esc(s)              → tekst bezpieczny w HTML (& < > " ' → encje; null/undefined → "")
+//   OESTNarzedzia.kopiuj(tekst)      → Promise: tekst w schowku telefonu
+//   OESTNarzedzia.udostepnij(tekst, tytul) → Promise: systemowe „Udostępnij” Androida (sam tekst, wtyczka ReportShare.text)
 // esc: jedno miejsce dla całej apki (audyt nr 53, 22/11/2026) – zastąpiła 27 kopii w ekranach i modułach.
 (function (w) {
   "use strict";
@@ -29,6 +31,15 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function kb(n) { return n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
   function blobB64(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = rej; r.readAsDataURL(blob); }); }
-  w.OESTNarzedzia = { blobB64: blobB64, pad: pad, data: data, godzina: godzina, dzienIso: dzienIso, dmm: dmm, dmmrrrr: dmmrrrr, miesiacRok: miesiacRok, dmmrrrrhmm: dmmrrrrhmm, b64ToBytes: b64ToBytes, bytesToB64: bytesToB64, kb: kb, esc: esc };
+  function kopiuj(t) {
+    var c = w.navigator && w.navigator.clipboard;
+    return c && c.writeText ? c.writeText(String(t || "")) : Promise.reject(Error("COPY_UNAVAILABLE"));
+  }
+  function udostepnij(t, tytul) {
+    var C = w.Capacitor;
+    if (!(C && C.isNativePlatform && C.isNativePlatform() && C.registerPlugin)) return Promise.reject(Error("SHARE_UNAVAILABLE"));
+    return C.registerPlugin("ReportShare").text({ body: String(t || ""), subject: tytul || "OEST" });
+  }
+  w.OESTNarzedzia = { kopiuj: kopiuj, udostepnij: udostepnij, blobB64: blobB64, pad: pad, data: data, godzina: godzina, dzienIso: dzienIso, dmm: dmm, dmmrrrr: dmmrrrr, miesiacRok: miesiacRok, dmmrrrrhmm: dmmrrrrhmm, b64ToBytes: b64ToBytes, bytesToB64: bytesToB64, kb: kb, esc: esc };
   if (typeof module === "object" && module.exports) module.exports = w.OESTNarzedzia;
 })(typeof window !== "undefined" ? window : globalThis);

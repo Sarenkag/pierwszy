@@ -24,6 +24,7 @@
       <ion-button v-if="m.pobierz" expand="block" fill="outline" @click="akcja('download')">{{ T('⬇ Pobierz model (Wi‑Fi)', '⬇ Download model (Wi‑Fi)') }}</ion-button>
       <ion-button v-if="m.anuluj" expand="block" fill="outline" @click="akcja('remove')">{{ T('Anuluj pobieranie', 'Cancel download') }}</ion-button>
       <ion-button v-if="m.usun" expand="block" fill="outline" @click="akcja('remove')">{{ T('Usuń model z telefonu', 'Remove model from phone') }}</ion-button>
+      <ion-button v-if="available" expand="block" @click="czat">{{ T('Czat z Gemmą', 'Chat with Gemma') }}</ion-button>
       <ion-item v-if="m.prompt" lines="none">
         <ion-label class="ion-text-wrap">
           <h3>{{ T('Wspólne zasady agentów (po angielsku, tylko do podglądu)', 'Common rules for all agents (read only)') }}</h3>
@@ -122,6 +123,8 @@ let zegar = null, zywy = true;
 // stan modelu czyta moduł; w trakcie pobierania odświeżamy co 3 s (jak dawny panel)
 function odswiez(blad) { if (!M) return; M.panel(blad).then((d) => { if (!zywy) return; m.value = d; clearTimeout(zegar); if (d.trwa) zegar = setTimeout(odswiez, 3000); }); }
 function wybierzModel(k) { if (k === m.value.klucz) return; M.setKey(k); odswiez(); }
+const available = !!(M && M.available());
+function czat() { window.OESTEkrany.go('settings/ai/czat'); }
 async function akcja(a) { odswiez(await M.akcja(a)); }
 function zmien(k, v) { if (f[k] === v) return; f[k] = v; S.zmiany(true); } // niezapisane zmiany: pytanie przy Wstecz (straż ekranu settings)
 function zapisz() { wynik.value = S.zapiszPola({ 'ai.visionModel': String(f.visionModel || '').trim(), 'ai.provider': f.provider, 'ai.cloudModel': String(f.cloudModel || '').trim() }); }

@@ -24,6 +24,7 @@
     { "id": "settings/about", "rodzic": "settings", "pudelko": "v-settings", "pl": "O aplikacji", "en": "About" },
     { "id": "settings/vantify", "rodzic": "settings", "pudelko": "v-settings", "pl": "Vantify", "en": "Vantify" },
     { "id": "settings/ai", "rodzic": "settings", "pudelko": "v-settings", "pl": "OCR i modele AI", "en": "OCR & AI models" },
+    { "id": "settings/ai/czat", "rodzic": "settings/ai", "pudelko": "v-settings", "pl": "Czat z Gemmą", "en": "Chat with Gemma" },
     { "id": "konto-stare", "rodzic": "settings", "pudelko": "v-appset", "pl": "Konto (stary ekran)", "en": "Account (old screen)", "uwaga": "Martwa sekcja #v-appset (D13) – nic jej nie pokazuje, adres „appset” prowadzi do settings/account. Do usunięcia w D-2." },
     { "id": "questions", "rodzic": "settings", "pudelko": "v-questions", "pl": "Edytor pytań", "en": "Question editor" },
     { "id": "zdjecia", "rodzic": "settings", "pudelko": "v-zdjecia", "pl": "Zdjęcia", "en": "Photos", "uwaga": "Dziś zawsze wraca do Ustawień, także gdy weszło się z ekranu głównego (sprzeczność 5 z planu)." },
