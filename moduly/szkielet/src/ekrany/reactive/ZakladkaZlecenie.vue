@@ -1,4 +1,4 @@
-<!-- Zakładka 1 „Zlecenie” (Grzegorz 26/11/2026): nazwa · Data | Typ · Kto | Gdzie · Co · „Załóż w Vantify”. Po założeniu wszystko szare (zablokowane).
+<!-- Zakładka 1 „Zlecenie” (Grzegorz 26/11/2026): nazwa · Data | Typ · Kto | Gdzie · Co · „Załóż w Vantify”. Z szablonu (Templates): bez Typ i Co, za to karta urządzenia. Po założeniu wszystko szare (zablokowane).
      Pola i reguły jak na dawnej karcie: OESTReactiveUI (app/www/reactive.js); priorytet i Job Group – w okienku zakładania. -->
 <template>
   <ion-card>
@@ -6,7 +6,7 @@
     <ion-item><ion-input :label="d.nazwa.etykieta" label-placement="stacked" :disabled="zab" data-rx-field="title" :maxlength="300" :placeholder="d.nazwa.podpowiedz" :helper-text="d.nazwa.en" :value="d.nazwa.wartosc" @ionInput="e => A.pole('title', e.detail.value)"></ion-input><ion-button v-if="!zab" slot="end" fill="clear" data-rx-mik="title" :aria-label="T('Podyktuj nazwę', 'Dictate the name')" :ref="el => el && A.mikNazwy(el.$el)"><ion-icon slot="icon-only" :icon="mic" aria-hidden="true"></ion-icon></ion-button></ion-item>
     <ion-grid class="ion-no-padding"><ion-row>
       <ion-col size="6"><PoleDaty :T="T" id="rxOrderDate" :disabled="zab" :value="d.data.wartosc" data-rx-field="orderDate" @zmiana="v => A.pole('orderDate', v)"><ion-label position="stacked">{{ d.data.etykieta }}</ion-label></PoleDaty></ion-col>
-      <ion-col size="6"><ion-item><ion-select :label="d.typ.etykieta" label-placement="stacked" interface="popover" :disabled="zab" :placeholder="d.wybierz" data-rx-field="jobType" :value="d.typ.wartosc" @ionChange="e => A.akcja('type', { value: e.detail.value })"><ion-select-option v-for="o in d.typ.opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item></ion-col>
+      <ion-col v-if="d.typ" size="6"><ion-item><ion-select :label="d.typ.etykieta" label-placement="stacked" interface="popover" :disabled="zab" :placeholder="d.wybierz" data-rx-field="jobType" :value="d.typ.wartosc" @ionChange="e => A.akcja('type', { value: e.detail.value })"><ion-select-option v-for="o in d.typ.opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item></ion-col>
     </ion-row><ion-row>
       <ion-col size="6"><ion-item><ion-select :label="d.kto.etykieta" label-placement="stacked" interface="popover" :disabled="zab" :placeholder="d.wybierz" data-rx-field="requestedBy" :value="d.kto.wartosc" @ionChange="e => e.detail.value === '__people' ? A.akcja('people') : A.akcja('who', { value: e.detail.value })"><ion-select-option v-for="o in d.kto.grupy.flatMap(g => g.opcje)" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option><ion-select-option value="__people">{{ d.kto.dodaj }}</ion-select-option></ion-select></ion-item></ion-col>
       <ion-col size="6"><Pole pod id="where" :disabled="zab" :etykieta="d.gdzie.etykieta" :tekst="d.gdzie.tekst" :wybierz="d.wybierz" :otwarty="d.otwarty === 'where'"></Pole></ion-col>
@@ -20,6 +20,7 @@
       <ion-item v-else><ion-input label-placement="stacked" :label="d.gdzie.etRoom" data-rx-field="room" :maxlength="300" :value="d.gdzie.room" @ionInput="e => A.pole('room', e.detail.value)"></ion-input></ion-item>
       <ion-item><ion-input label-placement="stacked" :label="d.gdzie.etFlat" data-rx-field="flat" :maxlength="300" :value="d.gdzie.flat" @ionInput="e => A.pole('flat', e.detail.value)"></ion-input></ion-item>
     </div>
+    <KartaUrzadzenia v-if="d.urzadzenie" :k="d.urzadzenie"></KartaUrzadzenia>
     <template v-if="d.drzewo">
       <ion-item><ion-select :label="d.drzewo.etykieta" interface="popover" :disabled="zab" :placeholder="d.wybierz" :selected-text="d.drzewo.tekst || d.wybierz" @ionChange="e => wybierzProblem(e.detail.value)"><ion-select-option v-for="c in d.drzewo.dzieci || []" :key="c.id" :value="c.id">{{ c.nazwa }}</ion-select-option><ion-select-option v-if="d.drzewo.gora" value="__up">{{ d.drzewo.gora.nazwa }}</ion-select-option><ion-select-option v-for="c in d.drzewo.gotowce?.opcje || []" :key="c.id" :value="c.id">{{ c.nazwa }}</ion-select-option><ion-select-option v-if="d.drzewo.wybrany" value="__reset">{{ T('Zmień', 'Change') }}</ion-select-option></ion-select></ion-item>
       <ion-item v-if="d.drzewo.wybrany"><ion-textarea label-placement="stacked" :label="d.drzewo.wybrany.opisEtykieta" :disabled="zab" data-rx-field="problem" :rows="2" :maxlength="4000" :value="d.drzewo.wybrany.opis" @ionInput="e => A.pole('problem', e.detail.value)"></ion-textarea></ion-item>
@@ -51,6 +52,7 @@ import PoleDaty from '../../czesci/PoleDaty.vue';
 import Zablokowane from '../../czesci/Zablokowane.vue';
 import Pole from './Pole.vue';
 import Chipy from './Chipy.vue';
+import KartaUrzadzenia from './KartaUrzadzenia.vue';
 const props = defineProps({ T: Function, d: Object });
 const A = window.OESTReactiveUI;
 const zab = computed(() => !!props.d.zablokowane);

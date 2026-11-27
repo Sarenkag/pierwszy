@@ -88,7 +88,8 @@ window.OEST_PPM = {
       // Fuel level (zapis %), Oil / Coolant / Water level i Leaks (wzrokowo), Control panel – available to start in AUTO; Acceptable Y/N = Yes/No.
       // Do tego napięcie L1, L2, L3 (V) dla każdego generatora (Grzegorz 21/11/2026 16:37) i częstotliwość Hz (16:37); potwierdzenie rozruchu, silnik pracuje równo i stabilnie (16:37); na końcu powrót do AUTO i zabezpieczenie (16:38); obroty RPM, paliwo w % i litrach (16:38); na samym końcu „Generator tested off-load”, bez czasu pracy (16:42).
       // vantify: true = w podglądzie przycisk „Open Vantify” – zlecenie tą samą ścieżką co Reactive (Grzegorz 21/11/2026 16:31: „założyć zlecenie przez Vantify… zdjęcie formularza, nasz basic form i zdjęcia”).
-      GEN: { points: true, ui: "checks", raport: true, vantify: true, title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
+      // grupaVantify = Job Group wybrany od razu w oknie „Open Vantify” (Grzegorz 27/11/2026: generator jako Template, Job Group Generator)
+      GEN: { points: true, ui: "checks", raport: true, vantify: true, grupaVantify: "Generator", title: "Generator Checks – Weekly", building: "", col: "Acceptable", wzorBasic: "gen-basic",
         hint: ["Zrób zdjęcie wypełnionej kartki („Formularz”), zaznacz punkty (domyślnie Yes) i wpisz odczyty: paliwo w % i litrach, napięcia L1–L3 w V, częstotliwość w Hz, obroty RPM. Do raportu idzie nasz formularz, zdjęcia i zdjęcie kartki.",
           "Take a photo of the filled-in paper form (“Form”), mark the checks (Yes by default) and type the readings: fuel in % and litres, L1–L3 voltage in V, frequency in Hz, engine RPM. The report gets our form, the photos and the form photo."],
         summary: ["All generator checks acceptable – generator returned to AUTO", "check(s) not acceptable – record on the Generator Fault & Remedial Actions Log"],
@@ -173,7 +174,8 @@ window.OEST_PPM = {
     // (nie mają otwartych zleceń w eksporcie Job). Przywrócone za zgodą Grzegorza 09/11/2026 – te same id co przed 31/10.
     // Bez zleceń w vantify-plan.js: bez terminu, dopóki nie przyjdzie zlecenie z Vantify albo Grzegorz nie ustawi go w Update.
     // własne inspekcje OEST (nie ma ich w Vantify): bez zleceń i bez terminu, uruchamiane ręcznie
-    { id: "gen-weekly", form: "folder", flush: "GEN", group: "elec", name: "Generator Checks – Weekly", freq: ["1W"] },
+    // szablon: true = nie ma klocka na liście Inspekcji ani w kalendarzu; formularz otwiera się z Reactive → Templates (Grzegorz 27/11/2026, app/www/reactive-szablony.js)
+    { id: "gen-weekly", form: "folder", flush: "GEN", group: "elec", name: "Generator Checks – Weekly", freq: ["1W"], szablon: true },
     { id: "shower", group: "water", name: "Showerhead Clean & De-scale", freq: ["3M"] },
     { id: "ahu", group: "mech", name: "Air Handling Units", freq: ["6M", "12M"] },
     { id: "efans", group: "mech", name: "Extract Fans", where: "Tower B", freq: ["6M"] },
@@ -306,6 +308,8 @@ window.OEST_PPM = {
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { LS.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
   P.byId = function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0] || null; };
+  // zadania na liście Inspekcji i w kalendarzu: bez szablonów (szablon: true – otwierane z Reactive → Templates)
+  P.naLiscie = function () { return P.tasks.filter(function (t) { return !t.szablon; }); };
   // Karta ze zleceniami Vantify: termin TYLKO z pliku. Po ostatnim zleceniu z importu nie ma terminu (null) –
   // apka nie tworzy kolejnej daty ani nie bierze starej daty z telefonu (PROD-010, audyt 06/11/2026).
   P.due = function (t) {

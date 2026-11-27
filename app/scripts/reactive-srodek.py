@@ -2,6 +2,7 @@
 # Ramka = moduly/wzory/basic.docx (apka wkłada w nią ten środek przy raporcie, OESTWzory.bajty('reactive-basic')).
 # Styl (kolory, pasek, ramki, odstęp) TYLKO z app/scripts/flush-basic-wzory.py – tu żadnych własnych funkcji stylu.
 # Dane z OESTReactiveReport.uklad(): {#sekcje} = tabela: granatowy pasek {naglowek} WIELKIMI + wiersz na każdy akapit {#akapity}{tekst};
+# {#tabela} = sekcja-tabela (Templates): granatowy pasek + wiersz na każdą parę {#pary}{l1}{w1} | {l2}{w2}; {#tekstowa} = zwykła sekcja.
 # {#wstep} / {#koniec} = szara ramka: tekst bez nagłówka przed pierwszą sekcją / zdanie końcowe (BHP). Uruchom: python3 app/scripts/reactive-srodek.py   (potrzebne: python-docx)
 import importlib.util, os
 from docx import Document
@@ -30,6 +31,7 @@ def build(out):
     add = sect.addprevious
     szare(d, add, "wstep")
     add(tag(d, "{#sekcje}"))
+    add(tag(d, "{#tekstowa}"))  # sekcja z akapitami
     add(S.spacer())
     t = d.add_table(rows=2, cols=1); S.borders(t, 4, S.LINE)
     h = t.rows[0].cells[0]; S.shade(h, S.TEAL)
@@ -39,6 +41,19 @@ def build(out):
     S.run(c.add_paragraph(), "{/akapity}", 11)
     t.autofit = False; t.columns[0].width = Cm(15.52); t.alignment = WD_TABLE_ALIGNMENT.CENTER
     add(t._tbl)
+    add(tag(d, "{/tekstowa}"))
+    add(tag(d, "{#tabela}"))  # sekcja-tabela (Templates, np. Device details): pary po 2 w wierszu „nazwa – wartość”, jak w Job Sheecie #3085016
+    add(S.spacer())
+    t = d.add_table(rows=2, cols=2); S.borders(t, 4, S.LINE)
+    h = t.rows[0].cells[0].merge(t.rows[0].cells[1]); S.shade(h, S.TEAL)
+    r = S.run(S.par(h), "{naglowek}", 10.5, True, "FFFFFF"); r.font.all_caps = True
+    p = S.par(t.rows[1].cells[0]); S.run(p, "{#pary}{l1}", 11); S.run(p, "{w1}", 9.5, color="595959")
+    p = S.par(t.rows[1].cells[1]); S.run(p, "{l2}", 11); S.run(p, "{w2}{/pary}", 9.5, color="595959")
+    t.autofit = False
+    for col in t.columns: col.width = Cm(7.76)
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    add(t._tbl)
+    add(tag(d, "{/tabela}"))
     add(tag(d, "{/sekcje}"))
     szare(d, add, "koniec")
     add(S.spacer())

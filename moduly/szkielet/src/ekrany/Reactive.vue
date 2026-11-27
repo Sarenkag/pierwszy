@@ -1,13 +1,13 @@
-<!-- Reactive (reactive, reactive/new|draft|job|complete/:id, reactive/tree/:id, reactive/history): lista zadań (filtr + klocki),
+<!-- Reactive (reactive, reactive/new|draft|job|complete/:id, reactive/tree/:id, reactive/history, reactive/templates): lista zadań (filtr + klocki),
      drzewko „Nowe zadanie”, zlecenie (4 zakładki, wariant B 26/11/2026), kreator „Co”, podgląd raportu (kartka jak PDF, po angielsku), historia i ustawienia.
      Dane i reguły (zapis szkicu, wysyłka, Vantify, notatki): OESTReactiveUI (app/www/reactive.js) – tu tylko wspólne części i układ jak na main.
      Akcje na końcu przewijanej treści; komunikaty przez wspólny toast Ionic. -->
 <template>
   <div :data-ekran="d.ekran">
     <!-- lista, historia, drzewko i grupy kreatora: klocki i kafelki bez oest-ekran (własny wygląd części, jak w Inspekcjach i na ekranie głównym) -->
-    <div v-if="['lista', 'historia', 'drzewo', 'kreator'].includes(d.ekran)">
+    <div v-if="['lista', 'historia', 'drzewo', 'kreator', 'szablony'].includes(d.ekran)">
       <template v-if="d.ekran === 'lista'">
-        <div class="ion-padding-horizontal ion-padding-top"><ion-button expand="block" data-rx="new" @click="A.akcja('new')">{{ d.nowe }}</ion-button></div><!-- na całą szerokość, u góry – jak na main (Grzegorz 25.11.2026) -->
+        <PrzyciskiListy :nowe="d.nowe" :szablony="d.szablony"></PrzyciskiListy><!-- „Nowe zadanie” i „Templates” po połowie (Grzegorz 27/11/2026) -->
         <Filtr :T="T" :opcje="d.filtry" :wybrane="d.filtr" @zmiana="id => A.akcja('filter', { id })"></Filtr>
         <div>
           <Klocek v-for="k in d.klocki" :key="k.rx + '|' + k.id" :T="T" :k="k" :data-rx="k.rx" @wybierz="x => A.akcja(x.rx, { id: x.id })" @przytrzymaj="info"></Klocek>
@@ -35,6 +35,9 @@
         <p>{{ d.sciezka }}</p>
         <Kafelki :lista="kafle(d.kafelki)" @wybierz="kafel"></Kafelki>
       </template>
+
+      <!-- Templates (Grzegorz 27/11/2026): gotowe klocki – zlecenie z szablonu albo formularz inspekcji -->
+      <Kafelki v-else-if="d.ekran === 'szablony'" :lista="kafle(d.kafelki)" @wybierz="kafel"></Kafelki>
 
       <ion-card v-else-if="d.ekran === 'kreator'">
         <div>{{ d.podpis }}</div>
@@ -115,6 +118,7 @@ import Akcja from '../czesci/Akcja.vue';
 import InfoInspekcji from '../czesci/InfoInspekcji.vue';
 import ZakladkiReactive from '../czesci/ZakladkiReactive.vue';
 import Wiecej from './reactive/Wiecej.vue';
+import PrzyciskiListy from './reactive/PrzyciskiListy.vue';
 import ZakladkaZlecenie from './reactive/ZakladkaZlecenie.vue';
 import ZakladkaZdjecia from './reactive/ZakladkaZdjecia.vue';
 import ZakladkaNotatki from './reactive/ZakladkaNotatki.vue';

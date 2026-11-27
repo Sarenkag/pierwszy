@@ -62,7 +62,7 @@
   // wiersze listy Inspekcji: termin i dzień w pasku (Gotowa zostaje w swoim dniu, zaległe na dziś)
   function ppmRows() {
     var t0 = today();
-    return P.tasks.map(function (t) {
+    return P.naLiscie().map(function (t) {
       var due = P.due(t), next = due, st = P.stage && P.stage(t);
       if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
       var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? t0 : due) : "" };
@@ -169,7 +169,7 @@
   // dzień → lista {t, job, plan} (P.occurrences: zlecenia Vantify, bieżący termin, dalej planowane)
   function calDue(from, to) {
     var by = {};
-    P.tasks.forEach(function (t) { P.occurrences(t, from, to).forEach(function (e) { e.t = t; (by[e.d] = by[e.d] || []).push(e); }); });
+    P.naLiscie().forEach(function (t) { P.occurrences(t, from, to).forEach(function (e) { e.t = t; (by[e.d] = by[e.d] || []).push(e); }); });
     return by;
   }
   function kalDane() {
@@ -199,7 +199,7 @@
   // ekran główny: dzisiejsze i zaległe (powiadomienia)
   function licznikDzis() {
     var t = today(), out = {}, late = 0, k0 = P.iso(t);
-    P.tasks.forEach(function (x) { var due = P.due(x); if (!due) return; var left = P.daysLeft(due), k = P.iso(left < 0 ? t : due); out[k] = (out[k] || 0) + 1; if (left < 0) late++; });
+    P.naLiscie().forEach(function (x) { var due = P.due(x); if (!due) return; var left = P.daysLeft(due), k = P.iso(left < 0 ? t : due); out[k] = (out[k] || 0) + 1; if (left < 0) late++; });
     return { today: out[k0] || 0, late: late };
   }
   // dynamicznie (Grzegorz 02/11): lista i kalendarz odświeżają się same po powrocie z inspekcji, wysłaniu i zmianie etapu/terminu
