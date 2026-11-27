@@ -21,12 +21,18 @@
     },
     {
       "co": [
-        "css:.oest-rowne ion-card",
+        "css:.oest-rowne ion-col",
+        "css:.oest-rowne ion-col > *",
+        "css:.oest-rowne > ion-button",
         "css:.oest-rowne ion-card::part(native)",
-        "klasa:oest-rowne"
+        "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card",
+        "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-title",
+        "css:.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-subtitle",
+        "klasa:oest-rowne",
+        "klasa:oest-kafelki"
       ],
-      "powod": "Równa wysokość kafelków w grupie (zasada: przyciski w grupie równe).",
-      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
+      "powod": "JEDNA reguła „przyciski w grupie równe” dla całej apki: w siatce element kolumny wypełnia wysokość wiersza, w rzędzie przycisków każdy ma tę samą szerokość (27/11/2026). Kafelki.vue ma stałą klasę „oest-kafelki oest-rowne” (wcześniej wiązanie :class).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8XuRmBDW4ij3tpkYZLYjuw"
     },
     {
       "co": [
@@ -663,6 +669,23 @@
       "co": "css:.oest-klocek .oest-kopis ion-text",
       "powod": "Status Vantify w klocku Reactive kursywą (Ionic nie ma klasy kursywy); kolor z ion-text color.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8PU3PPoJ9NzLfPisfh3FWG"
+    },
+    {
+      "co": [
+        "css:ion-button[data-ui~=kafel-zdjecia]",
+        "css:ion-button[data-ui~=kafel-zdjecia] ion-label.ion-text-wrap",
+        "css:ion-button[data-ui~=kafel-zdjecia] ion-icon"
+      ],
+      "powod": "Kafelki zdjęć inspekcji: napis zmniejsza się z szerokością kafelka, żeby „Formularz” nie był ucięty; ikona z rozmiarów apki (27/11/2026).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8XuRmBDW4ij3tpkYZLYjuw"
+    },
+    {
+      "co": [
+        "css:ion-grid[data-ui~=photos]:empty, ion-grid[data-ui~=photo-head]:has(> ion-text:empty + ion-text:empty)",
+        "css:ion-list[data-ui~=ileft]"
+      ],
+      "powod": "Ekran inspekcji: bez pustych pasów – pusty licznik i miejsce na miniatury się chowają, lista Imię/Data bez własnego odstępu (27/11/2026).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHT8XuRmBDW4ij3tpkYZLYjuw"
     }
   ]
 }
