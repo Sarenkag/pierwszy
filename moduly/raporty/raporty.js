@@ -27,27 +27,21 @@
   else root.OESTRaporty = api.createBrowser(root);
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
+  var N = function () { return globalThis.OESTNarzedzia || require('../narzedzia/narzedzia.js'); }; // moduly/narzedzia (daty, nazwy plików, DOCX)
 
   var MB = 1024 * 1024;
   var LIMITS = { phoneLimitMB: 200, warnMB: 100, rootName: 'OEST Raporty' }; // i18n-ok: nazwa folderu na Dysku (stała, nie tekst ekranu)
-  var DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   function complete(r) { return !!(r.driveId && r.drivePdfId && r.driveSnapId && !r.dirty); }
 
   // nazwy bezpieczne dla Androida i Dysku (jak w module zdjęć)
-  function safe(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120); }
+  function safe(s) { return N().nazwaPliku(s, 120); }
   function size(r) { return (r.docx ? r.docx.byteLength || r.docx.length || 0 : 0) + (r.pdf ? r.pdf.byteLength || r.pdf.length || 0 : 0); }
 
   /* Co zrobić przy limicie: z telefonu znikają najstarsze (wg ostatniej zmiany), tylko z aktualną kopią na Dysku. */
   function plan(recs, lim) {
     lim = Object.assign({}, LIMITS, lim || {});
-    var total = 0; recs.forEach(function (r) { total += r.bytes || 0; });
-    var limit = lim.phoneLimitMB * MB, remove = [];
-    recs.slice().sort(function (a, b) { return a.updated < b.updated ? -1 : a.updated > b.updated ? 1 : 0; }).forEach(function (r) {
-      if (total <= limit) return;
-      if (r.keep || !complete(r)) return;
-      remove.push(r.id); total -= r.bytes || 0;
-    });
-    return { remove: remove, bytes: total, over: total > limit };
+    var limit = lim.phoneLimitMB * MB, p = N().ponadLimit(recs, { wg: 'updated', limit: limit, rozmiar: function (r) { return r.bytes; }, zostaw: function (r) { return r.keep || !complete(r); } }); // moduly/narzedzia
+    return { remove: p.usun, bytes: p.suma, over: p.suma > limit };
   }
 
   function stats(recs, lim) {
@@ -62,9 +56,9 @@
   function createStore(deps) {
     var syncing = null, lim = Object.assign({}, LIMITS, deps.limits || {}), rootId = '', rootOwner = '', adapter = deps.drive || null;
     function accountRoot() { if (rootOwner !== deps.owner()) { rootId = ''; rootOwner = deps.owner(); } }
+    async function root(drive) { if (!rootId) rootId = (await drive.ensureFolder(lim.rootName, '')).id; return rootId; } // folder „OEST Raporty”
     // zapisy do bazy po kolei (zapis nowej wersji, zwalnianie miejsca, wynik wysyłki na Dysk): równoległy zapis nie zostanie skasowany
-    var chain = Promise.resolve();
-    function serial(fn) { var p = chain.then(fn); chain = p.catch(function () {}); return p; }
+    var serial = N().poKolei(); // zapis jeden po drugim (moduly/narzedzia)
     function now() { return new Date(deps.now ? deps.now() : Date.now()).toISOString(); }
     function emit() { if (deps.onChange) try { deps.onChange(); } catch (e) {} }
     // „gone” = raport zwolniony z telefonu (jest na Dysku): zostaje mały ślad z nazwą pliku i id na Dysku, żeby inny raport nie dostał tej nazwy
@@ -128,18 +122,9 @@
       adapter = drive;
       accountRoot();
       syncing = (async function () {
-        var me = deps.owner(), folders = {}, sent = 0;
+        var me = deps.owner(), sent = 0;
         function allowed() { return !o.allowed || o.allowed(); }
-        async function folderId(parts) {
-          if (!rootId) rootId = (await drive.ensureFolder(lim.rootName, '')).id;
-          var parent = rootId, key = '';
-          for (var i = 0; i < parts.length; i++) {
-            key += '/' + parts[i];
-            if (!folders[key]) folders[key] = (await drive.ensureFolder(parts[i], parent)).id;
-            parent = folders[key];
-          }
-          return parent;
-        }
+        var folderId = N().folderyDysku(drive, { id: function () { return root(drive); }, zapomnij: function () { rootId = ''; } }); // moduly/narzedzia
         var todo = (await mine()).filter(function (r) { return !complete(r); })
           .sort(function (a, b) { return a.updated < b.updated ? -1 : 1; });
         for (var i = 0; i < todo.length; i++) {
@@ -147,8 +132,7 @@
           if (!allowed()) return { skipped: 'network', sent: sent };
           var r = todo[i], base = r.file || r.name, file = base + '.docx', parent;
           if (!r.pdf || !(r.pdf.byteLength || r.pdf.length)) throw Error('REPORT_PDF');
-          try { parent = await folderId(r.folder); }
-          catch (e) { if (rootId && /404/.test(String(e && e.message))) { rootId = ''; folders = {}; parent = await folderId(r.folder); } else throw e; }
+          parent = await folderId(r.folder);
           var parts = [
             { field: 'driveId', name: file, blob: toBlob(r.docx) },
             { field: 'drivePdfId', name: base + '.pdf', blob: toBlob(r.pdf, 'application/pdf') },
@@ -190,14 +174,14 @@
       return syncing;
     }
 
-    function toBlob(bytes, type) { return typeof Blob !== 'undefined' ? new Blob([bytes], { type: type || DOCX }) : bytes; }
+    function toBlob(bytes, type) { return typeof Blob !== 'undefined' ? new Blob([bytes], { type: type || N().DOCX }) : bytes; }
 
     async function driveList(drive) {
       drive = drive || adapter; if (!drive) throw Error('REPORT_DRIVE');
       adapter = drive;
       var me = deps.owner(); if (!me) throw Error('ACCOUNT_REQUIRED');
       accountRoot();
-      if (!rootId) rootId = (await drive.ensureFolder(lim.rootName, '')).id;
+      await root(drive);
       var out = [];
       async function walk(parent, path) {
         var files = await drive.list(parent);
@@ -258,16 +242,7 @@
 
   function createBrowser(win) {
     function who() { return win.OESTKonto.email(); } // moduly/konto
-    var dbP = null;
-    function open() {
-      if (!dbP) dbP = new Promise(function (res, rej) {
-        var rq = win.indexedDB.open('oest-raporty', 1);
-        rq.onupgradeneeded = function () { rq.result.createObjectStore('raporty', { keyPath: 'id' }); };
-        rq.onsuccess = function () { res(rq.result); };
-        rq.onerror = function () { dbP = null; rej(rq.error || Error('STORAGE_READ')); };
-      });
-      return dbP;
-    }
+    var open = N().baza(win.indexedDB, 'oest-raporty', function (d) { d.createObjectStore('raporty', { keyPath: 'id' }); }, 'STORAGE_READ'); // moduly/narzedzia
     function tx(mode, fn) {
       return open().then(function (db) {
         return new Promise(function (res, rej) {
@@ -303,7 +278,7 @@
   function day(r) {
     var t = r.meta && r.meta.sentAt || Date.parse(r.updated) || 0, d = new Date(t);
     if (!t) return '';
-    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+    return N().data(d);
   }
   function find(recs, q, f) {
     f = f || {};

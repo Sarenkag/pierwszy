@@ -3,7 +3,5 @@
  "version": 1,
  "rule": "wtyczki-kontrakt",
  "note": "Plan audytu 19/11/2026 punkt 1.7 (ustalenie nr 113): kontrakt wtyczek JS ↔ Java/Kotlin (app/tests/wtyczki-kontrakt.test.cjs). Rozbieżności zastane 21/11/2026. Lista może tylko maleć; dopisanie wpisu tylko za zgodą właściciela (QG-014).",
- "entries": [
-  { "id": "nieuzywana:OESTPhotoEdit", "reason": "PhotoEditPlugin.java jest w APK, ale apka go nie woła (moduly/aparat/aparat.js: edytor zdjęć z systemu nie działał – „Editing is not supported for this image”, apka ma własny). Do decyzji: usunąć wtyczkę z APK albo zostawić." }
- ]
+ "entries": []
 }

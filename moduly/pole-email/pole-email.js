@@ -4,7 +4,6 @@
 // Pole z wieloma adresami: <input type="email" multiple> (oddzielone przecinkiem lub średnikiem).
 (function (w) {
   "use strict";
-  var RE = /^[^\s@,;<>()]+@[^\s@,;<>()]+\.[A-Za-z]{2,}$/;
   var CSS = ".oest-email{position:relative;display:block}" +
     ".oest-email>input{padding-right:2.4em!important;width:100%;box-sizing:border-box}" +
     ".oest-email .oest-em-ic{position:absolute;right:.7em;top:50%;width:1.1em;height:1.1em;transform:translateY(-50%) scale(.4);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}" +
@@ -23,7 +22,7 @@
   function valid(text, multiple) {
     var v = String(text || "").trim(); if (!v) return null; // puste pole: bez oceny
     var parts = multiple ? v.split(/[;,]/).map(function (x) { return x.trim(); }).filter(Boolean) : [v];
-    return parts.length > 0 && parts.every(function (p) { return RE.test(p); });
+    return parts.length > 0 && parts.every(function (p) { return w.OESTNarzedzia.email(p); }) /* adres: moduly/narzedzia */;
   }
   function css() {
     if (document.getElementById("oest-email-css")) return;

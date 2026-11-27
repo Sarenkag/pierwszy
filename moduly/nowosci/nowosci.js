@@ -66,7 +66,7 @@
   function load(force) {
     var c = cache();
     if (!force && c && Date.now() - c.t < AGE) return Promise.resolve(c);
-    if (w.navigator.onLine === false || !w.DOMParser) return Promise.resolve(c); // najpierw połączenie; bez sieci – ostatnie zapisane
+    if (!w.OESTNarzedzia.online() || !w.DOMParser) return Promise.resolve(c); // najpierw połączenie; bez sieci – ostatnie zapisane
     if (loading) return loading;
     loading = Promise.all(KANALY.map(function (k) { return get(url(k)).then(function (x) { return parse(x, k); }).catch(function () { return null; }); }))
       .then(function (lists) {

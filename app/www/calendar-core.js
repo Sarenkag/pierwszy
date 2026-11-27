@@ -1,11 +1,11 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.OESTCalendarCore=api;})(typeof window==='undefined'?globalThis:window,function(){
   'use strict';const DAY=86400000,groups=['fire','water','elec','mech','sub'];
   const colors={fire:'#e5534b',water:'#3b8eea',elec:'#e3b341',mech:'#3fb27f',sub:'#a371f7'};
-  const valid=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s;
+  const NZ=()=>globalThis.OESTNarzedzia||require('../../moduly/narzedzia/narzedzia.js'),valid=s=>NZ().dataOk(s);/* daty: moduly/narzedzia */
   function number(s){if(!valid(s))throw Error('CALENDAR_DATE');return Date.parse(s+'T00:00:00Z')/DAY;}
   const iso=n=>new Date(n*DAY).toISOString().slice(0,10);
   function period(f){const m=/^([1-9]\d*)([DWM])$/.exec(f);if(!m||+m[1]>1200)throw Error('CALENDAR_FREQUENCY');return {n:+m[1],unit:m[2]};}
-  function occurrence(anchor,p,index){if(p.unit!=='M')return iso(number(anchor)+p.n*index*(p.unit==='W'?7:1));const d=new Date(anchor+'T00:00:00Z'),original=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+p.n*index);const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(original,last));return d.toISOString().slice(0,10);}
+  function occurrence(anchor,p,index){if(p.unit!=='M')return iso(number(anchor)+p.n*index*(p.unit==='W'?7:1));return NZ().dodajMiesiace(anchor,p.n*index);}
   function isWorkday(date,scheduleOn){const s=scheduleOn?.(date);if(!s||!valid(s.effectiveFrom)||date<s.effectiveFrom)throw Error('CALENDAR_SCHEDULE_REQUIRED');const wd=new Date(date+'T00:00:00Z').getUTCDay();if(s.kind==='calendar')return !!s.work;if(s.kind==='weekdays')return wd>0&&wd<6;if(s.kind==='weekends')return wd===0||wd===6;if(s.kind==='4on4'){if(!valid(s.anchor))throw Error('CALENDAR_SCHEDULE_REQUIRED');return ((number(date)-number(s.anchor))%8+8)%8<4;}throw Error('CALENDAR_SCHEDULE_REQUIRED');}
   function displayDate(d,mode,scheduleOn){if(mode==='all')return d;if(isWorkday(d,scheduleOn))return d;if(mode==='skip')return null;for(let i=1;i<=366;i++){const next=iso(number(d)+i);if(isWorkday(next,scheduleOn))return next;}throw Error('CALENDAR_WORKDAY_NOT_FOUND');}
   function generate({tasks,dues,today,config,scheduleOn,receipts=[],occurrences}){

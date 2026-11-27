@@ -67,7 +67,7 @@
   function makeProfile(){const t=P.tasks.find(t=>t.id===taskId);profile=structuredClone(s.selections[taskId]||{title:t?.name||'',scope:'',filePattern:'KOD DDMMRRRR',items:[]});}
   function entryFor(q){return profile.items.find(i=>i.questionId===q.id);}
   function pole(q,entry){return Object.assign({},q,entry&&entry.reportOverride);}
-  function plik(){try{const copy=structuredClone(s);copy.selections[taskId]=profile;const f=Q.formFor(copy,P,taskId);return L('Dziś:','Today:')+' '+(f?.fileName||profile.filePattern.replaceAll('KOD',taskId).replaceAll('DDMMRRRR',Q.localDate().split('-').reverse().join('')));}catch(e){return e.message;}}
+  function plik(){try{const copy=structuredClone(s);copy.selections[taskId]=profile;const f=Q.formFor(copy,P,taskId);return L('Dziś:','Today:')+' '+(f?.fileName||Q.plik(profile.filePattern,taskId,Q.localDate()));}catch(e){return e.message;}}
   function inspekcje(){if(!s)return null;if(!taskId||!P.tasks.some(t=>t.id===taskId))taskId=P.tasks[0].id;if(!profile)makeProfile();const task=P.tasks.find(t=>t.id===taskId);
     const head={zadanie:taskId,zadania:P.tasks.map(t=>({id:t.id,nazwa:t.id+' · '+t.name})),tylkoOdczyt:task.form==='tempTB'};if(head.tylkoOdczyt)return head;
     const status=!profile.items.length?(P.forms[task.form]?L('Formularz wbudowany','Built-in form'):L('Do konfiguracji','To configure')):L('Wybrano ','Selected ')+profile.items.length+' '+L('pytań','questions');

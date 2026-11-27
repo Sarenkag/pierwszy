@@ -37,6 +37,7 @@
   <template v-else-if="d.rodzaj === 'etap'"><StatusInspekcji :T="T" :stan="d.stan" :opcje="d.opcje" @zmien="kontroler.akcja($event)" /></template>
   <template v-else-if="d.rodzaj === 'komunikat'"><ion-text>{{ d.tytul }}</ion-text>{{ d.tekst }}</template>
   <template v-else-if="d.rodzaj === 'znacznik'"><ion-text v-html="d.html"></ion-text></template>
+  <template v-else-if="d.rodzaj === 'pigulka'"><Pigulka :T="T" :tryb="d.tryb" /></template>
 </template>
 <script setup>
 import MiniaturaInspekcji from '../../czesci/MiniaturaInspekcji.vue';
@@ -49,6 +50,7 @@ import StatusInspekcji from '../../czesci/StatusInspekcji.vue';
 
 import { uzyjKontrolera } from '../../czesci/kontroler.js';
 import Kafelki from '../../czesci/Kafelki.vue';
+import Pigulka from '../../czesci/Pigulka.vue';
 const props = defineProps({ kontroler: Object, T: Function });
 const d = uzyjKontrolera(props.kontroler);
 </script>

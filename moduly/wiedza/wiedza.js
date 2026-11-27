@@ -257,17 +257,7 @@
     };
   }
   function magazynIndexedDB(nazwa) {
-    var otwarcie;
-    function db() {
-      if (!otwarcie) otwarcie = new Promise(function (ok, zle) {
-        if (!globalThis.indexedDB) return zle(blad('WIEDZA_INDEXEDDB'));
-        var r = indexedDB.open(nazwa || 'oest-wiedza', 1);
-        r.onupgradeneeded = function () { r.result.createObjectStore('stan'); };
-        r.onsuccess = function () { ok(r.result); };
-        r.onerror = function () { otwarcie = null; zle(r.error); };
-      });
-      return otwarcie;
-    }
+    var db = (globalThis.OESTNarzedzia || require('../narzedzia/narzedzia.js')).baza(globalThis.indexedDB, nazwa || 'oest-wiedza', function (d) { d.createObjectStore('stan'); }, 'WIEDZA_INDEXEDDB'); // moduly/narzedzia
     function tx(tryb, fn) {
       return db().then(function (d) {
         return new Promise(function (ok, zle) {

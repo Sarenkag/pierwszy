@@ -9,10 +9,9 @@
 | Klocek listy (Inspekcje, Kalendarz, Reactive, grupy DB) | `moduly/klocek` |
 | Kafelek (ekran główny, Ustawienia, Reactive, typy inspekcji) | `moduly/kafelek` |
 | Nagłówek ekranu (Wstecz, tytuł, ikonki, PL/EN) | `moduly/naglowek` |
-| Przełącznik PL/EN (i każdy wybór 2–3 opcji) | `moduly/przelacznik` |
 | Kółko ładowania | `moduly/ladowanie` |
 | Licznik, lampka, ikonka z liczbą | `moduly/znacznik` |
-| Przycisk akcji + okienko „Na pewno?” (`OESTPytaj`, `OESTKomunikat`, `OESTPrzycisk.leave`) | `moduly/przycisk` |
+| Przycisk akcji + okienko „Na pewno?” (`OESTPytaj`, `OESTPrzycisk.alert`, `OESTPrzycisk.leave`) | `moduly/przycisk` |
 
 Rozmiary przycisków: główna akcja ekranu 52 px, zwykły 48 px, mały 40 px, ikonka w nagłówku 40×40, pigułka 34 px, pole 48 px.
 
@@ -38,7 +37,6 @@ Każda animacja w apce ma **rolę**, a każda rola ma parametry w jednym miejscu
 Jak podmienić animację:
 - na stałe: zmień wartość w tabeli `:root` (np. `--ruch-okno-efekt:wyFade`) – działa na wszystkich ekranach;
 - nowy efekt: dopisz `@keyframes` do biblioteki efektów i wpisz jego nazwę w tabeli;
-- w locie (np. przyszłe ustawienia animacji): `OESTWyglad.ruch.ustaw("okno", "zanikanie")` albo `ustaw("okno", { czas: ".3s", efekt: "wyFade" })`, odczyt `OESTWyglad.ruch.pobierz("okno")`, lista ról i gotowych wariantów `OESTWyglad.ruch.role()` / `.warianty("okno")`, powrót `OESTWyglad.ruch.domyslne()`.
 
 Ograniczenie ruchu: systemowe „mniej ruchu” i „Ogranicz animacje” w Ustawieniach – jedno miejsce w `wyglad.css` (zeruje `nacisk` i `znacznik`, wyłącza animacje ekranu, listy i okien). Zasada: ekrany nie mają własnych liczb animacji; moduł czyta tabelę z wartością zapasową, np. `var(--ruch-stan-czas,.24s)`.
 

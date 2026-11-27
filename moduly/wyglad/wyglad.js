@@ -136,44 +136,6 @@
   var rm = Element.prototype.remove, rc = Node.prototype.removeChild;
   Element.prototype.remove = function () { var el = this; if (el.dataset && el.dataset.wyPop && !el.dataset.wyOut) { popOut(el, function () { rm.call(el); }); return; } return rm.call(el); };
   Node.prototype.removeChild = function (ch) { var p = this; if (ch && ch.dataset && ch.dataset.wyPop && !ch.dataset.wyOut && p === d.body) { popOut(ch, function () { if (ch.parentNode === p) rc.call(p, ch); }); return ch; } return rc.call(p, ch); };
-  // ---------- tabela ruchu: odczyt i podmiana w locie (07/11/2026) ----------
-  // Wartości domyślne są w wyglad.css (:root, --ruch-<rola>-<parametr>). Tu tylko API dla przyszłych ustawień animacji:
-  //   OESTWyglad.ruch.pobierz("okno") → { czas: ".22s", easing: "…", efekt: "wyPop", … }
-  //   OESTWyglad.ruch.ustaw("okno", { czas: ".3s", efekt: "wyFade" })  albo  ustaw("okno", "zanikanie")  (gotowy wariant)
-  //   OESTWyglad.ruch.domyslne()  → wszystko jak w wyglad.css
-  var ROLE = {
-    przycisk: ["czas", "easing", "nacisk"], kafelek: ["czas", "easing", "nacisk"], stan: ["czas"], znacznik: ["czas", "easing", "efekt"],
-    status: ["czas", "easing", "efekt"], okno: ["czas", "easing", "efekt", "zamkniecie-czas", "zamkniecie-efekt", "tlo-czas"],
-    ekran: ["czas", "easing", "efekt", "skala", "przesuniecie"], lista: ["czas", "easing", "efekt", "odstep"]
-  };
-  var WARIANTY = { // gotowe zestawy z efektów, które już są w wyglad.css (bez nowego wyglądu)
-    przycisk: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
-    kafelek: { nacisk: { nacisk: "scale(.97)" }, brak: { nacisk: "none" } },
-    okno: { wzrost: { efekt: "wyPop", "zamkniecie-efekt": "wyOut" }, zanikanie: { efekt: "wyFade", "zamkniecie-efekt": "wyOut" } },
-    ekran: { poswiata: { efekt: "wyPoswiataIn" }, zanikanie: { efekt: "wyFade" }, wjazd: { efekt: "wyIn" } },
-    lista: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
-    status: { podjazd: { efekt: "wyUp" }, zanikanie: { efekt: "wyFade" } },
-    znacznik: { wyskok: { efekt: "oest-n-in" }, zanikanie: { efekt: "wyFade" }, brak: { efekt: "none" } }
-  };
-  function nazwa(rola, p) { return "--ruch-" + rola + "-" + p; }
-  var ruch = {
-    role: function () { return Object.keys(ROLE); },
-    warianty: function (rola) { return Object.keys(WARIANTY[rola] || {}); },
-    pobierz: function (rola) {
-      if (!ROLE[rola]) return null;
-      var cs = w.getComputedStyle(d.documentElement), o = {};
-      ROLE[rola].forEach(function (p) { o[p] = cs.getPropertyValue(nazwa(rola, p)).trim(); });
-      return o;
-    },
-    ustaw: function (rola, zmiany) {
-      if (!ROLE[rola]) return false;
-      if (typeof zmiany === "string") zmiany = (WARIANTY[rola] || {})[zmiany];
-      if (!zmiany) return false;
-      Object.keys(zmiany).forEach(function (p) { if (ROLE[rola].indexOf(p) >= 0) d.documentElement.style.setProperty(nazwa(rola, p), String(zmiany[p])); });
-      return true;
-    },
-    domyslne: function () { Object.keys(ROLE).forEach(function (r) { ROLE[r].forEach(function (p) { d.documentElement.style.removeProperty(nazwa(r, p)); }); }); },
-    ograniczony: reduce
-  };
-  w.OESTWyglad = { stagger: stagger, enter: nav, reduce: reduce, tap: function () { return tap; }, ruch: ruch };
+  // miejsce i czas ostatniego stuknięcia (logowanie Google sprawdza, czy okno otworzył człowiek: app/www/settings-google.js)
+  w.OESTWyglad = { tap: function () { return tap; } };
 })(window, document);

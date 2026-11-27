@@ -35,7 +35,7 @@
   // odcisk całej treści inspekcji (to samo, co idzie do szkicu: pola raportu, odpowiedzi, powody, notatki, krany, pomiary, zdjęcia),
   // bez znaczników czasu; służy tylko do sprawdzenia, czy dotknięcie Grzegorza coś w inspekcji zmieniło
   function ppmSig() {
-    try { var d = draftSnap(); delete d.t; delete d.fin; delete d.finPeriod; if (d.fl) delete d.fl.open; /* rozwinięcie notatki to nie zmiana */ var j = JSON.stringify(d), h = 0; for (var i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return j.length + ":" + h; } catch (e) { return ""; }
+    try { var d = draftSnap(); delete d.t; delete d.fin; delete d.finPeriod; if (d.fl) delete d.fl.open; /* rozwinięcie notatki to nie zmiana */ var j = JSON.stringify(d); return j.length + ":" + NZ.skrot(j); } catch (e) { return ""; }
   }
   // user = zmiana zrobiona przez Grzegorza (dotknięcie/wpis w formularzu, poprawione zdjęcie), a nie wczytanie zapisanej inspekcji
   function ppmTrack(open, user) {

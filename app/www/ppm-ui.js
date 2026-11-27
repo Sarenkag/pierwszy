@@ -23,7 +23,7 @@
   var DAYS = [["Nd", "Su"], ["Pn", "Mo"], ["Wt", "Tu"], ["Śr", "We"], ["Cz", "Th"], ["Pt", "Fr"], ["So", "Sa"]];
   function dayName(i) { return w.OESTT(DAYS[i][0], DAYS[i][1]); }
   function grp(id) { return P.groups.filter(function (g) { return g.id === id; })[0]; }
-  function today() { var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+  var today = w.OESTNarzedzia.dzis; // moduly/narzedzia
 
   // termin i częstotliwość na klocku: jedna reguła w moduly/klocek (OESTKlocek.termin/czest) – „DD/MM za 4D”, „jutro”, „dziś”, „−3D”, od 31 dni „1M”
   function termin(due, left, done) { var x = w.OESTKlocek.termin(due, left, done); return { tekst: x.text, ton: x.tone }; }
@@ -34,7 +34,7 @@
     try { var sc = w.OESTSettings.scheduleOn(iso); if (!sc) return false; return w.OESTCalendarCore.isWorkday(iso, function () { return sc; }); } catch (e) { return false; }
   }
   // klocek inspekcji (Grzegorz 07/11/2026; 23/11: pigułka w linii 2)
-  function trybOf(st, late) { return !st ? (late ? "zalegla" : "nierozpoczeta") : st.s === "done" || st.s === "queued" || st.s === "sent" ? "gotowa" : st.s === "hold" ? "wstrzymana" : "wtrakcie"; }
+  function trybOf(st, late) { return !st ? (late ? "zalegla" : "nierozpoczeta") : P.zamknieta(st) ? "gotowa" : st.s === "hold" ? "wstrzymana" : "wtrakcie"; }
   function kiData(t, due, left) {
     var st = P.stage ? P.stage(t) : null, nd = P.needs ? P.needs(t) : { q: true, p: true, f: false };
     var tryb = trybOf(st, left !== null && left < 0);
@@ -64,14 +64,14 @@
     var t0 = today();
     return P.tasks.map(function (t) {
       var due = P.due(t), next = due, st = P.stage && P.stage(t);
-      if (st && st.period && (st.s === "done" || st.s === "queued" || st.s === "sent")) { var p = st.period.split("-"); due = new Date(+p[0], +p[1] - 1, +p[2]); }
+      if (st && st.period && P.zamknieta(st)) due = P.parse(st.period);
       var left = P.daysLeft(due); return { t: t, due: due, next: next, left: left, day: due ? P.iso(left < 0 ? t0 : due) : "" };
     });
   }
   // licznik pod dniem (Grzegorz 05/11): zakończone / wszystkie na ten dzień – ten sam na głównej i w Inspekcjach
   function ppmDayCounts(rows) {
     var out = {};
-    rows.forEach(function (r) { if (!r.day) return; var c = out[r.day] = out[r.day] || { done: 0, all: 0 }; c.all++; var x = P.stage && P.stage(r.t); if (x && (x.s === "done" || x.s === "queued" || x.s === "sent")) c.done++; });
+    rows.forEach(function (r) { if (!r.day) return; var c = out[r.day] = out[r.day] || { done: 0, all: 0 }; c.all++; var x = P.stage && P.stage(r.t); if (P.zamknieta(x)) c.done++; });
     return out;
   }
   // jeden pasek dni (Grzegorz 07/11): wczoraj + 13 dni, dni pracy z grafiku, pogoda z ekranu głównego
@@ -144,7 +144,7 @@
   function dlong(d) { return w.OESTNarzedzia.data(d); }
   function infoDane(id, dayIso) {
     var t = P.byId(id); if (!t) return null;
-    var due = dayIso ? new Date(+dayIso.slice(0, 4), +dayIso.slice(5, 7) - 1, +dayIso.slice(8, 10)) : P.due(t), k = kiData(t, due, P.daysLeft(due));
+    var due = dayIso ? P.parse(dayIso) : P.due(t), k = kiData(t, due, P.daysLeft(due));
     // inny termin niż bieżąca inspekcja (np. grudzień w Kalendarzu): bez jej zdjęć, odpowiedzi i usterek – jak na klocku (uwaga Codex w PR #87)
     var now = P.due(t), cur = !dayIso || (k.st && k.st.period === dayIso) || (now && P.iso(now) === dayIso);
     if (!cur) { k.st = null; k.photos = 0; k.qa = null; k.issues = 0; k.form = k.nd.f ? "blad" : "brak"; }
@@ -182,7 +182,7 @@
       kratki.push({ k: k, d: day.getDate(), inny: day.getMonth() !== m, praca: calShift(k), dzis: k === td, wybrany: k === calSel, n: n, plan: !!n && (by[k] || []).every(function (e) { return e.plan; }) });
     }
     var klocki = (by[calSel] || []).map(function (e) {
-      var t = e.t, due = P.due(t), cur = due && P.iso(due) === calSel, cd = calSel.split("-"), day = new Date(+cd[0], +cd[1] - 1, +cd[2]);
+      var t = e.t, due = P.due(t), cur = due && P.iso(due) === calSel, day = P.parse(calSel);
       // ten sam klocek co na liście Inspekcji; etap tylko dla bieżącego terminu
       var k = kiData(t, day, P.daysLeft(day)), tryb = cur ? k.tryb : "nierozpoczeta";
       return klocek({ id: t.id, group: t.group, no: (P.jobFor(t, calSel) || {}).no || "", day: calSel, name: P.short(t).name, status: tryb, loc: k.loc.code, freq: e.job ? (P.jobFor(t, calSel) || {}).f || k.freq : k.freq, form: cur ? k.form : (k.nd.f ? "blad" : "brak"),

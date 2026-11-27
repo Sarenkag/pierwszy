@@ -13,8 +13,8 @@
     var C = root.Capacitor;
     return !!(C && C.isPluginAvailable && C.isPluginAvailable("LibreOffice") && C.Plugins && C.Plugins.LibreOffice);
   }
-  function b64(bytes) { var s = ""; for (var i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); return root.btoa(s); }
-  function zB64(t) { var s = root.atob(t), out = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; }
+  function b64(bytes) { return root.OESTNarzedzia.bytesToB64(bytes); } // base64: moduly/narzedzia
+  function zB64(t) { return root.OESTNarzedzia.b64ToBytes(t); }
   function zWorda(docxBytes) {
     if (!dostepny() || !docxBytes || !docxBytes.length) return Promise.resolve(null);
     return root.Capacitor.Plugins.LibreOffice.toPdf({ docx: b64(docxBytes) }).then(function (r) {
