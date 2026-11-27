@@ -40,7 +40,7 @@
       if (states[i] === "ok") pk.push({ nazwa: punkt(c), stan: "ok" });
       else if (states[i] === "fail") { nNo++; pk.push({ nazwa: punkt(c), stan: "no", uwaga: override[i] || c.fail || powody(c, i) }); }
     });
-    Object.assign(d, OESTWzory.grupy([{ nazwa: head || cur.code || cur.type.name, punkty: pk }], { szare: [ogolny(d)].concat(extra.map(function (s) { return "Fault: " + s; }),
+    Object.assign(d, OESTWzory.grupy([{ nazwa: head || cur.code || cur.type.name, punkty: pk }], { stan: d.stan_ogolny, szare: extra.map(function (s) { return "Fault: " + s; }).concat(
       [pk.length || extra.length ? summaryLine(nNo + extra.length) : "Visual inspection carried out.", d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
     return english(d);
   }
@@ -48,8 +48,7 @@
   function punkt(c) { return c.short || c.cp || c.qen || c.ok || ""; }
   // pytanie z powodami (izolatory): wybrane powody po angielsku, inaczej ogólne zdanie pytania
   function powody(c, i) { var rs = (c.reasons || []).filter(function (r) { return (rsel[i] || []).indexOf(r.id) >= 0; }); return rs.length ? rs.map(function (r) { return r.en; }).join("; ") : c.en || ""; }
-  // pierwszy akapit szarej ramki: wiersza „Overall Condition” w środku grup nie ma (jak we Flushingu), stan idzie tutaj
-  function ogolny(d) { return d.stan_ogolny ? "Overall condition: " + d.stan_ogolny + "." : ""; }
+
   // plant roomy: dane środka „grupy” (Word i PDF z niego) i tekst opisu (podgląd, Vantify)
   function roomsData(w) {
     var d = english({ data: dateTxt(w), inspektor: val("podpis"), urzadzenie: cur.code, lokalizacja: cur.where, wieza: cur.loc, pietro: "",
@@ -73,7 +72,7 @@
     if (!rooms.length) end.unshift("Visual inspection carried out."); // wszystko N/A: sama inspekcja wzrokowa
     // środek „grupy” (Grzegorz 27/11/2026): grupa = pomieszczenie z lokalizacją, przy ☒ szara uwaga pomieszczenia
     Object.assign(d, OESTWzory.grupy(rooms.map(function (r) { return { nazwa: r.name + " \u2013 " + r.loc, punkty: r.punkty }; }),
-      { szare: [ogolny(d)].concat(rooms.length ? [] : ["Visual inspection carried out."], d.komentarz ? ["Comments: " + d.komentarz] : []) }));
+      { stan: d.stan_ogolny, szare: (rooms.length ? [] : ["Visual inspection carried out."]).concat(d.komentarz ? ["Comments: " + d.komentarz] : []) }));
     d.opis = d.details = rooms.map(function (r) { return r.name + " \u2013 Location: " + r.loc + "\n" + r.cells.join(", "); }).concat(end).join("\n");
     return d;
   }

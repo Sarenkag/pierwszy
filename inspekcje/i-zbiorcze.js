@@ -190,7 +190,7 @@
       return { nazwa: dv.code, stan: it && it.fails ? "no" : "ok", uwaga: ln.indexOf(pre) === 0 ? ln.slice(pre.length) : ln };
     });
     var reszta = pts.slice(1).filter(function (x) { return /^(Remaining |No defects found|Not inspected: )/.test(x); }); // zdania podsumowania listy
-    Object.assign(d, OESTWzory.grupy([{ nazwa: t.name, punkty: pk }], { szare: [ogolny(d)].concat(reszta, [d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
+    Object.assign(d, OESTWzory.grupy([{ nazwa: t.name, punkty: pk }], { stan: d.stan_ogolny, szare: reszta.concat([d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
     return english(d);
   }
 

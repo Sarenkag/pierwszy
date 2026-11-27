@@ -109,7 +109,7 @@
   function ustaw(id, b) { opis(id); pliki[id] = new Uint8Array(b); }
 
   // Dane środka „grupy-basic” (jedno miejsce dla wszystkich inspekcji): lista = [{ nazwa, punkty: [{ nazwa, stan: "ok"|"no"|"na", uwaga }] }],
-  // o = { podtytul, szare: [akapity szarej ramki] }. Po 2 punkty w wierszu, licznik w pasku = ☑ / wszystkie punkty grupy (jak strefy Flushingu);
+  // o = { podtytul, stan, szare: [akapity szarej ramki] }; stan = Overall Condition – wiersza w środku grup nie ma (jak we Flushingu), idzie pierwszym akapitem szarej ramki. Po 2 punkty w wierszu, licznik w pasku = ☑ / wszystkie punkty grupy (jak strefy Flushingu);
   // grupa bez punktów nie trafia do raportu. ☑ / ☒ / N/A – te same znaki co we Flushingu (OESTFlush.basicPola).
   function grupy(lista, o) {
     o = o || {};
@@ -126,7 +126,7 @@
       }
       return { nazwa: g.nazwa, licznik: ok + "/" + g.punkty.length, wiersze: w };
     });
-    return { podtytul: o.podtytul ? [{ tekst: o.podtytul }] : [], grupy: gr, szare: (o.szare || []).filter(Boolean).map(function (t) { return { tekst: t }; }) };
+    return { podtytul: o.podtytul ? [{ tekst: o.podtytul }] : [], grupy: gr, szare: [o.stan ? "Overall condition: " + o.stan + "." : ""].concat(o.szare || []).filter(Boolean).map(function (t) { return { tekst: t }; }) };
   }
 
   function slownik() { var o = {}; Object.keys(SLOWNIK).forEach(function (k) { var v = SLOWNIK[k]; o[k] = Array.isArray(v) ? { opis: v.slice(), stare: false } : { opis: v.opis.slice(), stare: !!v.stare }; }); return o; }
