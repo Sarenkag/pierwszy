@@ -145,3 +145,18 @@ test("Bot wyłączony na zleceniu w apce (plik „BOT STOP <nr>” na Dysku): an
   assert.match(E.mails[0].t, /#3084999 zamknięte/);
   assert.ok(BOT.stopZDysku("BOT STOP 3084999.txt", "3084999")); assert.ok(!BOT.stopZDysku("BOT STOP 30849990.txt", "3084999")); assert.ok(!BOT.stopZDysku("JOB SHEET 3084999.pdf", "3084999"));
 });
+
+test("Mail „assigned” przed Job Sheetem (#3085206, 27/11/2026): brak Commence i Complete = czeka co godzinę, bez maila; po pojawieniu się Complete zamyka; po dobie bez zmiany „zamknij ręcznie”", () => {
+  const T = Date.parse("2026-11-27T13:32:00Z"), sh = nr => ({ ...SHEET, title: "JOB SHEET REACTIVE Cabinet 27112026 " + nr }), jobs = { 3085206: { status: "open", files: [sh(3085206)] } }, props = {};
+  const run = (dt, V) => { const E = env(V, { subjects: [ASSIGNED(3085206)], now: T + dt, props }); BOT.run(E.e, A); return E; };
+  const V = vantify(jobs);
+  let E = run(0, V); assert.equal(V.posts().length, 0); assert.equal(E.mails.length, 0); assert.match(E.logs.join("\n"), /sprawdzę za godzinę/);
+  const n = V.calls.length; run(30 * 60e3, V); assert.equal(V.calls.length, n, "w ciągu godziny nie pyta Vantify");
+  jobs[3085206].status = "commenced"; E = run(61 * 60e3, V);
+  assert.equal(V.posts().length, 1); assert.equal(E.mails.length, 1); assert.match(E.mails[0].t, /#3085206 zamknięte/);
+  const jobs2 = { 3085207: { status: "open", files: [sh(3085207)] } }, props2 = {}, V2 = vantify(jobs2);
+  const run2 = dt => { const e = env(V2, { subjects: [ASSIGNED(3085207)], now: T + dt, props: props2 }); BOT.run(e.e, A); return e; };
+  assert.equal(run2(0).mails.length, 0); assert.equal(run2(23 * 3600e3).mails.length, 0);
+  const e = run2(24 * 3600e3 + 61 * 60e3); assert.equal(e.mails.length, 1); assert.match(e.mails[0].t, /zamknij ręcznie/); assert.match(e.mails[0].b, /przez dobę/);
+  assert.equal(V2.posts().length, 0);
+});
