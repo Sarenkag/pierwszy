@@ -37,7 +37,7 @@
     </template>
     <!-- bot na tym zleceniu (Grzegorz 27/11/2026): wyłączony = bot nie zamyka; czynny także po założeniu (pozostałe pola szare) -->
     <ion-item v-if="d.bot"><ion-toggle justify="space-between" data-akcja="vantify-bot" :checked="d.bot.on" :disabled="d.bot.off" @ionChange="e => A.akcja('vt-bot', { value: e.detail.checked })">{{ d.bot.etykieta }}</ion-toggle></ion-item>
-    <!-- zlecenie z grupy „Z Vantify” (Grzegorz 27/11/2026): zostaje na liście, ale na końcu grupy, z szarym paskiem -->
+    <!-- zlecenie z grupy „Z Vantify” (Grzegorz 27/11/2026): zostaje na liście, ale na końcu grupy, w szarej ramce -->
     <ion-item v-if="d.pomin"><ion-toggle justify="space-between" data-akcja="vantify-pomin" :checked="d.pomin.on" @ionChange="e => A.akcja('vt-pomin', { value: e.detail.checked })">{{ d.pomin.etykieta }}</ion-toggle></ion-item>
     <ion-item v-if="d.zaloz" lines="none"><ion-button expand="block" :fill="d.zaloz.ton === 'go' ? 'solid' : 'outline'" :color="d.zaloz.ton === 'done' ? 'success' : undefined" data-akcja="vantify-zaloz" @click="A.akcja(d.zaloz.rx)">{{ d.zaloz.tekst }}</ion-button></ion-item>
   </ion-card>
