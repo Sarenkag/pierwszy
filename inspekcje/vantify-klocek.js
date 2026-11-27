@@ -56,7 +56,8 @@
     return { get draft() { return draft; }, L: o.T, render: render, persist: zapisz, photos: pliki,
       message: function (t) { o.$('vtHint').textContent = t || ''; },
       english: function (co, extra) { return Promise.resolve(co === 'start' || co === 'end' ? extra || '' : String(co || '')); },
-      lastPriority: function () { try { return w.localStorage.getItem('oest-vt-prio') || ''; } catch (e) { return ''; } } };
+      lastPriority: function () { try { return w.localStorage.getItem('oest-vt-prio') || ''; } catch (e) { return ''; } },
+      grupa: o.stan().typ.flush.grupaVantify || '' }; // Job Group z opisu typu (ppm.js, np. Generator)
   }
   function klik() {
     var s = o.stan(), b = o.$('vtBtn');

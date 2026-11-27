@@ -58,7 +58,7 @@
     // Weekly Generator Check (Grzegorz 21/11/2026): środek w stylu Flushing (jeden generator: Visual check + Off-load test)
     "gen-basic": { plik: "gen-srodek.docx", ramka: "basic", nazwa: "Generator Checks – Weekly – basic form middle", pola: flushPola(12, 2) },
     // Reactive Job Sheet (Grzegorz 26/11/2026): bez wiersza „Overall Condition”; środek w stylu „grupy stref” (27/11/2026, app/scripts/reactive-srodek.py)
-    "reactive-basic": { plik: "reactive-srodek.docx", ramka: "basic", nazwa: "Reactive Job Sheet – basic form middle (no Overall Condition)", pola: ["wstep", "sekcje", "naglowek", "akapity", "tekst", "koniec"] },
+    "reactive-basic": { plik: "reactive-srodek.docx", ramka: "basic", nazwa: "Reactive Job Sheet – basic form middle (no Overall Condition)", pola: ["wstep", "sekcje", "tekstowa", "naglowek", "akapity", "tekst", "tabela", "pary", "l1", "w1", "l2", "w2", "koniec"] },
     "temp-tb": { plik: "temp-tb.docx", nazwa: "Monthly Tap Temperature Check TB (QHS-031)", pola: ["temp", "name", "data"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();

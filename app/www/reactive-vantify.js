@@ -69,7 +69,9 @@
     /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
     const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = x.kreator, ks = K && K.fromDraft(d, roomEn);
     /* kreator opisu (PROD-039): Summary z wyborów (już po angielsku); bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026) */
-    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '';
+    let sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '';
+    /* z szablonu (Templates): „Firmware update – Tower A, Flat 2606” – nazwa szablonu i miejsce z karty (Grzegorz 27/11/2026) */
+    if (d.szablon && sum) { const lv = String(d.level || ''), m = [d.building, d.flat ? 'Flat ' + d.flat : /^\d/.test(lv) ? 'Level ' + lv : lv].filter(Boolean).join(', '); if (m) sum += ' – ' + m; }
     return { roomEn, K, ks, sum };
   }
   async function open(x) {
@@ -89,7 +91,8 @@
     /* priorytet do wyboru (Grzegorz 20/11/2026: dłuższy termin niż P5, żeby zlecenie nie było zaległe, zanim Josh zatwierdzi);
        lista z Vantify tego samego rodzaju co priorytet ze wzoru, domyślnie ostatnio wybrany. Pierwszy raz (bez wzoru) – wybór w oknie Vantify */
     const W = await wzory(P), pr = W.create ? await prioList(P, x) : null, last = x.lastPriority ? x.lastPriority() : '', jg = W.create ? await groupList(P, x) : null, lastG = x.lastGroup ? x.lastGroup() : '';
-    const pickG = jg && jg.list.length ? (jg.list.find(g => g.href === lastG) || jg.list.find(g => g.href === jg.current) || jg.list[0]).href : '';
+    /* Job Group z szablonu (Templates: Firmware update → Electrical, Generator → Generator; Grzegorz 27/11/2026) przed ostatnio użytą */
+    const pickG = jg && jg.list.length ? ((x.grupa && jg.list.find(g => g.name.toLowerCase() === x.grupa.toLowerCase())) || jg.list.find(g => g.href === lastG) || jg.list.find(g => g.href === jg.current) || jg.list[0]).href : '';
     const pick = pr && pr.list.length ? (pr.list.find(p => p.href === last) || pr.list.find(p => p.href === pr.current) || pr.list[0]).href : '';
     /* zdjęcia przed zebrane przed oknem i przed zapisem „zakładam”: brak zdjęcia = błąd, karta zostaje bez zmian (przegląd Codex #166) */
     const files = x.photos ? await x.photos('before') : [];

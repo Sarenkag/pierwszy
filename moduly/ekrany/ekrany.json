@@ -48,6 +48,7 @@
     { "id": "reactive/complete/:id", "rodzic": "reactive/job/:id", "pudelko": "v-reactive", "pl": "Zamknięcie zlecenia", "en": "Complete job" },
     { "id": "reactive/vantify/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Zlecenie z Vantify", "en": "Job from Vantify", "uwaga": "Pierwsze otwarcie zakłada szkic z numerem z Vantify i przechodzi do reactive/draft/:id." },
     { "id": "reactive/tree/:id", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Wybór (drzewo)", "en": "Pick (tree)", "uwaga": "Węzeł drzewa wraca do węzła nadrzędnego, a najwyższy do Reactive." },
-    { "id": "reactive/history", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Historia", "en": "History" }
+    { "id": "reactive/history", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Historia", "en": "History" },
+    { "id": "reactive/templates", "rodzic": "reactive", "pudelko": "v-reactive", "pl": "Templates", "en": "Templates", "uwaga": "Gotowe klocki (app/www/reactive-szablony.js): zlecenie z szablonu albo formularz inspekcji (Generator)." }
   ]
 }
