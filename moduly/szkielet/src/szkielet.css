@@ -526,8 +526,6 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 .oest-rx-h { margin: 18px 0 8px; font-size: .95rem; font-weight: 600; }
 .oest-rx-sciezka { margin: 10px 0 0; }
 .oest-rx-tekst { margin: 0; white-space: pre-wrap; }
-/* tekst z podziałem na wiersze, np. odpowiedź Gemmy z punktami w czacie */
-.oest-tekst-wiersze { white-space: pre-wrap; }
 .oest-rx-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .oest-rx-row > ion-button { min-height: var(--h-btn, 52px); margin: 3px 0; }
 .oest-rx-vt-upd { grid-template-columns: 1fr; }

@@ -12,7 +12,7 @@
       <ion-item lines="none">
         <ion-label class="ion-text-wrap">
           <p>{{ m.kto === 'ja' ? T('Ty', 'You') : 'Gemma' }}</p>
-          <h3 class="oest-tekst-wiersze">{{ m.tekst }}</h3>
+          <h3 v-for="(l, j) in String(m.tekst || '').split('\n')" :key="j">{{ l || '\u00a0' }}</h3>
         </ion-label>
       </ion-item>
       <ion-item v-if="m.kto !== 'ja'" lines="none">
