@@ -133,7 +133,8 @@ function rxKolejnosc(r,done){const v=r&&r.vantify||{};if(done||v.final||v.closed
   async function enFields(day){const f=C.report({...await vtEn(),...await enVoice()},w.OESTSettings.get().profile,day);/* świadomie wyczyszczony raport zostaje pusty, nie wraca tekst automatyczny (przegląd Codex #153) */return draft.reportEdited?{...f,details:String(draft.reportText||'')}:f;}
   /* podgląd = prawdziwy PDF raportu (Grzegorz 26/11/2026): ten sam plik co do wysyłki, składany od nowa z bieżących pól
      i otwarty w przeglądarce PDF telefonu; poprawki w polach karty, potem znowu podgląd (zamiast kartki-imitacji z akapitami) */
-  async function openSummary(mode,f){f=f||await enFields();reviewView=f;preview=mode;render();await pdfPreview(f);}
+  /* podgląd: ekran z „Otwórz PDF”, bez samoczynnego otwierania przeglądarki PDF (Grzegorz 27/11/2026: „najpierw jedno okno, zaraz drugie”) */
+  async function openSummary(mode,f){f=f||await enFields();reviewView=f;preview=mode;render();}
   async function pdfPreview(f){if(!w.Capacitor?.isNativePlatform())throw Error(L('Podgląd PDF działa w aplikacji Android.','The PDF preview works in the Android app.'));
     message(L('Składam PDF…','Building the PDF…'));const photos=[];for(const phase of ['before','after'])for(const id of draft[phase+'MediaIds']||[]){const m=await repo.media(id);if(m?.kind==='photo')photos.push({...m,phase});}
     const RR=w.OESTReactiveReport,r=await RR.fit(px=>RR.build(f,photos,{px}),()=>false);if(!r.pdf)throw Error(L('PDF nie powstał (brak silnika).','The PDF was not created (no engine).'));
