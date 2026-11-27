@@ -9,7 +9,7 @@
       </ion-grid>
 
 
-    <!-- Imię i Data (Grzegorz 25.11.2026: jak na main – znaczniki na całą szerokość, data jako przycisk obok „Data”; pole daty = klocek PoleDaty) -->
+    <!-- Imię i Data (27.11.2026: lista bez własnego odstępu – pod „Data” bez pustego pasa; Grzegorz 25.11.2026: jak na main – znaczniki na całą szerokość, data jako przycisk obok „Data”; pole daty = klocek PoleDaty) -->
     <div data-ui="ihead"><ion-grid data-ui="iright"><ion-row class="ion-align-items-center"><ion-col size="3"><ion-button data-ui="kebab" fill="clear" color="medium" :aria-label="T('Opcje inspekcji', 'Inspection options')"><ion-icon slot="icon-only" :icon="ellipsisVertical"></ion-icon></ion-button></ion-col><ion-col size="5"><div id="ppmStage" aria-label="Etap inspekcji" hidden></div><ion-text id="recPill" hidden></ion-text></ion-col><ion-col size="3" class="ion-text-end"><ion-text color="tertiary" data-termin><strong id="iEnds"></strong></ion-text> <ion-text id="iCntBox" title="OK / pytania"><ion-text id="iCnt"></ion-text> OK</ion-text></ion-col></ion-row></ion-grid>
     <ion-grid class="ion-no-padding"><ion-row class="ion-align-items-center"><ion-col>
     <ion-list lines="none" data-ui="ileft">
@@ -23,7 +23,8 @@
     <ion-card data-ui="panel iphotos">
       <!-- 4 kafelki jak na main, bez napisu „Zdjęcia” (Grzegorz 25.11.2026); licznik i rozmiar zdjęć zostają dla i-zdjecia.js -->
       <ion-grid data-ui="photo-head"><ion-text id="photoCount"></ion-text><ion-text id="photoSize"></ion-text></ion-grid>
-      <ion-grid><ion-row>
+      <!-- 4 kafelki równe (jedna reguła .oest-rowne, Grzegorz 27/11/2026) -->
+      <ion-grid class="oest-rowne"><ion-row>
         <ion-col size="3"><DodajZdjecie id="galIn" tryb="galeria" :T="T">{{ T('Z galerii', 'From gallery') }}</DodajZdjecie></ion-col>
         <ion-col size="3"><DodajZdjecie id="camIn" tryb="aparat" :T="T">{{ T('Zrób zdjęcie', 'Take photo') }}</DodajZdjecie></ion-col>
         <ion-col size="3"><DodajZdjecie formularz id="shCamIn" tryb="aparat" :T="T">{{ T('Formularz', 'Form') }}</DodajZdjecie></ion-col>

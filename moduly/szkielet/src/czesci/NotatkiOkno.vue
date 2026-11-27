@@ -5,7 +5,7 @@
   <div class="oest-nt" data-nt-okno @click="tlo">
     <template v-if="d.tryb === 'edycja'">
       <div class="oest-nt-h"><ion-icon :icon="createOutline" aria-hidden="true"></ion-icon> {{ d.edycja.naglowek }}</div>
-      <div class="oest-nt-tabs">
+      <div class="oest-nt-tabs oest-rowne">
         <ion-button class="oest-nt-b" fill="outline" :data-on="d.edycja.tab === 'pl' ? '' : undefined" data-nt="tab-pl" @click="k.akcja('tab', 'pl')">{{ T('Po polsku (oryginał)', 'Polish (original)') }}</ion-button>
         <ion-button class="oest-nt-b" fill="outline" :data-on="d.edycja.tab === 'en' ? '' : undefined" data-nt="tab-en" @click="k.akcja('tab', 'en')">{{ T('Po angielsku (do raportu)', 'English (for the report)') }}</ion-button>
       </div>
@@ -16,12 +16,12 @@
         <ion-textarea data-nt-f="en" :value="d.edycja.en" :maxlength="4000" :auto-grow="true" :rows="4" :aria-label="T('Po angielsku (do raportu)', 'English (for the report)')" @ionInput="e => k.akcja('pole', 'en', e.detail.value)"></ion-textarea>
       </ion-item>
       <div class="oest-nt-warn" role="status" data-nt-warn><template v-if="d.edycja.ostrzezenie"><ion-icon :icon="warningOutline" aria-hidden="true"></ion-icon> {{ d.edycja.ostrzezenie }}</template></div>
-      <div class="oest-nt-rzad">
+      <div class="oest-nt-rzad oest-rowne">
         <ion-button class="oest-nt-b" fill="outline" data-nt="redo" :disabled="d.edycja.uklada" @click="k.akcja('redo')"><ion-icon :icon="sparkles" aria-hidden="true"></ion-icon>{{ T('Ułóż z polskiego', 'Rewrite from Polish') }}</ion-button>
         <ion-button v-if="d.edycja.audio" class="oest-nt-b" fill="outline" data-nt="play" @click="k.akcja('play', null)"><ion-icon :icon="d.edycja.gra ? stop : play" aria-hidden="true"></ion-icon>{{ d.edycja.gra ? T('Stop', 'Stop') : d.edycja.czas }}</ion-button>
         <span v-else></span>
       </div>
-      <div class="oest-nt-rzad">
+      <div class="oest-nt-rzad oest-rowne">
         <ion-button class="oest-nt-b" fill="outline" data-nt="cancel" @click="k.akcja('cancel')">{{ T('Anuluj', 'Cancel') }}</ion-button>
         <ion-button class="oest-nt-b" data-nt="save" :disabled="d.edycja.zapisuje" @click="k.akcja('save')">{{ T('Zapisz', 'Save') }}</ion-button>
       </div>
@@ -38,7 +38,7 @@
         <div v-if="n.pl" class="oest-nt-pl" data-nt-pl>{{ n.pl }}</div>
         <div v-if="n.brak" class="oest-nt-blad">{{ n.brak }}</div>
         <div v-if="n.blad" class="oest-nt-blad">{{ n.blad }}</div>
-        <div class="oest-nt-ic">
+        <div class="oest-nt-ic oest-rowne">
           <ion-button v-if="n.audio" class="oest-nt-b" fill="outline" data-nt="play" @click="k.akcja('play', n.id)"><ion-icon :icon="n.gra ? stop : play" aria-hidden="true"></ion-icon>{{ n.gra ? T('Stop', 'Stop') : n.czas }}</ion-button>
           <ion-button v-else class="oest-nt-b" fill="outline" disabled>—</ion-button>
           <template v-if="!d.readonly">

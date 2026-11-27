@@ -4,7 +4,7 @@
      <KafelZdjecia :ikona="adres svg">Notatka</KafelZdjecia> -->
 <template>
   <ion-button data-ui="kafel-zdjecia" mode="ios" expand="block" fill="outline" size="small">
-    <ion-label class="ion-text-center ion-text-wrap"><ion-icon :src="ikona" size="small" aria-hidden="true"></ion-icon><br v-if="$slots.default"><slot></slot></ion-label>
+    <ion-label class="ion-text-center ion-text-wrap"><ion-icon :src="ikona" aria-hidden="true"></ion-icon><br v-if="$slots.default"><slot></slot></ion-label>
   </ion-button>
 </template>
 

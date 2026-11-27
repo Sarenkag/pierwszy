@@ -28,10 +28,16 @@ ion-content::part(scroll) { overscroll-behavior: none; } /* bez rozciągania na 
 .oest-pas { /* pas pod godziną nad ekranem jeszcze w starym kodzie (do zera licznika) */
   height: var(--ion-safe-area-top); background: var(--ion-toolbar-background); }
 .oest-inicjaly { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--grad); color: #fff; font-weight: 700; }
-.oest-rowne ion-card { height: calc(100% - 20px); min-height: 200px; }
-.oest-rowne ion-card::part(native) { height: 100%; display: flex; flex-direction: column; justify-content: flex-start; } /* reguła Grzegorza: przyciski w grupie równe – karty w wierszu siatki tej samej wysokości */
-.oest-rowne ion-card-title { min-height: 2lh; }
-.oest-rowne ion-card-subtitle { min-height: 2lh; }
+/* JEDNA reguła „przyciski w grupie równe” dla całej apki (Grzegorz 27/11/2026): klasa oest-rowne na grupie (ion-grid albo rząd przycisków).
+   W siatce każdy element kolumny wypełnia wysokość wiersza (= najwyższy w rzędzie); w rzędzie przycisków każdy ma tę samą szerokość. */
+.oest-rowne ion-col { display: flex; flex-direction: column; container-type: inline-size; } /* szerokość kolumny = miara dla napisu (cqi) */
+.oest-rowne ion-col > * { flex: 1 1 auto; }
+.oest-rowne > ion-button { flex: 1 1 0; min-width: 0; }
+.oest-rowne ion-card::part(native) { height: 100%; display: flex; flex-direction: column; justify-content: flex-start; }
+/* karty z podpisami (Ustawienia, kafelki z podpisem): miejsce na dwie linijki tytułu i podpisu */
+.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card { min-height: 200px; }
+.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-title { min-height: 2lh; }
+.oest-rowne:has(ion-card-subtitle:not(:empty)) ion-card-subtitle { min-height: 2lh; }
 /* Przyciski: gradient z poświatą Grzegorza („Szkło i poświata”, jak dawne .btn.go) – decyzja 23/11/2026 (cmsg_01XEAk2s9PJV8mCFfCy1yHHTL8zCmDhBv4XZ6N7ZTQxy2m).
    Tylko zmienne ion-button, jedno miejsce dla całej apki; przyciski outline/clear i przyciski paska (ion-buttons) zostają standardowe. */
 ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
@@ -41,6 +47,15 @@ ion-button:not([fill=outline]):not([fill=clear]):not(.in-buttons) {
   --background-focused: var(--grad);
   --box-shadow: 0 8px 24px rgba(120, 90, 255, .4);
   --border-radius: 14px;
+}
+/* Rozmiary ikon – JEDNO miejsce dla całej apki (Grzegorz 27/11/2026: „wszystkie kwadraty, wszystkie ikony powinny mieć reguły wielkości”).
+   Ekrany biorą tylko z tych zmiennych. Poza listą: mikrofon nagrywania (cały ekran) i kółka c1–c3 edytora (rosną z przyciskiem). */
+:root:root {
+  --oest-ikona-kropka: 10px;   /* kropka w chipie / lampce */
+  --oest-ikona-mala: 16px;     /* przy tekście */
+  --oest-ikona-przycisk: 20px; /* w przycisku */
+  --oest-ikona-kafel: 24px;    /* w kafelku */
+  --oest-ikona-klocek: 21px;   /* ikona stanu w klocku (jak dziś) */
 }
 /* Kolory stanów (pigułka statusu, lampki, terminy) – JEDNO miejsce dla całej apki (Grzegorz 07/11/2026): Zaległa #ef3b36, Gotowa #00d84a,
    W trakcie żółty, Wstrzymana niebieski, Nie rozpoczęta szary, Odzyskana fioletowy. Tylko zmienne palety Ionic. */
@@ -69,7 +84,7 @@ ion-modal[data-oest-okno] { --width: min(calc(100% - 34px), 358px); --height: au
 ion-modal[data-oest-okno] .ion-page { position: relative; display: block; contain: content; }
 .oest-okno { padding: 18px; color: #fff; font: 15px/1.4 var(--font-body, system-ui), sans-serif; }
 .oest-okno-tytul { display: flex; align-items: center; gap: 5px; font-size: 17px; font-weight: 650; margin-bottom: 6px; }
-.oest-okno-tytul ion-icon { flex: none; font-size: 17px; }
+.oest-okno-tytul ion-icon { flex: none; font-size: var(--oest-ikona-mala); }
 .oest-okno-tresc { max-height: 62vh; overflow: auto; margin: 0 0 14px; }
 .oest-okno-rzad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .oest-okno-rzad[data-jeden] { grid-template-columns: 1fr; }
@@ -99,7 +114,7 @@ ion-button.oest-nt-b[data-on] { --background: rgba(124, 132, 255, .25); --border
 ion-button.oest-nt-b[data-nt=del] { --color: var(--bad, #ff4d5e); }
 ion-button.oest-nt-b[data-nt=del][data-pewne] { --background: rgba(255, 77, 94, .18); --border-color: rgba(255, 77, 94, .7); }
 ion-modal[data-oest-okno] ion-button.oest-nt-b[data-nt=save]:not([fill=outline]) { --border-width: 0; --box-shadow: none; }
-ion-button.oest-nt-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-nt-b ion-icon { font-size: var(--oest-ikona-mala); margin-right: 4px; }
 ion-button.oest-nt-b ion-icon[slot=icon-only] { margin: 0; }
 .oest-nt ion-item { --background: rgba(255, 255, 255, .07); --border-radius: 12px; --border-color: rgba(255, 255, 255, .12); --border-width: 1px; --border-style: solid;
   --inner-border-width: 0; --highlight-height: 0; --padding-start: 10px; --inner-padding-end: 10px; --min-height: 108px; }
@@ -112,15 +127,15 @@ ion-button.oest-ntp-b { height: 48px; min-width: 0; margin: 0; text-transform: n
   --background-hover: var(--panel, rgba(255, 255, 255, .06)); --background-activated: rgba(255, 255, 255, .1); --color: var(--ink, #eef1ff); --padding-start: 6px; --padding-end: 6px; --box-shadow: none; }
 ion-button.oest-ntp-b::part(native) { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 ion-button.oest-ntp-b[data-nt-bar=rec] { --background: rgba(255, 77, 94, .12); --background-hover: rgba(255, 77, 94, .12); --border-color: rgba(255, 77, 94, .7); touch-action: none; -webkit-user-select: none; user-select: none; }
-ion-button.oest-ntp-b ion-icon { font-size: 17px; }
-ion-button.oest-ntp-b ion-icon + ion-icon { font-size: 13px; margin-left: -3px; margin-right: 3px; }
+ion-button.oest-ntp-b ion-icon { font-size: var(--oest-ikona-mala); }
+ion-button.oest-ntp-b ion-icon + ion-icon { font-size: var(--oest-ikona-mala); margin-left: -3px; margin-right: 3px; }
 .oest-ntp-ikony { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; }
 ion-button.oest-ntp-i { flex: none; height: 36px; min-width: 52px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 14px var(--font-body, system-ui), sans-serif;
   --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: rgba(255, 255, 255, .05);
   --background-hover: rgba(255, 255, 255, .05); --color: var(--ink, #fff); --padding-start: 10px; --padding-end: 10px; --box-shadow: none; }
 ion-button.oest-ntp-i[data-stan=w] { --border-color: rgba(255, 210, 63, .6); }
 ion-button.oest-ntp-i[data-stan=busy] { opacity: .55; }
-ion-button.oest-ntp-i ion-icon { font-size: 14px; margin-right: 1px; }
+ion-button.oest-ntp-i ion-icon { font-size: var(--oest-ikona-mala); margin-right: 1px; }
 ion-button.oest-ntp-i[data-nt-bar=open] { margin-left: auto; }
 .oest-ntp-n { display: inline-block; min-width: 22px; margin-left: 4px; padding: 0 7px; box-sizing: border-box; border-radius: 11px; background: rgba(124, 132, 255, .25); border: 1px solid rgba(124, 132, 255, .6); font-size: .8rem; line-height: 20px; text-align: center; }
 /* nagrywanie notatki (main: .oest-rec) – mikrofon 170 px z pulsowaniem, czas, postęp, podpowiedź, „Zakończ” */
@@ -146,7 +161,7 @@ ion-modal[data-oest-czesc=Aparat] { --background: #05070c; }
 ion-button.oest-podglad-b { height: 56px; margin: 0; text-transform: none; letter-spacing: 0; font: 600 16px system-ui; --border-radius: 14px; --padding-start: 4px; --padding-end: 4px; --color: #fff; }
 ion-button.oest-podglad-b[fill=outline] { --background: #151a22; --background-hover: #151a22; --background-activated: #1d232d; --border-width: 1px; --border-style: solid; --border-color: #3a4152; --box-shadow: none; }
 ion-modal[data-oest-czesc=Aparat] ion-button.oest-podglad-b:not([fill=outline]) { font-weight: 700; --box-shadow: none; }
-ion-button.oest-podglad-b ion-icon { font-size: 16px; margin-right: 4px; }
+ion-button.oest-podglad-b ion-icon { font-size: var(--oest-ikona-mala); margin-right: 4px; }
 /* edytor zdjęć (main: .oest-editor) – Anuluj (tekst) · Cofnij (szkło) · Zapisz (gradient), panel ze szkła z ramkami grup, kropki kolorów i grubości */
 ion-modal[data-oest-czesc=EdytorZdjec] { --background: var(--bg, #0a0e1f); }
 .oest-ed { --ed-w: clamp(30px, calc((100vw - 100px) / 7), 44px); position: absolute; inset: 0; display: flex; flex-direction: column; touch-action: none; user-select: none;
@@ -160,7 +175,7 @@ ion-button.oest-ed-b { height: 44px; margin: 0; text-transform: none; letter-spa
 ion-button.oest-ed-b[data-a=cancel] { --background: transparent; --background-hover: transparent; --color: var(--muted, #9aa3cc); --box-shadow: none; }
 ion-button.oest-ed-b[data-a=undo] { --background: var(--panel, rgba(255, 255, 255, .06)); --background-hover: var(--panel, rgba(255, 255, 255, .06)); --border-color: var(--line, rgba(255, 255, 255, .12)); --box-shadow: none; }
 ion-button.oest-ed-b[data-a=save] { font-weight: 700; --color: #fff; --padding-start: min(20px, 4.5vw); --padding-end: min(20px, 4.5vw); --box-shadow: 0 4px 18px rgba(124, 132, 255, .35); }
-ion-button.oest-ed-b ion-icon { font-size: 15px; margin-right: 4px; }
+ion-button.oest-ed-b ion-icon { font-size: var(--oest-ikona-mala); margin-right: 4px; }
 ion-button.oest-ed-b ion-spinner { width: 16px; height: 16px; margin-right: 6px; color: #fff; }
 .oest-ed-scena { flex: 1; min-height: 0; } /* odstęp 6 px wokół zdjęcia liczy moduł (fit), zdjęcie na środku sceny */
 .oest-ed-scena canvas { border-radius: 10px; }
@@ -176,10 +191,10 @@ ion-button.oest-ed-t { width: var(--ed-w); height: 44px; margin: 0; font: 600 18
   --padding-start: 0; --padding-end: 0; --padding-top: 0; --padding-bottom: 0; --border-radius: 11px; --border-width: 1px; --border-style: solid; --border-color: transparent;
   --background: transparent; --background-hover: transparent; --background-activated: rgba(124, 132, 255, .1); --color: var(--steel, #b9c2f0); --box-shadow: none; }
 ion-button.oest-ed-t[data-on] { --background: rgba(124, 132, 255, .18); --background-hover: rgba(124, 132, 255, .18); --border-color: rgba(124, 132, 255, .55); --color: #fff; --box-shadow: 0 0 14px rgba(124, 132, 255, .30); }
-ion-button.oest-ed-t ion-icon { font-size: 18px; }
-ion-button.oest-ed-t[data-t=arrow] ion-icon { font-size: 16px; transform: rotate(-45deg); }
-ion-button.oest-ed-t[data-t=line] ion-icon { font-size: 28px; transform: rotate(-60deg); }
-ion-button.oest-ed-t[data-t=rect] ion-icon { font-size: 17px; }
+ion-button.oest-ed-t ion-icon { font-size: var(--oest-ikona-przycisk); }
+ion-button.oest-ed-t[data-t=arrow] ion-icon { font-size: var(--oest-ikona-przycisk); transform: rotate(-45deg); }
+ion-button.oest-ed-t[data-t=line] ion-icon { font-size: var(--oest-ikona-przycisk); transform: rotate(-60deg); }
+ion-button.oest-ed-t[data-t=rect] ion-icon { font-size: var(--oest-ikona-przycisk); }
 ion-button.oest-ed-t[data-t=c1] ion-icon { font-size: calc(var(--ed-w) * .45); }
 ion-button.oest-ed-t[data-t=c2] ion-icon { font-size: calc(var(--ed-w) * .61); }
 ion-button.oest-ed-t[data-t=c3] ion-icon { font-size: calc(var(--ed-w) * .84); }
@@ -211,7 +226,7 @@ ion-loading[data-oest-ladowanie] .loading-spinner ion-spinner { width: 46px; hei
 ion-modal[data-oest-okno=OdczytArkusz] { align-items: flex-end; --width: min(100%, 560px); --max-height: 88vh; --border-radius: 18px 18px 0 0; --background: #14202a; --border-width: 0; --backdrop-opacity: .6; }
 ion-modal[data-oest-okno=OdczytArkusz] .oest-okno { padding: 16px 16px calc(16px + var(--ion-safe-area-bottom, 0px)); font: 16px system-ui; }
 ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
-ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul ion-icon { font-size: 19px; }
+ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tytul ion-icon { font-size: var(--oest-ikona-mala); }
 ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-tresc { max-height: none; margin: 0; }
 ion-modal[data-oest-okno=OdczytArkusz] .oest-okno-rzad { margin-top: 16px; }
 ion-modal[data-oest-okno=OdczytArkusz] ion-button.oest-okno-b[data-okno=ok] { height: 56px; font: 700 18px system-ui; --background: #fff; --background-hover: #fff; --background-activated: #e8e8e8; --color: #14202a; --box-shadow: none; }
@@ -241,17 +256,16 @@ ion-button.oest-dzien { flex: none; width: 50px; height: auto; margin: 0; text-t
 ion-button.oest-dzien ion-label { text-align: center; }
 ion-button.oest-dzien small { display: block; font-size: .72rem; text-transform: uppercase; color: var(--muted); }
 ion-button.oest-dzien strong { display: block; font-size: 1.1rem; }
-ion-button.oest-dzien ion-icon { display: block; margin: 0 auto; height: 1.2em; font-size: .8rem; }
+ion-button.oest-dzien ion-icon { display: block; margin: 0 auto; height: 1.2em; font-size: var(--oest-ikona-mala); }
 ion-button.oest-dzien ion-badge { display: block; min-width: 26px; width: max-content; margin: 3px auto 0; border-radius: 7px; font-size: .72rem; --background: rgba(255,255,255,.1); --color: var(--muted); }
 ion-button.oest-dzien[data-minal] { opacity: .4; }
 ion-button.oest-dzien[data-praca] { --background: linear-gradient(135deg, rgba(91,124,255,.35), rgba(163,91,255,.35)); --border-color: rgba(160,150,255,.45); }
 ion-button.oest-dzien[data-dzis] { --border-color: var(--accent); --box-shadow: 0 0 12px rgba(124,132,255,.5); }
 ion-button.oest-dzien[data-wybrany] { --border-color: #fff; --box-shadow: 0 0 14px rgba(124,132,255,.7); }
 .oest-kafelki { --ion-grid-column-padding: 0; padding: 0 11px; }
-/* height: kafelki w jednym wierszu tej samej wysokości – kolumna siatki rośnie do wysokości wiersza (Grzegorz 27/11/2026: „wielkie kafelki się rozjeżdżają”, „Ściany / podłogi / sufit” w dwóch linijkach) */
-.oest-kafelki ion-card { height: calc(100% - 10px); margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
+.oest-kafelki ion-card { margin: 5px; border: 1px solid var(--line); border-radius: 18px; box-shadow: none; text-align: center; }
 .oest-kafelki ion-card-header { align-items: center; padding: 16px 10px 14px; }
-.oest-kafelki ion-card-header > ion-icon { width: 24px; height: 24px; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
+.oest-kafelki ion-card-header > ion-icon { width: var(--oest-ikona-kafel); height: var(--oest-ikona-kafel); padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--grad); color: #fff; box-sizing: content-box; box-shadow: 0 8px 24px rgba(120,90,255,.4); }
 .oest-kafelki ion-card-title { align-self: stretch; font-size: .95rem; font-weight: 700; color: var(--ink); }
 /* licznik kafelka w prawym górnym rogu, poza układem – każdy kafelek ma ten sam rozmiar bez względu na licznik (Grzegorz 25.11.2026) */
 .oest-kafelki ion-card-header > ion-badge { position: absolute; top: 10px; right: 10px; }
@@ -263,7 +277,7 @@ ion-button.oest-ikona ion-badge { position: absolute; top: -8px; right: -8px; bo
 .oest-lampki { display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; padding: 4px 10px 14px; }
 .oest-lampki ion-chip, .oest-lampki ion-chip.ion-color { min-width: 0; flex: 0 1 auto; --background: transparent; background: transparent; margin: 0 4px; padding: 0 6px; border: 0; font-size: .85rem; }
 .oest-lampki ion-chip:last-child { margin-left: auto; }
-.oest-lampki ion-chip ion-icon { font-size: 9px; margin-right: 6px; }
+.oest-lampki ion-chip ion-icon { font-size: var(--oest-ikona-kropka); margin-right: 6px; }
 .oest-jezyk { display: flex; height: 32px; padding: 2px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
 .oest-jezyk ion-button { height: 26px; margin: 0; --padding-start: 7px; --padding-end: 7px; --border-radius: 8px; --box-shadow: none; --color: var(--muted); font-weight: 700; }
 .oest-jezyk ion-button[fill=solid] { --color: #fff; }
@@ -277,7 +291,7 @@ ion-card.oest-klocek[data-szary] { --oest-grupa: #8b949e; border-color: #8b949e;
 .oest-klocek .oest-kr + .oest-kr { margin-top: 9px; }
 .oest-klocek h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oest-klocek .oest-kr > img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; border: 1px solid rgba(255,255,255,.2); flex: none; }
-.oest-klocek ion-icon { flex: none; width: 21px; height: 21px; color: var(--steel); --ionicon-stroke-width: 36px; }
+.oest-klocek ion-icon { flex: none; width: var(--oest-ikona-klocek); height: var(--oest-ikona-klocek); color: var(--steel); --ionicon-stroke-width: 36px; }
 .oest-klocek ion-icon[data-ton="ok"] { color: #21c45a; }
 .oest-klocek ion-icon[data-ton="blad"], .oest-klocek ion-icon[data-ton="danger"] { color: #ef3b36; }
 .oest-klocek ion-icon[data-ton="brak"] { color: #9097a6; }
@@ -320,7 +334,7 @@ ion-badge.oest-pigulka[data-kolor="tertiary"] { color: #a35bff; }
 .oest-chipy { display: flex; gap: 8px; overflow-x: auto; padding: 6px 16px 12px; scrollbar-width: none; }
 .oest-chipy ion-chip { flex: none; margin: 0; min-height: 32px; font-size: .85rem; border-radius: 999px; border: 1px solid var(--line); --background: var(--panel); --color: var(--ink); transition: transform .12s, box-shadow .12s; }
 .oest-chipy ion-chip[data-on] { --background: var(--grad); border-color: transparent; --color: #fff; transform: translateY(1px) scale(.97); box-shadow: inset 0 2px 6px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.12); filter: brightness(.92); }
-.oest-chipy ion-icon { width: 10px; height: 10px; margin: 0 6px 0 0; }
+.oest-chipy ion-icon { width: var(--oest-ikona-kropka); height: var(--oest-ikona-kropka); margin: 0 6px 0 0; }
 .oest-chipy ion-icon[data-grupa="fire"] { color: #e5534b; }
 .oest-chipy ion-icon[data-grupa="water"] { color: #3b8eea; }
 .oest-chipy ion-icon[data-grupa="elec"] { color: #e3b341; }
@@ -388,7 +402,7 @@ ion-card.oest-panel ion-button.oest-duzy { margin: 0; }
 ion-progress-bar.oest-sbar-p { height: 2px; --background: transparent; --progress-background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); }
 .oest-sbar-m { display: flex; padding: 10px 12px 6px; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line, rgba(255, 255, 255, .12)); }
 .oest-sbar-m small { flex: 1 1 100%; opacity: .75; font-size: 12px; }
-.oest-sbar-m ion-button { flex: 1 1 auto; height: auto; min-height: 40px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: var(--panel, rgba(255, 255, 255, .06)); --color: var(--ink); --padding-top: 8px; --padding-bottom: 8px; --padding-start: 12px; --padding-end: 12px; --box-shadow: none; }
+.oest-sbar-m ion-button { height: auto; min-height: 40px; margin: 0; font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; --border-radius: 12px; --border-width: 1px; --border-style: solid; --border-color: var(--line, rgba(255, 255, 255, .18)); --background: var(--panel, rgba(255, 255, 255, .06)); --color: var(--ink); --padding-top: 8px; --padding-bottom: 8px; --padding-start: 12px; --padding-end: 12px; --box-shadow: none; }
 .oest-sbar-m ion-button.oest-sbar-go { --background: var(--grad, linear-gradient(90deg, #5b7cff, #a35bff)); --color: #fff; --border-color: transparent; }
 /* podgląd na cały ekran (OESTOkna.okno({ pelny: true }), np. zdjęcie) – jak dawny .zd-full na main: czarne tło .92, odstęp 12 px, treść na środku */
 ion-modal.oest-karta.oest-podglad { --width: 100%; --height: 100%; --max-width: none; --max-height: none; --border-radius: 0; --border-width: 0; --background: rgba(0, 0, 0, .92); --backdrop-opacity: 0; }
@@ -568,7 +582,7 @@ ion-item.oest-adresat ion-checkbox.checkbox-disabled::part(label), ion-item.oest
 .oest-rx-phb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
 .oest-ekran .oest-rx-phb ion-button { min-height: 58px; font-size: 12.5px; line-height: 1.15; --padding-start: 2px; --padding-end: 2px; }
 .oest-rx-phb-w { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.oest-rx-phb-w ion-icon { width: 22px; height: 22px; }
+.oest-rx-phb-w ion-icon { width: var(--oest-ikona-kafel); height: var(--oest-ikona-kafel); }
 .oest-rx-phb-w span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oest-rx-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .oest-rx-ph { position: relative; }
@@ -597,17 +611,23 @@ ion-toolbar ion-buttons .oest-jezyk ion-button.in-buttons[fill=solid] { --backgr
 /* tło pod przyciskami nawigacji telefonu (czesci/TloNawigacji.vue): pusty pasek w stopce = tylko odstęp safe-area dołu od Ionic, kolor tła apki */
 ion-footer ion-toolbar:empty { --min-height: 0; --padding-top: 0; --padding-bottom: 0; --background: var(--bg); }
 /* rząd statusu inspekcji (ekrany/inspekcja/Formularz.vue, Grzegorz 25.11.2026): 11 kolumn – ⋮ 3 | status 5 | termin 3; pigułka zawsze ta sama szerokość */
-ion-grid[data-ui~=iright] { --ion-grid-columns: 11; }
+ion-grid[data-ui~=iright] { --ion-grid-columns: 11; --ion-grid-padding: 0; } /* bez pustego pasa nad statusem (Grzegorz 27/11/2026) */
 /* Imię / Data – niższe wiersze, mniejszy odstęp (Grzegorz 25.11.2026) */
 ion-list[data-ui~=ileft] ion-item { --min-height: 34px; }
+ion-list[data-ui~=ileft] { padding: 0; } /* bez pustego pasa pod „Data” (Grzegorz 27/11/2026) */
 /* klocek StatusInspekcji: węższe boki pigułki */
 ion-button[data-ui~=status] { --padding-start: 10px; --padding-end: 10px; }
 /* termin inspekcji („Po terminie X dni”) – fioletowy jak na main */
 ion-text[data-termin] { --ion-color-base: #b9a8ff; }
+/* panel zdjęć inspekcji: licznik i miejsce na miniatury chowają się, gdy są puste (Grzegorz 27/11/2026: puste miejsce w karcie) */
+ion-grid[data-ui~=photos]:empty, ion-grid[data-ui~=photo-head]:has(> ion-text:empty + ion-text:empty) { display: none; }
 
 /* rząd przycisków ekranu w treści (czesci/AkcjeEkranu.vue, Grzegorz 25.11.2026): bez własnego tła paska – tło ekranu prześwituje, jak na main */
 ion-content ion-toolbar { --background: transparent; --border-width: 0; --min-height: 40px; } /* rząd ⋮ nad treścią niższy (Grzegorz 25.11.2026) */
 /* kafelki zdjęć inspekcji (czesci/KafelZdjecia.vue, Grzegorz 25.11.2026): jak na main – jasny napis, zaokrąglone rogi, wąskie boki; kolor obwódki z koloru Ionic */
 ion-button[data-ui~=kafel-zdjecia] { --color: var(--ink); --border-color: var(--line); --border-width: 1px; --border-radius: 12px; --padding-start: 2px; --padding-end: 2px; --padding-top: 8px; --padding-bottom: 8px; --ionicon-stroke-width: 1.8px; }
+/* napis zmniejsza się z szerokością kafelka, żeby najdłuższe słowo („Formularz”) weszło całe (Grzegorz 27/11/2026: „Formularz” ucięty) */
+ion-button[data-ui~=kafel-zdjecia] ion-label.ion-text-wrap { font-size: min(13px, 16cqi); }
+ion-button[data-ui~=kafel-zdjecia] ion-icon { font-size: var(--oest-ikona-przycisk); }
 ion-button[data-ui~=kafel-zdjecia][data-ok] { --border-color: var(--ion-color-success); }
 ion-button[data-ui~=kafel-zdjecia][data-alarm] { --border-color: var(--ion-color-danger); }

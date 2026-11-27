@@ -110,17 +110,14 @@
   function syncSendHint() {
     var n = needsNow(), h = $("sendHint"); if (!h) return;
     if (!n || cur.mode !== "one") { h.textContent = ""; return; }
+    // Krótko pod Wyślij (Grzegorz 27/11/2026, karta „Jak ułożyć tekst pod przyciskiem Wyślij?”): „PDF + Word → adres”; co i jak idzie – w ⚙.
     function txt() {
-    var to = recipientsFor(n), what = [], off = [];
-    if (n.q && sendParts().q) what.push(window.OESTT("raport", "report"));
-    if (n.f) what.push(window.OESTT("zdjęcia formularza", "form photos"));
-    if (n.p || n.t) what.push(window.OESTT("zdjęcia", "photos"));
+    var to = recipientsFor(n), off = [];
     if (!n.f && sheetPhotos().length) off.push(window.OESTT("zdjęcia formularza", "form photos") + " (" + sheetPhotos().length + ")");
     if (!n.p && genPhotos().length) off.push(window.OESTT("zdjęcia ogólne", "general photos") + " (" + genPhotos().length + ")");
     if (!n.t && photos.some(function (p) { return p.tap != null; })) off.push(window.OESTT("zdjęcia do pytań", "question photos") + " (" + photos.filter(function (p) { return p.tap != null; }).length + ")");
-    return "⚙ " + (what.join(" + ") || window.OESTT("nic", "nothing")) + " · " + (n.one ? window.OESTT("jeden dokument", "one document") : window.OESTT("osobne pliki", "separate files")) + " · " +
-      [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || window.OESTT("brak adresata", "no recipient")) +
-      (off.length ? window.OESTT(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") : "") + ".";
+    return [n.xp && "PDF", n.xw && hasWord() && "Word"].filter(Boolean).join(" + ") + " → " + (to.list.join(", ") || window.OESTT("brak adresata", "no recipient")) +
+      (off.length ? window.OESTT(". Odznaczone, nie pójdą: ", ". Unticked, will not go: ") + off.join(", ") + "." : "");
     }
     h.textContent = txt();
     if (window.OESTPodmien && window.OESTBledy && OESTBledy.wJezyku) OESTPodmien.miejsce(h, OESTBledy.wJezyku(OESTBledy.drugi(), txt)); // PL i EN zajmują tyle samo miejsca

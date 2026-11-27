@@ -5,7 +5,7 @@
      więc ten sam układ: rząd 29 px, lampka 8 px z poświatą, kropka stanu 10 px, ▴ jako znak; style: szkielet.css (.oest-sbar*). -->
 <template>
   <div v-if="s.widoczny" id="oest-pasek-wysylki" class="oest-sbar" :class="[s.ton, s.otwarty ? 'open' : '']" role="status">
-    <div v-if="s.otwarty" class="oest-sbar-m">
+    <div v-if="s.otwarty" class="oest-sbar-m oest-rowne">
       <small v-if="s.opis">{{ s.opis }}</small>
       <ion-button v-for="b in s.przyciski" :key="b.a" :data-a="b.a" :class="b.glowny ? 'oest-sbar-go' : 'oest-sbar-b'" fill="outline" @click="akcja(b.a)">{{ b.tekst }}</ion-button>
     </div>
