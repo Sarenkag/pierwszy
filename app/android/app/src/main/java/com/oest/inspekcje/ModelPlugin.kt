@@ -16,9 +16,11 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -36,6 +38,9 @@ class ModelPlugin : Plugin() {
     private val main = Handler(Looper.getMainLooper())
     private var engine: Engine? = null
     private var engineFile: String = ""
+    /** Czat z Gemmą (Grzegorz 27/11/2026): jedna trwała rozmowa biblioteki – każda wiadomość to kolejna tura (wzór Google LiteRT-LM). */
+    private var chat: Conversation? = null
+    private var chatKey: String = ""
     @Volatile private var destroyed = false
     private val idle = Runnable { if (!destroyed) try { worker.execute { closeEngine() } } catch (_: Throwable) {} }
 
@@ -141,6 +146,7 @@ class ModelPlugin : Plugin() {
                 val file = fileFor(name)
                 if (!file.exists() || (file.parentFile == dir() && stillDownloading(name))) throw IllegalStateException("MODEL_NOT_DOWNLOADED")
                 val eng = load(file)
+                closeChat() // silnik trzyma jedną rozmowę naraz; czat wróci z historii przy następnej wiadomości
                 val cfg = ConversationConfig(
                     systemInstruction = Contents.of(system),
                     samplerConfig = SamplerConfig(topK = 20, topP = 0.9, temperature = temperature),
@@ -154,6 +160,50 @@ class ModelPlugin : Plugin() {
             }
         }
     }
+
+    /** {name, system, message, history:[{role:'user'|'model', text}]} → {text}. history wczytywana tylko przy zakładaniu rozmowy (start apki, po pracy agenta, po zwolnieniu silnika). */
+    @PluginMethod fun chat(call: PluginCall) {
+        val name: String; val system = call.getString("system", "")!!; val message = call.getString("message", "")!!
+        try { name = safeName(call.getString("name", "")!!) } catch (e: Throwable) { call.reject("MODEL_NAME"); return }
+        if (Build.VERSION.SDK_INT < 31) { call.reject("MODEL_ANDROID_TOO_OLD"); return }
+        if (message.isBlank() || message.length > 20000 || system.length > 8000) { call.reject("MODEL_INPUT"); return }
+        val history = mutableListOf<Message>()
+        try {
+            val arr = call.getArray("history")
+            if (arr != null) for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i); val t = o.optString("text", "")
+                if (t.isNotBlank()) history.add(if (o.optString("role") == "model") Message.model(t) else Message.user(t))
+            }
+        } catch (e: Throwable) { call.reject("MODEL_INPUT"); return }
+        val temperature = call.getDouble("temperature") ?: 0.2
+        main.removeCallbacks(idle)
+        worker.execute {
+            try {
+                val file = fileFor(name)
+                if (!file.exists() || (file.parentFile == dir() && stillDownloading(name))) throw IllegalStateException("MODEL_NOT_DOWNLOADED")
+                val eng = load(file)
+                val key = file.path + "\n" + system
+                val conv = chat?.takeIf { chatKey == key } ?: run {
+                    closeChat()
+                    eng.createConversation(ConversationConfig(
+                        systemInstruction = Contents.of(system),
+                        initialMessages = history,
+                        samplerConfig = SamplerConfig(topK = 20, topP = 0.9, temperature = temperature),
+                    )).also { chat = it; chatKey = key }
+                }
+                val text = runBlocking { conv.sendMessage(message) }.toString()
+                val out = JSObject(); out.put("text", text.trim()); call.resolve(out)
+            } catch (e: Throwable) {
+                closeChat()
+                call.reject("MODEL_FAILED: " + (e.message ?: e.javaClass.simpleName))
+            } finally {
+                if (!destroyed) main.postDelayed(idle, 180_000)
+            }
+        }
+    }
+
+    /** „Nowa rozmowa”: zamyka rozmowę czatu w bibliotece. */
+    @PluginMethod fun chatReset(call: PluginCall) { worker.execute { closeChat(); call.resolve() } }
 
     @PluginMethod fun unload(call: PluginCall) { worker.execute { closeEngine(); call.resolve() } }
 
@@ -175,7 +225,8 @@ class ModelPlugin : Plugin() {
         prefs().edit().remove("dl:$name").apply(); return false
     }
 
-    private fun closeEngine() { try { engine?.close() } catch (_: Throwable) {} ; engine = null; engineFile = "" }
+    private fun closeChat() { try { chat?.close() } catch (_: Throwable) {} ; chat = null; chatKey = "" }
+    private fun closeEngine() { closeChat(); try { engine?.close() } catch (_: Throwable) {} ; engine = null; engineFile = "" }
 
     override fun handleOnDestroy() { destroyed = true; main.removeCallbacks(idle); worker.execute { closeEngine() }; worker.shutdown(); super.handleOnDestroy() }
 }
