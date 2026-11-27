@@ -24,9 +24,10 @@ import OdczytArkusz from './czesci/OdczytArkusz.vue';
 import KolejkaInsp from './czesci/KolejkaInsp.vue';
 import RozmiarZdjec from './czesci/RozmiarZdjec.vue';
 import PodgladUpdate from './czesci/PodgladUpdate.vue'; // podgląd przed wysłaniem do Vantify (Reactive, 26/11/2026)
+import WynikVantify from './czesci/WynikVantify.vue'; // wynik zakładania w Vantify w wierszach (Reactive, 27/11/2026)
 import { WIDOKI_INSPEKCJI } from './ekrany/index.js';
 
-const CZESCI = { Aparat, EdytorZdjec, Notatki, NotatkiOkno, NotatkiPropozycja, NotatkaNowa, Nagrywanie, Ladowanie, OdczytArkusz, KolejkaInsp, RozmiarZdjec, PodgladUpdate };
+const CZESCI = { Aparat, EdytorZdjec, Notatki, NotatkiOkno, NotatkiPropozycja, NotatkaNowa, Nagrywanie, Ladowanie, OdczytArkusz, KolejkaInsp, RozmiarZdjec, PodgladUpdate, WynikVantify };
 void IonSpinner; // <ion-spinner> zdefiniowany także dla napisów starego kodu (OESTLadowanie.ring())
 
 export function zainstaluj(w, OESTOkna, T) {

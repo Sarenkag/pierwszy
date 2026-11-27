@@ -27,12 +27,12 @@
   /* zdjęcia przed wysłane przy zakładaniu, a niewidoczne przy zleceniu (przegląd Codex #166): {hrefs, seen} na karcie */
   function photosMissing(d) { const p = d?.vantify?.photos; return p && Array.isArray(p.hrefs) ? p.hrefs.filter(h => !(p.seen || []).includes(h)).length : 0; }
   /* co już jest w Vantify (Grzegorz 26/11/2026: wysłane = zablokowane, szare, „✓ w Vantify, godzina”): godziny wysłania
-     { zlecenie, zdjecia: { idZdjęcia: czas }, notatki: { done, rec, final: czas } } – czas ISO albo brak */
+     { zlecenie, zdjecia: { idZdjęcia: czas }, notatki: { done, rec, info, final: czas } } – czas ISO albo brak */
   function wyslane(d) {
     const v = d?.vantify || {}, p = v.photos || {}, zd = {}, n = {};
     if (!v.id) return { zlecenie: '', zdjecia: zd, notatki: n };
     (p.ids || []).forEach((id, i) => { if (id && (p.hrefs || [])[i]) zd[id] = (p.at || {})[id] || v.at || ''; });
-    for (const k of ['done', 'rec', 'final']) if (v.notes?.[k]?.at) n[k] = v.notes[k].at;
+    for (const k of ['done', 'rec', 'info', 'final']) if (v.notes?.[k]?.at) n[k] = v.notes[k].at;
     return { zlecenie: v.at || '', zdjecia: zd, notatki: n };
   }
   /* przycisk „Zamknij w Vantify” w zakładce Zamknięcie: { tekst, rx, ton } – ton: '' zwykły, 'off' przygaszony, 'done' zielony ✓, 'go' główny */
@@ -51,10 +51,19 @@
   }
   /* wynik zakładania w okienku Ionic, które zostaje do zamknięcia (Grzegorz 21/11/2026: „nie ma jak w apce sprawdzić, czy poszło”);
      okienko ze szkieletu (moduly/szkielet, OESTOkna.komunikat = ion-alert), bez własnego HTML. Pasek na dole mówi to samo. */
-  const wynik = (tytul, tresc) => w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
+  /* wynik w wierszach (Grzegorz 27/11/2026): tresc = [{ etykieta, tekst, uwaga }] → okienko WynikVantify; tekst = zwykły komunikat */
+  const wynik = (tytul, tresc) => Array.isArray(tresc) && w.OESTCzesci?.okno ? w.OESTCzesci.okno('WynikVantify', { dane: () => ({ wiersze: tresc }) }, { tytul, ok: 'OK', anuluj: false }).catch(() => {}) : Array.isArray(tresc) ? wynik(tytul, tresc.map(r => r.etykieta + ': ' + r.tekst).join('\n')) : w.OESTOkna?.komunikat ? w.OESTOkna.komunikat({ tytul, tresc, przyciski: [{ text: 'OK', role: 'ok' }] }).catch(() => {}) : Promise.resolve();
   async function act(P, a) { try { return await P.action({ action: { site: SITE, nonce: (w.crypto?.randomUUID?.() || String(Date.now())), ...a } }); } catch (e) { return { status: 'error', code: e?.code || e?.message || 'error' }; } }
   async function wzory(P) { try { return await P.wzory(); } catch (e) { return {}; } }
 
+  /* Summary do Vantify z karty – jedno miejsce dla okna „Załóż zlecenie” i podglądu pod nazwą zadania (Grzegorz 27/11/2026: „mogłaby od razu tłumaczyć”) */
+  async function nazwaEn(x, d) {
+    /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
+    const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = x.kreator, ks = K && K.fromDraft(d, roomEn);
+    /* kreator opisu (PROD-039): Summary z wyborów (już po angielsku); bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026) */
+    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '';
+    return { roomEn, K, ks, sum };
+  }
   async function open(x) {
     const { draft: d, L } = x, P = plugin();
     if (state(d) !== 'none' && state(d) !== 'pending') return check(x);
@@ -62,13 +71,11 @@
     /* poprzednie zakładanie bez odpowiedzi (przegląd Codex #146): zlecenie mogło powstać – najpierw sprawdzić w Vantify */
     if (state(d) === 'pending' && !await ask({ title: 'Open Vantify', text: L('Poprzednie zakładanie (', 'The previous attempt (') + new Date(d.vantify.at).toLocaleString('en-GB') + L(') nie dostało odpowiedzi z Vantify i zlecenie mogło już powstać: „', ') got no answer from Vantify and the job may already exist: “') + (d.vantify.summary || '') + L('”. Sprawdź najpierw listę zleceń w Vantify. Założyć nowe mimo to?', '”. Check the job list in Vantify first. Create a new one anyway?'), ok: L('Załóż mimo to', 'Create anyway'), cancel: L('Wróć', 'Back') })) return;
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
-    /* miejsce: budynek i piętro z listy (już po angielsku), opis miejsca wpisany ręcznie – tłumaczony (przegląd Codex #146) */
-    const roomEn = String(d.room || '').trim() ? await x.english(String(d.room).trim(), '') : '', K = x.kreator, ks = K && K.fromDraft(d, roomEn);
+    const { roomEn, K, ks, sum } = await nazwaEn(x, d), body = await x.english('start', d.note || '');
     /* piętro z napisem jak w kreatorze (K.where): „Level 20”, nie gołe „20” (Grzegorz 21/11/2026) */
     const lvl = String(d.level || ''), where = [d.building, /^\d/.test(lvl) ? 'Level ' + lvl : lvl, d.flat ? 'Flat ' + d.flat : '', roomEn].filter(Boolean).join(', ');
     /* kreator opisu (PROD-039): Summary i opis zlecenia z wyborów (już po angielsku), info na start dopisane pod spodem */
     /* bez kreatora i bez nazwy: Summary proponuje Gemma z info na start (Grzegorz 25/11/2026); do poprawy w oknie poniżej */
-    const sum = ks ? K.summary(ks) : String(d.title || d.problem || '').trim() ? await x.english(d.title || d.problem || '', '') : x.summary ? await x.summary(d.note || '') : '', body = await x.english('start', d.note || '');
     /* miejsce na początku opisu (Grzegorz 26/11/2026: Vantify nie przyjmuje własnej lokalizacji) – tylko to, co wpisane na karcie */
     const desc = [where.split(', ').join(' · '), ks ? K.request(ks) : '', body].filter(Boolean).join('\n');
     /* priorytet do wyboru (Grzegorz 20/11/2026: dłuższy termin niż P5, żeby zlecenie nie było zaległe, zanim Josh zatwierdzi);
@@ -107,8 +114,9 @@
       const photos = files.length ? { hrefs: Array.isArray(r.hrefs) ? r.hrefs : [], seen: Array.isArray(r.seenHrefs) ? r.seenHrefs : [], ids: files.map(f => f.id) } : null;
       await saved(x, { id: r.id, status: r.job?.status || 'approval_pending', summary: r.job?.summary || summary, ...(priority ? { priority, priorityName: prioName } : {}), ...(jobgroup ? { jobgroup, groupName } : {}), ...(photos ? { photos } : {}), startNote: String(x.draft.note || '') });
       const miss = photos ? photosMissing(x.draft) : 0;
-      const ph = !photos ? '' : miss ? L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.seen.length + '/' + photos.hrefs.length + (r.photoError ? L(' – Vantify: ', ' – Vantify: ') + r.photoError : '') + L('. Stuknij „⚠ Vantify”, żeby dosłać brakujące.', '. Tap “⚠ Vantify” to send the missing ones.') : L(' Zdjęcia przed przy zleceniu: ', ' Before photos on the job: ') + photos.hrefs.length + '/' + photos.hrefs.length + '.';
-      const done = wynik(L('Założone w Vantify #', 'Created in Vantify #') + r.id, L('Zlecenie #', 'Job #') + r.id + ': „' + (r.job?.summary || summary) + L('”. Status: czeka na zatwierdzenie (Pending Approval).', '”. Status: awaiting approval (Pending Approval).') + ph);
+      const wiersze = [{ etykieta: L('Numer zlecenia', 'Job number'), tekst: '#' + r.id }, { etykieta: 'Summary', tekst: r.job?.summary || summary }, { etykieta: 'Status', tekst: L('Czeka na zatwierdzenie (Pending Approval)', 'Awaiting approval (Pending Approval)') }];
+      if (photos) wiersze.push({ etykieta: L('Zdjęcia przed przy zleceniu', 'Before photos on the job'), tekst: (miss ? photos.seen.length : photos.hrefs.length) + '/' + photos.hrefs.length + (miss ? (r.photoError ? ' – Vantify: ' + r.photoError : '') + L('. Stuknij „⚠ Vantify”, żeby dosłać brakujące.', '. Tap “⚠ Vantify” to send the missing ones.') : ''), uwaga: !!miss });
+      const done = wynik(L('Założone w Vantify', 'Created in Vantify'), wiersze);
       if (photos && photosMissing(x.draft)) x.message(L('Założone w Vantify #', 'Created in Vantify #') + r.id + L(', ale widzę tylko ', ', but I see only ') + photos.seen.length + L(' z ', ' of ') + photos.hrefs.length + L(' zdjęć przed', ' before photos') + (r.photoError ? L(' (Vantify: ', ' (Vantify: ') + r.photoError + ')' : '') + L('. Stuknij „⚠ Vantify”, żeby sprawdzić znowu i dosłać brakujące.', '. Tap “⚠ Vantify” to check again and send the missing ones.'));
       return done;
     }
@@ -126,6 +134,8 @@
   const UPDATE_TEXT = 'Works completed. Please approve so the job can be closed.';
   /* notatka z rekomendacją zawsze z nagłówkiem w pierwszej linii (Grzegorz 26/11/2026: „zawsze nad tym recommendation”, wpisuje tak ręcznie w Vantify) */
   const REC_HEAD = 'Recommendation:', recText = t => { t = String(t || '').trim(); return !t || t.toLowerCase().startsWith(REC_HEAD.toLowerCase()) ? t : REC_HEAD + '\n' + t; };
+  /* Dodatkowe informacje (Grzegorz 27/11/2026): osobna wiadomość po rekomendacji, z nagłówkiem jak rekomendacja */
+  const INFO_HEAD = 'Additional information:', infoText = t => { t = String(t || '').trim(); return !t || t.toLowerCase().startsWith(INFO_HEAD.toLowerCase()) ? t : INFO_HEAD + '\n' + t; };
   /* podgląd przed wysyłką: { wiadomosci: [{ id, etykieta, tekst }], zdjecia: [{ url, tytul }] } → poprawione wiadomości albo null (Wróć) */
   async function podglad(x, tytul, dane) {
     const C = w.OESTCzesci; if (!C?.okno) return null;
@@ -162,17 +172,18 @@
     if (r.status !== 'ok') return x.message(why(r, L) + (sent.filter(Boolean).length ? L(' Wysłane: ', ' Sent: ') + sent.filter(Boolean).length + '/' + files.length : ''));
     x.message(photosMissing(x.draft) ? L('Wysłane, ale Vantify nie pokazuje wszystkich zdjęć. Stuknij „⚠ Vantify” w zakładce Zlecenie, żeby sprawdzić.', 'Sent, but Vantify does not show all photos. Tap “⚠ Vantify” on the Job tab to check.') : L('✓ Zdjęcia w Vantify #', '✓ Photos on Vantify #') + v.id + ': ' + sent.filter(Boolean).length + '.');
   }
-  /* Update w zakładce Notatki: Co zrobione, Rekomendacja (gdy wpisana) i na końcu zawsze prośba o zatwierdzenie – osobne wiadomości.
+  /* Update w zakładce Notatki: Co zrobione, Rekomendacja i Dodatkowe informacje (gdy wpisane) i na końcu zawsze prośba o zatwierdzenie – osobne wiadomości.
      Każda zapisana na karcie PRZED wysyłką (sentAt); zgubiona odpowiedź = następny Update najpierw sprawdza, czy jest przy zleceniu. */
   async function notatki(x) {
     const { draft: d, L } = x, P = plugin(), v = d.vantify;
     if (!v?.id) return x.message(L('Najpierw „Załóż w Vantify” w zakładce Zlecenie.', 'First “Create in Vantify” on the Job tab.'));
     if (!P) return x.message(L('Vantify działa w aplikacji na telefonie.', 'Vantify works in the phone app.'));
-    const n = v.notes || {}, msgs = [], et = { done: L('Co zrobione', 'Work done'), rec: L('Rekomendacja', 'Recommendation'), final: L('Prośba o zatwierdzenie', 'Approval request') };
+    const n = v.notes || {}, msgs = [], et = { done: L('Co zrobione', 'Work done'), rec: L('Rekomendacja', 'Recommendation'), info: L('Dodatkowe informacje', 'Additional information'), final: L('Prośba o zatwierdzenie', 'Approval request') };
     x.message(L('Tłumaczę na angielski…', 'Translating to English…'));
-    const hasDone = !!String(d.endNote || '').trim() || !!await x.english('end', '', true), hasRec = !!String(d.recNote || '').trim() || !!await x.english('rec', '', true);
+    const hasDone = !!String(d.endNote || '').trim() || !!await x.english('end', '', true), hasRec = !!String(d.recNote || '').trim() || !!await x.english('rec', '', true), hasInfo = !!String(d.infoNote || '').trim() || !!await x.english('info', '', true);
     if (!n.done?.at && hasDone) msgs.push({ id: 'done', etykieta: et.done, tekst: n.done?.text || await x.english('end', d.endNote || '') });
     if (!n.rec?.at && hasRec) msgs.push({ id: 'rec', etykieta: et.rec, tekst: recText(n.rec?.text || await x.english('rec', d.recNote || '')) });
+    if (!n.info?.at && hasInfo) msgs.push({ id: 'info', etykieta: et.info, tekst: infoText(n.info?.text || await x.english('info', d.infoNote || '')) });
     if (!n.final?.at && (n.done?.at || msgs.some(m => m.id === 'done'))) msgs.push({ id: 'final', etykieta: et.final, tekst: n.final?.text || UPDATE_TEXT });
     x.message('');
     if (!msgs.length) return x.message(n.final?.at ? L('Wszystkie notatki są już w Vantify.', 'All notes are already in Vantify.') : L('Najpierw wpisz albo nagraj „Co zrobione”.', 'First type or record “Work done”.'));
@@ -180,9 +191,9 @@
     if (!list) return;
     if (list.some(m => !String(m.tekst || '').trim())) return x.message(L('Wiadomość nie może być pusta.', 'The message cannot be empty.'));
     if (!await fresh(x, P)) return;
-    const W = await wzory(P), save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
+    const save = async (id, o) => { x.draft.vantify = { ...x.draft.vantify, notes: { ...(x.draft.vantify.notes || {}), [id]: o } }; await x.persist(); x.render(); };
     for (const m of list) {
-      const text = m.id === 'rec' ? recText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
+      const text = m.id === 'rec' ? recText(m.tekst) : m.id === 'info' ? infoText(m.tekst) : String(m.tekst).trim(), prev = (x.draft.vantify.notes || {})[m.id];
       /* poprzednia próba bez odpowiedzi: najpierw odczyt wiadomości przy zleceniu (bez dublowania) */
       if (prev?.sentAt && !prev.at) {
         const c = await act(P, { op: 'status', ids: [v.id], messageText: prev.text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
@@ -191,8 +202,9 @@
       }
       await save(m.id, { text, sentAt: new Date().toISOString() });
       x.message(L('Wysyłam do Vantify: ', 'Sending to Vantify: ') + m.etykieta + '…');
-      if (!W.update) {
-        /* pierwszy raz (brak wzoru): okno Vantify z tekstem do skopiowania, apka uczy się i następne wysyła sama */
+      const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '', anyStatus: true });
+      if (r.status === 'nowzor' && r.built) {
+        /* wbudowany wzór odrzucony przez Vantify (4xx): okno Vantify z tekstem do skopiowania, apka uczy się i następne wysyła sama */
         await ask({ title: 'Update', text: L('Pierwszy raz: dodaj wiadomość do zlecenia w oknie Vantify, jak zwykle. Tekst jest gotowy do skopiowania (przycisk u góry). Apka zapamięta, jak to zrobiłeś, a następne wyśle sama.', 'First time: add a message to the job in the Vantify window as usual. The text is ready to copy (button at the top). The app remembers how you did it and sends the next ones by itself.'), alert: true });
         try { await P.open({ lang: L('pl', 'en'), hash: jobHash(v.id, 'status'), text }); } catch (e) { return x.message(why({ code: e?.code || e?.message }, L)); }
         const c = await act(P, { op: 'status', ids: [v.id], messageText: text }), j2 = c.status === 'ok' ? (c.jobs || [])[0] : null;
@@ -200,7 +212,6 @@
         await save(m.id, { text, sentAt: new Date().toISOString(), at: new Date().toISOString() });
         return notatki(x);
       }
-      const r = await act(P, { op: 'update', id: v.id, text, summary: v.summary || '', anyStatus: true });
       if (r.status === 'differs' || r.status === 'nowzor') { await save(m.id, prev || null); if (r.job) await update(x, r.job); return x.message(r.why === 'summary' ? L('W Vantify zlecenie ma inną nazwę. Nic nie wysłałem.', 'In Vantify the job has a different name. Nothing was sent.') : 'Vantify #' + v.id + ': ' + label(r.job || {}, L) + L('. Nie wysłane.', '. Not sent.')); }
       if (r.status !== 'ok') return x.message(why(r, L) + L(' Stuknij Update, żeby sprawdzić, czy doszło.', ' Tap Update to check whether it arrived.'));
       await save(m.id, { text, sentAt: new Date().toISOString(), at: new Date().toISOString(), seen: r.seen === true });
@@ -360,5 +371,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { odswiez, przyciski, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
+  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
 })(window);

@@ -24,7 +24,7 @@
         {{ T('Notatki', 'Notes') }}<span class="oest-ntp-n" data-nt-bar="n">{{ d.n }}</span>
       </ion-button>
     </div>
-    <ion-button v-if="d.polacz" class="oest-ntp-b" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon :icon="sparkles" aria-hidden="true"></ion-icon>&nbsp;{{ d.napisPolacz }}</ion-button>
+    <ion-button v-if="d.polacz" size="small" fill="outline" data-nt-bar="join" :disabled="d.laczy" @click="k.akcja('polacz')"><ion-icon :icon="sparkles" aria-hidden="true"></ion-icon>&nbsp;{{ d.napisPolacz }}</ion-button>
   </div>
 </template>
 

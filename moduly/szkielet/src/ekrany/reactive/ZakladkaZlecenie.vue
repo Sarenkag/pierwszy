@@ -3,7 +3,7 @@
 <template>
   <ion-card>
     <Zablokowane :z="d.zablokowane"></Zablokowane>
-    <ion-item><ion-input :label="d.nazwa.etykieta" label-placement="stacked" :disabled="zab" data-rx-field="title" :maxlength="300" :placeholder="d.nazwa.podpowiedz" :value="d.nazwa.wartosc" @ionInput="e => A.pole('title', e.detail.value)"></ion-input></ion-item>
+    <ion-item><ion-input :label="d.nazwa.etykieta" label-placement="stacked" :disabled="zab" data-rx-field="title" :maxlength="300" :placeholder="d.nazwa.podpowiedz" :helper-text="d.nazwa.en" :value="d.nazwa.wartosc" @ionInput="e => A.pole('title', e.detail.value)"></ion-input><ion-button v-if="!zab" slot="end" fill="clear" data-rx-mik="title" :aria-label="T('Podyktuj nazwę', 'Dictate the name')" :ref="el => el && A.mikNazwy(el.$el)"><ion-icon slot="icon-only" :icon="mic" aria-hidden="true"></ion-icon></ion-button></ion-item>
     <ion-grid class="ion-no-padding"><ion-row>
       <ion-col size="6"><PoleDaty :T="T" id="rxOrderDate" :disabled="zab" :value="d.data.wartosc" data-rx-field="orderDate" @zmiana="v => A.pole('orderDate', v)"><ion-label position="stacked">{{ d.data.etykieta }}</ion-label></PoleDaty></ion-col>
       <ion-col size="6"><ion-item><ion-select :label="d.typ.etykieta" label-placement="stacked" interface="popover" :disabled="zab" :placeholder="d.wybierz" data-rx-field="jobType" :value="d.typ.wartosc" @ionChange="e => A.akcja('type', { value: e.detail.value })"><ion-select-option v-for="o in d.typ.opcje" :key="o.id" :value="o.id">{{ o.nazwa }}</ion-select-option></ion-select></ion-item></ion-col>
@@ -25,7 +25,8 @@
       <ion-item v-if="d.drzewo.wybrany"><ion-textarea label-placement="stacked" :label="d.drzewo.wybrany.opisEtykieta" :disabled="zab" data-rx-field="problem" :rows="2" :maxlength="4000" :value="d.drzewo.wybrany.opis" @ionInput="e => A.pole('problem', e.detail.value)"></ion-textarea></ion-item>
     </template>
     <template v-if="d.co">
-      <ion-item><ion-select :label="d.co.etykieta" interface="popover" :disabled="zab" :placeholder="d.wybierz" :selected-text="d.co.tekst || d.wybierz" data-rx-field="co" @ionChange="e => A.akcja('kr-group', { id: e.detail.value })"><ion-select-option v-for="g in d.co.grupy" :key="g.id" :value="g.id">{{ g.nazwa }}</ion-select-option></ion-select></ion-item>
+      <!-- „Co” (Grzegorz 27/11/2026: zamiast małego okienka w rogu – okno na większość ekranu): kafelki grup kreatora na całym ekranie, jak w PROD-039 -->
+      <ion-item button :disabled="zab" data-rx-field="co" data-rx="kr-groups" @click="A.akcja('kr-groups')"><ion-label position="stacked">{{ d.co.etykieta }}</ion-label><ion-text>{{ d.co.tekst || d.wybierz }}</ion-text></ion-item>
       <div v-if="!d.co.pusto && !zab">
         <div>{{ d.co.naCzym }}</div>
         <Chipy :opcje="d.co.powierzchnie" rx="kr-on" klucz="value"></Chipy>
@@ -40,7 +41,8 @@
 
 <script setup>
 import { computed } from 'vue';
-import { IonCard, IonItem, IonLabel, IonInput, IonTextarea, IonCheckbox, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonCard, IonItem, IonLabel, IonText, IonIcon, IonInput, IonTextarea, IonCheckbox, IonSelect, IonSelectOption, IonButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { mic } from 'ionicons/icons';
 import PoleDaty from '../../czesci/PoleDaty.vue';
 import Zablokowane from '../../czesci/Zablokowane.vue';
 import Pole from './Pole.vue';
