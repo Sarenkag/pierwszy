@@ -18,7 +18,8 @@
     'You write the text for one field of a maintenance app, using correct engineering terminology, in clear, professional British English. ' +
     'Rules for every field: work only from the text given in this request; keep every fact exactly; copy all numbers, units, dates, device codes, ' +
     'room names and product names character for character; do not add causes, opinions, assumptions or new facts; ' +
-    'do not leave out any information; if the text is in Polish, translate it faithfully. ' +
+    'do not leave out any information; if the text is in Polish, translate it faithfully; keep the meaning, the point of view and who did what: ' +
+    'a report stays a report ("I was asked to build X" must never become "Please build X"); never turn it into a request, an order or a question. ' +
     'Output only the final text for the field, with no preamble, no headings, no quotation marks and no notes about what you changed.';
   // agent na każde pole: po co jest pole i jak ma wyglądać tekst (Grzegorz 26/11/2026; punktory tylko w opisie pracy, częściach i rekomendacji)
   var AGENTS = {
