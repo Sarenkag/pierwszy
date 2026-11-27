@@ -183,6 +183,186 @@
       ],
       "punkt": "R25",
       "usuwa": "wysylka"
+    },
+    {
+      "rzecz": "indexeddb",
+      "opis": "otwieranie bazy IndexedDB (indexedDB.open) poza narzędziami – jedno miejsce: OESTNarzedzia.baza",
+      "wzory": [
+        "\\bindexedDB\\s*\\.\\s*open\\s*\\(",
+        "\\bidb\\s*\\.\\s*open\\s*\\("
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "sha256",
+      "opis": "własne liczenie SHA-256 – jedno miejsce: OESTNarzedzia.sha256",
+      "wzory": [
+        "[\\\"']SHA-256[\\\"']"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "typ-docx",
+      "opis": "typ pliku Word (application/vnd…wordprocessingml.document) wpisany w kodzie – jedno miejsce: OESTNarzedzia.DOCX",
+      "wzory": [
+        "[\\\"']application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document[\\\"']"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "siec-online",
+      "opis": "własne sprawdzanie internetu (navigator.onLine) – jedno miejsce: OESTNarzedzia.online",
+      "wzory": [
+        "navigator\\s*\\.\\s*onLine"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "siec-wifi",
+      "opis": "własne sprawdzanie Wi‑Fi (connection.type === \"wifi\") – jedno miejsce: OESTNarzedzia.wifi",
+      "wzory": [
+        "\\.type\\s*===?\\s*[\\\"']wifi[\\\"']"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "skrot",
+      "opis": "własny skrót tekstu (djb2) – jedno miejsce: OESTNarzedzia.skrot",
+      "wzory": [
+        "<<\\s*5\\s*\\)\\s*[-+]",
+        "\\b5381\\b"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "id-losowe",
+      "opis": "identyfikator z Math.random().toString(36) – identyfikatory tylko przez crypto.randomUUID()",
+      "wzory": [
+        "Math\\.random\\(\\)\\s*\\.\\s*toString\\(\\s*36"
+      ],
+      "wlasciciele": [],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "dzien-utc",
+      "opis": "dzisiejsza data z new Date().toISOString().slice(0, 10) (to dzień w UTC, nie lokalny) – dzień tylko przez OESTNarzedzia.dzienIso",
+      "wzory": [
+        "new\\s+Date\\(\\s*\\)\\s*\\.\\s*toISOString\\(\\)\\s*\\.\\s*(?:slice|substring|substr)\\(\\s*0\\s*,\\s*10"
+      ],
+      "wlasciciele": [],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "base64url",
+      "opis": "własna zamiana na base64url – jedno miejsce: OESTNarzedzia.b64url",
+      "wzory": [
+        "replace\\(\\s*/\\\\\\+/g\\s*,\\s*[\\\"']-[\\\"']"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "nazwa-pliku",
+      "opis": "własne czyszczenie nazwy pliku ze znaków / : * ? \" < > | – jedno miejsce: OESTNarzedzia.nazwaPliku",
+      "wzory": [
+        "\\\\u0000-\\\\u001f\\]\\+/g"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "kolejka",
+      "opis": "własna kolejka obietnic (chain = …then) – jedno miejsce: OESTNarzedzia.poKolei",
+      "wzory": [
+        "\\bchain\\s*=",
+        "\\bqueue\\s*=\\s*\\w+\\s*\\.\\s*then\\("
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "dysk-foldery",
+      "opis": "własne zakładanie ścieżki folderów na Dysku (ensureFolder po kawałku ścieżki) – jedno miejsce: OESTNarzedzia.folderyDysku",
+      "wzory": [
+        "ensureFolder\\(\\s*\\w+\\[\\s*\\w+\\s*\\]"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "raport-1mb",
+      "opis": "pytanie i zmniejszanie zdjęć, gdy raport ma ponad 1 MB – jedno miejsce: OESTWord.dopasuj",
+      "wzory": [
+        "limit 1 MB",
+        "Math\\.sqrt\\(\\s*\\w+\\s*\\*\\s*0\\.9\\s*/"
+      ],
+      "wlasciciele": [
+        "moduly/word/word.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "email-wzor",
+      "opis": "własny wzór adresu e-mail – jedno miejsce: OESTNarzedzia.email",
+      "wzory": [
+        "\\[\\^\\\\s@\\]\\+@"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
+    },
+    {
+      "rzecz": "data-wzor",
+      "opis": "własne sprawdzanie daty RRRR-MM-DD – jedno miejsce: OESTNarzedzia.dataOk",
+      "wzory": [
+        "\\^\\\\d\\{4\\}-\\\\d\\{2\\}-\\\\d\\{2\\}\\$"
+      ],
+      "wlasciciele": [
+        "moduly/narzedzia/narzedzia.js"
+      ],
+      "punkt": "R25",
+      "usuwa": "duble 27/11/2026"
     }
   ],
   "kluczeWlasciciele": {

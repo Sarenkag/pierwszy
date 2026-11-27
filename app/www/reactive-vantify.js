@@ -17,7 +17,6 @@
   const jobHash = (id, tail) => '#/user/sites/list/details/' + encodeURIComponent(w.btoa('/sites/' + SITE)) + '/jobs/' + encodeURIComponent(w.btoa('/sites/' + SITE + '/jobs/' + id)) + '/' + tail;
   const plugin = () => { const C = w.Capacitor; if (!C?.isNativePlatform?.()) return null; return C.registerPlugin ? C.registerPlugin('Vantify') : C.Plugins?.Vantify || null; };
   const ask = o => w.OESTPrzycisk?.ask ? w.OESTPrzycisk.ask(o) : Promise.resolve(false);
-  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   function state(d) {
     const v = d?.vantify;
     if (!v?.id) return v?.pending ? 'pending' : 'none';
@@ -424,5 +423,5 @@
   }
   /* daty do Vantify: start = pierwsze zdjęcie przed, koniec = ostatnie zdjęcie po (jak Job Sheet); nie wcześniej niż założenie, nie w przyszłości */
   function clampDay(d, from) { const now = new Date(), f = from ? new Date(from) : null; if (!(d instanceof Date) || isNaN(d) || d > now) d = now; if (f && !isNaN(f) && d < f) d = new Date(Math.min(now, +f + 60000)); return d; }
-  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, sheet, bot, check, zdjecia, notatki, state, photosMissing, clampDay, ymd, groupOrder, UPDATE_TEXT };
+  w.OESTReactiveVantify = { odswiez, przyciski, nazwaEn, wyslane, open, close, sheet, bot, check, zdjecia, notatki, state, photosMissing, clampDay, groupOrder, UPDATE_TEXT };
 })(window);

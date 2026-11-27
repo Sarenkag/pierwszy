@@ -242,16 +242,11 @@ window.OEST_PPM = {
     // ustawienia pytań/zdjęć zapisane z odzyskaną inspekcją wygrywają z bieżącymi ustawieniami karty (uwaga Codex #101)
     if (needs && typeof needs === "object" && !Array.isArray(needs)) box["oest.ppm.needs"] = Object.assign({}, needs);
   };
-  P.sandboxed = function () { return !!box; };
-  var pad = (window.OESTNarzedzia || (typeof require === "function" && require("../../moduly/narzedzia/narzedzia.js"))).pad;
-  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var NZ = window.OESTNarzedzia || (typeof require === "function" && require("../../moduly/narzedzia/narzedzia.js")); // daty: moduly/narzedzia
+  var iso = NZ.dzienIso;
   function parse(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-  function add(d, f) {
-    var n = parseInt(f, 10), r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    if (/W$/.test(f)) r.setDate(r.getDate() + 7 * n);
-    else { var day = r.getDate(); r.setDate(1); r.setMonth(r.getMonth() + n); r.setDate(Math.min(day, new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate())); }
-    return r;
-  }
+  // następny termin: tydzień = 7 dni, miesiąc = ten sam dzień (31.01 + 1M → ostatni dzień lutego) – moduly/narzedzia
+  function add(d, f) { var n = parseInt(f, 10), s = iso(d); return parse(/W$/.test(f) ? NZ.dodajDni(s, 7 * n) : NZ.dodajMiesiace(s, n)); }
   function next(t, d) { return t.freq.map(function (f) { return add(d, f); }).sort(function (a, b) { return a - b; })[0]; }
   // Terminy zapisane pod kartami sprzed katalogu 28 inspekcji przechodzą na nowe karty (wspólny termin → każda karta)
   var OLD = { "fa-weekly": ["006", "013", "025"], "spr-weekly": ["005"], "aov-weekly": ["003", "019"], "el-ta-pv": ["001", "011"], "el-tb": ["027"],
@@ -278,7 +273,7 @@ window.OEST_PPM = {
   // Karta prowadzona zleceniami Vantify (lista „cards” w vantify-plan.js, sumowana przez kolejne eksporty).
   // Gdy Vantify zamknie wszystkie jej zlecenia, karta dalej jest kartą Vantify: bez terminu, bez prognozy (PROD-010).
   function isVantify(id) { var V = window.OEST_VANTIFY; return jobsOf(id).length > 0 || !!(V && V.cards && V.cards.indexOf(id) >= 0); }
-  function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
+  function today0() { return iso(new Date()); }
   // Zakończone terminy trzymane osobno od bieżącego etapu (localStorage "oest.ppm.done" = { id: ["RRRR-MM-DD", ...] }),
   // żeby rozpoczęcie następnej inspekcji nie otwierało z powrotem poprzedniego zlecenia. Zapis/cofnięcie: P.setStage.
   var DK = "oest.ppm.done";
@@ -287,7 +282,7 @@ window.OEST_PPM = {
     if (a && typeof a === "object") return a;
     a = {}; // pierwsze uruchomienie: zakończone etapy zapisane wcześniej w telefonie
     var st = {}; try { st = JSON.parse(LS.getItem("oest.ppm.stage") || "{}") || {}; } catch (e) {}
-    Object.keys(st).forEach(function (id) { var r = st[id]; if (r && r.period && (r.s === "queued" || r.s === "sent" || r.s === "done")) a[id] = [r.period]; });
+    Object.keys(st).forEach(function (id) { var r = st[id]; if (r && r.period && P.zamknieta(r)) a[id] = [r.period]; });
     try { LS.setItem(DK, JSON.stringify(a)); } catch (e) {}
     return a;
   }
@@ -307,6 +302,7 @@ window.OEST_PPM = {
   }
   function put(id, day) { var a = all(); if (day) a[id] = day; else delete a[id]; try { LS.setItem("oest.ppm.due", JSON.stringify(a)); } catch (e) {} }
   P.iso = iso;
+  P.parse = parse; // "rrrr-mm-dd" → Date o północy (czas lokalny)
   P.byId = function (id) { return P.tasks.filter(function (t) { return t.id === id; })[0] || null; };
   // zadania na liście Inspekcji i w kalendarzu: bez szablonów (szablon: true – otwierane z Reactive → Templates)
   P.naLiscie = function () { return P.tasks.filter(function (t) { return !t.szablon; }); };
@@ -379,12 +375,11 @@ window.OEST_PPM = {
   // period = termin (RRRR-MM-DD), którego dotyczy wpis. Wpis „zamyka” okres, dopóki nie minie ten termin (albo dzień wysłania, jeśli po terminie).
   var SK = "oest.ppm.stage";
   function stages() { try { return JSON.parse(LS.getItem(SK) || "{}") || {}; } catch (e) { return {}; } }
-  function today0() { var n = new Date(); return iso(new Date(n.getFullYear(), n.getMonth(), n.getDate())); }
   function alive(r) { if (!r || !r.s) return false; if (r.s === "prog" || r.s === "hold" || r.s === "queued") return true; /* w kolejce: aż raport faktycznie wyjdzie */ var end = r.period && r.period > r.day ? r.period : r.day; return !!end && today0() <= end; }
   P.stage = function (t) { var r = stages()[t.id]; return alive(r) ? r : null; };
   P.setStage = function (t, patch) {
     var a = stages(), r = alive(a[t.id]) ? a[t.id] : {};
-    var CL = function (x) { return !!x && (x.s === "queued" || x.s === "sent" || x.s === "done"); };
+    var CL = P.zamknieta;
     if (patch === null) { if (CL(r)) P._done(t.id, r.period, false); delete a[t.id]; } // cofnięcie zakończenia: zlecenie znów otwarte
     else { var was = r; r = Object.assign({}, r, patch); if (!r.period) { var d = P.due(t); r.period = d ? iso(d) : ""; } r.day = r.day || today0(); r.at = patch.at || (was.s === "done" && r.s === "done" && was.at ? was.at : Date.now()); /* Gotowa: odświeżone liczniki nie zmieniają daty zakończenia */ a[t.id] = r;
       if (CL(r)) P._done(t.id, r.period, true); else if (CL(was)) P._done(t.id, was.period, false); }
@@ -405,7 +400,9 @@ window.OEST_PPM = {
     try { LS.setItem(UK, JSON.stringify(a)); } catch (e) {}
   };
   // już wysłane / zakończone w tym okresie → ponowne wysłanie to poprawka (termin się nie przesuwa)
-  P.closed = function (t) { var r = P.stage(t); return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
+  // zamknięty termin = Gotowa, w kolejce albo wysłana – JEDNO miejsce tego warunku (ppm.js i ppm-ui.js)
+  P.zamknieta = function (r) { return !!r && (r.s === "queued" || r.s === "sent" || r.s === "done"); };
+  P.closed = function (t) { return P.zamknieta(P.stage(t)); };
   // raport faktycznie wyszedł (moduł wysyłki / Apps Script): W kolejce → Wysłana
   // qid = id raportu w kolejce: inspekcja otwarta po „Wyślij” (s = prog/hold, mail = queued) dostaje ✉ wysłany tylko za swój ostatni raport
   // Potwierdzenie z kolejki dotyczy zwykłego raportu: zapis prosto do telefonu, z pominięciem kopii odzyskanej inspekcji (uwaga Codex #101)

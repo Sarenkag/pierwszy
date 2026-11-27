@@ -75,24 +75,14 @@
   function reportSize() { return (cur.type && cur.type.flush) ? REPORT_SIZE.flush : REPORT_SIZE.zwykla; }
   // Raport ponad 1 MB (Grzegorz 05/11/2026 08:20): przed wysłaniem pytamy, czy zmniejszyć zdjęcia, czy zostawić.
   // „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie (kartka formularza bez zmian, zdjęcia w folderze bez zmian).
-  var REPORT_LIMIT = 1024 * 1024, reportShrink = 1;
+  var reportShrink = 1;
   function bigFile(r) { return (r && r.files || []).reduce(function (m, f) { return f.bytes && f.bytes.length > m ? f.bytes.length : m; }, 0); }
-  function mb1(n) { return (n / 1048576).toFixed(1).replace(".", window.OESTT(",", ".")); }
-  async function fitReport(r, rebuild) {
-    var big = bigFile(r); if (big < REPORT_LIMIT) return r;
-    var yes = window.OESTPrzycisk && OESTPrzycisk.confirm ? await OESTPrzycisk.confirm(
-      window.OESTT("Plik raportu będzie miał " + mb1(big) + " MB (limit 1 MB). Zmniejszyć zdjęcia w raporcie, czy zostawić je tak, jak są?",
-        "The report file will be " + mb1(big) + " MB (limit 1 MB). Make the photos in the report smaller, or keep them as they are?"),
-      { ok: window.OESTT("Zmniejsz zdjęcia", "Make smaller"), cancel: window.OESTT("Zostaw tak", "Keep as is"), danger: false }) : false;
-    if (!yes) return r;
-    try {
-      for (var i = 0; i < 4 && big >= REPORT_LIMIT; i++) {
-        reportShrink = Math.max(0.35, reportShrink * Math.sqrt(REPORT_LIMIT * 0.9 / big));
-        if (r === built) freeBuilt(); else (r.pics || []).forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
-        r = await rebuild(); big = bigFile(r);
-      }
-    } finally { reportShrink = 1; }
-    return r;
+  function fitReport(r, rebuild) { // pytanie i zmniejszanie: moduly/word (OESTWord.dopasuj, jedno miejsce z Reactive)
+    return OESTWord.dopasuj(r, { rozmiar: bigFile, min: 0.35, buduj: function (skala, prev) {
+      reportShrink = skala;
+      if (prev === built) freeBuilt(); else (prev.pics || []).forEach(function (p) { if (p.url) URL.revokeObjectURL(p.url); });
+      return rebuild();
+    } }).finally(function () { reportShrink = 1; });
   }
   // Zdjęcie do raportu zmniejszane RAZ (audyt wydajności 07/11/2026): wynik zapamiętany przy samym zdjęciu (WeakMap po blobie),
   // więc Podgląd → Wyślij, „Zmniejsz zdjęcia” i ponowne budowanie nie liczą go od nowa. Klucz = wszystko, od czego zależy wynik

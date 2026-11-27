@@ -158,33 +158,6 @@
       "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
     },
     {
-      "id": "ZNACZNIK|brak|moduly/kafelek/kafelek.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/kafelek/kafelek.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|moduly/klocek/klocek.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/klocek/klocek.js: 2 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 2,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
-      "id": "ZNACZNIK|brak|moduly/przelacznik/przelacznik.js",
-      "rule": "ZNACZNIK",
-      "detail": "moduly/przelacznik/przelacznik.js: 1 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",
-      "maks": 1,
-      "punkt": "R26/D12",
-      "usuwa": "N1–N3",
-      "reason": "Zastany stan main przy wprowadzeniu zasad (P0-1, 19/11/2026). Usuwa go PR z kolumny „usuwa” (plan naprawy architektury)."
-    },
-    {
       "id": "ZNACZNIK|brak|moduly/przycisk/przycisk.js",
       "rule": "ZNACZNIK",
       "detail": "moduly/przycisk/przycisk.js: 2 klikalnych elementów bez dokładnie jednego znacznika data-nav/data-okno/data-akcja.",

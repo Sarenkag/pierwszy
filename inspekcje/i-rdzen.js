@@ -3,7 +3,6 @@
 // Korzysta ze wspólnych nazw całej strony (pliki 2–16 z tabeli w docs/podzial-modulow.md); ładować w kolejności z index.html.
 // Nie ruszać: nazw globalnych – używają ich wszystkie dalsze pliki.
   var $ = function (id) { return document.getElementById(id); };
-  var MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   // ---------- rodzaje inspekcji: inspekcje/rodzaje.js (K02) ----------
   var RD = window.OESTRodzaje, TYPES = RD.lista, FAULTS = RD.usterki;
@@ -49,7 +48,7 @@
   var esc = window.OESTNarzedzia.esc; // moduly/narzedzia (audyt nr 53)
   function val(id) { return $(id).value.trim(); }
   function radio(name) { var el = document.querySelector('ion-select[name="' + name + '"]'); return el ? el.value : ""; }
-  function online() { return navigator.onLine !== false; }
+  var online = NZ.online; // moduly/narzedzia
 
   // ---------- baza w telefonie (IndexedDB „inspekcje”): kolejka raportów + szablon ----------
   // jeden właściciel bazy: moduly/wysylka (OESTSender.baza, karta K10) – strona nie otwiera jej sama

@@ -41,10 +41,10 @@
   // ---------- wejście z listy PPM w apce (#ppm=id) ----------
   function renderPpmBar() {
     if (REC) {
-      // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (moduly/znacznik), termin bez zmian
+      // odzyskana: zamiast terminu i etapu – fioletowa pigułka „Odzyskana” (Pigulka.vue), termin bez zmian
       document.querySelectorAll("[data-ui~=ppmbar]").forEach(function (el) { el.hidden = true; });
       var pill = $("recPill");
-      if (pill && window.OESTZnacznik) { pill.hidden = false; widokInspekcji(pill, "fragment", { rodzaj: "znacznik", html: OESTZnacznik.status("odzyskana") }); }
+      if (pill) { pill.hidden = false; widokInspekcji(pill, "fragment", { rodzaj: "pigulka", tryb: "odzyskana" }); } // pigułka: moduly/szkielet (Pigulka.vue, jedna w apce)
       $("ppmStage").hidden = true;
       return;
     }

@@ -17,7 +17,7 @@
   function wxLoad(force) {
     var c = wxCache();
     if (!force && c && Date.now() - c.t < WX_AGE) return Promise.resolve(c);
-    if (w.navigator.onLine === false || !w.fetch) return Promise.resolve(c);
+    if (!w.OESTNarzedzia.online() || !w.fetch) return Promise.resolve(c);
     if (wxLoading) return wxLoading;
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
       "&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FLondon&forecast_days=14";

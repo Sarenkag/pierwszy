@@ -17,12 +17,10 @@
     if(last)out.koniec.push({tekst:last.tekst});return out;}
   function wzor(){if(!globalThis.OESTWzory)return Promise.reject(Error('REPORT_TEMPLATE_MISSING'));return OESTWzory.wczytaj().then(()=>OESTWzory.bajty('reactive-basic'));}/* Reactive: ramka basic + środek bez „Overall Condition” (Grzegorz 26/11/2026) */
   async function build(fields,records,opts){const maxPx=opts&&opts.px||1600;const template=await wzor(),photos=[];for(const record of records){const bitmap=await OESTZdjecia.wczytaj(record.blob),scale=Math.min(1,maxPx/Math.max(bitmap.width,bitmap.height));/* wczytanie i zmniejszenie: moduly/zdjecia */if(scale===1&&record.blob.type==='image/jpeg'){/* 07/11/2026: zdjęcie z modułu zdjęć ma już ≤1600 px – do raportu bez drugiej kompresji (szybciej, bez dodatkowej straty jakości) */photos.push({bytes:new Uint8Array(await record.blob.arrayBuffer()),width:bitmap.width,height:bitmap.height,phase:record.phase});if(bitmap.close)bitmap.close();continue;}const c=OESTZdjecia.plotno(bitmap,maxPx,{tlo:'#fff'});const blob=await new Promise(resolve=>c.toBlob(resolve,'image/jpeg',.72));photos.push({bytes:new Uint8Array(await blob.arrayBuffer()),width:c.width,height:c.height,phase:record.phase});}const word=OESTWord.wypelnij(template,{...fields,...uklad(fields.details)},photos,{uklad:'przed-po',autor:fields.author});/* PDF TYLKO z tego samego Worda silnikiem LibreOffice w telefonie (moduly/word-pdf; Grzegorz 21/11/2026: własny rysownik usunięty); bez silnika pdf = null – wysyłany sam Word */const zWorda=globalThis.OESTWordPdf&&OESTWordPdf.zWorda?await OESTWordPdf.zWorda(word):null;return {docx:word,pdf:zWorda};}
-  /* Raport poniżej 1 MB (Grzegorz 05/11/2026 08:09 i 08:20; przegląd ChatGPT 09/11/2026, pkt 6 – Reactive omijał tę zasadę):
-     większy plik (Word albo PDF) → pytanie „Zmniejsz zdjęcia / Zostaw tak”; „Zmniejsz” = mniejsze zdjęcia TYLKO w tym raporcie
-     (zdjęcia w folderze OEST bez zmian), do 4 prób, nie mniej niż 400 px. rebuild(px) buduje raport, ask(bajty) → true/false. */
-  const LIMIT=1024*1024,START_PX=1600,MIN_PX=400;
+  /* Raport poniżej 1 MB (Grzegorz 05/11/2026; przegląd ChatGPT 09/11/2026, pkt 6): pytanie i zmniejszanie – moduly/word (OESTWord.dopasuj,
+     jedno miejsce z inspekcjami); tu tylko Reactive: zdjęcia od 1600 px, nie mniej niż 400 px. ask=false → bez pytania (podgląd). */
+  const PX=1600;
   function biggest(r){return Math.max(...['docx','pdf'].map(k=>r&&r[k]?(r[k].byteLength??r[k].length??0):0));}
-  async function fit(rebuild,ask){let px=START_PX,r=await rebuild(px),big=biggest(r);if(big<LIMIT||!(await ask(big)))return r;
-    for(let i=0;i<4&&big>=LIMIT&&px>MIN_PX;i++){px=Math.max(MIN_PX,Math.round(px*Math.sqrt(LIMIT*0.9/big)));r=await rebuild(px);big=biggest(r);}return r;}
-  return {build,fit,biggest,LIMIT,sekcje,uklad};
+  async function fit(fields,records,ask=true){const r=await build(fields,records,{px:PX});return ask?OESTWord.dopasuj(r,{rozmiar:biggest,min:400/PX,buduj:s=>build(fields,records,{px:Math.round(PX*s)})}):r;}
+  return {build,fit,sekcje,uklad};
 });

@@ -10,11 +10,12 @@
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
+  var N = function () { return globalThis.OESTNarzedzia || require('../../moduly/narzedzia/narzedzia.js'); }; // adres, daty, id: moduly/narzedzia
   var copy = function (v) { return JSON.parse(JSON.stringify(v)); };
   var themes = ['graphite', 'navy', 'light'];
   function fail(code) { throw new Error(code); }
-  function email(v) { return !v || /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(v); }
-  function date(v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v; }
+  function email(v) { return !v || N().email(v); } // adres e-mail: moduly/narzedzia
+  function date(v) { return N().dataOk(v); } // moduly/narzedzia
   function defaults(owner, account) {
     return {version:1, owner:owner, revision:0,
       profile:{first:account.first || '',last:account.last || '',title:'',position:'',workplace:'',companyEmail:'',privateEmail:'',formSignature:'',photo:'',signatureImage:'',language:'pl'},
@@ -116,7 +117,7 @@
     function shiftKey(id){return 'oest.shifts.calendar.v1.'+encodeURIComponent(id);}
     function calendarShifts(){var c;try{c=read(shiftKey(identity().id),null);}catch(_){return null;}return c&&c.days&&typeof c.days==='object'&&date(c.from)&&date(c.to)?c:null;}
     function setCalendarShifts(c){if(!c||!date(c.from)||!date(c.to)||!c.days||typeof c.days!=='object')fail('CALENDAR_SHIFTS');write(shiftKey(identity().id),c);}
-    function step(d,n){return new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);}
+    function step(d,n){return N().dodajDni(d,n);}
     function fromCalendar(day,s){var c=calendarShifts();if(!c||!s.calendar.shiftCalendarId||c.calendarId!==s.calendar.shiftCalendarId||day<c.from||day>c.to)return null;var x=c.days[day],r={kind:'calendar',effectiveFrom:day,anchor:day,work:!!x,start:x?x.start:'',end:x?x.end:'',endNextDay:!!(x&&x.endNextDay)},a,b;
       if(x){a=day;b=day;while(step(a,-1)>=c.from&&c.days[step(a,-1)])a=step(a,-1);while(c.days[step(b,1)])b=step(b,1);r.blockStart=a;r.blockEnd=b;}
       else{a=step(day,1);while(a<=c.to&&!c.days[a])a=step(a,1);if(a<=c.to){b=a;while(c.days[step(b,1)])b=step(b,1);r.blockStart=a;r.blockEnd=b;}}
@@ -137,7 +138,7 @@
     function addEntry(kind,name){name=String(name||'').trim().slice(0,120);if(!name)fail('CONTACT_INVALID');if(['person','department'].indexOf(kind)<0)fail('CONTACT_INVALID');
       return update(function(s){var same=s.contacts.find(function(c){return !c.labelId&&(c.kind||'person')===kind&&nameOf(c).toLowerCase()===name.toLowerCase();}); // tylko wpisy ręczne; nie budzimy kontaktów z importu Google
         if(same){same.active=true;return;}
-        s.contacts.push({id:'manual:'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),first:name,last:'',email:'',position:'',role:'other',labelId:'',active:true,kind:kind});});}
+        s.contacts.push({id:'manual:'+crypto.randomUUID(),first:name,last:'',email:'',position:'',role:'other',labelId:'',active:true,kind:kind});});}
     function removeEntry(id){return update(function(s){var i=s.contacts.findIndex(function(c){return c.id===id&&!c.labelId;});if(i<0)fail('CONTACT_INVALID');s.contacts.splice(i,1);});}
     function recipients(kind){var s=get(),emails=[s.profile.companyEmail];
       if(kind==='handover')[s.mail.engineerId,s.mail.managerId].forEach(function(id){var c=s.contacts.find(function(x){return x.id===id&&x.active;});if(c)emails.push(c.email);});

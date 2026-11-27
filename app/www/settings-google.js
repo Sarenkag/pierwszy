@@ -3,9 +3,8 @@
 (function(root,factory){
   var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;
   else {
-    // ostatnie dotknięcie ekranu: okno ponownego połączenia tylko po świadomym kliknięciu, nigdy w tle
-    var lastTap=0;try{root.document.addEventListener('pointerdown',function(){lastTap=Date.now();},true);}catch(_){}
-    root.OESTGoogle=api.createGoogle({recentTap:function(){return Date.now()-lastTap<120000;},fetch:root.fetch.bind(root),
+    // ostatnie dotknięcie ekranu (pamięta moduly/wyglad): okno ponownego połączenia tylko po świadomym kliknięciu, nigdy w tle
+    root.OESTGoogle=api.createGoogle({recentTap:function(){var W=root.OESTWyglad;return !!W&&Date.now()-W.tap().t<120000;},fetch:root.fetch.bind(root),
     // 04/11: duży raport (np. Flushing z 13 zdjęciami ~10 MB) idzie natywnie przez /upload Gmaila (do 35 MB).
     // Zwykły fetch z WebView nie dostaje od /upload nagłówków CORS, a zwykły adres przyjmuje tylko ~5 MB → „brak odpowiedzi”.
     nativeFetch:(function(){var cap=root.Capacitor,h=cap&&cap.isNativePlatform&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.CapacitorHttp;if(!h)return null;
@@ -28,13 +27,14 @@
       var what={drive:root.OESTT('Dysku Google','Google Drive'),gmail:root.OESTT('Gmaila','Gmail'),contacts:root.OESTT('kontaktów Google','Google Contacts'),calendar:root.OESTT('Kalendarza Google','Google Calendar')}[kind]||'Google';
       if(why==='offline')return P.ask({title:root.OESTT('Brak internetu','No internet'),text:root.OESTT('Telefon nie ma teraz połączenia z internetem. Włącz Wi‑Fi albo dane i spróbuj ponownie.','The phone has no internet connection right now. Turn on Wi‑Fi or mobile data and try again.'),ok:root.OESTT('Spróbuj ponownie','Try again')});
       return P.ask({title:root.OESTT('Połączenie wygasło','Connection expired'),text:root.OESTT('Pozwolenie dla '+what+' wygasło. Połączyć ponownie? Potem operacja dokończy się sama.','Permission for '+what+' has expired. Reconnect? The operation will then finish by itself.'),ok:root.OESTT('Połącz ponownie','Reconnect')});
-    },online:function(){return root.navigator.onLine!==false;},store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
+    },online:function(){return root.OESTNarzedzia.online();},store:{ // sesja przeżywa przejście między ekranami apki (inspekcje ↔ lista), ginie po zamknięciu apki
       get:function(){try{return JSON.parse(root.sessionStorage.getItem('oest.gsess')||'{}');}catch(_){return {};}},
       set:function(v){try{root.sessionStorage.setItem('oest.gsess',JSON.stringify(v));}catch(_){}}
     }});
   }
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
+  var N=function(){return globalThis.OESTNarzedzia||require('../../moduly/narzedzia/narzedzia.js');}; // base64, adres e-mail: moduly/narzedzia
   var BIG_MAIL=6500000,MAX_MAIL=35000000; // znaki: do BIG_MAIL sprawdzona droga JSON (raport 4 MB przeszedł 04/11), powyżej /upload natywnie; MAX_MAIL = limit Gmaila
   var SCOPES={contacts:['https://www.googleapis.com/auth/contacts.readonly'],drive:['https://www.googleapis.com/auth/drive.file'],gmail:['https://www.googleapis.com/auth/gmail.send'],calendar:['https://www.googleapis.com/auth/calendar.calendarlist.readonly']};
   function createGoogle(opts){
@@ -176,21 +176,20 @@
     function downloadFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id+'?alt=media',{binary:true});}
     async function removeFile(id){if(!/^[\w-]+$/.test(id||''))throw Error('FILE_ID');return request('drive','https://www.googleapis.com/drive/v3/files/'+id,{method:'DELETE'});}
     async function testMail(address){
-      if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(address)||/[\r\n]/.test(address))throw Error('EMAIL_INVALID');
+      if(!N().email(address))throw Error('EMAIL_INVALID'); // adres: moduly/narzedzia
       var mime='To: '+address+'\r\nSubject: OEST TEST - connection check\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nTEST ONLY. OEST email connection check. This is not an inspection report.';
-      var bytes=new TextEncoder().encode(mime),binary='';bytes.forEach(function(b){binary+=String.fromCharCode(b);});
-      var raw=btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      var raw=N().b64url(new TextEncoder().encode(mime)); // base64url: moduly/narzedzia
       try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw})});}
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
     /* Raport z załącznikami prosto z Gmaila (zakres gmail.send). files: [{name, mime, bytes: Uint8Array}] */
-    function b64(bytes){var bin='';for(var i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin);}
+    function b64(bytes){return N().bytesToB64(bytes);} // moduly/narzedzia
     function wrap76(t){return t.replace(/.{1,76}/g,'$&\r\n');}
     function hdr(t){return /^[\x20-\x7e]*$/.test(t)?t:'=?UTF-8?B?'+b64(new TextEncoder().encode(t))+'?=';}
     function buildMime(m){
       var to=(Array.isArray(m.to)?m.to:[m.to]).filter(Boolean); // kilku adresatów (Ja / Inżynier / Manager, 04/11)
-      if(!to.length||to.some(function(a){return !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(a);}))throw Error('EMAIL_INVALID');
-      var subject=String(m.subject||'').replace(/[\r\n]+/g,' '),boundary='oest_'+Date.now().toString(36)+Math.random().toString(36).slice(2);
+      if(!to.length||to.some(function(a){return !N().email(a);}))throw Error('EMAIL_INVALID');
+      var subject=String(m.subject||'').replace(/[\r\n]+/g,' '),boundary='oest_'+crypto.randomUUID().replace(/-/g,'');
       var out='To: '+to.join(', ')+'\r\nSubject: '+hdr(subject)+'\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="'+boundary+'"\r\n\r\n';
       out+='--'+boundary+'\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n'+wrap76(b64(new TextEncoder().encode(m.body||'')));
       (m.files||[]).forEach(function(f){var n=String(f.name).replace(/["\r\n\\]/g,'_');
@@ -200,7 +199,7 @@
     async function sendMail(m){
       var mime=buildMime(m);
       // zwykły adres (JSON), nie /upload: przy błędzie /upload nie daje nagłówków CORS i WebView widzi tylko „brak odpowiedzi”
-      var bytes=new TextEncoder().encode(mime),raw=b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      var bytes=new TextEncoder().encode(mime),raw=N().b64url(bytes);
       var wait=Math.min(600000,30000+Math.ceil(raw.length/20000)*1000); // duży raport na słabym zasięgu: ok. 1 s na 20 KB
       // zwykły adres przyjmuje ok. 5 MB; większy raport natywnie przez /upload (do 35 MB), bo tam WebView nie widzi odpowiedzi
       if(raw.length>BIG_MAIL&&opts.nativeFetch){if(mime.length>MAX_MAIL)throw Error('GOOGLE_HTTP_413');
@@ -209,8 +208,7 @@
       try{return await request('gmail','https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:raw}),timeout:wait});}
       catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw Error('EMAIL_RESULT_UNCERTAIN');throw e;}
     }
-    async function calendars(){var out=[],page='';do{var r=await request('calendar','https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer'+(page?'&pageToken='+encodeURIComponent(page):''));out=out.concat(r.items||[]);page=r.nextPageToken||'';}while(page);return out;}
-    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,findFile:findFile,updateFile:updateFile,listFiles:listFiles,downloadFile:downloadFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime,calendars:calendars};
+    return {background:background,foreground:foreground,connect:connect,connected:connected,ready:ready,disconnect:disconnect,labels:labels,contacts:contacts,folders:folders,folder:folder,createFolder:createFolder,ensureFolder:ensureFolder,uploadFile:uploadFile,removeFile:removeFile,findFile:findFile,updateFile:updateFile,listFiles:listFiles,downloadFile:downloadFile,backup:backup,testMail:testMail,sendMail:sendMail,buildMime:buildMime};
   }
   return {createGoogle:createGoogle};
 });

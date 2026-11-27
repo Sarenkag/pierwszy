@@ -8,8 +8,7 @@ Test zasad: `app/tests/moduly-zasady-ui-check.cjs` (blokada w trakcie, „✓ Go
 
 ## Użycie
 ```js
-OESTPrzycisk.run(btn, () => wyslij());                 // najprościej
-const h = OESTPrzycisk.start(btn);                     // gdy ekran zmienia się po sukcesie
+const h = OESTPrzycisk.start(btn);
 wyslij().then(() => h.ok()).then(pokazListe, () => h.fail());
 ```
 Opcje: `{ done: "Wysłano", busy: "Wysyłam…", hold: 900 }`.

@@ -20,7 +20,7 @@
 | Aparat | `moduly/aparat`, pluginy Android | przechwytywanie i edycja |
 | Magazyn zdjęć | `moduly/zdjecia` | pojedynczy magazyn, referencje, synchronizacja |
 | Wysyłka | `moduly/wysylka`, `settings-google.js` | Gmail, kolejka, stan |
-| UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `znacznik`, `pasek-dni`, `przelacznik`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
+| UI współdzielone | `moduly/przycisk`, `checkbox`, `kafelek`, `klocek`, `znacznik`, `pasek-dni`, `pole-email`, `ladowanie`, `wyglad` | współdzielone kontrolki |
 | Wstecz telefonu | `moduly/wstecz` | systemowy Wstecz: okienko → poziom wyżej → pytanie o wyjście (08/11/2026); stos okien na wierzchu `OESTWstecz.nakladki` (dawniej `OESTOverlay` w index.html, 09/11/2026) |
 | Notatki głosowe | `moduly/notatki` (`glos.js` = OESTVoice, `notatki.js` = OESTNotatki) | nagrywanie, tekst PL→EN, okienko notatek; inspekcje (08/11/2026), Reactive i Hand over – gotowy pasek `OESTNotatki.mount` (09/11/2026) |
 | Zmiana treści bez drgań | `moduly/podmien`, `moduly/bledy` (`applyDom`, `wJezyku`) | podmiana HTML bez przerysowania, miejsce pod PL i EN (08/11/2026) |

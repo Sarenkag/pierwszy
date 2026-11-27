@@ -13,14 +13,8 @@
   // magazyny: queue (kolejka raportów, klucz id) i kv (szablon, szkice, ustawienia strony inspekcji). Strona inspekcji
   // nie otwiera bazy sama – używa OESTSender.baza. Bez magazynu: odczyt = pusto, zapis = jawny błąd STORAGE_WRITE
   // (przegląd ChatGPT 09/11/2026 pkt 4, D11 – zapis NIE może udawać sukcesu).
-  var dbP = new Promise(function (res) {
-    try {
-      var rq = root.indexedDB.open("inspekcje", 1);
-      rq.onupgradeneeded = function () { var db = rq.result; db.createObjectStore("queue", { keyPath: "id" }); db.createObjectStore("kv"); };
-      rq.onsuccess = function () { res(rq.result); };
-      rq.onerror = function () { res(null); };
-    } catch (e) { res(null); }
-  });
+  var dbP = root.OESTNarzedzia.baza(root.indexedDB, "inspekcje", function (db) { db.createObjectStore("queue", { keyPath: "id" }); db.createObjectStore("kv"); })() // moduly/narzedzia
+    .catch(function () { return null; });
   function sklep(store, mode, fn) {
     return dbP.then(function (db) {
       if (!db) { if (mode === "readwrite") throw Error("STORAGE_WRITE"); return undefined; }
@@ -55,7 +49,7 @@
     var cap = root.Capacitor, c = cfg();
     return !!(G() && cap && cap.isNativePlatform && cap.isNativePlatform() && adapters.clientConfigured && adapters.clientConfigured() && !c.api && account() && account().email);
   }
-  function online() { return root.navigator.onLine !== false; }
+  function online() { return root.OESTNarzedzia.online(); } // moduly/narzedzia
   // szybki test internetu (5 s): czy w ogóle dochodzimy do Google
   function reachable() {
     if (!online()) return Promise.resolve(false);
@@ -63,7 +57,7 @@
     return root.fetch("https://www.gstatic.com/generate_204", { mode: "no-cors", cache: "no-store", signal: c ? c.signal : undefined })
       .then(function () { return true; }, function () { return false; }).then(function (ok) { clearTimeout(t); return ok; });
   }
-  function onWifi() { var c = root.navigator.connection; return !!(c && (c.type === "wifi" || c.type === "ethernet")); } // nieznana sieć = jak komórkowa (czeka na kliknięcie)
+  function onWifi() { return root.OESTNarzedzia.wifi(); } // nieznana sieć = jak komórkowa (czeka na kliknięcie); moduly/narzedzia
   // ustawienia obecnego konta (Mój profil, kontakty, Wysyłka) podaje strona w init({ ustawienia }) – właścicielem zapisu
   // jest settings-store.js (klucz oest.settings.v1.*), moduł nie czyta go sam
   function ustawienia() { try { return opts.ustawienia ? opts.ustawienia() : null; } catch (e) { return null; } }
@@ -103,7 +97,7 @@
     if (Array.isArray(it.files)) return it.files; // pliki złożone w inspekcji wg ⚙ (pusta lista = świadomie nic, nie pełny PDF)
     var f = [];
     if (it.pdf && it.pdf.length) f.push({ name: it.name + ".pdf", mime: "application/pdf", bytes: it.pdf });
-    if (it.docx && it.docx.length) f.push({ name: it.name + ".docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", bytes: it.docx });
+    if (it.docx && it.docx.length) f.push({ name: it.name + ".docx", mime: root.OESTNarzedzia.DOCX, bytes: it.docx });
     return f;
   }
   function changed(it) { if (opts.onChange) try { opts.onChange(it); } catch (e) {} }
@@ -111,7 +105,6 @@
   // Mail = Word + PDF. Dysk = Word + PDF + dane inspekcji (Grzegorz 24/11/2026), w OEST Raporty / budynek / rodzaj.
   // Ponowna wysyłka nadpisuje komplet. Błąd Dysku nie psuje wysyłki maila: raport czeka na następną próbę.
   var archived = Promise.resolve();
-  var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   // Word/PDF raportu: z it.docx/it.pdf albo z listy plików złożonej wg ⚙ (formularz ze zdjęć, Flushing basic) – główny plik „nazwa.docx” ma pierwszeństwo
   function pickFile(it, ext, mime) {
     var own = ext === "docx" ? it.docx : it.pdf;
@@ -122,7 +115,7 @@
   }
   // Zwraca obietnicę: true = raport bezpiecznie w archiwum telefonu (dopiero wtedy wolno wyczyścić Worda z kolejki).
   function archive(it) {
-    var R = root.OESTRaporty, docx = pickFile(it, "docx", DOCX_MIME), pdf = pickFile(it, "pdf", "application/pdf");
+    var R = root.OESTRaporty, docx = pickFile(it, "docx", root.OESTNarzedzia.DOCX), pdf = pickFile(it, "pdf", "application/pdf");
     if (!R || !docx || it.noArchive) return Promise.resolve(true); // noArchive: ponowne wysłanie z przeglądarki raportów (raport już jest w archiwum). Bez Worda nie ma czego kłaść na Dysk (np. w ⚙ zaznaczony tylko PDF)
     var rep = { key: it.key || it.name, at: it.at || it.sentAt || it.created || Date.now(), /* it.at: chwila „Update” (nowsza wersja niż wysłana) */ name: it.name, docx: docx, pdf: pdf || null, folder: Array.isArray(it.rpt) && it.rpt.length ? it.rpt : [it.type === "reactive" ? "Reactive" : "General"], // Reactive: jeden folder (bez budynku w zadaniu)
       meta: { ppm: it.ppm || it.ppmRef || "", type: it.type || "", code: it.code || "", queueId: it.id, sentAt: it.sentAt || Date.now(), card: it.card || null, job: it.job || "" }, // card: opis klocka odzyskanej (nazwa, lokalizacja, częstotliwość) od apki; ppmRef: odzyskana inspekcja (bez zmiany klocka PPM)
@@ -142,7 +135,7 @@
   // „Update” odzyskanej inspekcji: nowa wersja w telefonie i nadpisanie kompletu na Dysku, BEZ maila.
   // Zwraca { saved, drive }: saved = zapis w telefonie się udał; drive = wynik próby wysyłki na Dysk (null = nie było jak: brak sieci / Dysku / logowania).
   function update(it) {
-    if (!root.OESTRaporty || !pickFile(it, "docx", DOCX_MIME)) return Promise.reject(new Error("REPORT_DOCX")); // bez Worda nie ma czego zapisać – nie udajemy
+    if (!root.OESTRaporty || !pickFile(it, "docx", root.OESTNarzedzia.DOCX)) return Promise.reject(new Error("REPORT_DOCX")); // bez Worda nie ma czego zapisać – nie udajemy
     return archive(it).then(function (ok) {
       if (!ok) throw new Error("STORAGE_WRITE");
       return syncReports({ anyNet: true }).then(function (r) { return { saved: true, drive: r }; });
@@ -305,7 +298,7 @@
   // Dodanie raportu do kolejki z dowolnego miejsca apki (np. Reactive): uzupełnia id, konto i status, potem wysyła w tle
   function enqueue(it) {
     var acct = (account() || {}).email || "";
-    var rec = Object.assign({ id: (root.crypto && root.crypto.randomUUID ? root.crypto.randomUUID() : String(Date.now()) + Math.random()), created: Date.now(), acct: acct, status: "wait" }, it);
+    var rec = Object.assign({ id: crypto.randomUUID(), created: Date.now(), acct: acct, status: "wait" }, it);
     return put(rec).then(function () { refresh(); run({ login: true }); return rec; });
   }
   root.OESTSender = { baza: baza, init: init, run: run, count: function () { return pending().length; }, toConfirm: function () { return unconfirmed().length; } /* „przekazano · niepotwierdzone” – nie „Wszystko wysłane” */, expand: function () { open = true; render(); }, stan: function () { return stan; }, akcja: akcja, enqueue: enqueue, active: active, busy: function () { return sending || !!lock; } /* też w trakcie sprawdzania połączenia: raportu z kolejki nie da się wtedy usunąć */, whenIdle: whenIdle, refresh: refresh, render: render, _errText: errText, recipients: recipients, myEmail: myEmail, reachable: reachable, syncReports: syncReports, update: update };
