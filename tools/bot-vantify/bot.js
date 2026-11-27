@@ -5,6 +5,7 @@
 //   • Job Sheet już w Vantify → Complete bez nowego pliku (bez duplikatu). Tylko na Dysku → Complete z tym PDF. Brak obu → czeka.
 //   • Do Vantify tylko po mailu „assigned”. Czekające bez Job Sheetu: Dysk przy każdym przebiegu, Vantify najwyżej co godzinę.
 //   • Awaria Vantify (sieć, 5xx, logowanie): odstępy 30 min → 1 h → 2 h → 4 h → 12 h, jeden mail na całą awarię.
+//   • Bot wyłączony na zleceniu w apce (przełącznik w zakładce Zlecenie, Grzegorz 27/11/2026) = plik „BOT STOP <nr>” na Dysku → nic nie robi.
 //   • Odmowa Vantify przy zleceniu (4xx) albo zlecenie w innym stanie → bez ponawiania, jeden mail „zamknij ręcznie”.
 // Zapytania (Commence, Complete, daty, typ dokumentu, Visibility) budują te same funkcje co apka: app/www/vantify-akcje.js,
 // doklejany przed tym plikiem przy budowie (tools/bot-vantify/zbuduj.cjs) – bez drugiej kopii.
@@ -32,13 +33,14 @@ var BOT = (function () {
     if (typeof f.filename === "string" && f.filename && !/\.pdf$/i.test(f.filename)) return false;
     return true;
   }
+  function stopZDysku(nazwa, nr) { return /^BOT STOP\b/i.test(String(nazwa || "").trim()) && maNr(nazwa, nr); }
   function pdfZDysku(nazwa, nr) { return /^JOB SHEET\b/i.test(nazwa) && maNr(nazwa, nr) && /\.pdf$/i.test(nazwa); }
   function lista(r) { var l = r && (r.files || r.items || (r._embedded && r._embedded.files)); return Array.isArray(l) ? l : l && Array.isArray(l.items) ? l.items : []; }
   function sciezka(h) { return String(h || "").replace(/^https?:\/\/[^/]+/, ""); }
   function json(t) { try { return t ? JSON.parse(t) : null; } catch (e) { return null; } }
   var POWOD = { other: "Vantify zwrócił inne zlecenie pod tym numerem", state: "zlecenie nie ma ani Commence, ani Complete (inny stan)", doctype: "zlecenie wymaga innego typu dokumentu niż Job Sheet" };
 
-  // env: { now(), dry, props.get/set, szukaj(q) → [{subject}], dysk(nr) → {name, size, bytes()} | null, http(m, url, o) → {code, text}, mail(temat, treść), log(s), user, pass }
+  // env: { now(), dry, props.get/set, szukaj(q) → [{subject}], stop(nr) → true, gdy apka wyłączyła bota na zleceniu, dysk(nr) → {name, size, bytes()} | null, http(m, url, o) → {code, text}, mail(temat, treść), log(s), user, pass }
   // A: funkcje z vantify-akcje.js (OESTVantifyAkcje)
   function run(env, A) {
     var now = env.now(), s = json(env.props.get(KLUCZ)) || {}, zmiana = false, raport = [];
@@ -86,6 +88,7 @@ var BOT = (function () {
 
     try {
       nry.slice(0, MAX).forEach(function (nr) {
+        if (env.stop && env.stop(nr)) { log("#" + nr + ": bot wyłączony na tym zleceniu w apce – nic nie robię."); return; }
         var z = s.jobs[nr], dysk = env.dysk(nr);
         if (!z) { z = s.jobs[nr] = { od: now, next: 0 }; zmiana = true; }
         if (z.next > now && !dysk) return; // czeka na Job Sheet: Vantify najwyżej co godzinę, chyba że PDF pojawił się na Dysku
@@ -138,6 +141,11 @@ var BOT = (function () {
       user: P.getProperty("VANTIFY_USER") || "", pass: P.getProperty("VANTIFY_PASS") || "",
       props: { get: function (k) { return P.getProperty(k); }, set: function (k, v) { P.setProperty(k, v); } },
       szukaj: function (q) { return GmailApp.search(q, 0, 50).map(function (t) { return { subject: t.getFirstMessageSubject() }; }); },
+      stop: function (nr) {
+        var it = DriveApp.searchFiles('title contains "' + nr + '" and title contains "BOT STOP" and trashed = false');
+        while (it.hasNext()) if (stopZDysku(it.next().getName(), nr)) return true;
+        return false;
+      },
       dysk: function (nr) {
         var it = DriveApp.searchFiles('title contains "' + nr + '" and title contains "JOB SHEET" and mimeType = "application/pdf" and trashed = false'), best = null;
         while (it.hasNext()) { var f = it.next(); if (pdfZDysku(f.getName(), nr) && (!best || f.getLastUpdated() > best.getLastUpdated())) best = f; }
@@ -160,7 +168,7 @@ var BOT = (function () {
     if (!lock.tryLock(1000)) return Logger.log("Poprzedni przebieg jeszcze trwa.");
     try { return run(srodowisko(dry), OESTVantifyAkcje); } finally { lock.releaseLock(); }
   }
-  return { run: run, przebieg: przebieg, nrZTematu: nrZTematu, jestJobSheet: jestJobSheet, pdfZDysku: pdfZDysku, SZUKAJ: SZUKAJ, KLUCZ: KLUCZ };
+  return { run: run, przebieg: przebieg, nrZTematu: nrZTematu, jestJobSheet: jestJobSheet, pdfZDysku: pdfZDysku, stopZDysku: stopZDysku, SZUKAJ: SZUKAJ, KLUCZ: KLUCZ };
 })();
 
 // ---------- funkcje do wyboru w edytorze Apps Script ----------
