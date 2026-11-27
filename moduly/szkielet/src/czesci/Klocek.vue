@@ -2,10 +2,10 @@
      Każde miejsce stałe; lista tylko podaje dane (zwykły obiekt z modułu), klocek niczego nie liczy:
        { id, grupa (kolor paska z lewej: fire/water/elec/mech/sub – kolory w szkielet.css), nazwa, znak ('TA', 'TB/L13'), czestotliwosc ('3M'), formularz ('brak'|'ok'|'blad'), status: { tryb } | { tekst, ton },
          opis, termin: { tekst, ton: ''|'jutro'|'red' }, numer (zlecenie Vantify, linia 1 na prawo od nazwy, w całości – nazwa skracana „…”; linia 3 ma stałe miejsca jak na main, usterki z miejscem także bez usterek – Grzegorz 23/11: „Stałe miejsca, numer w 1. linii”), opisTon (kolor Ionic opisu – wtedy kursywą: szkielet.css, wyjątek w quality/wyjatki-ionic.json; np. status Vantify w Reactive, Grzegorz 26/11/2026), procent, ikony: [{ rodzaj: 'zdjecia'|'pytania'|'usterki'|'notatki'|'wysylka', n, ton }],
-         miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), akcja ('Otwórz') }
+         miniatura (adres obrazka), przygaszony (planowane / gotowe na końcu), szary (szara ramka: Reactive „Nie interesuje mnie”), akcja ('Otwórz') }
      Wygląd jak dotąd (szkielet.css, .oest-klocek: szkło, pasek grupy z lewej, odstępy i separatory jak w moduly/klocek). Stuknięcie w dowolne miejsce: zdarzenie „wybierz” (bez strzałki z prawej – Grzegorz 23/11); przytrzymanie ~0,4 s: zdarzenie „przytrzymaj” (informacje o inspekcji). -->
 <template>
-  <ion-card button class="oest-klocek" :disabled="k.wylaczony" :data-id="k.id" :data-day="k.day || undefined" :data-grupa="k.grupa || undefined" :data-przygaszony="k.przygaszony || undefined" :aria-description="k.akcja || undefined" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
+  <ion-card button class="oest-klocek" :disabled="k.wylaczony" :data-id="k.id" :data-day="k.day || undefined" :data-grupa="k.grupa || undefined" :data-przygaszony="k.przygaszony || undefined" :data-szary="k.szary || undefined" :aria-description="k.akcja || undefined" @click="klik" @pointerdown="wcisnij" @pointermove="rusz" @pointerup="pusc" @pointerleave="pusc" @pointercancel="pusc" @contextmenu.prevent>
     <div class="oest-kr">
       <img v-if="k.miniatura" :src="k.miniatura" alt="">
       <h2>{{ k.nazwa }}</h2>

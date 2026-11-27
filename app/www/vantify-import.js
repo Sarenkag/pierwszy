@@ -6,7 +6,7 @@
 // ppm.js czyta OEST_VANTIFY przy każdym wywołaniu, więc podmiana po jego wczytaniu działa od razu.
 (function (w) {
   // Plan wbudowany (vantify-plan.js) jest jedynym obiektem OEST_VANTIFY; wczytany plik podmienia w nim tylko zlecenia i karty.
-  var KEY = "oest.vantify.plan", E = w.OESTEksportVantify, V = w.OEST_VANTIFY;
+  var KEY = "oest.vantify.plan", RKEY = "oest.vantify.reactive", E = w.OESTEksportVantify, V = w.OEST_VANTIFY;
   var base = { exported: V && V.exported, jobs: (V && V.jobs) || {}, cards: V && V.cards };
   function ls() { try { return w.localStorage; } catch (e) { return null; } }
   function baseDate() { return String(base.exported || "").slice(0, 10); }
@@ -49,7 +49,11 @@
   function apiPreview(r) {
     var rows = E.fromApi(r && r.jobs, today());
     if (!rows.some(function (x) { return x.jobType === "Planned"; })) throw new Error("VANTIFY_EMPTY_LIST");
-    var pv = previewRows(rows); pv.api = true; pv.older = false; return pv;
+    var pv = previewRows(rows); pv.api = true; pv.older = false;
+    // zlecenia inne niż planowe (Reactive) z tej samej listy – grupa „Z Vantify” w Reactive (Grzegorz 27/11/2026)
+    pv.reactive = ((r && r.jobs) || []).filter(function (j) { return j && j.type !== "planned"; })
+      .map(function (j) { return { id: String(j.id), summary: String(j.summary || ""), status: String(j.status || "") }; });
+    return pv;
   }
   // Zapis + ponowny odczyt (DATA-002): sukces dopiero, gdy telefon oddał to samo.
   // o: { api: plan z „Pobierz z Vantify”, zmiany: nowe i zamknięte względem poprzedniego planu (pokazuje je karta) }
@@ -69,6 +73,7 @@
   function zapiszPlan(r) {
     var ch = r.changes;
     var back = save(r.plan, { api: !!r.api, zmiany: { nowe: ch.added, zamkniete: ch.closed, pominiete: r.plan.missing || [], starszy: !!r.older, dataObecna: r.currentDate } });
+    if (r.api && r.reactive) { try { ls().setItem(RKEY, JSON.stringify({ at: back.at, jobs: r.reactive })); } catch (e) {} }
     zmiana(); // otwarty ekran Ustawienia → Vantify od razu pokazuje nowy plan (także po zapisie przy starcie apki)
     return back;
   }
@@ -264,5 +269,7 @@
     dane: dane, ekran: ekran, pobierz: function () { return pobierz(false); }, otworz: function () { return otworz(); }, zbadaj: zbadaj, udostepnij: udostepnij,
     loginOdswiez: loginOdswiez, loginZapisz: loginZapisz, loginUsun: loginUsun, loginPokaz: loginPokaz,
     // dla vantify-auto.js: pobranie, zapis planu, stan sprawdzania, przejście do Ustawienia → Vantify (hasło, logowanie)
-    sync: sync, zapiszPlan: zapiszPlan, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); }, go: goVantify };
+    sync: sync, zapiszPlan: zapiszPlan,
+    // dla reactive.js: zlecenia Reactive z ostatniego pobrania listy [{ id, summary, status }]
+    reactive: function () { try { var x = JSON.parse(ls().getItem(RKEY) || "null"); return x && Array.isArray(x.jobs) ? x.jobs : []; } catch (e) { return []; } }, state: function (v) { if (v === undefined) return getJson(AKEY) || {}; setJson(AKEY, v); }, go: goVantify };
 })(window);

@@ -12,6 +12,11 @@
         <div>
           <Klocek v-for="k in d.klocki" :key="k.rx + '|' + k.id" :T="T" :k="k" :data-rx="k.rx" @wybierz="x => A.akcja(x.rx, { id: x.id })" @przytrzymaj="info"></Klocek>
         </div>
+        <!-- zlecenia Reactive założone w Vantify poza apką (Grzegorz 27/11/2026): osobna grupa pod własnymi; „Nie interesuje mnie” na końcu, szara ramka -->
+        <template v-if="d.zVantify">
+          <h2 class="ion-padding-horizontal">{{ d.zVantify.tytul }}</h2>
+          <Klocek v-for="k in d.zVantify.klocki" :key="k.rx + '|' + k.id" :T="T" :k="k" :data-rx="k.rx" @wybierz="x => A.akcja(x.rx, { id: x.id })" @przytrzymaj="info"></Klocek>
+        </template>
       </template>
 
       <template v-else-if="d.ekran === 'historia'">

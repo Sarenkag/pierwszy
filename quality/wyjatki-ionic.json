@@ -2,6 +2,11 @@
   "opis": "Jedyne wyjątki od zasady „tylko komponenty Ionic”. Każdy wpis: co, powód i id pisemnego „tak” Grzegorza. Nowy wpis tylko po jego zgodzie w czacie.",
   "wyjatki": [
     {
+      "co": "css:ion-card.oest-klocek[data-szary]",
+      "powod": "Reactive „Nie interesuje mnie”: klocek zostaje na liście, na końcu grupy „Z Vantify”, z szarą ramką i paskiem (PROD-045).",
+      "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTRPeBLErZwx2bxB3a6WYnyC"
+    },
+    {
       "co": "css:ion-content::part(scroll)",
       "powod": "Wyłączenie sprężynowania (overscroll) na każdym ekranie jednym ustawieniem, żeby dolny pasek stał w miejscu.",
       "zgoda": "cmsg_01XEAk2s9PJV8mCFfCy1yHHTSLrQHGxPZDFnqmWHzYCezq"
