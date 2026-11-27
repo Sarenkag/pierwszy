@@ -97,7 +97,10 @@
     rs.forEach(function (r, i) { if (ti < 0 && r.tekst.indexOf("{title}") >= 0) ti = i; if (wi < 0 && r.tekst.indexOf("Works Complete") >= 0) wi = i; });
     if (ti < 0 || wi <= ti + 1) throw Error("REPORT_TEMPLATE_FRAME");
     var mid = rs.slice(ti + 1, wi), kont = mid.filter(function (r) { return r.tekst.indexOf("{details}") >= 0; })[0] || mid[mid.length - 1];
-    var tr = x.slice(kont.a, kont.b).replace(/<w:trHeight[^>]*\/>/g, "");
+    // wysokość: środek zajmuje co najmniej tyle, ile wiersze ramki, które zastępuje – ramka wypełnia stronę jak w samym basic
+    // (Grzegorz 27/11/2026 21:42: „nawet jak ramka nie jest w pełni uzupełniona, powinna zajmować całą stronę”); dłuższy środek rośnie dalej
+    var wys = mid.reduce(function (a, r) { var h = /<w:trHeight[^>]*w:val="(\d+)"/.exec(x.slice(r.a, r.b)); return a + (h ? +h[1] : 0); }, 0);
+    var tr = x.slice(kont.a, kont.b).replace(/<w:trHeight[^>]*\/>/g, wys ? '<w:trHeight w:val="' + wys + '"/>' : "");
     var tcA = tr.indexOf("<w:tc>") >= 0 ? tr.indexOf("<w:tc>") : tr.search(/<w:tc /), tcEnd = tr.indexOf("</w:tc>");
     var tc = tr.slice(tcA, tcEnd), pr = (tc.match(/<w:tcPr>[\s\S]*?<\/w:tcPr>/) || [""])[0];
     if (!/<\/w:p>\s*$/.test(body) && !/<w:p\/>\s*$/.test(body)) body += "<w:p/>"; // komórka Worda musi kończyć się akapitem
