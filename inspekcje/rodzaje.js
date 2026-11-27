@@ -33,7 +33,7 @@
       { key: "access", short: "Access clear, no storage", cp: "Access clear", ok: "Access to the board clear and unobstructed; area not used for storage.", fail: "Access to the board obstructed, or area used for storage.", def: "ok" }
     ]
   }, {
-    id: "ats", name: "ATS", title: "Automatic Transfer Switch - Visual Inspection",
+    id: "ats", name: "ATS", title: "Automatic Transfer Switch - Visual Inspection", jednaKolumna: true, // raport: punkty jeden pod drugim (Grzegorz 27/11/2026 21:46)
     scope: "Scope: visual inspection only – no covers removed, no transfer test and no electrical testing carried out.",
     devices: [],
     checks: [

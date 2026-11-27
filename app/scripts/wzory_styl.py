@@ -50,6 +50,10 @@ def srodek():
 def tag(d, s):  # akapit z samym znacznikiem pętli – docxtemplater (paragraphLoop) usuwa go z raportu
     p = d.add_paragraph(); p.paragraph_format.space_after = Pt(0); run(p, s, 11); return p._p
 
+def dol(d):  # akapit-znacznik DOL_RAMKI: wszystko po nim apka stawia na dole ramki, tuż nad „Works Complete” (OESTWzory.zloz;
+    # Grzegorz 27/11/2026 21:45: szara ramka „zawsze na dole tej ramki”); sam akapit znika przy składaniu
+    return tag(d, "DOL_RAMKI")
+
 def pasek(t, tekst):  # granatowy pasek grupy w pierwszym wierszu tabeli: tekst biały, pogrubiony, WIELKIMI
     h = t.rows[0].cells[0].merge(t.rows[0].cells[-1]) if len(t.rows[0].cells) > 1 else t.rows[0].cells[0]; shade(h, TEAL)
     r = run(par(h), tekst, 10.5, True, "FFFFFF"); r.font.all_caps = True

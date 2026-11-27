@@ -40,7 +40,7 @@
       if (states[i] === "ok") pk.push({ nazwa: punkt(c), stan: "ok" });
       else if (states[i] === "fail") { nNo++; pk.push({ nazwa: punkt(c), stan: "no", uwaga: override[i] || c.fail || powody(c, i) }); }
     });
-    Object.assign(d, OESTWzory.grupy([{ nazwa: head || cur.code || cur.type.name, punkty: pk }], { stan: d.stan_ogolny, szare: extra.map(function (s) { return "Fault: " + s; }).concat(
+    Object.assign(d, OESTWzory.grupy([{ nazwa: head || cur.code || cur.type.name, punkty: pk, jednaKolumna: cur.type.jednaKolumna }], { stan: d.stan_ogolny, szare: extra.map(function (s) { return "Fault: " + s; }).concat(
       [pk.length || extra.length ? summaryLine(nNo + extra.length) : "Visual inspection carried out.", d.komentarz ? "Comments: " + d.komentarz : "", d.zakres]) }));
     return english(d);
   }

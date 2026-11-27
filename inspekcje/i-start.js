@@ -113,7 +113,7 @@
     if (f) {
       // formularz jak DB (pytania z ppm.js) albo pomiary temperatur według wzoru firmy
       cur.type = f.temp ? { id: "ppm-" + t.id, temp: true, name: t.name, title: f.title, wzor: f.wzor, slots: f.slots, scope: "", devices: dev, checks: [] } :
-        { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", devices: dev,
+        { id: "ppm-" + t.id, plain: true, name: t.name, title: f.title, scope: f.scope || "", jednaKolumna: !!f.jednaKolumna, devices: dev,
           checks: f.checks.map(function (c) { return { key: c.key, cp: c.cp, short: c.short, ok: c.ok, fail: c.fail, def: c.def || "ok" }; }) };
       openForm(t.name); return;
     }

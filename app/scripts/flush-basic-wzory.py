@@ -8,7 +8,7 @@ from docx.shared import Pt, Cm
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from wzory_styl import ROOT, WZORY, TEAL, LINE, shade, borders, run, par, spacer, srodek, szara  # styl: tylko app/scripts/wzory_styl.py
+from wzory_styl import ROOT, WZORY, TEAL, LINE, shade, borders, run, par, spacer, srodek, szara, dol  # styl: tylko app/scripts/wzory_styl.py
 
 PLIKI = {"TA": "flush-ta-srodek.docx", "TB": "flush-tb-srodek.docx", "P": "flush-p-srodek.docx", "GEN": "gen-srodek.docx"}  # GEN: Weekly Generator Check (21/11/2026)
 
@@ -37,7 +37,7 @@ def build(f, out):
         for k2, col in enumerate(t.columns): col.width = Cm(6.56 if k2 % 2 == 0 else 1.2)  # = szerokość komórki: równy odstęp z lewej i prawej
         t.alignment = WD_TABLE_ALIGNMENT.CENTER
         dodaj(t._tbl)
-    dodaj(spacer())
+    dodaj(dol(d))  # stałe zdanie zawsze na dole ramki (Grzegorz 27/11/2026 21:45)
     t = szara(d, "{statement}")
     dodaj(t._tbl); dodaj(spacer())
     d.core_properties.title = f["title"]

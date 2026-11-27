@@ -12,6 +12,7 @@ window.OEST_PPM = {
   ],
   // Formularze {SF} (ten sam układ co DB): pytania od Grzegorza 31/10/2026, zdania do raportu po angielsku.
   // ✓ / ✗ / – (pominięty punkt nie trafia do raportu); domyślnie OK.
+  // jednaKolumna: w raporcie punkty jeden pod drugim z większym odstępem (Grzegorz 27/11/2026 21:46, ATS), inaczej po 2 w wierszu.
   // short: punkt w raporcie przy ☑/☒ (Grzegorz 27/11/2026 21:31, zatwierdzona lista krótszych punktów); przy ☒ pod punktem pełne zdanie „fail”.
   forms: {
     // „z folderu”: tylko zdjęcia wypełnionej kartki → jeden PDF (strona na zdjęcie), bez pytań (Grzegorz 01/11/2026)
@@ -25,7 +26,7 @@ window.OEST_PPM = {
       { key: "mcp", short: "Manual call point operated the system", cp: "Call point works", ok: "Activating (test-triggering) the local manual call point operated the system correctly.", fail: "Activating (test-triggering) the local manual call point did not operate the system correctly." },
       { key: "reset", short: "System reset successful", cp: "Reset successful", ok: "Control panel allowed a successful system reset.", fail: "System reset from the control panel unsuccessful." },
       { key: "seals", short: "Frames and seals in good condition", cp: "Frames and seals OK", ok: "Frames, profiles and seals of the windows/vents in good condition.", fail: "Frames, profiles or seals of the windows/vents damaged or deteriorated." } ] },
-    ats: { title: "Automatic Transfer Switch - Visual Inspection", scope: "Scope: visual inspection only.", checks: [
+    ats: { title: "Automatic Transfer Switch - Visual Inspection", scope: "Scope: visual inspection only.", jednaKolumna: true, checks: [
       { key: "dust", short: "No dust build-up on the ATS", cp: "No dust build-up", ok: "No dust build-up on or around the ATS.", fail: "Dust build-up found on or around the ATS – cleaning required." },
       { key: "moisture", short: "No moisture or water ingress", cp: "No moisture", ok: "No signs of moisture or water ingress.", fail: "Signs of moisture or water ingress found." },
       { key: "heat", short: "No signs of overheating", cp: "No overheating signs", ok: "No signs of overheating, burning or discolouration.", fail: "Signs of overheating, burning or discolouration observed." },

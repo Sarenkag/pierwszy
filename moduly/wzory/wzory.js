@@ -21,6 +21,7 @@
   SLOWNIK.podtytul = ["grupy: linia nad grupami", "groups: line above the groups"]; SLOWNIK.grupy = ["grupy: lista grup", "groups: group list"];
   SLOWNIK.nazwa = ["grupy: nazwa grupy (pasek)", "groups: group name (bar)"]; SLOWNIK.licznik = ["grupy: licznik w pasku (np. 5/6)", "groups: count in the bar (e.g. 5/6)"];
   SLOWNIK.wiersze = ["grupy: wiersz z 2 punktami", "groups: row with 2 points"]; SLOWNIK.szare = ["grupy: akapity szarej ramki", "groups: grey box paragraphs"];
+  SLOWNIK.dwie = ["grupy: układ po 2 punkty w wierszu", "groups: 2 points per row layout"]; SLOWNIK.jedna = ["grupy: układ jeden punkt pod drugim", "groups: one point per row layout"];
   [1, 2].forEach(function (n) {
     SLOWNIK["n" + n] = ["grupy: nazwa punktu " + n + " w wierszu", "groups: point " + n + " name in row"]; SLOWNIK["u" + n] = ["grupy: szara uwaga punktu " + n, "groups: point " + n + " grey note"]; // ok/no/na 1–2: te same co we Flushingu
   });
@@ -57,7 +58,7 @@
     "reactive-basic": { plik: "reactive-srodek.docx", ramka: "basic", nazwa: "Reactive Job Sheet – basic form middle (no Overall Condition)", pola: ["wstep", "sekcje", "tekstowa", "naglowek", "akapity", "tekst", "tabela", "pary", "l1", "w1", "l2", "w2", "koniec"] },
     // Inspekcje bez własnego środka (Grzegorz 27/11/2026): z pytaniami, Plant Rooms, Temp TB, Spa, AOV TB – JEDEN środek z pętlami grup
     "grupy-basic": { plik: "grupy-srodek.docx", ramka: "basic", nazwa: "Inspection groups – basic form middle", pola: ["podtytul", "tekst", "grupy", "nazwa", "licznik", "wiersze",
-      "n1", "u1", "ok1", "no1", "na1", "n2", "u2", "ok2", "no2", "na2", "szare"] }
+      "n1", "u1", "ok1", "no1", "na1", "n2", "u2", "ok2", "no2", "na2", "szare", "dwie", "jedna"] }
   };
   var baza = (function () { try { var s = g.document && g.document.currentScript && g.document.currentScript.src; return s ? new URL(".", s).href : ""; } catch (e) { return ""; } })();
   var pliki = {}, obietnica = null;
@@ -88,6 +89,7 @@
     }
     return out;
   }
+  var DOL_RAMKI = "DOL_RAMKI", DOL_MIN = 2000; // znacznik dołu w pliku środka; ok. 3,5 cm na szarą ramkę (kilka linii podsumowania)
   function zloz(ramkaB, srodekB) {
     var W = g.OESTWord; if (!W) throw Error("REPORT_TEMPLATE_MISSING"); // pliki Word tylko przez moduly/word
     var rz = W.otworz(ramkaB), x = rz.file("word/document.xml").asText(), sx = W.otworz(srodekB).file("word/document.xml").asText();
@@ -100,34 +102,44 @@
     // wysokość: środek zajmuje co najmniej tyle, ile wiersze ramki, które zastępuje – ramka wypełnia stronę jak w samym basic
     // (Grzegorz 27/11/2026 21:42: „nawet jak ramka nie jest w pełni uzupełniona, powinna zajmować całą stronę”); dłuższy środek rośnie dalej
     var wys = mid.reduce(function (a, r) { var h = /<w:trHeight[^>]*w:val="(\d+)"/.exec(x.slice(r.a, r.b)); return a + (h ? +h[1] : 0); }, 0);
-    var tr = x.slice(kont.a, kont.b).replace(/<w:trHeight[^>]*\/>/g, wys ? '<w:trHeight w:val="' + wys + '"/>' : "");
-    var tcA = tr.indexOf("<w:tc>") >= 0 ? tr.indexOf("<w:tc>") : tr.search(/<w:tc /), tcEnd = tr.indexOf("</w:tc>");
-    var tc = tr.slice(tcA, tcEnd), pr = (tc.match(/<w:tcPr>[\s\S]*?<\/w:tcPr>/) || [""])[0];
-    if (!/<\/w:p>\s*$/.test(body) && !/<w:p\/>\s*$/.test(body)) body += "<w:p/>"; // komórka Worda musi kończyć się akapitem
-    var nowy = tr.slice(0, tcA) + tr.slice(tcA, tcA + tc.indexOf(">") + 1) + pr + body + tr.slice(tcEnd);
+    var tr = x.slice(kont.a, kont.b);
+    // DÓŁ (Grzegorz 27/11/2026 21:45: szara ramka „zawsze na dole tej ramki”): akapit DOL_RAMKI w pliku środka dzieli go na dwa wiersze ramki –
+    // górny (grupy, sekcje) i dolny wyrównany do dołu, tuż nad „Works Complete”; dolny trzyma DOL_MIN twipów z wysokości, reszta dla górnego
+    var m = body.indexOf(DOL_RAMKI), gora = body, dol = null;
+    if (m >= 0) { var pa = Math.max(body.lastIndexOf("<w:p>", m), body.lastIndexOf("<w:p ", m)), pb = body.indexOf("</w:p>", m) + 6; gora = body.slice(0, pa); dol = body.slice(pb); }
+    function wiersz(tresc, h, wyrownaj) {
+      if (!/<\/w:p>\s*$/.test(tresc) && !/<w:p\/>\s*$/.test(tresc)) tresc += "<w:p/>"; // komórka Worda musi kończyć się akapitem
+      var t = tr.replace(/<w:trHeight[^>]*\/>/g, h > 0 ? '<w:trHeight w:val="' + h + '"/>' : "");
+      var a2 = t.indexOf("<w:tc>") >= 0 ? t.indexOf("<w:tc>") : t.search(/<w:tc /), e2 = t.indexOf("</w:tc>"), c2 = t.slice(a2, e2);
+      var pr = (c2.match(/<w:tcPr>[\s\S]*?<\/w:tcPr>/) || [""])[0]; // ustawienia komórki ramki (lewa/prawa linia) zostają
+      var p2 = wyrownaj ? pr.replace(/<w:vAlign[^>]*\/>/g, "").replace("</w:tcPr>", '<w:vAlign w:val="' + wyrownaj + '"/></w:tcPr>') : pr;
+      return t.slice(0, a2) + c2.slice(0, c2.indexOf(">") + 1) + p2 + tresc + t.slice(e2);
+    }
+    var nowy = dol === null ? wiersz(body, wys) : wiersz(gora, wys - Math.min(DOL_MIN, wys)) + wiersz(dol, Math.min(DOL_MIN, wys), "bottom");
     rz.file("word/document.xml", x.slice(0, mid[0].a) + nowy + x.slice(mid[mid.length - 1].b));
     return W.zapisz(rz);
   }
   // test w node: wzór podany z zewnątrz (plik z dysku), bez fetch
   function ustaw(id, b) { opis(id); pliki[id] = new Uint8Array(b); }
 
-  // Dane środka „grupy-basic” (jedno miejsce dla wszystkich inspekcji): lista = [{ nazwa, punkty: [{ nazwa, stan: "ok"|"no"|"na", uwaga }] }],
+  // Dane środka „grupy-basic” (jedno miejsce dla wszystkich inspekcji): lista = [{ nazwa, jednaKolumna, punkty: [{ nazwa, stan: "ok"|"no"|"na", uwaga }] }],
   // o = { podtytul, stan, szare: [akapity szarej ramki] }; stan = Overall Condition – wiersza w środku grup nie ma (jak we Flushingu), idzie pierwszym akapitem szarej ramki. Po 2 punkty w wierszu, licznik w pasku = ☑ / wszystkie punkty grupy (jak strefy Flushingu);
   // grupa bez punktów nie trafia do raportu. ☑ / ☒ / N/A – te same znaki co we Flushingu (OESTFlush.basicPola).
   function grupy(lista, o) {
     o = o || {};
     var gr = (lista || []).filter(function (g) { return g.punkty && g.punkty.length; }).map(function (g) {
       var w = [], ok = g.punkty.filter(function (p) { return p.stan === "ok"; }).length;
-      for (var i = 0; i < g.punkty.length; i += 2) {
+      var co = g.jednaKolumna ? 1 : 2; // jednaKolumna: punkty jeden pod drugim, większy odstęp (Grzegorz 27/11/2026 21:46, ATS)
+      for (var i = 0; i < g.punkty.length; i += co) {
         var r = {};
-        [g.punkty[i], g.punkty[i + 1]].forEach(function (p, k) {
+        g.punkty.slice(i, i + co).forEach(function (p, k) {
           var n = k + 1; p = p || {};
           r["n" + n] = p.nazwa || ""; r["u" + n] = p.uwaga ? " \u2013 " + p.uwaga : "";
           r["ok" + n] = p.stan === "ok" ? "\u2611" : ""; r["no" + n] = p.stan === "no" ? "\u2612" : ""; r["na" + n] = p.stan === "na" ? "N/A" : "";
         });
         w.push(r);
       }
-      return { nazwa: g.nazwa, licznik: ok + "/" + g.punkty.length, wiersze: w };
+      return { nazwa: g.nazwa, licznik: ok + "/" + g.punkty.length, wiersze: w, dwie: co === 2, jedna: co === 1 };
     });
     return { podtytul: o.podtytul ? [{ tekst: o.podtytul }] : [], grupy: gr, szare: [o.stan ? "Overall condition: " + o.stan + "." : ""].concat(o.szare || []).filter(Boolean).map(function (t) { return { tekst: t }; }) };
   }
