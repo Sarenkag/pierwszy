@@ -29,37 +29,16 @@
       tytul: cur.type.title, punkty: pts, quote: "", site: cfg.site, komentarz: "", zakres: "", temps: slots.map(function (s, i) { var n = tempNum(temps[i]); return n === null ? "" : String(n); }),
       stan_ogolny: outN ? outN + " reading(s) out of range – record in the Fault and Remedial Actions Log" : "All readings within range" };
     d.obiekt = d.lokalizacja; d.stan = d.stan_ogolny; d.rodzaj = d.tytul; d.nr = ""; d.godzina = NZ.godzina(new Date()); d.opis = pts.join("\n");
-    d.rok = w.getFullYear(); d.miesiac = w.getMonth(); // zaznaczenie roku i miesiąca w formularzu = data inspekcji
-    return d;
-  }
-  // Wzór firmy: kolejne pola {temp} dostają kolejne pomiary, {name} podpis, {data} datę; reszta tabeli bez zmian
-  function fillTempDocx(d) {
-    var i = 0, x = window.OESTNarzedzia.esc;
-    return OESTWord.zmien(OESTWzory.bajty(cur.type.wzor), { "word/document.xml": function (xml) {
-      xml = xml.replace(/\{temp\}/g, function () { return x(d.temps[i++] || ""); }).split("{name}").join(x(d.inspektor || "")).split("{data}").join(x(d.data));
-      return markPeriod(xml, d.rok, d.miesiac);
-    } });
-  }
-  // Tabela lat i miesięcy we wzorze QHS-031: żadnego stałego zaznaczenia – zielone tło tylko na roku i miesiącu daty inspekcji
-  var MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  function markPeriod(xml, rok, mies) {
-    var want = [String(rok), MONTHS_EN[mies]];
-    return xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, function (p) {
-      var t = (p.match(/<w:t(?: [^>]*)?>[^<]*/g) || []).map(function (s) { return s.replace(/^<w:t[^>]*>/, ""); }).join("").trim();
-      if (!/^20\d\d$/.test(t) && MONTHS_EN.indexOf(t) < 0) return p;
-      p = p.replace(/<w:highlight w:val="[^"]*"\/>/g, "");
-      if (want.indexOf(t) < 0) return p;
-      return p.replace(/<w:r(?=[ >])([^>]*)>([\s\S]*?)<\/w:r>/g, function (r, a, b) {
-        if (!/<w:t[ >]/.test(b)) return r;
-        var h = '<w:highlight w:val="green"/>';
-        if (/<w:rPr>/.test(b)) b = b.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/, function (m, c) {
-          var k = c.search(/<w:(u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath)[ \/>]/);
-          return "<w:rPr>" + (k < 0 ? c + h : c.slice(0, k) + h + c.slice(k)) + "</w:rPr>";
-        });
-        else b = "<w:rPr>" + h + "</w:rPr>" + b;
-        return "<w:r" + a + ">" + b + "</w:r>";
-      });
+    // środek „grupy” w ramce basic (Grzegorz 27/11/2026, zamiast wzoru QHS-031): grupa = miejsce, punkt = rodzaj kranu z odczytem °C, ☒ poza progiem
+    var gr = [];
+    slots.forEach(function (s, i) {
+      var n = tempNum(temps[i]); if (n === null) return;
+      var bad = tempBad(s[1], temps[i]), g = gr[gr.length - 1];
+      if (!g || g.nazwa !== s[0]) gr.push(g = { nazwa: s[0], punkty: [] });
+      g.punkty.push({ nazwa: KIND[s[1]], stan: bad ? "no" : "ok", uwaga: n + "°C" + (bad ? " – out of range (" + LIMIT[s[1]] + ")" : "") });
     });
+    Object.assign(d, OESTWzory.grupy(gr, { szare: [d.stan_ogolny + ".", "Limits: " + LIMIT.hot + " · " + LIMIT.cold + " · " + LIMIT.tmv + "."] }));
+    return english(d);
   }
   var susN = {}; // numer sugestii modelu przy pytaniu (i → n)
   var rsel = {}; // wybrane powody pod pytaniem (i → [id])

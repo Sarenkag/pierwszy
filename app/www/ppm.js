@@ -12,43 +12,45 @@ window.OEST_PPM = {
   ],
   // Formularze {SF} (ten sam układ co DB): pytania od Grzegorza 31/10/2026, zdania do raportu po angielsku.
   // ✓ / ✗ / – (pominięty punkt nie trafia do raportu); domyślnie OK.
+  // jednaKolumna: w raporcie punkty jeden pod drugim z większym odstępem (Grzegorz 27/11/2026 21:46, ATS), inaczej po 2 w wierszu.
+  // short: punkt w raporcie przy ☑/☒ (Grzegorz 27/11/2026 21:31, zatwierdzona lista krótszych punktów); przy ☒ pod punktem pełne zdanie „fail”.
   forms: {
     // „z folderu”: tylko zdjęcia wypełnionej kartki → jeden PDF (strona na zdjęcie), bez pytań (Grzegorz 01/11/2026)
     folder: { folder: true, title: "", checks: [] },
     aov: { title: "AOV - Operation Test", scope: "", checks: [
-      { key: "access", cp: "Panel access clear", ok: "Access to the AOV control panel clear and unobstructed.", fail: "Access to the AOV control panel obstructed." },
-      { key: "panel", cp: "Panel undamaged", ok: "AOV control panel free from visible damage.", fail: "AOV control panel damaged – remedial action required." },
-      { key: "system", cp: "System operating", ok: "AOV system operating correctly.", fail: "AOV system not operating correctly – further investigation required." },
-      { key: "alarm", cp: "Alarm activated", ok: "Alarm activated as intended on operation of the system.", fail: "Alarm not activated on operation of the system." },
-      { key: "vents", cp: "Vents fully open", ok: "Vents/windows opened fully on activation.", fail: "Vents/windows failed to open fully on activation." },
-      { key: "mcp", cp: "Call point works", ok: "Activating (test-triggering) the local manual call point operated the system correctly.", fail: "Activating (test-triggering) the local manual call point did not operate the system correctly." },
-      { key: "reset", cp: "Reset successful", ok: "Control panel allowed a successful system reset.", fail: "System reset from the control panel unsuccessful." },
-      { key: "seals", cp: "Frames and seals OK", ok: "Frames, profiles and seals of the windows/vents in good condition.", fail: "Frames, profiles or seals of the windows/vents damaged or deteriorated." } ] },
-    ats: { title: "Automatic Transfer Switch - Visual Inspection", scope: "Scope: visual inspection only.", checks: [
-      { key: "dust", cp: "No dust build-up", ok: "No dust build-up on or around the ATS.", fail: "Dust build-up found on or around the ATS – cleaning required." },
-      { key: "moisture", cp: "No moisture", ok: "No signs of moisture or water ingress.", fail: "Signs of moisture or water ingress found." },
-      { key: "heat", cp: "No overheating signs", ok: "No signs of overheating, burning or discolouration.", fail: "Signs of overheating, burning or discolouration observed." },
-      { key: "terminations", cp: "Terminations tight", ok: "No loose cable terminations observed.", fail: "Loose cable termination(s) observed – remedial action required." },
-      { key: "lights", cp: "Indicators normal", ok: "Controller indicator lights showing normal status.", fail: "Controller indicator lights showing abnormal or fault status." },
-      { key: "access", cp: "Access clear", ok: "Access to the ATS clear and unobstructed.", fail: "Access to the ATS obstructed – area requires clearing." } ] },
+      { key: "access", short: "AOV panel access clear", cp: "Panel access clear", ok: "Access to the AOV control panel clear and unobstructed.", fail: "Access to the AOV control panel obstructed." },
+      { key: "panel", short: "AOV panel free from damage", cp: "Panel undamaged", ok: "AOV control panel free from visible damage.", fail: "AOV control panel damaged – remedial action required." },
+      { key: "system", short: "AOV system operating correctly", cp: "System operating", ok: "AOV system operating correctly.", fail: "AOV system not operating correctly – further investigation required." },
+      { key: "alarm", short: "Alarm activated on operation", cp: "Alarm activated", ok: "Alarm activated as intended on operation of the system.", fail: "Alarm not activated on operation of the system." },
+      { key: "vents", short: "Vents/windows opened fully", cp: "Vents fully open", ok: "Vents/windows opened fully on activation.", fail: "Vents/windows failed to open fully on activation." },
+      { key: "mcp", short: "Manual call point operated the system", cp: "Call point works", ok: "Activating (test-triggering) the local manual call point operated the system correctly.", fail: "Activating (test-triggering) the local manual call point did not operate the system correctly." },
+      { key: "reset", short: "System reset successful", cp: "Reset successful", ok: "Control panel allowed a successful system reset.", fail: "System reset from the control panel unsuccessful." },
+      { key: "seals", short: "Frames and seals in good condition", cp: "Frames and seals OK", ok: "Frames, profiles and seals of the windows/vents in good condition.", fail: "Frames, profiles or seals of the windows/vents damaged or deteriorated." } ] },
+    ats: { title: "Automatic Transfer Switch - Visual Inspection", scope: "Scope: visual inspection only.", jednaKolumna: true, checks: [
+      { key: "dust", short: "No dust build-up on the ATS", cp: "No dust build-up", ok: "No dust build-up on or around the ATS.", fail: "Dust build-up found on or around the ATS – cleaning required." },
+      { key: "moisture", short: "No moisture or water ingress", cp: "No moisture", ok: "No signs of moisture or water ingress.", fail: "Signs of moisture or water ingress found." },
+      { key: "heat", short: "No signs of overheating", cp: "No overheating signs", ok: "No signs of overheating, burning or discolouration.", fail: "Signs of overheating, burning or discolouration observed." },
+      { key: "terminations", short: "No loose cable terminations", cp: "Terminations tight", ok: "No loose cable terminations observed.", fail: "Loose cable termination(s) observed – remedial action required." },
+      { key: "lights", short: "Indicator lights normal", cp: "Indicators normal", ok: "Controller indicator lights showing normal status.", fail: "Controller indicator lights showing abnormal or fault status." },
+      { key: "access", short: "Access to the ATS clear", cp: "Access clear", ok: "Access to the ATS clear and unobstructed.", fail: "Access to the ATS obstructed – area requires clearing." } ] },
     plant: { title: "Plant Room Inspection", scope: "", checks: [
-      { key: "housekeeping", cp: "Clean and tidy", ok: "Housekeeping: room clean, tidy and free of clutter, rubbish and stored combustible materials.", fail: "Housekeeping: clutter, rubbish or combustible materials found – room requires clearing." },
-      { key: "access", cp: "Access clear", ok: "Access & egress: escape routes and walkways to plant equipment clear and unobstructed.", fail: "Access & egress: escape routes or walkways to plant equipment obstructed." },
-      { key: "lighting", cp: "Lighting working", ok: "Lighting & emergency lighting: all general lights and emergency lighting units fully functional.", fail: "Lighting & emergency lighting: one or more general or emergency lighting units not functional." },
-      { key: "fire", cp: "Fire safety OK", ok: "Fire safety: fire extinguishers in place, unblocked, with valid service tags and pins intact; fire doors closed (no wedges).", fail: "Fire safety: extinguisher missing, blocked, out of date or pin/tag missing, or fire door wedged open." },
-      { key: "signage", cp: "Signage in place", ok: "Signage: high voltage, danger and mandatory PPE warning signs clearly visible and secure.", fail: "Signage: warning signs missing, illegible or not secure." } ] },
+      { key: "housekeeping", short: "Room clean, tidy, no combustibles", cp: "Clean and tidy", ok: "Housekeeping: room clean, tidy and free of clutter, rubbish and stored combustible materials.", fail: "Housekeeping: clutter, rubbish or combustible materials found – room requires clearing." },
+      { key: "access", short: "Escape routes and walkways clear", cp: "Access clear", ok: "Access & egress: escape routes and walkways to plant equipment clear and unobstructed.", fail: "Access & egress: escape routes or walkways to plant equipment obstructed." },
+      { key: "lighting", short: "General and emergency lighting working", cp: "Lighting working", ok: "Lighting & emergency lighting: all general lights and emergency lighting units fully functional.", fail: "Lighting & emergency lighting: one or more general or emergency lighting units not functional." },
+      { key: "fire", short: "Extinguishers in date, fire doors closed", cp: "Fire safety OK", ok: "Fire safety: fire extinguishers in place, unblocked, with valid service tags and pins intact; fire doors closed (no wedges).", fail: "Fire safety: extinguisher missing, blocked, out of date or pin/tag missing, or fire door wedged open." },
+      { key: "signage", short: "Warning and PPE signs in place", cp: "Signage in place", ok: "Signage: high voltage, danger and mandatory PPE warning signs clearly visible and secure.", fail: "Signage: warning signs missing, illegible or not secure." } ] },
     lighting: { title: "Monthly Lighting Checks", scope: "", checks: [
-      { key: "external", cp: "External lights OK", ok: "External lighting: all external and façade lights operational.", fail: "External lighting: one or more external or façade lights not operational." },
-      { key: "common", cp: "Common areas lit", ok: "Common areas: lobbies, corridors and stairwells fully lit, no failed lamps.", fail: "Common areas: failed lamps found in lobbies, corridors or stairwells." },
-      { key: "plant", cp: "Plant rooms lit", ok: "Plant rooms & risers: lighting operational.", fail: "Plant rooms & risers: lighting not fully operational." },
-      { key: "fittings", cp: "Fittings intact", ok: "Fittings: no damaged, loose or missing diffusers/covers.", fail: "Fittings: damaged, loose or missing diffusers/covers found." },
-      { key: "controls", cp: "Controls working", ok: "Lighting controls: timers, PIR sensors and switches operating correctly.", fail: "Lighting controls: timer, PIR sensor or switch not operating correctly." },
-      { key: "flicker", cp: "No flickering lamps", ok: "No flickering, buzzing or discoloured lamps observed.", fail: "Flickering, buzzing or discoloured lamp(s) observed – replacement required." } ] },
+      { key: "external", short: "External and façade lights working", cp: "External lights OK", ok: "External lighting: all external and façade lights operational.", fail: "External lighting: one or more external or façade lights not operational." },
+      { key: "common", short: "Common areas fully lit", cp: "Common areas lit", ok: "Common areas: lobbies, corridors and stairwells fully lit, no failed lamps.", fail: "Common areas: failed lamps found in lobbies, corridors or stairwells." },
+      { key: "plant", short: "Plant rooms and risers lit", cp: "Plant rooms lit", ok: "Plant rooms & risers: lighting operational.", fail: "Plant rooms & risers: lighting not fully operational." },
+      { key: "fittings", short: "Fittings and diffusers intact", cp: "Fittings intact", ok: "Fittings: no damaged, loose or missing diffusers/covers.", fail: "Fittings: damaged, loose or missing diffusers/covers found." },
+      { key: "controls", short: "Timers, PIRs and switches working", cp: "Controls working", ok: "Lighting controls: timers, PIR sensors and switches operating correctly.", fail: "Lighting controls: timer, PIR sensor or switch not operating correctly." },
+      { key: "flicker", short: "No flickering or buzzing lamps", cp: "No flickering lamps", ok: "No flickering, buzzing or discoloured lamps observed.", fail: "Flickering, buzzing or discoloured lamp(s) observed – replacement required." } ] },
     // 024: wzór firmy (docx) z polami {temp} — kolejność pól jak w tabeli wzoru. Tylko temperatury, bez domyślnych wartości.
     // kind: hot / cold / tmv — progi z wzoru: Hot > 50°C, Cold < 20°C, TMV mixed 38–43°C.
-    // plant roomy (01/11/2026, Grzegorz): 7 stałych pomieszczeń, w każdym siatka checkpointów, wzór firmy TPL_PLANT
-    plantW: { rooms: true, title: "Weekly Plant Status Checks", wzor: "plant" },
-    plantM: { rooms: true, monthly: true, title: "Monthly Plant Room Inspections", wzor: "plant" },
+    // plant roomy (01/11/2026, Grzegorz): 7 stałych pomieszczeń, w każdym siatka checkpointów; raport: ramka basic + środek „grupy” (27/11/2026)
+    plantW: { rooms: true, title: "Weekly Plant Status Checks", wzor: "grupy-basic" },
+    plantM: { rooms: true, monthly: true, title: "Monthly Plant Room Inspections", wzor: "grupy-basic" },
     plantRooms: [
       { key: "spa_pump", name: "Spa pump plant room", loc: "TB LG" },
       { key: "spa_filtration", name: "Spa filtration plant room", loc: "TB UG", extra: ["Chemicals stored safely"] },
@@ -59,6 +61,8 @@ window.OEST_PPM = {
       { key: "mechanical", name: "Mechanical plant room", loc: "TB External access" } ],
     plantCps: ["Secure", "Clean", "Access", "Lighting", "No leaks", "Panel secure"],
     plantCpsMonthly: ["No active alarms", "Emergency lighting"],
+    // punkt w raporcie (Grzegorz 27/11/2026: krótsze, ale nie jedno słowo); ekran zostaje z hasłem
+    plantCpsRaport: { "Secure": "Room secure", "Clean": "Room clean and tidy", "Access": "Access clear", "Lighting": "Lighting working" },
     // Weekly Flushing (Grzegorz 02/11/2026): listy kranów z formularzy, wspólny wzór Word (moduly/wzory/flush.docx).
     // strefy (Grzegorz 21/11/2026): grupy kranów basic form (moduly/wzory/flush-basic-*.docx, generator app/scripts/flush-basic-wzory.py);
     // każdy kran dokładnie w jednej strefie. TB bez apartamentów (Grzegorz 21/11/2026: znikają z apki i z raportu).
@@ -108,7 +112,7 @@ window.OEST_PPM = {
       "AOV-TB": { points: true, title: "AOV Operation Test – Tower B", building: "B", col: "Opened & reset",
         groups: [{ name: "Roof AOVs (R2)", n: 2 }, { name: "Upper Ground AOVs – by the lifts", n: 1 }],
         taps: ["Ground floor – main entrance doors (call point)", "Stairwell level 14 (call point)", "Upper Ground – by the lifts (call point)"] } },
-    tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", wzor: "temp-tb", slots: [
+    tempTB: { temp: true, title: "Monthly Tap Temperature Check TB", wzor: "grupy-basic", slots: [
       ["Roof", "cold"], ["Spa Chemical Room", "hot"], ["Spa Chemical Room", "cold"], ["Bin Area", "cold"],
       ["Spa Hall Tap", "hot"], ["Spa Hall Tap", "cold"], ["Massage Hall", "cold"], ["Massage Room", "hot"], ["Massage Room", "cold"],
       ["Hairdresser Room", "hot"], ["Hairdresser Room", "cold"], ["Disabled Toilet LG", "tmv"], ["Fitness 1", "cold"],

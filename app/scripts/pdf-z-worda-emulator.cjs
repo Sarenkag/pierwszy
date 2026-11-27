@@ -20,7 +20,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log("strona:", await val("location.href", 10000));
   console.log("silnik dostępny:", await val("!!(window.OESTWordPdf && OESTWordPdf.dostepny())", 10000));
   let ok = 0;
-  for (const nazwa of ["plant", "basic", "flush", "temp-tb"]) {
+  const WZORY = ["basic", "flush", "grupy-basic"], RAZEM = WZORY.length + 1; // + Flushing sklejony z dwóch Wordów
+  for (const nazwa of WZORY) {
     const t0 = Date.now();
     const v = await val(`(function(){var b=OESTWzory.bajty("${nazwa}");
       var docx=OESTWord.wypelnij(b,{},[]);
@@ -44,7 +45,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       if (pages === oczek && oczek > 1) ok++;
     }
   }
-  console.log(ok === 5 ? "WYNIK OK 5/5" : "WYNIK ZŁY " + ok + "/5");
+  console.log(ok === RAZEM ? "WYNIK OK " + ok + "/" + RAZEM : "WYNIK ZŁY " + ok + "/" + RAZEM);
   try { ws.close(); } catch (e) {}
   process.exit(0);
 })();

@@ -1,37 +1,23 @@
 # Środek Job Sheetu Reactive w stylu „grupy stref” (Grzegorz 27/11/2026: „wygląda bardzo elegancko i profesjonalnie”, Job Sheet #3085016).
 # Ramka = moduly/wzory/basic.docx (apka wkłada w nią ten środek przy raporcie, OESTWzory.bajty('reactive-basic')).
-# Styl (kolory, pasek, ramki, odstęp) TYLKO z app/scripts/flush-basic-wzory.py – tu żadnych własnych funkcji stylu.
+# Styl (kolory, pasek, ramki, odstęp, szara ramka) TYLKO z app/scripts/wzory_styl.py – tu żadnych własnych funkcji stylu.
 # Dane z OESTReactiveReport.uklad(): {#sekcje} = tabela: granatowy pasek {naglowek} WIELKIMI + wiersz na każdy akapit {#akapity}{tekst};
 # {#tabela} = sekcja-tabela (Templates): granatowy pasek + wiersz na każdą parę {#pary}{l1}{w1} | {l2}{w2}; {#tekstowa} = zwykła sekcja.
 # {#wstep} / {#koniec} = szara ramka: tekst bez nagłówka przed pierwszą sekcją / zdanie końcowe (BHP). Uruchom: python3 app/scripts/reactive-srodek.py   (potrzebne: python-docx)
-import importlib.util, os
-from docx import Document
+import os, sys
 from docx.shared import Pt, Cm
 from docx.enum.table import WD_TABLE_ALIGNMENT
-
-TU = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("styl", os.path.join(TU, "flush-basic-wzory.py"))
-S = importlib.util.module_from_spec(spec); spec.loader.exec_module(S)
-
-def tag(d, s):  # akapit z samym znacznikiem pętli – docxtemplater (paragraphLoop) usuwa go z raportu
-    p = d.add_paragraph(); p.paragraph_format.space_after = Pt(0); S.run(p, s, 11); return p._p
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import wzory_styl as S
 
 def szare(d, add, petla):  # szara ramka akapitów spoza sekcji (pętla {#wstep} przed sekcjami albo {#koniec} na końcu)
-    add(tag(d, "{#%s}" % petla)); add(S.spacer())
-    t = d.add_table(rows=1, cols=1); S.borders(t, 4, S.LINE); c = t.rows[0].cells[0]; S.shade(c, S.GRAY)
-    p = S.par(c); p.paragraph_format.space_before = Pt(4); p.paragraph_format.space_after = Pt(4); S.run(p, "{tekst}", 11)
-    t.autofit = False; t.columns[0].width = Cm(15.52); t.alignment = WD_TABLE_ALIGNMENT.CENTER
-    add(t._tbl); add(tag(d, "{/%s}" % petla))
+    add(S.tag(d, "{#%s}" % petla)); add(S.spacer()); add(S.szara(d, "{tekst}")._tbl); add(S.tag(d, "{/%s}" % petla))
 
 def build(out):
-    d = Document(os.path.join(S.WZORY, "basic.docx")); body = d.element.body; sect = body.find(S.W + "sectPr")
-    for ch in list(body):
-        if ch is not sect: body.remove(ch)
-    for h in sect.findall(S.W + "headerReference") + sect.findall(S.W + "footerReference"): sect.remove(h)
-    add = sect.addprevious
+    d, add = S.srodek()
     szare(d, add, "wstep")
-    add(tag(d, "{#sekcje}"))
-    add(tag(d, "{#tekstowa}"))  # sekcja z akapitami
+    add(S.tag(d, "{#sekcje}"))
+    add(S.tag(d, "{#tekstowa}"))  # sekcja z akapitami
     add(S.spacer())
     t = d.add_table(rows=2, cols=1); S.borders(t, 4, S.LINE)
     h = t.rows[0].cells[0]; S.shade(h, S.TEAL)
@@ -41,8 +27,8 @@ def build(out):
     S.run(c.add_paragraph(), "{/akapity}", 11)
     t.autofit = False; t.columns[0].width = Cm(15.52); t.alignment = WD_TABLE_ALIGNMENT.CENTER
     add(t._tbl)
-    add(tag(d, "{/tekstowa}"))
-    add(tag(d, "{#tabela}"))  # sekcja-tabela (Templates, np. Device details): pary po 2 w wierszu „nazwa – wartość”, jak w Job Sheecie #3085016
+    add(S.tag(d, "{/tekstowa}"))
+    add(S.tag(d, "{#tabela}"))  # sekcja-tabela (Templates, np. Device details): pary po 2 w wierszu „nazwa – wartość”, jak w Job Sheecie #3085016
     add(S.spacer())
     t = d.add_table(rows=2, cols=2); S.borders(t, 4, S.LINE)
     h = t.rows[0].cells[0].merge(t.rows[0].cells[1]); S.shade(h, S.TEAL)
@@ -53,8 +39,8 @@ def build(out):
     for col in t.columns: col.width = Cm(7.76)
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
     add(t._tbl)
-    add(tag(d, "{/tabela}"))
-    add(tag(d, "{/sekcje}"))
+    add(S.tag(d, "{/tabela}"))
+    add(S.tag(d, "{/sekcje}"))
     szare(d, add, "koniec")
     add(S.spacer())
     d.core_properties.title = "Reactive Job Sheet – basic form middle"
