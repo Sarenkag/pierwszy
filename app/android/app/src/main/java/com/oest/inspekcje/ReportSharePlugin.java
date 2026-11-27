@@ -77,12 +77,11 @@ public class ReportSharePlugin extends Plugin {
             File[] old = dir.listFiles();
             if (old != null) for (File x : old) x.delete();
             if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException();
-            Intent view = new Intent(Intent.ACTION_VIEW);
-            view.setDataAndType(uri(write(dir, f)), f.getString("type", "application/pdf"));
-            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            // podgląd w apce (PdfPodgladActivity), bez wyboru zewnętrznej aplikacji (Grzegorz 27/11/2026)
+            Intent view = new Intent(getContext(), PdfPodgladActivity.class);
+            view.putExtra(PdfPodgladActivity.PLIK, write(dir, f).getAbsolutePath());
             getActivity().runOnUiThread(() -> {
                 try { getActivity().startActivity(view); call.resolve(new JSObject().put("status", "opened")); }
-                catch (android.content.ActivityNotFoundException e) { call.reject("OPEN_NO_APP"); }
                 catch (Exception e) { call.reject("OPEN_FAILED"); }
             });
         } catch (Exception e) { call.reject("OPEN_FAILED"); }
